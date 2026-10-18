@@ -1,0 +1,43 @@
+{
+  "id": "xenoform-draft",
+  "revision": 0,
+  "last_node_id": 1,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "XenoformTryIt",
+      "pos": [120, 120],
+      "size": [380, 150],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "status",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 0
+        }
+      ],
+      "title": "Try the demo — draft",
+      "properties": {
+        "Node name for S&R": "XenoformTryIt"
+      },
+      "widgets_values": ["draft", "pynchon"]
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": { "scale": 1, "offset": [0, 0] },
+    "xenoform": {
+      "quality": "draft",
+      "register": "pynchon",
+      "note": "Drag this file onto the ComfyUI canvas. Queue it. The bundled demo and the Pynchon register render a dry-run draft. No weights required."
+    }
+  },
+  "version": 0.4
+}

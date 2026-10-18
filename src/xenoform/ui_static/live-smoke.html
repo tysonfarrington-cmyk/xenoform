@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Live smoke</title>
+</head>
+<body>
+  <canvas id="c" width="320" height="180"></canvas>
+  <pre id="live-smoke">pending</pre>
+  <script src="live.js"></script>
+  <script>
+    const result = window.XENO_LIVE.smoke(document.getElementById("c"));
+    document.getElementById("live-smoke").textContent = JSON.stringify(result);
+    document.body.dataset.liveSmoke = result.ok ? "ok" : "fail";
+  </script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+# Pinned to the versions the smoke tests install. ComfyUI Manager reads this file.
+numpy==2.5.4
+librosa==1.0.0
+soundfile==0.14.0
+comfy-sdk==0.5.0
+comfy-api-proxy==0.1.6
+fastapi==0.143.3
+uvicorn==0.54.0
+python-multipart==0.0.32
+aiohttp==3.11.18

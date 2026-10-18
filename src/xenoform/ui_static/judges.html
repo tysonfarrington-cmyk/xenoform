@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Xenoform · judges</title>
+  <link rel="stylesheet" href="theme.css" />
+  <link rel="stylesheet" href="app.css" />
+  <style>
+    .judges { max-width: 880px; margin: 0 auto; padding: 16px 14px 48px; display: grid; gap: 12px; }
+    .screen {
+      position: relative;
+      background: var(--zinc-950);
+      aspect-ratio: 16 / 9;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .screen video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; }
+    .screen video.on { opacity: 1; }
+    .screen .empty, .screen .status {
+      position: absolute;
+      inset: auto 16px 16px 16px;
+      margin: 0;
+      color: var(--zinc-50);
+      font-size: 15px;
+    }
+    .drop.over { outline: 2px solid var(--nightshade); }
+    .energy-labels { display: flex; align-items: baseline; gap: 12px; }
+    .energy-labels span { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--zinc-500); }
+    .energy-labels b { margin-left: auto; font-variant-numeric: tabular-nums; }
+    .energy input { width: 100%; accent-color: var(--ink); }
+    .beat-grid { position: relative; height: 28px; background: var(--zinc-50); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; }
+    .beat-grid i { position: absolute; bottom: 0; width: 1px; }
+    .beat-grid i.beat { height: 10px; background: var(--peri); }
+    .beat-grid i.cut { top: 0; height: 100%; width: 2px; background: var(--nightshade); }
+    .beat-grid i.morph { top: 0; height: 100%; width: 3px; background: var(--vermilion); }
+    .beat-grid i.play { top: 0; height: 100%; width: 1px; background: var(--page-text); }
+    #qa { display: none; }
+    .judges-foot { max-width: 880px; margin: 0 auto; padding: 0 14px 32px; color: var(--muted); font-size: 13px; }
+  </style>
+</head>
+<body data-advanced="0">
+  <header class="top">
+    <a class="brand" href="index.html">
+      <span>
+        <span class="studio">Tyso Studio</span>
+        <strong>Xenoform</strong>
+        <em>A music video director, not a visualiser.</em>
+      </span>
+    </a>
+    <nav class="views" aria-label="Judges">
+      <a href="index.html">Desk</a>
+    </nav>
+    <a class="ow-badge" href="/licences" title="LTX-2.3 has a revenue threshold. FLUX.2 Klein 9B is non-commercial. This desk uses the Apache 2.0 4B.">Open weights</a>
+  </header>
+  <main class="judges">
+    <section class="panel" id="drop" data-song-drop="1">
+      <p class="kicker">1 · Song</p>
+      <h2>Drop a song</h2>
+      <div class="easy-actions">
+        <label class="upload solid">Choose a song<input id="file" type="file" accept="audio/*,.wav,.mp3,.flac,.ogg,.m4a" aria-label="Choose a song" /></label>
+        <button type="button" class="ghost" id="bundled">Bundled demo</button>
+      </div>
+      <p class="note" id="file-note">Or drop the file on this step.</p>
+    </section>
+    <section class="panel" id="vibe-panel">
+      <p class="kicker">2 · Vibe</p>
+      <h2>Pick a look</h2>
+      <div class="vibe-grid" role="radiogroup" aria-label="Vibe">
+        <button type="button" class="vibe-card" data-vibe="liquid-gold" role="radio" aria-checked="false"><span class="vibe-thumb" style="background-image:url(vibes/liquid-gold.jpg)"></span><strong>Liquid gold</strong></button>
+        <button type="button" class="vibe-card" data-vibe="paper-summer" role="radio" aria-checked="false"><span class="vibe-thumb" style="background-image:url(vibes/paper-summer.jpg)"></span><strong>Paper summer</strong></button>
+        <button type="button" class="vibe-card" data-vibe="bloom" role="radio" aria-checked="false"><span class="vibe-thumb" style="background-image:url(vibes/bloom.jpg)"></span><strong>Bloom</strong></button>
+        <button type="button" class="vibe-card is-dark" data-vibe="neon-night" role="radio" aria-checked="false"><span class="vibe-thumb" style="background-image:url(vibes/neon-night.jpg)"></span><strong>Neon night</strong></button>
+        <button type="button" class="vibe-card" data-vibe="ocean" role="radio" aria-checked="false"><span class="vibe-thumb" style="background-image:url(vibes/ocean.jpg)"></span><strong>Ocean</strong></button>
+        <button type="button" class="vibe-card is-dark" data-vibe="cosmic" role="radio" aria-checked="false"><span class="vibe-thumb" style="background-image:url(vibes/cosmic.jpg)"></span><strong>Cosmic</strong></button>
+      </div>
+    </section>
+    <section class="panel">
+      <p class="kicker">3 · Make</p>
+      <h2>Make the cut</h2>
+      <button type="button" class="generate easy-make" id="play">Make</button>
+    </section>
+    <section class="panel" id="result">
+      <p class="kicker">Your cut</p>
+      <h2>Play it</h2>
+      <div class="screen" id="screen">
+        <video id="clip-wide" data-shot="wide" muted playsinline loop preload="auto" src="library/wide.mp4"></video>
+        <video id="clip-medium" data-shot="medium" muted playsinline loop preload="auto" src="library/medium.mp4"></video>
+        <video id="clip-close" data-shot="close" muted playsinline loop preload="auto" src="library/close.mp4"></video>
+        <video id="clip-reveal" data-shot="reveal" muted playsinline loop preload="auto" src="library/reveal.mp4"></video>
+        <p class="empty" id="empty">Drop a song. The pictures follow its beats in this browser.</p>
+      </div>
+      <audio id="song" preload="auto"></audio>
+      <div class="beat-grid" id="grid" aria-hidden="true"></div>
+      <label class="easy-energy">Energy
+        <div class="energy-labels"><span>Calm</span><b id="readout">Calm</b><span>Hype</span></div>
+        <div class="energy"><input id="energy" type="range" min="0" max="1" step="0.01" value="0" aria-label="Energy from Calm to Hype" /></div>
+      </label>
+      <div class="easy-actions">
+        <button type="button" class="ghost" id="again">Try another vibe</button>
+      </div>
+      <div id="qa"></div>
+    </section>
+  </main>
+  <p class="judges-foot"><a class="ow-badge" href="/licences" title="LTX-2.3 has a revenue threshold. FLUX.2 Klein 9B is non-commercial. This desk uses the Apache 2.0 4B.">Open weights</a> <a href="/credits">Picture credits</a>. The pictures are already here. Nothing on this page calls a GPU.</p>
+  <script src="cutplay.js"></script>
+  <script src="judges.js"></script>
+</body>
+</html>

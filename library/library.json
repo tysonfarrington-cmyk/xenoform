@@ -1,0 +1,153 @@
+{
+  "name": "Xenoform sample library",
+  "version": 1,
+  "note": "Procedural stand-in. The full pack is not in the repo.",
+  "schema": {
+    "category": "shapes|silhouettes|loops|footage|film|stills|objects_gr|gpu_objects|gpu_morphs"
+  },
+  "items": [
+    {
+      "id": "sample_blob",
+      "category": "shapes",
+      "files": {
+        "poster": "shapes/blob.png",
+        "rgba": "shapes/blob.png"
+      },
+      "silhouette": "round",
+      "motion": "merging",
+      "tags": [
+        "liquid",
+        "organic"
+      ],
+      "colour": {
+        "mood": [
+          "warm"
+        ]
+      },
+      "licence_bucket": "own_work_procedural",
+      "licence": "Own work (procedural); free to use",
+      "face_present": false,
+      "morph_partners": [
+        {
+          "id": "sample_drop",
+          "iou": 0.82
+        },
+        {
+          "id": "sample_pulse",
+          "iou": 0.74
+        }
+      ]
+    },
+    {
+      "id": "sample_drop",
+      "category": "silhouettes",
+      "files": {
+        "poster": "shapes/drop.png"
+      },
+      "silhouette": "drop",
+      "motion": "static",
+      "tags": [
+        "water",
+        "drop",
+        "liquid"
+      ],
+      "colour": {
+        "mood": [
+          "warm"
+        ]
+      },
+      "licence_bucket": "own_work_procedural",
+      "licence": "Own work (procedural); free to use",
+      "face_present": false,
+      "morph_partners": [
+        {
+          "id": "sample_blob",
+          "iou": 0.82
+        }
+      ]
+    },
+    {
+      "id": "sample_ring",
+      "category": "shapes",
+      "files": {
+        "poster": "shapes/ring.png"
+      },
+      "silhouette": "ring",
+      "motion": "spinning",
+      "tags": [
+        "abstract",
+        "ring"
+      ],
+      "colour": {
+        "mood": [
+          "vivid"
+        ]
+      },
+      "licence_bucket": "own_work_procedural",
+      "licence": "Own work (procedural); free to use",
+      "face_present": false,
+      "morph_partners": [
+        {
+          "id": "sample_spiral",
+          "iou": 0.7
+        }
+      ]
+    },
+    {
+      "id": "sample_spiral",
+      "category": "shapes",
+      "files": {
+        "poster": "shapes/spiral.png"
+      },
+      "silhouette": "spiral",
+      "motion": "spinning",
+      "tags": [
+        "spiral",
+        "space"
+      ],
+      "colour": {
+        "mood": [
+          "cool"
+        ]
+      },
+      "licence_bucket": "own_work_procedural",
+      "licence": "Own work (procedural); free to use",
+      "face_present": false,
+      "morph_partners": [
+        {
+          "id": "sample_ring",
+          "iou": 0.7
+        }
+      ]
+    },
+    {
+      "id": "sample_pulse",
+      "category": "loops",
+      "file": "loops/pulse.mp4",
+      "files": {
+        "poster": "loops/pulse.png"
+      },
+      "silhouette": "round",
+      "motion": "morphing",
+      "tags": [
+        "liquid",
+        "morph",
+        "metal"
+      ],
+      "colour": {
+        "mood": [
+          "warm"
+        ]
+      },
+      "licence_bucket": "own_work_procedural",
+      "licence": "Own work (procedural); free to use",
+      "face_present": false,
+      "morph_partners": [
+        {
+          "id": "sample_blob",
+          "iou": 0.9
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "1": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {"ckpt_name": "ltx-2.5-22b-distilled-transformer-comfy-int8-convrot.safetensors"},
+    "_meta": {"title": "LTX-2.5 distilled, local weights"}
+  },
+  "21": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "model": ["1", 0],
+      "lora_name": "ltx-2.5-22b-ic-lora-layout-to-render-1.0.safetensors",
+      "strength_model": 1.0
+    },
+    "_meta": {"title": "Layout-to-Render IC-LoRA"}
+  },
+  "2": {
+    "class_type": "CLIPLoader",
+    "inputs": {"clip_name": "gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors", "type": "ltxv"},
+    "_meta": {"title": "Local Gemma text encoder"}
+  },
+  "3": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {"text": "the layout becomes a finished chrome morph on the beat", "clip": ["2", 0]},
+    "_meta": {"title": "Positive prompt"}
+  },
+  "4": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {"text": "text, watermark, human, flicker, low detail", "clip": ["2", 0]},
+    "_meta": {"title": "Negative prompt"}
+  },
+  "5": {
+    "class_type": "LTXVConditioning",
+    "inputs": {"positive": ["3", 0], "negative": ["4", 0], "frame_rate": 24.0},
+    "_meta": {"title": "LTXV frame rate"}
+  },
+  "6": {
+    "class_type": "LoadVideo",
+    "inputs": {"file": "xenoform_chunk.mp4"},
+    "_meta": {"title": "Procedural layout, the morph proxy"}
+  },
+  "7": {"class_type": "GetVideoComponents", "inputs": {"video": ["6", 0]}, "_meta": {"title": "Frames"}},
+  "8": {"class_type": "LTXVPreprocess", "inputs": {"image": ["7", 0], "img_compression": 18}, "_meta": {"title": "LTXV preprocess"}},
+  "9": {
+    "class_type": "EmptyLTXVLatentVideo",
+    "inputs": {"width": 512, "height": 320, "length": 49, "batch_size": 1},
+    "_meta": {"title": "Empty LTX latent"}
+  },
+  "10": {
+    "class_type": "LTXVImgToVideoInplace",
+    "inputs": {"vae": ["1", 2], "image": ["8", 0], "latent": ["9", 0], "strength": 0.85, "bypass": false},
+    "_meta": {"title": "Layout guide"}
+  },
+  "11": {
+    "class_type": "LTXVScheduler",
+    "inputs": {"steps": 20, "max_shift": 2.05, "base_shift": 0.95, "stretch": true, "terminal": 0.1, "latent": ["10", 0]},
+    "_meta": {"title": "LTX sigmas"}
+  },
+  "12": {"class_type": "KSamplerSelect", "inputs": {"sampler_name": "euler"}, "_meta": {"title": "Sampler"}},
+  "13": {"class_type": "RandomNoise", "inputs": {"noise_seed": 2727}, "_meta": {"title": "Seed"}},
+  "20": {
+    "class_type": "ModelSamplingLTXV",
+    "inputs": {"model": ["21", 0], "max_shift": 2.05, "base_shift": 0.95, "latent": ["10", 0]},
+    "_meta": {"title": "LTX sampling shift"}
+  },
+  "14": {
+    "class_type": "CFGGuider",
+    "inputs": {"model": ["20", 0], "positive": ["5", 0], "negative": ["5", 1], "cfg": 3.0},
+    "_meta": {"title": "CFG"}
+  },
+  "15": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {"noise": ["13", 0], "guider": ["14", 0], "sampler": ["12", 0], "sigmas": ["11", 0], "latent_image": ["10", 0]},
+    "_meta": {"title": "Sample"}
+  },
+  "17": {"class_type": "VAEDecode", "inputs": {"samples": ["15", 0], "vae": ["1", 2]}, "_meta": {"title": "Decode"}},
+  "18": {"class_type": "CreateVideo", "inputs": {"images": ["17", 0], "fps": 24.0}, "_meta": {"title": "Create video"}},
+  "19": {
+    "class_type": "SaveVideo",
+    "inputs": {"video": ["18", 0], "filename_prefix": "xenoform/ltx25-layout", "format": "auto", "codec": "auto"},
+    "_meta": {"title": "Save video"}
+  }
+}

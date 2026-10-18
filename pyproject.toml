@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "xenoform"
+version = "0.2.0"
+description = "A music-video director. Audio becomes a liquid alien-biotech form, restyled with ComfyUI LTX."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+authors = [{name = "Xenoform contributors"}]
+keywords = ["comfyui", "ltx", "audio-reactive", "video", "sdf"]
+dependencies = [
+    "numpy==2.5.4",
+    "librosa==1.0.0",
+    "soundfile==0.14.0",
+    "comfy-sdk==0.5.0",
+    "fastapi==0.143.3",
+    "uvicorn==0.54.0",
+    "python-multipart==0.0.32",
+    "aiohttp==3.11.18",
+]
+
+[project.optional-dependencies]
+gpu = ["moderngl>=5.12"]
+osc = ["python-osc>=1.8"]
+dev = ["pytest>=8", "httpx>=0.27"]
+agent = ["mcp>=1.8"]
+
+[project.scripts]
+xenoform = "xenoform.cli:main"
+
+[project.urls]
+Homepage = "https://comfy.org/open-source-higgsfield/"
+# Set this to the public git URL before `comfy node publish`.
+Repository = "https://github.com/PLACEHOLDER/xenoform"
+Documentation = "https://docs.comfy.org/development/api-development/sdks"
+
+# Used by Comfy Registry https://registry.comfy.org
+# PublisherId is filled by a person after they create a publisher account.
+# Search in ComfyUI Manager works after `comfy node publish`. Until then, install from the git URL.
+[tool.comfy]
+PublisherId = ""
+DisplayName = "Xenoform"
+Icon = ""
+requires-comfyui = ">=0.3.0"
+includes = []
+
+[[tool.comfy.Models]]
+location = "checkpoints/ltx-video-2b-v0.9.5.safetensors"
+model_url = "https://huggingface.co/Lightricks/LTX-Video/resolve/main/ltx-video-2b-v0.9.5.safetensors"
+
+[[tool.comfy.Models]]
+location = "text_encoders/t5xxl_fp8_e4m3fn_scaled.safetensors"
+model_url = "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp8_e4m3fn_scaled.safetensors"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+xenoform = ["ui_static/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

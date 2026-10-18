@@ -1,0 +1,11 @@
+@echo off
+setlocal
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0install.ps1"
+if errorlevel 1 (
+  echo.
+  echo The installer stopped. The message above is the reason.
+  pause
+  exit /b 1
+)
+echo.
+pause

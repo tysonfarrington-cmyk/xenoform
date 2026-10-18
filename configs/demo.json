@@ -1,0 +1,17 @@
+{
+  "fps": 24,
+  "sr": 44100,
+  "seed": 7,
+  "audio": {"duration": 12.0, "bpm": 120},
+  "render": {
+    "backend": "cpu",
+    "width": 640,
+    "height": 360,
+    "max_steps": 40,
+    "crf": 20,
+    "write_png": false,
+    "write_depth": false,
+    "write_mask": false
+  },
+  "comfy": {"mode": "dry-run"}
+}

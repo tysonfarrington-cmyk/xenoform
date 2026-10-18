@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Xenoform · music video director</title>
+  <script>window.XENO_BASE="";</script>
+  <link rel="stylesheet" href="/static/theme.css" />
+  <link rel="stylesheet" href="/static/app.css" />
+</head>
+<body data-advanced="0">
+  <header class="top">
+    <a class="brand" href="#simple">
+      <span>
+        <span class="studio">Tyso Studio</span>
+        <strong>Xenoform</strong>
+        <em>A music video director, not a visualiser.</em>
+      </span>
+    </a>
+    <nav class="views" aria-label="How you direct">
+      <a href="#simple" data-view="simple">Overview</a>
+      <a href="#director" data-view="director">Director</a>
+      <a href="#notes" data-view="notes">Notes</a>
+      <a href="#connect" data-view="connect">Connect</a>
+      <a href="#setup" data-view="setup">Setup</a>
+      <a href="/judges">Judges</a>
+    </nav>
+    <p class="comfy-status" id="comfy-status" data-ok="0">ComfyUI not connected</p>
+    <a class="ow-badge" href="/licences" title="LTX-2.3 has a revenue threshold. FLUX.2 Klein 9B is non-commercial. This desk uses the Apache 2.0 4B.">Open weights</a>
+    <div class="top-actions">
+      <button type="button" class="text" id="tutorial-open" aria-expanded="false">Tutorial</button>
+      <details class="more-menu">
+        <summary aria-label="More">…</summary>
+        <div class="more-panel">
+          <button type="button" class="text" id="copy-diagnostics">Copy diagnostics</button>
+          <button type="button" class="text" id="open-about">About</button>
+          <button type="button" class="text" id="reset-tutorial">Reset tutorial</button>
+        </div>
+      </details>
+      <button type="button" class="text" id="open-settings">Settings</button>
+      <button type="button" class="text" id="advanced-toggle" aria-pressed="false">Advanced</button>
+      <button type="button" class="ghost" id="review-fix">Review &amp; fix</button>
+      <div id="generate-gate" class="generate-gate" data-gate="1"></div>
+      <button type="button" class="generate" id="generate">Generate</button>
+    </div>
+  </header>
+  <div id="register-slot"></div>
+  <div id="reviewslot"></div>
+  <div id="jobslot"></div>
+  <main id="app">
+    <p class="boot">Opening the desk…</p>
+  </main>
+  <dialog id="about" class="about">
+    <form method="dialog">
+      <p class="kicker">Tyso Studio</p>
+      <h2>Xenoform</h2>
+      <p class="pitch">Higgsfield's Music Video Generator, rebuilt open-source on ComfyUI.</p>
+      <p class="tagline">A music video director, not a visualiser.</p>
+      <p><a class="ow-badge" href="/licences" title="LTX-2.3 has a revenue threshold. FLUX.2 Klein 9B is non-commercial. This desk uses the Apache 2.0 4B.">Open weights</a></p>
+      <p class="note"><a href="/credits">Picture credits</a>. A picture with no checked author is marked TODO.</p>
+      <p class="note">Z-Image Turbo stills. LTX-2.3 is the core video model. LTX 0.9.5 covers morphs. The LTX API key stays empty, and LTX-2.5 partner nodes stay out.</p>
+      <p class="note"><a href="/judges">Judges demo</a>. Drop in any song. The cut locks to the beat in the browser.</p>
+      <div class="dialog-actions">
+        <button type="submit" class="generate">Close</button>
+      </div>
+    </form>
+  </dialog>
+  <dialog id="settings">
+    <form method="dialog">
+      <p class="kicker">Endpoint</p>
+      <h2>How the cut is made</h2>
+      <div class="modes">
+        <label><input type="radio" name="mode" id="mode-dry" value="dry" checked /> Dry run</label>
+        <label><input type="radio" name="mode" id="mode-live" value="live" /> Live ComfyUI</label>
+      </div>
+      <label class="field">Comfy base URL
+        <input id="endpoint" type="url" spellcheck="false" placeholder="http://127.0.0.1:8188" />
+      </label>
+      <p class="note" id="comfy-settings-status">The desk pings /system_stats on this address. ComfyUI on this machine is http://127.0.0.1:8188.</p>
+      <label class="field">Video model
+        <select id="video-model">
+          <option value="ltx-23">LTX-2.3</option>
+          <option value="ltx-25">LTX-2.5</option>
+        </select>
+      </label>
+      <p class="note">LTX-2.3 is the default core. LTX-2.5 is local open weights under the LTX-2.x Community License, free under $10M annual revenue. If that distilled file is missing, or the open-weights check fails, the cut stays on LTX-2.3. Turbo stays on LTX 0.9.5, and an 8 GB card stays on 0.9.5 unless you pick 2.5. Partner nodes stay out.</p>
+      <p class="note">Dry run is the default. It renders the liquid body, slices it on the script, and passes those slices through — no weights, no GPU. Live sends each slice through the Comfy SDK to the local proxy on port 8189. This URL stays the ComfyUI health ping.</p>
+      <label class="addon"><input type="checkbox" id="addons" /> Add-ons</label>
+      <p class="note">Off by default. This covers FLUX 3 API, H3 API, partner nodes, and cloud LLMs. The demo, the judges page, and setup never need it.</p>
+      <p class="kicker">Source library</p>
+      <label class="field">Library folder
+        <input id="library-folder" type="text" spellcheck="false" placeholder="./library" autocomplete="off" />
+      </label>
+      <label class="addon"><input type="checkbox" id="exclude-faces" checked /> Exclude items with a face</label>
+      <label class="addon"><input type="checkbox" id="allow-pd-us" /> US use (allow PD-US only)</label>
+      <p class="note">The folder holds library.json. Missing pictures stay in the index. Faces stay out unless you clear that box. PD-US only clips stay out unless US use is on. CC BY lines are written to the render’s CREDITS.md.</p>
+      <div class="dialog-actions">
+        <button type="submit" value="cancel" class="text">Close</button>
+        <button type="button" id="save-settings" class="generate">Save</button>
+      </div>
+    </form>
+  </dialog>
+  <dialog id="command-palette" aria-label="Find a control">
+    <form>
+      <input id="palette-q" type="search" placeholder="Find a control or a tool" aria-label="Find a control" autocomplete="off" />
+      <ul id="palette-list"></ul>
+    </form>
+  </dialog>
+  <script src="/static/cutplay.js"></script>
+  <script src="/static/live.js"></script>
+  <script src="/static/app.js"></script>
+  <script src="/static/ideas.js"></script>
+  <script src="/static/tutorial.js"></script>
+</body>
+</html>

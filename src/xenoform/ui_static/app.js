@@ -1,0 +1,5222 @@
+const SLIDERS = [
+  ["kick", "Kick", "morph impulse"],
+  ["bass", "Bass", "camera push"],
+  ["hats", "Hats", "flicker"],
+  ["vocals", "Vocals", "surface"],
+  ["liquidity", "Liquidity", "how wet the body stays"],
+  ["chaos", "Chaos", "how far a drop may go"],
+  ["material", "Material", "chrome against flesh"],
+  ["camera", "Camera energy", "orbit and push"],
+];
+
+const LOCK_ROWS = [
+  ["register", "Register"],
+  ...SLIDERS.map(([key, name]) => [key, name]),
+  ["quality", "Quality"],
+  ["preset", "Look"],
+  ["script", "Script"],
+];
+
+let state = null;
+
+function esc(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  }[ch]));
+}
+
+function api(path, options) {
+  const base = window.XENO_BASE || "";
+  const full = /^https?:/.test(path) ? path : base + path;
+  return window.fetch(full, options);
+}
+
+function media(path) {
+  if (!path) return "";
+  const base = window.XENO_BASE || "";
+  if (/^https?:/.test(path)) return path;
+  if (base && path.startsWith("/") && !path.startsWith(base + "/")) return base + path;
+  return path;
+}
+
+const SAMPLE_NOTE = "the ending plops, make it a big splash";
+
+function viewFromHash() {
+  const name = (location.hash || "#simple").replace("#", "").split("/")[0];
+  if (name === "scene") return "scene";
+  if (name === "notes") return "notes";
+  if (name === "setup") return "setup";
+  if (name === "connect") return "connect";
+  if (["director", "script", "looks", "desk"].includes(name)) return "director";
+  return "simple";
+}
+
+function allForms() {
+  return state.forms.concat(state.customs);
+}
+
+function formById(id) {
+  return allForms().find((form) => form.id === id) || state.forms[0];
+}
+
+function layoutBlocks() {
+  const duration = Math.max(state.duration || 1, 0.001);
+  const cleaned = state.blocks.map((block) => ({
+    ...block,
+    hold: Math.max(0.2, Math.min(25.5, Number(block.hold) || 1)),
+  }));
+  const total = cleaned.reduce((sum, block) => sum + block.hold, 0) || 1;
+  let cursor = 0;
+  return cleaned.map((block) => {
+    const span = (duration * block.hold) / total;
+    const row = { ...block, start: cursor, end: cursor + span };
+    cursor += span;
+    return row;
+  });
+}
+
+function clock(seconds) {
+  const safe = Math.max(0, seconds);
+  const m = Math.floor(safe / 60);
+  const s = Math.floor(safe % 60);
+  const tenth = Math.floor((safe % 1) * 10);
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}.${tenth}`;
+}
+
+function lookName() {
+  const preset = state.presets.find((item) => item.id === state.preset);
+  return preset ? preset.name : "Custom";
+}
+
+function paintRegisters() {
+  const slot = document.getElementById("register-slot");
+  if (!slot || !state || !state.registers) return;
+  const register = activeRegister();
+  if (register) {
+    document.documentElement.style.setProperty("--accent", register.accent);
+    document.body.dataset.register = register.id;
+  }
+  const buttons = state.registers
+    .map((item) => {
+      const on = item.id === state.register ? " on" : "";
+      return `<button type="button" class="register-btn${on}" data-act="register" data-register="${esc(item.id)}" style="border-top-color:${esc(item.accent)}">
+        <strong>${esc(item.name)}</strong>
+        <span>${esc(item.voice)}</span>
+      </button>`;
+    })
+    .join("");
+  const cards = (state.cards || [])
+    .map(
+      (card) => `<label>${card.at === "drop" ? "Drop card" : "Outro card"}
+        <input data-card="${esc(card.at)}" type="text" maxlength="80" value="${esc(card.text)}" placeholder="${card.at === "drop" ? "A line for the drop" : "A line for the outro"}" aria-label="${card.at === "drop" ? "Drop card" : "Outro card"}" />
+      </label>`,
+    )
+    .join("");
+  slot.innerHTML = `<section class="register-band" aria-label="Register">
+    <div class="register-top">
+      <div>
+        <p class="kicker">Register</p>
+        <h2>${esc(registerName())}</h2>
+      </div>
+      <p class="voice">${esc(register ? register.voice : "")}</p>
+      ${lockButton("register", "register")}
+    </div>
+    <div class="register-row">${buttons}</div>
+    <div class="card-row">${cards}</div>
+  </section>`;
+}
+
+function customScript() {
+  if (!state.customs.length) {
+    return [{ form: "", hold: Math.max(0.2, state.duration || 1), transition: "ribbon", energy: "calm" }];
+  }
+  const sections = state.sections.length ? state.sections : [{ label: "calm", start: 0, end: state.duration || 1 }];
+  return sections.map((section, index) => {
+    const last = index === sections.length - 1;
+    const energy = section.label === "drop" ? "drop" : last ? "outro" : section.label;
+    const transition = energy === "drop" ? "ribbon" : energy === "outro" ? "pour-harden" : "ribbon";
+    return {
+      form: state.customs[index % state.customs.length].id,
+      hold: Math.round((section.end - section.start) * 100) / 100,
+      transition,
+      energy,
+    };
+  });
+}
+
+function applyRegister(id, respectLocks) {
+  const register = state.registers.find((item) => item.id === id);
+  if (!register) return;
+  if (respectLocks && state.locks.register) return;
+  state.register = register.id;
+  state.palette = register.palette;
+  state.flash = register.flash;
+  state.preset = "";
+  for (const key of Object.keys(register.sliders)) {
+    if (!respectLocks || !state.locks[key]) state.sliders[key] = register.sliders[key];
+  }
+  state.cards = register.cards.map((card) => ({ at: card.at, text: card.text }));
+  document.documentElement.style.setProperty("--accent", register.accent);
+  if (!respectLocks || !state.locks.script) {
+    state.motif = "";
+    planStory({ scenes: [] });
+  }
+}
+
+function payload() {
+  return {
+    audio_id: state.audioId,
+    preset: state.preset || "",
+    quality: state.quality,
+    register: state.register || "",
+    palette: state.palette || "neutral",
+    flash: state.flash || "normal",
+    cards: (state.cards || []).map((card) => ({ at: card.at, text: card.text || "" })),
+    sliders: state.sliders,
+    locks: state.locks,
+    blocks: state.blocks.map((block) => ({
+      form: block.form,
+      hold: Number(block.hold),
+      transition: block.transition,
+      energy: block.energy || "",
+    })),
+    customs: state.customs.map((form) => ({
+      id: form.id,
+      noun: form.noun || form.name,
+      name: form.name,
+      kind: form.kind || "noun",
+    })),
+    live: state.live,
+    morph_hit: state.morphHit !== false,
+    endpoint: state.endpoint,
+    addons: !!state.addons,
+    library_folder: state.libraryFolder || "",
+    exclude_faces: state.excludeFaces !== false,
+    allow_pd_us: !!state.allowPdUs,
+    library_pins: state.libraryPins || [],
+    library_bans: state.libraryBans || [],
+    vibe: (state.easy && state.easy.vibe) || "",
+    video_model: state.videoModel || "ltx-23",
+    brief: state.brief || "",
+    mode: state.view === "simple" ? "simple" : "director",
+    scenes: (state.scenes || []).map((scene) => ({
+      index: scene.index,
+      start: scene.start,
+      end: scene.end,
+      seconds: scene.seconds,
+      bars: scene.bars,
+      bar_seconds: scene.bar_seconds,
+      hold: scene.hold,
+      beat: scene.beat,
+      form: scene.form,
+      action: scene.action,
+      shot: scene.shot,
+      move: scene.move,
+      edit: scene.edit,
+      mood: scene.mood,
+      motif: !!scene.motif,
+      edited: !!scene.edited,
+      verb: scene.verb || "",
+      protagonist: scene.protagonist || "",
+      goal: scene.goal || "",
+      payoff: scene.payoff || "",
+      signature: !!scene.signature,
+      conditioning: scene.conditioning || (scene.signature ? "signature" : "first-frame"),
+      guide: scene.guide || "",
+      retime: scene.retime || null,
+      guide_strengths: scene.guide_strengths || null,
+      hero_image: scene.hero_image || "",
+      chain_from: scene.chain_from == null ? null : scene.chain_from,
+      guide_from: scene.guide_from || "",
+      prompt: scene.prompt || "",
+      lead: scene.lead || "",
+      lines: scene.lines || [],
+      lock_words: scene.lock_words || [],
+      element_ids: scene.element_ids || [],
+      because: scene.because || "",
+      still_name: scene.still_name || "",
+      reference_url: scene.reference_url || "",
+    })),
+    only_scenes: state.textOnly ? state.onlyScenes || [] : [],
+    energy: Number(state.energy || 0),
+    continuous: !!state.continuous,
+    hero_id: state.heroId || "",
+    title_card: state.titleText || "",
+    end_card: state.endText || "",
+    motif: state.motif || "",
+    callback: state.callback || "",
+    climax: state.climax == null ? null : state.climax,
+    treatment: state.treatment || "",
+    guide_id: state.guideId || "",
+    interpolate: !!state.interpolate,
+  };
+}
+
+function lockButton(key, label) {
+  const on = state.locks[key] ? " on" : "";
+  const pressed = state.locks[key] ? "true" : "false";
+  return `<button type="button" class="lock${on}" data-act="lock" data-key="${esc(key)}" aria-pressed="${pressed}" aria-label="Lock ${esc(label)}">
+    <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4">
+      <rect x="3" y="6" width="8" height="6"/>
+      <path d="M5 6V4.2a2 2 0 0 1 4 0V6"/>
+    </svg>
+  </button>`;
+}
+
+function sliderRow(key, name, hint) {
+  const value = Number(state.sliders[key] ?? 0.5);
+  return `<div class="slider">
+    <div class="name">${esc(name)}<small>${esc(hint)}</small></div>
+    <span class="val">${Math.round(value * 100)}</span>
+    ${lockButton(key, name)}
+    <input type="range" min="0" max="1" step="0.01" value="${value}" data-slider="${esc(key)}" aria-label="${esc(name)}" />
+  </div>`;
+}
+
+const FALLBACK_ETA = {
+  live: { label: "Live", short: "now", line: "The picture is in the browser. Record writes an mp4 with no model." },
+  turbo: { label: "Turbo", short: "~1 min", line: "Animatic in about 5 seconds, then a 4-step 384p pass. About a minute the first time on a 12 GB GPU." },
+  draft: { label: "Draft", short: "~4 min", line: "512×288. About 4 minutes the first time on a 12 GB GPU." },
+  final: { label: "Final", short: "~10 min", line: "640×360 at 24 fps. About 10 minutes on a 12 GB GPU. Same seed as Turbo." },
+};
+
+function qualityLabel(value) {
+  if (value === "live") return "Live";
+  if (value === "turbo") return "Turbo";
+  if (value === "final") return "Final";
+  return "Draft";
+}
+
+function etaFor(id) {
+  return (state.etas && state.etas[id]) || FALLBACK_ETA[id] || { label: qualityLabel(id), short: "", line: "" };
+}
+
+function qualityToggle() {
+  const buttons = ["live", "turbo", "draft", "final"].map((id) => {
+    const eta = etaFor(id);
+    const on = state.quality === id ? " on" : "";
+    return `<button type="button" class="${on}" data-act="quality" data-quality="${id}"><b>${esc(eta.label || qualityLabel(id))}</b><small>${esc(eta.short || "")}</small></button>`;
+  }).join("");
+  const current = etaFor(state.quality || "live");
+  return `<div class="toggle quality" role="group" aria-label="Quality">${buttons}</div><p class="eta">${esc(current.line || "")}</p>`;
+}
+
+function stageMedia() {
+  if (state.quality === "live") {
+    const src = state.audioUrl || "/media/audio/demo";
+    const ai = state.liveAiRequested ? " checked" : "";
+    return `<div class="live-wrap">
+      <canvas id="live-canvas" width="768" height="432" aria-label="Live liquid body"></canvas>
+      <audio id="live-audio" src="${esc(media(src))}" preload="auto"></audio>
+      <div class="live-bar" data-tour="live">
+        <button type="button" class="generate" data-act="live-play">Play</button>
+        <button type="button" class="ghost" data-act="live-record">${state.recording ? "Stop" : "Record"}</button>
+        <label class="check"><input type="checkbox" data-act="live-ai"${ai} /> Live+AI</label>
+        <span id="live-note">Live. Edits land on the next frame.</span>
+      </div>
+    </div>`;
+  }
+  const fill = state.interpolate ? " checked" : "";
+  const src = state.previewUrl || state.video || "";
+  const poster = state.previewUrl ? "" : ` poster="${media("/media/poster")}"`;
+  return `<video id="player" controls playsinline${poster} src="${esc(media(src))}"></video>
+    <label class="check fill-check"><input type="checkbox" data-act="interpolate"${fill} /> Fill to 24 fps</label>`;
+}
+
+function stagesHtml() {
+  if (state.quality === "live") {
+    return `<p class="note">Live draws in this window. Record writes an mp4 with no model. Turbo, Draft, and Final can use that file as a motion guide.</p>`;
+  }
+  const turbo = state.quality === "turbo";
+  const order = turbo
+    ? (state.live
+      ? [["analyze", "Analyze"], ["animatic", "Animatic"], ["restyle", "Turbo"], ["assemble", "Lock"]]
+      : [["analyze", "Analyze"], ["animatic", "Animatic"], ["assemble", "Lock"]])
+    : [
+    ["analyze", "Analyze"],
+    ["render", "Beauty"],
+    ["restyle", "Restyle"],
+    ["assemble", "Assemble"],
+  ];
+  const job = state.job;
+  const active = job && job.stage !== "done" ? job.stage : "";
+  return `<ol class="stages" id="stages">${order
+    .map(([id, label]) => {
+      let cls = "";
+      let detail = "Waiting";
+      let width = 0;
+      if (job) {
+        const index = order.findIndex((row) => row[0] === id);
+        const current = order.findIndex((row) => row[0] === (job.stage === "done" ? "assemble" : job.stage));
+        if (job.status === "error" && id === job.stage) cls = "active";
+        else if (job.stage === "done" || index < current) {
+          cls = "done";
+          detail = "Done";
+          width = 100;
+        } else if (index === current) {
+          cls = "active";
+          detail = job.detail || "Working";
+          width = Math.round((job.progress || 0) * 100);
+        }
+      } else if (id === "restyle") {
+        detail = state.live ? "Live, when you generate" : "Dry run, when you generate";
+      }
+      return `<li class="${cls}"><b>${label}</b><span>${esc(detail)}<span class="bar"><span style="width:${width}%"></span></span></span></li>`;
+    })
+    .join("")}</ol>
+    <div class="song-actions"><button type="button" class="ghost" data-act="preview" id="preview-btn">Preview</button></div>
+    <p class="note" id="preview-note">${esc(state.previewNote || "Low-res animatic. Cut to the beat, before the GPU.")}</p>`;
+}
+
+function bandMap() {
+  const map = SLIDERS.slice(0, 4).map((row) => sliderRow(...row)).join("");
+  const globals = SLIDERS.slice(4).map((row) => sliderRow(...row)).join("");
+  return `<section class="panel mix">
+      <p class="kicker">Band map</p>
+      <h2>What the song does</h2>
+      ${map}
+      <h3>Globals</h3>
+      ${globals}
+    </section>`;
+}
+
+const RAIL = [
+  ["song", "1 Song"],
+  ["story", "2 Story"],
+  ["cast", "3 Cast lock"],
+  ["look", "4 Look"],
+  ["shots", "5 Shots"],
+  ["morph", "6 Morph"],
+  ["notes", "7 Notes & review"],
+  ["export", "8 Export"],
+];
+
+function railHash(step) {
+  if (step === "notes") return "#notes";
+  if (step === "setup") return "#setup";
+  if (step === "connect") return "#connect";
+  if (step === "look" || step === "shots" || step === "morph") return "#director";
+  return "#simple";
+}
+
+function deskStep() {
+  const view = state.view;
+  const step = state.step || "song";
+  if (view === "notes") return "notes";
+  if (view === "setup") return "setup";
+  if (view === "connect") return "connect";
+  if (view === "scene") return "shots";
+  if (view === "director") return ["look", "shots", "morph"].includes(step) ? step : "shots";
+  return ["song", "story", "cast", "export"].includes(step) ? step : "song";
+}
+
+function goRail(step) {
+  state.step = step;
+  const hash = railHash(step);
+  if ((location.hash || "#simple") === hash) render();
+  else location.hash = hash.slice(1);
+}
+
+function tourStepFor(target) {
+  const map = {
+    "[data-tour=song]": "song",
+    "[data-tour=beats]": "song",
+    "#brief": "story",
+    "[data-tour=ideas]": "story",
+    "[data-tour=continuity]": "cast",
+    "#energy": "cast",
+    "[data-tour=gate]": "cast",
+    "[data-tour=treatment]": "look",
+    "[data-tour=looks]": "look",
+    "[data-tour=share]": "export",
+  };
+  return map[target] || "";
+}
+
+function railPills() {
+  const bpm = Math.round(Number(state.tempo) || 0);
+  const sections = (state.sections || []).length;
+  const shots = (state.scenes || []).length;
+  const callback = (state.callback || "").trim() ? " · callback set" : "";
+  const clips = (state.testClips || []).length;
+  const signatures = (state.scenes || []).filter((scene) => scene.signature).length;
+  const morphs = signatures || ((state.scenes || []).some((scene) => scene.beat === "climax") ? 1 : 0);
+  return {
+    song: `${bpm} BPM · ${sections} section${sections === 1 ? "" : "s"}`,
+    story: `${shots} shot${shots === 1 ? "" : "s"}${callback}`,
+    cast: state.heroUrl ? "Hero locked" : "Hero, prop, place",
+    look: registerName(),
+    shots: clips >= 1 && clips <= 2 ? `${clips} test clip${clips === 1 ? "" : "s"} approved` : "2 test clips to approve",
+    morph: `New · ${morphs} on the drop`,
+  };
+}
+
+function railHtml(current) {
+  const pills = railPills();
+  const order = RAIL.map((row) => row[0]);
+  const at = order.indexOf(current);
+  const steps = RAIL.map(([id, label], index) => {
+    const on = id === current ? " on" : "";
+    const done = at > index ? " done" : "";
+    const pill = pills[id] ? `<span class="pill${id === "morph" ? " new" : ""}">${esc(pills[id])}</span>` : "";
+    return `<button type="button" class="rail-step${on}${done}" data-act="rail" data-step="${id}" aria-current="${on ? "step" : "false"}"><i class="dot"></i><span>${label}${pill}</span></button>`;
+  }).join("");
+  const footOn = (id) => (current === id ? " on" : "");
+  return `<nav class="rail" aria-label="Your video">
+    <h2>Your video</h2>
+    ${steps}
+    <div class="rail-foot">
+      <button type="button" class="rail-link${footOn("setup")}" data-act="rail" data-step="setup">Setup &amp; models</button>
+      <button type="button" class="rail-link${footOn("connect")}" data-act="rail" data-step="connect">Connect an AI</button>
+      <a class="rail-link" href="/judges">Judges page</a>
+      <button type="button" class="rail-link" data-act="palette">Ctrl K</button>
+    </div>
+  </nav>`;
+}
+
+function songStep() {
+  return `<section class="panel song-drop" data-tour="song">
+      <p class="kicker">Song</p>
+      <h2>Pick or drop a song</h2>
+      <div class="meta">
+        <span><b>${Number(state.duration || 0).toFixed(1)}s</b> duration</span>
+        <span><b>${Math.round(Number(state.tempo) || 0)}</b> bpm</span>
+        <span><b>${(state.beats || []).length}</b> beats</span>
+        <span><b>${(state.drops || []).length}</b> drops</span>
+      </div>
+      <div class="song-actions">
+        <label class="upload">Drop a song<input id="song-file" type="file" accept="audio/*,.wav,.mp3,.flac,.ogg" aria-label="Drop a song" /></label>
+        <button type="button" class="ghost" data-act="use-demo">Use the bundled demo</button>
+      </div>
+      <p class="note" id="song-note">The desk opens on examples/demo.wav. Drop a file to analyze another track. Nothing here starts a render.</p>
+    </section>
+    ${timingPanel()}
+    <section class="panel guided-tours" id="guided-tours">
+      <p class="kicker">Guided tours</p>
+      <h2>Short walks through the desk</h2>
+      <div id="tour-list"><p class="note">Opening the tours…</p></div>
+    </section>`;
+}
+
+function storyStep() {
+  const lead = (state.scenes || [])[0] || {};
+  const spine = lead.protagonist
+    ? `<p class="spine"><b>${esc(lead.protagonist)}</b> · ${esc(lead.goal || "")}<br>${esc(lead.payoff || "")}</p>`
+    : "";
+  return `<section class="panel brief-panel">
+      <p class="kicker">Story</p>
+      <h2>Tell it the life. It cuts the song.</h2>
+      <label class="brief-label" for="brief">One-line brief</label>
+      <textarea id="brief" rows="3" maxlength="180" aria-label="One-line brief">${esc(state.brief || "")}</textarea>
+      <label class="idea-field">Callback
+        <input id="callback" type="text" maxlength="140" value="${esc(state.callback || "")}" placeholder="the sphere returns at the end, changed" aria-label="Callback" />
+      </label>
+      <p class="note">One line becomes a protagonist, a goal, and a payoff. Each section is an action shot, hard-cut on the bar. A morph is a signature, once, on the drop.</p>
+      <div class="simple-actions">
+        <button type="button" class="generate" data-act="try-it">Try the demo</button>
+        <button type="button" class="ghost" data-act="generate-inline">Generate this brief</button>
+        <div class="generate-gate" data-gate="1"></div>
+        <button type="button" class="ghost" data-act="to-director">Open the shots</button>
+        <button type="button" class="ghost" data-act="music-only">Music only</button>
+      </div>
+      ${setupBanner()}
+      ${spine}
+      <ol class="shotlist">${shotRows()}</ol>
+    </section>
+    <div class="scene-grid">${sceneCards()}</div>`;
+}
+
+function lookStep() {
+  const presets = (state.presets || [])
+    .map((preset) => {
+      const on = preset.id === state.preset ? " on" : "";
+      return `<button type="button" class="preset${on}" data-act="preset" data-preset="${esc(preset.id)}"><strong>${esc(preset.name)}</strong><span>${esc(preset.note)}</span></button>`;
+    })
+    .join("");
+  return `${treatmentPanel()}
+    <section class="panel">
+      <div data-tour="looks">
+        <div class="looks-head">
+          <div>
+            <p class="kicker">Looks</p>
+            <h2>${esc(lookName())}</h2>
+          </div>
+          <button type="button" class="generate" data-act="random">Roll the board</button>
+        </div>
+        <div class="preset-grid">${presets}</div>
+      </div>
+      <div class="recipe-code" id="recipe-out">${esc(state.recipe || "")}</div>
+      <div class="recipe-actions">
+        <button type="button" class="ghost" data-act="copy">Copy</button>
+        <input id="recipe-in" type="text" spellcheck="false" placeholder="XF-…" aria-label="Paste a recipe" />
+        <button type="button" class="ghost" data-act="restore">Restore</button>
+      </div>
+      <p class="hint" id="recipe-hint"></p>
+      <p class="note">The code carries the storyboard: brief, scenes, callback, motif, and the register. ${lockButton("script", "storyboard")}</p>
+    </section>
+    ${bandMap()}`;
+}
+
+function shotsStep() {
+  const arc = ["setup", "rising", "climax", "release"]
+    .map((beat) => `<span class="${(state.scenes || []).some((scene) => scene.beat === beat) ? "on" : ""}">${beat}</span>`)
+    .join("<i></i>");
+  return `<section class="panel">
+      <div class="board-head">
+        <div>
+          <p class="kicker">Shots</p>
+          <h2>Storyboard</h2>
+        </div>
+        <p>One card per section. Hard cuts on the bar. Drag the climax onto a card.</p>
+      </div>
+      <div class="story-tools">
+        <div class="climax-chip" draggable="true" id="climax-token" title="Drag onto a scene">Climax</div>
+      </div>
+      <div class="beat-rail" aria-hidden="true">${arc}</div>
+      <div class="scene-grid">${sceneCards()}</div>
+    </section>
+    ${state.expanded != null ? sceneEditor() : ""}
+    ${shotReview()}`;
+}
+
+function exportStep() {
+  return `<section class="panel">
+      <p class="kicker">Export</p>
+      <h2>Share the cut you already have</h2>
+      <p class="note">Share cut exports a 720p H.264 file under 16 MB from the picture you already have. It does not re-render the shots. Every render also writes a shot list and a seed file beside the picture.</p>
+      <div class="simple-actions">
+        <a class="ghost" id="notes-link" href="${state.job && state.job.id ? "/api/jobs/" + encodeURIComponent(state.job.id) + "/notes" : "#"}">Shot list</a>
+        <a class="ghost" id="seed-link" href="${state.job && state.job.id ? "/api/jobs/" + encodeURIComponent(state.job.id) + "/seed" : "#"}">Seed file</a>
+        <button type="button" class="ghost" data-act="export-workflow">ComfyUI workflow</button>
+      </div>
+      <div class="simple-actions">
+        <button type="button" class="generate" data-act="share-cut" data-tour="share">Share cut</button>
+        <button type="button" class="ghost" data-act="music-only">Music only</button>
+      </div>
+      <div class="recipe-code" id="recipe-out">${esc(state.recipe || "")}</div>
+      <div class="recipe-actions">
+        <button type="button" class="ghost" data-act="copy">Copy</button>
+        <input id="recipe-in" type="text" spellcheck="false" placeholder="XF-…" aria-label="Paste a recipe" />
+        <button type="button" class="ghost" data-act="restore">Restore</button>
+      </div>
+      <p class="hint" id="recipe-hint"></p>
+      ${setupBanner()}
+    </section>`;
+}
+
+function inspectorFor(step) {
+  if (step === "song") return songStep();
+  if (step === "story") return storyStep();
+  if (step === "cast") return cutPanel();
+  if (step === "look") return lookStep();
+  if (step === "shots") return shotsStep();
+  if (step === "morph") return morphPanel();
+  if (step === "notes") return `<section class="panel notes-pane">${notesPanel()}</section>`;
+  if (step === "export") return exportStep();
+  if (step === "setup") return renderSetup();
+  if (step === "connect") return renderConnect();
+  return songStep();
+}
+
+function shotStill(scene) {
+  const clip = { wide: "wide", medium: "medium", close: "close", macro: "close", tracking: "medium", reveal: "reveal", overhead: "reveal" }[scene.shot] || "wide";
+  return `/static/library/neon-night/${clip}.jpg`;
+}
+
+function timelineHtml() {
+  const duration = Number(state.duration || 1) || 1;
+  const sections = (state.sections || [])
+    .map((section) => {
+      const width = Math.max(4, ((Number(section.end) - Number(section.start)) / duration) * 100);
+      const label = section.label || "section";
+      return `<span class="sec sec-${esc(label)}" style="width:${width}%">${esc(label)}</span>`;
+    })
+    .join("");
+  const shots = (state.scenes || [])
+    .map((scene, index) => {
+      const span = Math.max(0.4, (Number(scene.end) || 0) - (Number(scene.start) || 0)) || Number(scene.bars || 1);
+      const peak = scene.beat === "climax" ? `<span class="cx">Climax</span>` : "";
+      const on = state.expanded === index ? " on" : "";
+      return `<button type="button" class="tl-shot${on}" data-act="expand" data-index="${index}" style="flex:${span} 1 0;background-image:url(${shotStill(scene)})"><em>${String(index + 1).padStart(2, "0")}</em>${peak}</button>`;
+    })
+    .join("");
+  const marks = [0, 0.25, 0.5, 0.75, 1].map((part) => `<span>${clock(duration * part)}</span>`).join("");
+  const join = morphJoin();
+  const locked = (state.morphReport && state.morphReport.joins && state.morphReport.joins[0]) || null;
+  const markTime = locked ? Number(locked.at) : join.scene ? Number(join.scene.start) : null;
+  const markAt = markTime == null ? null : Math.max(0, Math.min(100, (markTime / duration) * 100));
+  const hitClass = locked && locked.hit ? " tl-hit" : "";
+  const marker = markAt == null ? "" : `<i class="tl-mark${hitClass}" style="left:${markAt}%" title="Morph on the downbeat"></i>`;
+  const report = state.qa;
+  const chips = report
+    ? ["Sync", "Motion", "Morphs", "Flash", "Energy"]
+        .map((label) => {
+          const key = label === "Morphs" ? "morph" : label.toLowerCase();
+          const row = report[key] || {};
+          return `<span class="tl-qa ${row.pass ? "ok" : "bad"}">${esc(label)} · ${esc(row.detail || (row.pass ? "Pass" : "Fail"))}</span>`;
+        })
+        .join("")
+    : `<span class="tl-qa">Cast lock · one hero, one prop, one place</span>`;
+  return `<section class="desk-timeline" aria-label="Timeline">
+      <div class="tl-head"><h3>Timeline</h3><span>Cuts snap to the bar.</span></div>
+      <div class="tl-ruler">${marks}</div>
+      <div class="tl-lane"><span>Sections</span><div class="tl-sections">${sections}</div></div>
+      <div class="tl-lane"><span>Score</span>${scoreLane()}</div>
+      <div class="tl-lane"><span>Song</span><canvas class="wave" id="wave" width="640" height="36"></canvas></div>
+      <div class="tl-lane"><span>Shots</span><div class="tl-shots">${marker}${shots}</div></div>
+      <div class="tl-qa-row">${chips}</div>
+    </section>`;
+}
+
+function renderAdvanced() {
+  const step = deskStep();
+  state.step = step;
+  const monitor = `<div class="desk-monitor">
+      <p class="kicker">Picture · ${esc(qualityLabel(state.quality))}</p>
+      <h2>${esc(state.quality === "live" ? "Live" : state.videoLabel || "Picture")}</h2>
+      ${stageMedia()}
+      <p class="caption"><b>${esc(registerName())}</b> · seed 2727 · ${esc(paletteLabel())} · ${state.live ? "Live endpoint armed" : "Dry run is the default"}</p>
+      ${qualityToggle()}
+      ${stagesHtml()}
+    </div>`;
+  return `<div class="desk-app">
+    ${railHtml(step)}
+    <div class="desk-main">
+      <div class="desk-upper">
+        ${monitor}
+        <div class="desk-inspector">${inspectorFor(step)}</div>
+      </div>
+      ${timelineHtml()}
+    </div>
+  </div>`;
+}
+
+function monogram(noun) {
+  const letter = esc((noun || "?").trim().charAt(0).toUpperCase() || "?");
+  return `<svg class="mono-mark" viewBox="0 0 80 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="80" height="64" fill="#f4f4f5"/><text x="40" y="40" text-anchor="middle" fill="#2e2752" font-family="Space Grotesk, sans-serif" font-size="28">${letter}</text></svg>`;
+}
+
+function formThumb(form) {
+  if (form.image) return `<img alt="" src="${esc(media(form.image))}" />`;
+  if (form.svg) return form.svg;
+  return monogram(form.noun || form.name);
+}
+
+function activeRegister() {
+  return (state.registers || []).find((item) => item.id === state.register) || null;
+}
+
+function registerName() {
+  const register = activeRegister();
+  return register ? register.name : "No register";
+}
+
+function paletteLabel() {
+  const register = activeRegister();
+  return register ? register.palette_label : "";
+}
+
+function registerForms() {
+  const register = activeRegister();
+  if (!register || register.id === "custom") return state.customs.slice();
+  return register.forms.map((id) => state.forms.find((form) => form.id === id)).filter(Boolean);
+}
+
+function otherForms() {
+  const shown = new Set(registerForms().map((form) => form.id));
+  return state.forms.concat(state.customs).filter((form) => !shown.has(form.id));
+}
+
+function renderScript() {
+  const laid = layoutBlocks();
+  const register = activeRegister();
+  const packName = register ? register.pack : "Forms";
+  const cards = registerForms()
+    .map((form) => {
+      const on = state.blocks[state.selected] && state.blocks[state.selected].form === form.id ? " on" : "";
+      return `<button type="button" class="form-card${on}" data-act="assign" data-form="${esc(form.id)}">
+        ${formThumb(form)}
+        <strong>${esc(form.name)}</strong>
+        <span>${esc(form.blurb || "")}</span>
+      </button>`;
+    })
+    .join("");
+  const options = allForms()
+    .map((form) => `<option value="${esc(form.id)}">${esc(form.name)}</option>`)
+    .join("");
+  const transitions = state.transitions
+    .map((item) => `<option value="${esc(item.id)}">${esc(item.label)}</option>`)
+    .join("");
+  const blocks = laid
+    .map((block, index) => {
+      const accent = (formById(block.form) || {}).accent || "#c6a15a";
+      return `<article class="block${index === state.selected ? " on" : ""}" data-act="select-block" data-index="${index}" style="flex-grow:${block.hold};border-top-color:${esc(accent)}">
+        <div class="when">${clock(block.start)} – ${clock(block.end)}</div>
+        <label>Form
+          <select data-act="block-form" data-index="${index}" aria-label="Form in block ${index + 1}">${options.replace(
+            `value="${esc(block.form)}"`,
+            `value="${esc(block.form)}" selected`,
+          )}</select>
+        </label>
+        <label>Hold
+          <input data-act="block-hold" data-index="${index}" type="number" min="0.2" max="25.5" step="0.1" value="${Number(block.hold).toFixed(1)}" aria-label="Hold length for block ${index + 1}" />
+        </label>
+        <label>Into it
+          <select data-act="block-transition" data-index="${index}" aria-label="Transition into block ${index + 1}">${transitions.replace(
+            `value="${esc(block.transition)}"`,
+            `value="${esc(block.transition)}" selected`,
+          )}</select>
+        </label>
+      </article>`;
+    })
+    .join("");
+  return `<div class="script">
+    <section class="panel">
+      <div class="pack-head">
+        <div>
+          <p class="kicker">Forms · ${esc(packName)}</p>
+          <h2>${register && register.id === "custom" ? "Built from what you add" : esc(registerName())}</h2>
+        </div>
+        <p>These cards are the subject in the frame. The shot plays the action. Click one to place it on the selected block. Everything here can still be rewritten.</p>
+      </div>
+      <div class="form-grid">
+        ${cards}
+        <div class="add-card">
+          <strong>Add your own</strong>
+          <span>A noun, or a photo. It joins the script.</span>
+          <input id="noun" type="text" maxlength="40" placeholder="glass harmonica" aria-label="Noun for a new form" />
+          <div class="add-row">
+            <button type="button" class="ghost" data-act="add-noun">Add noun</button>
+            <label class="upload">Photo<input id="form-file" type="file" accept="image/png,image/jpeg,image/webp" /></label>
+          </div>
+        </div>
+      </div>
+      ${
+        otherForms().length
+          ? `<details class="other-forms"><summary>Other forms</summary><div class="mini-forms">${otherForms()
+              .map(
+                (form) =>
+                  `<button type="button" data-act="assign" data-form="${esc(form.id)}">${esc(form.name)}</button>`,
+              )
+              .join("")}</div></details>`
+          : ""
+      }
+    </section>
+    <section class="panel">
+      <div class="board-head">
+        <div>
+          <p class="kicker">Song-to-form</p>
+          <h2>The script</h2>
+        </div>
+        <p>Each block is a hold. The widths share the song, so changing a hold refits the others. The menu on the block is the transition into that form. ${lockButton("script", "script")} <span class="mono">${state.locks.script ? "script locked" : "script free"}</span></p>
+      </div>
+      <div class="timeline">${blocks}</div>
+    </section>
+  </div>`;
+}
+
+function renderLooks() {
+  const presets = state.presets
+    .map((preset) => {
+      const on = preset.id === state.preset ? " on" : "";
+      return `<button type="button" class="preset${on}" data-act="preset" data-preset="${esc(preset.id)}">
+        <strong>${esc(preset.name)}</strong>
+        <span>${esc(preset.note)}</span>
+        <em>${esc(qualityLabel(preset.quality))}</em>
+      </button>`;
+    })
+    .join("");
+  const locks = LOCK_ROWS.map(([key, name]) => {
+    const extra = state.sliders[key] !== undefined ? `<span class="mini">${Math.round(state.sliders[key] * 100)}</span>` : "";
+    return `<li><span>${esc(name)}</span><span style="display:flex;gap:8px;align-items:center">${extra}${lockButton(key, name)}</span></li>`;
+  }).join("");
+  return `<div class="looks">
+    <section class="panel">
+      <div class="looks-head">
+        <div>
+          <p class="kicker">Looks</p>
+          <h2>${esc(lookName())}</h2>
+        </div>
+        <p>Eight desks already mixed. Picking one writes the unlocked faders. Locked rows stay where you left them.</p>
+      </div>
+      <div class="preset-grid">${presets}</div>
+    </section>
+    <section class="side">
+      <div class="panel">
+        <p class="kicker">Recipe</p>
+        <h2>Take it to another desk</h2>
+        <div class="recipe-code" id="recipe-out">${esc(state.recipe)}</div>
+        <div class="recipe-actions">
+          <button type="button" class="ghost" data-act="copy">Copy</button>
+          <input id="recipe-in" type="text" spellcheck="false" placeholder="XF-7Q2K-…" aria-label="Paste a recipe" />
+          <button type="button" class="ghost" data-act="restore">Restore</button>
+        </div>
+        <p class="hint" id="recipe-hint"></p>
+        <p class="note">The code holds the register, the cards, the faders, the locks, the script, and custom nouns. A photo is not inside the code.</p>
+      </div>
+      <div class="panel">
+        <div class="die">
+          <div>
+            <p class="kicker">Chance</p>
+            <h2>Randomise</h2>
+          </div>
+          <button type="button" class="generate" data-act="random">
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x="1" y="1" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="5" cy="5" r="1" fill="currentColor"/><circle cx="11" cy="5" r="1" fill="currentColor"/><circle cx="8" cy="8" r="1" fill="currentColor"/><circle cx="5" cy="11" r="1" fill="currentColor"/><circle cx="11" cy="11" r="1" fill="currentColor"/></svg>
+            Randomise
+          </button>
+        </div>
+        <ul class="locks">${locks}</ul>
+        ${qualityToggle()}
+      </div>
+    </section>
+  </div>`;
+}
+
+function formName(id) {
+  const form = allForms().find((item) => item.id === id);
+  return form ? form.name : id || "The liquid";
+}
+
+function choiceOptions(values, current) {
+  return (values || [])
+    .map((value) => `<option value="${esc(value)}"${value === current ? " selected" : ""}>${esc(value)}</option>`)
+    .join("");
+}
+
+function sceneCards() {
+  return (state.scenes || [])
+    .map((scene, index) => {
+      const on = state.expanded === index ? " on" : "";
+      const peak = scene.beat === "climax" ? " climax" : "";
+      return `<article class="scene${on}${peak}" data-index="${index}" draggable="false">
+        <header>
+          <span class="num">${String(index + 1).padStart(2, "0")}</span>
+          <span class="beat">${esc(scene.beat)}</span>
+          <span class="when">${clock(scene.start)} · ${scene.bars} bar${scene.bars === 1 ? "" : "s"}</span>
+        </header>
+        <p class="action">${esc(scene.action)}</p>
+        <footer>
+          <b>${esc(formName(scene.form))}</b>
+          <span>${esc(scene.shot)} · ${esc(scene.move)}</span>
+          <span>${esc(scene.edit)} · ${esc(scene.mood)}</span>
+        </footer>
+        <div class="scene-actions">
+          <button type="button" data-act="expand" data-index="${index}">Open</button>
+          <button type="button" data-act="motif" data-index="${index}" class="${state.motif === scene.form ? "on" : ""}">Motif</button>
+        </div>
+      </article>`;
+    })
+    .join("");
+}
+
+function treatmentPanel() {
+  const treatments = state.treatments || [];
+  if (!treatments.length) return "";
+  const cards = treatments
+    .map((item) => {
+      const on = item.id === state.treatment ? " on" : "";
+      const moments = (item.moments || []).map((moment) => esc(moment)).join(" · ");
+      return `<button type="button" class="treatment${on}" data-act="treatment" data-treatment="${esc(item.id)}"><strong>${esc(item.name)}</strong><span>${moments}</span><em>${esc(item.idea || "")}</em></button>`;
+    })
+    .join("");
+  const bible = state.bible;
+  const frames = bible
+    ? (bible.frames || [])
+        .map(
+          (frame) => `<figure>
+            <span class="swatch" style="background:${esc(frame.swatch || "#9b8cff")}"></span>
+            <figcaption>${esc(frame.name || "")}</figcaption>
+            <p>${esc(frame.prompt || "")}</p>
+          </figure>`,
+        )
+        .join("")
+    : "";
+  const rules = bible ? (bible.motion || []).map((line) => `<li>${esc(line)}</li>`).join("") : "";
+  const chosen = treatments.find((item) => item.id === state.treatment) || treatments[0] || {};
+  const card = chosen.idea
+    ? `<div class="treatment-card">
+        <p><b>Idea</b> ${esc(chosen.idea)}</p>
+        <p><b>Through-line</b> ${esc(chosen.through || "")}</p>
+        <p><b>Lead</b> ${esc(chosen.lead || "")}</p>
+        <p><b>Colour</b> ${esc(chosen.colour || "")}</p>
+      </div>`
+    : "";
+  return `<section class="panel treatments-panel">
+    <p class="kicker">Treatment · ${esc((bible && bible.look) || "Action Cut")}</p>
+    <h2>Pick the three moments.</h2>
+    <div class="treatments" data-tour="treatment">${cards}</div>
+    ${card}
+    ${
+      bible
+        ? `<p class="bible">${esc(bible.palette || "")}. ${esc((bible.textures || []).join(", "))}.</p>
+           <ul class="motion-rules">${rules}</ul>
+           <div class="swatches">${frames}</div>`
+        : ""
+    }
+    <p class="note">The style frames are the look. Turbo plays a 4 second proof before the full animatic. The picture locks to the song.</p>
+    <label class="idea-field">Look
+      <input id="style-note" type="text" maxlength="80" value="${esc(state.styleNote || "")}" aria-label="Look and palette" autocomplete="off" />
+    </label>
+    <label class="idea-field">Transition
+      <input id="transition-note" type="text" maxlength="140" value="${esc(state.transitionNote || "")}" aria-label="Transition or morph" autocomplete="off" />
+    </label>
+  </section>`;
+}
+
+function morphJoin() {
+  const scenes = state.scenes || [];
+  const signed = scenes.findIndex((scene) => scene.signature);
+  const climax = scenes.findIndex((scene) => scene.beat === "climax");
+  const index = signed > 0 ? signed : climax >= 0 ? climax : 0;
+  return { index, scene: scenes[index] || null, before: scenes[Math.max(0, index - 1)] || null };
+}
+
+function morphQaChip() {
+  const report = state && state.morphReport;
+  if (!report || !report.joins) return `<span class="tl-qa">QA · not checked</span>`;
+  if (!report.joins.length) return `<span class="tl-qa bad">QA · fail</span>`;
+  const pass = report.joins.every((join) => join.qa && join.qa.pass);
+  const detail = pass ? "pass" : "fail";
+  return `<span class="tl-qa ${pass ? "ok" : "bad"}">QA · ${detail}</span>`;
+}
+
+function morphPanel() {
+  const method = state.morphMethod || "keyframe-blend";
+  const choices = [
+    ["keyframe-blend", "Keyframe blend"],
+    ["cross-clip", "Cross clip"],
+    ["v2v-ramp", "Video ramp"],
+    ["region-staged", "Staged region"],
+  ]
+    .map(([id, label]) => {
+      const on = id === method ? " on" : "";
+      const pressed = id === method ? "true" : "false";
+      return `<button type="button" class="${on}" data-act="morph-method" data-method="${id}" aria-pressed="${pressed}">${label}</button>`;
+    })
+    .join("");
+  const join = morphJoin();
+  const source = join.before || join.scene || {};
+  const clip = { wide: "wide", medium: "medium", close: "close", macro: "close", tracking: "medium", reveal: "reveal", overhead: "reveal" }[source.shot] || "wide";
+  const number = join.index ? String(join.index).padStart(2, "0") : "01";
+  return `<section class="panel span" id="morph-panel">
+    <p class="kicker">Morph</p>
+    <h2>Blend two shots that already exist</h2>
+    <div class="morph-split">
+      <figure class="morph-source">
+        <video muted autoplay playsinline loop src="${esc(media("/static/library/" + clip + ".mp4"))}"></video>
+        <figcaption>Source · shot ${number}</figcaption>
+      </figure>
+      <div>
+        <p class="note">The blend names the two subjects in the brief and nothing from the register. A restyle uses LTX-2.3 when that file is on this machine. Fast stays on LTX 0.9.5. Seed 2727.</p>
+        <div class="toggle" role="group" aria-label="Morph method">${choices}</div>
+        <div class="morph-actions">
+          <button type="button" class="${state.morphFast ? "on" : ""}" data-act="morph-fast" aria-pressed="${state.morphFast ? "true" : "false"}">Fast</button>
+          <button type="button" class="${state.morphHit !== false ? "on" : ""}" data-act="morph-hit" aria-pressed="${state.morphHit !== false ? "true" : "false"}">Hit flash</button>
+          <button type="button" class="ghost" data-act="morph-check">Check the joins</button>
+          ${morphQaChip()}
+        </div>
+      </div>
+    </div>
+    <div id="morph-report">${morphReportHtml()}</div>
+    <div id="library-browser" class="library-browser">
+      <p class="kicker">Source library</p>
+      <h3>Partners for this scene</h3>
+      <p class="note" id="library-note">Reading the library…</p>
+      <p class="library-pair" id="library-pair"></p>
+      <label class="field">Filter by tag
+        <input id="library-tag" type="search" value="${esc(state.libraryTag || "")}" aria-label="Filter the library by tag" autocomplete="off" />
+      </label>
+      <div class="library-grid" id="library-grid"></div>
+    </div>
+  </section>`;
+}
+
+function morphReportHtml() {
+  const report = state && state.morphReport;
+  if (!report) return "";
+  if (!report.joins || !report.joins.length) {
+    return `<p class="note">${esc(report.note || "No morph on this cut. Hard cuts only.")}</p>`;
+  }
+  const rows = report.joins
+    .map((join) => {
+      const qa = join.qa || {};
+      const detail = qa.pass ? "Pass." : (qa.reasons || []).join(" ") || "Fail.";
+      const hit = join.hit ? " Hit frame." : "";
+      const why = join.reason ? `${join.reason} ` : "";
+      return `<p>${esc(why)}${esc(join.method)} at ${clock(join.at || 0)}.${hit} ${esc(detail)}</p><p>${esc(join.prompt || "")}</p>`;
+    })
+    .join("");
+  const note = report.note ? `<p class="note">${esc(report.note)}</p>` : "";
+  return `${note}${rows}`;
+}
+
+async function previewAnimatic(button) {
+  if (button) button.disabled = true;
+  const note = document.getElementById("preview-note");
+  if (note) note.textContent = "Cutting the animatic…";
+  try {
+    const response = await api("/api/animatic", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        audio_id: state.audioId || "demo",
+        scenes: state.scenes || [],
+      }),
+    });
+    if (!response.ok) {
+      state.previewNote = "The preview did not cut.";
+      if (note) note.textContent = state.previewNote;
+      return;
+    }
+    const body = await response.json();
+    state.previewUrl = body.url;
+    state.previewNote = `Animatic · ${body.width}×${body.height} · cut in ${body.seconds}s`;
+    render();
+  } finally {
+    if (button && button.isConnected) button.disabled = false;
+  }
+}
+
+async function exportWorkflow(button) {
+  if (button) button.disabled = true;
+  try {
+    const response = await api("/api/workflow", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        scenes: state.scenes || [],
+        brief: state.brief || "",
+        fps: state.fps || 12,
+        seed: 2727,
+        width: 512,
+        height: 320,
+        video_model: state.videoModel || "ltx-23",
+      }),
+    });
+    if (!response.ok) return;
+    const graph = await response.json();
+    const blob = new Blob([JSON.stringify(graph, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "xenoform-storyboard.json";
+    link.click();
+    URL.revokeObjectURL(url);
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
+async function loadMorph() {
+  if (!state) return;
+  const response = await api("/api/morph/board", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      scenes: state.scenes || [],
+      beats: state.beats || [],
+      sections: state.sections || [],
+      drops: state.drops || [],
+      method: state.morphMethod || "keyframe-blend",
+      brief: state.brief || "",
+      fast: !!state.morphFast,
+      lock: true,
+      hit: state.morphHit !== false,
+    }),
+  });
+  const data = await response.json();
+  if (!response.ok) return;
+  state.morphReport = data;
+  const slot = document.getElementById("morph-report");
+  if (slot) slot.innerHTML = morphReportHtml();
+  else render();
+}
+
+function energyWord(value) {
+  const energy = Number(value || 0);
+  if (energy <= 0) return "Calm";
+  if (energy >= 1) return "Hype";
+  return energy.toFixed(2);
+}
+
+function gateCopy() {
+  if (state.gateReason) return state.gateReason;
+  if (state.storyApproved) return "Shot list approved.";
+  if (state.storyNudge) return "Approve the shot list before Turbo, Draft, or Final. Live stays in the browser.";
+  return "Approve the shot list before a GPU render. Approve 1 or 2 test clips before a full batch. Live stays in the browser.";
+}
+
+function gateChecklist() {
+  if (!state || state.quality === "live") return `<span class="gate-item">Live stays in the browser.</span>`;
+  const clips = (state.testClips || []).length;
+  const storyOk = !!state.storyApproved;
+  const clipsOk = clips >= 1 && clips <= 2;
+  const story = storyOk ? "Story approved ✓" : "Story";
+  const approve = storyOk ? "" : `<button type="button" class="text" data-act="approve-story">Approve</button>`;
+  const reason = state.gateReason ? `<span class="gate-reason">${esc(state.gateReason)}</span>` : "";
+  const logic = state.logic && state.logic.ok === false ? `<span class="gate-reason">${esc(state.logic.detail || "The story has to hold in one line.")}</span>` : "";
+  return `<span class="gate-item${storyOk ? " pass" : ""}">${story}</span><span class="gate-item${clipsOk ? " pass" : ""}">Test clips ${clips} of 1–2</span>${approve}${reason}${logic}`;
+}
+
+function paintGate() {
+  const html = gateChecklist();
+  document.querySelectorAll("[data-gate]").forEach((node) => {
+    node.innerHTML = html;
+  });
+}
+
+function shotRows() {
+  return (state.scenes || [])
+    .map(
+      (scene, index) => `<li>
+        <span class="num">${String(index + 1).padStart(2, "0")}</span>
+        <span class="beat">${esc(scene.beat)}</span>
+        <span class="when">${clock(scene.start)}</span>
+        <span class="action">${esc(scene.action)}</span>
+        <span class="who">${esc(scene.verb || "")} · ${esc(formName(scene.form))}</span>
+        <span class="how">${esc(scene.shot)} · ${esc(scene.move)} · ${scene.bars} bar${scene.bars === 1 ? "" : "s"}</span>
+      </li>`,
+    )
+    .join("");
+}
+
+function beatGridInner() {
+  const grid = state.grid || { duration: state.duration || 1, beats: state.beats || [], cuts: [], morphs: [] };
+  const duration = Number(grid.duration || state.duration || 1) || 1;
+  const tick = (time, kind) => `<i class="${kind}" style="left:${(Number(time) / duration) * 100}%"></i>`;
+  return (grid.beats || []).map((beat) => tick(beat, "beat")).join("")
+    + (grid.cuts || []).map((cut) => tick(cut, "cut")).join("")
+    + (grid.morphs || []).map((cut) => tick(cut, "morph")).join("");
+}
+
+function qaInner() {
+  const report = state.qa;
+  if (!report) return `<p class="note">The cut has not been measured yet.</p>`;
+  const rows = [
+    ["Sync", report.sync],
+    ["Motion", report.motion],
+    ["Morphs", report.morph],
+    ["Flash", report.flash],
+    ["Energy", report.energy],
+  ];
+  return `<ul class="qa-list">${rows
+    .map(([label, row]) => {
+      const pass = !!(row && row.pass);
+      return `<li class="${pass ? "pass" : "fail"}"><span>${pass ? "Pass" : "Fail"}</span><b>${esc(label)}</b><em>${esc((row && row.detail) || "")}</em></li>`;
+    })
+    .join("")}</ul>`;
+}
+
+function storyInner() {
+  const story = state.story || {};
+  const journey = (story.journey || [])
+    .map((step) => `<li><b>${esc(step.beat)}</b> ${esc(step.line || "")}</li>`)
+    .join("");
+  const shots = (story.shots || [])
+    .map((scene, index) => {
+      const because = scene.because ? `<em>${esc(scene.because)}</em>` : "";
+      return `<li><span>${String(index + 1).padStart(2, "0")}</span> ${esc(scene.shot || "")} · ${esc(scene.action || "")}${because}</li>`;
+    })
+    .join("");
+  const gpu = story.gpu || { seconds: 0, line: "no GPU" };
+  const gpuText = gpu.seconds
+    ? `${gpu.seconds}s of GPU time for ${qualityLabel(state.quality)}. ${gpu.line}`
+    : "No GPU. This cut is assembled from cached shots.";
+  return `<div id="continuity-story">
+    <p class="logline">${esc(story.logline || state.brief || "")}</p>
+    <p class="hero-line"><b>Hero</b> ${esc(story.hero || "The protagonist is still unnamed.")}</p>
+    <ol class="journey">${journey || `<li>The journey appears with the shot list.</li>`}</ol>
+    <ol class="story-shots">${shots}</ol>
+    ${continuityInner()}
+    </div>
+    <p class="gpu" id="gpu-line" data-tour="gate">${esc(gpuText)}</p>`;
+}
+
+function continuityInner() {
+  const bible = state.continuity;
+  if (!bible || !(bible.elements || []).length) return "";
+  const rows = (bible.elements || [])
+    .map((element) => {
+      const still = element.url
+        ? `<img alt="${esc(element.name || "Reference")}" src="${esc(media(element.url))}" />`
+        : `<span class="frame-wait">Still</span>`;
+      const kicker = element.kind === "hero" ? "Cast lock" : element.kind || "";
+      return `<article class="continuity-row">
+        <figure>${still}</figure>
+        <p><b>${esc(kicker)}</b> ${esc(element.sentence || "")}</p>
+      </article>`;
+    })
+    .join("");
+  const flags = ((state.logic && state.logic.flags) || [])
+    .map((flag) => `<li>${esc(flag.plain || "")}</li>`)
+    .join("");
+  const what = bible.what || (state.logic && state.logic.what) || "";
+  return `<div class="continuity-card" id="continuity-card" data-tour="continuity">
+    <p class="kicker">Continuity</p>
+    <p class="what-happens"><b>What happens</b> ${esc(what)}</p>
+    <div class="continuity-rows">${rows}</div>
+    ${flags ? `<ul class="continuity-flags">${flags}</ul>` : `<p class="note">One hero, one of each prop, one place. Each shot follows from the last.</p>`}
+  </div>`;
+}
+
+function timingPanel() {
+  const duration = Number(state.duration || 1) || 1;
+  const sections = (state.sections || [])
+    .map((section) => {
+      const width = Math.max(4, ((Number(section.end) - Number(section.start)) / duration) * 100);
+      return `<span class="sec sec-${esc(section.label || "sustain")}" style="width:${width}%">${esc(section.label || "")}</span>`;
+    })
+    .join("");
+  const lyric = state.lyricOn ? " checked" : "";
+  const words = (state.lyricWords || []).map((word) => `<i>${esc(word.word)}</i>`).join(" ");
+  return `<section class="panel span timing-panel" id="timing-panel" data-tour="beats">
+    <p class="kicker">Song timing</p>
+    <h2>The beat grid, before any picture</h2>
+    <div class="beat-grid" aria-hidden="true">${beatGridInner()}</div>
+    <div class="legend">
+      <span><i class="sw-beat"></i>beat</span>
+      <span><i class="sw-cut"></i>cut</span>
+      <span><i class="sw-morph"></i>morph</span>
+    </div>
+    <div class="timing-map" aria-label="Section map">${sections}</div>
+    <label class="check"><input id="lyric-align" type="checkbox"${lyric} /> Lyric align</label>
+    <p class="note">Off by default. Local open weights only. Whisper runs 0.3–1.5s early, so a correction offset moves the words later. ${esc(state.lyricNote || "")}</p>
+    <div class="title-row">
+      <label>Offset, seconds
+        <input id="lyric-offset" type="number" min="0.3" max="1.5" step="0.1" value="${Number(state.lyricOffset || 0.9)}" aria-label="Lyric offset in seconds"${state.lyricOn ? "" : " disabled"} />
+      </label>
+      <label>Local transcript
+        <textarea id="lyric-words" rows="2" aria-label="Local transcript" placeholder="word 1.20 1.48"${state.lyricOn ? "" : " disabled"}>${esc(state.lyricDraft || "")}</textarea>
+      </label>
+    </div>
+    <p class="lyric-line">${words}</p>
+  </section>`;
+}
+
+function takeSeed(index) {
+  const picked = (state.takes || []).find((take) => take.scene === index && take.picked);
+  if (picked) return Number(picked.seed);
+  const owned = (state.takes || []).filter((take) => take.scene === index);
+  if (!owned.length) return 2727;
+  return Number(owned[owned.length - 1].seed);
+}
+
+function shotReview() {
+  const rows = (state.scenes || [])
+    .map((scene, index) => {
+      const seed = takeSeed(index);
+      const prompt = scene.prompt || scene.action || "";
+      const clip = { wide: "wide", medium: "medium", close: "close", macro: "close", tracking: "medium", reveal: "reveal", overhead: "reveal" }[scene.shot] || "wide";
+      const key = `${index}:${seed}`;
+      const frame = (state.frameUrls || {})[key] || "";
+      const still = frame
+        ? `<img alt="Keyframe ${index + 1}" src="${esc(frame)}" />`
+        : `<span class="frame-wait">Keyframe</span>`;
+      const takes = (state.takes || [])
+        .filter((take) => take.scene === index)
+        .map((take) => {
+          const on = take.picked ? " on" : "";
+          return `<button type="button" class="take${on}" data-act="pick-take" data-index="${index}" data-seed="${take.seed}">${take.seed}${take.repeated ? " · repeat" : ""}</button>`;
+        })
+        .join("");
+      const approved = (state.testClips || []).includes(String(index)) ? " checked" : "";
+      return `<article class="review-shot">
+        <header><b>${String(index + 1).padStart(2, "0")}</b> ${esc(scene.shot || "")} · seed ${seed}</header>
+        <div class="review-row">
+          <figure>${still}<figcaption>Keyframe</figcaption></figure>
+          <figure><video muted autoplay playsinline loop src="${esc(media("/static/library/" + clip + ".mp4"))}"></video><figcaption>Clip</figcaption></figure>
+        </div>
+        <label>Prompt
+          <textarea data-prompt="${index}" rows="2" maxlength="240" aria-label="Prompt for shot ${index + 1}">${esc(prompt)}</textarea>
+        </label>
+        <div class="cut-actions">
+          <button type="button" class="generate" data-act="remake" data-index="${index}">Remake</button>
+          <button type="button" class="ghost" data-act="new-take" data-index="${index}">New seed</button>
+          <label class="check"><input type="checkbox" data-act="test-clip" data-index="${index}"${approved} /> Test clip</label>
+        </div>
+        <div class="takes">${takes}</div>
+      </article>`;
+    })
+    .join("");
+  return `<section class="panel span review-desk" id="review-desk">
+    <p class="kicker">Shot review</p>
+    <h2>Keyframe beside the clip</h2>
+    <p class="note">Remake with the same seed repeats the take. A new seed keeps the old take and adds one. A text-only change re-renders that shot. Titles and lyrics are drawn in code, not in the prompt.</p>
+    ${rows}
+  </section>`;
+}
+
+function cutPanel() {
+  const hero = state.heroUrl
+    ? `<img class="hero-thumb" alt="Hero reference" src="${esc(media(state.heroUrl))}" />`
+    : "";
+  const continuous = state.continuous ? " checked" : "";
+  return `<section class="panel span cut-panel" id="cut-panel">
+    <p class="kicker">Cut</p>
+    <h2>Calm to Hype, from the shots you already have</h2>
+    <div class="energy-labels"><span>Calm</span><b id="energy-readout">${esc(energyWord(state.energy))}</b><span>Hype</span></div>
+    <input id="energy" type="range" min="0" max="1" step="0.01" value="${Number(state.energy || 0)}" aria-label="Energy from Calm to Hype" />
+    <p class="note">Calm is the default. The slider re-cuts cached shots on the beat grid. Morphs stay at two or fewer. Nothing here calls the GPU.</p>
+    <div class="beat-grid" id="beat-grid" aria-hidden="true">${beatGridInner()}</div>
+    <div class="legend">
+      <span><i class="sw-beat"></i>beat</span>
+      <span><i class="sw-cut"></i>cut</span>
+      <span><i class="sw-morph"></i>morph</span>
+    </div>
+    <div class="story-grid">
+      <div>
+        <p class="kicker">Story</p>
+        <div id="story-body">${storyInner()}</div>
+        <p class="note" id="story-gate">${esc(gateCopy())}</p>
+        <div class="cut-actions">
+          <button type="button" class="generate" id="approve-story" data-act="approve-story">${state.storyApproved ? "Approved" : "Approve shot list"}</button>
+          <button type="button" class="ghost" data-act="conform">${state.heldBoard ? "Conform the saved story to this song" : "Conform this story to the song"}</button>
+        </div>
+      </div>
+      <div>
+        <p class="kicker">Hero lock</p>
+        <div class="hero-row">
+          ${hero}
+          <label class="upload">Reference image<input id="hero-file" type="file" accept="image/png,image/jpeg,image/webp" /></label>
+        </div>
+        <p class="note">One picture of the protagonist is the first frame of every shot.</p>
+        <label class="check"><input id="continuous" type="checkbox"${continuous} /> Continuous take</label>
+        <p class="note">Chain the last frame of each shot to the first frame of the next, and snap the hit onto the beat.</p>
+        <div class="title-row">
+          <label>Title card
+            <input id="title-card" type="text" maxlength="80" value="${esc(state.titleText || "")}" aria-label="Title card" />
+          </label>
+          <label>End card
+            <input id="end-card" type="text" maxlength="80" value="${esc(state.endText || "")}" aria-label="End card" />
+          </label>
+        </div>
+        <div id="qa-panel">${qaInner()}</div>
+      </div>
+    </div>
+  </section>`;
+}
+
+function renderSimple() {
+  const lead = (state.scenes || [])[0] || {};
+  const spine = lead.protagonist
+    ? `<p class="spine"><b>${esc(lead.protagonist)}</b> · ${esc(lead.goal || "")}<br>${esc(lead.payoff || "")}</p>`
+    : "";
+  const rows = shotRows();
+  return `<div class="simple">
+    <section class="panel span song-drop" data-tour="song">
+      <p class="kicker">Song</p>
+      <h2>Pick or drop a song</h2>
+      <div class="song-actions">
+        <label class="upload">Drop a song<input id="song-file" type="file" accept="audio/*,.wav,.mp3,.flac,.ogg" aria-label="Drop a song" /></label>
+        <button type="button" class="ghost" data-act="use-demo">Use the bundled demo</button>
+      </div>
+      <p class="note" id="song-note">The desk opens on examples/demo.wav. Drop a file to analyze another track. Nothing here starts a render.</p>
+    </section>
+    <section class="panel span guided-tours" id="guided-tours">
+      <p class="kicker">Guided tours</p>
+      <h2>Short walks through the desk</h2>
+      <div id="tour-list"><p class="note">Opening the tours…</p></div>
+    </section>
+    ${timingPanel()}
+    <section class="panel stage span">
+      <p class="kicker">Picture · ${esc(qualityLabel(state.quality))}</p>
+      <h2>${esc(state.quality === "live" ? "Live" : state.videoLabel || "Picture")}</h2>
+      ${stageMedia()}
+      <p class="caption"><b>${esc(registerName())}</b> · seed 2727 · ${esc(paletteLabel())}</p>
+      ${qualityToggle()}
+    </section>
+    ${cutPanel()}
+    ${morphPanel()}
+    <section class="panel brief-panel">
+      <p class="kicker">Overview</p>
+      <h2>Tell it the life. It cuts the song.</h2>
+      <label class="brief-label" for="brief">One-line brief</label>
+      <textarea id="brief" rows="3" maxlength="180" aria-label="One-line brief">${esc(state.brief || "")}</textarea>
+      <p class="note">One line becomes a protagonist, a goal, and a payoff. Each section is an action shot, hard-cut on the bar. A morph is a signature, once, on the drop. It plans offline. A local model is used only if <span class="mono">XENO_LLM_URL</span> is set.</p>
+      <div class="simple-actions">
+        <button type="button" class="generate" data-act="try-it">Try the demo</button>
+        <button type="button" class="ghost" data-act="generate-inline">Generate this brief</button>
+        <div class="generate-gate" data-gate="1"></div>
+        <button type="button" class="ghost" data-act="to-director">Open the storyboard</button>
+        <button type="button" class="ghost" data-act="music-only">Music only</button>
+        <button type="button" class="ghost" data-act="share-cut" data-tour="share">Share cut</button>
+      </div>
+      ${setupBanner()}
+    </section>
+    <section class="panel">
+      <p class="kicker">Shot list · ${esc(state.planner || "template")}</p>
+      <h2>${esc(registerName())}</h2>
+      ${spine}
+      <ol class="shotlist">${rows}</ol>
+    </section>
+    ${shotReview()}
+    ${treatmentPanel()}
+    ${bandMap()}
+  </div>`;
+}
+
+function sceneEditor() {
+  const scene = (state.scenes || [])[state.expanded];
+  if (!scene) return "";
+  const forms = allForms()
+    .map((form) => `<option value="${esc(form.id)}"${form.id === scene.form ? " selected" : ""}>${esc(form.name)}</option>`)
+    .join("");
+  return `<section class="panel editor" id="scene-editor">
+    <p class="kicker">Scene ${String(scene.index + 1).padStart(2, "0")} · ${esc(scene.beat)}</p>
+    <h2>${esc(scene.action)}</h2>
+    <div class="editor-grid">
+      <label>Action
+        <textarea data-scene="action" data-index="${scene.index}" rows="3" maxlength="180" aria-label="Action">${esc(scene.action)}</textarea>
+      </label>
+      <label>Verb
+        <input data-scene="verb" data-index="${scene.index}" type="text" maxlength="40" value="${esc(scene.verb || "")}" aria-label="Action verb" />
+      </label>
+      <label>Protagonist
+        <input data-scene="protagonist" data-index="${scene.index}" type="text" maxlength="80" value="${esc(scene.protagonist || "")}" aria-label="Protagonist" />
+      </label>
+      <label>Goal
+        <input data-scene="goal" data-index="${scene.index}" type="text" maxlength="160" value="${esc(scene.goal || "")}" aria-label="Goal" />
+      </label>
+      <label>Payoff
+        <input data-scene="payoff" data-index="${scene.index}" type="text" maxlength="160" value="${esc(scene.payoff || "")}" aria-label="Payoff" />
+      </label>
+      <label>Subject
+        <select data-scene="form" data-index="${scene.index}" aria-label="Subject">${forms}</select>
+      </label>
+      <label>Shot
+        <select data-scene="shot" data-index="${scene.index}" aria-label="Shot">${choiceOptions(state.shots, scene.shot)}</select>
+      </label>
+      <label>Camera
+        <select data-scene="move" data-index="${scene.index}" aria-label="Camera move">${choiceOptions(state.moves, scene.move)}</select>
+      </label>
+      <label>Edit
+        <select data-scene="edit" data-index="${scene.index}" aria-label="Edit">${choiceOptions(state.edits, scene.edit)}</select>
+      </label>
+      <label>Mood and light
+        <select data-scene="mood" data-index="${scene.index}" aria-label="Mood and light">${choiceOptions(state.moods, scene.mood)}</select>
+      </label>
+      <label>Duration, bars
+        <input data-scene="bars" data-index="${scene.index}" type="number" min="1" max="64" step="1" value="${scene.bars}" aria-label="Duration in bars" />
+      </label>
+      <p class="note">Snapped to the bar (${(scene.bar_seconds || 2).toFixed(2)}s). The first frame is the guide. The shot plays the action. A morph is a signature.</p>
+    </div>
+  </section>`;
+}
+
+function renderDirector() {
+  const open = state.view === "scene" || state.expanded != null;
+  const presets = (state.presets || [])
+    .map((preset) => {
+      const on = preset.id === state.preset ? " on" : "";
+      return `<button type="button" class="preset${on}" data-act="preset" data-preset="${esc(preset.id)}"><strong>${esc(preset.name)}</strong><span>${esc(preset.note)}</span></button>`;
+    })
+    .join("");
+  const arc = ["setup", "rising", "climax", "release"]
+    .map((beat) => `<span class="${(state.scenes || []).some((scene) => scene.beat === beat) ? "on" : ""}">${beat}</span>`)
+    .join("<i></i>");
+  return `<div class="director">
+    <section class="panel span">
+      <div class="board-head">
+        <div>
+          <p class="kicker">Director</p>
+          <h2>Storyboard</h2>
+        </div>
+        <p>One card per section. A protagonist, a goal, a payoff. Hard cuts on the bar. A morph is a signature, once or twice, usually on the drop. Drag the climax onto a card. A callback is the last line.</p>
+      </div>
+      <div class="story-tools">
+        <label>Brief
+          <input id="brief" type="text" maxlength="180" value="${esc(state.brief || "")}" aria-label="Brief" />
+        </label>
+        <label>Callback
+          <input id="callback" type="text" maxlength="140" value="${esc(state.callback || "")}" placeholder="the sphere returns at the end, changed" aria-label="Callback" />
+        </label>
+        <div class="climax-chip" draggable="true" id="climax-token" title="Drag onto a scene">Climax</div>
+      </div>
+      <div class="beat-rail" aria-hidden="true">${arc}</div>
+      <div class="scene-grid">${sceneCards()}</div>
+      ${treatmentPanel()}
+    </section>
+    ${open ? sceneEditor() : ""}
+    <section class="panel span">
+      <p class="kicker">Song</p>
+      <h2>${esc(state.title)}</h2>
+      <div class="wave-wrap"><canvas class="wave" id="wave" width="640" height="220"></canvas></div>
+      <div class="legend">
+        <span><i class="sw-section"></i>section</span>
+        <span><i class="sw-drop"></i>drop</span>
+        <span><i class="sw-beat"></i>beat</span>
+      </div>
+      <div class="song-actions">
+        <label class="upload">Replace song<input id="song-file" type="file" accept="audio/*,.wav,.mp3,.flac,.ogg" /></label>
+        <button type="button" class="ghost" data-act="music-only">Music only</button>
+        <button type="button" class="ghost" data-act="share-cut">Share cut</button>
+      </div>
+    </section>
+    ${timingPanel()}
+    ${cutPanel()}
+    ${morphPanel()}
+    ${shotReview()}
+    <section class="panel picture span">
+      <div class="picture-split">
+        <div class="stage">
+          <p class="kicker">Picture</p>
+          <h2>${esc(state.quality === "live" ? "Live" : state.videoLabel || "Picture")}</h2>
+          ${stageMedia()}
+          ${qualityToggle()}
+          ${stagesHtml()}
+        </div>
+        ${notesPanel()}
+      </div>
+    </section>
+    ${bandMap()}
+    <section class="panel">
+      <div data-tour="looks">
+        <div class="looks-head">
+          <div>
+            <p class="kicker">Looks</p>
+            <h2>${esc(lookName())}</h2>
+          </div>
+          <button type="button" class="generate" data-act="random">Roll the board</button>
+        </div>
+        <div class="preset-grid">${presets}</div>
+      </div>
+      <div class="recipe-code" id="recipe-out">${esc(state.recipe)}</div>
+      <div class="recipe-actions">
+        <button type="button" class="ghost" data-act="copy">Copy</button>
+        <input id="recipe-in" type="text" spellcheck="false" placeholder="XF-…" aria-label="Paste a recipe" />
+        <button type="button" class="ghost" data-act="restore">Restore</button>
+      </div>
+      <p class="hint" id="recipe-hint"></p>
+      <p class="note">The code carries the storyboard: brief, scenes, callback, motif, and the register. ${lockButton("script", "storyboard")}</p>
+    </section>
+  </div>`;
+}
+
+function notesPanel() {
+  const pending = state.pending;
+  const chips = (state.suggestions || [])
+    .map(
+      (item) =>
+        `<button type="button" class="chip" data-act="chip" data-note="${esc(item.note)}" title="${esc(item.reason || "")}">${esc(item.note)}</button>`,
+    )
+    .join("");
+  const diff = pending
+    ? (pending.diff || [])
+        .map(
+          (row) => `<article>
+            <p class="field">${esc(row.label)} · ${esc(row.field)}</p>
+            <p class="old">${esc(row.old)}</p>
+            <p class="new">${esc(row.new)}</p>
+          </article>`,
+        )
+        .join("")
+    : "";
+  const patch = pending && pending.patch ? JSON.stringify(pending.patch, null, 2) : "";
+  const versions = (state.versions || [])
+    .map((version, index) => {
+      const on = version.id === state.versionId ? " on" : "";
+      return `<li class="${on.trim()}">
+        <button type="button" class="watch" data-act="watch-version" data-id="${esc(version.id)}">v${index + 1} · ${esc(version.label || version.note || "Cut")}</button>
+        <button type="button" class="text" data-act="revert-version" data-id="${esc(version.id)}">Revert</button>
+      </li>`;
+    })
+    .join("");
+  const open = state.notesOpen || pending ? " open" : "";
+  const offer = (pending && pending.lesson_offer) || state.lessonOffer;
+  const offerHtml = offer
+    ? `<div class="lesson-offer">
+        <p>${esc(offer.prompt || "Save this as a lesson.")}</p>
+        <p class="rule">${esc(offer.rule || "")}</p>
+        <div class="note-actions">
+          <button type="button" class="generate" data-act="save-lesson">Save as a lesson</button>
+          <button type="button" class="ghost" data-act="dismiss-lesson">Not now</button>
+        </div>
+      </div>`
+    : "";
+  const learned = (state.savedLessons || [])
+    .map((lesson) => `<li>${esc(lesson.lesson || lesson.note)}</li>`)
+    .join("");
+  let source = "";
+  if (pending) {
+    if (pending.source === "lesson") source = "Saved lesson, on this machine";
+    else if (pending.source === "llm") source = `Local model · ${pending.model || "ollama"}`;
+    else if (pending.source === "rules-fallback") source = "Rules, after the model reply failed the schema";
+    else source = "Rules, on this machine";
+  }
+  return `<aside class="notes">
+    <p class="kicker">Director's notes</p>
+    <h2>Watch, then say what to change</h2>
+    <textarea id="note-text" rows="3" maxlength="400" placeholder="${esc(SAMPLE_NOTE)}" aria-label="Director's note">${esc(state.note || "")}</textarea>
+    <div class="notes-apply">
+      <button type="button" class="generate${state.noteBusy ? " is-loading" : ""}" data-act="apply-note"${state.noteBusy ? " disabled" : ""}>Apply</button>
+      <span class="note-status">${esc(state.noteStatus || "One box. The patch waits for confirm.")}</span>
+    </div>
+    <div class="chips" aria-label="Critic suggestions">${chips || `<p class="note">The critic has nothing loud to flag.</p>`}</div>
+    <details class="note-depth"${open}>
+      <summary>Patch, versions, compare</summary>
+      ${
+        pending
+          ? `<p class="source">${esc(source)}</p>
+             <pre class="patch">${esc(patch)}</pre>
+             <div class="diff">${diff}</div>
+             <p class="rationale">${esc(pending.rationale || "")}</p>
+             <p class="cache-line">${esc(pending.cache_line || "")}</p>
+             <div class="note-actions">
+               <button type="button" class="generate${state.noteBusy ? " is-loading" : ""}" data-act="confirm-note"${state.noteBusy ? " disabled" : ""}>Confirm</button>
+               <button type="button" class="ghost" data-act="undo-note">Undo</button>
+             </div>
+             ${offerHtml}`
+          : `<p class="note">Apply a note to see the patch and the diff before anything renders.</p>`
+      }
+      ${learned ? `<p class="kicker">Lessons learned</p><ul class="learned">${learned}</ul>` : `<p class="note">Saved lessons become critic rules on the next cut.</p>`}
+      <ol class="versions">${versions || `<li class="empty"><span>Versions appear as you confirm notes.</span></li>`}</ol>
+      <p class="kicker">Review ledger</p>
+      ${
+        (state.ledger || []).length
+          ? `<ol class="ledger">${(state.ledger || [])
+              .map(
+                (row) =>
+                  `<li>Round ${esc(String(row.round))} · ${esc(row.verdict || "")} · ${esc(
+                    (row.before && row.before.failed) || "",
+                  )}</li>`,
+              )
+              .join("")}</ol>${state.ledgerMarkdown ? `<pre class="patch ledger-raw">${esc(state.ledgerMarkdown)}</pre>` : ""}`
+          : `<p class="note">The ledger fills after the first review.</p>`
+      }
+      <div class="note-actions">
+        <button type="button" class="ghost" data-act="flip">Flip A/B</button>
+      </div>
+    </details>
+  </aside>`;
+}
+
+function renderNotes() {
+  return `<div class="notes-view">
+    <section class="panel stage">
+      <p class="kicker">${esc(qualityLabel(state.quality))}</p>
+      <h2>${esc(state.quality === "live" ? "Live" : state.videoLabel || "Picture")}</h2>
+      ${stageMedia()}
+      <p class="caption"><b>${esc(registerName())}</b> · seed 2727 · ${esc(state.quality || "draft")} · ${esc(state.videoLabel || "Reference")}</p>
+      ${stagesHtml()}
+    </section>
+    <section class="panel notes-pane">${notesPanel()}</section>
+  </div>`;
+}
+
+function snippetBlock(title, id, text, hint) {
+  return `<section class="snippet">
+    <header><h3>${esc(title)}</h3><button type="button" class="text" data-act="copy-snippet" data-snippet="${id}">Copy</button></header>
+    <p class="note">${hint}</p>
+    <pre id="snippet-${id}">${esc(text)}</pre>
+  </section>`;
+}
+
+function connectSnippets() {
+  const desk = location.origin || "http://127.0.0.1:47317";
+  const stdio = JSON.stringify({
+    mcpServers: {
+      xenoform: {
+        command: "xenoform",
+        args: ["mcp"],
+        env: { XENO_DESK: desk },
+      },
+    },
+  }, null, 2);
+  const http = JSON.stringify({
+    mcpServers: {
+      xenoform: { url: "http://127.0.0.1:47319/mcp" },
+    },
+  }, null, 2);
+  return { stdio, http, desk };
+}
+
+function renderConnect() {
+  const snippets = connectSnippets();
+  const status = state.mcp || { detail: "The desk API is up. The agent port is off until you start it.", running: false };
+  return `<section class="panel connect">
+    <p class="kicker">Agent</p>
+    <h2>Connect an AI</h2>
+    <p class="note">Grok, Claude, GPT, or Cursor can direct this desk. The agent port is off until you start it, listens only on this machine, and needs no token. The desk it talks to is ${esc(snippets.desk)}.</p>
+    <p class="mcp-status" id="mcp-status" data-running="${status.running ? "yes" : "no"}">${esc(status.detail || "")}</p>
+    <div class="review-actions">
+      <button type="button" class="ghost" data-act="mcp-test">Test connection</button>
+      <button type="button" class="generate${state.mcpBusy ? " is-loading" : ""}" data-act="mcp-start"${state.mcpBusy ? " disabled" : ""}>Start on this machine</button>
+    </div>
+    ${snippetBlock("Claude Desktop", "claude", snippets.stdio, "Paste into claude_desktop_config.json. This uses stdio, so the HTTP port can stay off.")}
+    ${snippetBlock("Cursor", "cursor", snippets.stdio, "Paste into .cursor/mcp.json. Same command. XENO_DESK is this desk.")}
+    ${snippetBlock("Generic MCP client", "http", snippets.http, "Streamable HTTP at http://127.0.0.1:47319/mcp. Press Start on this machine first.")}
+  </section>`;
+}
+
+const VIBES = [
+  {
+    id: "liquid-gold",
+    name: "Liquid gold",
+    line: "A gold pour becomes a ring in a dark forge.",
+    palette: "gold",
+    register: "pynchon",
+    morph: true,
+    dark: false,
+    tone: "bright",
+    still: "/static/vibes/liquid-gold.jpg",
+  },
+  {
+    id: "paper-summer",
+    name: "Paper summer",
+    line: "A paper boat crosses a bright kitchen.",
+    palette: "neutral",
+    register: "rome",
+    morph: false,
+    dark: false,
+    tone: "bright",
+    still: "/static/vibes/paper-summer.jpg",
+  },
+  {
+    id: "bloom",
+    name: "Bloom",
+    line: "A flower opens on a green hill.",
+    palette: "bronze",
+    register: "tolkien",
+    morph: false,
+    dark: false,
+    tone: "soft",
+    still: "/static/vibes/bloom.jpg",
+  },
+  {
+    id: "neon-night",
+    name: "Neon night",
+    line: "A neon sign holds one quiet street.",
+    palette: "violet",
+    register: "lecarre",
+    morph: false,
+    dark: true,
+    tone: "dark",
+    still: "/static/vibes/neon-night.jpg",
+  },
+  {
+    id: "ocean",
+    name: "Ocean",
+    line: "A swimmer crosses a calm harbour.",
+    palette: "grey-green",
+    register: "tolkien",
+    morph: false,
+    dark: false,
+    tone: "bright",
+    still: "/static/vibes/ocean.jpg",
+  },
+  {
+    id: "cosmic",
+    name: "Cosmic",
+    line: "A star field turns over a dark shore.",
+    palette: "violet",
+    register: "pynchon",
+    morph: true,
+    dark: true,
+    tone: "dark",
+    still: "/static/vibes/cosmic.jpg",
+  },
+];
+
+function vibeById(id) {
+  return VIBES.find((item) => item.id === id) || null;
+}
+
+function energyFromTrack() {
+  const levels = (state.sections || []).map((section) => Number(section.level || 0));
+  const peak = levels.length ? Math.max.apply(null, levels) : 0;
+  return Math.max(0, Math.min(1, peak || 0));
+}
+
+function plainWords(text) {
+  return String(text || "")
+    .replace(/LTX[-\w.]*/gi, "")
+    .replace(/\b(turbo|draft|final|denoise|comfyui|seed)\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function libraryClip(vibe, shot) {
+  return media(`/static/library/${vibe}/${shot}.mp4`);
+}
+
+function libraryStill(vibe, shot) {
+  return media(`/static/library/${vibe}/${shot}.jpg`);
+}
+
+function songFacts() {
+  const duration = Number((state && state.duration) || 0);
+  const tempo = Math.round(Number((state && state.tempo) || 0));
+  const sections = ((state && state.sections) || []).length;
+  const clock = duration ? `${Math.floor(duration / 60)}:${String(Math.floor(duration % 60)).padStart(2, "0")}` : "";
+  return [clock, tempo ? `${tempo} BPM` : "", sections ? `${sections} sections` : ""].filter(Boolean).join(" · ");
+}
+
+function waveBars() {
+  const peaks = (state && state.waveform) || [];
+  const count = 42;
+  const bars = [];
+  for (let index = 0; index < count; index += 1) {
+    const sample = peaks.length ? peaks[Math.floor((index / count) * peaks.length)] : 0.35;
+    const value = typeof sample === "number" ? sample : Number(sample && sample.peak != null ? sample.peak : sample);
+    const scaled = Number.isFinite(value) ? (value > 2 ? value / 100 : value) : 0.35;
+    const height = Math.max(4, Math.round(Math.min(1, scaled) * 28));
+    bars.push(`<i style="height:${height}px"${index < 16 ? ' class="on"' : ""}></i>`);
+  }
+  return `<span class="wave" aria-hidden="true">${bars.join("")}</span>`;
+}
+
+function easyMedia() {
+  if (state.easy && state.easy.playedHere) {
+    const vibe = (state.easy && state.easy.vibe) || "neon-night";
+    const src = state.audioUrl || "/media/audio/demo";
+    const clips = (window.XENO_CUT ? window.XENO_CUT.shots : ["wide", "medium", "close", "reveal"])
+      .map(
+        (shot, index) =>
+          `<video class="cut-clip${index === 0 ? " on" : ""}" data-shot="${shot}" muted playsinline loop preload="auto" src="${esc(libraryClip(vibe, shot))}"></video>`,
+      )
+      .join("");
+    return `<div class="screen" id="easy-screen" data-vibe="${esc(vibe)}" aria-label="Your cut">${clips}</div>
+      <audio id="live-audio" src="${esc(media(src))}" preload="auto"></audio>`;
+  }
+  if (state.job && state.job.video) {
+    return `<video id="player" playsinline poster="${media("/media/poster")}" src="${esc(media(state.job.video))}"></video>`;
+  }
+  return `<video id="player" playsinline poster="${media("/media/poster")}" src="${esc(media(state.video || "/media/demo"))}"></video>`;
+}
+
+function vibeCards(easy, compact) {
+  return VIBES.map((vibe) => {
+    const on = vibe.id === easy.vibe;
+    const tone = vibe.tone || (vibe.dark ? "dark" : "bright");
+    return `<button type="button" class="vibe-card${vibe.dark ? " is-dark" : ""}${on ? " on" : ""}${compact ? " is-mini" : ""}" role="radio" aria-checked="${on ? "true" : "false"}" tabindex="${on || (!easy.vibe && vibe.id === VIBES[0].id) ? "0" : "-1"}" data-act="easy-vibe" data-vibe="${esc(vibe.id)}">
+      <span class="vibe-thumb" style="background-image:url(${esc(media(vibe.still))})"></span>
+      ${on && !compact ? '<span class="vibe-tick" aria-hidden="true">✓</span>' : ""}
+      <span class="vibe-meta"><strong>${esc(vibe.name)}</strong>${compact ? "" : `<em>${esc(tone)}</em>`}</span>
+    </button>`;
+  }).join("");
+}
+
+function shotStrip(vibeId) {
+  const shots = ["wide", "medium", "close", "reveal"];
+  return shots
+    .map((shot) => `<span class="strip-shot" style="background-image:url(${esc(libraryStill(vibeId, shot))})"></span>`)
+    .join("");
+}
+
+function dropCard() {
+  const opener = state.opener;
+  const ready = opener && opener.ready;
+  const pair = ready
+    ? (opener.source && opener.target ? `${opener.source} → ${opener.target}` : (opener.becomes || "Impact"))
+    : "Finding the downbeat…";
+  const line = ready
+    ? (opener.line || "")
+    : "The song decides the object. This card lands before any GPU wait.";
+  return `<section class="drop-open" id="drop-open">
+    <p class="eyebrow">The drop</p>
+    <h3>${esc(pair)}</h3>
+    <p class="drop-line">${esc(line)}</p>
+    <button type="button" class="ghost" data-act="open-drop"${ready ? "" : " disabled"}>Play the drop</button>
+  </section>`;
+}
+
+function renderEasy() {
+  const easy = state.easy || { phase: "choose", song: "", vibe: "", idea: "", note: "" };
+  const chosen = vibeById(easy.vibe) || VIBES[3];
+  if (easy.phase === "making") {
+    const width = Math.round(((state.job && state.job.progress) || 0.08) * 100);
+    const scenes = state.scenes || [];
+    const story = scenes.map((scene) => scene.action).filter(Boolean).slice(0, 2).join(" ") || easy.idea || chosen.line;
+    const heard = easy.song ? "done" : "now";
+    const wrote = scenes.length ? "done" : "now";
+    const painting = scenes.length ? "now" : "wait";
+    return `<div class="easy easy-making">
+      <div class="easy-make-head">
+        <div>
+          <p class="eyebrow">${esc(chosen.name)} · ${esc(easy.songLabel || "Song")}</p>
+          <h2>Making your video.</h2>
+        </div>
+        <div class="easy-make-actions">
+          <span>About a minute</span>
+          <button type="button" class="ghost" data-act="easy-stop">Stop</button>
+        </div>
+      </div>
+      <div class="easy-make-grid">
+        <div>
+          <div class="monitor" style="background-image:url(${esc(media(chosen.still))})">
+            <span class="monitor-pill">${esc(scenes.length ? `Shot 1 of ${scenes.length}` : "Reading the song")}</span>
+          </div>
+          <div class="filmstrip">${shotStrip(chosen.id)}</div>
+          <div class="track" aria-hidden="true"><span style="width:${width}%"></span></div>
+        </div>
+        <aside class="panel">
+          <h3>What is happening</h3>
+          <ol class="happen">
+            <li class="${heard}">Listened to the song</li>
+            <li class="${wrote}">Wrote the story</li>
+            <li class="${painting}">Painting the shots</li>
+            <li class="wait">Cutting to the beat</li>
+          </ol>
+          <p class="eyebrow">The story</p>
+          <p>${esc(story)}</p>
+          <p class="note" id="easy-progress">${esc(easy.note || "Reading the song.")}</p>
+          <p class="note">You can leave this page. The video keeps going and waits for you.</p>
+        </aside>
+      </div>
+    </div>`;
+  }
+  if (easy.phase === "result") {
+    const title = chosen && easy.vibe ? chosen.name : "Your cut";
+    return `<div class="easy easy-done">
+      <section class="easy-result">
+        <div class="easy-result-head">
+          <div>
+            <p class="eyebrow">Your video</p>
+            <h2>${esc(title)}</h2>
+          </div>
+          <div class="easy-result-actions">
+            <button type="button" class="ghost" data-act="easy-share">Share cut</button>
+            <button type="button" class="generate" data-act="easy-download">Download</button>
+          </div>
+        </div>
+        <div class="player">
+          ${easyMedia()}
+          <button type="button" class="play-toggle" data-act="easy-play" aria-label="Play">Play</button>
+          <p class="ready-toast">Your video is ready.</p>
+        </div>
+        <p class="note" id="easy-note">${esc(easy.note || "")}</p>
+      </section>
+      <aside class="panel easy-side">
+        <div class="energy-head"><h3>Energy</h3><b id="energy-readout">${esc(energyWord(state.energy || 0))}</b></div>
+        <p class="note">Re-cuts the same shots instantly. No new pictures.</p>
+        <input id="energy" type="range" min="0" max="1" step="0.01" value="${Number(state.energy || 0)}" aria-label="Energy from Calm to Hype" />
+        <div class="energy-ends"><span>Calm</span><span>Hype</span></div>
+        <div class="energy-head"><h3>Try another vibe</h3><span>Same song, same story</span></div>
+        <div class="vibe-grid vibe-mini" role="radiogroup" aria-label="Try another vibe">${vibeCards(easy, true)}</div>
+        <button type="button" class="ghost easy-row" data-act="easy-better">Make it better</button>
+        <button type="button" class="text easy-row" data-act="easy-advanced">Open in Advanced</button>
+        <button type="button" class="text easy-row" data-act="easy-again">Back to the song</button>
+      </aside>
+    </div>`;
+  }
+  const preview = easy.vibe ? chosen : VIBES[3];
+  const songSet = !!easy.song;
+  const songBlock = songSet
+    ? `<div class="songrow">
+        <span class="play-dot" aria-hidden="true">▶</span>
+        <div><strong>${esc(easy.songLabel || "Chosen")}</strong><span>${esc(songFacts() || "Ready")}</span></div>
+        ${waveBars()}
+      </div>`
+    : `<div class="easy-actions">
+        <label class="upload solid">Choose a song<input id="easy-file" type="file" accept="audio/*,.wav,.mp3,.flac,.ogg" aria-label="Choose a song" /></label>
+        <button type="button" class="ghost${easy.song === "demo" ? " on" : ""}" data-act="easy-demo">Bundled demo</button>
+      </div>`;
+  return `<div class="easy easy-desk">
+    <header class="easy-intro">
+      <p class="eyebrow">Xenoform · Simple</p>
+      <h2>Make a music video.</h2>
+      <p class="lede">A song, a vibe, then Make. Everything else is chosen for you, and you can change it later.</p>
+      ${dropCard()}
+    </header>
+    <section class="easy-main">
+      <section class="easy-step" data-tour="easy-song" data-song-drop="1">
+        <div class="step-head"><h3>Song</h3>${songSet ? '<button type="button" class="text" data-act="easy-step" data-step="song">Change</button>' : ""}</div>
+        ${songBlock}
+        ${songSet ? "" : `<p class="note">${esc(easy.songLabel || "Drop a file here, or use the bundled demo.")}</p>`}
+      </section>
+      <section class="easy-step" data-tour="easy-vibe">
+        <div class="step-head"><h3>Vibe</h3><span>Pick one. You can try another after.</span></div>
+        <div class="vibe-grid" role="radiogroup" aria-label="Vibe">${vibeCards(easy, false)}</div>
+        <label class="idea-field">Your idea in one line, if you have one.
+          <input id="easy-idea" type="text" maxlength="170" value="${esc(easy.idea || "")}" aria-label="One line, optional" placeholder="Leave this empty and the vibe decides." autocomplete="off" />
+        </label>
+      </section>
+    </section>
+    <aside class="panel easy-side" data-tour="easy-make">
+      <div class="monitor" style="background-image:url(${esc(media(preview.still))})"><span class="monitor-pill">${esc(preview.name)} · sample</span></div>
+      <div class="filmstrip">${shotStrip(preview.id)}</div>
+      <dl class="facts">
+        <dt>Shots</dt><dd>7, one per section</dd>
+        <dt>Cut</dt><dd>On the bar</dd>
+        <dt>Energy</dt><dd>Follows the song</dd>
+        <dt>Time</dt><dd>About 1 minute</dd>
+      </dl>
+      <button type="button" class="generate easy-make" data-act="easy-make">Make my video</button>
+      <p class="note" id="easy-note">${esc(easy.note || "No ComfyUI? It plays in your browser.")}</p>
+      <p class="side-foot"><a class="ow-badge" href="${esc(media("/licences"))}" title="LTX-2.3 has a revenue threshold. FLUX.2 Klein 9B is non-commercial. This desk uses the Apache 2.0 4B.">Open weights</a></p>
+    </aside>
+  </div>`;
+}
+
+async function easyMake() {
+  const vibe = vibeById(state.easy.vibe);
+  if (!vibe) return;
+  state.easy.phase = "making";
+  state.easy.note = "Reading the song. A few seconds.";
+  state.brief = (state.easy.idea || "").trim() || vibe.line;
+  state.palette = vibe.palette;
+  state.register = vibe.register;
+  state.morphCap = vibe.morph ? 1 : 0;
+  state.energy = energyFromTrack();
+  state.continuous = false;
+  state.quality = "live";
+  render();
+  await planStory();
+  if (!state || !state.easy || state.easy.phase !== "making") return;
+  state.storyApproved = true;
+  await refreshComfy();
+  const blocked = state.logic && state.logic.ok === false;
+  if (!state.comfyOk || blocked) {
+    state.quality = "live";
+    state.easy.phase = "result";
+    state.easy.playedHere = true;
+    state.easy.note = "Playing the pictures for this vibe.";
+    render();
+    return;
+  }
+  state.quality = "turbo";
+  state.testClips = ["0"];
+  state.live = true;
+  state.easy.playedHere = false;
+  state.easy.note = "Cutting a preview, then the GPU pass.";
+  const line = document.getElementById("easy-progress");
+  if (line) line.textContent = state.easy.note;
+  await generate();
+  if (state.easy && state.easy.phase === "making" && state.job && state.job.status === "error") {
+    state.quality = "live";
+    state.easy.phase = "result";
+    state.easy.playedHere = true;
+    state.easy.note = "Playing the pictures for this vibe.";
+    render();
+  }
+}
+
+async function easyBetter() {
+  await runReview();
+  if (state.review && (state.review.findings || []).length) await applyReview(true);
+  if (!state.easy) return;
+  const reviewLine = String((state.review && state.review.summary) || "");
+  state.easy.note = /live|board|gpu|ltx|seed|denoise|turbo|draft|final|comfy/i.test(reviewLine)
+    ? "The cut is a little tighter."
+    : plainWords(reviewLine) || "The cut is a little tighter.";
+  render();
+  if (state.quality === "live" && !(state.easy && state.easy.playedHere)) playLive();
+}
+
+function placeKey(node) {
+  if (!node || node === document.body || node === document.documentElement) return "";
+  if (node.id) return `#${node.id}`;
+  if (!node.dataset || !node.dataset.act) return "";
+  return ["act", node.dataset.act, node.dataset.vibe || "", node.dataset.index || "", node.dataset.quality || "", node.dataset.method || "", node.dataset.step || ""].join(":");
+}
+
+function rememberPlace() {
+  const node = document.activeElement;
+  const place = { y: window.scrollY || 0, key: placeKey(node), start: null, end: null };
+  if (node && node.selectionStart != null) {
+    place.start = node.selectionStart;
+    place.end = node.selectionEnd;
+  }
+  return place;
+}
+
+function restorePlace(place) {
+  if (!place || document.body.dataset.tour === "1") return;
+  if (place.y) window.scrollTo(0, place.y);
+  if (!place.key) return;
+  let node = null;
+  if (place.key.startsWith("#")) node = document.getElementById(place.key.slice(1));
+  else {
+    const parts = place.key.split(":");
+    const act = parts[1];
+    node = [...document.querySelectorAll(`[data-act="${act}"]`)].find((item) => {
+      if (parts[2] && item.dataset.vibe !== parts[2]) return false;
+      if (parts[3] && String(item.dataset.index || "") !== parts[3]) return false;
+      if (parts[4] && item.dataset.quality !== parts[4]) return false;
+      if (parts[5] && item.dataset.method !== parts[5]) return false;
+      if (parts[6] && item.dataset.step !== parts[6]) return false;
+      return true;
+    });
+  }
+  if (!node || !node.focus) return;
+  node.focus({ preventScroll: true });
+  if (place.start != null && node.setSelectionRange) {
+    try {
+      node.setSelectionRange(place.start, place.end);
+    } catch (error) {
+      /* The control does not take a caret. */
+    }
+  }
+}
+
+function render() {
+  const place = rememberPlace();
+  const app = document.getElementById("app");
+  state.view = viewFromHash();
+  const advanced = document.body.dataset.advanced === "1";
+  if (advanced) {
+    state.step = deskStep();
+    document.body.dataset.step = state.step;
+    if (state.view === "scene") {
+      if (state.expanded == null) state.expanded = state.climax == null ? 0 : state.climax;
+    } else if (state.step !== "shots") {
+      state.expanded = null;
+    }
+  } else {
+    document.body.dataset.step = "";
+    if (state.view === "scene") {
+      if (state.expanded == null) state.expanded = state.climax == null ? 0 : state.climax;
+    } else {
+      state.expanded = null;
+    }
+  }
+  document.body.dataset.mode = advanced ? "desk" : "easy";
+  document.querySelectorAll(".views a").forEach((link) => {
+    const current = state.view === "scene" ? "director" : state.view;
+    if (link.dataset.view === current) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
+  });
+  const generate = document.getElementById("generate");
+  generate.disabled = Boolean(state.job && state.job.status === "running");
+  const view = advanced ? renderAdvanced() : renderEasy();
+  app.innerHTML = view;
+  paintRegisters();
+  paintJob();
+  paintReview();
+  requestAnimationFrame(drawWave);
+  mountLive();
+  scheduleSession();
+  document.body.dataset.ready = "1";
+  if (document.getElementById("review-desk")) {
+    document.querySelectorAll("#review-desk video").forEach((video) => {
+      video.play().catch(() => {});
+    });
+    loadFrames();
+  }
+  if (window.XENO_IDEAS) window.XENO_IDEAS.mount();
+  if (window.XENO_TUTORIAL) window.XENO_TUTORIAL.sync();
+  paintGate();
+  scheduleLibrary();
+  scheduleScore();
+  scheduleOpener();
+  restorePlace(place);
+}
+
+function mountLive() {
+  window.XENO_STATE = () => state;
+  if (state && state.easy && state.easy.playedHere && document.getElementById("easy-screen")) {
+    requestAnimationFrame(() => startLibraryCut());
+    return;
+  }
+  if (!state || state.quality !== "live" || !window.XENO_LIVE) return;
+  requestAnimationFrame(() => {
+    if (state && state.quality === "live" && document.getElementById("live-canvas")) window.XENO_LIVE.mount();
+  });
+}
+
+function startLibraryCut() {
+  const screen = document.getElementById("easy-screen");
+  const audio = document.getElementById("live-audio");
+  if (!screen || !audio || !window.XENO_CUT || !state || !state.easy) return;
+  const duration = Number(state.duration || 12);
+  const beats = state.beats || [];
+  const energy = Number(state.energy || 0);
+  const windows = window.XENO_CUT.windows(duration, beats, energy);
+  const drops = (state.sections || []).filter((section) => section.label === "drop").map((section) => Number(section.start) || 0);
+  const morphs = window.XENO_CUT.morphs(windows, energy, drops);
+  const clips = {};
+  screen.querySelectorAll("video").forEach((node) => {
+    clips[node.dataset.shot] = node;
+  });
+  const at = Number(state.easy.playAt || 0);
+  function showAt(time) {
+    if (!windows.length) return;
+    let index = 0;
+    for (let cursor = 0; cursor < windows.length; cursor += 1) {
+      if (time >= windows[cursor][0]) index = cursor;
+    }
+    const shot = window.XENO_CUT.shot(index);
+    const morph = morphs.indexOf(index) >= 0;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const into = windows[index] ? (time - windows[index][0]) / 0.4 : 1;
+    const blending = morph && !reduced && into >= 0 && into < 1;
+    window.XENO_CUT.shots.forEach((id) => {
+      const node = clips[id];
+      if (!node) return;
+      const on = id === shot;
+      node.classList.toggle("on", on);
+      node.style.opacity = on && blending ? String(Math.max(0.15, into)) : "";
+      if (on && node.paused) node.play().catch(() => {});
+    });
+    if (blending) {
+      const previous = clips[window.XENO_CUT.shot(Math.max(0, index - 1))];
+      if (previous) {
+        previous.classList.add("on");
+        previous.style.opacity = String(1 - into);
+      }
+    }
+  }
+  function arm() {
+    if (at > 0 && audio.duration) audio.currentTime = Math.min(at, Math.max(0, audio.duration - 0.05));
+    audio.play().catch(() => {});
+    showAt(audio.currentTime || at || 0);
+  }
+  if (audio.readyState >= 1) arm();
+  else audio.addEventListener("loadedmetadata", arm, { once: true });
+  if (state.easy.cutFrame) cancelAnimationFrame(state.easy.cutFrame);
+  function tick() {
+    if (!document.getElementById("easy-screen")) return;
+    showAt(audio.currentTime || 0);
+    state.easy.cutFrame = requestAnimationFrame(tick);
+  }
+  state.easy.cutFrame = requestAnimationFrame(tick);
+}
+
+function paintGenerate() {
+  const button = document.getElementById("generate");
+  if (!button || !state) return;
+  if (state.quality === "live") {
+    button.disabled = false;
+    button.classList.toggle("is-loading", Boolean(state.recording));
+    button.textContent = state.recording ? "Stop" : "Record";
+    return;
+  }
+  const running = Boolean(state.job && state.job.status === "running");
+  button.disabled = false;
+  button.classList.toggle("is-loading", running);
+  button.textContent = running ? "Generating" : "Generate";
+}
+
+function kindLabel(kind) {
+  if (kind === "rerender") return "Needs a picture";
+  if (kind === "note") return "Note";
+  return "Board fix";
+}
+
+function paintReview() {
+  const slot = document.getElementById("reviewslot");
+  if (!slot) return;
+  const report = state && state.review;
+  if (!report) {
+    slot.innerHTML = "";
+    return;
+  }
+  const findings = report.findings || [];
+  const rows = findings.map((row) => {
+    const change = row.before || row.after
+      ? `<p class="ba"><span>${esc(row.before || "—")}</span> → <span>${esc(row.after || "—")}</span></p>`
+      : "";
+    return `<li>
+      <span class="kind ${esc(row.kind || "cpu")}">${esc(kindLabel(row.kind))}</span>
+      <strong>${esc(row.label || "Board")}</strong>
+      <p>${esc(row.plain || "")}</p>
+      ${change}
+    </li>`;
+  }).join("");
+  const ranked = (report.ranked || [])
+    .filter((row) => row.t != null || ["no-picture", "story-unclear", "loudness", "frame-one", "still-stretch", "cut-beat", "duration", "size", "fps", "clipping", "peak", "contrast", "margins", "harding"].includes(row.id))
+    .map((row) => {
+      const stamp = row.t == null ? "" : `<span class="when">${Number(row.t).toFixed(2)}s</span>`;
+      return `<li><strong>${esc(row.id || "")}</strong> ${stamp}<p>${esc(row.plain || "")}</p></li>`;
+    })
+    .join("");
+  const bar = (report.bar || [])
+    .map((item) => {
+      const mark = !item.measured ? "open" : item.pass ? "pass" : "fail";
+      const word = !item.measured ? "open" : item.pass ? "pass" : "fail";
+      return `<li class="${mark}"><span>${esc(word)}</span> ${esc(item.id || "")} <em>${esc(item.detail || "")}</em></li>`;
+    })
+    .join("");
+  const verdict = report.verdict === "ship" ? "Ship" : report.verdict === "one more pass" ? "One more pass" : "";
+  const retelling = report.retelling ? `<p class="retelling">${esc(report.retelling)}</p>` : "";
+  const actionable = findings.some((row) => row.op && row.op.op);
+  const apply = report.applied || !actionable
+    ? ""
+    : `<button type="button" class="generate${report.busy ? " is-loading" : ""}" data-act="apply-review" ${report.busy ? "disabled" : ""}>Apply all fixes</button>
+       <button type="button" class="ghost${report.busy ? " is-loading" : ""}" data-act="fix-biggest" ${report.busy ? "disabled" : ""}>Fix the biggest</button>`;
+  const undo = report.undo || state.reviewUndoId
+    ? `<button type="button" class="ghost" data-act="undo-review">Undo</button>`
+    : "";
+  slot.innerHTML = `<section class="review" id="review-report">
+    <p class="kicker">Review</p>
+    <h2>${esc(report.summary || "Review")}</h2>
+    ${verdict ? `<p class="verdict">${esc(verdict)}</p>` : ""}
+    ${retelling}
+    ${bar ? `<ul class="bar">${bar}</ul>` : ""}
+    ${ranked ? `<p class="kicker">Fresh eyes</p><ol>${ranked}</ol>` : ""}
+    ${rows ? `<ol>${rows}</ol>` : `<p class="note">Nothing on the board needs a change.</p>`}
+    <div class="review-actions">${apply}${undo}<button type="button" class="text" data-act="dismiss-review">Dismiss</button></div>
+  </section>`;
+}
+
+function reviewBody() {
+  return {
+    audio_id: state.audioId || "demo",
+    quality: state.quality || "live",
+    register: state.register || "pynchon",
+    palette: state.palette || "violet",
+    flash: state.flash || "normal",
+    preset: state.preset || "",
+    sliders: state.sliders || {},
+    scenes: state.scenes || [],
+    motif: state.motif || "",
+    video: state.video || "",
+    continuity: state.continuity || null,
+  };
+}
+
+async function runReview() {
+  if (!state || state.reviewBusy) return;
+  state.reviewBusy = true;
+  state.review = { summary: "Reading the board…", findings: [], busy: true };
+  paintReview();
+  const button = document.getElementById("review-fix");
+  if (button) {
+    button.disabled = true;
+    button.classList.add("is-loading");
+  }
+  try {
+    const response = await api("/api/v1/review", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(reviewBody()),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      state.review = { summary: data.detail || "The review did not finish.", findings: [] };
+    } else {
+      state.review = data;
+      if (data.ledger) state.ledger = data.ledger;
+    }
+  } catch (error) {
+    state.review = { summary: "The review did not finish.", findings: [] };
+  } finally {
+    state.reviewBusy = false;
+    if (button) {
+      button.disabled = false;
+      button.classList.remove("is-loading");
+    }
+    paintReview();
+  }
+}
+
+async function applyReview(biggest = false) {
+  const report = state.review;
+  if (!report || report.busy || report.applied) return;
+  state.reviewUndo = {
+    scenes: JSON.parse(JSON.stringify(state.scenes || [])),
+    flash: state.flash,
+    sliders: { ...(state.sliders || {}) },
+    preset: state.preset || "",
+    blocks: JSON.parse(JSON.stringify(state.blocks || [])),
+  };
+  report.busy = true;
+  report.summary = "Applying the fixes…";
+  paintReview();
+  const response = await api("/api/v1/review/apply", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...reviewBody(), findings: report.findings || [], biggest: !!biggest }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    report.busy = false;
+    report.summary = data.detail || "Those fixes did not apply.";
+    paintReview();
+    return;
+  }
+  state.scenes = data.scenes || state.scenes;
+  state.blocks = data.blocks || state.blocks;
+  state.flash = data.flash || state.flash;
+  state.sliders = data.sliders || state.sliders;
+  state.preset = data.preset || "";
+  state.reviewUndoId = data.undo || "";
+  state.ledger = data.ledger || state.ledger;
+  state.review = {
+    summary: data.summary || "Fixes applied.",
+    findings: data.findings || report.findings || [],
+    ranked: report.ranked || [],
+    bar: report.bar || [],
+    verdict: report.verdict || "",
+    retelling: report.retelling || "",
+    applied: true,
+    undo: data.undo || "",
+  };
+  if (data.job && data.job.id && state.quality !== "live") {
+    state.job = {
+      id: data.job.id,
+      status: "running",
+      progress: 0.02,
+      detail: data.summary || "Queued",
+      mode: "dry-run",
+      quality: state.quality,
+      only_scenes: data.rerender || [],
+    };
+    poll(data.job.id);
+  }
+  render();
+}
+
+async function undoReview() {
+  const snapshot = state.reviewUndo;
+  const versionId = state.reviewUndoId || (state.review && state.review.undo);
+  if (versionId) {
+    const response = await api("/api/v1/revert", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ version_id: versionId }),
+    });
+    if (response.ok) {
+      const data = await response.json();
+      if (data.scenes) state.scenes = data.scenes;
+      if (data.blocks) state.blocks = data.blocks;
+      if (data.flash) state.flash = data.flash;
+      if (data.sliders) state.sliders = data.sliders;
+    }
+  }
+  if (snapshot) {
+    state.scenes = snapshot.scenes;
+    state.flash = snapshot.flash;
+    state.sliders = snapshot.sliders;
+    state.preset = snapshot.preset;
+    state.blocks = snapshot.blocks;
+  }
+  state.review = { summary: "Undone. The board is back where it was.", findings: [], applied: true };
+  state.reviewUndo = null;
+  state.reviewUndoId = "";
+  render();
+}
+
+let sessionRevision = 0;
+let skipPush = false;
+
+function sessionBody() {
+  return {
+    source: "ui",
+    audio_id: state.audioId,
+    title: state.title,
+    brief: state.brief || "",
+    register: state.register,
+    preset: state.preset || "",
+    quality: state.quality,
+    palette: state.palette,
+    flash: state.flash,
+    sliders: state.sliders,
+    scenes: state.scenes,
+    blocks: state.blocks,
+    cards: state.cards,
+    motif: state.motif || "",
+    callback: state.callback || "",
+    video: state.video || "",
+    recipe: state.recipe || "",
+  };
+}
+
+function scheduleSession() {
+  if (skipPush) {
+    skipPush = false;
+    return;
+  }
+  clearTimeout(scheduleSession.timer);
+  scheduleSession.timer = setTimeout(pushSession, 250);
+}
+
+async function pushSession() {
+  if (!state) return;
+  const response = await api("/api/v1/session", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(sessionBody()),
+  });
+  if (!response.ok) return;
+  const data = await response.json();
+  if (data.revision) sessionRevision = data.revision;
+}
+
+function adoptAgent(data) {
+  skipPush = true;
+  sessionRevision = data.revision || sessionRevision;
+  if (Array.isArray(data.scenes) && data.scenes.length) {
+    state.scenes = data.scenes;
+    state.board = data.scenes.map((scene) => ({ ...scene }));
+  }
+  if (Array.isArray(data.blocks) && data.blocks.length) state.blocks = data.blocks;
+  if (data.register) state.register = data.register;
+  if (data.palette) state.palette = data.palette;
+  if (data.flash) state.flash = data.flash;
+  if (data.quality) state.quality = data.quality;
+  if (data.sliders && Object.keys(data.sliders).length) state.sliders = data.sliders;
+  if (data.preset != null) state.preset = data.preset;
+  if (data.brief != null) state.brief = data.brief;
+  if (Array.isArray(data.cards) && data.cards.length) state.cards = data.cards;
+  if (data.motif != null) state.motif = data.motif;
+  if (data.callback != null) state.callback = data.callback;
+}
+
+async function pollAgent() {
+  if (!state) return;
+  const focused = document.activeElement && ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName);
+  if (focused) return;
+  const response = await api("/api/v1/session");
+  if (!response.ok) return;
+  const data = await response.json();
+  if (data.source === "agent" && Number(data.revision) > sessionRevision) {
+    adoptAgent(data);
+    render();
+  }
+}
+
+async function testMcp() {
+  const response = await api("/api/v1/mcp/status");
+  state.mcp = response.ok ? await response.json() : { running: false, detail: "The desk did not answer." };
+  if (state.view === "connect") render();
+}
+
+async function startMcp() {
+  state.mcpBusy = true;
+  if (state.view === "connect") render();
+  const response = await api("/api/v1/mcp/start", { method: "POST" });
+  state.mcp = response.ok ? await response.json() : { running: false, detail: "The agent port did not start." };
+  if (state.view === "connect") render();
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    const status = await api("/api/v1/mcp/status");
+    if (!status.ok) continue;
+    state.mcp = await status.json();
+    const node = document.getElementById("mcp-status");
+    if (node && state.mcp) {
+      node.textContent = state.mcp.detail || "";
+      node.dataset.running = state.mcp.running ? "yes" : "no";
+    }
+    if (state.mcp.running) break;
+  }
+  state.mcpBusy = false;
+  if (state.view === "connect") render();
+}
+
+function paintJob() {
+  const slot = document.getElementById("jobslot");
+  const job = state && state.job;
+  paintGenerate();
+  if (!job) {
+    if (slot) slot.innerHTML = "";
+    return;
+  }
+  if (!slot) return;
+  const width = Math.round((job.progress || 0) * 100);
+  const mode = job.mode === "live" ? "Live" : "Dry run";
+  if (job.status === "cancelled") {
+    slot.innerHTML = `<div class="jobbar"><strong>Stopped</strong><span>${esc(job.detail || "Cancelled. The card changed.")}</span></div>`;
+    return;
+  }
+  if (job.status === "error") {
+    slot.innerHTML = `<div class="jobbar error"><strong>Cut failed</strong><span>${esc(job.error || job.detail || "")}</span><button type="button" class="text" data-act="copy-job">Copy diagnostics</button></div>`;
+    return;
+  }
+  const note = job.tier_note ? ` ${job.tier_note}` : "";
+  const label = (job.status === "done" ? "Cut ready" : job.detail || "Working") + note;
+  slot.innerHTML = `<div class="jobbar"><strong>${mode}</strong><span>${esc(label)}</span><div class="track"><span style="width:${width}%"></span></div></div>`;
+}
+
+const SECTION_COLOR = {
+  calm: "#eef0fb",
+  build: "#e4e4e7",
+  drop: "#f8d7cf",
+  release: "#e5f0e8",
+  sustain: "#f4f4f5",
+};
+
+function drawWave() {
+  const canvas = document.getElementById("wave");
+  if (!canvas || !state) return;
+  const dpr = window.devicePixelRatio || 1;
+  const width = canvas.clientWidth || 320;
+  const height = canvas.clientHeight || 168;
+  canvas.width = Math.round(width * dpr);
+  canvas.height = Math.round(height * dpr);
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = "#f4f4f5";
+  ctx.fillRect(0, 0, width, height);
+  const duration = state.duration || 1;
+  for (const section of state.sections) {
+    const x = (section.start / duration) * width;
+    const w = ((section.end - section.start) / duration) * width;
+    ctx.fillStyle = SECTION_COLOR[section.label] || "#e4e4e7";
+    ctx.fillRect(x, 0, w, height);
+  }
+  for (const drop of state.drops) {
+    const x = (drop.start / duration) * width;
+    const w = Math.max(2, ((drop.end - drop.start) / duration) * width);
+    ctx.fillStyle = "rgba(232, 81, 46, 0.85)";
+    ctx.fillRect(x, 0, w, 8);
+  }
+  const peaks = state.waveform.length ? state.waveform : [0.2];
+  ctx.beginPath();
+  ctx.strokeStyle = "#2e2752";
+  ctx.lineWidth = 1.25;
+  peaks.forEach((peak, index) => {
+    const x = (index / Math.max(peaks.length - 1, 1)) * width;
+    const y = height * 0.86 - peak * (height * 0.68);
+    if (index === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  ctx.strokeStyle = "#5560dd";
+  ctx.lineWidth = 1;
+  for (const beat of state.beats) {
+    const x = (beat / duration) * width;
+    ctx.beginPath();
+    ctx.moveTo(x, height - 10);
+    ctx.lineTo(x, height - 2);
+    ctx.stroke();
+  }
+}
+
+function scheduleRecipe() {
+  clearTimeout(scheduleRecipe.timer);
+  scheduleRecipe.timer = setTimeout(refreshRecipe, 160);
+}
+
+async function refreshRecipe() {
+  if (!state) return;
+  const response = await api("/api/recipe/encode", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload()),
+  });
+  if (!response.ok) return;
+  const data = await response.json();
+  state.recipe = data.recipe;
+  document.querySelectorAll("#recipe-out").forEach((node) => {
+    node.textContent = data.recipe;
+  });
+}
+
+function applyPreset(preset) {
+  state.preset = preset.id;
+  if (!state.locks.quality) state.quality = preset.quality;
+  for (const key of Object.keys(preset.sliders)) {
+    if (!state.locks[key]) state.sliders[key] = preset.sliders[key];
+  }
+}
+
+let planTimer = 0;
+
+async function planStory(extra = {}) {
+  if (!state) return;
+  const body = payload();
+  if (extra.scenes) body.scenes = extra.scenes;
+  if (extra.rolls) body.rolls = extra.rolls;
+  if (extra.climax != null) body.climax = extra.climax;
+  if (extra.treatment) body.treatment = extra.treatment;
+  const response = await api("/api/story", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await response.json();
+  if (!response.ok) return;
+  const active = document.activeElement;
+  const activeId = active && active.id;
+  const caret = active && typeof active.selectionStart === "number" ? active.selectionStart : null;
+  state.board = data.scenes;
+  state.scenes = data.scenes;
+  state.blocks = data.blocks;
+  state.climax = data.climax;
+  state.planner = data.planner;
+  state.storyApproved = false;
+  state.heldBoard = null;
+  if (data.treatments) state.treatments = data.treatments;
+  if (data.bible) state.bible = data.bible;
+  if (data.treatment) state.treatment = data.treatment;
+  if (data.continuity) state.continuity = data.continuity;
+  if (data.logic) state.logic = data.logic;
+  await settleCut({ full: true });
+  if (activeId) {
+    const next = document.getElementById(activeId);
+    if (next) {
+      next.focus();
+      if (caret != null && next.setSelectionRange) next.setSelectionRange(caret, caret);
+    }
+  }
+  scheduleRecipe();
+}
+
+function queuePlan(delay = 280) {
+  clearTimeout(planTimer);
+  planTimer = setTimeout(() => planStory(), delay);
+}
+
+let ignoreJob = null;
+
+function cancelStale() {
+  const job = state && state.job;
+  if (!job || job.status !== "running" || !job.id) return;
+  ignoreJob = job.id;
+  state.job = Object.assign({}, job, { status: "cancelled", detail: "Cancelled. The card changed." });
+  paintJob();
+  api(`/api/jobs/${job.id}/cancel`, { method: "POST" }).catch(() => {});
+}
+
+function touchScene(index, key, value) {
+  const scene = state.scenes[index];
+  if (!scene) return;
+  scene[key] = value;
+  scene.edited = true;
+  if (key === "bars") {
+    const bar = Number(scene.bar_seconds) || 2;
+    scene.hold = Math.round(Number(value) * bar * 100) / 100;
+  }
+  if (key === "edit" && (value === "hard cut" || value === "snap")) {
+    scene.signature = false;
+    scene.conditioning = "first-frame";
+  }
+  const source = state.board && state.board.length ? state.board[index % state.board.length] : null;
+  if (source && source !== scene) {
+    source[key] = value;
+    source.edited = true;
+  }
+  if (key === "action" || key === "shot" || key === "move" || key === "mood" || key === "verb" || key === "protagonist" || key === "edit") {
+    const shotWord = { wide: "Wide shot", medium: "Medium shot", close: "Close shot", reveal: "Reveal", macro: "Macro shot", overhead: "Overhead shot", tracking: "Tracking shot" }[scene.shot] || "Wide shot";
+    const who = scene.protagonist || "the subject";
+    const verb = scene.verb || "moves";
+    if (scene.signature) {
+      scene.guide = `Signature transition. ${shotWord} of ${who}. Action: ${verb}. ${scene.action}. Camera ${scene.move}. ${scene.mood} light.`;
+    } else {
+      scene.guide = `First frame only. ${shotWord} of ${who}. Action: ${verb}. ${scene.action}. Camera ${scene.move}. Hard cut on the bar. ${scene.mood} light.`;
+    }
+  }
+  cancelStale();
+  scheduleRecipe();
+}
+
+function randomise() {
+  if (state.locks.script) {
+    const hint = document.getElementById("recipe-hint");
+    if (hint) hint.textContent = "The storyboard is locked.";
+    return;
+  }
+  planStory({ rolls: 6, scenes: [] });
+}
+
+async function copyRecipe() {
+  const hint = document.getElementById("recipe-hint");
+  try {
+    await navigator.clipboard.writeText(state.recipe);
+    if (hint) hint.textContent = "Copied.";
+  } catch {
+    if (hint) hint.textContent = state.recipe;
+  }
+}
+
+async function restoreRecipe() {
+  const input = document.getElementById("recipe-in");
+  const hint = document.getElementById("recipe-hint");
+  const recipe = (input && input.value.trim()) || "";
+  if (!recipe) {
+    if (hint) hint.textContent = "Paste a code first.";
+    return;
+  }
+  const response = await api("/api/recipe/decode", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ recipe }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    if (hint) hint.textContent = data.detail || "That code did not restore.";
+    return;
+  }
+  state.preset = data.preset;
+  state.quality = data.quality;
+  state.sliders = data.sliders;
+  state.locks = data.locks;
+  state.blocks = data.blocks;
+  state.register = data.register || "";
+  state.palette = data.palette || "neutral";
+  state.flash = data.flash || "normal";
+  state.cards = data.cards || [];
+  state.brief = data.brief || "";
+  state.scenes = data.scenes || state.scenes;
+  state.motif = data.motif || "";
+  state.callback = data.callback || "";
+  state.climax = data.climax;
+  state.customs = (data.customs || []).map((form) => ({
+    ...form,
+    svg: "",
+    blurb: form.blurb,
+  }));
+  state.recipe = data.recipe;
+  state.selected = 0;
+  if (hint) hint.textContent = "Restored.";
+  render();
+}
+
+async function addNoun() {
+  const input = document.getElementById("noun");
+  const noun = (input && input.value.trim()) || "";
+  if (!noun) return;
+  const id = `c${state.customs.length}`;
+  state.customs.push({
+    id,
+    noun,
+    name: noun,
+    kind: "noun",
+    blurb: "Named on this desk.",
+    accent: "#e7d7c3",
+  });
+  if (state.register === "custom" && !state.locks.script) state.blocks = customScript();
+  else if (state.blocks[state.selected]) state.blocks[state.selected].form = id;
+  render();
+  scheduleRecipe();
+}
+
+async function uploadForm(file) {
+  const body = new FormData();
+  body.append("file", file);
+  const response = await api("/api/forms", { method: "POST", body });
+  const data = await response.json();
+  if (!response.ok) {
+    window.alert(data.detail || "That picture did not attach.");
+    return;
+  }
+  state.customs.push(data);
+  if (state.register === "custom" && !state.locks.script) state.blocks = customScript();
+  else if (state.blocks[state.selected]) state.blocks[state.selected].form = data.id;
+  render();
+  scheduleRecipe();
+}
+
+async function useDemoSong() {
+  const note = document.getElementById("song-note");
+  if (note) note.textContent = "Using the bundled demo, examples/demo.wav.";
+  if (state && state.easy && document.body.dataset.advanced !== "1") {
+    state.easy.song = "demo";
+    state.easy.songLabel = "Bundled demo";
+    state.easy.note = "";
+    if (!state.easy.phase || state.easy.phase === "song" || state.easy.phase === "choose") state.easy.phase = "vibe";
+  }
+  if (!state || state.audioId === "demo") {
+    if (document.body.dataset.advanced !== "1") render();
+    return;
+  }
+  const response = await api("/api/demo");
+  if (!response.ok) return;
+  adoptSession(await response.json());
+  await settleCut({ full: true });
+}
+
+async function uploadSong(file) {
+  if (state && state.easy) {
+    state.easy.song = "file";
+    state.easy.songLabel = file.name;
+    state.easy.note = "";
+    if (!state.easy.phase || state.easy.phase === "song" || state.easy.phase === "choose") state.easy.phase = "vibe";
+  }
+  const app = document.getElementById("app");
+  app.innerHTML = `<p class="boot">Reading ${esc(file.name)}…</p>`;
+  const body = new FormData();
+  body.append("file", file);
+  const response = await api("/api/analyze", { method: "POST", body });
+  const data = await response.json();
+  if (!response.ok) {
+    app.innerHTML = `<div class="error-panel"><h2>That song did not open.</h2><p>${esc(data.detail || "Analysis failed.")}</p></div>`;
+    document.body.dataset.ready = "1";
+    return;
+  }
+  if (state && state.board && state.board.length) state.heldBoard = JSON.parse(JSON.stringify(state.board));
+  adoptSession(data, { keepScript: state.locks.script, keepLook: state.locks.preset });
+  await settleCut({ full: true });
+}
+
+function adoptSession(data, options = {}) {
+  const previous = state;
+  state = {
+    view: viewFromHash(),
+    audioId: data.audio_id,
+    title: data.title,
+    duration: data.duration,
+    tempo: data.tempo,
+    fps: data.fps,
+    waveform: data.waveform,
+    beats: data.beats,
+    drops: data.drops,
+    sections: data.sections,
+    forms: data.forms.filter((form) => form.kind === "preset"),
+    customs: options.keepScript && previous ? previous.customs : data.customs || [],
+    presets: data.presets,
+    transitions: data.transitions,
+    blocks: options.keepScript && previous ? previous.blocks : data.blocks,
+    selected: 0,
+    sliders: options.keepLook && previous ? previous.sliders : data.sliders,
+    locks: previous ? previous.locks : data.locks,
+    quality: options.keepLook && previous ? previous.quality : data.quality || "live",
+    etas: data.etas || (previous && previous.etas) || null,
+    audioUrl: data.audio_url || (previous && previous.audioUrl) || "",
+    drive: data.drive || null,
+    liveAiRequested: previous ? !!previous.liveAiRequested : false,
+    liveAiPresent: previous ? !!previous.liveAiPresent : false,
+    interpolate: previous ? !!previous.interpolate : false,
+    guideId: previous ? previous.guideId || "" : "",
+    recording: previous ? !!previous.recording : false,
+    takes: previous ? previous.takes || [] : [],
+    testClips: previous ? previous.testClips || [] : [],
+    onlyScenes: previous ? previous.onlyScenes || [] : [],
+    textOnly: previous ? !!previous.textOnly : false,
+    frameUrls: previous ? previous.frameUrls || {} : {},
+    lyricOn: previous ? !!previous.lyricOn : false,
+    lyricOffset: previous ? Number(previous.lyricOffset || 0.9) : 0.9,
+    lyricWords: previous ? previous.lyricWords || [] : [],
+    lyricNote: previous ? previous.lyricNote || "" : "",
+    lyricDraft: previous ? previous.lyricDraft || "" : "",
+    gateReason: "",
+    continuity: null,
+    continuityKey: "",
+    logic: null,
+    energy: previous ? Number(previous.energy || 0) : 0,
+    continuous: previous ? !!previous.continuous : false,
+    heroId: previous ? previous.heroId || "" : "",
+    heroUrl: previous ? previous.heroUrl || "" : "",
+    storyApproved: options.keepScript && previous ? !!previous.storyApproved : false,
+    storyNudge: false,
+    titleText: previous ? previous.titleText || "" : "",
+    endText: previous ? previous.endText || "" : "",
+    styleNote: previous ? previous.styleNote || "" : "",
+    transitionNote: previous ? previous.transitionNote || "" : "",
+    easy: previous && previous.easy
+      ? previous.easy
+      : { song: "", songLabel: "", vibe: "", idea: "", phase: "song", note: "", playedHere: false },
+    morphCap: previous && previous.morphCap != null ? previous.morphCap : null,
+    heldBoard: previous ? previous.heldBoard : null,
+    board: options.keepScript && previous && previous.board ? previous.board : (data.scenes || []).map((scene) => ({ ...scene })),
+    qa: null,
+    grid: null,
+    story: null,
+    preset: options.keepLook && previous ? previous.preset : data.preset,
+    registers: data.registers || (previous && previous.registers) || [],
+    scripts: data.scripts || {},
+    register: options.keepScript && previous ? previous.register : data.register || "pynchon",
+    palette: options.keepScript && previous ? previous.palette : data.palette || "violet",
+    flash: options.keepScript && previous ? previous.flash : data.flash || "normal",
+    cards: options.keepScript && previous ? previous.cards : data.cards || [],
+    brief: options.keepScript && previous ? previous.brief : data.brief || "",
+    scenes: options.keepScript && previous ? previous.scenes : data.scenes || [],
+    motif: options.keepScript && previous ? previous.motif : data.motif || "",
+    callback: options.keepScript && previous ? previous.callback : data.callback || "",
+    climax: options.keepScript && previous ? previous.climax : data.climax,
+    planner: data.planner || "template",
+    treatments: options.keepScript && previous ? previous.treatments : data.treatments || [],
+    bible: options.keepScript && previous ? previous.bible : data.bible || null,
+    treatment: options.keepScript && previous ? previous.treatment : data.treatment || "",
+    ledger: previous ? previous.ledger : [],
+    ledgerMarkdown: previous ? previous.ledgerMarkdown : "",
+    shots: data.shots || ["wide", "close", "macro", "overhead", "tracking"],
+    moves: data.moves || ["push in", "pull back", "orbit", "follow", "hold"],
+    edits: data.edits || ["dissolve", "hard cut", "continuous", "pour-harden", "droplet-burst", "ribbon", "snap", "grow-out"],
+    moods: data.moods || ["dawn", "neon", "storm", "cold", "forge", "night", "marble", "void"],
+    expanded: viewFromHash() === "scene" ? (data.climax == null ? 0 : data.climax) : null,
+    step: previous && previous.step ? previous.step : "song",
+    morphMethod: previous && previous.morphMethod ? previous.morphMethod : "keyframe-blend",
+    morphFast: previous ? !!previous.morphFast : false,
+    morphHit: previous && previous.morphHit != null ? previous.morphHit !== false : readMorphHit(),
+    morphReport: previous ? previous.morphReport : null,
+    libraryFolder: previous && previous.libraryFolder != null ? previous.libraryFolder : readLibraryFolder(),
+    excludeFaces: previous && previous.excludeFaces != null ? previous.excludeFaces : readExcludeFaces(),
+    allowPdUs: previous && previous.allowPdUs != null ? !!previous.allowPdUs : readAllowPdUs(),
+    libraryPins: previous && previous.libraryPins ? previous.libraryPins.slice() : readIdList("xeno-library-pins"),
+    libraryBans: previous && previous.libraryBans ? previous.libraryBans.slice() : readIdList("xeno-library-bans"),
+    libraryTag: previous ? previous.libraryTag || "" : "",
+    libraryItems: previous ? previous.libraryItems : null,
+    libraryPick: previous ? previous.libraryPick : null,
+    libraryNote: previous ? previous.libraryNote || "" : "",
+    score: previous ? previous.score || null : null,
+    videoModel: previous && previous.videoModel ? previous.videoModel : readVideoModel(),
+    live: previous ? previous.live : false,
+    addons: previous && previous.addons != null ? !!previous.addons : readAddons(),
+    endpoint: data.endpoint || (previous && previous.endpoint) || "",
+    recipe: data.recipe,
+    opener: previous && previous.audioId === data.audio_id ? previous.opener || null : null,
+    video: data.video || (previous && previous.video) || "",
+    videoLabel: data.video ? data.video_label || "Reference base form" : "No picture yet",
+    reference: data.reference || "",
+    job: previous ? previous.job : null,
+    note: previous ? previous.note : "",
+    pending: previous ? previous.pending : null,
+    suggestions: previous ? previous.suggestions : [],
+    versions: previous ? previous.versions : [],
+    versionId: previous ? previous.versionId : null,
+    flipId: previous ? previous.flipId : null,
+    notesOpen: viewFromHash() === "notes",
+    noteStatus: previous ? previous.noteStatus : "",
+    noteBusy: false,
+    lessonOffer: previous ? previous.lessonOffer : null,
+    savedLessons: previous ? previous.savedLessons : [],
+  };
+  if (!state.video && data.audio_id === "demo") {
+    state.video = "/media/demo";
+    state.videoLabel = "Reference base form";
+  }
+}
+
+function showEasyPreview(url) {
+  const monitor = document.querySelector(".easy-making .monitor");
+  if (!monitor || !url) return;
+  const src = media(url);
+  let video = monitor.querySelector("video.easy-preview");
+  if (!video) {
+    video = document.createElement("video");
+    video.className = "easy-preview";
+    video.muted = true;
+    video.playsInline = true;
+    video.autoplay = true;
+    video.loop = true;
+    monitor.prepend(video);
+  }
+  if (video.getAttribute("src") !== src) {
+    video.src = src;
+    video.play().catch(() => {});
+  }
+}
+
+function watchJob(job) {
+  if (!job || !job.video) return;
+  const version = job.video_version || 0;
+  if (version && version === state.videoVersion) return;
+  state.videoVersion = version;
+  state.video = job.video;
+  state.previewUrl = "";
+  state.previewNote = "";
+  state.videoLabel = job.status === "done"
+    ? (state.quality === "turbo" ? "Turbo animatic" : (job.mode === "live" ? "Live cut" : "Dry-run cut"))
+    : (job.detail || "Preview");
+  state.reference = job.status === "done" ? "This pass" : "Preview";
+  const player = document.getElementById("player");
+  if (player) {
+    const next = media(job.video);
+    if (player.getAttribute("src") !== next) player.src = next;
+  }
+  const caption = document.querySelector(".caption");
+  if (caption) caption.innerHTML = `<b>${esc(qualityLabel(state.quality))}</b> · seed 2727 · ${esc(state.videoLabel)}`;
+}
+
+let cutTimer = 0;
+
+function patchCut() {
+  document.querySelectorAll(".shotlist").forEach((list) => {
+    list.innerHTML = shotRows();
+  });
+  const sceneGrid = document.querySelector(".scene-grid");
+  if (sceneGrid) sceneGrid.innerHTML = sceneCards();
+  const beat = document.getElementById("beat-grid");
+  if (beat) beat.innerHTML = beatGridInner();
+  const report = document.getElementById("qa-panel");
+  if (report) report.innerHTML = qaInner();
+  const story = document.getElementById("story-body");
+  if (story) story.innerHTML = storyInner();
+  const gate = document.getElementById("story-gate");
+  if (gate) gate.textContent = gateCopy();
+  const approve = document.getElementById("approve-story");
+  if (approve) approve.textContent = state.storyApproved ? "Approved" : "Approve shot list";
+  if (window.XENO_TUTORIAL) window.XENO_TUTORIAL.reposition();
+}
+
+async function settleCut(options = {}) {
+  if (!state) return;
+  if (!state.board || !state.board.length) {
+    if (options.full) render();
+    return;
+  }
+  const token = (settleCut.token = (settleCut.token || 0) + 1);
+  let data = null;
+  try {
+    const response = await api("/api/recut", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        audio_id: state.audioId || "demo",
+        energy: Number(state.energy || 0),
+        continuous: !!state.continuous,
+        hero_image: state.heroUrl || "",
+        flash: state.flash || "normal",
+        brief: state.brief || "",
+        quality: state.quality || "live",
+        morph_cap: state.morphCap == null ? null : state.morphCap,
+        scenes: state.board,
+      }),
+    });
+    data = await response.json();
+    if (!response.ok) data = null;
+  } catch (error) {
+    data = null;
+  }
+  if (token !== settleCut.token) return;
+  if (data && data.scenes) {
+    state.scenes = data.scenes;
+    if (data.blocks) state.blocks = data.blocks;
+    state.grid = data.grid;
+    state.qa = data.qa;
+    state.story = data.story;
+    if (data.continuity) state.continuity = data.continuity;
+    if (data.logic) state.logic = data.logic;
+    scheduleRecipe();
+    loadContinuity();
+  }
+  if (options.full || !document.getElementById("beat-grid")) render();
+  else patchCut();
+}
+
+function queueCut(delay = 40) {
+  clearTimeout(cutTimer);
+  cutTimer = setTimeout(() => settleCut(), delay);
+}
+
+function forgetApproval() {
+  state.storyApproved = false;
+  const gate = document.getElementById("story-gate");
+  if (gate) gate.textContent = gateCopy();
+  const approve = document.getElementById("approve-story");
+  if (approve) approve.textContent = "Approve shot list";
+}
+
+function parseLyricDraft(text) {
+  const words = [];
+  for (const line of String(text || "").split(/\n+/)) {
+    const parts = line.trim().split(/\s+/);
+    if (parts.length < 3) continue;
+    const end = Number(parts.pop());
+    const start = Number(parts.pop());
+    const word = parts.join(" ");
+    if (!word || !Number.isFinite(start) || !Number.isFinite(end)) continue;
+    words.push({ word, start, end });
+  }
+  return words;
+}
+
+let lyricTimer = 0;
+
+function queueLyrics() {
+  clearTimeout(lyricTimer);
+  lyricTimer = setTimeout(alignLyrics, 280);
+}
+
+async function alignLyrics() {
+  if (!state || !state.lyricOn) return;
+  const token = (alignLyrics.token = (alignLyrics.token || 0) + 1);
+  let data = null;
+  try {
+    const response = await api("/api/timing", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        audio_id: state.audioId || "demo",
+        lyrics: true,
+        offset: Number(state.lyricOffset || 0.9),
+        words: parseLyricDraft(state.lyricDraft),
+      }),
+    });
+    data = await response.json();
+    if (!response.ok) data = null;
+  } catch (error) {
+    data = null;
+  }
+  if (!state || token !== alignLyrics.token || !state.lyricOn) return;
+  if (!data) return;
+  state.lyricWords = data.lyrics || [];
+  state.lyricNote = data.note || "";
+  const line = document.querySelector("#timing-panel .lyric-line");
+  const note = document.querySelector("#timing-panel .note");
+  if (line) line.innerHTML = (state.lyricWords || []).map((word) => `<i>${esc(word.word)}</i>`).join(" ");
+  if (note) note.textContent = `Off by default. Local open weights only. Whisper runs 0.3–1.5s early, so a correction offset moves the words later. ${state.lyricNote || ""}`;
+}
+
+async function remakeShot(index, fresh) {
+  if (!state || !(state.scenes || [])[index]) return;
+  const scene = state.scenes[index];
+  const prompt = scene.prompt || scene.guide || scene.action || "";
+  let takes = (state.takes || []).map((take) => ({ ...take }));
+  if (fresh && !takes.some((take) => take.scene === index)) {
+    takes.push({ id: `s${index}-2727`, scene: index, seed: 2727, prompt, picked: false, repeated: false });
+  }
+  const owned = takes.filter((take) => take.scene === index).map((take) => Number(take.seed));
+  const seed = fresh ? Math.max(2727, ...owned, takeSeed(index)) + 1 : takeSeed(index);
+  let data = null;
+  try {
+    const response = await api("/api/review/remake", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ scene: index, seed, prompt, takes }),
+    });
+    data = await response.json();
+    if (!response.ok) data = null;
+  } catch (error) {
+    data = null;
+  }
+  if (!data || !state) return;
+  state.takes = data.takes || takes;
+  state.onlyScenes = data.only_scenes || [`s${index}`];
+  state.textOnly = data.text_only !== false;
+  state.gateReason = "";
+  const key = `${index}:${seed}`;
+  const previous = (state.frameUrls || {})[key];
+  if (previous && String(previous).startsWith("blob:")) URL.revokeObjectURL(previous);
+  delete state.frameUrls[key];
+  render();
+}
+
+function pickTake(index, seed) {
+  if (!state) return;
+  state.takes = (state.takes || []).map((take) => (
+    take.scene === index ? { ...take, picked: Number(take.seed) === seed } : take
+  ));
+  render();
+}
+
+function toggleTestClip(index, on) {
+  if (!state) return;
+  const id = String(index);
+  let clips = (state.testClips || []).filter((item) => item !== id);
+  if (on) {
+    clips.push(id);
+    if (clips.length > 2) clips = clips.slice(-2);
+  }
+  state.testClips = clips;
+  state.gateReason = "";
+  const gate = document.getElementById("story-gate");
+  if (gate) gate.textContent = gateCopy();
+  document.querySelectorAll("[data-act='test-clip']").forEach((box) => {
+    box.checked = state.testClips.includes(String(box.dataset.index));
+  });
+  paintGate();
+}
+
+async function loadFrames() {
+  if (!state || !document.getElementById("review-desk")) return;
+  const token = (loadFrames.token = (loadFrames.token || 0) + 1);
+  const inflight = loadFrames.inflight || (loadFrames.inflight = new Set());
+  const jobs = (state.scenes || []).map((scene, index) => {
+    const seed = takeSeed(index);
+    return {
+      index,
+      seed,
+      shot: scene.shot || "wide",
+      prompt: scene.prompt || scene.guide || scene.action || "",
+      key: `${index}:${seed}`,
+    };
+  });
+  await Promise.all(jobs.map(async (job) => {
+    if ((state.frameUrls || {})[job.key] || inflight.has(job.key)) return;
+    inflight.add(job.key);
+    try {
+      const response = await api("/api/review/frame", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ seed: job.seed, shot: job.shot, prompt: job.prompt, scene: job.index }),
+      });
+      if (!response.ok || token !== loadFrames.token || !state) return;
+      const blob = await response.blob();
+      if (token !== loadFrames.token || !state) return;
+      const url = URL.createObjectURL(blob);
+      state.frameUrls[job.key] = url;
+      const shots = document.querySelectorAll("#review-desk .review-shot");
+      const figure = shots[job.index] && shots[job.index].querySelector("figure");
+      if (!figure) return;
+      const img = document.createElement("img");
+      img.alt = `Keyframe ${job.index + 1}`;
+      img.src = url;
+      const wait = figure.querySelector(".frame-wait");
+      if (wait) wait.replaceWith(img);
+      else {
+        const existing = figure.querySelector("img");
+        if (existing) existing.src = url;
+      }
+    } catch (error) {
+      /* The keyframe placeholder stays until the next pass. */
+    } finally {
+      inflight.delete(job.key);
+    }
+  }));
+}
+
+async function loadContinuity() {
+  if (!state || !state.continuity || !(state.continuity.elements || []).length) return;
+  const key = (state.continuity.elements || []).map((element) => element.sentence || "").join("|");
+  if (state.continuityKey === key && (state.continuity.elements || []).every((element) => element.url)) return;
+  const token = (loadContinuity.token = (loadContinuity.token || 0) + 1);
+  let data = null;
+  try {
+    const response = await api("/api/continuity/stills", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ elements: state.continuity.elements, scenes: state.scenes || [] }),
+    });
+    data = await response.json();
+    if (!response.ok) data = null;
+  } catch (error) {
+    data = null;
+  }
+  if (!state || token !== loadContinuity.token || !data) return;
+  state.continuity = { ...(state.continuity || {}), elements: data.elements || [] };
+  state.continuityKey = key;
+  const byId = Object.fromEntries((data.elements || []).map((element) => [element.id, element]));
+  for (const scene of state.scenes || []) {
+    const ids = scene.element_ids || [];
+    const prop = ids.map((id) => byId[id]).find((element) => element && element.kind === "prop");
+    const chosen = prop || byId[ids[0]] || null;
+    if (!chosen || !chosen.still_name) continue;
+    scene.still_name = chosen.still_name;
+    scene.reference_url = chosen.url || "";
+    if (scene.guide_from !== "previous-last") scene.guide_from = "reference";
+  }
+  const card = document.getElementById("continuity-card");
+  if (card) {
+    const fresh = continuityInner();
+    const holder = document.createElement("div");
+    holder.innerHTML = fresh;
+    const next = holder.firstElementChild;
+    if (next) card.replaceWith(next);
+  }
+  if (window.XENO_TUTORIAL) window.XENO_TUTORIAL.reposition();
+}
+
+async function shareCut(button) {
+  if (!state) return;
+  const job = state.job && state.job.id ? `?job=${encodeURIComponent(state.job.id)}` : "";
+  if (button) button.classList.add("is-loading");
+  try {
+    const response = await api(`/api/share${job}`);
+    if (!response.ok) return;
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "xenoform-720.mp4";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  } finally {
+    if (button && button.isConnected) button.classList.remove("is-loading");
+  }
+}
+
+function showGate(reason) {
+  state.storyNudge = true;
+  state.gateReason = reason || "";
+  const gate = document.getElementById("story-gate");
+  if (gate) gate.textContent = gateCopy();
+  paintGate();
+}
+
+async function generate() {
+  if (state.quality !== "live" && !state.storyApproved) {
+    showGate("");
+    return;
+  }
+  if (state.quality !== "live" && state.logic && state.logic.ok === false) {
+    showGate(state.logic.detail || "The story has to hold in one line before a render.");
+    return;
+  }
+  if (state.quality !== "live" && !state.textOnly) {
+    const approved = state.testClips || [];
+    if (approved.length < 1 || approved.length > 2) {
+      showGate("Approve 1 or 2 test clips before the full batch.");
+      return;
+    }
+  }
+  if (state.job && state.job.status === "running" && state.job.id) {
+    ignoreJob = state.job.id;
+    api(`/api/jobs/${state.job.id}/cancel`, { method: "POST" }).catch(() => {});
+  }
+  state.job = {
+    status: "running",
+    stage: "analyze",
+    progress: 0.02,
+    detail: "Starting",
+    mode: state.live ? "live" : "dry-run",
+    quality: state.quality,
+    error: null,
+  };
+  render();
+  const response = await api("/api/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload()),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    state.job = { status: "error", stage: "analyze", progress: 0, detail: data.detail || "Could not start", error: data.detail, mode: state.live ? "live" : "dry-run" };
+    paintJob();
+    return;
+  }
+  state.job.id = data.id;
+  poll(data.id);
+}
+
+async function poll(id) {
+  if (ignoreJob === id) return;
+  const response = await api(`/api/jobs/${id}`);
+  if (!response.ok || ignoreJob === id) return;
+  const job = await response.json();
+  if (ignoreJob === id) return;
+  state.job = job;
+  watchJob(job);
+  if (document.body.dataset.advanced !== "1" && state.easy && state.easy.phase === "making") {
+    if (job.video) showEasyPreview(job.video);
+    if (job.status === "done") {
+      state.easy.phase = "result";
+      state.easy.playedHere = false;
+      state.easy.note = String(job.detail || "").startsWith("The animatic is ready")
+        ? job.detail
+        : "Your cut is ready.";
+      render();
+      return;
+    }
+    if (job.status === "error" || job.status === "cancelled") {
+      state.quality = "live";
+      state.easy.phase = "result";
+      state.easy.playedHere = true;
+      state.easy.note = "Playing the pictures for this vibe.";
+      render();
+      return;
+    }
+    const line = document.getElementById("easy-progress");
+    if (line) line.textContent = "Making the pictures. About a minute.";
+  }
+  const stages = document.getElementById("stages");
+  if (stages) stages.outerHTML = stagesHtml();
+  paintJob();
+  if (job.status === "running") setTimeout(() => poll(id), 400);
+}
+
+document.addEventListener("click", (event) => {
+  const el = event.target.closest("[data-act]");
+  if (!el || !state) return;
+  const act = el.dataset.act;
+  if (act === "rail") {
+    goRail(el.dataset.step || "song");
+  } else if (act === "palette") {
+    openPalette();
+  } else if (act === "palette-run") {
+    runPalette(paletteRows[Number(el.dataset.index)]);
+  } else if (act === "register") {
+    applyRegister(el.dataset.register, false);
+    render();
+    scheduleRecipe();
+  } else if (act === "to-director") {
+    location.hash = "director";
+  } else if (act === "use-demo" || act === "easy-demo") {
+    useDemoSong();
+  } else if (act === "easy-vibe") {
+    state.easy.vibe = el.dataset.vibe || "";
+    state.easy.note = "";
+    if (state.easy.phase === "result") {
+      if (state.easy.playedHere) render();
+      else easyMake();
+      return;
+    }
+    render();
+    const next = document.querySelector(`[data-act=easy-vibe][data-vibe="${state.easy.vibe}"]`);
+    if (next) next.focus();
+    else {
+      const make = document.querySelector("[data-act=easy-make]");
+      if (make) make.focus();
+    }
+  } else if (act === "easy-make") {
+    if (!state.easy.song || !state.easy.vibe) {
+      state.easy.note = state.easy.song ? "Pick a vibe." : "Choose a song.";
+      const note = document.getElementById("easy-note");
+      if (note) note.textContent = state.easy.note;
+      return;
+    }
+    easyMake();
+  } else if (act === "easy-play") {
+    if (state.easy && state.easy.playedHere) startLibraryCut();
+    else {
+      const player = document.getElementById("player");
+      if (player && player.play) player.play().catch(() => {});
+    }
+  } else if (act === "easy-download") {
+    if (state.easy && state.easy.playedHere) {
+      state.easy.note = "This cut is the pictures on screen. A file needs ComfyUI.";
+      const note = document.getElementById("easy-note");
+      if (note) note.textContent = state.easy.note;
+      return;
+    }
+    shareCut(el);
+  } else if (act === "easy-share") {
+    if (state.easy && state.easy.playedHere) {
+      state.easy.note = "This cut is the pictures on screen. A file needs ComfyUI.";
+      const note = document.getElementById("easy-note");
+      if (note) note.textContent = state.easy.note;
+      return;
+    }
+    shareCut(el);
+  } else if (act === "morph-fast") {
+    state.morphFast = !state.morphFast;
+    state.morphReport = null;
+    render();
+  } else if (act === "morph-hit") {
+    state.morphHit = state.morphHit === false;
+    writeMorphHit(state.morphHit);
+    state.morphReport = null;
+    render();
+  } else if (act === "morph-method") {
+    state.morphMethod = el.dataset.method || "keyframe-blend";
+    state.morphReport = null;
+    render();
+  } else if (act === "library-pin") {
+    const id = el.dataset.id || "";
+    if (!id) return;
+    const pins = state.libraryPins || [];
+    state.libraryPins = pins.indexOf(id) >= 0 ? pins.filter((item) => item !== id) : pins.concat([id]);
+    writeLibraryPrefs();
+    state.libraryPick = null;
+    scheduleLibrary();
+  } else if (act === "score-rerender") {
+    rerenderSection(Number(el.dataset.start), Number(el.dataset.end));
+  } else if (act === "library-ban") {
+    const id = el.dataset.id || "";
+    if (!id) return;
+    const bans = state.libraryBans || [];
+    state.libraryBans = bans.indexOf(id) >= 0 ? bans.filter((item) => item !== id) : bans.concat([id]);
+    writeLibraryPrefs();
+    state.libraryPick = null;
+    scheduleLibrary();
+  } else if (act === "morph-check") {
+    el.classList.add("is-loading");
+    loadMorph().finally(() => {
+      if (el.isConnected) el.classList.remove("is-loading");
+    });
+  } else if (act === "easy-step") {
+    if (el.dataset.step === "song") {
+      state.easy.song = "";
+      state.easy.songLabel = "";
+    }
+    state.easy.phase = "choose";
+    render();
+  } else if (act === "easy-stop") {
+    if (state.job && state.job.status === "running" && state.job.id) {
+      ignoreJob = state.job.id;
+      api(`/api/jobs/${state.job.id}/cancel`, { method: "POST" }).catch(() => {});
+    }
+    state.easy.phase = "choose";
+    state.easy.note = "";
+    render();
+  } else if (act === "easy-again") {
+    state.easy.phase = "choose";
+    state.easy.note = "";
+    render();
+  } else if (act === "easy-better") {
+    el.classList.add("is-loading");
+    easyBetter();
+  } else if (act === "easy-advanced") {
+    syncAdvanced(true);
+    if (location.hash !== "#simple") location.hash = "simple";
+    else render();
+  } else if (act === "try-it") {
+    el.classList.add("is-loading");
+    tryDemo();
+  } else if (act === "generate-inline") {
+    el.classList.add("is-loading");
+    if (state.quality === "live") playLive();
+    else generate();
+  } else if (act === "live-play") {
+    playLive();
+  } else if (act === "live-record") {
+    recordToggle();
+  } else if (act === "check-extra") {
+    loadSetup().then(() => {
+      if (state.view === "setup") render();
+    });
+  } else if (act === "download-model") {
+    downloadModel(el.dataset.id);
+  } else if (act === "copy-job") {
+    copyText(state.job && state.job.diagnostics ? state.job.diagnostics : state.job && state.job.error);
+  } else if (act === "expand") {
+    state.expanded = Number(el.dataset.index);
+    if (location.hash !== "#scene") location.hash = "scene";
+    else render();
+  } else if (act === "motif") {
+    const scene = state.scenes[Number(el.dataset.index)];
+    if (!scene) return;
+    state.motif = state.motif === scene.form ? "" : scene.form;
+    planStory({ scenes: [] });
+  } else if (act === "lock") {
+    state.locks[el.dataset.key] = !state.locks[el.dataset.key];
+    render();
+    scheduleRecipe();
+  } else if (act === "quality") {
+    if (!state.locks.quality && state.quality !== el.dataset.quality) {
+      state.quality = el.dataset.quality;
+      state.preset = state.locks.preset ? state.preset : "";
+      cancelStale();
+      render();
+      scheduleRecipe();
+      settleCut();
+    }
+  } else if (act === "assign") {
+    if (state.blocks[state.selected]) state.blocks[state.selected].form = el.dataset.form;
+    render();
+    scheduleRecipe();
+  } else if (act === "select-block") {
+    if (event.target.closest("select, input")) return;
+    state.selected = Number(el.dataset.index);
+    render();
+  } else if (act === "add-noun") {
+    addNoun();
+  } else if (act === "preset") {
+    if (state.locks.preset) return;
+    const preset = state.presets.find((item) => item.id === el.dataset.preset);
+    if (preset) applyPreset(preset);
+    render();
+    scheduleRecipe();
+  } else if (act === "random") {
+    randomise();
+    render();
+    scheduleRecipe();
+  } else if (act === "copy") {
+    copyRecipe();
+  } else if (act === "restore") {
+    restoreRecipe();
+  } else if (act === "apply-note") {
+    interpretNote(true);
+  } else if (act === "chip") {
+    state.note = el.dataset.note || "";
+    state.notesOpen = true;
+    interpretNote(true);
+  } else if (act === "confirm-note") {
+    confirmNote();
+  } else if (act === "undo-note") {
+    state.pending = null;
+    state.noteStatus = "Note set aside. The cut is unchanged.";
+    render();
+  } else if (act === "watch-version") {
+    watchVersion(el.dataset.id);
+  } else if (act === "revert-version") {
+    revertVersion(el.dataset.id);
+  } else if (act === "flip") {
+    flipVersions();
+  } else if (act === "save-lesson") {
+    saveLesson();
+  } else if (act === "dismiss-lesson") {
+    state.lessonOffer = null;
+    if (state.pending) state.pending.lesson_offer = null;
+    render();
+  } else if (act === "treatment") {
+    el.classList.add("is-loading");
+    el.disabled = true;
+    state.treatment = el.dataset.treatment || "";
+    planStory({ treatment: state.treatment }).finally(() => {
+      if (el.isConnected) {
+        el.classList.remove("is-loading");
+        el.disabled = false;
+      }
+    });
+  } else if (act === "approve-story") {
+    state.storyApproved = true;
+    state.storyNudge = false;
+    state.gateReason = "";
+    const gate = document.getElementById("story-gate");
+    if (gate) gate.textContent = gateCopy();
+    paintGate();
+    if (el.id === "approve-story") el.textContent = "Approved";
+  } else if (act === "conform") {
+    el.classList.add("is-loading");
+    conformStory().finally(() => {
+      if (el.isConnected) el.classList.remove("is-loading");
+    });
+  } else if (act === "music-only") {
+    const audioId = encodeURIComponent(state.audioId || "demo");
+    window.location.href = `/api/v1/music?audio_id=${audioId}`;
+  } else if (act === "open-drop") {
+    openDrop();
+  } else if (act === "preview") {
+    previewAnimatic(el);
+  } else if (act === "export-workflow") {
+    exportWorkflow(el);
+  } else if (act === "share-cut") {
+    shareCut(el);
+  } else if (act === "remake") {
+    remakeShot(Number(el.dataset.index), false);
+  } else if (act === "new-take") {
+    remakeShot(Number(el.dataset.index), true);
+  } else if (act === "pick-take") {
+    pickTake(Number(el.dataset.index), Number(el.dataset.seed));
+  } else if (act === "apply-review") {
+    applyReview(false);
+  } else if (act === "fix-biggest") {
+    applyReview(true);
+  } else if (act === "undo-review") {
+    undoReview();
+  } else if (act === "dismiss-review") {
+    state.review = null;
+    paintReview();
+  } else if (act === "copy-snippet") {
+    const node = document.getElementById(`snippet-${el.dataset.snippet}`);
+    copyText(node ? node.textContent : "");
+  } else if (act === "mcp-test") {
+    testMcp();
+  } else if (act === "mcp-start") {
+    startMcp();
+  }
+});
+
+document.addEventListener("input", (event) => {
+  const target = event.target;
+  if (!state) return;
+  if (target.id === "palette-q") {
+    state.paletteAt = 0;
+    paintPalette();
+  } else if (target.id === "note-text") {
+    state.note = target.value;
+  } else if (target.id === "energy") {
+    const playing = document.getElementById("live-audio");
+    if (playing && state.easy) state.easy.playAt = playing.currentTime || 0;
+    if (state.easy && state.easy.phase === "result") state.morphCap = null;
+    state.energy = Number(target.value);
+    const label = document.getElementById("energy-readout");
+    if (label) label.textContent = energyWord(state.energy);
+    forgetApproval();
+    queueCut(40);
+  } else if (target.id === "title-card") {
+    state.titleText = target.value;
+  } else if (target.id === "easy-idea") {
+    state.easy.idea = target.value;
+  } else if (target.id === "style-note") {
+    state.styleNote = target.value;
+  } else if (target.id === "transition-note") {
+    state.transitionNote = target.value;
+  } else if (target.id === "end-card") {
+    state.endText = target.value;
+  } else if (target.dataset.prompt != null) {
+    const index = Number(target.dataset.prompt);
+    const scene = state.scenes[index];
+    if (!scene) return;
+    scene.prompt = target.value;
+    scene.guide = target.value;
+    state.textOnly = true;
+    state.onlyScenes = [`s${scene.index}`];
+    state.gateReason = "";
+  } else if (target.id === "lyric-offset") {
+    state.lyricOffset = Math.min(1.5, Math.max(0.3, Number(target.value) || 0.9));
+    if (state.lyricOn) queueLyrics();
+  } else if (target.id === "lyric-words") {
+    state.lyricDraft = target.value;
+    if (state.lyricOn) queueLyrics();
+  } else if (target.id === "brief") {
+    state.brief = target.value;
+    forgetApproval();
+    queuePlan(360);
+  } else if (target.id === "callback") {
+    state.callback = target.value;
+    queuePlan(360);
+  } else if (target.dataset.scene === "action") {
+    touchScene(Number(target.dataset.index), "action", target.value);
+  } else if (target.dataset.slider) {
+    state.sliders[target.dataset.slider] = Number(target.value);
+    const val = target.parentElement.querySelector(".val");
+    if (val) val.textContent = String(Math.round(Number(target.value) * 100));
+    if (!state.locks.preset) state.preset = "";
+    scheduleRecipe();
+    scheduleSession();
+  } else if (target.dataset.card) {
+    const card = (state.cards || []).find((item) => item.at === target.dataset.card);
+    if (card) card.text = target.value;
+    scheduleRecipe();
+  }
+});
+
+document.addEventListener("change", (event) => {
+  const target = event.target;
+  if (!state) return;
+  if (target.dataset.act === "test-clip") {
+    toggleTestClip(Number(target.dataset.index), target.checked);
+  } else if (target.id === "lyric-align") {
+    state.lyricOn = !!target.checked;
+    state.lyricWords = [];
+    state.lyricNote = "";
+    render();
+    if (state.lyricOn) queueLyrics();
+  } else if (target.dataset.scene && target.dataset.scene !== "action") {
+    const value = target.dataset.scene === "bars" ? Number(target.value) : target.value;
+    touchScene(Number(target.dataset.index), target.dataset.scene, value);
+    state.textOnly = false;
+    state.onlyScenes = [];
+    if (target.dataset.scene !== "bars") render();
+  } else if (target.dataset.act === "block-form") {
+    state.blocks[target.dataset.index].form = target.value;
+    state.selected = Number(target.dataset.index);
+    cancelStale();
+    scheduleRecipe();
+    render();
+  } else if (target.dataset.act === "block-transition") {
+    state.blocks[target.dataset.index].transition = target.value;
+    state.selected = Number(target.dataset.index);
+    cancelStale();
+    scheduleRecipe();
+  } else if (target.dataset.act === "block-hold") {
+    state.blocks[target.dataset.index].hold = Number(target.value);
+    state.selected = Number(target.dataset.index);
+    cancelStale();
+    scheduleRecipe();
+    render();
+  } else if (target.dataset.act === "live-ai") {
+    state.liveAiRequested = !!target.checked;
+  } else if (target.id === "continuous") {
+    state.continuous = !!target.checked;
+    forgetApproval();
+    settleCut();
+  } else if (target.id === "hero-file" && target.files && target.files[0]) {
+    uploadHero(target.files[0]);
+  } else if (target.dataset.act === "interpolate") {
+    state.interpolate = !!target.checked;
+  } else if ((target.id === "song-file" || target.id === "easy-file") && target.files[0]) {
+    uploadSong(target.files[0]);
+  } else if (target.id === "form-file" && target.files[0]) {
+    uploadForm(target.files[0]);
+  }
+});
+
+document.addEventListener("dragover", (event) => {
+  const node = event.target;
+  if (!node || !node.closest || !node.closest("[data-tour=song], [data-song-drop]")) return;
+  event.preventDefault();
+});
+
+document.addEventListener("drop", (event) => {
+  const node = event.target;
+  const zone = node && node.closest ? node.closest("[data-tour=song], [data-song-drop]") : null;
+  if (!zone || !state) return;
+  event.preventDefault();
+  const file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
+  if (file) uploadSong(file);
+});
+
+document.getElementById("review-fix").addEventListener("click", () => {
+  if (!state) return;
+  runReview();
+});
+
+document.getElementById("generate").addEventListener("click", () => {
+  if (!state) return;
+  if (state.quality === "live") recordToggle();
+  else generate();
+});
+
+document.getElementById("copy-diagnostics").addEventListener("click", () => {
+  copyDiagnostics();
+});
+
+document.addEventListener("xeno-tour-step", (event) => {
+  if (!state) return;
+  if (document.body.dataset.advanced !== "1") {
+    render();
+    return;
+  }
+  const step = tourStepFor((event.detail && event.detail.target) || "");
+  if (!step) return;
+  const hash = railHash(step);
+  const sameHash = (location.hash || "#simple") === hash;
+  const sameStep = state.step === step;
+  state.step = step;
+  if (!sameHash) {
+    location.hash = hash.slice(1);
+    return;
+  }
+  if (!sameStep) render();
+});
+
+document.addEventListener("xeno-tour-end", () => {
+  if (state && document.body.dataset.advanced !== "1") render();
+});
+
+function keyTarget(event) {
+  return event.target && event.target.closest ? event.target : null;
+}
+
+function keyTyping(event) {
+  const node = keyTarget(event);
+  if (!node || !node.tagName) return false;
+  if (node.tagName === "TEXTAREA" || node.tagName === "SELECT") return true;
+  if (node.isContentEditable) return true;
+  return node.tagName === "INPUT" && node.type !== "range";
+}
+
+const MCP_TOOLS = [
+  ["list_registers", "List the story registers"],
+  ["get_register", "Fetch one register"],
+  ["set_register", "Switch the desk to a register"],
+  ["list_presets", "List the named looks"],
+  ["set_preset", "Apply a named look"],
+  ["analyse_track", "Analyse a local audio file"],
+  ["create_storyboard", "Turn a one-line brief into scene cards"],
+  ["edit_scene_card", "Edit one scene card"],
+  ["set_params", "Set the tier, palette, and faders"],
+  ["apply_note", "Apply a director's note"],
+  ["run_review", "Audit the storyboard"],
+  ["render", "Render a tier"],
+  ["get_render_status", "Read a render job"],
+  ["get_frames", "Contact sheet for the current board"],
+  ["list_versions", "List storyboard versions"],
+  ["revert", "Restore a stored version"],
+  ["export", "Export the recipe and the video"],
+  ["storyboard", "Resource: the current storyboard"],
+  ["lessons", "Resource: render lessons"],
+  ["transitions", "Resource: transition catalogue"],
+];
+
+let paletteRows = [];
+
+function paletteControls() {
+  const rows = [];
+  const seen = new Set();
+  document.querySelectorAll("button[data-act], a[data-view], a.rail-link").forEach((node) => {
+    if (node.closest("#command-palette")) return;
+    const label = (node.innerText || node.getAttribute("aria-label") || "").replace(/\s+/g, " ").trim();
+    if (!label || label.length > 90) return;
+    const row = {
+      kind: "control",
+      label,
+      blurb: "",
+      act: node.dataset.act || "",
+      step: node.dataset.step || "",
+      quality: node.dataset.quality || "",
+      method: node.dataset.method || "",
+      view: node.dataset.view || "",
+      id: node.id || "",
+      href: node.getAttribute("href") || "",
+    };
+    const key = [row.act, row.step, row.quality, row.method, row.view, row.id, row.href, row.label].join("|");
+    if (seen.has(key)) return;
+    seen.add(key);
+    rows.push(row);
+  });
+  MCP_TOOLS.forEach(([name, blurb]) => {
+    rows.push({
+      kind: "tool",
+      label: name,
+      blurb,
+      act: "",
+      step: "",
+      quality: "",
+      method: "",
+      view: "",
+      id: "",
+      href: "",
+    });
+  });
+  return rows;
+}
+
+function paintPalette() {
+  const list = document.getElementById("palette-list");
+  const input = document.getElementById("palette-q");
+  if (!list) return;
+  const query = (input && input.value ? input.value : "").trim().toLowerCase();
+  const words = query ? query.split(/\s+/) : [];
+  paletteRows = paletteControls().filter((row) => {
+    const hay = `${row.label} ${row.blurb} ${row.act} ${row.kind}`.toLowerCase();
+    return words.every((word) => hay.includes(word));
+  }).slice(0, 12);
+  if (!paletteRows.length) {
+    list.innerHTML = `<li class="empty">Nothing matches.</li>`;
+    return;
+  }
+  const at = Math.min(Number(state && state.paletteAt) || 0, paletteRows.length - 1);
+  if (state) state.paletteAt = at;
+  list.innerHTML = paletteRows
+    .map((row, index) => {
+      const kind = row.kind === "tool" ? "Tool" : "Control";
+      const extra = row.blurb ? ` · ${esc(row.blurb)}` : "";
+      return `<li><button type="button" class="${index === at ? "on" : ""}" data-act="palette-run" data-index="${index}"><b>${esc(row.label)}</b><span class="kind">${kind}${extra}</span></button></li>`;
+    })
+    .join("");
+}
+
+function openPalette() {
+  const dialog = document.getElementById("command-palette");
+  if (!dialog || !state) return;
+  state.paletteAt = 0;
+  const input = document.getElementById("palette-q");
+  if (input) input.value = "";
+  paintPalette();
+  if (!dialog.open) dialog.showModal();
+  if (input) input.focus();
+}
+
+function runPalette(row) {
+  const dialog = document.getElementById("command-palette");
+  if (dialog && dialog.open) dialog.close();
+  if (!row || !state) return;
+  if (row.kind === "tool") {
+    goRail("connect");
+    return;
+  }
+  if (row.act === "palette") return;
+  if (row.act === "rail" && row.step) {
+    goRail(row.step);
+    return;
+  }
+  if (row.quality) {
+    const button = document.querySelector(`[data-act="quality"][data-quality="${row.quality}"]`);
+    if (button) button.click();
+    return;
+  }
+  if (row.id) {
+    const node = document.getElementById(row.id);
+    if (node) node.click();
+    return;
+  }
+  if (row.view) {
+    const link = document.querySelector(`.views a[data-view="${row.view}"]`);
+    if (link) link.click();
+    return;
+  }
+  if (row.act) {
+    const node = [...document.querySelectorAll(`[data-act="${row.act}"]`)].find((item) => {
+      if (item.closest("#command-palette")) return false;
+      if (row.step && item.dataset.step !== row.step) return false;
+      if (row.method && item.dataset.method !== row.method) return false;
+      return true;
+    });
+    if (node) node.click();
+    return;
+  }
+  if (row.href) {
+    const node = document.querySelector(`a[href="${row.href}"]`);
+    if (node) node.click();
+  }
+}
+
+document.addEventListener("keydown", (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+    event.preventDefault();
+    const palette = document.getElementById("command-palette");
+    if (palette && palette.open) palette.close();
+    else openPalette();
+    return;
+  }
+  const palette = document.getElementById("command-palette");
+  if (palette && palette.open) {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      const count = paletteRows.length || 1;
+      state.paletteAt = (Number(state.paletteAt || 0) + (event.key === "ArrowDown" ? 1 : -1) + count) % count;
+      paintPalette();
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      runPalette(paletteRows[Number(state.paletteAt || 0)]);
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      palette.close();
+    }
+    return;
+  }
+  if (document.querySelector("dialog[open]")) return;
+  const tourCard = document.getElementById("tutorial-card");
+  const tourOffer = document.getElementById("tutorial-offer");
+  const touring = (tourCard && !tourCard.hidden) || (tourOffer && !tourOffer.hidden) || document.body.dataset.tour === "1";
+  const current = keyTarget(event) && keyTarget(event).closest("[data-act=easy-vibe]");
+  if (current && !touring && (event.key === "ArrowRight" || event.key === "ArrowDown" || event.key === "ArrowLeft" || event.key === "ArrowUp")) {
+    const forward = event.key === "ArrowRight" || event.key === "ArrowDown";
+    const cards = [...document.querySelectorAll("[data-act=easy-vibe]")];
+    const index = cards.indexOf(current);
+    if (index < 0) return;
+    event.preventDefault();
+    const nextCard = cards[(index + (forward ? 1 : -1) + cards.length) % cards.length];
+    if (nextCard) nextCard.click();
+    return;
+  }
+  if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+    event.preventDefault();
+    if (document.body.dataset.advanced !== "1") {
+      const make = document.querySelector("[data-act=easy-make]");
+      if (make) {
+        make.click();
+        return;
+      }
+    }
+    const generateButton = document.getElementById("generate");
+    if (generateButton && document.body.dataset.advanced === "1") generateButton.click();
+    return;
+  }
+  if (event.key === "Escape") {
+    if (touring) return;
+    if (state && state.recording) {
+      event.preventDefault();
+      recordToggle();
+      return;
+    }
+    if (state && state.job && state.job.status === "running" && state.job.id) {
+      event.preventDefault();
+      ignoreJob = state.job.id;
+      api(`/api/jobs/${state.job.id}/cancel`, { method: "POST" }).catch(() => {});
+    }
+    return;
+  }
+  if (keyTyping(event) || touring) return;
+  if (event.key === " ") {
+    const control = keyTarget(event) && keyTarget(event).closest("button, a, summary");
+    if (control) return;
+    const play = document.querySelector("[data-act=easy-play]");
+    if (play) {
+      event.preventDefault();
+      play.click();
+      return;
+    }
+    const player = document.getElementById("player");
+    if (player) {
+      event.preventDefault();
+      if (player.paused) player.play().catch(() => {});
+      else player.pause();
+      return;
+    }
+    if (state && state.quality === "live") {
+      event.preventDefault();
+      playLive();
+    }
+    return;
+  }
+  if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+  const shots = [...document.querySelectorAll("[data-act=expand]")];
+  if (!shots.length || !state) return;
+  event.preventDefault();
+  const at = shots.findIndex((button) => Number(button.dataset.index) === state.expanded);
+  const delta = event.key === "ArrowRight" ? 1 : -1;
+  const nextShot = shots[(Math.max(0, at) + delta + shots.length) % shots.length];
+  if (nextShot) nextShot.click();
+});
+
+document.getElementById("advanced-toggle").addEventListener("click", () => {
+  const on = document.body.dataset.advanced === "1";
+  syncAdvanced(!on);
+  if (state) render();
+});
+
+document.getElementById("open-about").addEventListener("click", () => {
+  document.getElementById("about").showModal();
+});
+
+const paletteForm = document.querySelector("#command-palette form");
+if (paletteForm) paletteForm.addEventListener("submit", (event) => event.preventDefault());
+
+document.getElementById("open-settings").addEventListener("click", () => {
+  if (!state) return;
+  document.getElementById("endpoint").value = state.endpoint || "";
+  document.getElementById(state.live ? "mode-live" : "mode-dry").checked = true;
+  document.getElementById("addons").checked = !!state.addons;
+  const model = document.getElementById("video-model");
+  if (model) model.value = state.videoModel === "ltx-25" ? "ltx-25" : "ltx-23";
+  const folder = document.getElementById("library-folder");
+  if (folder) folder.value = state.libraryFolder || "";
+  const faces = document.getElementById("exclude-faces");
+  if (faces) faces.checked = state.excludeFaces !== false;
+  const pdUs = document.getElementById("allow-pd-us");
+  if (pdUs) pdUs.checked = !!state.allowPdUs;
+  document.getElementById("settings").showModal();
+});
+
+document.getElementById("save-settings").addEventListener("click", () => {
+  if (!state) return;
+  state.live = document.getElementById("mode-live").checked;
+  state.endpoint = document.getElementById("endpoint").value.trim() || "http://127.0.0.1:8188";
+  state.addons = document.getElementById("addons").checked;
+  writeAddons(state.addons);
+  const model = document.getElementById("video-model");
+  state.videoModel = model && model.value === "ltx-25" ? "ltx-25" : "ltx-23";
+  writeVideoModel(state.videoModel);
+  const folder = document.getElementById("library-folder");
+  state.libraryFolder = folder ? folder.value.trim() : state.libraryFolder || "";
+  const faces = document.getElementById("exclude-faces");
+  state.excludeFaces = faces ? faces.checked : state.excludeFaces !== false;
+  const pdUs = document.getElementById("allow-pd-us");
+  state.allowPdUs = pdUs ? pdUs.checked : !!state.allowPdUs;
+  writeLibraryPrefs();
+  state.libraryItems = null;
+  state.libraryPick = null;
+  document.getElementById("settings").close();
+  render();
+  refreshComfy();
+});
+
+document.addEventListener("change", (event) => {
+  const target = event.target;
+  if (!target || !target.dataset || target.dataset.act !== "pick-model") return;
+  pickModel(target.dataset.id, target.value);
+});
+
+async function pickModel(id, file) {
+  if (!id || !file) return;
+  try {
+    const response = await api("/api/setup/pick", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, file }),
+    });
+    if (!response.ok) return;
+  } catch (error) {
+    return;
+  }
+  await loadSetup();
+  if (state && state.view === "setup") render();
+}
+
+async function refreshComfy() {
+  const endpoint = (state && state.endpoint) || "http://127.0.0.1:8188";
+  let data = null;
+  try {
+    const response = await api(`/api/comfy?url=${encodeURIComponent(endpoint)}`);
+    if (response.ok) data = await response.json();
+  } catch (error) {
+    data = null;
+  }
+  const ok = !!(data && data.ok);
+  const label = ok ? "ComfyUI connected" : "ComfyUI not connected";
+  const node = document.getElementById("comfy-status");
+  if (node) {
+    node.dataset.ok = ok ? "1" : "0";
+    node.textContent = label;
+  }
+  const note = document.getElementById("comfy-settings-status");
+  if (note) note.textContent = `${label}. The desk pings /system_stats on ${endpoint}.`;
+  if (state) state.comfyOk = ok;
+}
+
+const viewNav = document.querySelector(".views");
+if (viewNav) {
+  viewNav.addEventListener("click", (event) => {
+    const link = event.target.closest("a[data-view]");
+    if (!link || !state || document.body.dataset.advanced !== "1") return;
+    const view = link.dataset.view;
+    const step = view === "notes" ? "notes" : view === "connect" ? "connect" : view === "setup" ? "setup" : view === "director" ? "shots" : "song";
+    state.step = step;
+    if ((location.hash || "#simple") === railHash(step)) {
+      event.preventDefault();
+      render();
+    }
+  });
+}
+
+window.addEventListener("hashchange", () => {
+  if (!state) return;
+  if (viewFromHash() === "notes" && !state.pending) {
+    if (!state.note) state.note = SAMPLE_NOTE;
+    state.notesOpen = true;
+    settleNotes();
+    return;
+  }
+  render();
+});
+
+document.addEventListener("dragstart", (event) => {
+  if (event.target.id !== "climax-token") return;
+  event.dataTransfer.setData("text/plain", "climax");
+  event.dataTransfer.effectAllowed = "move";
+});
+
+document.addEventListener("dragover", (event) => {
+  const card = event.target.closest && event.target.closest(".scene");
+  if (!card) return;
+  event.preventDefault();
+  card.classList.add("drop");
+});
+
+document.addEventListener("dragleave", (event) => {
+  const card = event.target.closest && event.target.closest(".scene");
+  if (card) card.classList.remove("drop");
+});
+
+document.addEventListener("drop", (event) => {
+  const card = event.target.closest && event.target.closest(".scene");
+  if (!card || !state) return;
+  event.preventDefault();
+  card.classList.remove("drop");
+  const index = Number(card.dataset.index);
+  state.climax = index;
+  planStory({ climax: index });
+});
+
+async function interpretNote(shouldRender) {
+  const note = (state.note || "").trim();
+  if (!note) {
+    state.noteStatus = "Write what you saw.";
+    state.pending = null;
+    if (shouldRender) render();
+    return;
+  }
+  if (state.noteBusy) return;
+  state.noteBusy = true;
+  state.noteStatus = "Reading the note…";
+  if (shouldRender) render();
+  try {
+    const response = await api("/api/notes/interpret", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        audio_id: state.audioId,
+        note,
+        scenes: state.scenes,
+        quality: state.quality,
+        brief: state.brief,
+        addons: !!state.addons,
+      }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      state.pending = null;
+      state.noteStatus = data.detail || "The note did not parse.";
+    } else {
+      state.pending = data;
+      state.lessonOffer = data.lesson_offer || null;
+      state.notesOpen = true;
+      const first = (data.diff || [])[0];
+      state.noteStatus = first ? `${first.label} · ${first.field}: ${first.old} → ${first.new}` : data.rationale || "Patch ready.";
+    }
+  } catch (error) {
+    state.pending = null;
+    state.noteStatus = "The note interpreter did not answer.";
+  } finally {
+    state.noteBusy = false;
+    render();
+  }
+}
+
+async function confirmNote() {
+  if (!state.pending || !state.pending.patch || state.noteBusy) return;
+  cancelStale();
+  state.noteBusy = true;
+  state.noteStatus = "Rendering the changed segments…";
+  render();
+  try {
+    const response = await api("/api/notes/apply", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        audio_id: state.audioId,
+        note: state.note,
+        patch: state.pending.patch,
+        scenes: state.scenes,
+        quality: state.quality,
+        video: state.video,
+      }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      state.noteStatus = data.detail || "The patch did not apply.";
+    } else {
+      state.scenes = data.scenes;
+      state.blocks = data.blocks;
+      state.versions = data.versions || [];
+      state.versionId = data.current;
+      state.pending = null;
+      state.lessonOffer = data.lesson_offer || state.lessonOffer;
+      state.noteStatus = data.detail || "Cut updated.";
+      if (data.video) state.videoLabel = data.version && data.version.label ? data.version.label : state.videoLabel;
+      scheduleRecipe();
+    }
+  } catch (error) {
+    state.noteStatus = "The rerender did not finish.";
+  } finally {
+    state.noteBusy = false;
+    render();
+  }
+}
+
+function watchVersion(id) {
+  const version = (state.versions || []).find((item) => item.id === id);
+  if (!version) return;
+  state.versionId = version.id;
+  state.flipId = version.id;
+  if (version.video) {
+    state.video = version.video;
+    state.videoLabel = version.label || "Noted cut";
+  }
+  state.noteStatus = `Showing ${version.label || version.note}.`;
+  render();
+}
+
+async function revertVersion(id) {
+  const response = await api("/api/notes/revert", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ audio_id: state.audioId, version_id: id }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    state.noteStatus = data.detail || "That version is gone.";
+    render();
+    return;
+  }
+  state.scenes = data.scenes;
+  state.blocks = data.blocks;
+  state.versions = data.versions || [];
+  state.versionId = data.current;
+  state.pending = null;
+  if (data.video) {
+    state.video = data.video;
+    state.videoLabel = data.version && data.version.label ? data.version.label : "Reverted";
+  }
+  state.noteStatus = `Reverted. ${state.videoLabel}.`;
+  scheduleRecipe();
+  render();
+}
+
+function flipVersions() {
+  const list = state.versions || [];
+  if (list.length < 2) {
+    state.noteStatus = "Confirm a note, then flip between that cut and the draft.";
+    render();
+    return;
+  }
+  const current = state.flipId || state.versionId;
+  const index = Math.max(0, list.findIndex((item) => item.id === current));
+  const next = list[(index + 1) % list.length];
+  watchVersion(next.id);
+}
+
+async function saveLesson() {
+  const offer = state.lessonOffer || (state.pending && state.pending.lesson_offer);
+  if (!offer) return;
+  const response = await api("/api/lessons", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(offer),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    state.noteStatus = data.detail || "The lesson did not save.";
+    render();
+    return;
+  }
+  state.savedLessons = (state.savedLessons || []).concat([data.lesson]);
+  state.lessonOffer = null;
+  if (state.pending) state.pending.lesson_offer = null;
+  state.noteStatus = "Saved as a lesson. The critic will raise it next time.";
+  render();
+}
+
+async function settleNotes() {
+  try {
+    const lessons = await api("/api/lessons");
+    if (lessons.ok) {
+      const data = await lessons.json();
+      state.savedLessons = data.saved || [];
+      state.builtinLessons = data.builtin || [];
+    }
+  } catch (error) {
+    state.savedLessons = state.savedLessons || [];
+  }
+  try {
+    const critic = await api("/api/notes/critic", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ audio_id: state.audioId, scenes: state.scenes, sample: state.view === "notes" }),
+    });
+    if (critic.ok) {
+      const data = await critic.json();
+      state.suggestions = data.notes || [];
+    }
+  } catch (error) {
+    state.suggestions = state.suggestions || [];
+  }
+  try {
+    const ledger = await api("/api/v1/ledger");
+    if (ledger.ok) {
+      const data = await ledger.json();
+      state.ledger = data.rounds || [];
+      state.ledgerMarkdown = data.markdown || "";
+    }
+  } catch (error) {
+    state.ledger = state.ledger || [];
+  }
+  try {
+    const versions = await api(`/api/notes/versions?audio_id=${encodeURIComponent(state.audioId)}`);
+    if (versions.ok) {
+      const data = await versions.json();
+      if ((data.versions || []).length) {
+        state.versions = data.versions;
+        state.versionId = data.current;
+      }
+    }
+  } catch (error) {
+    /* the list fills after the first confirm */
+  }
+  if ((state.view === "notes" || state.notesOpen) && state.note) {
+    await interpretNote(false);
+    return;
+  }
+  const active = document.activeElement;
+  if (active && /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName)) return;
+  render();
+}
+
+function setupBanner() {
+  const setup = state && state.setup;
+  if (!setup || !(setup.missing_required || []).length || state.setupHidden) return "";
+  const names = setup.missing_required.join(", ");
+  return `<p class="setup-banner">Live restyle still needs ${esc(names)}. <a href="#setup">Open Setup</a>. Try the demo runs without it.</p>`;
+}
+
+function renderSetup() {
+  const setup = state.setup;
+  if (!setup) {
+    return `<section class="panel"><p class="boot">Checking this machine…</p></section>`;
+  }
+  const tier = setup.tier || {};
+  const cards = (setup.models || [])
+    .map((model) => {
+      const job = (state.downloads || {})[model.id] || {};
+      const running = job.status === "running";
+      const width = Math.round((job.progress || 0) * 100);
+      const status = model.present
+        ? "Installed"
+        : model.manual
+          ? "Place the local file"
+          : job.status === "error"
+            ? job.detail || job.error
+            : job.detail || (model.required ? "Needed for a live restyle" : "Optional");
+      const button = model.present || model.manual
+        ? ""
+        : `<button type="button" class="generate${running ? " is-loading" : ""}" data-act="download-model" data-id="${esc(model.id)}" ${running ? "disabled" : ""}>${running ? "Downloading" : "Download"} · ${esc(model.size_label)}</button>`;
+      const variants = model.variants || [];
+      const picker = variants.length
+        ? `<label>File<select data-act="pick-model" data-id="${esc(model.id)}" aria-label="Weight file for ${esc(model.name)}">${variants
+            .map((file) => `<option value="${esc(file)}"${file === model.chosen ? " selected" : ""}>${esc(file.split("/").pop())}</option>`)
+            .join("")}</select></label>`
+        : "";
+      return `<article class="model-card">
+        <header><strong>${esc(model.name)}</strong><span>${esc(model.badge || (model.required ? "Fast fallback" : "Optional"))}</span></header>
+        <p>${esc(model.detail)}</p>
+        <p class="status">${esc(status)}${model.filename ? ` · ${esc(model.filename)}` : ""}</p>
+        ${picker}
+        ${running ? `<div class="track"><span style="width:${width}%"></span></div>` : ""}
+        ${button}
+      </article>`;
+    })
+    .join("");
+  const llm = setup.llm || {};
+  const llmJob = (state.downloads || {}).llm || {};
+  return `<div class="setup">
+    <section class="panel">
+      <p class="kicker">Setup check</p>
+      <h2>${esc(tier.label || "This machine")}</h2>
+      <p>${esc(tier.detail || "")}</p>
+      <p class="note">${esc(setup.disk ? setup.disk.free_label : "")} on the models drive. ${esc(setup.try_it || "")}</p>
+      <p class="note">${esc((setup.stems || {}).detail || "")}</p>
+    </section>
+    <section class="panel models">${cards}</section>
+    <section class="panel">
+      <p class="kicker">Optional</p>
+      <h2>Local notes model</h2>
+      <p>${esc(llm.detail || "")}</p>
+      ${
+        llm.present
+          ? `<p class="status">Ollama is up.</p>`
+          : `<button type="button" class="ghost${llmJob.status === "running" ? " is-loading" : ""}" data-act="download-model" data-id="llm"${llmJob.status === "running" ? " disabled" : ""}>${llmJob.status === "running" ? "Asking Ollama…" : "Use Ollama if it is installed"}</button>`
+      }
+      <p class="note">Ableton is not part of this desk.</p>
+    </section>
+    <section class="panel">
+      <p class="kicker">Optional</p>
+      <h2>Faster picture</h2>
+      ${(setup.extras || [])
+        .map(
+          (extra) => `<article class="model-card">
+            <header><strong>${esc(extra.name)}</strong><span>${extra.present ? "Installed" : "Not installed"}</span></header>
+            <p>${esc(extra.detail)}</p>
+          </article>`,
+        )
+        .join("")}
+      <p class="note">Frame fill uses ${esc(setup.interpolate || "minterpolate")}. Turn it on beside Turbo, Draft, or Final. Live+AI and TensorRT stay off the base install.</p>
+      <button type="button" class="ghost" data-act="check-extra">Check again</button>
+    </section>
+  </div>`;
+}
+
+async function loadSetup() {
+  try {
+    const response = await api("/api/setup");
+    if (!response.ok) return;
+    state.setup = await response.json();
+    const extra = (state.setup.extras || []).find((item) => item.id === "live-ai");
+    state.liveAiPresent = !!(extra && extra.present);
+  } catch (error) {
+    state.setup = state.setup || null;
+  }
+}
+
+async function playLive() {
+  if (!window.XENO_LIVE) return;
+  try {
+    await window.XENO_LIVE.play();
+  } catch (error) {
+    const note = document.getElementById("live-note");
+    if (note) note.textContent = "Press Play to start the song with the picture.";
+  }
+}
+
+async function recordToggle() {
+  if (!window.XENO_LIVE) return;
+  const note = document.getElementById("live-note");
+  if (window.XENO_LIVE.recording()) {
+    let blob = null;
+    try {
+      blob = await window.XENO_LIVE.stopRecord();
+    } catch (error) {
+      blob = null;
+    }
+    state.recording = false;
+    paintGenerate();
+    const button = document.querySelector("[data-act='live-record']");
+    if (button) button.textContent = "Record";
+    if (!blob || !blob.size) {
+      if (note) note.textContent = "The recording was empty.";
+      return;
+    }
+    const body = new FormData();
+    body.append("file", blob, "live.webm");
+    const response = await api("/api/live/record", { method: "POST", body });
+    const data = await response.json();
+    if (!response.ok) {
+      if (note) note.textContent = data.detail || "The recording did not save.";
+      return;
+    }
+    state.guideId = data.id;
+    state.video = data.url;
+    state.videoLabel = "Live recording";
+    if (note) {
+      note.dataset.lock = "1";
+      note.textContent = data.detail || "Recorded.";
+    }
+    return;
+  }
+  try {
+    await window.XENO_LIVE.play();
+    await window.XENO_LIVE.startRecord();
+  } catch (error) {
+    if (note) note.textContent = "This browser did not start the recording.";
+    return;
+  }
+  state.recording = true;
+  paintGenerate();
+  const button = document.querySelector("[data-act='live-record']");
+  if (button) button.textContent = "Stop";
+}
+
+async function conformStory() {
+  const source = state.heldBoard && state.heldBoard.length ? state.heldBoard : state.board;
+  if (!source || !source.length) return;
+  const response = await api("/api/conform", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ audio_id: state.audioId || "demo", scenes: source }),
+  });
+  const data = await response.json();
+  if (!response.ok) return;
+  state.board = data.scenes;
+  state.storyApproved = false;
+  await settleCut({ full: true });
+}
+
+async function uploadHero(file) {
+  const body = new FormData();
+  body.append("file", file);
+  const response = await api("/api/hero", { method: "POST", body });
+  const data = await response.json();
+  if (!response.ok) {
+    window.alert(data.detail || "That picture did not attach.");
+    return;
+  }
+  state.heroId = data.id;
+  state.heroUrl = data.url;
+  state.storyApproved = false;
+  await settleCut({ full: true });
+}
+
+async function tryDemo() {
+  state.live = false;
+  if (state.audioId !== "demo") {
+    const response = await api("/api/demo");
+    if (response.ok) adoptSession(await response.json());
+  }
+  if (!state.locks || !state.locks.register) state.register = "pynchon";
+  state.quality = "live";
+  await settleCut({ full: true });
+  playLive();
+}
+
+async function downloadModel(id) {
+  state.downloads = state.downloads || {};
+  const response = await api("/api/setup/download", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    state.downloads[id] = { status: "error", detail: data.detail || "The download did not start.", error: data.detail };
+    render();
+    return;
+  }
+  state.downloads[id] = data;
+  render();
+  pollDownload(id);
+}
+
+async function pollDownload(id) {
+  const response = await api(`/api/setup/download/${encodeURIComponent(id)}`);
+  if (!response.ok) return;
+  const data = await response.json();
+  state.downloads = state.downloads || {};
+  state.downloads[id] = data;
+  if (state.view === "setup") render();
+  if (data.status === "running") {
+    setTimeout(() => pollDownload(id), 500);
+    return;
+  }
+  await loadSetup();
+  if (state.view === "setup") render();
+}
+
+async function copyText(text) {
+  const value = text || "Xenoform has no extra diagnostics yet.";
+  try {
+    await navigator.clipboard.writeText(value);
+    if (state) state.noteStatus = "Diagnostics copied.";
+  } catch (error) {
+    window.prompt("Copy diagnostics", value);
+  }
+}
+
+async function copyDiagnostics() {
+  const response = await api("/api/diagnostics");
+  const data = response.ok ? await response.json() : {};
+  const job = state && state.job && state.job.diagnostics;
+  await copyText([data.diagnostics, job].filter(Boolean).join("\n\n"));
+}
+
+document.addEventListener("input", (event) => {
+  const target = event.target;
+  if (!target || target.id !== "library-tag" || !state) return;
+  state.libraryTag = target.value || "";
+  paintLibraryGrid();
+});
+
+function libraryQuery() {
+  const join = morphJoin();
+  const scene = join.scene || {};
+  const start = Number(scene.start || 0);
+  const section = (state.sections || []).find((row) => Number(row.start) <= start && start < Number(row.end)) || {};
+  return {
+    folder: state.libraryFolder || "",
+    library_folder: state.libraryFolder || "",
+    exclude_faces: state.excludeFaces !== false,
+    allow_pd_us: !!state.allowPdUs,
+    vibe: (state.easy && state.easy.vibe) || "",
+    mood: scene.mood || "",
+    energy: section.level != null ? Number(section.level) : Number(state.energy || 0),
+    beat: scene.beat || "",
+    section: section.label || "",
+    pinned: state.libraryPins || [],
+    banned: state.libraryBans || [],
+  };
+}
+
+function libraryFallback(item) {
+  const letter = esc(String(item.category || item.id || "?").trim().charAt(0).toUpperCase() || "?");
+  return `<div class="library-fallback" aria-hidden="true">${letter}</div>`;
+}
+
+function libraryMatches(item, query) {
+  if (!query) return true;
+  const hay = [item.id, item.category, item.motion, item.silhouette, item.licence_bucket]
+    .concat(item.tags || [], item.moods || [])
+    .join(" ")
+    .toLowerCase();
+  return query.split(/\s+/).every((word) => word && hay.indexOf(word) >= 0);
+}
+
+function paintLibraryGrid() {
+  const grid = document.getElementById("library-grid");
+  if (!grid || !state) return;
+  const query = String(state.libraryTag || "").trim().toLowerCase();
+  const items = (state.libraryItems || []).filter((item) => libraryMatches(item, query));
+  if (!state.libraryItems) {
+    grid.innerHTML = "";
+    return;
+  }
+  if (!items.length) {
+    grid.innerHTML = `<p class="note">${state.libraryItems.length ? "No item has that tag." : "This folder has no items yet."}</p>`;
+    return;
+  }
+  const pins = state.libraryPins || [];
+  const bans = state.libraryBans || [];
+  grid.innerHTML = items
+    .slice(0, 48)
+    .map((item) => {
+      const pinned = pins.indexOf(item.id) >= 0;
+      const banned = bans.indexOf(item.id) >= 0;
+      const thumb = item.thumb
+        ? `<img class="library-thumb" alt="" src="${esc(media(item.thumb))}" />`
+        : libraryFallback(item);
+      const tags = (item.tags || []).slice(0, 3).join(" · ");
+      return `<article class="library-card${pinned ? " is-pinned" : ""}${banned ? " is-banned" : ""}">
+        ${thumb}
+        <h4>${esc(item.id)}</h4>
+        <p>${esc(item.category || "")}${tags ? " · " + esc(tags) : ""}</p>
+        <div class="library-actions">
+          <button type="button" class="ghost" data-act="library-pin" data-id="${esc(item.id)}" aria-pressed="${pinned ? "true" : "false"}">${pinned ? "Pinned" : "Pin"}</button>
+          <button type="button" class="ghost" data-act="library-ban" data-id="${esc(item.id)}" aria-pressed="${banned ? "true" : "false"}">${banned ? "Banned" : "Ban"}</button>
+        </div>
+      </article>`;
+    })
+    .join("");
+  grid.querySelectorAll("img.library-thumb").forEach((img) => {
+    img.addEventListener("error", () => {
+      const letter = (img.alt || "?").slice(0, 1) || "?";
+      const fallback = document.createElement("div");
+      fallback.className = "library-fallback";
+      fallback.textContent = letter;
+      img.replaceWith(fallback);
+    });
+  });
+}
+
+function paintLibrary() {
+  const note = document.getElementById("library-note");
+  const pair = document.getElementById("library-pair");
+  if (!note || !state) return;
+  const pick = state.libraryPick;
+  if (state.libraryNote) note.textContent = state.libraryNote;
+  else if (!state.libraryItems) note.textContent = "Reading the library…";
+  else if (!state.libraryItems.length) note.textContent = "No library.json in this folder. Run python scripts/fetch_sample_library.py for a few procedural shapes.";
+  else {
+    const hidden = [];
+    if (state.excludeFaces !== false) hidden.push("faces hidden");
+    if (!state.allowPdUs) hidden.push("PD-US only hidden");
+    note.textContent = `${state.libraryItems.length} items. ${hidden.join(". ")}.`;
+  }
+  if (pair) {
+    if (pick && pick.source) {
+      const target = pick.target ? pick.target.id : "—";
+      const chain = pick.chain ? "Morph chain" : "Tag match";
+      const credit = (pick.credits || [])[0] ? ` ${pick.credits[0]}` : "";
+      pair.textContent = `${pick.source.id} → ${target}. ${chain}.${credit}`;
+    } else pair.textContent = pick && pick.reason ? pick.reason : "";
+  }
+  paintLibraryGrid();
+}
+
+function scoreLane() {
+  const rows = state.score || [];
+  const duration = Number(state.duration || 1) || 1;
+  if (!rows.length) {
+    return `<div class="tl-score" id="score-lane"><span class="tl-qa">Reading the score…</span></div>`;
+  }
+  const bits = rows
+    .map((row) => {
+      const width = Math.max(8, ((Number(row.end) - Number(row.start)) / duration) * 100);
+      const object = row.source ? `${row.source} → ${row.target || "—"}` : row.becomes;
+      return `<button type="button" class="score-cue role-${esc(row.role)}" data-act="score-rerender" data-start="${Number(row.start)}" data-end="${Number(row.end)}" style="width:${width}%"><b>${esc(row.label)} · ${esc(row.role)}</b><small>${esc(object)}</small></button>`;
+    })
+    .join("");
+  return `<div class="tl-score" id="score-lane">${bits}</div>`;
+}
+
+function paintScore() {
+  const lane = document.getElementById("score-lane");
+  if (!lane || !state) return;
+  const fresh = document.createElement("div");
+  fresh.innerHTML = scoreLane();
+  const next = fresh.firstElementChild;
+  if (next) lane.replaceWith(next);
+}
+
+function scheduleOpener() {
+  const card = document.getElementById("drop-open");
+  if (!card || !state) return;
+  const key = state.audioId || "demo";
+  if (state.opener && state.opener.audioId === key && state.opener.ready) return;
+  const token = (scheduleOpener.token = (scheduleOpener.token || 0) + 1);
+  api("/api/opener", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      audio_id: key,
+      vibe: (state.easy && state.easy.vibe) || "",
+      library_folder: state.libraryFolder || "",
+      exclude_faces: state.excludeFaces !== false,
+      allow_pd_us: !!state.allowPdUs,
+      library_pins: state.libraryPins || [],
+      library_bans: state.libraryBans || [],
+    }),
+  })
+    .then(async (response) => {
+      if (token !== scheduleOpener.token || !state) return;
+      const body = response.ok ? await response.json() : { ready: false, line: "The drop did not read." };
+      body.audioId = key;
+      state.opener = body;
+      paintOpener();
+    })
+    .catch(() => {});
+}
+
+function paintOpener() {
+  const card = document.getElementById("drop-open");
+  const opener = state && state.opener;
+  if (!card || !opener) return;
+  const title = card.querySelector("h3");
+  const line = card.querySelector(".drop-line");
+  const button = card.querySelector("[data-act='open-drop']");
+  const pair = opener.source && opener.target ? `${opener.source} → ${opener.target}` : (opener.becomes || "Impact");
+  if (title) title.textContent = opener.ready ? pair : "Finding the downbeat…";
+  if (line) line.textContent = opener.line || "";
+  if (button) button.disabled = !opener.ready;
+}
+
+function openDrop() {
+  const opener = state && state.opener;
+  if (!opener || !opener.ready) return;
+  let audio = document.getElementById("drop-audio");
+  if (!audio) {
+    audio = document.createElement("audio");
+    audio.id = "drop-audio";
+    audio.preload = "auto";
+    document.body.appendChild(audio);
+  }
+  const src = media(state.audioUrl || "/media/audio/demo");
+  if (audio.getAttribute("src") !== src) audio.src = src;
+  const at = Number(opener.at) || 0;
+  const start = () => {
+    try {
+      audio.currentTime = at;
+    } catch (err) {
+      /* the element may not be seekable yet */
+    }
+    audio.play().catch(() => {});
+  };
+  if (audio.readyState >= 1) start();
+  else audio.addEventListener("loadedmetadata", start, { once: true });
+  const card = document.getElementById("drop-open");
+  if (!card) return;
+  card.classList.add("is-hit");
+  window.setTimeout(() => card.classList.remove("is-hit"), 80);
+}
+
+function scheduleScore() {
+  if (!document.getElementById("score-lane") || !state) return;
+  const token = (scheduleScore.token = (scheduleScore.token || 0) + 1);
+  api("/api/score", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      audio_id: state.audioId || "",
+      vibe: (state.easy && state.easy.vibe) || "",
+      library_folder: state.libraryFolder || "",
+      exclude_faces: state.excludeFaces !== false,
+      allow_pd_us: !!state.allowPdUs,
+      library_pins: state.libraryPins || [],
+      library_bans: state.libraryBans || [],
+    }),
+  })
+    .then(async (response) => {
+      if (token !== scheduleScore.token || !state) return;
+      state.score = response.ok ? (await response.json()).segments || [] : [];
+      paintScore();
+    })
+    .catch(() => {
+      if (token !== scheduleScore.token || !state) return;
+      state.score = [];
+      paintScore();
+    });
+}
+
+function rerenderSection(start, end) {
+  const scenes = (state.scenes || []).filter((scene) => {
+    const a = Number(scene.start) || 0;
+    const b = Number(scene.end) || a;
+    return b > start && a < end;
+  });
+  const ids = scenes.map((scene) => `s${scene.index}`);
+  if (!ids.length) return;
+  state.textOnly = true;
+  state.onlyScenes = ids;
+  generate();
+}
+
+function readMorphHit() {
+  try {
+    return localStorage.getItem("xeno-morph-hit") !== "0";
+  } catch (err) {
+    return true;
+  }
+}
+
+function writeMorphHit(on) {
+  try {
+    localStorage.setItem("xeno-morph-hit", on ? "1" : "0");
+  } catch (err) {}
+}
+
+function readVideoModel() {
+  try {
+    return localStorage.getItem("xeno-video-model") === "ltx-25" ? "ltx-25" : "ltx-23";
+  } catch (err) {
+    return "ltx-23";
+  }
+}
+
+function writeVideoModel(value) {
+  try {
+    localStorage.setItem("xeno-video-model", value === "ltx-25" ? "ltx-25" : "ltx-23");
+  } catch (err) {}
+}
+
+function scheduleLibrary() {
+  if (!document.getElementById("library-browser") || !state) return;
+  const token = (scheduleLibrary.token = (scheduleLibrary.token || 0) + 1);
+  const query = libraryQuery();
+  const params = new URLSearchParams({
+    folder: query.folder,
+    exclude_faces: query.exclude_faces ? "true" : "false",
+    allow_pd_us: query.allow_pd_us ? "true" : "false",
+  });
+  paintLibrary();
+  Promise.all([
+    api("/api/library?" + params.toString()),
+    api("/api/library/pick", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(query),
+    }),
+  ])
+    .then(async ([listResponse, pickResponse]) => {
+      if (token !== scheduleLibrary.token || !state) return;
+      if (!listResponse.ok) {
+        state.libraryNote = "The library did not answer.";
+        state.libraryItems = [];
+      } else {
+        const data = await listResponse.json();
+        state.libraryItems = data.items || [];
+        state.libraryNote = data.missing_index
+          ? "No library.json in this folder. Run python scripts/fetch_sample_library.py for a few procedural shapes."
+          : "";
+      }
+      if (pickResponse.ok) state.libraryPick = await pickResponse.json();
+      paintLibrary();
+    })
+    .catch(() => {
+      if (token !== scheduleLibrary.token || !state) return;
+      state.libraryNote = "The library did not answer.";
+      state.libraryItems = [];
+      paintLibrary();
+    });
+}
+
+function readAddons() {
+  try {
+    return localStorage.getItem("xeno-addons") === "1";
+  } catch (err) {
+    return false;
+  }
+}
+
+function writeAddons(on) {
+  try {
+    localStorage.setItem("xeno-addons", on ? "1" : "0");
+  } catch (err) {}
+}
+
+function readLibraryFolder() {
+  try {
+    return localStorage.getItem("xeno-library-folder") || "";
+  } catch (err) {
+    return "";
+  }
+}
+
+function readExcludeFaces() {
+  try {
+    const value = localStorage.getItem("xeno-exclude-faces");
+    if (value == null) return true;
+    return value !== "0";
+  } catch (err) {
+    return true;
+  }
+}
+
+function readAllowPdUs() {
+  try {
+    return localStorage.getItem("xeno-allow-pd-us") === "1";
+  } catch (err) {
+    return false;
+  }
+}
+
+function readIdList(key) {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(key) || "[]");
+    return Array.isArray(parsed) ? parsed.map((item) => String(item)) : [];
+  } catch (err) {
+    return [];
+  }
+}
+
+function writeLibraryPrefs() {
+  try {
+    localStorage.setItem("xeno-library-folder", state.libraryFolder || "");
+    localStorage.setItem("xeno-exclude-faces", state.excludeFaces === false ? "0" : "1");
+    localStorage.setItem("xeno-allow-pd-us", state.allowPdUs ? "1" : "0");
+    localStorage.setItem("xeno-library-pins", JSON.stringify(state.libraryPins || []));
+    localStorage.setItem("xeno-library-bans", JSON.stringify(state.libraryBans || []));
+  } catch (err) {}
+}
+
+function syncAdvanced(next) {
+  let on = false;
+  try {
+    if (next === undefined) on = localStorage.getItem("xeno-advanced") === "1";
+    else {
+      on = Boolean(next);
+      localStorage.setItem("xeno-advanced", on ? "1" : "0");
+    }
+  } catch (error) {
+    on = Boolean(next);
+  }
+  document.body.dataset.advanced = on ? "1" : "0";
+  const button = document.getElementById("advanced-toggle");
+  if (button) {
+    button.setAttribute("aria-pressed", on ? "true" : "false");
+    button.textContent = on ? "Advanced on" : "Advanced";
+  }
+}
+
+async function boot() {
+  syncAdvanced();
+  try {
+    const response = await api("/api/demo");
+    if (!response.ok) throw new Error("demo unavailable");
+    adoptSession(await response.json());
+    setInterval(pollAgent, 3000);
+    await loadSetup();
+    if (viewFromHash() === "notes") {
+      state.note = SAMPLE_NOTE;
+      state.notesOpen = true;
+    }
+    await settleCut({ full: true });
+    await settleNotes();
+    refreshComfy();
+    setInterval(refreshComfy, 8000);
+    if (window.XENO_TUTORIAL) window.XENO_TUTORIAL.ready();
+  } catch (error) {
+    document.getElementById("app").innerHTML = `<div class="error-panel"><h2>The desk could not open the demo.</h2><p>${esc(error.message)}. The reference cut is examples/demo_base.mp4.</p></div>`;
+    document.body.dataset.ready = "1";
+  }
+}
+
+boot();

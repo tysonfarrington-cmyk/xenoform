@@ -1,0 +1,536 @@
+{
+  "fields": {
+    "brief": {
+      "label": "Premises",
+      "categories": [
+        {
+          "id": "scale-journeys",
+          "name": "Scale journeys",
+          "ideas": [
+            "A lantern diver and a silver needle fall from a cloud harbour into a glowing trench until the needle stitches the dark shut.",
+            "A seed courier and a glass compass climb a redwood that opens into a coastline until the compass points at the sun.",
+            "A kite mason and a chalk plumb rise from a courtyard well to the lip of a thunderhead until the plumb finds still air.",
+            "A pearl swimmer and a tiny bell descend a waterfall that widens into a sea until the bell rings the surface calm.",
+            "A moth cartographer and a brass astrolabe cross a pollen desert that shrinks to a windowsill until the astrolabe names the room.",
+            "A frost pilot and a paper wing glide from an ice cathedral down to one frozen leaf until the wing melts a path.",
+            "A coral singer and a gold thimble travel a reef that towers into a city until the thimble hems the tide.",
+            "A dust astronomer and a crystal lens walk a dune that opens into the night sky until the lens catches dawn.",
+            "A bubble architect and an iron seed float from a teacup storm up to a glass mountain until the seed roots the cloud.",
+            "A firefly surveyor and a silk thread measure a canyon of mirrors down to a door of light until the thread ties it open."
+          ]
+        },
+        {
+          "id": "fluid-motion",
+          "name": "Fluid motion",
+          "ideas": [
+            "An ink shepherd and a porcelain bowl pour a river through a marble plaza until the bowl drinks the river back.",
+            "A tide tailor and a copper bobbin stitch moonlight into a harbour until the bobbin spools the waves still.",
+            "A rain sommelier and a clear vial catch a storm inside a greenhouse until the vial ferments the thunder sweet.",
+            "A mercury dancer and a black ribbon cross a ballroom of meltwater until the ribbon freezes one perfect turn.",
+            "A fog ferryman and a lantern coil guide a lake through a cedar grove until the coil brightens the far shore.",
+            "A syrup astronomer and a spinning spoon map a caramel sea inside a lighthouse until the spoon finds the horizon.",
+            "A tear-glass blower and a hollow reed shape a waterfall in a sunken chapel until the reed sings it upward.",
+            "A mist gardener and a silver watering can walk a cloud orchard until the can rains fruit into open hands.",
+            "An oil-lamp sailor and a cork compass drift a kitchen flood out to a moonlit bay until the compass points home.",
+            "A snowmelt painter and a horsehair brush draw a glacier across a ballroom until the brush thaws a dance floor."
+          ]
+        },
+        {
+          "id": "organic-change",
+          "name": "Organic change",
+          "ideas": [
+            "A bloom keeper and a bone flute turn a winter orchard into a living cathedral until the flute calls the leaves in.",
+            "A mycelium tailor and a spore needle sew a coat of moss across a stone amphitheatre until the needle rests.",
+            "A chrysalis pilot and a silk map hatch inside a clocktower until the map unfolds into wings.",
+            "A root architect and a copper acorn lift a cottage into a walking grove until the acorn plants the door.",
+            "A pollen priest and a gold saucer bless a field that becomes a choir until the saucer catches the song.",
+            "A fossil gardener and a soft hammer wake a sleeping reef under a meadow until the hammer rings it gentle.",
+            "A vine clockmaker and a green gear grow a timepiece through a library until the gear blooms on the hour.",
+            "A feather alchemist and a clay egg turn a cliff roost into a garden of flight until the egg cracks into dawn.",
+            "A bark singer and a resin bow play a forest until the bow draws the trees into one slow curve.",
+            "A seed librarian and a dew stamp file a jungle into a single drawer until the stamp opens a skylight of leaves."
+          ]
+        },
+        {
+          "id": "bright-weather",
+          "name": "Bright weather",
+          "ideas": [
+            "A sun cooper and a lemon bell forge noon inside a hill town until the bell rings every shadow kind.",
+            "A kite physician and a ribbon thermometer heal a grey harbour with a laughing squall until the ribbon warms.",
+            "A blossom postman and a wicker satchel deliver dawn along a canal until the satchel spills light on the water.",
+            "A rainbow mechanic and a prism wrench tune a waterfall over a fairground until the wrench locks a clean arc.",
+            "A honey pilot and a straw compass fly a meadow through a town square until the compass points at laughter.",
+            "A confetti meteorologist and a paper barometer call a storm of petals over a pier until the sky clears bright.",
+            "A daisy diver and a cork crown swim a sunlit quarry until the crown floats the whole afternoon.",
+            "A breeze conductor and a wheat baton lead a valley orchestra until the baton rests in warm hands.",
+            "A lantern baker and a sunrise loaf open a night bakery onto a brilliant street until the loaf glows.",
+            "A spark gardener and a glass trowel plant stars in a daytime fountain until the trowel strikes joy."
+          ]
+        },
+        {
+          "id": "night-hush",
+          "name": "Night hush",
+          "ideas": [
+            "An eclipse warden and a velvet key lock the sun inside a coastal fort until the key leaves one star free.",
+            "An ash gardener and a coal watering can tend a garden of embers under a viaduct until the can sighs cool.",
+            "A hush diver and a lead bell sink through a black lake under a chapel until the bell makes a soft answer.",
+            "A moth archivist and a soot ledger catalogue a burnt theatre until the ledger remembers one bright cue.",
+            "A frost nun and an iron candle keep vigil in a snow quarry until the candle steadies the dark.",
+            "A shadow ferryman and an obsidian coin cross a river of ink under a dead pier until the coin pays for dawn.",
+            "An owl mason and a moon hammer build a silent nave in a pine ravine until the hammer sets the last dark stone.",
+            "A smoke librarian and a charred bookmark wander a flooded stack until the bookmark finds an unburnt page.",
+            "A tide mourner and a black locket walk a moonless strand until the locket opens onto a small warm light.",
+            "A cavern painter and a phosphorescent brush draw a sleeping city on a cave sea until the brush finally rests."
+          ]
+        },
+        {
+          "id": "joyful-machines",
+          "name": "Joyful machines",
+          "ideas": [
+            "A clockwork gardener and a singing gear grow a carousel in a citrus grove until the gear laughs the ride awake.",
+            "A balloon engineer and a brass whistle launch a parade from a rooftop orchard until the whistle calls it home.",
+            "A typewriter pilot and a ribbon propeller fly a greeting across a sunny aqueduct until the propeller signs the sky.",
+            "A music-box diver and a pearl crank swim a harbour of buoys until the crank winds the tide into a tune.",
+            "A tram poet and a golden bell-pull ring a city into a dance along a flower viaduct until the pull rests.",
+            "An automaton baker and a yeast compass proof joy in a glass factory until the compass points at the warm oven.",
+            "A bicycle astronomer and a spoke harp ride a coastal road until the harp strums the afternoon open.",
+            "A fountain machinist and a soap trumpet build a choir of bubbles in a plaza until the trumpet takes a bow.",
+            "A lantern telegraphist and a giggle key send sunlight down a funicular until the key unlocks a picnic.",
+            "A marble-train captain and a polite throttle drive laughter under a park until the throttle gentles the ride."
+          ]
+        },
+        {
+          "id": "thresholds",
+          "name": "Thresholds",
+          "ideas": [
+            "A door shepherd and a salt key open a tide inside a train station until the key locks the sea kind.",
+            "A threshold swimmer and a pearl hinge pass from a bathtub into a moon harbour until the hinge sings shut.",
+            "A bridge novice and a red thread cross from a kitchen into a canyon of birds until the thread holds.",
+            "A curtain diver and a brass ring fall through a theatre drape into a real storm until the ring takes a bow.",
+            "A gate gardener and a living latch grow a door in a glacier until the latch opens onto summer.",
+            "A stair astronomer and a chalk step climb from a cellar into the weather until the step becomes a cloud.",
+            "A mirror ferryman and a fog ticket leave a dressing room for a lake of glass until the ticket dissolves.",
+            "A window mason and a dawn putty set a pane that turns a night street into morning until the putty warms.",
+            "An archway beekeeper and a honey key enter a walled garden that is also the sky until the key hums.",
+            "A snow locksmith and a warm coin turn a freezer door into a beach gate until the coin buys the sun."
+          ]
+        },
+        {
+          "id": "tiny-kingdoms",
+          "name": "Tiny kingdoms",
+          "ideas": [
+            "A thimble monarch and a pin sceptre rule a kingdom in a coat pocket until the sceptre knights a button.",
+            "A crumb cartographer and a sesame compass map a banquet from inside a napkin until the feast cheers.",
+            "A dew knight and a grass lance defend a moss courtyard on a windowsill until the lance lifts the morning.",
+            "A button admiral and a thread flag sail a teacup across a sunny table until the flag claims the saucer.",
+            "A matchstick architect and a spark blueprint build a warm city in a hearth until the blueprint becomes home.",
+            "A pebble monk and a rain bowl keep a monastery in a shoe until the bowl overflows with kindness.",
+            "A stitch surgeon and a needle lamp heal a torn map on a desk until the lamp shows a tiny coast.",
+            "A cork mayor and a bottle gavel open a council inside a green bottle on a pier until the vote is joy.",
+            "A lint ballerina and a dust crown dance a court across a sunbeam until the crown catches firelight.",
+            "A seed mayor and a leaf stamp found a village in a flowerpot until the stamp greens the whole sill."
+          ]
+        }
+      ]
+    },
+    "style": {
+      "label": "Looks",
+      "categories": [
+        {
+          "id": "noon-pollen",
+          "name": "Noon pollen",
+          "ideas": [
+            "Hard noon, pollen gold, one white shadow on warm stone.",
+            "Lemon light, a clean horizon, dust dancing in a shaft.",
+            "Butter sun on linen, a single orange flare at the edge.",
+            "High summer, chalk walls, a green flash in the corner.",
+            "Picnic glare, honey highlights, shadows short and kind.",
+            "White sail noon, blue water bounced into every face.",
+            "Apricot hour, soft grain, a smile of light on metal.",
+            "Citrus wash, open sky, one ripe shadow under the prop.",
+            "Wheat glare, air you can see, a bright rim on the hero.",
+            "Sunday gold, no gloom, a spark caught in a glass rim."
+          ]
+        },
+        {
+          "id": "night-copper",
+          "name": "Night copper",
+          "ideas": [
+            "Copper night, one lamp, rain drawn like dark wire.",
+            "Low amber, a hallway of smoke, the prop as the only moon.",
+            "Burgundy dark, a coin of light, edges almost lost.",
+            "Oil-lamp orange against a blue-black room.",
+            "Ember practical, deep teal falloff, a hush in the blacks.",
+            "Brass night, wet cobbles, a narrow path of warmth.",
+            "Mahogany shadow, one candle, the place holding its breath.",
+            "Ruby practicals, ink background, a glint on the prop.",
+            "Lantern copper, long dark, a doorway just barely there.",
+            "Burnt sienna night, a single reflection in black water."
+          ]
+        },
+        {
+          "id": "glass-water",
+          "name": "Glass water",
+          "ideas": [
+            "Clear caustics, moving light, edges soft as breath.",
+            "Aquarium green, a ripple across the whole frame.",
+            "Ice glass, pale cyan, one bubble rising through.",
+            "Window-rain bokeh, silver streaks, a soft face of light.",
+            "Tide-pool clarity, pebbles of colour under the surface.",
+            "Steam on glass, a wipe of hand, the world blooming back.",
+            "Mercury sheen, cool highlights, a liquid bend in the room.",
+            "Bottle-green depth, a shaft from above, slow bright motes.",
+            "Frosted pane, diffused white, a hint of blue at the rim.",
+            "Harbour glass, doubled reflections, the prop floating twice."
+          ]
+        },
+        {
+          "id": "botanical-dye",
+          "name": "Botanical dye",
+          "ideas": [
+            "Leaf-dye green, wet bark, a flare of yellow blossom.",
+            "Indigo cloth, sap green shadow, a pink stamen of light.",
+            "Madder red on cream, botanical stains, living edges.",
+            "Moss velvet, a gold pollen hit, deep shade behind.",
+            "Chlorophyll glow, backlit leaves, veins like stained glass.",
+            "Berry ink, stained fingers of light, a green relief.",
+            "Fern dark, one orchid spot, humid highlights.",
+            "Lichen silver, olive midtones, a fresh cut of stem.",
+            "Saffron dust on green, a garden seen through gauze.",
+            "Pine resin amber, needle green, a bright sap gleam."
+          ]
+        },
+        {
+          "id": "storm-silver",
+          "name": "Storm silver",
+          "ideas": [
+            "Storm silver, a slit of sun, wind you can almost see.",
+            "Graphite clouds, a white rip, rain as bright threads.",
+            "Cold steel light, blown spray, one warm window left.",
+            "Lightning white for a blink, then blue-grey calm.",
+            "Pewter sea, a brass glint, weather moving through frame.",
+            "Hail glitter, hard side light, the place briefly holy.",
+            "Squall green, silver pavement, a flag of light overhead.",
+            "Thunder shade, a mercury horizon, edges shaking.",
+            "Rain chrome, dark coats of colour, one clean highlight.",
+            "Gale-pale sky, iron water, a sudden kindness of sun."
+          ]
+        },
+        {
+          "id": "ash-ember",
+          "name": "Ash ember",
+          "ideas": [
+            "Ash velvet, one ember, smoke slow across the floor.",
+            "Charcoal field, a live coal, soft ruin all around.",
+            "Soot black, a rose of heat, ash falling like snow.",
+            "Cinder orange in a grey world, the prop still warm.",
+            "Burnt paper tones, a glow inside the hero's hands.",
+            "Kiln dark, hairline cracks of light, quiet after fire.",
+            "Ember dust, low contrast, one fierce point of heat.",
+            "Smoke brown, a fading spark, the place cooling.",
+            "Ash white on black, a coal drawing come alive.",
+            "Afterglow red, powder grey, tenderness in the dark."
+          ]
+        },
+        {
+          "id": "parade-colour",
+          "name": "Parade colour",
+          "ideas": [
+            "Parade primaries, confetti dust, a clean white ground.",
+            "Flag red, sky blue, a gold laugh of light.",
+            "Candy chroma, hard sun, shadows in pure complement.",
+            "Balloon gloss, saturated air, joy with sharp edges.",
+            "Marching-band brass, scarlet and cream, a cymbal flare.",
+            "Fairground bulbs, spinning colour, a sweet overexposure.",
+            "Kite silk primaries against a blown-out sky.",
+            "Paint-still-wet colour, a cheering wash, no mud.",
+            "Ribbon red through sunflower yellow, crisp and loud.",
+            "Carnival glass, prism hits, a grin of spectrum."
+          ]
+        },
+        {
+          "id": "pale-hush",
+          "name": "Pale hush",
+          "ideas": [
+            "Pale hush, milk light, a thin blue shadow at the sill.",
+            "Bone white, a whisper of pink, almost no contrast.",
+            "Fog linen, soft grey, one pearl highlight on the prop.",
+            "Chalk room, breath-warm, edges dissolving kindly.",
+            "Rice-paper light, a faint green, quiet as cloth.",
+            "Porcelain day, low saturation, a single blush.",
+            "Mist white, silver midtones, the place barely arriving.",
+            "Dove grey, a candle of colour, hush over everything.",
+            "Eggshell dawn, pale gold, shadows no darker than dust.",
+            "Linen fade, airy, a small bright mercy in the frame."
+          ]
+        }
+      ]
+    },
+    "shot": {
+      "label": "Camera",
+      "categories": [
+        {
+          "id": "push-and-approach",
+          "name": "Push and approach",
+          "ideas": [
+            "Push through hanging rain until the prop fills the frame.",
+            "Glide in from the door until the hero's hands arrive.",
+            "Drift forward on a breath, the place opening ahead.",
+            "Creep closer as the prop begins to change.",
+            "A steady push, weather sliding off the lens.",
+            "Approach low, along the floor, toward a pool of light.",
+            "Push past foreground leaves into the hero's eyes.",
+            "Slide in beside the hero, matching their pace.",
+            "A slow approach that turns into a held stare.",
+            "Push until the place falls away and only the prop remains."
+          ]
+        },
+        {
+          "id": "orbit",
+          "name": "Orbit",
+          "ideas": [
+            "Orbit the hero once, low, the place sliding behind.",
+            "Circle the prop as it turns the other way.",
+            "A half orbit that reveals the weather behind them.",
+            "Spin slowly, the hero planted, the room a carousel.",
+            "Orbit up from the boots to a bright horizon.",
+            "Circle through a doorway, losing them, finding them.",
+            "A joyful orbit, confetti streaking the edges.",
+            "Orbit in the dark, one lamp keeping the hero.",
+            "Sweep around until the prop eclipses the hero.",
+            "A final orbit that settles into a still profile."
+          ]
+        },
+        {
+          "id": "crane-and-fall",
+          "name": "Crane and fall",
+          "ideas": [
+            "Crane from the boots to a sky that keeps opening.",
+            "Fall with a drop of water from leaf to ground.",
+            "Rise off the prop until the place becomes a map.",
+            "Drop straight down a stairwell of light.",
+            "Crane over a shoulder into the weather ahead.",
+            "Sink from a wide sky to the hero's open hands.",
+            "Lift through smoke into a hard clean sun.",
+            "Fall backward off a ledge into a softer world.",
+            "Crane along a table as the prop travels its length.",
+            "Rise and rise until the hero is a bright speck."
+          ]
+        },
+        {
+          "id": "macro",
+          "name": "Macro",
+          "ideas": [
+            "Macro on the prop as it splits into living petals.",
+            "Fill the frame with a grain of pollen, then the hero.",
+            "A bead of water holds the whole place upside down.",
+            "Macro on a stitch tightening, the world waiting.",
+            "The prop's surface becomes a landscape, then recedes.",
+            "Eyelash close, a laugh lighting the skin.",
+            "Macro on rust blooming like a flower.",
+            "A fingerprint ridge, then the hand that made it.",
+            "Dew on metal, the place reduced to one sparkle.",
+            "Macro as the prop hatches, tiny and enormous."
+          ]
+        },
+        {
+          "id": "weather-strike",
+          "name": "Weather strike",
+          "ideas": [
+            "A sun-shaft rakes the hero, then the weather turns kind.",
+            "Rain arrives sideways and the camera leans with it.",
+            "Wind takes the frame, the prop steady at centre.",
+            "Snow erases the place, then the hero steps back in.",
+            "A bright squall, everyone leaning, the prop held high.",
+            "Lightning blinks the room into day for one frame.",
+            "Fog pours in low, the hero wading through it.",
+            "Hail chatters, the camera flinching, then calming.",
+            "A warm gust lifts dust into a gold curtain.",
+            "The storm exhales and the place is suddenly gentle."
+          ]
+        },
+        {
+          "id": "hands-and-prop",
+          "name": "Hands and prop",
+          "ideas": [
+            "Hands turn the prop once, and the room answers.",
+            "The hero sets the prop down as if it were alive.",
+            "Fingers hover, then commit, the camera holding.",
+            "Pass the prop from hand to hand without a cut.",
+            "A palm opens and the prop rises on its own.",
+            "Hands in joy, the prop tossed and caught in light.",
+            "A careful grip in the dark, knuckles the brightest thing.",
+            "The prop is offered to camera, then taken back.",
+            "Hands build the prop from nothing while we watch.",
+            "Let the hands leave, the prop remaining, still warm."
+          ]
+        },
+        {
+          "id": "reveal",
+          "name": "Reveal",
+          "ideas": [
+            "Reveal the place by sliding a door of light aside.",
+            "Wipe the hero into frame on a passing train of shadow.",
+            "Open on the prop, rack to a vast place behind it.",
+            "A curtain of rain parts on the hero.",
+            "Reveal by reflection, then turn to the real thing.",
+            "Start tight on a laugh, widen to the whole bright street.",
+            "A dark reveal: the place exists only as the lamp finds it.",
+            "The prop swings aside and the journey is behind it.",
+            "Reveal the scale by a bird crossing, tiny then gone.",
+            "Turn a corner into weather we did not know was there."
+          ]
+        },
+        {
+          "id": "release",
+          "name": "Release",
+          "ideas": [
+            "Release: the hero lets the prop go and the frame exhales.",
+            "Hold, then a small nod, then the camera finally breathes.",
+            "The prop settles, the hero steps back into light.",
+            "A laugh breaks the tension and the move eases.",
+            "Let the weather finish the gesture.",
+            "The hero lowers their hands and the place goes quiet.",
+            "Release into a wide, joyful, almost still frame.",
+            "A last look, then the camera drifts up and away.",
+            "The prop clicks home and every motion stops.",
+            "Exhale the shot into dawn, or into kind dark."
+          ]
+        }
+      ]
+    },
+    "transition": {
+      "label": "Morphs",
+      "categories": [
+        {
+          "id": "pour-and-harden",
+          "name": "Pour and harden",
+          "ideas": [
+            "Pour the hero into the prop, then harden both in the same place.",
+            "The frame melts, runs downhill, and sets as the next shot.",
+            "Liquid light fills the hero and freezes into a new pose.",
+            "A spill of colour hardens into the place, edges crisp.",
+            "The prop liquefies, crosses the cut, and becomes solid again.",
+            "Honey-slow pour from one scale into another, then a snap set.",
+            "Rain on the lens thickens, then clears as a hard new image.",
+            "The hero's outline drips away and reforms, same prop in hand.",
+            "Molten joy that cools into a bright, still frame.",
+            "A dark pour, cooling to glass, the place locked inside it."
+          ]
+        },
+        {
+          "id": "bloom",
+          "name": "Bloom",
+          "ideas": [
+            "The prop opens and the place becomes the flower.",
+            "A bud of light blooms across the cut into the next shot.",
+            "Petals wipe the frame, the hero waiting in the heart.",
+            "One seed pops, and the whole picture is suddenly garden.",
+            "A laugh blooms into weather, same hero, wider world.",
+            "The prop flowers in the hand and the hand becomes landscape.",
+            "Night blooms: a black bud opening onto a single star.",
+            "Colour blossoms from the centre and settles as a new palette.",
+            "A tight bud of a face opens into the full bright place.",
+            "Bloom and hold, the transformation finished, still alive."
+          ]
+        },
+        {
+          "id": "ribbon",
+          "name": "Ribbon",
+          "ideas": [
+            "A ribbon of water carries the cut to the next scale.",
+            "Silk of light wraps the hero and unwraps a new place.",
+            "One red ribbon pulls the prop from this shot into the next.",
+            "A joyful streamer stitches two frames without a blink.",
+            "Smoke ribbon, dark and thin, threading the hero through.",
+            "The prop trails a ribbon that becomes the horizon.",
+            "A hairline of gold leads the eye across the transformation.",
+            "Ribbons of rain braid into the next composition.",
+            "A pale ribbon loosens and the picture exhales wider.",
+            "Tie the cut with a ribbon, then let it fall away."
+          ]
+        },
+        {
+          "id": "tide",
+          "name": "Tide",
+          "ideas": [
+            "The tide takes the frame and returns it brighter.",
+            "A wave of shadow covers the hero and withdraws, changed.",
+            "Moon-tide: the picture ebbs to black and floods back.",
+            "Waterline rises through the prop and lowers on a new world.",
+            "A gentle tide of pollen washes one shot into the next.",
+            "The place inhales like a sea and exhales the hero closer.",
+            "Foam wipes left to right, leaving a cleaner light.",
+            "A dark undertow yanks the scale, then the surface calms.",
+            "Tide-pools of the old shot glint inside the new one.",
+            "The last wave sets the prop down and goes still."
+          ]
+        },
+        {
+          "id": "scale-morph",
+          "name": "Scale morph",
+          "ideas": [
+            "Shrink the place to the prop, then grow it past the hero.",
+            "The hero towers, then is a speck in their own palm.",
+            "Zoom through a grain of the prop into a new country.",
+            "A city folds into a thimble without losing the hero.",
+            "The prop swells until it is the weather.",
+            "Drop from a mountain to a freckle in one breath.",
+            "Scale up through laughter until the room is a cathedral.",
+            "A tiny dark door in the prop opens onto the real place.",
+            "Grow the hero from a reflection in a spoon.",
+            "End huge and quiet, the journey of size complete."
+          ]
+        },
+        {
+          "id": "shatter-and-gather",
+          "name": "Shatter and gather",
+          "ideas": [
+            "Shatter into seed, then gather back as one object.",
+            "The frame cracks like glaze and reassembles kinder.",
+            "Confetti burst, then every piece flies home to the prop.",
+            "A dark shatter, embers, gathering into a steady lamp.",
+            "Glass hero, broken into light, reformed in the same place.",
+            "The prop explodes into birds and the birds settle as weather.",
+            "Joyful shatter: colour everywhere, then a clean new frame.",
+            "Crack, pause, gather, the hero never actually lost.",
+            "Ash scatters and draws itself into the next composition.",
+            "One last shard clicks in and the picture is whole."
+          ]
+        },
+        {
+          "id": "smoke-and-dew",
+          "name": "Smoke and dew",
+          "ideas": [
+            "Smoke thins to dew on the same prop.",
+            "A cloud leaves the hero and beads into bright water.",
+            "Incense writes the next shot, then condenses.",
+            "Fog gathers into a single drop that is the prop.",
+            "Dew climbs back into mist and the place changes inside it.",
+            "A warm breath fogs the lens and clears on a new hour.",
+            "Night smoke, then morning beads on the hero's sleeve.",
+            "The prop smoulders, sighs, and is suddenly jewel-bright.",
+            "Haze organises itself into weather with a direction.",
+            "Last wisp, one drop, a clean hold."
+          ]
+        },
+        {
+          "id": "eclipse",
+          "name": "Eclipse",
+          "ideas": [
+            "An eclipse closes, and the hero steps out in new light.",
+            "The prop covers the sun of the frame, then slips aside.",
+            "A dark disc wipes the picture and leaves a softer day.",
+            "Blink of totality, corona, then the place rearranged.",
+            "The hero eclipses the prop, and when they part both have changed.",
+            "A joyful eclipse: a balloon crossing a lamp, colour after.",
+            "Shadow bite, held dark, release into pale gold.",
+            "The moon of a hand passes over the lens.",
+            "Totality as a tunnel, the far end a different scale.",
+            "Light returns in a ring, the transformation done."
+          ]
+        }
+      ]
+    }
+  }
+}

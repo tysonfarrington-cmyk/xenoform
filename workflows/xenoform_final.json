@@ -1,0 +1,43 @@
+{
+  "id": "xenoform-final",
+  "revision": 0,
+  "last_node_id": 1,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "XenoformTryIt",
+      "pos": [120, 120],
+      "size": [380, 150],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "status",
+          "type": "STRING",
+          "links": null,
+          "slot_index": 0
+        }
+      ],
+      "title": "Try the demo — final",
+      "properties": {
+        "Node name for S&R": "XenoformTryIt"
+      },
+      "widgets_values": ["final", "pynchon"]
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": { "scale": 1, "offset": [0, 0] },
+    "xenoform": {
+      "quality": "final",
+      "register": "pynchon",
+      "note": "Drag this file onto the ComfyUI canvas for the final-sized dry run. Live restyle uses the fast LTX model once Setup has it."
+    }
+  },
+  "version": 0.4
+}

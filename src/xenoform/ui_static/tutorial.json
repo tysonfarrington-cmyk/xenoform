@@ -1,0 +1,219 @@
+{
+  "steps": {
+    "song": {
+      "title": "Pick or drop a song",
+      "body": [
+        "Drop a track here, or press Use the bundled demo to stay on examples/demo.wav.",
+        "The desk reads the song on this machine, and this step does not start a render."
+      ],
+      "target": "[data-tour=song]",
+      "view": "simple",
+      "hit": "[data-act=use-demo], #song-file",
+      "on": ["click", "change"]
+    },
+    "beats": {
+      "title": "Analysis and beats",
+      "body": [
+        "Analysis draws the beat grid and the section map before any picture.",
+        "Lyric align stays off unless you turn it on, and it uses a local transcript."
+      ],
+      "target": "[data-tour=beats]",
+      "view": "simple"
+    },
+    "live": {
+      "title": "Live preview and Record",
+      "body": [
+        "Live plays the picture in this window, on the song, with no model.",
+        "Press Play to preview, or Record to write an mp4 you can use later as a motion guide."
+      ],
+      "target": "[data-tour=live]",
+      "view": "simple",
+      "quality": "live",
+      "hit": "[data-act=live-play], [data-act=live-record]",
+      "on": ["click"]
+    },
+    "brief": {
+      "title": "Write a brief",
+      "body": [
+        "Write one line with a hero, a prop, and a place.",
+        "The planner builds the shots from that line, still with no GPU."
+      ],
+      "target": "#brief",
+      "view": "simple",
+      "hit": "#brief",
+      "on": ["input"]
+    },
+    "chips": {
+      "title": "Idea chips",
+      "body": [
+        "Each prompt has a row of ideas. Click one to add it, or hold Shift to replace what is already there.",
+        "Shuffle moves to the next set. The dice writes one idea at random."
+      ],
+      "target": "[data-tour=ideas]",
+      "view": "simple",
+      "hit": "[data-tour=ideas] [data-act=idea-shuffle], [data-tour=ideas] .idea-chip",
+      "on": ["click"]
+    },
+    "continuity": {
+      "title": "Story and continuity",
+      "body": [
+        "The story step lists each shot and how it follows the last.",
+        "The card locks one hero, one prop, and one place, and those sentences travel into the shots."
+      ],
+      "target": "[data-tour=continuity]",
+      "view": "simple"
+    },
+    "treatment": {
+      "title": "Choose a treatment",
+      "body": [
+        "A treatment is the idea, the through-line, and the lead sentence for every shot.",
+        "Pick one and the board updates on this machine."
+      ],
+      "target": "[data-tour=treatment]",
+      "view": "simple",
+      "hit": "[data-act=treatment]",
+      "on": ["click"]
+    },
+    "energy": {
+      "title": "Calm to Hype",
+      "body": [
+        "Drag from Calm to Hype and the cut re-times the shots you already have.",
+        "The beat grid updates in place, morphs stay at two or fewer, and the slider never calls the GPU."
+      ],
+      "target": "#energy",
+      "view": "simple",
+      "hit": "#energy",
+      "on": ["change"]
+    },
+    "looks": {
+      "title": "Transitions and presets",
+      "body": [
+        "Presets and Randomise change the look and the handoff between forms.",
+        "The recipe code carries that board to another desk."
+      ],
+      "target": "[data-tour=looks]",
+      "view": "director",
+      "hit": "[data-act=preset], [data-act=random]",
+      "on": ["click"]
+    },
+    "gate": {
+      "title": "Test clips and the GPU estimate",
+      "body": [
+        "The highlighted line is the GPU estimate for this tier.",
+        "Approve one or two test clips before a full Turbo, Draft, or Final batch.",
+        "Live is not gated, and ticking a clip does not render."
+      ],
+      "target": "[data-tour=gate]",
+      "view": "simple",
+      "hit": "[data-act=test-clip], #approve-story",
+      "on": ["change", "click"]
+    },
+    "generate": {
+      "title": "Generate a draft",
+      "body": [
+        "Draft is the tier that would send the board to ComfyUI.",
+        "Press Generate. This tour does not start that job."
+      ],
+      "target": "#generate",
+      "view": "simple",
+      "quality": "draft",
+      "hit": "#generate, [data-act=generate-inline]",
+      "on": ["click"],
+      "simulate": "#generate, [data-act=generate-inline]",
+      "sim": "Simulated. No GPU job was started. The bundled demo stands in."
+    },
+    "review": {
+      "title": "Review and undo",
+      "body": [
+        "Review & fix reads the board on this machine and lists what to change.",
+        "Undo puts the previous board back after a fix, and neither one loads a model."
+      ],
+      "target": "#review-fix",
+      "view": "simple",
+      "hit": "#review-fix, [data-act=undo-review]",
+      "on": ["click"]
+    },
+    "share": {
+      "title": "Share cut",
+      "body": [
+        "Share cut exports a 720p H.264 file under 16 MB from the picture you already have.",
+        "It does not re-render the shots."
+      ],
+      "target": "[data-tour=share]",
+      "view": "simple",
+      "hit": "[data-tour=share]",
+      "on": ["click"]
+    },
+    "easy-song": {
+      "title": "Choose a song",
+      "body": [
+        "Drop a track, or press Bundled demo.",
+        "This step does not start a picture."
+      ],
+      "target": "[data-tour=easy-song]",
+      "view": "simple",
+      "hit": "[data-act=easy-demo], #easy-file",
+      "on": ["click", "change"]
+    },
+    "easy-vibe": {
+      "title": "Pick a vibe",
+      "body": [
+        "Choose a card. The optional line can stay empty.",
+        "The picture follows that card."
+      ],
+      "target": "[data-tour=easy-vibe]",
+      "view": "simple",
+      "hit": "[data-act=easy-vibe]",
+      "on": ["click"]
+    },
+    "easy-make": {
+      "title": "Press Make",
+      "body": [
+        "Make builds the cut with the defaults.",
+        "If this machine has no picture engine, it plays here instead."
+      ],
+      "target": "[data-tour=easy-make]",
+      "view": "simple",
+      "hit": "[data-act=easy-make]",
+      "on": ["click"],
+      "simulate": "[data-act=easy-make]",
+      "sim": "Simulated. No GPU job was started. The bundled demo stands in."
+    },
+    "weights": {
+      "title": "Open weights",
+      "body": [
+        "The default path is local open weights: Z-Image Turbo for stills, LTX-2.3 for video, and LTX 0.9.5 for morphs.",
+        "Add-ons stay off. The badge reads Open weights and links to the licence page."
+      ],
+      "target": "",
+      "view": "simple",
+      "badge": true
+    }
+  },
+  "tours": [
+    {
+      "id": "simple",
+      "name": "Simple mode in 30 seconds",
+      "blurb": "Song, a vibe, then Make.",
+      "steps": ["easy-song", "easy-vibe", "easy-make"]
+    },
+    {
+      "id": "first-video",
+      "name": "Make your first video",
+      "blurb": "The full walk, from the song to the share cut.",
+      "steps": ["song", "beats", "live", "brief", "chips", "continuity", "treatment", "energy", "looks", "gate", "generate", "review", "share", "weights"]
+    },
+    {
+      "id": "continuity",
+      "name": "Continuity & cast lock",
+      "blurb": "Write a brief, read the story card, and pick a treatment.",
+      "steps": ["brief", "continuity", "treatment"]
+    },
+    {
+      "id": "energy",
+      "name": "Energy & re-cut",
+      "blurb": "Read the beats, drag Calm to Hype, then roll a look.",
+      "steps": ["beats", "energy", "looks"]
+    }
+  ]
+}

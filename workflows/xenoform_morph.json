@@ -1,0 +1,58 @@
+{
+  "1": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": { "ckpt_name": "ltx-video-2b-v0.9.5.safetensors" },
+    "_meta": { "title": "LTX 0.9.5" }
+  },
+  "2": {
+    "class_type": "CLIPLoader",
+    "inputs": { "clip_name": "t5xxl_fp8_e4m3fn_scaled.safetensors", "type": "ltxv" },
+    "_meta": { "title": "Local text encoder" }
+  },
+  "3": {
+    "class_type": "CLIPTextEncode",
+    "inputs": { "text": "the shot", "clip": ["2", 0] },
+    "_meta": { "title": "Only the nouns already in the shots" }
+  },
+  "4": {
+    "class_type": "CLIPTextEncode",
+    "inputs": { "text": "text, watermark, flicker", "clip": ["2", 0] },
+    "_meta": { "title": "Negative" }
+  },
+  "5": {
+    "class_type": "LTXVConditioning",
+    "inputs": { "positive": ["3", 0], "negative": ["4", 0], "frame_rate": 24.0 },
+    "_meta": { "title": "Frame rate" }
+  },
+  "6": {
+    "class_type": "LoadImage",
+    "inputs": { "image": "shot-a.png" },
+    "_meta": { "title": "Guide frame" }
+  },
+  "9": {
+    "class_type": "EmptyLTXVLatentVideo",
+    "inputs": { "width": 384, "height": 224, "length": 17, "batch_size": 1 },
+    "_meta": { "title": "Latent" }
+  },
+  "10": {
+    "class_type": "LTXVImgToVideoInplace",
+    "inputs": { "vae": ["1", 2], "image": ["6", 0], "latent": ["9", 0], "strength": 0.35, "bypass": false },
+    "_meta": { "title": "Keep the source frame" }
+  },
+  "13": {
+    "class_type": "RandomNoise",
+    "inputs": { "noise_seed": 2727 },
+    "_meta": { "title": "Seed 2727" }
+  },
+  "15": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": ["13", 0],
+      "guider": ["5", 0],
+      "sampler": ["13", 0],
+      "sigmas": ["10", 0],
+      "latent_image": ["10", 0]
+    },
+    "_meta": { "title": "Sample" }
+  }
+}
