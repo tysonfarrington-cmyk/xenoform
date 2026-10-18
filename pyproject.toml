@@ -59,7 +59,7 @@ model_url = "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/ma
 where = ["src"]
 
 [tool.setuptools.package-data]
-xenoform = ["ui_static/*"]
+xenoform = ["ui_static/*", "ui_static/**/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

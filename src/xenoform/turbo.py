@@ -523,6 +523,10 @@ def run_turbo(
     tuned["comfy"]["resident"] = True
     tuned["comfy"]["width"] = VIDEO_W
     tuned["comfy"]["height"] = VIDEO_H
+    # The GPU pass has to see the vibe and the story, not the default section prompt.
+    from xenoform.director import prompts_for_state
+
+    tuned["prompts"] = {**(tuned.get("prompts") or {}), **prompts_for_state(state)}
 
     report("analyze", 0.05, "Reading the track")
     cache = cache_root(work)

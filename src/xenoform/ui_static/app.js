@@ -1869,7 +1869,12 @@ function waveBars() {
   return `<span class="wave" aria-hidden="true">${bars.join("")}</span>`;
 }
 
+const SHOWCASE = { video: "/static/showcase/showcase.mp4", poster: "/static/showcase/showcase.jpg" };
+
 function easyMedia() {
+  if (state.easy && state.easy.showcase) {
+    return `<video id="player" playsinline autoplay controls preload="auto" poster="${esc(media(SHOWCASE.poster))}" src="${esc(media(SHOWCASE.video))}"></video>`;
+  }
   if (state.easy && state.easy.playedHere) {
     const vibe = (state.easy && state.easy.vibe) || "neon-night";
     const src = state.audioUrl || "/media/audio/demo";
@@ -1883,7 +1888,7 @@ function easyMedia() {
       <audio id="live-audio" src="${esc(media(src))}" preload="auto"></audio>`;
   }
   if (state.job && state.job.video) {
-    return `<video id="player" playsinline poster="${media("/media/poster")}" src="${esc(media(state.job.video))}"></video>`;
+    return `<video id="player" playsinline preload="auto" src="${esc(media(state.job.video))}#t=0.5"></video>`;
   }
   return `<video id="player" playsinline poster="${media("/media/poster")}" src="${esc(media(state.video || "/media/demo"))}"></video>`;
 }
@@ -1941,7 +1946,7 @@ function renderEasy() {
           <h2>Making your video.</h2>
         </div>
         <div class="easy-make-actions">
-          <span>About a minute</span>
+          <span id="easy-eta" aria-live="polite">${esc(easyEtaText())}</span>
           <button type="button" class="ghost" data-act="easy-stop">Stop</button>
         </div>
       </div>
@@ -1970,7 +1975,7 @@ function renderEasy() {
     </div>`;
   }
   if (easy.phase === "result") {
-    const title = chosen && easy.vibe ? chosen.name : "Your cut";
+    const title = easy.showcase ? "A finished one" : chosen && easy.vibe ? chosen.name : "Your cut";
     return `<div class="easy easy-done">
       <section class="easy-result">
         <div class="easy-result-head">
@@ -2046,15 +2051,57 @@ function renderEasy() {
         <dt>Time</dt><dd>About 1 minute</dd>
       </dl>
       <button type="button" class="generate easy-make" data-act="easy-make">Make my video</button>
+      <button type="button" class="ghost easy-showcase" data-act="easy-showcase">Watch a finished one · plays now</button>
       <p class="note" id="easy-note">${esc(easy.note || "No ComfyUI? It plays in your browser.")}</p>
       <p class="side-foot"><a class="ow-badge" href="${esc(media("/licences"))}" title="LTX-2.3 has a revenue threshold. FLUX.2 Klein 9B is non-commercial. This desk uses the Apache 2.0 4B.">Open weights</a></p>
     </aside>
   </div>`;
 }
 
+const EASY_ETA_GPU_S = 55; // measured: 53.6 s on an RTX 3080 Ti, Turbo LTX 0.9.5, 12 s demo
+const EASY_ETA_BROWSER_S = 6;
+let easyTimer = null;
+
+function clockText(seconds) {
+  const s = Math.max(0, Math.round(seconds));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
+
+function easyEtaText() {
+  const easy = state && state.easy;
+  if (!easy || !easy.startedAt) return "About a minute";
+  const elapsed = (Date.now() - easy.startedAt) / 1000;
+  const eta = Number(easy.eta || EASY_ETA_GPU_S);
+  const left = eta - elapsed;
+  const draft = state.job && state.job.video ? "Draft playing · " : "";
+  return left > 2 ? `${draft}${clockText(elapsed)} · about ${clockText(left)} left` : `${draft}${clockText(elapsed)} · almost there`;
+}
+
+function tickEasy() {
+  if (!state || !state.easy || state.easy.phase !== "making") {
+    if (easyTimer) clearInterval(easyTimer);
+    easyTimer = null;
+    return;
+  }
+  const label = document.getElementById("easy-eta");
+  if (label) label.textContent = easyEtaText();
+  const bar = document.querySelector(".easy-making .track span");
+  if (bar) {
+    const elapsed = (Date.now() - state.easy.startedAt) / 1000;
+    const guess = Math.min(0.95, elapsed / Number(state.easy.eta || EASY_ETA_GPU_S));
+    const real = Number((state.job && state.job.status === "running" && state.job.stage !== "restyle" && state.job.progress) || 0) * 0.15;
+    bar.style.width = `${Math.round(Math.max(guess, real) * 100)}%`;
+  }
+}
+
 async function easyMake() {
   const vibe = vibeById(state.easy.vibe);
   if (!vibe) return;
+  state.easy.showcase = false;
+  state.easy.startedAt = Date.now();
+  state.easy.eta = state.comfyOk === false ? EASY_ETA_BROWSER_S : EASY_ETA_GPU_S;
+  if (easyTimer) clearInterval(easyTimer);
+  easyTimer = setInterval(tickEasy, 1000);
   state.easy.phase = "making";
   state.easy.note = "Reading the song. A few seconds.";
   state.brief = (state.easy.idea || "").trim() || vibe.line;
@@ -3541,6 +3588,15 @@ document.addEventListener("click", (event) => {
       if (player && player.play) player.play().catch(() => {});
     }
   } else if (act === "easy-download") {
+    if (state.easy && state.easy.showcase) {
+      const link = document.createElement("a");
+      link.href = media(SHOWCASE.video);
+      link.download = "xenoform-showcase.mp4";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      return;
+    }
     if (state.easy && state.easy.playedHere) {
       state.easy.note = "This cut is the pictures on screen. A file needs ComfyUI.";
       const note = document.getElementById("easy-note");
@@ -3607,7 +3663,16 @@ document.addEventListener("click", (event) => {
     state.easy.phase = "choose";
     state.easy.note = "";
     render();
+  } else if (act === "easy-showcase") {
+    state.easy.showcase = true;
+    state.easy.playedHere = false;
+    state.easy.phase = "result";
+    state.easy.note = "Made earlier on one RTX 3080 Ti with open weights: five LTX morphs, cut to the bar of our own track. Back to the song, then Make, cuts your own in about a minute.";
+    render();
+    const player = document.getElementById("player");
+    if (player && player.play) player.play().catch(() => {});
   } else if (act === "easy-again") {
+    state.easy.showcase = false;
     state.easy.phase = "choose";
     state.easy.note = "";
     render();

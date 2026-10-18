@@ -1,0 +1,47 @@
+{
+  "video": "showcase.mp4",
+  "poster": "showcase.jpg",
+  "seconds": 20.0,
+  "tempo": 143.961,
+  "cuts": [
+    0.0,
+    3.418,
+    8.669,
+    12.17,
+    15.671,
+    20.0
+  ],
+  "shots": [
+    {
+      "clip": "h08_rose_to_lotus_to_jellyfish_black_glass.mp4",
+      "start": 0.0,
+      "end": 3.418,
+      "source_in": 2.583
+    },
+    {
+      "clip": "h02_droplet_swarm_to_butterfly_to_swallow_gr.mp4",
+      "start": 3.418,
+      "end": 8.669,
+      "source_in": 1.645
+    },
+    {
+      "clip": "m02_tarot_card_to_orb_gr.mp4",
+      "start": 8.669,
+      "end": 12.17,
+      "source_in": 0.75
+    },
+    {
+      "clip": "m13_torus_knot_to_mobius_chrome.mp4",
+      "start": 12.17,
+      "end": 15.671,
+      "source_in": 0.75
+    },
+    {
+      "clip": "m22_lotus_to_jellyfish_iridescent.mp4",
+      "start": 15.671,
+      "end": 20.0,
+      "source_in": 0.335
+    }
+  ],
+  "note": "Pre-rendered on an RTX 3080 Ti with open weights (LTX 0.9.5 morphs). Plays instantly; no GPU needed."
+}

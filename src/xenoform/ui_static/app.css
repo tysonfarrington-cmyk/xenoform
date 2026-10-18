@@ -2058,3 +2058,8 @@ body[data-advanced="1"][data-step="look"] #register-slot { display: block; }
   .tl-ruler { margin-left: 0; }
   .library-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* Instant showcase: a finished reel that plays with no GPU wait. */
+button.easy-showcase { width: 100%; margin-top: 8px; }
+#easy-eta { font-variant-numeric: tabular-nums; }
+.easy-making .track span { transition: width 0.9s linear; }

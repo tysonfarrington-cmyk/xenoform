@@ -14,15 +14,15 @@ Xenoform turns a song into a cut: one action shot per section, hard-cut on the b
 
 Three steps. The first cut does not need a GPU, a model, or an account.
 
-1. **Install into Xenoform's own environment.** On Windows, double-click `install.bat`. It creates `.venv` with Python 3.12 and does not pip-install into ComfyUI. On Linux or macOS, run `bash install.sh`. Linking the pack into `custom_nodes` is optional: `install.ps1 -LinkNodes` or `bash install.sh --link-nodes`.
-2. **Open the desk.** On Windows, double-click `Xenoform.bat`. It starts the server minimised and opens [http://127.0.0.1:47317](http://127.0.0.1:47317). The first screen is Simple mode: a song, then a vibe, then Make. Each step waits for the one before it. Advanced in the header keeps the full desk, including the morph panel, and that choice is remembered. If the desk is already up, it opens the browser and appends a line to `xenoform_duplicate.log` instead of starting a second server. When `configs\local.json` is present, the launcher loads it with `--config configs\local.json` and sets `XENO_ADDONS=0`, so Add-ons stay off. ComfyUI stays on [http://127.0.0.1:8188](http://127.0.0.1:8188). The desk pings `/system_stats` and shows connected or not connected. If you linked the node pack, the same page is also at [http://127.0.0.1:8188/xenoform](http://127.0.0.1:8188/xenoform).
-3. **Press Try the demo.** The bundled royalty-free track and the Pynchon register render a dry-run draft. If `examples/demo.wav` or `examples/demo_base.mp4` is missing, the first open writes them. Setup can download the fast LTX model later, when you want a live restyle.
+1. **Install into Xenoform's own environment.** You need Python 3.12 on `PATH` (python.org installer, tick "Add python.exe to PATH") and `ffmpeg` on `PATH`. On Windows, double-click `install.bat`. It creates `.venv` with Python 3.12, installs the pinned requirements (including `comfy-sdk` 0.5.0 and `comfy-api-proxy` 0.1.6) and the `xenoform` package itself, and does not pip-install into ComfyUI. On Linux or macOS, run `bash install.sh`. Linking the pack into `custom_nodes` is optional: `install.ps1 -LinkNodes` or `bash install.sh --link-nodes`.
+2. **Open the desk.** Start ComfyUI on port 8188 first if you want GPU renders. On Windows, double-click `Xenoform.bat`. It starts `comfy-api-proxy` on port 8189 in front of ComfyUI (if it is not already running; log in `xenoform_proxy.log`), starts the server minimised and opens [http://127.0.0.1:47317](http://127.0.0.1:47317). The first screen is Simple mode: a song, then a vibe, then Make. Each step waits for the one before it. Advanced in the header keeps the full desk, including the morph panel, and that choice is remembered. If the desk is already up, it opens the browser and appends a line to `xenoform_duplicate.log` instead of starting a second server. When `configs\local.json` is present, the launcher loads it with `--config configs\local.json` and sets `XENO_ADDONS=0`, so Add-ons stay off. ComfyUI stays on [http://127.0.0.1:8188](http://127.0.0.1:8188). The desk pings `/system_stats` and shows connected or not connected. If you linked the node pack, the same page is also at [http://127.0.0.1:8188/xenoform](http://127.0.0.1:8188/xenoform).
+3. **Press Watch a finished one** to see a pre-rendered reel instantly (five LTX morphs cut to the bar; no GPU, plays in under a second). Then pick **Bundled demo**, a vibe, and **Make my video**: a draft animatic plays after about 3 seconds and the GPU pass finishes in about 25–55 seconds on a 12 GB RTX 3080 Ti, with a live countdown. On the Advanced desk, **Try the demo** The bundled royalty-free track and the Pynchon register render a dry-run draft. If `examples/demo.wav` or `examples/demo_base.mp4` is missing, the first open writes them. Setup can download the fast LTX model later, when you want a live restyle.
 
 ![Try the demo on the simple desk](docs/quickstart-simple.png)
 
 ![Setup check, with disk space and one download button per model](docs/quickstart-setup.png)
 
-Drag `workflows/xenoform_draft.png` or `workflows/xenoform_final.json` onto the ComfyUI canvas and queue it. The same draft graph is stored in the PNG `workflow` text chunk, and a short pointer is in the comment of `examples/demo_base.mp4`.
+Drag `workflows/xenoform_draft.png` or `workflows/xenoform_final.json` onto the ComfyUI canvas and queue it. `workflows/xenoform_morph.json` is a plain API-format A→B object morph (LTX 0.9.5, two `LTXVAddGuide` frames, about 7–9 s for 49 frames at 512×288 on a 3080 Ti): put two stills named `shot-a.png` and `shot-b.png` in `ComfyUI/input` and queue it. The same draft graph is stored in the PNG `workflow` text chunk, and a short pointer is in the comment of `examples/demo_base.mp4`.
 
 ### Judges
 
@@ -96,7 +96,7 @@ flowchart LR
 | Base-form raymarch | Works on CPU with no GPU. Optional moderngl path falls back to CPU if no GL context. |
 | Example base-form mp4 | `examples/demo_base.mp4`, 12 seconds, audio muxed. |
 | Chunking to LTX frame counts | Works. |
-| LTX restyle | **Implemented, dry-run by default.** Live submission uses the real SDK (`workflows.from_file`, `assets.from_file`, `set_input`, `submit`, `events`, `result`, `get_outputs`). It has not been executed in this environment: there is no ComfyUI and no weights here. |
+| LTX restyle | **Works live.** Submission uses the real SDK (`workflows.from_file`, `assets.from_file`, `set_input`, `submit`, `events`, `result`, `get_outputs`) through `comfy-api-proxy`. Verified 19 Oct 2026 on an RTX 3080 Ti: every Simple-mode chunk went `POST /api/v2/assets` → `POST /api/v2/jobs` → SSE events, and the manifest records `submit: sdk`. |
 | Assemble, crossfade, beat flashes, audio mux | Works. |
 | OSC / CSV for TouchDesigner | Export works. Streaming needs `pip install python-osc`. |
 | Director desk (`xenoform ui`) | Works in the browser. Dry-run generate is the default. Live generate needs a Comfy endpoint. |
@@ -455,7 +455,8 @@ LTX stays first. Draft and Final on this card use **LTX-2.3 22B distilled fp8** 
 4. Live renders go through `comfy-sdk` 0.5.0 and `comfy-api-proxy` 0.1.6, which `pip install -r requirements.txt` already pins. Start ComfyUI on 8188, then the proxy in front of it:
 
    ```bash
-   comfy-api-proxy --comfyui http://127.0.0.1:8188 --port 8189
+   .venv\Scripts\comfy-api-proxy.exe --comfyui http://127.0.0.1:8188 --port 8189   # Windows; Xenoform.bat does this for you
+   .venv/bin/comfy-api-proxy --comfyui http://127.0.0.1:8188 --port 8189            # Linux / macOS
    ```
 
    The proxy binds to loopback and does not require a token. See the [API proxy docs](https://docs.comfy.org/development/comfyui-server/api-proxy) and the [SDK docs](https://docs.comfy.org/development/api-development/sdks). `configs/example.json` sets `comfy.base_url` to `http://127.0.0.1:8188` (the health ping) and `comfy.proxy_url` to `http://127.0.0.1:8189` (what the SDK submits to). `send_api_key` stays false. You do not need `COMFY_API_KEY` for this local path. Dry-run does not start the proxy. With the proxy up, live submits use `/api/v2/assets`. Stock ComfyUI answers that route with 405, and the desk then uploads the chunk with `POST /upload/image` and queues it with `POST /prompt` on port 8188. No API key is sent on that path. Simple mode's Make button does this live Turbo pass when `/system_stats` answers, and keeps the CPU animatic on screen as the preview and as the fallback if the GPU pass fails.
@@ -468,7 +469,7 @@ LTX stays first. Draft and Final on this card use **LTX-2.3 22B distilled fp8** 
      --out work/xenoform.mp4
    ```
 
-   Settings can switch the live sampler to LTX-2.5. The three graphs are `workflows/ltx25_a2v_api.json` (audio-to-video), `workflows/ltx25_multishot_api.json`, and `workflows/ltx25_layout_api.json` (Layout-to-Render IC-LoRA for a beat-landed morph). LTX-2.3 stays the fallback when the distilled file is missing or the open-weights check fails. Turbo stays on LTX 0.9.5. Slot names follow the public LTX node list. If the installed pack rejects a slot, re-export with File → Export Workflow (API) and keep the same node ids.
+   Settings can switch the live sampler to LTX-2.5. The three graphs are `workflows/ltx25_a2v_api.json` (audio-to-video), `workflows/ltx25_multishot_api.json`, and `workflows/ltx25_layout_api.json` (Layout-to-Render IC-LoRA for a beat-landed morph). LTX-2.3 stays the fallback when the distilled file is missing or the open-weights check fails. Setup does not download the LTX-2.5 files (`ltx-2.5-22b-distilled-transformer-comfy-int8-convrot.safetensors`, `gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors`, `ltx-2.5-audio-vae-bf16.safetensors`); without them the three LTX-2.5 graphs fail ComfyUI validation and the desk stays on LTX-2.3. Turbo stays on LTX 0.9.5. Slot names follow the public LTX node list. If the installed pack rejects a slot, re-export with File → Export Workflow (API) and keep the same node ids.
 
 If `SaveVideo` rejects `format` / `codec` on your build, open the workflow in ComfyUI, export **File → Export Workflow (API)**, and point `comfy.workflow` at that file. Update `comfy.nodes` only if the node ids moved. The runner checks that every configured id exists and that links point at nodes in the graph before it submits.
 

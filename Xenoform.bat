@@ -26,6 +26,12 @@ if defined UP (
   exit /b 0
 )
 
+rem Live renders go through comfy-sdk to comfy-api-proxy on 8189. Start it if it is not up.
+netstat -ano -p tcp | findstr /C:":8189" | findstr /I /C:"LISTENING" >nul
+if errorlevel 1 (
+  if exist "%~dp0.venv\Scripts\comfy-api-proxy.exe" start "Xenoform proxy" /MIN cmd /c ""%~dp0.venv\Scripts\comfy-api-proxy.exe" --comfyui http://127.0.0.1:8188 --port 8189 >> "%~dp0xenoform_proxy.log" 2>&1"
+)
+
 start "Xenoform" /MIN cmd /c ""%~dp0.venv\Scripts\python.exe" -m xenoform ui --host 127.0.0.1 --port 47317 %XENO_CONFIG% >> "%~dp0xenoform_server.log" 2>&1"
 ping -n 3 127.0.0.1 >nul
 start "" "http://127.0.0.1:47317/"
