@@ -23,7 +23,7 @@ Engines, same plan and stills for all three:
 Gates before a paid submit (all required): ``state.cloud_quality``; not dry run;
 a confirm token minted by ``/api/cloud/estimate`` and clicked by the user whose
 confirmed price covers the real plan; the plan under the per-clip cap
-(``XENO_CLOUD_CAP_USD``, default US$3); the key in ``COMFY_ORG_API_KEY``; the
+(``XENO_CLOUD_CAP_USD``, default US$5); the key in ``COMFY_ORG_API_KEY``; the
 graph valid against the installed node; and ``XENO_CLOUD_NEVER`` unset.
 The key is never logged, stored, or written to the plan file.
 """
@@ -61,7 +61,7 @@ SHOT_TARGET_S = 5.0
 CREDITS_PER_USD = 211.0  # Comfy partner pricing
 AUD_PER_USD = 1.44
 FALLBACK_USD_PER_S = {"fast": {"1280x720": 0.1287}, "pro": {"1280x720": 0.1716}}
-DEFAULT_CAP_USD = 3.0
+DEFAULT_CAP_USD = 5.0
 TOKEN_TTL_S = 30 * 60
 DEFAULT_PROMPT = (
     "Black-glass and liquid-metal organism on pure black void, iridescent violet and teal edge light, "

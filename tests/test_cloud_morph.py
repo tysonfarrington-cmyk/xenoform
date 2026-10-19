@@ -53,8 +53,9 @@ def test_price_per_twenty_second_clip_and_cap():
     assert est["usd"] == pytest.approx(2.574)
     assert est["credits"] == pytest.approx(543.1, abs=0.1)
     assert est["aud"] == pytest.approx(3.71)
-    assert not est["over_cap"]
-    assert cm.estimate(cm.plan_shots(30.0, beats(30)))["over_cap"]
+    assert not est["over_cap"] and est["cap_usd"] == 5.0
+    assert not cm.estimate(cm.plan_shots(30.0, beats(30)))["over_cap"]  # US$3.86
+    assert cm.estimate(cm.plan_shots(40.0, beats(40)))["over_cap"]  # US$5.15
 
 
 def test_confirm_token_covers_only_what_was_shown():
