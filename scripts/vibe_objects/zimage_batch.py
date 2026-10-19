@@ -6,7 +6,7 @@ g, pj, out = sys.argv[1:4]; os.makedirs(out, exist_ok=True)
 c = Comfy(client_info="xenoform-stills", timeout=None)
 t0=time.time(); jobs=[]
 for i,p in enumerate(json.load(open(pj))):
-    wf=c.workflows.from_file(g); wf.set_input("5","text",p["prompt"]); wf.set_input("10","seed",1000+i)
+    wf=c.workflows.from_file(g); wf.set_input("5","text",p["prompt"]); wf.set_input("10","seed",int(os.environ.get("SEED0","1000"))+i)
     wf.set_input("7","width",1024); wf.set_input("7","height",576)
     jobs.append((p["name"], c.submit(wf)))
 for name,j in jobs:

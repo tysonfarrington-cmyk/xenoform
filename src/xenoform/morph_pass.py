@@ -33,9 +33,19 @@ GRAPH = Path(__file__).resolve().parents[2] / "workflows" / "xenoform_morph.json
 FPS = 24
 _size = os.environ.get("XENO_MORPH_SIZE", "512x288").lower().split("x")
 WIDTH, HEIGHT = int(_size[0]), int(_size[1])
-STEPS = int(os.environ.get("XENO_MORPH_STEPS", "12"))
+STEPS = int(os.environ.get("XENO_MORPH_STEPS", "20"))
 MIN_LEN, MAX_LEN = 25, 121
 OUT_W, OUT_H = max(768, WIDTH), max(432, HEIGHT)  # lanczos upscale for playback; the render is WIDTH x HEIGHT
+
+GRAPH25 = GRAPH.with_name("ltx25_morph_api.json")
+# Files the LTX-2.5 morph needs (the official ComfyUI FLF2V template's low-VRAM set,
+# from the gated Hugging Face repo Lightricks/LTX-2.5).
+LTX25_FILES = (
+    ("diffusion_models", "ltx-2.5-22b-distilled-transformer-comfy-int8-convrot.safetensors"),
+    ("text_encoders", "gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors"),
+    ("vae", "ltx-2.5-video-vae-bf16.safetensors"),
+    ("vae", "ltx-2.5-audio-vae-bf16.safetensors"),
+)
 
 VIBE_LOOK = {
     "liquid-gold": "molten gold and liquid mercury, warm amber studio glow, dark umber backdrop",
@@ -80,8 +90,9 @@ def pick_stills(state: dict, count: int) -> tuple[str, list[dict]]:
     lead = next((i for i, item in enumerate(pool) if set(item["noun"].split()) & words), None)
     if lead:
         pool = pool[lead:] + pool[:lead]
-    seq = pool + pool[-2:0:-1]  # ping-pong when a song needs more scenes than the pool has
-    picked = [seq[i % len(seq)] for i in range(count)]
+    # Twelve objects a vibe: a 20 s clip (up to 11 handoffs) never repeats one. Longer
+    # songs cycle forward, so a repeat is always a new pairing, never a ping-pong back.
+    picked = [pool[i % len(pool)] for i in range(count)]
     return vibe, [{**item, "path": str(OBJECTS / item["file"])} for item in picked]
 
 
@@ -107,7 +118,7 @@ def gen_length(frames: int) -> int:
     return int(min(MAX_LEN, max(MIN_LEN, n)))
 
 
-def prompt_for(vibe: str) -> str:
+def prompt_for(vibe: str, engine: str = "ltx095") -> str:
     """One prompt per vibe, not per pair: the two guide stills carry the objects.
 
     The text encoder runs on the CPU (it is what pushed the card past 11.5 GB),
@@ -115,14 +126,36 @@ def prompt_for(vibe: str) -> str:
     encode it once and reuse it for every morph.
     """
     look = VIBE_LOOK.get(vibe, VIBE_LOOK["liquid-gold"])
-    return (
+    lead = "Use the provided start image as the first frame and the provided end image as the final frame anchor. " if engine == "ltx25" else ""
+    return lead + (
         "One single sculptural object slowly melts and flows into another, one continuous liquid "
         f"transformation, the object stays centred, gentle slow camera drift, {look}, "
         "macro product photography, crisp, clean, high detail"
     )
 
 
-def _graph_path(work: Path) -> Path:
+def ltx25_present(root: Path | None = None) -> bool:
+    if root is None:
+        try:
+            from xenoform.models_setup import models_dir
+
+            root = Path(models_dir() or "")
+        except Exception:
+            return False
+    return all((Path(root) / folder / name).is_file() for folder, name in LTX25_FILES)
+
+
+def pick_engine() -> str:
+    """``ltx25`` when its four files are on disk (or ``XENO_MORPH_ENGINE`` asks), else ``ltx095``."""
+    forced = os.environ.get("XENO_MORPH_ENGINE", "").strip().lower()
+    if forced in ("ltx25", "ltx095"):
+        return forced
+    return "ltx25" if ltx25_present() and GRAPH25.exists() else "ltx095"
+
+
+def _graph_path(work: Path, engine: str = "ltx095") -> Path:
+    if engine == "ltx25":
+        return GRAPH25
     if GRAPH.exists():
         return GRAPH
     from xenoform.morph.workflow import graph
@@ -187,6 +220,35 @@ def run_morph_pass(
     state: dict,
     report: Callable[[str, float, str], None],
 ) -> dict[str, Any]:
+    """LTX-2.5 when it is installed, LTX 0.9.5 otherwise, and 0.9.5 again if 2.5 fails."""
+    engine = pick_engine()
+    if engine == "ltx25":
+        try:
+            return _render(directed, scenes, audio_path, out_path, work, cfg, state, report, "ltx25")
+        except Exception as exc:
+            from xenoform.turbo import JobCancelled
+
+            if isinstance(exc, JobCancelled):
+                raise
+            log.exception("LTX-2.5 morph pass failed; falling back to LTX 0.9.5")
+            report("restyle", 0.1, "LTX-2.5 did not run here. Falling back to LTX 0.9.5 morphs.")
+            info = _render(directed, scenes, audio_path, out_path, work, cfg, state, report, "ltx095")
+            info["fallback_from"] = f"ltx25: {exc}"[:300]
+            return info
+    return _render(directed, scenes, audio_path, out_path, work, cfg, state, report, engine)
+
+
+def _render(
+    directed: dict,
+    scenes: list[dict],
+    audio_path: Path,
+    out_path: Path,
+    work: Path,
+    cfg: dict,
+    state: dict,
+    report: Callable[[str, float, str], None],
+    engine: str = "ltx095",
+) -> dict[str, Any]:
     from xenoform.restyle import _make_client
 
     started = time.perf_counter()
@@ -201,7 +263,7 @@ def run_morph_pass(
     seed = int(state.get("seed") or 2727)
 
     client = _make_client(cfg)
-    graph = _graph_path(work)
+    graph = _graph_path(work, engine)
     assets: dict[str, Any] = {}
 
     def asset(path: str):
@@ -215,12 +277,16 @@ def run_morph_pass(
         wf = client.workflows.from_file(str(graph))
         wf.set_input("6", "image", asset(a["path"]))
         wf.set_input("7", "image", asset(b["path"]))
-        wf.set_input("3", "text", prompt_for(vibe))
+        wf.set_input("3", "text", prompt_for(vibe, engine))
         wf.set_input("4", "text", NEGATIVE)
         wf.set_input("9", "width", WIDTH)
         wf.set_input("9", "height", HEIGHT)
         wf.set_input("9", "length", gen_length(counts[i]))
-        wf.set_input("11", "steps", STEPS)
+        if engine == "ltx25":
+            # Distilled: the fixed 8-sigma schedule in the graph, CFG 1; audio latent sized to match.
+            wf.set_input("25", "frames_number", gen_length(counts[i]))
+        else:
+            wf.set_input("11", "steps", STEPS)
         wf.set_input("13", "noise_seed", seed + i)
         wf.set_input("18", "fps", float(FPS))
         jobs.append(client.submit(wf))
@@ -277,12 +343,12 @@ def run_morph_pass(
         log.exception("text cards on the morph cut")
     gpu_path.replace(out_path)
     info = {
-        "engine": "ltx-095 A->B morph chain (comfy-sdk -> comfy-api-proxy)",
+        "engine": ("ltx-2.5 22B distilled int8" if engine == "ltx25" else "ltx-095") + " A->B morph chain (comfy-sdk -> comfy-api-proxy)",
         "workflow": str(graph),
         "vibe": vibe,
         "render": f"{WIDTH}x{HEIGHT}",
         "output": f"{OUT_W}x{OUT_H}",
-        "steps": STEPS,
+        "steps": 8 if engine == "ltx25" else STEPS,
         "fps": FPS,
         "handoffs_s": [round(t, 3) for t in bounds],
         "frames": counts,

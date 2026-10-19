@@ -11,7 +11,7 @@ def test_every_vibe_has_its_own_stills_on_disk():
     assert {"liquid-gold", "paper-summer", "bloom", "neon-night", "ocean", "cosmic"} <= set(pools)
     seen = set()
     for vibe, items in pools.items():
-        assert len(items) >= 8
+        assert len(items) >= 12
         for item in items:
             assert (mp.OBJECTS / item["file"]).is_file()
             assert item["file"] not in seen
@@ -38,6 +38,27 @@ def test_story_noun_leads_the_chain():
     _, long = mp.pick_stills({"vibe": "cosmic"}, 20)
     assert len(long) == 20
     assert all(a["file"] != b["file"] for a, b in zip(long, long[1:]))
+    _, clip = mp.pick_stills({"vibe": "neon-night"}, 10)
+    assert len({s["file"] for s in clip}) == 10  # 9 shots, no repeats
+
+
+def test_ltx25_is_picked_only_when_its_files_exist(tmp_path, monkeypatch):
+    monkeypatch.delenv("XENO_MORPH_ENGINE", raising=False)
+    assert mp.ltx25_present(tmp_path) is False
+    for folder, name in mp.LTX25_FILES:
+        (tmp_path / folder).mkdir(exist_ok=True)
+        (tmp_path / folder / name).write_bytes(b"")
+    assert mp.ltx25_present(tmp_path) is True
+    monkeypatch.setenv("XENO_MORPH_ENGINE", "ltx095")
+    assert mp.pick_engine() == "ltx095"
+
+
+def test_ltx25_graph_mirrors_the_morph_node_ids():
+    graph = json.loads((ROOT / "workflows" / "ltx25_morph_api.json").read_text(encoding="utf-8"))
+    assert graph["1"]["class_type"] == "UNETLoader" and "ltx-2.5" in graph["1"]["inputs"]["unet_name"]
+    assert graph["6"]["class_type"] == graph["7"]["class_type"] == "LoadImage"
+    assert sorted(graph[k]["inputs"]["frame_idx"] for k in ("10", "22")) == [-1, 0]
+    assert graph["19"]["class_type"] == "SaveVideo" and graph["25"]["class_type"] == "LTXVEmptyLatentAudio"
 
 
 def test_handoffs_snap_to_beats_and_cover_the_clip():

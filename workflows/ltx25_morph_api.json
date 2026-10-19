@@ -1,0 +1,311 @@
+{
+ "1": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "ltx-2.5-22b-distilled-transformer-comfy-int8-convrot.safetensors",
+   "weight_dtype": "default"
+  }
+ },
+ "2": {
+  "class_type": "CLIPLoader",
+  "inputs": {
+   "clip_name": "gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors",
+   "type": "ltxv",
+   "device": "default"
+  }
+ },
+ "23": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "ltx-2.5-video-vae-bf16.safetensors"
+  }
+ },
+ "24": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "ltx-2.5-audio-vae-bf16.safetensors"
+  }
+ },
+ "3": {
+  "class_type": "CLIPTextEncode",
+  "inputs": {
+   "clip": [
+    "2",
+    0
+   ],
+   "text": "Use the provided start image as the first frame and the provided end image as the final frame anchor. One single sculptural object slowly melts and flows into another, one continuous liquid transformation, the object stays centred, gentle slow camera drift, soft ambient hum."
+  }
+ },
+ "4": {
+  "class_type": "CLIPTextEncode",
+  "inputs": {
+   "clip": [
+    "2",
+    0
+   ],
+   "text": "blurry, out of focus, low contrast, washed out colors, excessive noise, flickering, text, letters, watermark, two objects, cut, people, hands, camera shake"
+  }
+ },
+ "5": {
+  "class_type": "LTXVConditioning",
+  "inputs": {
+   "positive": [
+    "3",
+    0
+   ],
+   "negative": [
+    "4",
+    0
+   ],
+   "frame_rate": 24.0
+  }
+ },
+ "6": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "shot-a.png"
+  }
+ },
+ "7": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "shot-b.png"
+  }
+ },
+ "8": {
+  "class_type": "LTXVPreprocess",
+  "inputs": {
+   "image": [
+    "6",
+    0
+   ],
+   "img_compression": 18
+  }
+ },
+ "21": {
+  "class_type": "LTXVPreprocess",
+  "inputs": {
+   "image": [
+    "7",
+    0
+   ],
+   "img_compression": 18
+  }
+ },
+ "9": {
+  "class_type": "EmptyLTXVLatentVideo",
+  "inputs": {
+   "width": 512,
+   "height": 288,
+   "length": 49,
+   "batch_size": 1
+  }
+ },
+ "10": {
+  "class_type": "LTXVAddGuide",
+  "inputs": {
+   "positive": [
+    "5",
+    0
+   ],
+   "negative": [
+    "5",
+    1
+   ],
+   "vae": [
+    "23",
+    0
+   ],
+   "latent": [
+    "9",
+    0
+   ],
+   "image": [
+    "8",
+    0
+   ],
+   "frame_idx": 0,
+   "strength": 1.0
+  }
+ },
+ "22": {
+  "class_type": "LTXVAddGuide",
+  "inputs": {
+   "positive": [
+    "10",
+    0
+   ],
+   "negative": [
+    "10",
+    1
+   ],
+   "vae": [
+    "23",
+    0
+   ],
+   "latent": [
+    "10",
+    2
+   ],
+   "image": [
+    "21",
+    0
+   ],
+   "frame_idx": -1,
+   "strength": 1.0
+  }
+ },
+ "25": {
+  "class_type": "LTXVEmptyLatentAudio",
+  "inputs": {
+   "frames_number": 49,
+   "frame_rate": 24,
+   "batch_size": 1,
+   "audio_vae": [
+    "24",
+    0
+   ]
+  }
+ },
+ "26": {
+  "class_type": "LTXVConcatAVLatent",
+  "inputs": {
+   "video_latent": [
+    "22",
+    2
+   ],
+   "audio_latent": [
+    "25",
+    0
+   ]
+  }
+ },
+ "11": {
+  "class_type": "ManualSigmas",
+  "inputs": {
+   "sigmas": "1.0, 0.99375, 0.9875, 0.98125, 0.975, 0.909375, 0.725, 0.421875, 0.0"
+  }
+ },
+ "12": {
+  "class_type": "SamplerEulerAncestral",
+  "inputs": {
+   "eta": 0.0,
+   "s_noise": 1.0
+  }
+ },
+ "13": {
+  "class_type": "RandomNoise",
+  "inputs": {
+   "noise_seed": 2727
+  }
+ },
+ "14": {
+  "class_type": "LTXVDualCFGGuider",
+  "inputs": {
+   "model": [
+    "1",
+    0
+   ],
+   "positive": [
+    "22",
+    0
+   ],
+   "negative": [
+    "22",
+    1
+   ],
+   "video_cfg": 1.0,
+   "audio_cfg": 1.0
+  }
+ },
+ "15": {
+  "class_type": "SamplerCustomAdvanced",
+  "inputs": {
+   "noise": [
+    "13",
+    0
+   ],
+   "guider": [
+    "14",
+    0
+   ],
+   "sampler": [
+    "12",
+    0
+   ],
+   "sigmas": [
+    "11",
+    0
+   ],
+   "latent_image": [
+    "26",
+    0
+   ]
+  }
+ },
+ "27": {
+  "class_type": "LTXVSeparateAVLatent",
+  "inputs": {
+   "av_latent": [
+    "15",
+    1
+   ]
+  }
+ },
+ "16": {
+  "class_type": "LTXVCropGuides",
+  "inputs": {
+   "positive": [
+    "22",
+    0
+   ],
+   "negative": [
+    "22",
+    1
+   ],
+   "latent": [
+    "27",
+    0
+   ]
+  }
+ },
+ "17": {
+  "class_type": "VAEDecodeTiled",
+  "inputs": {
+   "samples": [
+    "16",
+    2
+   ],
+   "vae": [
+    "23",
+    0
+   ],
+   "tile_size": 512,
+   "overlap": 64,
+   "temporal_size": 64,
+   "temporal_overlap": 16
+  }
+ },
+ "18": {
+  "class_type": "CreateVideo",
+  "inputs": {
+   "images": [
+    "17",
+    0
+   ],
+   "fps": 24.0
+  }
+ },
+ "19": {
+  "class_type": "SaveVideo",
+  "inputs": {
+   "video": [
+    "18",
+    0
+   ],
+   "filename_prefix": "xenoform/morph25",
+   "format": "auto",
+   "codec": "auto"
+  }
+ }
+}
