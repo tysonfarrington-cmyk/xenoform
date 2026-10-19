@@ -369,10 +369,24 @@
     dimBottom.style.cssText = `top:${box.top + box.height}px;left:0;right:0;bottom:0`;
     ring.hidden = false;
     ring.style.cssText = `top:${box.top}px;left:${box.left}px;width:${box.width}px;height:${box.height}px`;
-    placeCard(card, rect);
+    const keep = keepNode(currentStep(), node);
+    placeCard(card, rect, keep ? keep.getBoundingClientRect() : rect);
   }
 
-  function placeCard(card, rect) {
+  // The control the step asks for (the Make button, a vibe card). The card must never cover it.
+  function keepNode(step, node) {
+    if (!step || !step.hit || !node) return null;
+    const hits = [...node.querySelectorAll(step.hit)].filter((el) => el.offsetParent !== null);
+    return hits[0] || null;
+  }
+
+  function overlap(a, b) {
+    const w = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+    const h = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+    return w > 0 && h > 0 ? w * h : 0;
+  }
+
+  function placeCard(card, rect, keep) {
     card.classList.remove("is-center");
     if (narrow()) {
       card.classList.add("is-sheet");
@@ -384,14 +398,33 @@
     const margin = 12;
     const width = card.offsetWidth || 360;
     const height = card.offsetHeight || 180;
-    let top = rect.bottom + margin;
-    let left = Math.min(rect.left, window.innerWidth - width - margin);
-    if (top + height > window.innerHeight - margin) top = rect.top - height - margin;
-    if (top < margin) top = Math.min(rect.bottom + margin, window.innerHeight - height - margin);
-    if (top < margin) top = margin;
-    if (left < margin) left = margin;
-    card.style.top = `${top}px`;
-    card.style.left = `${left}px`;
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+    const target = { left: Math.max(0, rect.left), top: Math.max(0, rect.top), right: Math.min(W, rect.right), bottom: Math.min(H, rect.bottom) };
+    const clampL = (v) => Math.max(margin, Math.min(v, W - width - margin));
+    const clampT = (v) => Math.max(margin, Math.min(v, H - height - margin));
+    // Below, above, right of, left of the highlight; then around the control itself.
+    const spots = [
+      [rect.bottom + margin, clampL(rect.left)],
+      [rect.top - height - margin, clampL(rect.left)],
+      [clampT(keep.top), rect.right + margin],
+      [clampT(keep.top), rect.left - width - margin],
+      [keep.bottom + margin, clampL(keep.left)],
+      [keep.top - height - margin, clampL(keep.left)],
+      [clampT(keep.top), keep.right + margin],
+      [clampT(keep.top), keep.left - width - margin],
+    ];
+    let best = null;
+    spots.forEach(([top, left], order) => {
+      const fits = top >= margin && left >= margin && top + height <= H - margin && left + width <= W - margin;
+      const t = fits ? top : clampT(top);
+      const l = fits ? left : clampL(left);
+      const box = { left: l, top: t, right: l + width, bottom: t + height };
+      const score = overlap(box, keep) * 1000 + overlap(box, target) + (fits ? 0 : 1e9) + order;
+      if (!best || score < best.score) best = { score, top: t, left: l };
+    });
+    card.style.top = `${Math.round(best.top)}px`;
+    card.style.left = `${Math.round(best.left)}px`;
   }
 
   function reveal(node) {
@@ -406,6 +439,15 @@
     if (fullyVisible && rect.height <= limit - bar) return;
     const top = window.scrollY + rect.top - bar;
     window.scrollTo({ top: Math.max(0, top), behavior: "auto" });
+  }
+
+  // A tall highlight (the whole Make panel) can push its own button off screen.
+  function revealKeep(step, node) {
+    const keep = keepNode(step, node);
+    if (!keep) return;
+    const r = keep.getBoundingClientRect();
+    if (r.top >= 0 && r.bottom <= window.innerHeight - 24) return;
+    window.scrollTo({ top: Math.max(0, window.scrollY + r.bottom - window.innerHeight + 48), behavior: "auto" });
   }
 
   function focusCard(step) {
@@ -434,11 +476,13 @@
     }
     placeTries = 0;
     if (node) reveal(node);
+    revealKeep(step, node);
     layout(node);
     window.requestAnimationFrame(() => {
       if (!running) return;
       const again = step.target ? document.querySelector(step.target) : null;
       if (again) reveal(again);
+      revealKeep(step, again);
       layout(again);
       focusCard(step);
     });
