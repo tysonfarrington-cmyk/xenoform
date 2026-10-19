@@ -157,3 +157,12 @@ def test_upscale_can_be_switched_off(tmp_path, stills, monkeypatch):
     client = _Client(lambda i, up: None)
     ft.final_clips([{"render_s": 2, "seconds": 1}], stills, tmp_path, {}, 1, "black", client=client)
     assert client.submitted == [False]
+
+
+def test_present_defaults_to_the_comfy_models_root(tmp_path, monkeypatch):
+    from xenoform import models_setup
+
+    monkeypatch.setattr(models_setup, "models_root", lambda: tmp_path)
+    (tmp_path / "upscale_models").mkdir()
+    (tmp_path / "upscale_models" / ft.UPSCALER).write_bytes(b"x")
+    assert ft.present()["upscale"] is True

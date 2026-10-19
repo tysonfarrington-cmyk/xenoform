@@ -44,9 +44,9 @@ def present(root: Path | None = None) -> dict:
     """Which Final-tier files are on disk (by ComfyUI models folder)."""
     if root is None:
         try:
-            from xenoform.models_setup import models_dir
+            from xenoform.models_setup import models_root
 
-            root = Path(models_dir() or "")
+            root = Path(models_root())
         except Exception:
             root = None
     found = {name: bool(root and (Path(root) / folder / name).is_file()) for folder, name in FILES}
