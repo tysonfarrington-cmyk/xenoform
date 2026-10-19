@@ -640,11 +640,16 @@ def run_turbo(
                 )
                 warning = cloud_warning or warning
             else:
+                from xenoform.dense import run_simple, wants_finishing
                 from xenoform.morph_pass import run_morph_pass
 
                 if state.get("cloud_quality"):
                     warning = "Paid cloud renders are off, so this cut used the open-weights morphs on this machine."
-                morph_info = run_morph_pass(directed, scenes, Path(audio_path), out_path, work, tuned, state, report, cancel=cancel)
+                if wants_finishing(state):
+                    # Dense energy, 9:16 / 1:1, Final tier, end card: the open-weights finishing pass.
+                    morph_info = run_simple(directed, Path(audio_path), out_path, work, tuned, state, report, cancel=cancel)
+                else:
+                    morph_info = run_morph_pass(directed, scenes, Path(audio_path), out_path, work, tuned, state, report, cancel=cancel)
             mode = "turbo"
             report("restyle", 1.0, "GPU morphs locked to the beat")
         except JobCancelled:

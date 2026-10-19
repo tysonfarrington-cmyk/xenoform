@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import math
 import re
@@ -930,6 +931,117 @@ def create_app(cfg: dict | None = None):
             scene.setdefault("form", "sphere")
         return desk_pass(scenes, features, energy=payload.get("energy") or 0, quality="live")
 
+    # ---------------------------------------------------------- Simple: recipe codes, options, hook, My videos
+
+    @app.post("/api/simple/recipe/encode")
+    def simple_recipe_encode(body: dict) -> dict:
+        from xenoform.simple_recipe import encode
+
+        return {"recipe": encode(body or {})}
+
+    @app.post("/api/simple/recipe/decode")
+    def simple_recipe_decode(body: dict) -> dict:
+        from xenoform.simple_recipe import RecipeError, decode, encode
+
+        try:
+            state = decode(str((body or {}).get("recipe") or ""))
+        except RecipeError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        state["recipe"] = encode(state)
+        return state
+
+    @app.get("/api/simple/options")
+    def simple_options(duration: float = 20.0, energy: str = "flow", tier: str = "draft") -> dict:
+        from xenoform import final_tier
+        from xenoform.cloud_morph import plan_shots
+        from xenoform.dense import dense_plan
+
+        duration = max(1.0, min(float(duration or 20.0), 600.0))
+        beats = [i * 0.5 for i in range(int(duration / 0.5))]
+        if energy == "dense":
+            shots = dense_plan(duration, beats, drop=duration * 0.6)["shots"]
+        else:
+            shots = plan_shots(duration, beats)
+        files = final_tier.present()
+        return {
+            "energies": ["flow", "dense"],
+            "aspects": ["16:9", "9:16", "1:1"],
+            "tiers": ["draft", "final"],
+            "shots": len(shots),
+            "final": {"ready": files["ready"], "upscale": files["upscale"], "files": files["files"],
+                      "eta_s": final_tier.eta_seconds(shots, upscale=files["upscale"]),
+                      "eta_measured": bool(final_tier.ETA["measured"]),
+                      "render": f"{final_tier.RENDER_W}x{final_tier.RENDER_H}",
+                      "output": f"{final_tier.OUT_W}x{final_tier.OUT_H}"},
+        }
+
+    def _video_dir(video_id: str) -> Path:
+        folder = work_dir() / "jobs" / storage_id(video_id, fallback="")
+        if not (folder / "xenoform.mp4").is_file():
+            raise HTTPException(404, "That video is not on this machine.")
+        return folder
+
+    @app.post("/api/videos/{video_id}/hook")
+    def video_hook(video_id: str, body: dict | None = None) -> dict:
+        from xenoform.beatfx import export_hook, pick_hook
+
+        folder = _video_dir(video_id)
+        length = max(5.0, min(float((body or {}).get("length") or 15.0), 60.0))
+        src = folder / "xenoform.mp4"
+        meta = _read_meta(folder)
+        beats = []
+        try:
+            beats = list(_features_for(str(meta.get("audio_id") or "demo")).get("beats") or [])
+        except HTTPException:
+            pass
+        window = pick_hook(src, length=length, beats=beats)
+        made = export_hook(src, folder / "hook.mp4", window["start"], min(length, window["end"] - window["start"]))
+        return {**window, "seconds": made["seconds"], "url": f"/api/videos/{video_id}/hook.mp4"}
+
+    @app.get("/api/videos/{video_id}/hook.mp4")
+    def video_hook_file(video_id: str) -> FileResponse:
+        path = _video_dir(video_id) / "hook.mp4"
+        if not path.is_file():
+            raise HTTPException(404, "Make the 15 s hook first.")
+        return FileResponse(path, media_type="video/mp4", filename=f"xenoform-hook-{video_id}.mp4",
+                            headers={"Cache-Control": "no-store"})
+
+    @app.get("/api/videos/{video_id}/video")
+    def video_file(video_id: str) -> FileResponse:
+        return FileResponse(_video_dir(video_id) / "xenoform.mp4", media_type="video/mp4", headers={"Cache-Control": "no-store"})
+
+    @app.get("/api/videos")
+    def videos_index(limit: int = 24) -> dict:
+        rows = []
+        root = work_dir() / "jobs"
+        folders = sorted((p for p in root.glob("*") if (p / "xenoform.mp4").is_file()) if root.is_dir() else [],
+                         key=lambda p: (p / "xenoform.mp4").stat().st_mtime, reverse=True)
+        for folder in folders[: max(1, min(int(limit), 200))]:
+            meta = _read_meta(folder)
+            if not meta.get("simple"):
+                continue
+            simple = {}
+            simple_file = folder / "simple" / "simple.json"
+            if simple_file.is_file():
+                try:
+                    simple = json.loads(simple_file.read_text(encoding="utf-8"))
+                except ValueError:
+                    simple = {}
+            rows.append({
+                "id": folder.name,
+                "created": meta.get("created") or "",
+                "vibe": meta.get("vibe") or "",
+                "song": meta.get("song") or "",
+                "recipe": meta.get("recipe") or "",
+                "energy": meta.get("energy_preset") or "flow",
+                "aspect": meta.get("aspect") or "16:9",
+                "tier": meta.get("quality_tier") or "draft",
+                "engine": simple.get("engine") or "",
+                "url": f"/api/videos/{folder.name}/video",
+                "hook": (folder / "hook.mp4").is_file(),
+            })
+        return {"videos": rows}
+
     @app.post("/api/recipe/encode")
     def recipe_encode(body: dict) -> dict:
         try:
@@ -979,6 +1091,9 @@ def create_app(cfg: dict | None = None):
         job_id = uuid.uuid4().hex[:8]
         out = work_dir() / "jobs" / job_id / "xenoform.mp4"
         out.parent.mkdir(parents=True, exist_ok=True)
+        recipe = _write_meta(out.parent, body, audio_id)
+        if recipe and not body.get("simple_recipe"):
+            body["simple_recipe"] = recipe
         cancel_event = threading.Event()
         only = [str(item) for item in (body.get("only_scenes") or []) if str(item)]
         try:
@@ -1555,6 +1670,40 @@ def _run_job(job_id: str, audio_path: Path, body: dict, cfg: dict, out: Path, ca
             job["error"] = sentence
             job["detail"] = sentence
             job["diagnostics"] = diagnostics(exc, extra={"job": job_id})
+
+
+def _read_meta(folder: Path) -> dict:
+    path = Path(folder) / "meta.json"
+    try:
+        return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
+    except ValueError:
+        return {}
+
+
+def _write_meta(folder: Path, body: dict, audio_id: str) -> str:
+    """What My videos needs to list, reopen and re-render a Simple cut."""
+    try:
+        from datetime import datetime
+
+        from xenoform.simple_recipe import encode
+
+        simple = str(body.get("mode") or "") == "simple" or bool(body.get("vibe"))
+        meta = {
+            "created": datetime.now().astimezone().isoformat(timespec="seconds"),
+            "simple": simple,
+            "audio_id": audio_id,
+            "song": str(body.get("song") or body.get("song_label") or "")[:80],
+            "vibe": str(body.get("vibe") or ""),
+            "energy_preset": str(body.get("energy_preset") or "flow"),
+            "aspect": str(body.get("aspect") or "16:9"),
+            "quality_tier": str(body.get("quality_tier") or "draft"),
+            "recipe": encode({**body, "idea": body.get("idea") or body.get("brief") or ""}) if simple else "",
+        }
+        (Path(folder) / "meta.json").write_text(json.dumps(meta, indent=1), encoding="utf-8")
+        return meta["recipe"]
+    except Exception:
+        log.exception("job meta")
+        return ""
 
 
 def serve(host: str = "127.0.0.1", port: int = 47317, cfg: dict | None = None) -> None:
