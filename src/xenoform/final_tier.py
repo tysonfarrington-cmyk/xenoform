@@ -37,6 +37,9 @@ OOM_WORDS = ("out of memory", "outofmemory", "cuda error", "allocation", "oom")
 # with another LTX-2.3 job): a 2 s shot (49 frames) took 93 s warm including the ClearReality
 # pass; a 3 s shot (73 frames) took 238 s including the first model load. Peak card memory
 # 11.8 GB of 12. The split between load, render and upscale is inferred from those two runs.
+# Checked against the full 15-shot demo1 Final (same night, still shared): 1481 s of clips
+# against 1540 s predicted (first 3 s shot 271 s cold, then 86 s per 2 s shot), plus about
+# 50-95 s per aspect to compose. Peak card memory 11.9 GB.
 ETA = {"load_s": 100.0, "per_shot_s": 70.0, "upscale_per_shot_s": 23.0, "per_second_extra_s": 45.0,
        "measured": True}
 
