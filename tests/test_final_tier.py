@@ -36,8 +36,8 @@ def test_lengths_are_8k_plus_1_and_capped():
 def test_eta_is_honest_and_labelled_unmeasured():
     shots = [{"render_s": 2}] * 15
     cold = ft.eta_seconds(shots)
-    assert cold == int(90 + 15 * (55 + 25))
-    assert ft.eta_seconds(shots, upscale=False, warm=True) == 15 * 55
+    assert cold == int(90 + 15 * (120 + 30))
+    assert ft.eta_seconds(shots, upscale=False, warm=True) == 15 * 120
     assert ft.ETA["measured"] is False
 
 

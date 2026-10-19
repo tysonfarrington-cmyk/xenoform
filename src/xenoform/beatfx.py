@@ -60,6 +60,19 @@ def norm_aspect(value) -> str:
 # ------------------------------------------------------------------ envelopes
 
 
+def load_audio(path: Path, sr: int = 22050, offset: float = 0.0, duration: float | None = None) -> np.ndarray:
+    """Mono float32 samples from any file ffmpeg reads (wav, mp3, or the audio track of an mp4)."""
+    cmd = [_ffmpeg(), "-v", "error"]
+    if offset:
+        cmd += ["-ss", f"{offset:.3f}"]
+    cmd += ["-i", str(path)]
+    if duration:
+        cmd += ["-t", f"{duration:.3f}"]
+    cmd += ["-vn", "-ac", "1", "-ar", str(sr), "-f", "f32le", "-"]
+    raw = subprocess.run(cmd, capture_output=True).stdout
+    return np.frombuffer(raw, np.float32).copy()
+
+
 def envelopes(audio_path: Path | None, frames: int, start: float = 0.0) -> dict[str, np.ndarray]:
     """kick, transient and loudness, one value per output frame, 0..1."""
     zero = np.zeros(frames, np.float32)
@@ -67,7 +80,8 @@ def envelopes(audio_path: Path | None, frames: int, start: float = 0.0) -> dict[
         return {"kick": zero, "trans": zero, "loud": zero + 0.6}
     import librosa
 
-    y, sr = librosa.load(str(audio_path), sr=22050, mono=True, offset=float(start), duration=frames / FPS + 0.5)
+    sr = 22050
+    y = load_audio(Path(audio_path), sr, float(start), frames / FPS + 0.5)
     if len(y) < 4096:
         return {"kick": zero, "trans": zero, "loud": zero + 0.6}
     hop = 512
@@ -382,7 +396,8 @@ def pick_hook(audio_path: Path, length: float = 15.0, beats: Iterable[float] = (
     """
     import librosa
 
-    y, sr = librosa.load(str(audio_path), sr=22050, mono=True)
+    sr = 22050
+    y = load_audio(Path(audio_path), sr)
     dur = len(y) / sr
     if dur <= length + 0.05:
         return {"start": 0.0, "end": round(dur, 3), "drop": 0.0, "whole_song": True}
@@ -415,7 +430,8 @@ def drop_time(audio_path: Path, beats: Iterable[float] = (), lo: float = 0.25, h
     """The song's main drop: the biggest one-bar jump in loudness between ``lo`` and ``hi`` of the song."""
     import librosa
 
-    y, sr = librosa.load(str(audio_path), sr=22050, mono=True)
+    sr = 22050
+    y = load_audio(Path(audio_path), sr)
     dur = len(y) / sr
     hop = 512
     rms = librosa.feature.rms(y=y, hop_length=hop)[0]

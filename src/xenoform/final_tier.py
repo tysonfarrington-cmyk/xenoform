@@ -20,7 +20,9 @@ from typing import Callable
 CKPT = "ltx-2.3-22b-distilled-fp8.safetensors"
 TEXT_ENCODER = "gemma_3_12B_it_fp4_mixed.safetensors"
 LATENT_UPSCALER = "ltx-2.3-spatial-upscaler-x2-1.1.safetensors"
-UPSCALER = "4x-ClearRealityV1.safetensors"
+# 4x-ClearReality (Kim2091) is CC BY-NC-SA 4.0: non-commercial. XENO_FINAL_UPSCALER names another
+# file in models/upscale_models (for a commercial release), or XENO_FINAL_UPSCALE=0 skips it.
+UPSCALER = os.environ.get("XENO_FINAL_UPSCALER", "").strip() or "4x-ClearRealityV1.safetensors"
 FILES = (("checkpoints", CKPT), ("text_encoders", TEXT_ENCODER), ("latent_upscale_models", LATENT_UPSCALER),
          ("upscale_models", UPSCALER))
 RENDER_W, RENDER_H = 768, 448  # multiples of 64, so stage 1 (half size) is still a multiple of 32
@@ -31,9 +33,10 @@ STAGE2_SIGMAS = "0.85, 0.7250, 0.4219, 0.0"
 NEGATIVE = "text, letters, watermark, logo, two objects, cut, flicker, blurry, low quality, cartoon, people, hands"
 OOM_WORDS = ("out of memory", "outofmemory", "cuda error", "allocation", "oom")
 
-# Honest planning figures, seconds. They are estimates until the overnight calibration
-# run measures this card; the desk labels them that way.
-ETA = {"load_s": 90.0, "per_shot_s": 55.0, "upscale_per_shot_s": 25.0, "per_second_extra_s": 6.0,
+# Honest planning figures, seconds, from LTX-2.3 fp8 two-stage shots of 33-45 frames on the
+# 12 GB RTX 3080 Ti (110-175 s each in the showcase renders). The 4x upscale figure is a guess.
+# They stay labelled as estimates until a Final run in the app measures them.
+ETA = {"load_s": 90.0, "per_shot_s": 120.0, "upscale_per_shot_s": 30.0, "per_second_extra_s": 15.0,
        "measured": False}
 
 
