@@ -731,12 +731,28 @@ def _verb_for(beat: str, *, first: bool, last: bool, parsed: dict, rising_index:
     return {"setup": "enters", "climax": "hits", "release": "leaves"}.get(beat, "moves")
 
 
+# The spine is a verb ("cross", "open", "hold"). Never put "the" in front of it:
+# "moves closer to the cross" reads as a noun and garbles the story.
 _SPINE = {
     "setup": ("begins to {base}", "sets out to {base}"),
-    "rising": ("closes in to {base}", "braces for the {base}", "presses the {base}", "draws near the {base}"),
+    "rising": ("closes in to {base}", "gets ready to {base}", "keeps on", "draws near"),
     "climax": ("{third}",),
-    "release": ("completes the {base}", "leaves the {base} done", "lets the {base} settle"),
+    "release": ("comes to rest", "lets go", "settles"),
 }
+_BARE = frozenset("one two three next other another it them this that these those".split())
+_QUANT = ("one ", "two ", "three ", "every ", "each ", "some ", "the ", "a ", "an ")
+
+
+def _phrase(text: str) -> str:
+    """A prop, place or threat that can follow "the". Drops a bare "one" or "next"."""
+    words = str(text or "").strip()
+    low = words.lower()
+    if not words or low in _BARE:
+        return ""
+    for lead in _QUANT:
+        if low.startswith(lead) and len(words) > len(lead):
+            return words[len(lead):].strip()
+    return words
 _VARIED = {
     "setup": ("arrives", "steps in", "comes up"),
     "rising": ("keeps watch", "looks again", "moves closer", "holds the line"),
@@ -772,9 +788,9 @@ def _natural_line(
     """
     base = str(parsed.get("base") or "")
     third = str(parsed.get("third") or base)
-    prop = str(parsed.get("prop") or "")
-    place = str(parsed.get("place") or "")
-    threat = str(parsed.get("threat") or "")
+    prop = _phrase(parsed.get("prop") or "")
+    place = _phrase(parsed.get("place") or "")
+    threat = _phrase(parsed.get("threat") or "")
     role = str(parsed.get("prop_role") or "object")
     place_prep = str(parsed.get("place_prep") or "at")
     threat_prep = str(parsed.get("threat_prep") or "from")
@@ -808,12 +824,14 @@ def _natural_line(
 
     if beat == "release" and last:
         if role == "companion" and prop:
-            return "completes", _join(who, "completes the", base, with_prop)
+            return "goes", _join(who, "goes on to", base, with_prop, "one last time")
         if obj and threat:
-            return "completes", _join(who, "completes the", base, "and keeps", obj, f"clear of the {threat}")
+            return "goes", _join(who, "goes on to", base, obj, f"{threat_prep} the {threat}")
+        if obj and place:
+            return "goes", _join(who, "goes on to", base, obj, place_bit, "one last time")
         if place:
-            return "completes", _join(who, "completes the", base, f"at the {place}")
-        return "completes", _join(who, "completes the", base, f"and keeps {obj}" if obj else "")
+            return "goes", _join(who, "goes on to", base, place_bit, "one last time")
+        return "goes", _join(who, "goes on to", base, obj, "one last time")
 
     if beat == "rising" and role == "companion":
         return _pick_line(
@@ -863,13 +881,25 @@ def _natural_line(
             counts,
         )
 
+    if beat == "rising" and obj:
+        return _pick_line(
+            [
+                ("moves", _join(who, "moves closer to", obj)),
+                ("looks", _join(who, "looks again at", obj)),
+                ("keeps", _join(who, "keeps going toward", obj)),
+                ("draws", _join(who, "draws near", obj)),
+            ],
+            beat,
+            counts,
+        )
+
     if beat == "rising":
         return _pick_line(
             [
-                ("moves", _join(who, "moves closer to the", base)),
-                ("looks", _join(who, "looks again at the", base)),
-                ("holds", _join(who, "holds on through the", base)),
-                ("draws", _join(who, "draws near the", base)),
+                ("moves", _join(who, "moves closer")),
+                ("looks", _join(who, "looks again")),
+                ("keeps", _join(who, "keeps going", place_bit)),
+                ("draws", _join(who, "draws in")),
             ],
             beat,
             counts,
@@ -905,11 +935,21 @@ def _natural_line(
             beat,
             counts,
         )
+    if obj:
+        return _pick_line(
+            [
+                ("pauses", _join(who, "pauses at", obj)),
+                ("rests", _join(who, "rests by", obj)),
+                ("leaves", _join(who, "leaves", obj, "behind")),
+            ],
+            beat,
+            counts,
+        )
     return _pick_line(
         [
-            ("leaves", _join(who, "leaves the", base, "behind")),
-            ("lets", _join(who, "lets the", base, "settle")),
-            ("finishes", _join(who, "finishes the", base)),
+            ("settles", _join(who, "settles", place_bit)),
+            ("lets", _join(who, "lets go")),
+            ("rests", _join(who, "comes to rest", place_bit)),
         ],
         beat,
         counts,
