@@ -1,0 +1,302 @@
+{
+ "liquid-gold": [
+  {
+   "file": "liquid-gold/00_droplet_mercury.jpg",
+   "noun": "droplet",
+   "finish": "liquid mercury",
+   "source": "library/gpu_objects/droplet_mercury.png (regraded)"
+  },
+  {
+   "file": "liquid-gold/01_crown_splash_mercury.jpg",
+   "noun": "crown splash",
+   "finish": "liquid mercury",
+   "source": "library/gpu_objects/crown_splash_mercury.png (regraded)"
+  },
+  {
+   "file": "liquid-gold/02_orb_mercury.jpg",
+   "noun": "orb",
+   "finish": "liquid mercury",
+   "source": "library/gpu_objects/orb_mercury.png (regraded)"
+  },
+  {
+   "file": "liquid-gold/03_nautilus_mercury.jpg",
+   "noun": "nautilus",
+   "finish": "liquid mercury",
+   "source": "library/gpu_objects/nautilus_mercury.png (regraded)"
+  },
+  {
+   "file": "liquid-gold/04_torus_knot_chrome.jpg",
+   "noun": "torus knot",
+   "finish": "polished chrome",
+   "source": "library/gpu_objects/torus_knot_chrome.png (regraded)"
+  },
+  {
+   "file": "liquid-gold/05_dna_helix_chrome.jpg",
+   "noun": "dna helix",
+   "finish": "polished chrome",
+   "source": "library/gpu_objects/dna_helix_chrome.png (regraded)"
+  },
+  {
+   "file": "liquid-gold/06_snowflake_mercury.jpg",
+   "noun": "snowflake",
+   "finish": "liquid mercury",
+   "source": "library/gpu_objects/snowflake_mercury.png (regraded)"
+  },
+  {
+   "file": "liquid-gold/07_mobius_chrome.jpg",
+   "noun": "mobius",
+   "finish": "polished chrome",
+   "source": "library/gpu_objects/mobius_chrome.png (regraded)"
+  }
+ ],
+ "bloom": [
+  {
+   "file": "bloom/00_dandelion_iridescent.jpg",
+   "noun": "dandelion",
+   "finish": "iridescent glass",
+   "source": "library/gpu_objects/dandelion_iridescent.png (regraded)"
+  },
+  {
+   "file": "bloom/01_lotus_iridescent.jpg",
+   "noun": "lotus",
+   "finish": "iridescent glass",
+   "source": "library/gpu_objects/lotus_iridescent.png (regraded)"
+  },
+  {
+   "file": "bloom/02_butterfly_oil_slick.jpg",
+   "noun": "butterfly",
+   "finish": "oil-slick metal",
+   "source": "library/gpu_objects/butterfly_oil_slick.png (regraded)"
+  },
+  {
+   "file": "bloom/03_feather_iridescent.jpg",
+   "noun": "feather",
+   "finish": "iridescent glass",
+   "source": "library/gpu_objects/feather_iridescent.png (regraded)"
+  },
+  {
+   "file": "bloom/04_leaf_iridescent.jpg",
+   "noun": "leaf",
+   "finish": "iridescent glass",
+   "source": "library/gpu_objects/leaf_iridescent.png (regraded)"
+  },
+  {
+   "file": "bloom/05_acorn_iridescent.jpg",
+   "noun": "acorn",
+   "finish": "iridescent glass",
+   "source": "library/gpu_objects/acorn_iridescent.png (regraded)"
+  },
+  {
+   "file": "bloom/06_pine_cone_iridescent.jpg",
+   "noun": "pine cone",
+   "finish": "iridescent glass",
+   "source": "library/gpu_objects/pine_cone_iridescent.png (regraded)"
+  },
+  {
+   "file": "bloom/07_egg_iridescent.jpg",
+   "noun": "egg",
+   "finish": "iridescent glass",
+   "source": "library/gpu_objects/egg_iridescent.png (regraded)"
+  }
+ ],
+ "neon-night": [
+  {
+   "file": "neon-night/00_droplet_black_glass.jpg",
+   "noun": "droplet",
+   "finish": "black glass",
+   "source": "library/gpu_objects/droplet_black_glass.png (regraded)"
+  },
+  {
+   "file": "neon-night/01_jellyfish_black_glass.jpg",
+   "noun": "jellyfish",
+   "finish": "black glass",
+   "source": "library/gpu_objects/jellyfish_black_glass.png (regraded)"
+  },
+  {
+   "file": "neon-night/02_quartz_black_glass.jpg",
+   "noun": "quartz",
+   "finish": "black glass",
+   "source": "library/gpu_objects/quartz_black_glass.png (regraded)"
+  },
+  {
+   "file": "neon-night/03_orb_oil_slick.jpg",
+   "noun": "orb",
+   "finish": "oil-slick metal",
+   "source": "library/gpu_objects/orb_oil_slick.png (regraded)"
+  },
+  {
+   "file": "neon-night/04_crystal_cluster_black_glass.jpg",
+   "noun": "crystal cluster",
+   "finish": "black glass",
+   "source": "library/gpu_objects/crystal_cluster_black_glass.png (regraded)"
+  },
+  {
+   "file": "neon-night/05_umbrella_black_glass.jpg",
+   "noun": "umbrella",
+   "finish": "black glass",
+   "source": "library/gpu_objects/umbrella_black_glass.png (regraded)"
+  },
+  {
+   "file": "neon-night/06_wine_glass_black_glass.jpg",
+   "noun": "wine glass",
+   "finish": "black glass",
+   "source": "library/gpu_objects/wine_glass_black_glass.png (regraded)"
+  },
+  {
+   "file": "neon-night/07_fluorite_octahedron_black_glass.jpg",
+   "noun": "fluorite octahedron",
+   "finish": "black glass",
+   "source": "library/gpu_objects/fluorite_octahedron_black_glass.png (regraded)"
+  }
+ ],
+ "ocean": [
+  {
+   "file": "ocean/00_jellyfish_iridescent.jpg",
+   "noun": "jellyfish",
+   "finish": "iridescent glass",
+   "source": "library/gpu_objects/jellyfish_iridescent.png (regraded)"
+  },
+  {
+   "file": "ocean/01_spiral_seashell_iridescent.jpg",
+   "noun": "spiral seashell",
+   "finish": "iridescent glass",
+   "source": "library/gpu_objects/spiral_seashell_iridescent.png (regraded)"
+  },
+  {
+   "file": "ocean/02_nautilus_gr.jpg",
+   "noun": "nautilus",
+   "finish": "dark iridescent enamel",
+   "source": "library/gpu_objects/nautilus_gr.png (regraded)"
+  },
+  {
+   "file": "ocean/03_sea_urchin_iridescent.jpg",
+   "noun": "sea urchin",
+   "finish": "iridescent glass",
+   "source": "library/gpu_objects/sea_urchin_iridescent.png (regraded)"
+  },
+  {
+   "file": "ocean/04_scallop_shell_iridescent.jpg",
+   "noun": "scallop shell",
+   "finish": "iridescent glass",
+   "source": "library/gpu_objects/scallop_shell_iridescent.png (regraded)"
+  },
+  {
+   "file": "ocean/05_sand_dollar_mercury.jpg",
+   "noun": "sand dollar",
+   "finish": "liquid mercury",
+   "source": "library/gpu_objects/sand_dollar_mercury.png (regraded)"
+  },
+  {
+   "file": "ocean/06_manta_ray_chrome.jpg",
+   "noun": "manta ray",
+   "finish": "polished chrome",
+   "source": "library/gpu_objects/manta_ray_chrome.png (regraded)"
+  },
+  {
+   "file": "ocean/07_conch_mercury.jpg",
+   "noun": "conch",
+   "finish": "liquid mercury",
+   "source": "library/gpu_objects/conch_mercury.png (regraded)"
+  }
+ ],
+ "cosmic": [
+  {
+   "file": "cosmic/00_orb_iridescent.jpg",
+   "noun": "orb",
+   "finish": "iridescent glass",
+   "source": "library/gpu_objects/orb_iridescent.png (regraded)"
+  },
+  {
+   "file": "cosmic/01_crescent_moon_oil_slick.jpg",
+   "noun": "crescent moon",
+   "finish": "oil-slick metal",
+   "source": "library/gpu_objects/crescent_moon_oil_slick.png (regraded)"
+  },
+  {
+   "file": "cosmic/02_pearl_iridescent.jpg",
+   "noun": "pearl",
+   "finish": "iridescent glass",
+   "source": "library/gpu_objects/pearl_iridescent.png (regraded)"
+  },
+  {
+   "file": "cosmic/03_snowflake_iridescent.jpg",
+   "noun": "snowflake",
+   "finish": "iridescent glass",
+   "source": "library/gpu_objects/snowflake_iridescent.png (regraded)"
+  },
+  {
+   "file": "cosmic/04_egg_iridescent.jpg",
+   "noun": "egg",
+   "finish": "iridescent glass",
+   "source": "library/gpu_objects/egg_iridescent.png (regraded)"
+  },
+  {
+   "file": "cosmic/05_mobius_iridescent.jpg",
+   "noun": "mobius",
+   "finish": "iridescent glass",
+   "source": "library/gpu_objects/mobius_iridescent.png (regraded)"
+  },
+  {
+   "file": "cosmic/06_dna_helix_iridescent.jpg",
+   "noun": "dna helix",
+   "finish": "iridescent glass",
+   "source": "library/gpu_objects/dna_helix_iridescent.png (regraded)"
+  },
+  {
+   "file": "cosmic/07_sea_urchin_oil_slick.jpg",
+   "noun": "sea urchin",
+   "finish": "oil-slick metal",
+   "source": "library/gpu_objects/sea_urchin_oil_slick.png (regraded)"
+  }
+ ],
+ "paper-summer": [
+  {
+   "file": "paper-summer/00_paper_boat.jpg",
+   "noun": "paper boat",
+   "finish": "white paper and porcelain",
+   "source": "Z-Image Turbo, seed 1000+i, 1024x576"
+  },
+  {
+   "file": "paper-summer/01_paper_crane.jpg",
+   "noun": "paper crane",
+   "finish": "white paper and porcelain",
+   "source": "Z-Image Turbo, seed 1000+i, 1024x576"
+  },
+  {
+   "file": "paper-summer/02_jellyfish.jpg",
+   "noun": "jellyfish",
+   "finish": "white paper and porcelain",
+   "source": "Z-Image Turbo, seed 1000+i, 1024x576"
+  },
+  {
+   "file": "paper-summer/03_pleated_flower.jpg",
+   "noun": "pleated flower",
+   "finish": "white paper and porcelain",
+   "source": "Z-Image Turbo, seed 1000+i, 1024x576"
+  },
+  {
+   "file": "paper-summer/04_nautilus.jpg",
+   "noun": "nautilus",
+   "finish": "white paper and porcelain",
+   "source": "Z-Image Turbo, seed 1000+i, 1024x576"
+  },
+  {
+   "file": "paper-summer/05_seed_pod.jpg",
+   "noun": "seed pod",
+   "finish": "white paper and porcelain",
+   "source": "Z-Image Turbo, seed 1000+i, 1024x576"
+  },
+  {
+   "file": "paper-summer/06_orb.jpg",
+   "noun": "orb",
+   "finish": "white paper and porcelain",
+   "source": "Z-Image Turbo, seed 1000+i, 1024x576"
+  },
+  {
+   "file": "paper-summer/07_ribbon_knot.jpg",
+   "noun": "ribbon knot",
+   "finish": "white paper and porcelain",
+   "source": "Z-Image Turbo, seed 1000+i, 1024x576"
+  }
+ ]
+}

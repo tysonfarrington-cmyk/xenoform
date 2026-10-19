@@ -2058,7 +2058,14 @@ function renderEasy() {
   </div>`;
 }
 
-const EASY_ETA_GPU_S = 55; // measured: 53.6 s on an RTX 3080 Ti, Turbo LTX 0.9.5, 12 s demo
+// Morph pass, measured on an RTX 3080 Ti (LTX 0.9.5, 512x288, 12 steps, T5 on the CPU):
+// ~16 s fixed (song read, 3 s draft, one CPU prompt encode, mux) plus ~1.75 s of GPU per
+// second of song, warm: 47.9 s for a 20 s, 7-morph clip. The first run after ComfyUI
+// starts (or after /free) also loads the checkpoint and the text encoder (~30 s).
+const EASY_ETA_FIXED_S = 16;
+const EASY_ETA_PER_SONG_S = 1.75;
+const EASY_ETA_COLD_S = 30;
+const EASY_ETA_GPU_S = 51; // 20 s clip, warm
 const EASY_ETA_BROWSER_S = 6;
 let easyTimer = null;
 
@@ -2067,11 +2074,36 @@ function clockText(seconds) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
+function easySongSeconds() {
+  const ends = (state.scenes || []).map((scene) => Number(scene.end || 0)).filter((t) => t > 0);
+  return ends.length ? Math.max.apply(null, ends) : Number(state.duration || 20) || 20;
+}
+
+function easyEtaGuess() {
+  const cold = state.easy && state.easy.warm ? 0 : EASY_ETA_COLD_S;
+  return Math.round(EASY_ETA_FIXED_S + EASY_ETA_PER_SONG_S * Math.min(easySongSeconds(), 60) + cold);
+}
+
+// Once morphs come back, the server says "Morph k of N": re-estimate from the real pace.
+function easyEtaLive() {
+  const easy = state.easy;
+  const job = state.job || {};
+  const hit = /Morph (\d+) of (\d+)/.exec(String(job.detail || ""));
+  if (!hit) return Number(easy.eta || EASY_ETA_GPU_S);
+  const done = Number(hit[1]);
+  const total = Number(hit[2]);
+  const now = (Date.now() - easy.startedAt) / 1000;
+  if (!easy.firstMorph || done < easy.firstMorph.done) easy.firstMorph = { done, at: now };
+  const span = done - easy.firstMorph.done;
+  const pace = span > 0 ? (now - easy.firstMorph.at) / span : 4.5;
+  return now + (total - done) * pace + 2;
+}
+
 function easyEtaText() {
   const easy = state && state.easy;
-  if (!easy || !easy.startedAt) return "About a minute";
+  if (!easy || !easy.startedAt) return "About half a minute";
   const elapsed = (Date.now() - easy.startedAt) / 1000;
-  const eta = Number(easy.eta || EASY_ETA_GPU_S);
+  const eta = easyEtaLive();
   const left = eta - elapsed;
   const draft = state.job && state.job.video ? "Draft playing · " : "";
   return left > 2 ? `${draft}${clockText(elapsed)} · about ${clockText(left)} left` : `${draft}${clockText(elapsed)} · almost there`;
@@ -2088,7 +2120,7 @@ function tickEasy() {
   const bar = document.querySelector(".easy-making .track span");
   if (bar) {
     const elapsed = (Date.now() - state.easy.startedAt) / 1000;
-    const guess = Math.min(0.95, elapsed / Number(state.easy.eta || EASY_ETA_GPU_S));
+    const guess = Math.min(0.95, elapsed / easyEtaLive());
     const real = Number((state.job && state.job.status === "running" && state.job.stage !== "restyle" && state.job.progress) || 0) * 0.15;
     bar.style.width = `${Math.round(Math.max(guess, real) * 100)}%`;
   }
@@ -2099,7 +2131,8 @@ async function easyMake() {
   if (!vibe) return;
   state.easy.showcase = false;
   state.easy.startedAt = Date.now();
-  state.easy.eta = state.comfyOk === false ? EASY_ETA_BROWSER_S : EASY_ETA_GPU_S;
+  state.easy.firstMorph = null;
+  state.easy.eta = state.comfyOk === false ? EASY_ETA_BROWSER_S : easyEtaGuess();
   if (easyTimer) clearInterval(easyTimer);
   easyTimer = setInterval(tickEasy, 1000);
   state.easy.phase = "making";
@@ -3517,6 +3550,7 @@ async function poll(id) {
     if (job.status === "done") {
       state.easy.phase = "result";
       state.easy.playedHere = false;
+      state.easy.warm = true;
       state.easy.note = String(job.detail || "").startsWith("The animatic is ready")
         ? job.detail
         : "Your cut is ready.";

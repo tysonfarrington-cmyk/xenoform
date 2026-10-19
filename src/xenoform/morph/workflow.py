@@ -65,7 +65,9 @@ def _ramp(plan: dict) -> dict:
         "1": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": checkpoint}, "_meta": {"title": title}},
         "2": {
             "class_type": "CLIPLoader",
-            "inputs": {"clip_name": "t5xxl_fp8_e4m3fn_scaled.safetensors", "type": "ltxv"},
+            "inputs": {"clip_name": "t5xxl_fp8_e4m3fn_scaled.safetensors", "type": "ltxv", "device": "cpu"},
+            # On the CPU: T5 on the card took the 3080 Ti to 11.9 GB. ComfyUI caches the
+            # encode, so a run that keeps one prompt pays for it once.
             "_meta": {"title": "Local text encoder"},
         },
         "3": {
@@ -130,7 +132,11 @@ def _ramp(plan: dict) -> dict:
             "_meta": {"title": "Sample"},
         },
         "16": {"class_type": "LTXVCropGuides", "inputs": {"positive": ["22", 0], "negative": ["22", 1], "latent": ["15", 0]}},
-        "17": {"class_type": "VAEDecode", "inputs": {"samples": ["16", 2], "vae": ["1", 2]}},
+        # Tiled in time: a 73-frame plain decode pushed the card to 11.9 GB.
+        "17": {
+            "class_type": "VAEDecodeTiled",
+            "inputs": {"samples": ["16", 2], "vae": ["1", 2], "tile_size": 512, "overlap": 64, "temporal_size": 32, "temporal_overlap": 8},
+        },
         "18": {"class_type": "CreateVideo", "inputs": {"images": ["17", 0], "fps": fps}},
         "19": {
             "class_type": "SaveVideo",

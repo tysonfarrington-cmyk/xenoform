@@ -3,8 +3,9 @@
 The animatic never calls a video model. One keyframe per scene (4 steps at
 384×216) sits on the beat grid. Hard cuts join the shots. A signature scene
 crossfades, with a zoom regather, and a beat flash rides the picture. Dry run
-stops there. Live mode then restyles short chunks with LTX 0.9.5 at 384×224,
-four to six steps, and never loads Wan or LTX-2.3.
+stops there. Live mode then replaces it with a chain of A->B guided morphs
+between per-vibe stills (LTX 0.9.5 at 512x288, see ``morph_pass``), one per
+scene with handoffs on the beat, and never loads Wan or LTX-2.3.
 
 Cache keys are the scene card hash, the seed, the model, and the resolution.
 Analysis is cached per track. Unchanged keyframes are reused, so a second pass
@@ -620,29 +621,16 @@ def run_turbo(
 
     warning = fill_warning
     mode = "animatic"
+    morph_info: dict = {}
     if state.get("live"):
-        report("restyle", 0.1, "Turbo video, LTX 0.9.5, 4 steps. The animatic stays up while this runs.")
+        report("restyle", 0.1, "GPU morphs, LTX 0.9.5 at 512x288. The draft stays up while this runs.")
         try:
-            from xenoform.assemble import assemble
-            from xenoform.restyle import restyle
+            from xenoform.morph_pass import run_morph_pass
 
             _stop(cancel)
-            manifest_live = restyle(directed, out_path, work / "chunks", tuned, mode="live")
-            gpu_path = out_path.with_name(out_path.stem + "-gpu.mp4")
-            report("assemble", 0.6, "Locking the GPU pass")
-            assemble(
-                manifest_live,
-                audio_path,
-                gpu_path,
-                features=directed,
-                crossfade_frames=int(tuned["assemble"].get("crossfade_frames") or 4),
-                beat_flashes=bool(tuned["assemble"].get("beat_flashes")),
-                flash_amount=float(tuned["assemble"].get("flash_amount") or 0.22),
-                crf=int(tuned["assemble"].get("crf") or 18),
-            )
-            gpu_path.replace(out_path)
+            morph_info = run_morph_pass(directed, scenes, Path(audio_path), out_path, work, tuned, state, report)
             mode = "turbo"
-            report("restyle", 1.0, "Turbo video locked")
+            report("restyle", 1.0, "GPU morphs locked to the beat")
         except JobCancelled:
             raise
         except Exception as exc:
@@ -657,8 +645,8 @@ def run_turbo(
         "quality": "turbo",
         "seed": seed,
         "checkpoint": tuned["comfy"]["checkpoint_name"],
-        "steps": int(tuned["comfy"]["steps"]),
-        "resolution": f"{VIDEO_W}x{VIDEO_H}",
+        "steps": int(morph_info.get("steps") or tuned["comfy"]["steps"]),
+        "resolution": morph_info.get("render") or f"{VIDEO_W}x{VIDEO_H}",
         "animatic_resolution": f"{ANIMATIC_W}x{ANIMATIC_H}",
         "keyframe_model": keyframe_backend(),
         "keyframe_steps": KEY_STEPS,
@@ -678,6 +666,7 @@ def run_turbo(
         "only_scenes": only,
         "proof": {"path": "proof.mp4", "verdict": proof_verdict, "seconds": round(len(proof_frames) / float(FPS), 3)},
         "timing": "timing.json",
+        "morph_pass": morph_info,
     }
     (work / "turbo.json").write_text(json.dumps(manifest, indent=2, default=str), encoding="utf-8")
     try:
