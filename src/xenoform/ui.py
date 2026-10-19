@@ -972,7 +972,10 @@ def create_app(cfg: dict | None = None):
                       "eta_s": final_tier.eta_seconds(shots, upscale=files["upscale"]),
                       "eta_measured": bool(final_tier.ETA["measured"]),
                       "render": f"{final_tier.RENDER_W}x{final_tier.RENDER_H}",
-                      "output": f"{final_tier.OUT_W}x{final_tier.OUT_H}"},
+                      "output": f"{final_tier.OUT_W}x{final_tier.OUT_H}",
+                      "render_916": "x".join(map(str, final_tier.RENDER_916)),
+                      "output_916": "x".join(map(str, final_tier.out_916()))},
+            "vertical": ["native", "crop"],
         }
 
     def _video_dir(video_id: str) -> Path:

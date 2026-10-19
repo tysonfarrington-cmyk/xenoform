@@ -9,7 +9,9 @@ cut script that made the Facebook demo:
 * bloom           big punches from the cut plan add a soft glow
 * loudness lift   overall exposure follows the song's RMS
 
-Aspect: 16:9 is the render. 9:16 and 1:1 crop each shot around the morph's centre
+Aspect: 16:9 is the render (Final 9:16 can also render natively in portrait, see
+final_tier; then ``size`` is the portrait output and the crop below is a no-op).
+9:16 and 1:1 crop each shot around the morph's centre
 (the brightness-weighted centre of mass, which is the object on the black or plain
 backgrounds the vibes use), eased between the shot's first and last frame so the
 crop follows the object as it transforms.
@@ -243,12 +245,17 @@ def read_frames(path: Path) -> np.ndarray:
 
 def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Path, *, aspect: str = "16:9",
             quality: str = "draft", fx: bool = True, overlay: bool = False, beats: Iterable[float] = (),
-            label: str | None = None, report: Callable[[str, float, str], None] | None = None) -> dict:
-    """Retime every clip to its shot (speed, ease, hold, stutter, skip, reverse), reframe, add beat FX, mux."""
+            label: str | None = None, report: Callable[[str, float, str], None] | None = None,
+            size: tuple[int, int] | None = None) -> dict:
+    """Retime every clip to its shot (speed, ease, hold, stutter, skip, reverse), reframe, add beat FX, mux.
+
+    ``size`` overrides the output frame size (native vertical Final: 1080x1920). Clips that
+    already have the target aspect pass through whole; any other clip is cropped around its object.
+    """
     from xenoform.cloud_morph import BeatOverlay, audio_envelope, punch_curve, shot_indices
 
     aspect = norm_aspect(aspect)
-    w, h = out_size(aspect, quality)
+    w, h = size or out_size(aspect, quality)
     total = sum(int(s["frames"]) for s in shots)
     beats = [float(b) for b in beats]
     env = envelopes(audio_path, total) if fx else None

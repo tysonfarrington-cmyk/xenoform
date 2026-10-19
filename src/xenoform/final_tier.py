@@ -5,6 +5,12 @@ LTX-2.3 22B distilled fp8 in two stages (384x224 -> x2 latent upsample -> 768x44
 then upscales the decoded frames with 4x-ClearReality and scales them to 1280x720.
 All open weights, all local.
 
+Native vertical (9:16, the default for Final 9:16): the same two stages at 448x768
+(224x384 -> 448x768) from stills re-laid for portrait (``portrait.py``), ClearReality,
+then 1080x1920 (``XENO_FINAL_916_OUT=720`` gives 720x1280). Same pixel count as the
+landscape render, so the same memory and time. The crop path (render 16:9, crop in the
+compositor) stays as the fallback option.
+
 Fallbacks, in order, when a shot fails (out of memory included):
   1. the same LTX-2.3 shot without the ClearReality pass (Lanczos to 1280x720)
   2. the LTX 0.9.5 Draft shot
@@ -27,6 +33,21 @@ FILES = (("checkpoints", CKPT), ("text_encoders", TEXT_ENCODER), ("latent_upscal
          ("upscale_models", UPSCALER))
 RENDER_W, RENDER_H = 768, 448  # multiples of 64, so stage 1 (half size) is still a multiple of 32
 OUT_W, OUT_H = 1280, 720
+RENDER_916 = (448, 768)  # portrait; both multiples of 64 (stage 1 is 224x384)
+
+
+def out_916() -> tuple[int, int]:
+    """Native vertical output size: 1080x1920, or 720x1280 with XENO_FINAL_916_OUT=720."""
+    return (720, 1280) if os.environ.get("XENO_FINAL_916_OUT", "").strip() in {"720", "720x1280"} else (1080, 1920)
+
+
+def sizes(vertical: bool = False) -> dict:
+    if vertical:
+        w, h = RENDER_916
+        ow, oh = out_916()
+    else:
+        w, h, ow, oh = RENDER_W, RENDER_H, OUT_W, OUT_H
+    return {"render": (w, h), "out": (ow, oh)}
 FPS = 24
 STAGE1_SIGMAS = "1.0, 0.99375, 0.9875, 0.98125, 0.975, 0.909375, 0.725, 0.421875, 0.0"
 STAGE2_SIGMAS = "0.85, 0.7250, 0.4219, 0.0"
@@ -73,8 +94,13 @@ def gen_length(seconds: float) -> int:
     return int(min(121, max(25, n)))
 
 
-def graph(prompt: str, *, length: int, seed: int, upscale: bool = True, prefix: str = "xenoform/final") -> dict:
+def graph(prompt: str, *, length: int, seed: int, upscale: bool = True, prefix: str = "xenoform/final",
+          width: int = RENDER_W, height: int = RENDER_H, out_w: int = OUT_W, out_h: int = OUT_H) -> dict:
     """ComfyUI API graph for one LTX-2.3 first/last-frame morph. Images go in nodes 100 and 101."""
+    if width % 64 or height % 64:
+        raise ValueError(f"LTX-2.3 two-stage needs multiples of 64 (stage 1 is half size, a multiple of 32); got {width}x{height}.")
+    if (length - 1) % 8:
+        raise ValueError(f"LTX frame counts are 8k+1; got {length}.")
     g: dict = {}
 
     def n(i, cls, **inp):
@@ -86,7 +112,7 @@ def graph(prompt: str, *, length: int, seed: int, upscale: bool = True, prefix: 
     n(4, "CLIPTextEncode", clip=["2", 0], text=prompt)
     n(5, "CLIPTextEncode", clip=["2", 0], text=NEGATIVE)
     n(6, "LTXVConditioning", positive=["4", 0], negative=["5", 0], frame_rate=float(FPS))
-    n(7, "EmptyLTXVLatentVideo", width=RENDER_W // 2, height=RENDER_H // 2, length=length, batch_size=1)
+    n(7, "EmptyLTXVLatentVideo", width=width // 2, height=height // 2, length=length, batch_size=1)
     n(100, "LoadImage", image="a.png")
     n(101, "LoadImage", image="b.png")
     n(102, "LTXVPreprocess", image=["100", 0], img_compression=18)
@@ -124,7 +150,7 @@ def graph(prompt: str, *, length: int, seed: int, upscale: bool = True, prefix: 
         n(40, "UpscaleModelLoader", model_name=UPSCALER)
         n(41, "ImageUpscaleWithModel", upscale_model=["40", 0], image=frames)
         frames = ["41", 0]
-    n(42, "ImageScale", image=frames, upscale_method="lanczos", width=OUT_W, height=OUT_H, crop="center")
+    n(42, "ImageScale", image=frames, upscale_method="lanczos", width=out_w, height=out_h, crop="center")
     n(27, "CreateVideo", images=["42", 0], fps=float(FPS))
     n(28, "SaveVideo", video=["27", 0], filename_prefix=prefix, format="auto", codec="auto")
     return g
@@ -137,8 +163,12 @@ def is_oom(exc: BaseException) -> bool:
 
 def final_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, seed: int, vibe: str, *, client=None,
                 cancel: Callable[[], bool] | None = None, report: Callable[[str, float, str], None] | None = None,
-                draft: Callable[[list[int]], dict[int, Path]] | None = None) -> tuple[list[Path], list[dict]]:
+                draft: Callable[[list[int]], dict[int, Path]] | None = None,
+                vertical: bool = False) -> tuple[list[Path], list[dict]]:
     """Render every shot on LTX-2.3 (+ ClearReality). Returns clips and one note per fallback.
+
+    ``vertical`` renders native 9:16 (448x768 -> 1080x1920) from portrait stills. A shot
+    that falls all the way back to Draft comes back 16:9 and the compositor crops it.
 
     ``draft(indices)`` renders the given shots on LTX 0.9.5 and returns {index: clip}; it is
     the last fallback. Shots are rendered one at a time so a failure costs one shot, not the run.
@@ -148,6 +178,12 @@ def final_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
 
     client = client or _client(cfg)
     prompt = mp.prompt_for(vibe, "ltx25")
+    size = sizes(vertical)
+    if vertical:
+        from xenoform.portrait import PROMPT_SUFFIX, portrait_stills
+
+        stills = portrait_stills(stills, Path(work))
+        prompt = prompt.rstrip() + PROMPT_SUFFIX
     assets: dict = {}
     upscale = os.environ.get("XENO_FINAL_UPSCALE", "1").strip() not in {"0", "false", "off"}
 
@@ -158,7 +194,9 @@ def final_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
 
     def one(i: int, shot: dict, with_upscale: bool) -> Path:
         wf = client.workflows.from_json(graph(prompt, length=gen_length(float(shot.get("render_s") or shot["seconds"])),
-                                              seed=int(seed) + i, upscale=with_upscale))
+                                              seed=int(seed) + i, upscale=with_upscale,
+                                              width=size["render"][0], height=size["render"][1],
+                                              out_w=size["out"][0], out_h=size["out"][1]))
         wf.set_input("100", "image", asset(stills[i]["path"]))
         wf.set_input("101", "image", asset(stills[i + 1]["path"]))
         job = client.submit(wf)
@@ -177,7 +215,8 @@ def final_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
     for i, shot in enumerate(shots):
         mp.stop_queued([], cancel)
         if report:
-            report("restyle", 0.12 + 0.75 * i / max(len(shots), 1), f"Final: morph {i + 1} of {len(shots)} on LTX-2.3")
+            report("restyle", 0.12 + 0.75 * i / max(len(shots), 1),
+                   f"Final: morph {i + 1} of {len(shots)} on LTX-2.3" + (" (native 9:16)" if vertical else ""))
         try:
             clips[i] = one(i, shot, upscale)
             continue

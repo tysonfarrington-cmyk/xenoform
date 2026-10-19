@@ -29,6 +29,16 @@ ROOT = Path(__file__).resolve().parents[2]
 DEMO1_PLAN = ROOT / "configs" / "dense_demo1.json"
 ENERGY = ("flow", "dense")
 TIERS = ("draft", "final")
+VERTICAL = ("native", "crop")
+
+
+def vertical_mode(state: dict) -> str:
+    """9:16 on Final renders natively unless the crop is asked for; Draft always crops (for now)."""
+    tier = str(state.get("quality_tier") or "draft").lower()
+    asked = str(state.get("vertical_mode") or "auto").lower()
+    if tier != "final":
+        return "crop"
+    return asked if asked in VERTICAL else "native"
 MAX_SHOTS = 15  # 16 stills: the black pool holds 17, the other vibes 12 (the chain wraps)
 
 
@@ -40,6 +50,7 @@ def options(state: dict) -> dict:
         "energy": energy if energy in ENERGY else "flow",
         "aspect": beatfx.norm_aspect(state.get("aspect")),
         "tier": tier if tier in TIERS else "draft",
+        "vertical": vertical_mode(state),
         "fx": bool(state.get("beat_fx", True)),
         "overlay": bool(state.get("beat_overlay")) and not bool(state.get("clean")),
         "end_card": bool(state.get("end_card")),
@@ -172,13 +183,23 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     vibe, stills = stills_for({**state, "cut_plan": plan if plan.get("stills") else None}, len(shots) + 1)
     seed = int(state.get("seed") or 2727)
     engine = engine or ("ltx23" if opt["tier"] == "final" else "ltx095")
+    native = opt["aspect"] == "9:16" and opt["vertical"] == "native" and engine in {"ltx23", "mock"} \
+        and opt["tier"] == "final"
+    from xenoform import final_tier
+
+    size = final_tier.sizes(True)["out"] if native else None
     notes: list[dict] = []
     report("restyle", 0.1, f"{len(shots)} {'Final (LTX-2.3)' if engine == 'ltx23' else 'Draft (LTX 0.9.5)'} morphs · "
                            f"{opt['energy']} · {opt['aspect']}")
     if engine == "mock":
         from xenoform.cloud_morph import _mock_clips
 
-        clips = _mock_clips(shots, stills, work, 768, 432)
+        if native:
+            from xenoform.portrait import portrait_stills
+
+            clips = _mock_clips(shots, portrait_stills(stills, work), work, *final_tier.RENDER_916)
+        else:
+            clips = _mock_clips(shots, stills, work, 768, 432)
     elif engine == "ltx23":
         from xenoform.final_tier import final_clips
 
@@ -195,14 +216,15 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
                 got[i] = renamed
             return got
 
-        clips, notes = final_clips(shots, stills, work, cfg, seed, vibe, client=client, cancel=cancel, report=report, draft=draft)
+        clips, notes = final_clips(shots, stills, work, cfg, seed, vibe, client=client, cancel=cancel, report=report, draft=draft,
+                                   vertical=native)
     else:
         clips = _draft_clips(shots, stills, work, cfg, seed, vibe, client, cancel)
     report("assemble", 0.6, "Cutting to the beat" + (" with beat FX" if opt["fx"] else ""))
     tmp = Path(out_path).with_name(Path(out_path).stem + ".simple.mp4")
     made = beatfx.compose(clips, shots, Path(audio_path), tmp, aspect=opt["aspect"],
                           quality="final" if engine == "ltx23" else "draft", fx=opt["fx"], overlay=opt["overlay"],
-                          beats=directed.get("beats") or [], report=report)
+                          beats=directed.get("beats") or [], report=report, size=size)
     card = False
     if opt["end_card"]:
         card = beatfx.end_card(tmp, opt["recipe"] or "(none)")
@@ -210,6 +232,7 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     info = {"engine": {"ltx23": "LTX-2.3 22B distilled fp8 + 4x-ClearReality (Final)", "ltx095": "LTX 0.9.5 (Draft)",
                        "mock": "mock cross-fades (test)"}[engine],
             "open_weights": True, "energy": opt["energy"], "aspect": opt["aspect"], "tier": opt["tier"],
+            "vertical": ("native" if native else "crop") if opt["aspect"] == "9:16" else None,
             "fx": opt["fx"], "overlay": made["overlay"], "end_card": card, "vibe": vibe,
             "stills": [s["file"] for s in stills], "shots": shots, "plan_name": plan.get("name", ""),
             "handoffs_s": [s["start"] for s in shots] + [shots[-1]["end"]], "fallbacks": notes,

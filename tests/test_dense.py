@@ -70,7 +70,7 @@ def test_dense_plan_without_beats_still_plans():
 def test_options_default_to_flow_draft_wide_and_open_weights():
     opt = dense.options({})
     assert opt == {"energy": "flow", "aspect": "16:9", "tier": "draft", "fx": True, "overlay": False,
-                   "end_card": False, "recipe": ""}
+                   "end_card": False, "recipe": "", "vertical": "crop"}
     assert not dense.wants_finishing({})
     assert dense.wants_finishing({"energy_preset": "dense"})
     assert dense.wants_finishing({"aspect": "9:16"})
@@ -140,3 +140,19 @@ def test_dense_mock_run_writes_a_vertical_fx_cut_with_an_end_card(tmp_path):
     assert json.loads((tmp_path / "simple" / "simple.json").read_text())["aspect"] == "9:16"
     hook = beatfx.export_hook(out, tmp_path / "hook.mp4", 2.0, 4.0)
     assert hook["seconds"] == pytest.approx(4.0, abs=0.1)
+
+
+@pytest.mark.skipif(not HAS_FFMPEG, reason="needs ffmpeg")
+def test_final_9x16_mock_run_is_native_portrait(tmp_path):
+    directed = {"duration": FEATURES["duration"], "beats": FEATURES["beats"]}
+    out = tmp_path / "xenoform.mp4"
+    info = dense.run_simple(directed, DEMO, out, tmp_path, {}, {"vibe": "black", "energy_preset": "dense", "aspect": "9:16",
+                            "quality_tier": "final"}, lambda *a: None, engine="mock")
+    assert info["vertical"] == "native" and info["render"] == "1080x1920"
+    probe = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v", "-show_entries", "stream=width,height",
+                            "-of", "csv=p=0", str(out)], capture_output=True, text=True).stdout.strip()
+    assert probe == "1080,1920"
+    assert any((tmp_path / "simple" / "portrait").glob("*_720x1280.png"))
+    crop = dense.run_simple(directed, DEMO, tmp_path / "crop.mp4", tmp_path / "c", {}, {"vibe": "black", "aspect": "9:16",
+                            "quality_tier": "final", "vertical_mode": "crop"}, lambda *a: None, engine="mock")
+    assert crop["vertical"] == "crop" and crop["render"] == "432x768"  # the mock composes at Draft size

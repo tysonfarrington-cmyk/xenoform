@@ -34,6 +34,7 @@ def _clean(state: dict) -> dict:
         "fx": bool(state.get("beat_fx", True)),
         "overlay": bool(state.get("beat_overlay")),
         "card": bool(state.get("end_card")),
+        "vertical": state.get("vertical_mode") if state.get("vertical_mode") in ("native", "crop") else "auto",
     }
     song = str(state.get("song") or "")[:80]
     if song:
@@ -45,9 +46,9 @@ def _clean(state: dict) -> dict:
 
 
 _SHORT = {"vibe": "v", "idea": "i", "seed": "s", "energy": "e", "aspect": "a", "tier": "t", "fx": "f",
-          "overlay": "o", "card": "c", "song": "g", "plan": "p"}
+          "overlay": "o", "card": "c", "song": "g", "plan": "p", "vertical": "vm"}
 _DEFAULTS = {"idea": "", "seed": 2727, "energy": "flow", "aspect": "16:9", "tier": "draft", "fx": True,
-             "overlay": False, "card": False}
+             "overlay": False, "card": False, "vertical": "auto"}
 
 
 def encode(state: dict) -> str:
@@ -75,10 +76,12 @@ def decode(code: str) -> dict:
                     "energy_preset": data.get("energy"), "aspect": data.get("aspect"),
                     "quality_tier": data.get("tier"), "beat_fx": data.get("fx", True),
                     "beat_overlay": data.get("overlay"), "end_card": data.get("card"), "song": data.get("song"),
-                    "cut_plan": data.get("plan")})
+                    "vertical_mode": data.get("vertical"), "cut_plan": data.get("plan")})
     state = {"vibe": clean["vibe"], "idea": clean["idea"], "seed": clean["seed"], "energy_preset": clean["energy"],
              "aspect": clean["aspect"], "quality_tier": clean["tier"], "beat_fx": clean["fx"],
              "beat_overlay": clean["overlay"], "end_card": clean["card"], "song": clean.get("song", "")}
+    if clean["vertical"] != "auto":
+        state["vertical_mode"] = clean["vertical"]
     if "plan" in clean:
         from xenoform.cloud_morph import CutPlanError, custom_shots
 

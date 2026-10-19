@@ -209,6 +209,7 @@ function payload() {
     energy_preset: (state.easy && state.easy.energyPreset) || "flow",
     aspect: (state.easy && state.easy.aspect) || "16:9",
     quality_tier: (state.easy && state.easy.tier) || "draft",
+    vertical_mode: (state.easy && state.easy.vertical) || "auto",
     beat_fx: !(state.easy && state.easy.fx === false),
     end_card: !!(state.easy && state.easy.endCard),
     idea: (state.easy && state.easy.idea) || "",
@@ -2121,14 +2122,19 @@ function simpleOptions(easy) {
   const tier = easy.tier || "draft";
   const fx = easy.fx !== false;
   const card = !!easy.endCard;
+  const vertical = tier === "final" ? (easy.vertical === "crop" ? "crop" : "native") : "crop";
+  const vertNote = aspect !== "9:16" ? (aspect === "16:9" ? "" : " Each shot is reframed around the object as it changes.")
+    : vertical === "native" ? " Native vertical: rendered in portrait (448×768), upscaled to 1080×1920, the object centred whole."
+    : " Each shot is cropped from the 16:9 render around the object as it changes.";
   return `<div class="simple-opts" data-tour="easy-options">
       ${simpleSeg("easy-energy", energy, [["flow", "Flow"], ["dense", "Dense"]], "Energy")}
       ${simpleSeg("easy-aspect", aspect, [["16:9", "16:9"], ["9:16", "9:16"], ["1:1", "1:1"]], "Aspect")}
       ${simpleSeg("easy-tier", tier, [["draft", "Draft"], ["final", "Final"]], "Quality")}
+      ${aspect === "9:16" && tier === "final" ? simpleSeg("easy-vertical", vertical, [["native", "Native"], ["crop", "Crop"]], "Vertical") : ""}
       ${simpleSeg("easy-fx", fx ? "on" : "off", [["on", "On"], ["off", "Off"]], "Beat FX")}
       ${simpleSeg("easy-card", card ? "on" : "off", [["off", "Off"], ["on", "On"]], "End card")}
       <p class="note">${esc(energy === "dense" ? "Dense: up to 15 morphs, a shot a bar, then a shot every half bar from the drop, with stutters, holds and punches." : "Flow: one morph per section, cut on the bar.")}
-      ${esc(aspect === "16:9" ? "" : " Each shot is reframed around the object as it changes.")}
+      ${esc(vertNote)}
       ${esc(tier === "final" ? " " + finalEtaText() : " Draft: LTX 0.9.5, the quick pass.")}
       ${esc(easy.overlay ? "" : " Clean export: no waveform or text on the picture.")}</p>
     </div>`;
@@ -2201,6 +2207,7 @@ function applySimpleRecipe(recipe) {
   easy.energyPreset = recipe.energy_preset || "flow";
   easy.aspect = recipe.aspect || "16:9";
   easy.tier = recipe.quality_tier || "draft";
+  easy.vertical = recipe.vertical_mode || "";
   easy.fx = recipe.beat_fx !== false;
   easy.overlay = !!recipe.beat_overlay;
   easy.endCard = !!recipe.end_card;
@@ -3937,6 +3944,9 @@ document.addEventListener("click", async (event) => {
     loadSimpleOptions().then(render);
   } else if (act === "easy-aspect") {
     state.easy.aspect = ["16:9", "9:16", "1:1"].includes(el.dataset.value) ? el.dataset.value : "16:9";
+    render();
+  } else if (act === "easy-vertical") {
+    state.easy.vertical = el.dataset.value === "crop" ? "crop" : "native";
     render();
   } else if (act === "easy-tier") {
     state.easy.tier = el.dataset.value === "final" ? "final" : "draft";
