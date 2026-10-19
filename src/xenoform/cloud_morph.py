@@ -114,6 +114,176 @@ def plan_shots(duration: float, beats: list | None = None, target: float = SHOT_
     return shots
 
 
+# ---------------------------------------------------------------- custom cut points
+#
+# A cut plan (``state["cut_plan"]``) replaces the even ~5 s grid with hand-placed shots:
+#   {"stills": ["rose", "jellyfish", ...],            # optional, len(shots) + 1, nouns from the vibe pool
+#    "shots": [{"start": 0.0, "end": 3.275,           # seconds on the song
+#               "render_s": 3,                         # optional: an allowed partner duration, 2 s minimum
+#               "speed": 0.92,                         # optional: playback factor (render_s / slot)
+#               "ease": "in",                          # optional: "in" accelerates into the end (a speed ramp)
+#               "effects": [{"type": "punch", "t": 1.216, "strength": 1.0},
+#                           {"type": "stutter", "t": 1.216, "frames": 2, "repeat": 3},
+#                           {"type": "hold", "t": 13.77, "len": 0.12},
+#                           {"type": "skip", "t": 13.9, "amount": 0.25},
+#                           {"type": "reverse", "t": 19.2, "len": 0.405}]}, ...]}
+# Only render_s costs money (it is what the partner node renders). Speed, ease and every
+# effect are free post-processing in ``stitch``.
+
+EFFECT_TYPES = ("punch", "stutter", "hold", "skip", "reverse")
+SPEED_TOLERANCE = 0.2
+
+
+class CutPlanError(ValueError):
+    """A cut plan that cannot be rendered as written."""
+
+
+def snap_up(seconds: float) -> int:
+    """The shortest allowed partner duration that covers ``seconds`` (2 s minimum)."""
+    return next((d for d in ALLOWED_S if d >= seconds - 1e-6), ALLOWED_S[-1])
+
+
+def custom_shots(plan: dict, duration: float | None = None) -> list[dict]:
+    """Validate a cut plan and return shots in the same shape ``plan_shots`` gives, plus speed/ease/effects."""
+    raw = list((plan or {}).get("shots") or [])
+    if not raw:
+        raise CutPlanError("The cut plan has no shots.")
+    shots: list[dict] = []
+    prev_end = 0.0
+    for i, item in enumerate(raw):
+        start, end = float(item["start"]), float(item["end"])
+        if abs(start - prev_end) > 0.5 / FPS:
+            raise CutPlanError(f"Shot {i + 1} starts at {start:.3f}s but the previous one ends at {prev_end:.3f}s.")
+        seconds = end - start
+        if seconds < 0.25:
+            raise CutPlanError(f"Shot {i + 1} is {seconds:.3f}s; the shortest slot is 0.25s.")
+        want = item.get("speed")
+        if item.get("render_s") is not None:
+            render_s = int(item["render_s"])
+            if render_s not in ALLOWED_S:
+                raise CutPlanError(f"Shot {i + 1}: render_s {render_s} is not an allowed duration {ALLOWED_S}.")
+        else:
+            render_s = snap_up(float(want) * seconds if want else seconds)
+        speed = render_s / seconds
+        if want is not None and abs(speed - float(want)) > SPEED_TOLERANCE * float(want):
+            raise CutPlanError(f"Shot {i + 1}: {render_s}s rendered into a {seconds:.3f}s slot plays at {speed:.2f}x, "
+                               f"not the {float(want):.2f}x asked for.")
+        ease = str(item.get("ease") or "")
+        if ease not in ("", "in", "out"):
+            raise CutPlanError(f"Shot {i + 1}: ease must be 'in', 'out' or empty.")
+        effects = []
+        for fx in item.get("effects") or []:
+            kind = str(fx.get("type") or "")
+            if kind not in EFFECT_TYPES:
+                raise CutPlanError(f"Shot {i + 1}: unknown effect {kind!r}; use one of {EFFECT_TYPES}.")
+            t = float(fx.get("t", start))
+            if not start - 1e-6 <= t < end:
+                raise CutPlanError(f"Shot {i + 1}: {kind} at {t:.3f}s is outside {start:.3f}-{end:.3f}s.")
+            effects.append({**fx, "type": kind, "t": round(t, 4)})
+        shots.append({"index": i, "start": round(start, 4), "end": round(end, 4), "seconds": round(seconds, 4),
+                      "render_s": render_s, "speed": round(speed, 3), "ease": ease, "effects": effects})
+        prev_end = end
+    if duration and prev_end > float(duration) + 0.05:
+        raise CutPlanError(f"The cut plan ends at {prev_end:.3f}s, past the {float(duration):.3f}s song.")
+    edges = [round(s["start"] * FPS) for s in shots] + [round(shots[-1]["end"] * FPS)]
+    for shot, a, b in zip(shots, edges[:-1], edges[1:]):
+        shot["frames"] = int(b - a)
+    return shots
+
+
+def shot_indices(shot: dict, n_src: int) -> np.ndarray:
+    """Which source frame plays on each output frame: speed (linear), ease, then the in-shot effects.
+
+    The shot always starts on frame 0 (still A) and ends on the last frame (still B), so the
+    chain stays continuous across handoffs whatever the effects do in between.
+    """
+    count = int(shot["frames"])
+    last = max(n_src - 1, 0)
+    u = np.linspace(0.0, 1.0, count) if count > 1 else np.zeros(count)
+    if shot.get("ease") == "in":
+        u = u ** 1.6
+    elif shot.get("ease") == "out":
+        u = 1 - (1 - u) ** 1.6
+    idx = u * last
+    step = last / max(count - 1, 1)
+    for fx in shot.get("effects") or []:
+        k0 = int(round((float(fx["t"]) - float(shot["start"])) * FPS))
+        if not 0 <= k0 < count:
+            continue
+        kind = fx["type"]
+        if kind == "hold":
+            n = max(1, int(round(float(fx.get("len", 0.12)) * FPS)))
+            idx[k0:min(count - 1, k0 + n)] = idx[k0]
+        elif kind == "stutter":
+            size, rep = max(1, int(fx.get("frames", 2))), max(2, int(fx.get("repeat", 3)))
+            for k in range(k0, min(count - 1, k0 + size * rep)):
+                idx[k] = idx[k0 + (k - k0) % size]
+        elif kind == "skip":
+            jump = float(fx.get("amount", 0.25)) * FPS  # source frames to lurch ahead
+            tail = np.arange(count - k0)
+            idx[k0:] = idx[k0:] + jump * (1 - tail / max(count - k0 - 1, 1))
+        elif kind == "reverse":
+            n = max(2, int(round(float(fx.get("len", 0.4)) * FPS)))
+            n = min(n, count - 1 - k0)
+            half = n // 2
+            if half < 1:
+                continue
+            back = idx[k0] - np.arange(half) * step
+            fwd = np.linspace(back[-1], idx[min(count - 1, k0 + n)], n - half + 1)[:-1]
+            idx[k0:k0 + n] = np.concatenate([back, fwd])
+    idx = np.clip(np.round(idx), 0, last).astype(int)
+    if count:
+        idx[0], idx[-1] = 0, last
+    return idx
+
+
+def punch_curve(shots: list[dict]) -> np.ndarray:
+    """Per output frame, 0..1: the decaying punch from every ``punch`` effect in the plan."""
+    total = sum(int(s["frames"]) for s in shots)
+    curve = np.zeros(total, np.float32)
+    for fx in (fx for s in shots for fx in s.get("effects") or [] if fx["type"] == "punch"):
+        k0 = int(round(float(fx["t"]) * FPS))
+        strength = float(fx.get("strength", 1.0))
+        for k in range(max(0, k0), min(total, k0 + 16)):
+            curve[k] = max(curve[k], strength * np.exp(-(k - k0) / 3.5))
+    return curve
+
+
+def apply_punch(frame: np.ndarray, amount: float) -> np.ndarray:
+    """A free zoom punch and exposure flash; numpy only (nearest-neighbour crop, no extra deps)."""
+    if amount <= 0.01:
+        return frame
+    h, w = frame.shape[:2]
+    scale = 1.0 + 0.09 * amount
+    ys = np.clip(((np.arange(h) - h / 2) / scale + h / 2).astype(int), 0, h - 1)
+    xs = np.clip(((np.arange(w) - w / 2) / scale + w / 2).astype(int), 0, w - 1)
+    out = frame[ys][:, xs].astype(np.float32)
+    out = out * (1.0 + 0.45 * amount) + 18.0 * amount
+    return np.clip(out, 0, 255).astype(np.uint8)
+
+
+def stills_for(state: dict, count: int) -> tuple[str, list[dict]]:
+    """The cut plan's own stills when it names them, else the vibe chain."""
+    nouns = list(((state.get("cut_plan") or {}).get("stills")) or [])
+    if not nouns:
+        return chain_stills(state, count)
+    from xenoform.morph_pass import OBJECTS, manifest, vibe_for
+
+    vibe = vibe_for(state)
+    pool = {item["noun"]: item for item in manifest()[vibe]}
+    missing = [n for n in nouns if n not in pool]
+    if missing:
+        raise CutPlanError(f"Not in the {vibe} pool: {', '.join(missing)}.")
+    if len(nouns) < count:
+        raise CutPlanError(f"The cut plan names {len(nouns)} stills; {count} shots need {count}.")
+    return vibe, [{**pool[n], "path": str(OBJECTS / pool[n]["file"])} for n in nouns[:count]]
+
+
+def shots_for(state: dict, duration: float, beats: list) -> list[dict]:
+    plan = state.get("cut_plan")
+    return custom_shots(plan, duration) if plan else plan_shots(duration, beats)
+
+
 def prices(comfy_url: str | None = None, timeout: float = 5.0) -> tuple[dict, dict | None, str]:
     """USD/s table from the node's own price badge, plus its object_info (or None)."""
     info = None
@@ -387,9 +557,15 @@ def stitch(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pat
     cmd.append(str(tmp))
     enc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
     frame_no = 0
+    punch = punch_curve(shots)
     try:
         for clip, shot in zip(clips, shots):
-            for frame in _fit(_read_frames(clip, width, height), shot["frames"]):
+            frames = _read_frames(clip, width, height)
+            if len(frames) == 0:
+                raise RuntimeError("A shot came back with no frames.")
+            for frame in frames[shot_indices(shot, len(frames))]:
+                if frame_no < len(punch) and punch[frame_no] > 0.01:
+                    frame = apply_punch(frame, float(punch[frame_no]))
                 if over is not None:
                     frame = over.draw(frame, frame_no / FPS)
                 enc.stdin.write(np.ascontiguousarray(frame).tobytes())
@@ -463,7 +639,7 @@ def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, cli
         wf.set_input("4", "text", mp.NEGATIVE)
         wf.set_input("9", "width", mp.WIDTH)
         wf.set_input("9", "height", mp.HEIGHT)
-        wf.set_input("9", "length", mp.gen_length(int(round(min(shot["seconds"], 5.0) * FPS))))
+        wf.set_input("9", "length", mp.gen_length(int(round(min(float(shot.get("render_s") or shot["seconds"]), 5.0) * FPS))))
         wf.set_input("11", "steps", int(tune.get("steps", mp.STEPS)))
         if "cfg" in tune:
             wf.set_input("14", "cfg", float(tune["cfg"]))
@@ -516,14 +692,14 @@ def comfy_url(cfg: dict | None) -> str:
 
 def plan_for(duration: float, beats: list, state: dict, cfg: dict | None = None, *, probe: bool = True) -> dict:
     """The whole plan the confirm card shows: shots, stills, cost, gates."""
-    shots = plan_shots(duration, beats)
-    vibe, stills = chain_stills(state, len(shots) + 1)
+    shots = shots_for(state, duration, beats)
+    vibe, stills = stills_for(state, len(shots) + 1)
     table, info, source = prices(comfy_url(cfg) if probe else None)
     est = estimate(shots, table=table)
     return {"shots": shots, "vibe": vibe, "stills": [s["file"] for s in stills], "estimate": est,
             "price_source": source, "node_installed": info is not None,
             "key_present": bool(os.environ.get(KEY_ENV, "").strip()), "dry_run": dry_run_default(cfg),
-            "label": LABEL, "prompt": DEFAULT_PROMPT}
+            "label": LABEL, "prompt": DEFAULT_PROMPT, "custom_cut": bool(state.get("cut_plan"))}
 
 
 def run_chain(engine: str, directed: dict, audio_path: Path, out_path: Path, work: Path, cfg: dict, state: dict,
@@ -534,8 +710,8 @@ def run_chain(engine: str, directed: dict, audio_path: Path, out_path: Path, wor
     work.mkdir(parents=True, exist_ok=True)
     duration = float(directed.get("duration") or 0.0)
     beats = list(directed.get("beats") or [])
-    shots = plan_shots(duration, beats)
-    vibe, stills = chain_stills(state, len(shots) + 1)
+    shots = shots_for(state, duration, beats)
+    vibe, stills = stills_for(state, len(shots) + 1)
     seed = int(state.get("seed") or 2727)
     prompt = str(state.get("cloud_prompt") or DEFAULT_PROMPT)
     table, info, source = prices(comfy_url(cfg))

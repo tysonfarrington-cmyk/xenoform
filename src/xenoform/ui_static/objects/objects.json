@@ -515,6 +515,36 @@
    "noun": "droplet",
    "finish": "black glass",
    "source": "library/gpu_objects/droplet_black_glass.png (cut out onto pure black)"
+  },
+  {
+   "file": "black/12_manta_ray_gr.jpg",
+   "noun": "manta ray",
+   "finish": "iridescent liquid metal",
+   "source": "library/gpu_objects/manta_ray_gr.png (cut out onto pure black)"
+  },
+  {
+   "file": "black/13_dragonfly_gr.jpg",
+   "noun": "dragonfly",
+   "finish": "iridescent liquid metal",
+   "source": "library/gpu_objects/dragonfly_gr.png (cut out onto pure black)"
+  },
+  {
+   "file": "black/14_torus_knot_gr.jpg",
+   "noun": "torus knot",
+   "finish": "iridescent liquid metal",
+   "source": "library/gpu_objects/torus_knot_gr.png (cut out onto pure black)"
+  },
+  {
+   "file": "black/15_ribbon_twist_gr.jpg",
+   "noun": "ribbon",
+   "finish": "iridescent liquid metal",
+   "source": "library/gpu_objects/ribbon_twist_gr.png (cut out onto pure black)"
+  },
+  {
+   "file": "black/16_liquid_orb_gr.jpg",
+   "noun": "liquid orb",
+   "finish": "iridescent liquid metal",
+   "source": "library/gpu_objects/soap_orb_gr.png (cut out onto pure black)"
   }
  ]
 }

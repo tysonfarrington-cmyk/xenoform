@@ -204,6 +204,7 @@ function payload() {
     cloud_quality: !!(state.easy && state.easy.cloud && state.easy.cloudToken),
     cloud_confirm: (state.easy && state.easy.cloud && state.easy.cloudToken) || "",
     beat_overlay: !!(state.easy && state.easy.overlay),
+    cut_plan: (state.easy && state.easy.cloud && state.easy.cutPlan) || null,
     video_model: state.videoModel || "ltx-23",
     brief: state.brief || "",
     mode: state.view === "simple" ? "simple" : "director",
@@ -2150,6 +2151,7 @@ function cloudToggles(easy) {
   return `<div class="cloud-opts">
       <button type="button" class="ghost cloud-toggle${cloud ? " on" : ""}" data-act="easy-cloud" aria-pressed="${cloud ? "true" : "false"}">Cloud quality · ${cloud ? "on" : "off"}</button>
       <button type="button" class="ghost cloud-toggle${overlay ? " on" : ""}" data-act="easy-overlay" aria-pressed="${overlay ? "true" : "false"}">Beat overlay · ${overlay ? "on" : "off"}</button>
+      ${cloud ? `<label class="ghost cloud-toggle">Cut plan · ${easy.cutPlan ? `${(easy.cutPlan.shots || []).length} shots` : "auto (~5s on the beat)"}<input type="file" accept="application/json,.json" data-act="easy-cut-plan" hidden></label>${easy.cutPlan ? `<button type="button" class="ghost" data-act="easy-cut-clear">Clear cut plan</button>` : ""}` : ""}
       <p class="note">Cloud quality renders the morphs with LTX-2.5 through a paid Comfy partner node. You see the price and confirm it first. Off, everything stays on open weights on this machine.</p>
     </div>`;
 }
@@ -2161,7 +2163,7 @@ function cloudCard(plan) {
   if (est.over_cap) blockers.push(`Over the US$${Number(est.cap_usd || 0).toFixed(2)} cap for one clip.`);
   if (!plan.node_installed) blockers.push("The LTX-2.5 partner node is not in this ComfyUI.");
   if (!plan.key_present && !plan.dry_run) blockers.push("No Comfy API key on this machine (COMFY_ORG_API_KEY).");
-  const shots = (plan.shots || []).map((shot) => `${Number(shot.seconds).toFixed(1)}s→${shot.render_s}s`).join(" · ");
+  const shots = (plan.shots || []).map((shot) => `${Number(shot.seconds).toFixed(2)}s←${shot.render_s}s${shot.speed ? ` @${Number(shot.speed).toFixed(2)}x` : ""}${(shot.effects || []).length ? "*" : ""}`).join(" · ");
   const go = plan.can_submit
     ? `<button type="button" class="generate" data-act="easy-cloud-confirm">${plan.dry_run ? "Dry run · spend nothing" : `Confirm and render · US$${Number(est.usd || 0).toFixed(2)}`}</button>`
     : "";
@@ -2170,6 +2172,7 @@ function cloudCard(plan) {
       <p><strong>${esc(money)}</strong></p>
       <p class="note">${esc(`${est.shots} LTX-2.5 shots, ${est.render_seconds}s at ${est.resolution} ${est.fps} fps, ${est.model}. Cap US$${Number(est.cap_usd || 0).toFixed(2)} a clip.`)}</p>
       <p class="note">${esc(shots)}</p>
+      ${plan.custom_cut ? `<p class="note">Custom cut plan: you pay only for render seconds; speed, stutters and punches (*) are free post-processing.</p>` : ""}
       <p class="note">A free local draft plays while the cloud renders. If the cloud fails you keep the local cut. The result is labelled ${esc(plan.label || "cloud-rendered")}.</p>
       ${blockers.map((line) => `<p class="note warn">${esc(line)}</p>`).join("")}
       <div class="review-actions">
@@ -2187,7 +2190,7 @@ async function easyCloudEstimate() {
     const res = await api("/api/cloud/estimate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ audio_id: state.audioId || "demo", vibe: vibe ? vibe.id : "", palette: vibe ? vibe.palette : "", brief: state.brief || "" }),
+      body: JSON.stringify({ audio_id: state.audioId || "demo", vibe: vibe ? vibe.id : "", palette: vibe ? vibe.palette : "", brief: state.brief || "", cut_plan: state.easy.cutPlan || null }),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     state.easy.cloudPlan = await res.json();
@@ -3699,6 +3702,11 @@ document.addEventListener("click", (event) => {
     state.easy.cloudToken = "";
     state.easy.cloudPlan = null;
     render();
+  } else if (act === "easy-cut-clear") {
+    state.easy.cutPlan = null;
+    state.easy.cloudPlan = null;
+    state.easy.cloudToken = "";
+    render();
   } else if (act === "easy-overlay") {
     state.easy.overlay = !state.easy.overlay;
     render();
@@ -4033,7 +4041,18 @@ document.addEventListener("input", (event) => {
 document.addEventListener("change", (event) => {
   const target = event.target;
   if (!state) return;
-  if (target.dataset.act === "test-clip") {
+  if (target.dataset.act === "easy-cut-plan") {
+    const file = target.files && target.files[0];
+    if (!file) return;
+    file.text().then((text) => {
+      const plan = JSON.parse(text);
+      if (!plan || !Array.isArray(plan.shots) || !plan.shots.length) throw new Error("no shots");
+      state.easy.cutPlan = plan;
+      state.easy.cloudPlan = null; // a new plan needs a new price and a new confirm click
+      state.easy.cloudToken = "";
+      state.easy.note = `Cut plan loaded: ${plan.shots.length} shots. Press Make to see its price.`;
+    }).catch(() => { state.easy.note = "That file is not a cut plan (needs a shots list)."; }).finally(render);
+  } else if (target.dataset.act === "test-clip") {
     toggleTestClip(Number(target.dataset.index), target.checked);
   } else if (target.id === "lyric-align") {
     state.lyricOn = !!target.checked;

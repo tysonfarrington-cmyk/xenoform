@@ -88,7 +88,7 @@ def test_graph_chains_stills_and_validates_against_the_installed_node():
 def test_black_vibe_pool_and_demo_chain():
     pools = json.loads((ROOT / "src/xenoform/ui_static/objects/objects.json").read_text(encoding="utf-8"))
     black = pools["black"]
-    assert len(black) == 12
+    assert len(black) == 17 and len({item["noun"] for item in black}) == 17
     assert tuple(item["noun"] for item in black[:5]) == cm.BLACK_CHAIN
     for item in black:
         assert (ROOT / "src/xenoform/ui_static/objects" / item["file"]).is_file()
@@ -276,3 +276,120 @@ def test_story_words_do_not_rotate_the_black_chain():
     state = {"vibe": "black", "brief": "a swarm of drops on the drop", "scenes": [{"form": "lotus of light"}]}
     vibe, stills = cm.chain_stills(state, 5)
     assert [s["noun"] for s in stills] == list(cm.BLACK_CHAIN)
+
+
+# ---------------------------------------------------------------- custom cut points
+
+
+def dense_plan():
+    """The shape of demo1's dense cut: calm shots on downbeats, the drop on half-bars at 2.5x."""
+    p = lambda t, s=1.0: {"type": "punch", "t": t, "strength": s}
+    return {
+        "stills": ["rose", "jellyfish", "butterfly", "swallow", "dragonfly", "drop swarm", "mobius", "sea urchin"],
+        "shots": [
+            {"start": 0.0, "end": 3.275, "render_s": 3, "speed": 0.92,
+             "effects": [p(1.216), {"type": "stutter", "t": 1.216, "frames": 2, "repeat": 3}]},
+            {"start": 3.275, "end": 4.864, "render_s": 2},
+            {"start": 4.864, "end": 6.453, "render_s": 2},
+            {"start": 6.453, "end": 12.8, "speed": 0.9},  # render_s chosen from the speed: snap_up(5.71) = 6
+            {"start": 12.8, "end": 13.6, "render_s": 2, "speed": 2.5, "effects": [p(12.8), {"type": "stutter", "t": 12.8}]},
+            {"start": 13.6, "end": 14.432, "render_s": 2, "speed": 2.4,
+             "effects": [{"type": "hold", "t": 13.77, "len": 0.12}, p(13.899), {"type": "skip", "t": 13.899, "amount": 0.3}]},
+            {"start": 14.432, "end": 20.0, "render_s": 6, "ease": "in",
+             "effects": [p(19.2), {"type": "reverse", "t": 19.2, "len": 0.405}]},
+        ],
+    }
+
+
+def test_custom_cut_points_shape_render_seconds_and_cost():
+    shots = cm.custom_shots(dense_plan(), 20.0)
+    assert [s["render_s"] for s in shots] == [3, 2, 2, 6, 2, 2, 6]
+    assert sum(s["frames"] for s in shots) == 480
+    assert shots[4]["speed"] == pytest.approx(2.5) and shots[0]["speed"] == pytest.approx(0.916, abs=1e-3)
+    est = cm.estimate(shots)
+    assert est["render_seconds"] == 23 and est["usd"] == pytest.approx(23 * 0.1287)
+    assert est["aud"] == pytest.approx(round(23 * 0.1287 * 1.44, 2)) and not est["over_cap"]
+    assert cm.snap_up(0.8) == 2 and cm.snap_up(2.01) == 3 and cm.snap_up(6.5) == 8
+
+
+@pytest.mark.parametrize("change, why", [
+    (lambda p: p["shots"][1].update(render_s=7), "not an allowed duration"),
+    (lambda p: p["shots"][1].update(render_s=1), "not an allowed duration"),
+    (lambda p: p["shots"][2].update(start=5.0), "previous one ends"),
+    (lambda p: p["shots"][4].update(speed=1.5), "plays at 2.50x"),
+    (lambda p: p["shots"][1]["effects"].append({"type": "punch", "t": 9.0}) if p["shots"][1].setdefault("effects", []) is not None else None, "outside"),
+    (lambda p: p["shots"][1].update(effects=[{"type": "glitch", "t": 3.5}]), "unknown effect"),
+    (lambda p: p["shots"][-1].update(end=25.0), "past the"),
+])
+def test_bad_cut_plans_are_refused(change, why):
+    plan = dense_plan()
+    change(plan)
+    with pytest.raises(cm.CutPlanError, match=why):
+        cm.custom_shots(plan, 20.0)
+
+
+def test_effects_change_only_which_frame_plays_and_keep_the_chain_continuous():
+    shots = {s["index"]: s for s in cm.custom_shots(dense_plan(), 20.0)}
+    for shot in shots.values():
+        idx = cm.shot_indices(shot, 49)
+        assert len(idx) == shot["frames"] and idx[0] == 0 and idx[-1] == 48 and idx.min() >= 0 and idx.max() <= 48
+    plain = cm.shot_indices(shots[1], 49)
+    assert (np.diff(plain) >= 0).all()  # no effects: monotonic, a plain retime
+    first = cm.shot_indices(shots[0], 73)
+    k = round(1.216 * cm.FPS)
+    assert list(first[k:k + 6]) == [first[k], first[k + 1]] * 3  # stutter: a 2-frame slice three times
+    hold = cm.shot_indices(shots[5], 49)
+    k = round((13.77 - 13.6) * cm.FPS)
+    assert len(set(hold[k:k + 2])) == 1  # 60 ms freeze before the slam
+    k = round((13.899 - 13.6) * cm.FPS)
+    assert hold[k] - hold[k - 1] > 2  # skip: lurches ahead on the hit
+    rev = cm.shot_indices(shots[6], 145)
+    k = round((19.2 - 14.432) * cm.FPS)
+    assert rev[k + 3] < rev[k]  # reverse for a beat
+    ramp = cm.shot_indices(shots[6], 145)
+    assert ramp[10] - ramp[0] < ramp[-1] - ramp[-11]  # ease in: accelerates into the end
+    punch = cm.punch_curve(list(shots.values()))
+    assert punch[round(12.8 * cm.FPS)] == pytest.approx(1.0) and punch[round(10.0 * cm.FPS)] == 0
+    frame = np.full((36, 64, 3), 100, np.uint8)
+    assert cm.apply_punch(frame, 1.0).mean() > frame.mean() and cm.apply_punch(frame, 0.0) is frame
+
+
+@pytest.mark.skipif(not HAS_FFMPEG, reason="ffmpeg")
+def test_custom_cut_dry_run_end_to_end_and_paid_gates(tmp_path, monkeypatch):
+    audio = _audio(tmp_path / "a.wav")
+    directed = {"duration": 20.0, "beats": beats()}
+    state = {"vibe": "black", "beat_overlay": True, "cloud_quality": True, "cut_plan": dense_plan()}
+    info = cm.run_chain("mock", directed, audio, tmp_path / "o.mp4", tmp_path, {}, state, _report)
+    assert info["frames"] == 480 and info["spent_usd"] == 0.0
+    assert info["handoffs_s"] == [0.0, 3.275, 4.864, 6.453, 12.8, 13.6, 14.432, 20.0]
+    assert info["stills"][4] == "black/13_dragonfly_gr.jpg"
+    plan = json.loads((tmp_path / "cloud" / "plan_mock.json").read_text())
+    durations = [n["inputs"]["model.duration"] for n in plan["graph"].values() if n["class_type"] == cm.PARTNER_NODE]
+    assert durations == ["3", "2", "2", "6", "2", "2", "6"] and plan["graph_errors"] == []
+    assert plan["estimate"]["render_seconds"] == 23
+    # the confirm token must cover THIS plan: a token for the cheaper auto plan is refused
+    cheap = cm.mint_token(cm.estimate(cm.plan_shots(20.0, beats())))
+    monkeypatch.setenv("COMFY_ORG_API_KEY", "test-not-a-key")
+    fake = FakeClient(tmp_path / "c.mp4")
+    with pytest.raises(cm.CloudRefused):
+        cm.run_chain("cloud", directed, audio, tmp_path / "o.mp4", tmp_path, {}, {**state, "cloud_confirm": cheap}, _report, client=fake)
+    assert fake.submits == []
+
+
+def test_estimate_route_prices_a_cut_plan_and_rejects_a_bad_one():
+    from fastapi.testclient import TestClient
+
+    from xenoform.ui import create_app
+
+    client = TestClient(create_app())
+    short = dense_plan()  # the bundled demo song is 12 s: the first three shots fit
+    short["shots"] = short["shots"][:3]
+    plan = client.post("/api/cloud/estimate", json={"audio_id": "demo", "vibe": "black", "cut_plan": short}).json()
+    assert plan["custom_cut"] is True and plan["estimate"]["render_seconds"] == 7 and plan["token"]
+    assert [s["render_s"] for s in plan["shots"]] == [3, 2, 2] and plan["stills"][3] == "black/03_swallow_gr.jpg"
+    too_long = client.post("/api/cloud/estimate", json={"audio_id": "demo", "vibe": "black", "cut_plan": dense_plan()})
+    assert too_long.status_code == 400 and "past the" in too_long.json()["detail"]
+    bad = dict(short, shots=[dict(x) for x in short["shots"]])
+    bad["shots"][1]["render_s"] = 7
+    res = client.post("/api/cloud/estimate", json={"audio_id": "demo", "vibe": "black", "cut_plan": bad})
+    assert res.status_code == 400 and "allowed duration" in res.json()["detail"]

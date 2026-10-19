@@ -32,3 +32,23 @@ US$0.1716/s. Fast allows 2 to 20s and Pro allows 2 to 10s.
 - On any failure the free local cut stays and a warning explains why.
 - `XENO_CLOUD_DRY_RUN=1` swaps the paid engine for a free ffmpeg mock. `XENO_CLOUD_NEVER=1` refuses every paid submit.
 - The key is read from `COMFY_ORG_API_KEY` in the desk process only. It is never written to plans, logs or results.
+
+### Custom cut points
+
+Cloud quality can also take a cut plan (`cut_plan` in `/api/cloud/estimate` and `/api/generate`, or **Cut plan** in the UI, which loads a JSON file). A cut plan replaces the automatic ~5s beat grid.
+
+- **Stills:** an optional `stills` list of black-pool nouns, one more than the number of shots.
+- **Shot times:** each shot has `start` and `end`, contiguous on the song.
+- **Render length:** `render_s` must be one of 2/3/4/5/6/8/10, so 2s is the minimum. If you leave it out, it's derived from `speed`.
+- **Speed:** `speed` is render_s ÷ slot length. It's checked to within 20%.
+- **Speed ramp:** optional `ease: "in"` makes the morph accelerate into the cut.
+- **Effects:** optional `effects`, each placed at a song time `t`:
+  - `punch`: zoom and flash
+  - `stutter`: repeat a 2-frame slice
+  - `hold`: freeze
+  - `skip`: lurch ahead
+  - `reverse`: play backwards for a beat
+
+Only render seconds cost money: the estimate is the sum of render_s × US$0.1287 for Fast 720p. Speed, ease and effects are free post-processing in `stitch`. Every shot still starts on still A and ends on still B, so the chain stays continuous.
+
+The cost card and the single-use confirm click are unchanged. The confirm must cover the cut plan's own price.
