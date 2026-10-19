@@ -2082,3 +2082,27 @@ button.easy-showcase { width: 100%; margin-top: 8px; }
   .top-actions { flex-wrap: wrap; justify-content: flex-end; }
   body[data-advanced="1"] .top-actions { margin-left: auto; }
 }
+
+/* Simple finishing: energy, aspect, quality, FX, end card; remix box; My videos */
+.simple-opts { display: grid; gap: 8px; margin: 10px 0 4px; }
+.simple-seg { display: grid; grid-template-columns: 64px 1fr; align-items: center; gap: 8px; }
+.simple-seg > span { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; opacity: .7; }
+.simple-seg .toggle { display: flex; flex-wrap: wrap; }
+.simple-seg .toggle button { flex: 1 1 0; min-width: 0; }
+.simple-opts .cloud-opts { grid-template-columns: 1fr 1fr; margin: 0; }
+.remix { margin-top: 10px; }
+.remix summary { cursor: pointer; font-size: 13px; opacity: .8; }
+.recipe-line code { word-break: break-all; font-size: 12px; }
+.gallery { grid-column: 1 / -1; }
+.gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+.gallery-card { margin: 0; display: grid; gap: 6px; }
+.gallery-card video { width: 100%; aspect-ratio: 16 / 9; object-fit: contain; background: #000; border-radius: 8px; }
+.gallery-card[data-aspect="9:16"] video { aspect-ratio: 9 / 16; max-height: 220px; }
+.gallery-card[data-aspect="1:1"] video { aspect-ratio: 1; }
+.gallery-card figcaption { display: grid; gap: 2px; font-size: 12px; }
+.gallery-card figcaption span { opacity: .75; }
+.gallery-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.gallery-actions button { padding: 0; }
+.licence-table { width: 100%; border-collapse: collapse; font-size: 12px; margin: 8px 0; }
+.licence-table th, .licence-table td { text-align: left; padding: 4px 6px; border-bottom: 1px solid rgba(255,255,255,.08); vertical-align: top; }
+.licence-table th { opacity: .7; font-weight: 500; }

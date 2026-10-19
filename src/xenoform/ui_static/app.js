@@ -205,7 +205,15 @@ function payload() {
     cloud_quality: !!(state.paidCloud && state.easy && state.easy.cloud && state.easy.cloudToken),
     cloud_confirm: (state.easy && state.easy.cloud && state.easy.cloudToken) || "",
     beat_overlay: !!(state.easy && state.easy.overlay),
-    cut_plan: (state.easy && state.easy.cloud && state.easy.cutPlan) || null,
+    // Simple finishing (open weights): energy preset, aspect, quality tier, beat FX, end card.
+    energy_preset: (state.easy && state.easy.energyPreset) || "flow",
+    aspect: (state.easy && state.easy.aspect) || "16:9",
+    quality_tier: (state.easy && state.easy.tier) || "draft",
+    beat_fx: !(state.easy && state.easy.fx === false),
+    end_card: !!(state.easy && state.easy.endCard),
+    idea: (state.easy && state.easy.idea) || "",
+    song: (state.easy && state.easy.songLabel) || "",
+    cut_plan: (state.easy && (state.easy.cloud || state.easy.remixPlan) && (state.easy.cutPlan || state.easy.remixPlan)) || null,
     video_model: state.videoModel || "ltx-23",
     brief: state.brief || "",
     mode: state.view === "simple" ? "simple" : "director",
@@ -1904,6 +1912,9 @@ function easyMedia() {
     return `<div class="screen" id="easy-screen" data-vibe="${esc(vibe)}" aria-label="Your cut">${clips}</div>
       <audio id="live-audio" src="${esc(media(src))}" preload="auto"></audio>`;
   }
+  if (state.easy && state.easy.reopenUrl) {
+    return `<video id="player" playsinline controls preload="auto" src="${esc(media(state.easy.reopenUrl))}"></video>`;
+  }
   if (state.job && state.job.video) {
     return `<video id="player" playsinline preload="auto" src="${esc(media(state.job.video))}#t=0.5"></video>`;
   }
@@ -2004,6 +2015,8 @@ function renderEasy() {
           </div>
           <div class="easy-result-actions">
             <button type="button" class="ghost" data-act="easy-share">Share cut</button>
+            ${easyVideoId() ? '<button type="button" class="ghost" data-act="easy-hook" title="Cuts the strongest drop into a 15 second clip, same aspect and FX">15 s hook</button>' : ""}
+            ${easyVideoId() ? '<button type="button" class="ghost" data-act="easy-copy-recipe">Copy recipe code</button>' : ""}
             <button type="button" class="generate" data-act="easy-download">Download</button>
           </div>
         </div>
@@ -2013,6 +2026,8 @@ function renderEasy() {
           <p class="ready-toast">Your video is ready.</p>
         </div>
         <p class="note" id="easy-note">${esc(easy.note || "")}</p>
+        ${easy.hookUrl ? `<p class="note">15 s hook ready: <a href="${esc(media(easy.hookUrl))}" download>download the hook</a>${easy.hookInfo ? ` · ${esc(easy.hookInfo)}` : ""}</p>` : ""}
+        ${easy.recipe ? `<p class="note recipe-line">Recipe <code>${esc(easy.recipe)}</code></p>` : ""}
       </section>
       <aside class="panel easy-side">
         <div class="energy-head"><h3>Energy</h3><b id="energy-readout">${esc(energyWord(state.energy || 0))}</b></div>
@@ -2044,7 +2059,7 @@ function renderEasy() {
     <header class="easy-intro">
       <p class="eyebrow">Xenoform · Simple</p>
       <h2>Make a music video.</h2>
-      <p class="lede">A song, a vibe, then Make. Everything else is chosen for you, and you can change it later.</p>
+      <p class="lede">One object keeps transforming into the next, every change on the beat. A song, a vibe, then Make. Free, local, open weights.</p>
       ${dropCard()}
     </header>
     <section class="easy-main">
@@ -2065,19 +2080,180 @@ function renderEasy() {
       <div class="monitor" style="background-image:url(${esc(media(preview.still))})"><span class="monitor-pill">${esc(preview.name)} · sample</span></div>
       <div class="filmstrip">${shotStrip(preview.id)}</div>
       <dl class="facts">
-        <dt>Shots</dt><dd>7, one per section</dd>
-        <dt>Cut</dt><dd>On the bar</dd>
+        <dt>Shots</dt><dd>${esc(easy.energyPreset === "dense" ? "Up to 15, faster after the drop" : "7, one per section")}</dd>
+        <dt>Cut</dt><dd>${esc(easy.energyPreset === "dense" ? "Every bar, every half bar on the drop" : "On the bar")}</dd>
         <dt>Energy</dt><dd>Follows the song</dd>
         <dt>Time</dt><dd>${esc(easyTimeFact())}</dd>
       </dl>
+      ${simpleOptions(easy)}
       ${cloudToggles(easy)}
       ${easy.cloudPlan ? cloudCard(easy.cloudPlan) : ""}
       <button type="button" class="generate easy-make" data-act="easy-make">Make my video</button>
+      ${remixBox(easy)}
       <button type="button" class="ghost easy-showcase" data-act="easy-showcase">Watch a finished one · plays now</button>
       <p class="note" id="easy-note">${esc(easy.note || "No ComfyUI? It plays in your browser.")}</p>
       <p class="side-foot"><a class="ow-badge" href="${esc(media("/licences"))}" title="LTX-2.3 has a revenue threshold. FLUX.2 Klein 9B is non-commercial. This desk uses the Apache 2.0 4B.">Open weights</a></p>
     </aside>
+    ${galleryPanel()}
   </div>`;
+}
+
+// ---------------------------------------------------------------- Simple finishing (open weights)
+
+function simpleSeg(act, current, choices, label) {
+  const buttons = choices
+    .map(([id, text]) => `<button type="button" class="${id === current ? "on" : ""}" data-act="${act}" data-value="${esc(id)}" aria-pressed="${id === current ? "true" : "false"}">${esc(text)}</button>`)
+    .join("");
+  return `<div class="simple-seg"><span>${esc(label)}</span><div class="toggle" role="group" aria-label="${esc(label)}">${buttons}</div></div>`;
+}
+
+function finalEtaText() {
+  const info = state.simpleOptions && state.simpleOptions.final;
+  if (!info) return "Final takes longer: minutes, not seconds.";
+  const ready = info.ready ? "" : " Some Final files are missing on this machine, so it falls back to Draft.";
+  const measured = info.eta_measured ? "" : " (estimate, not yet measured on this card)";
+  return `Final: LTX-2.3 at ${info.render}, upscaled to ${info.output}. About ${clockText(info.eta_s)}${measured}.${ready}`;
+}
+
+function simpleOptions(easy) {
+  const energy = easy.energyPreset || "flow";
+  const aspect = easy.aspect || "16:9";
+  const tier = easy.tier || "draft";
+  const fx = easy.fx !== false;
+  const card = !!easy.endCard;
+  return `<div class="simple-opts" data-tour="easy-options">
+      ${simpleSeg("easy-energy", energy, [["flow", "Flow"], ["dense", "Dense"]], "Energy")}
+      ${simpleSeg("easy-aspect", aspect, [["16:9", "16:9"], ["9:16", "9:16"], ["1:1", "1:1"]], "Aspect")}
+      ${simpleSeg("easy-tier", tier, [["draft", "Draft"], ["final", "Final"]], "Quality")}
+      <div class="cloud-opts">
+        <button type="button" class="ghost cloud-toggle${fx ? " on" : ""}" data-act="easy-fx" aria-pressed="${fx ? "true" : "false"}">Beat FX · ${fx ? "on" : "off"}</button>
+        <button type="button" class="ghost cloud-toggle${card ? " on" : ""}" data-act="easy-card" aria-pressed="${card ? "true" : "false"}">End card · ${card ? "on" : "off"}</button>
+      </div>
+      <p class="note">${esc(energy === "dense" ? "Dense: up to 15 morphs, a shot a bar, then a shot every half bar from the drop, with stutters, holds and punches." : "Flow: one morph per section, cut on the bar.")}
+      ${esc(aspect === "16:9" ? "" : " Each shot is reframed around the object as it changes.")}
+      ${esc(tier === "final" ? " " + finalEtaText() : " Draft: LTX 0.9.5, the quick pass.")}
+      ${esc(easy.overlay ? "" : " Clean export: no waveform or text on the picture.")}</p>
+    </div>`;
+}
+
+function remixBox(easy) {
+  return `<details class="remix"${easy.remixOpen ? " open" : ""}>
+      <summary>Paste a recipe code</summary>
+      <label class="idea-field">Someone's recipe code (starts with xf1.)
+        <input id="easy-recipe" type="text" spellcheck="false" autocomplete="off" value="${esc(easy.remixCode || "")}" aria-label="Recipe code" />
+      </label>
+      <button type="button" class="ghost" data-act="easy-remix">Use this recipe</button>
+      <p class="note">Same vibe, energy, aspect, quality and seed. Use the same song to get the same film, or a different one to remix it.</p>
+    </details>`;
+}
+
+function galleryPanel() {
+  const rows = (state.videos || []).slice(0, 12);
+  if (!rows.length) {
+    return `<section class="panel span gallery" id="my-videos"><h3>My videos</h3><p class="note">Videos you make in Simple mode show up here, with their recipe codes.</p></section>`;
+  }
+  const cards = rows
+    .map((row) => `<figure class="gallery-card" data-aspect="${esc(row.aspect)}">
+        <video muted playsinline preload="metadata" src="${esc(media(row.url))}#t=0.5"></video>
+        <figcaption><strong>${esc(row.song || row.vibe || row.id)}</strong>
+          <span>${esc([row.vibe, row.energy, row.aspect, row.tier].filter(Boolean).join(" · "))}</span>
+          <span class="mono">${esc(String(row.created || "").replace("T", " ").slice(0, 16))}</span>
+          <span class="gallery-actions">
+            <button type="button" class="text" data-act="video-open" data-id="${esc(row.id)}">Reopen</button>
+            <button type="button" class="text" data-act="video-rerender" data-id="${esc(row.id)}"${row.recipe ? "" : " disabled"}>Re-render</button>
+            <button type="button" class="text" data-act="video-copy" data-id="${esc(row.id)}"${row.recipe ? "" : " disabled"}>Copy recipe</button>
+          </span>
+        </figcaption>
+      </figure>`)
+    .join("");
+  return `<section class="panel span gallery" id="my-videos"><h3>My videos</h3><div class="gallery-grid">${cards}</div></section>`;
+}
+
+async function loadVideos() {
+  try {
+    const res = await api("/api/videos");
+    if (!res.ok) return;
+    state.videos = (await res.json()).videos || [];
+  } catch (err) {
+    state.videos = state.videos || [];
+  }
+}
+
+async function loadSimpleOptions() {
+  try {
+    const duration = Math.round(easySongSeconds());
+    const energy = (state.easy && state.easy.energyPreset) || "flow";
+    const res = await api(`/api/simple/options?duration=${duration}&energy=${energy}&tier=final`);
+    if (res.ok) state.simpleOptions = await res.json();
+  } catch (err) {
+    state.simpleOptions = null;
+  }
+}
+
+function easyVideoId() {
+  if (state.easy && state.easy.reopenId) return state.easy.reopenId;
+  const job = state.job || {};
+  return job.status === "done" && job.id ? job.id : "";
+}
+
+function applySimpleRecipe(recipe) {
+  const easy = state.easy;
+  if (recipe.vibe && vibeById(recipe.vibe)) easy.vibe = recipe.vibe;
+  easy.idea = recipe.idea || easy.idea || "";
+  easy.energyPreset = recipe.energy_preset || "flow";
+  easy.aspect = recipe.aspect || "16:9";
+  easy.tier = recipe.quality_tier || "draft";
+  easy.fx = recipe.beat_fx !== false;
+  easy.overlay = !!recipe.beat_overlay;
+  easy.endCard = !!recipe.end_card;
+  easy.remixPlan = recipe.cut_plan || null;
+  state.seed = recipe.seed || state.seed;
+}
+
+async function decodeSimpleRecipe(code) {
+  const res = await api("/api/simple/recipe/decode", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ recipe: code }),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.detail || "That recipe code did not read.");
+  return body;
+}
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
+async function easyHook() {
+  const id = easyVideoId();
+  if (!id) return;
+  state.easy.note = "Finding the strongest drop and cutting 15 seconds around it.";
+  render();
+  try {
+    const res = await api(`/api/videos/${id}/hook`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ length: 15 }) });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.detail || "The hook did not cut.");
+    state.easy.hookUrl = body.url;
+    state.easy.hookInfo = `${clockText(body.start)} to ${clockText(body.end)}, drop at ${clockText(body.drop)}`;
+    state.easy.note = "";
+  } catch (err) {
+    state.easy.note = String(err.message || err);
+  }
+  render();
+}
+
+async function easyRecipeFor(id) {
+  const row = (state.videos || []).find((item) => item.id === id);
+  if (row && row.recipe) return row.recipe;
+  await loadVideos();
+  const again = (state.videos || []).find((item) => item.id === id);
+  return again ? again.recipe : "";
 }
 
 // One set of figures, the same as the README. Morph pass on a 12 GB RTX 3080 Ti
@@ -2247,6 +2423,10 @@ async function easyMake() {
   }
   state.easy.cloudPlan = null;
   state.easy.showcase = false;
+  state.easy.reopenId = "";
+  state.easy.reopenUrl = "";
+  state.easy.hookUrl = "";
+  state.easy.recipe = "";
   state.easy.startedAt = Date.now();
   state.easy.firstMorph = null;
   state.easy.eta = state.comfyOk === false ? EASY_ETA_BROWSER_S : easyEtaGuess();
@@ -2284,6 +2464,11 @@ async function easyMake() {
   const line = document.getElementById("easy-progress");
   if (line) line.textContent = state.easy.note;
   await generate();
+  loadVideos().then(() => {
+    const id = easyVideoId();
+    const row = (state.videos || []).find((item) => item.id === id);
+    if (row && state.easy) state.easy.recipe = row.recipe || "";
+  });
   if (state.easy && state.easy.phase === "making" && state.job && state.job.status === "error") {
     state.quality = "live";
     state.easy.phase = "result";
@@ -3694,7 +3879,7 @@ async function poll(id) {
   if (job.status === "running") setTimeout(() => poll(id), 400);
 }
 
-document.addEventListener("click", (event) => {
+document.addEventListener("click", async (event) => {
   const el = event.target.closest("[data-act]");
   if (!el || !state) return;
   const act = el.dataset.act;
@@ -3748,6 +3933,73 @@ document.addEventListener("click", (event) => {
   } else if (act === "easy-overlay") {
     state.easy.overlay = !state.easy.overlay;
     render();
+  } else if (act === "easy-energy") {
+    state.easy.energyPreset = el.dataset.value === "dense" ? "dense" : "flow";
+    render();
+    loadSimpleOptions().then(render);
+  } else if (act === "easy-aspect") {
+    state.easy.aspect = ["16:9", "9:16", "1:1"].includes(el.dataset.value) ? el.dataset.value : "16:9";
+    render();
+  } else if (act === "easy-tier") {
+    state.easy.tier = el.dataset.value === "final" ? "final" : "draft";
+    render();
+    if (state.easy.tier === "final") loadSimpleOptions().then(render);
+  } else if (act === "easy-fx") {
+    state.easy.fx = state.easy.fx === false;
+    render();
+  } else if (act === "easy-card") {
+    state.easy.endCard = !state.easy.endCard;
+    render();
+  } else if (act === "easy-hook") {
+    easyHook();
+  } else if (act === "easy-copy-recipe") {
+    const code = state.easy.recipe || (await easyRecipeFor(easyVideoId()));
+    state.easy.recipe = code;
+    state.easy.note = code && (await copyText(code)) ? "Recipe code copied." : code ? "Recipe code below." : "No recipe code for this cut.";
+    render();
+  } else if (act === "easy-remix") {
+    const input = document.getElementById("easy-recipe");
+    const code = input ? input.value.trim() : "";
+    state.easy.remixCode = code;
+    state.easy.remixOpen = true;
+    try {
+      applySimpleRecipe(await decodeSimpleRecipe(code));
+      state.easy.note = state.easy.song ? "Recipe loaded. Make my video renders it." : "Recipe loaded. Choose a song, then Make.";
+    } catch (err) {
+      state.easy.note = String(err.message || err);
+    }
+    render();
+  } else if (act === "video-open") {
+    const row = (state.videos || []).find((item) => item.id === el.dataset.id);
+    if (!row) return;
+    state.easy.reopenId = row.id;
+    state.easy.reopenUrl = row.url;
+    state.easy.recipe = row.recipe || "";
+    state.easy.hookUrl = row.hook ? `/api/videos/${row.id}/hook.mp4` : "";
+    state.easy.hookInfo = "";
+    state.easy.showcase = false;
+    state.easy.playedHere = false;
+    state.easy.phase = "result";
+    render();
+  } else if (act === "video-copy") {
+    const code = await easyRecipeFor(el.dataset.id);
+    state.easy.note = code && (await copyText(code)) ? "Recipe code copied." : code ? `Recipe: ${code}` : "No recipe code for that video.";
+    render();
+  } else if (act === "video-rerender") {
+    const code = await easyRecipeFor(el.dataset.id);
+    if (!code) return;
+    try {
+      applySimpleRecipe(await decodeSimpleRecipe(code));
+      if (!state.easy.song) {
+        state.easy.note = "Recipe loaded. Choose the song again, then Make.";
+        render();
+        return;
+      }
+      easyMake();
+    } catch (err) {
+      state.easy.note = String(err.message || err);
+      render();
+    }
   } else if (act === "easy-cloud-confirm") {
     const plan = state.easy.cloudPlan;
     if (!plan || !plan.token || !plan.can_submit) return;
@@ -5509,6 +5761,7 @@ async function boot() {
     await settleNotes();
     refreshComfy();
     setInterval(refreshComfy, 8000);
+    Promise.all([loadVideos(), loadSimpleOptions()]).then(() => render());
     if (window.XENO_TUTORIAL) window.XENO_TUTORIAL.ready();
   } catch (error) {
     document.getElementById("app").innerHTML = `<div class="error-panel"><h2>The desk could not open the demo.</h2><p>${esc(error.message)}. The reference cut is examples/demo_base.mp4.</p></div>`;
