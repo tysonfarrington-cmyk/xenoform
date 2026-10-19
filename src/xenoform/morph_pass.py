@@ -244,6 +244,81 @@ def _result(client, job, index: int, failed):
             job = client.jobs.get(job.id)
 
 
+_TERMINAL = {"succeeded", "failed", "canceled", "cancelled"}
+
+
+def cancel_jobs(jobs: list, settle_s: float = 4.0) -> int:
+    """Cancel every job of ours that has not finished, on the proxy (and so in ComfyUI).
+
+    ``POST /api/v2/jobs/{id}/cancel`` maps to ComfyUI's atomic per-id cancel: a queued
+    job is dequeued, the running one is interrupted at the next node boundary. Jobs
+    from other clients are never touched. Returns how many jobs were cancelled.
+
+    Queued jobs go first and the running one last: interrupting the running job
+    first lets ComfyUI start the next queued one, and a new prompt clears the
+    interrupt flag, so that one would run to the end. A short sweep then catches
+    any job that slipped from queued to running while the cancels went out.
+    """
+    cancelled: set = set()
+
+    def status(job) -> str:
+        try:
+            job.refresh()
+        except Exception:
+            log.debug("refresh of %s failed", getattr(job, "id", "?"))
+        return str(getattr(job, "status", "")).lower()
+
+    def one_pass() -> int:
+        live = [(job, status(job)) for job in jobs]
+        live = [(job, st) for job, st in live if st not in _TERMINAL and st != "expired"]
+        live.sort(key=lambda pair: pair[1] in ("running", "in_progress"))
+        for job, _ in live:
+            try:
+                job.cancel()
+                cancelled.add(getattr(job, "id", id(job)))
+            except Exception:
+                log.exception("could not cancel job %s", getattr(job, "id", "?"))
+        return len(live)
+
+    left = one_pass()
+    deadline = time.monotonic() + settle_s
+    while left and time.monotonic() < deadline:
+        time.sleep(0.5)
+        left = one_pass()
+    if cancelled:
+        log.info("cancelled %d queued/running morph job(s)", len(cancelled))
+    return len(cancelled)
+
+
+def stop_queued(jobs: list, cancel: Callable[[], bool] | None) -> None:
+    """Raise ``JobCancelled`` after cancelling what is already queued, if the desk cancelled."""
+    if cancel and cancel():
+        from xenoform.turbo import JobCancelled
+
+        n = cancel_jobs(jobs)
+        raise JobCancelled(f"Cancelled. {n} queued morph{'s' if n != 1 else ''} removed from the GPU queue.")
+
+
+def wait_or_cancel(job, jobs: list, cancel: Callable[[], bool] | None, poll_s: float = 0.4) -> None:
+    """Block until ``job`` is terminal, checking ``cancel`` between polls.
+
+    ``job.result()`` alone blocks with no way out, so a Stop on the desk used to
+    leave every queued morph running on the GPU.
+    """
+    if not cancel:
+        return
+    while True:
+        stop_queued(jobs, cancel)
+        try:
+            job.refresh()
+        except Exception:
+            log.debug("refresh of %s failed; trying again", getattr(job, "id", "?"))
+        status = str(getattr(job, "status", "")).lower()
+        if status in _TERMINAL or status == "expired":
+            return
+        time.sleep(poll_s)
+
+
 def run_morph_pass(
     directed: dict,
     scenes: list[dict],
@@ -253,12 +328,17 @@ def run_morph_pass(
     cfg: dict,
     state: dict,
     report: Callable[[str, float, str], None],
+    cancel: Callable[[], bool] | None = None,
 ) -> dict[str, Any]:
-    """LTX-2.5 when it is installed, LTX 0.9.5 otherwise, and 0.9.5 again if 2.5 fails."""
+    """LTX-2.5 when it is installed, LTX 0.9.5 otherwise, and 0.9.5 again if 2.5 fails.
+
+    ``cancel`` is the desk's Stop: when it fires, every morph this pass queued is
+    cancelled on the proxy and the chain stops with ``JobCancelled``.
+    """
     engine = pick_engine()
     if engine == "ltx25":
         try:
-            return _render(directed, scenes, audio_path, out_path, work, cfg, state, report, "ltx25")
+            return _render(directed, scenes, audio_path, out_path, work, cfg, state, report, "ltx25", cancel=cancel)
         except Exception as exc:
             from xenoform.turbo import JobCancelled
 
@@ -266,10 +346,10 @@ def run_morph_pass(
                 raise
             log.exception("LTX-2.5 morph pass failed; falling back to LTX 0.9.5")
             report("restyle", 0.1, "LTX-2.5 did not run here. Falling back to LTX 0.9.5 morphs.")
-            info = _render(directed, scenes, audio_path, out_path, work, cfg, state, report, "ltx095")
+            info = _render(directed, scenes, audio_path, out_path, work, cfg, state, report, "ltx095", cancel=cancel)
             info["fallback_from"] = f"ltx25: {exc}"[:300]
             return info
-    return _render(directed, scenes, audio_path, out_path, work, cfg, state, report, engine)
+    return _render(directed, scenes, audio_path, out_path, work, cfg, state, report, engine, cancel=cancel)
 
 
 def _render(
@@ -282,6 +362,7 @@ def _render(
     state: dict,
     report: Callable[[str, float, str], None],
     engine: str = "ltx095",
+    cancel: Callable[[], bool] | None = None,
 ) -> dict[str, Any]:
     from xenoform.restyle import _make_client
 
@@ -331,6 +412,7 @@ def _render(
                 wf.set_input("22", "strength", float(tune["guide_end_strength"]))
         wf.set_input("13", "noise_seed", seed + i)
         wf.set_input("18", "fps", float(FPS))
+        stop_queued(jobs, cancel)
         jobs.append(client.submit(wf))
         log.info("morph %d/%d %s -> %s submitted as %s", i + 1, shots, a["noun"], b["noun"], jobs[-1].id)
     submitted = time.perf_counter() - started
@@ -341,6 +423,7 @@ def _render(
     clips = []
     timings = []
     for i, job in enumerate(jobs):
+        wait_or_cancel(job, jobs, cancel)
         result = _result(client, job, i, JobFailed)
         outputs = list(result.get_outputs("19")) or list(result.outputs)
         if not outputs:
@@ -356,6 +439,7 @@ def _render(
             f"Morph {i + 1} of {shots} · {stills[i]['noun']} into {stills[i + 1]['noun']}",
         )
 
+    stop_queued(jobs, cancel)
     report("assemble", 0.6, "Locking the morphs to the beat")
     gpu_path = Path(out_path).with_name(Path(out_path).stem + "-gpu.mp4")
     enc = subprocess.Popen(

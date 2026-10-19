@@ -8,6 +8,8 @@ The default path is open weights only. Stills are Z-Image Turbo, with local FLUX
 
 Add-ons are off. Settings has an Add-ons switch for FLUX 3 API, H3 API, partner nodes, and cloud LLMs. The demo, the judges page, and setup do not use it. `comfy.addons` defaults to false. CI fails if a default workflow references a partner or API node, fills an LTX API key, encodes prompts through the LTX API, or uses an LTX-2.5 partner node.
 
+**The default path is 100% open weights.** Out of the box, every picture is made on your own GPU with open-weights models, and nothing is sent to a paid API. Paid cloud renders are a separate opt-in, **off by default**: Settings → "Paid cloud renders (partner node, not open weights)", or start the desk with `XENO_PAID_CLOUD=1` (`XENO_PAID_CLOUD=0` forces it off). Only then does Simple mode show *Cloud quality*, which renders the morphs with the LTX-2.5 partner node (`LtxApi25ImageToVideo`) behind a price card and a confirm click, labels the result `cloud-rendered (LTX-2.5 partner node)`, and bills your Comfy account. With the opt-in off, `/api/cloud/estimate` answers 403 and a Make runs the open-weights morph pass. The official contest entry and its demo use the default open-weights path only.
+
 Xenoform turns a song into a cut: one action shot per section, hard-cut on the bar, then restyled with ComfyUI. The name stays. It is the form, and it is foreign to the track it grew from.
 
 ## Quick start
@@ -390,6 +392,7 @@ pytest
 | `comfy.width` / `height` | Latent size. **Multiples of 32.** 512×320 is the 12 GB starting point. |
 | `comfy.checkpoint_name` / `clip_name` | Filenames as they appear in the ComfyUI model dropdowns, not paths. The desk uses the LTX-2.3 file you pick. On 12 GB that file has to be fp8 or int8. `ltx-2.3-22b-distilled-fp8.safetensors` counts. |
 | `comfy.video_model` | `ltx` (default), `ltx-23`, `ltx-095`, or `wan`. `wan` asks for the optional Wan 2.2 alternative. Turbo ignores this and stays on LTX 0.9.5. |
+| `comfy.paid_cloud` / `XENO_PAID_CLOUD` | Off by default. Paid cloud renders (LTX-2.5 partner node, not open weights) for Simple mode's Cloud quality. `XENO_PAID_CLOUD=1` turns it on, `0` forces it off. Separate from Add-ons. |
 | `comfy.addons` | Off by default. FLUX 3 API, H3 API, partner nodes, and cloud LLMs stay behind this switch. The demo, the judges page, and setup do not read it. |
 | `assemble.beat_flashes` | Short lift on analyzer beats. Off if you want the restyle untouched. |
 | `osc.host` / `port` | Where `xenoform osc --stream` sends UDP. |

@@ -23,6 +23,7 @@ def _never_spend(monkeypatch):
     monkeypatch.delenv("COMFY_ORG_API_KEY", raising=False)
     monkeypatch.delenv("XENO_CLOUD_CAP_USD", raising=False)
     monkeypatch.delenv("XENO_CLOUD_DRY_RUN", raising=False)
+    monkeypatch.delenv("XENO_PAID_CLOUD", raising=False)
     info = json.loads(FIXTURE.read_text(encoding="utf-8"))[cm.PARTNER_NODE]
     monkeypatch.setattr(cm, "prices", lambda url=None, timeout=5.0: (cm.FALLBACK_USD_PER_S, info, "fixture"))
     yield
@@ -198,7 +199,9 @@ def test_cloud_gates_refuse_before_anything_is_sent(tmp_path, monkeypatch):
     shutil.copyfile(audio, tmp_path / "x.wav")
     directed = {"duration": 20.0, "beats": beats()}
     fake = FakeClient(clip)
-    base = {"vibe": "black", "cloud_quality": True}
+    with pytest.raises(cm.CloudRefused, match="Paid cloud renders are off"):
+        cm.run_chain("cloud", directed, audio, tmp_path / "o.mp4", tmp_path, {}, {"vibe": "black", "cloud_quality": True}, _report, client=fake)
+    base = {"vibe": "black", "cloud_quality": True, "paid_cloud": True}
     with pytest.raises(cm.CloudRefused, match="confirm"):
         cm.run_chain("cloud", directed, audio, tmp_path / "o.mp4", tmp_path, {}, base, _report, client=fake)
     est = cm.estimate(cm.plan_shots(20.0, beats()))
@@ -226,7 +229,7 @@ def test_all_gates_open_sends_one_parallel_prompt_with_the_key(tmp_path, monkeyp
     est = cm.estimate(cm.plan_shots(20.0, beats()))
     token = cm.mint_token(est)
     fake = FakeClient(clip)
-    state = {"vibe": "black", "cloud_quality": True, "cloud_confirm": token}
+    state = {"vibe": "black", "cloud_quality": True, "cloud_confirm": token, "paid_cloud": True}
     info = cm.run_chain("cloud", directed, audio, tmp_path / "o.mp4", tmp_path, {}, state, _report, client=fake)
     assert len(fake.submits) == 1
     sent = fake.submits[0]
@@ -265,7 +268,9 @@ def test_estimate_route_is_read_only_and_mints_a_token(monkeypatch):
     from xenoform.ui import create_app
 
     client = TestClient(create_app())
-    plan = client.post("/api/cloud/estimate", json={"audio_id": "demo", "vibe": "black"}).json()
+    off = client.post("/api/cloud/estimate", json={"audio_id": "demo", "vibe": "black"})
+    assert off.status_code == 403 and "Paid cloud renders are off" in off.json()["detail"]
+    plan = client.post("/api/cloud/estimate", json={"audio_id": "demo", "vibe": "black", "paid_cloud": True}).json()
     assert plan["estimate"]["usd"] > 0 and plan["token"]
     assert plan["label"] == cm.LABEL
     assert plan["key_present"] is False
@@ -371,8 +376,8 @@ def test_custom_cut_dry_run_end_to_end_and_paid_gates(tmp_path, monkeypatch):
     cheap = cm.mint_token(cm.estimate(cm.plan_shots(20.0, beats())))
     monkeypatch.setenv("COMFY_ORG_API_KEY", "test-not-a-key")
     fake = FakeClient(tmp_path / "c.mp4")
-    with pytest.raises(cm.CloudRefused):
-        cm.run_chain("cloud", directed, audio, tmp_path / "o.mp4", tmp_path, {}, {**state, "cloud_confirm": cheap}, _report, client=fake)
+    with pytest.raises(cm.CloudRefused, match="covers|confirm|price|token"):
+        cm.run_chain("cloud", directed, audio, tmp_path / "o.mp4", tmp_path, {}, {**state, "cloud_confirm": cheap, "paid_cloud": True}, _report, client=fake)
     assert fake.submits == []
 
 
@@ -384,12 +389,12 @@ def test_estimate_route_prices_a_cut_plan_and_rejects_a_bad_one():
     client = TestClient(create_app())
     short = dense_plan()  # the bundled demo song is 12 s: the first three shots fit
     short["shots"] = short["shots"][:3]
-    plan = client.post("/api/cloud/estimate", json={"audio_id": "demo", "vibe": "black", "cut_plan": short}).json()
+    plan = client.post("/api/cloud/estimate", json={"audio_id": "demo", "vibe": "black", "cut_plan": short, "paid_cloud": True}).json()
     assert plan["custom_cut"] is True and plan["estimate"]["render_seconds"] == 7 and plan["token"]
     assert [s["render_s"] for s in plan["shots"]] == [3, 2, 2] and plan["stills"][3] == "black/03_swallow_gr.jpg"
-    too_long = client.post("/api/cloud/estimate", json={"audio_id": "demo", "vibe": "black", "cut_plan": dense_plan()})
+    too_long = client.post("/api/cloud/estimate", json={"audio_id": "demo", "vibe": "black", "cut_plan": dense_plan(), "paid_cloud": True})
     assert too_long.status_code == 400 and "past the" in too_long.json()["detail"]
     bad = dict(short, shots=[dict(x) for x in short["shots"]])
     bad["shots"][1]["render_s"] = 7
-    res = client.post("/api/cloud/estimate", json={"audio_id": "demo", "vibe": "black", "cut_plan": bad})
+    res = client.post("/api/cloud/estimate", json={"audio_id": "demo", "vibe": "black", "cut_plan": bad, "paid_cloud": True})
     assert res.status_code == 400 and "allowed duration" in res.json()["detail"]

@@ -201,7 +201,8 @@ function payload() {
     library_bans: state.libraryBans || [],
     vibe: (state.easy && state.easy.vibe) || "",
     // Cloud quality: optional, paid, off by default. Only the confirm click sets the token.
-    cloud_quality: !!(state.easy && state.easy.cloud && state.easy.cloudToken),
+    paid_cloud: !!state.paidCloud,
+    cloud_quality: !!(state.paidCloud && state.easy && state.easy.cloud && state.easy.cloudToken),
     cloud_confirm: (state.easy && state.easy.cloud && state.easy.cloudToken) || "",
     beat_overlay: !!(state.easy && state.easy.overlay),
     cut_plan: (state.easy && state.easy.cloud && state.easy.cutPlan) || null,
@@ -284,7 +285,7 @@ function sliderRow(key, name, hint) {
 
 const FALLBACK_ETA = {
   live: { label: "Live", short: "now", line: "The picture is in the browser. Record writes an mp4 with no model." },
-  turbo: { label: "Turbo", short: "~1 min", line: "Animatic in about 5 seconds, then a 4-step 384p pass. About a minute the first time on a 12 GB GPU." },
+  turbo: { label: "Turbo", short: "~45-85 s", line: "Animatic in about 5 seconds, then the GPU morph pass: 41-65 s warm and 55-85 s on a first run for a 12-20 s song on a 12 GB GPU. A live countdown follows the real pace." },
   draft: { label: "Draft", short: "~4 min", line: "512×288. About 4 minutes the first time on a 12 GB GPU." },
   final: { label: "Final", short: "~10 min", line: "640×360 at 24 fps. About 10 minutes on a 12 GB GPU. Same seed as Turbo." },
 };
@@ -1951,7 +1952,7 @@ function renderEasy() {
   if (easy.phase === "making") {
     const width = Math.round(((state.job && state.job.progress) || 0.08) * 100);
     const scenes = state.scenes || [];
-    const story = scenes.map((scene) => scene.action).filter(Boolean).slice(0, 2).join(" ") || easy.idea || chosen.line;
+    const story = scenes.map((scene) => storySentence(scene.action)).filter(Boolean).slice(0, 2).join(" ") || easy.idea || chosen.line;
     const heard = easy.song ? "done" : "now";
     const wrote = scenes.length ? "done" : "now";
     const painting = scenes.length ? "now" : "wait";
@@ -2065,7 +2066,7 @@ function renderEasy() {
         <dt>Shots</dt><dd>7, one per section</dd>
         <dt>Cut</dt><dd>On the bar</dd>
         <dt>Energy</dt><dd>Follows the song</dd>
-        <dt>Time</dt><dd>About 1 minute</dd>
+        <dt>Time</dt><dd>${esc(easyTimeFact())}</dd>
       </dl>
       ${cloudToggles(easy)}
       ${easy.cloudPlan ? cloudCard(easy.cloudPlan) : ""}
@@ -2128,6 +2129,28 @@ function easyEtaText() {
   return left > 2 ? `${draft}${clockText(elapsed)} · about ${clockText(left)} left` : `${draft}${clockText(elapsed)} · almost there`;
 }
 
+// The stage the server is really on ("7 morphs queued on the GPU", "Morph 3 of 7 · ...").
+// The countdown beside Stop re-estimates from the real morph pace.
+function easyProgressText(job) {
+  const detail = String((job && job.detail) || "").trim();
+  if (!detail || detail === "Starting") return "Starting the GPU pass.";
+  return detail;
+}
+
+// Measured on a 12 GB RTX 3080 Ti: 41-65 s warm, 55-85 s on a first run for a 12-20 s song.
+function easyTimeFact() {
+  if (state.comfyOk === false) return "Seconds, in the browser";
+  const guess = easyEtaGuess();
+  return `About ${clockText(guess)}${state.easy && state.easy.warm ? "" : " (first run)"}`;
+}
+
+function storySentence(text) {
+  const line = String(text || "").trim().replace(/\s+/g, " ");
+  if (!line) return "";
+  const capital = line.charAt(0).toUpperCase() + line.slice(1);
+  return /[.!?]$/.test(capital) ? capital : `${capital}.`;
+}
+
 function tickEasy() {
   if (!state || !state.easy || state.easy.phase !== "making") {
     if (easyTimer) clearInterval(easyTimer);
@@ -2146,13 +2169,18 @@ function tickEasy() {
 }
 
 function cloudToggles(easy) {
-  const cloud = !!easy.cloud;
   const overlay = !!easy.overlay;
+  const overlayButton = `<button type="button" class="ghost cloud-toggle${overlay ? " on" : ""}" data-act="easy-overlay" aria-pressed="${overlay ? "true" : "false"}">Beat overlay · ${overlay ? "on" : "off"}</button>`;
+  if (!state.paidCloud) {
+    // Paid cloud renders are opt-in (Settings). Off, the main flow shows only open-weights choices.
+    return `<div class="cloud-opts">${overlayButton}</div>`;
+  }
+  const cloud = !!easy.cloud;
   return `<div class="cloud-opts">
       <button type="button" class="ghost cloud-toggle${cloud ? " on" : ""}" data-act="easy-cloud" aria-pressed="${cloud ? "true" : "false"}">Cloud quality · ${cloud ? "on" : "off"}</button>
       <button type="button" class="ghost cloud-toggle${overlay ? " on" : ""}" data-act="easy-overlay" aria-pressed="${overlay ? "true" : "false"}">Beat overlay · ${overlay ? "on" : "off"}</button>
       ${cloud ? `<label class="ghost cloud-toggle">Cut plan · ${easy.cutPlan ? `${(easy.cutPlan.shots || []).length} shots` : "auto (~5s on the beat)"}<input type="file" accept="application/json,.json" data-act="easy-cut-plan" hidden></label>${easy.cutPlan ? `<button type="button" class="ghost" data-act="easy-cut-clear">Clear cut plan</button>` : ""}` : ""}
-      <p class="note">Cloud quality renders the morphs with LTX-2.5 through a paid Comfy partner node. You see the price and confirm it first. Off, everything stays on open weights on this machine.</p>
+      <p class="note">Paid cloud renders are on (Settings). Cloud quality renders the morphs with LTX-2.5 through a paid Comfy partner node, which is not open weights. You see the price and confirm it first. Off, everything stays on open weights on this machine.</p>
     </div>`;
 }
 
@@ -2190,7 +2218,7 @@ async function easyCloudEstimate() {
     const res = await api("/api/cloud/estimate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ audio_id: state.audioId || "demo", vibe: vibe ? vibe.id : "", palette: vibe ? vibe.palette : "", brief: state.brief || "", cut_plan: state.easy.cutPlan || null }),
+      body: JSON.stringify({ audio_id: state.audioId || "demo", vibe: vibe ? vibe.id : "", palette: vibe ? vibe.palette : "", brief: state.brief || "", cut_plan: state.easy.cutPlan || null, paid_cloud: !!state.paidCloud }),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     state.easy.cloudPlan = await res.json();
@@ -2206,6 +2234,7 @@ async function easyCloudEstimate() {
 async function easyMake() {
   const vibe = vibeById(state.easy.vibe);
   if (!vibe) return;
+  if (!state.paidCloud) state.easy.cloud = false;
   if (state.easy.cloud && !state.easy.cloudToken) {
     await easyCloudEstimate();
     return;
@@ -2240,6 +2269,7 @@ async function easyMake() {
     render();
     return;
   }
+  if (!state || !state.easy || state.easy.phase !== "making") return;
   state.quality = "turbo";
   state.testClips = ["0"];
   state.live = true;
@@ -3200,6 +3230,8 @@ function adoptSession(data, options = {}) {
     videoModel: previous && previous.videoModel ? previous.videoModel : readVideoModel(),
     live: previous ? previous.live : false,
     addons: previous && previous.addons != null ? !!previous.addons : readAddons(),
+    paidCloudEnv: data.paid_cloud ? String(data.paid_cloud.env || "") : previous ? previous.paidCloudEnv || "" : "",
+    paidCloud: paidCloudFor(data, previous),
     endpoint: data.endpoint || (previous && previous.endpoint) || "",
     recipe: data.recipe,
     opener: previous && previous.audioId === data.audio_id ? previous.opener || null : null,
@@ -3648,7 +3680,7 @@ async function poll(id) {
       return;
     }
     const line = document.getElementById("easy-progress");
-    if (line) line.textContent = "Making the pictures. About a minute.";
+    if (line) line.textContent = easyProgressText(job);
   }
   const stages = document.getElementById("stages");
   if (stages) stages.outerHTML = stagesHtml();
@@ -3803,13 +3835,13 @@ document.addEventListener("click", (event) => {
       api(`/api/jobs/${state.job.id}/cancel`, { method: "POST" }).catch(() => {});
     }
     state.easy.phase = "choose";
-    state.easy.note = "";
+    state.easy.note = "Stopped. Anything still queued on the GPU was cancelled.";
     render();
   } else if (act === "easy-showcase") {
     state.easy.showcase = true;
     state.easy.playedHere = false;
     state.easy.phase = "result";
-    state.easy.note = "Made earlier on one RTX 3080 Ti with open weights: five LTX morphs, cut to the bar of our own track. Back to the song, then Make, cuts your own in about a minute.";
+    state.easy.note = "Made earlier on one RTX 3080 Ti with open weights: five LTX morphs, cut to the bar of our own track. Back to the song, then Make, cuts your own in about 45-85 seconds on a 12 GB GPU, with a live countdown.";
     render();
     const player = document.getElementById("player");
     if (player && player.play) player.play().catch(() => {});
@@ -4428,6 +4460,13 @@ document.getElementById("open-settings").addEventListener("click", () => {
   document.getElementById("endpoint").value = state.endpoint || "";
   document.getElementById(state.live ? "mode-live" : "mode-dry").checked = true;
   document.getElementById("addons").checked = !!state.addons;
+  const paid = document.getElementById("paid-cloud");
+  if (paid) {
+    paid.checked = !!state.paidCloud;
+    paid.disabled = state.paidCloudEnv === "on" || state.paidCloudEnv === "off";
+    const why = document.getElementById("paid-cloud-env");
+    if (why) why.textContent = state.paidCloudEnv ? `Set by XENO_PAID_CLOUD=${state.paidCloudEnv === "on" ? "1" : "0"} when the desk started.` : "";
+  }
   const model = document.getElementById("video-model");
   if (model) model.value = state.videoModel === "ltx-25" ? "ltx-25" : "ltx-23";
   const folder = document.getElementById("library-folder");
@@ -4445,6 +4484,16 @@ document.getElementById("save-settings").addEventListener("click", () => {
   state.endpoint = document.getElementById("endpoint").value.trim() || "http://127.0.0.1:8188";
   state.addons = document.getElementById("addons").checked;
   writeAddons(state.addons);
+  const paid = document.getElementById("paid-cloud");
+  if (paid && !paid.disabled) {
+    state.paidCloud = paid.checked;
+    writePaidCloud(state.paidCloud);
+  }
+  if (!state.paidCloud && state.easy) {
+    state.easy.cloud = false;
+    state.easy.cloudToken = "";
+    state.easy.cloudPlan = null;
+  }
   const model = document.getElementById("video-model");
   state.videoModel = model && model.value === "ltx-25" ? "ltx-25" : "ltx-23";
   writeVideoModel(state.videoModel);
@@ -5334,6 +5383,30 @@ function scheduleLibrary() {
       state.libraryItems = [];
       paintLibrary();
     });
+}
+
+function readPaidCloud() {
+  try {
+    return localStorage.getItem("xeno-paid-cloud") === "1";
+  } catch (err) {
+    return false;
+  }
+}
+
+function writePaidCloud(on) {
+  try {
+    localStorage.setItem("xeno-paid-cloud", on ? "1" : "0");
+  } catch (err) {}
+}
+
+// Paid cloud renders: off unless XENO_PAID_CLOUD=1, comfy.paid_cloud, or the Settings opt-in.
+function paidCloudFor(data, previous) {
+  const info = (data && data.paid_cloud) || null;
+  const env = info ? String(info.env || "") : previous ? previous.paidCloudEnv || "" : "";
+  if (env === "on") return true;
+  if (env === "off") return false;
+  if (previous && previous.paidCloud != null) return !!previous.paidCloud;
+  return readPaidCloud() || !!(info && info.config);
 }
 
 function readAddons() {

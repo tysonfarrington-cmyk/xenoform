@@ -53,14 +53,15 @@ _ETA = {
     },
     "turbo": {
         "label": "Turbo",
-        "short": "~1 min",
+        "short": "~45-85 s",
         "first_s": 75,
         "again_s": 10,
         "animatic_s": 5,
         "line": (
             "Animatic in about 5 seconds: one 384px keyframe a scene, on the beat. "
-            "The 4-step LTX 0.9.5 video is about a minute the first time on a 12 GB GPU, "
-            "then a few seconds for a scene you change. A 4 second proof plays before the full animatic. "
+            "The GPU morph pass took 41-65 s warm and 55-85 s on a first run for a 12-20 s song "
+            "on a 12 GB RTX 3080 Ti; the desk counts down from the real morph pace. "
+            "A scene you change re-renders in seconds. A 4 second proof plays before the full animatic. "
             "Turbo never loads LTX-2.3. "
             "Seed 2727 and the retime in seconds carry to Final."
         ),
@@ -626,16 +627,23 @@ def run_turbo(
         report("restyle", 0.1, "GPU morphs, LTX 0.9.5 at 512x288. The draft stays up while this runs.")
         try:
             _stop(cancel)
-            if state.get("cloud_quality"):
-                # Optional, off by default, PAID (see cloud_morph): free local draft first, then LTX-2.5.
+            from xenoform.cloud_morph import paid_cloud_enabled
+
+            paid_ok = paid_cloud_enabled(tuned, bool(state.get("paid_cloud")))
+            if state.get("cloud_quality") and paid_ok:
+                # Opt-in only, PAID (see cloud_morph): free local draft first, then LTX-2.5.
                 from xenoform.cloud_morph import run_cloud_quality
 
-                morph_info, cloud_warning = run_cloud_quality(directed, Path(audio_path), out_path, work, tuned, state, report)
+                morph_info, cloud_warning = run_cloud_quality(
+                    directed, Path(audio_path), out_path, work, tuned, state, report, cancel=cancel
+                )
                 warning = cloud_warning or warning
             else:
                 from xenoform.morph_pass import run_morph_pass
 
-                morph_info = run_morph_pass(directed, scenes, Path(audio_path), out_path, work, tuned, state, report)
+                if state.get("cloud_quality"):
+                    warning = "Paid cloud renders are off, so this cut used the open-weights morphs on this machine."
+                morph_info = run_morph_pass(directed, scenes, Path(audio_path), out_path, work, tuned, state, report, cancel=cancel)
             mode = "turbo"
             report("restyle", 1.0, "GPU morphs locked to the beat")
         except JobCancelled:

@@ -418,6 +418,10 @@ def create_app(cfg: dict | None = None):
             endpoint=str(cfg["comfy"].get("base_url") or "http://127.0.0.1:8188"),
         )
         payload["reference"] = "examples/demo_base.mp4"
+        from xenoform.cloud_morph import OPT_IN_LABEL, paid_env_state
+
+        # Paid cloud renders are opt-in. The desk shows the env override so it can lock the setting.
+        payload["paid_cloud"] = {"env": paid_env_state(), "config": bool(cfg["comfy"].get("paid_cloud", False)), "label": OPT_IN_LABEL}
         return payload
 
     @app.get("/api/catalog")
@@ -1071,13 +1075,15 @@ def create_app(cfg: dict | None = None):
 
     @app.post("/api/cloud/estimate")
     def cloud_estimate(body: dict) -> dict:
-        """Cloud quality (PAID, off by default): the plan, its exact cost, and a confirm token.
+        """Cloud quality (PAID, opt-in only): the plan, its exact cost, and a confirm token.
 
         Read only. Nothing is queued or uploaded. The token is what the explicit
         confirm click sends back with /api/generate; without it no paid node runs.
         """
-        from xenoform.cloud_morph import CutPlanError, mint_token, plan_for
+        from xenoform.cloud_morph import OFF_MESSAGE, CutPlanError, mint_token, paid_cloud_enabled, plan_for
 
+        if not paid_cloud_enabled(cfg, bool(body.get("paid_cloud"))):
+            raise HTTPException(status_code=403, detail=OFF_MESSAGE)
         features = _features_for(str(body.get("audio_id") or "demo"))
         state = {key: body.get(key) for key in ("vibe", "palette", "preset", "brief", "scenes", "customs", "seed", "cut_plan")}
         try:
@@ -1533,11 +1539,11 @@ def _run_job(job_id: str, audio_path: Path, body: dict, cfg: dict, out: Path, ca
             if note:
                 job["detail"] = f"{note} {job.get('detail') or ''}".strip()
                 job["tier_note"] = note
-    except JobCancelled:
+    except JobCancelled as exc:
         with _LOCK:
             job = _JOBS[job_id]
             job["status"] = "cancelled"
-            job["detail"] = "Cancelled. The card changed."
+            job["detail"] = str(exc) or "Cancelled. The card changed."
             job["error"] = None
         return
     except Exception as exc:

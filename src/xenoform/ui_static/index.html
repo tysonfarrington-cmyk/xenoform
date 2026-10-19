@@ -87,6 +87,8 @@
       <p class="note">Dry run is the default. It renders the liquid body, slices it on the script, and passes those slices through — no weights, no GPU. Live sends each slice through the Comfy SDK to the local proxy on port 8189. This URL stays the ComfyUI health ping.</p>
       <label class="addon"><input type="checkbox" id="addons" /> Add-ons</label>
       <p class="note">Off by default. This covers FLUX 3 API, H3 API, partner nodes, and cloud LLMs. The demo, the judges page, and setup never need it.</p>
+      <label class="addon"><input type="checkbox" id="paid-cloud" /> Paid cloud renders (partner node, not open weights)</label>
+      <p class="note">Off by default. On, Simple mode shows Cloud quality: LTX-2.5 morphs rendered by a paid Comfy partner node, billed to your Comfy account after a price card and a confirm click. The default path is 100% open weights and never needs this. <span id="paid-cloud-env"></span></p>
       <p class="kicker">Source library</p>
       <label class="field">Library folder
         <input id="library-folder" type="text" spellcheck="false" placeholder="./library" autocomplete="off" />

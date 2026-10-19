@@ -20,7 +20,15 @@ Engines, same plan and stills for all three:
              ``/object_info`` (read only) and the clips are cross-fades of the
              stills. Nothing is submitted.
 
-Gates before a paid submit (all required): ``state.cloud_quality``; not dry run;
+OFF BY DEFAULT, OPT-IN ONLY. Nothing in this module is reachable unless paid cloud
+renders were switched on: the desk setting "Paid cloud renders (partner node, not
+open weights)" or ``XENO_PAID_CLOUD=1``. ``XENO_PAID_CLOUD=0`` forces it off even
+when the desk asks. With it off, the estimate route answers 403, the Simple mode
+toggle is hidden, and a Make that still says ``cloud_quality`` runs the open-weights
+morph pass instead.
+
+Gates before a paid submit (all required): paid cloud renders switched on;
+``state.cloud_quality``; not dry run;
 a confirm token minted by ``/api/cloud/estimate`` and clicked by the user whose
 confirmed price covers the real plan; the plan under the per-clip cap
 (``XENO_CLOUD_CAP_USD``, default US$5); the key in ``COMFY_ORG_API_KEY``; the
@@ -53,6 +61,14 @@ PARTNER_NODE = "LtxApi25ImageToVideo"
 PARTNER_GRAPH = ROOT / "workflows" / "ltx25_partner_flf_api.json"
 LABEL = "cloud-rendered (LTX-2.5 partner node)"
 KEY_ENV = "COMFY_ORG_API_KEY"
+PAID_ENV = "XENO_PAID_CLOUD"
+OPT_IN_LABEL = "Paid cloud renders (partner node, not open weights)"
+OFF_MESSAGE = (
+    f"Paid cloud renders are off. The default path is open weights only. Turn on "
+    f"\"{OPT_IN_LABEL}\" in Settings, or start the desk with {PAID_ENV}=1."
+)
+_ON = {"1", "true", "yes", "on"}
+_OFF = {"0", "false", "no", "off"}
 ALLOWED_S = (2, 3, 4, 5, 6, 8, 10)
 MODELS = {"fast": "LTX-2.5 (Fast)", "pro": "LTX-2.5 (Pro)"}
 RESOLUTION = "1280x720"
@@ -616,7 +632,7 @@ def _job_result(client, job):
             job = client.jobs.get(job.id)
 
 
-def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, client=None) -> list[Path]:
+def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, client=None, cancel=None) -> list[Path]:
     """Free: one LTX 0.9.5 A->B morph per shot through the existing morph graph."""
     from xenoform import morph_pass as mp
 
@@ -645,9 +661,11 @@ def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, cli
             wf.set_input("14", "cfg", float(tune["cfg"]))
         wf.set_input("13", "noise_seed", int(seed) + i)
         wf.set_input("18", "fps", float(FPS))
+        mp.stop_queued(jobs, cancel)
         jobs.append(client.submit(wf))
     clips = []
     for i, job in enumerate(jobs):
+        mp.wait_or_cancel(job, jobs, cancel)
         result = _job_result(client, job)
         outs = list(result.get_outputs("19")) or list(result.outputs)
         dest = work / f"local{i:02d}.mp4"
@@ -702,6 +720,29 @@ def plan_for(duration: float, beats: list, state: dict, cfg: dict | None = None,
             "label": LABEL, "prompt": DEFAULT_PROMPT, "custom_cut": bool(state.get("cut_plan"))}
 
 
+def paid_env_state() -> str:
+    """``on``, ``off`` or empty: what ``XENO_PAID_CLOUD`` forces, if anything."""
+    flag = os.environ.get(PAID_ENV, "").strip().lower()
+    if flag in _ON:
+        return "on"
+    if flag in _OFF:
+        return "off"
+    return ""
+
+
+def paid_cloud_enabled(cfg: dict | None = None, requested: bool = False) -> bool:
+    """True only after an explicit opt-in. Off by default.
+
+    ``XENO_PAID_CLOUD=1`` turns it on, ``XENO_PAID_CLOUD=0`` forces it off. Otherwise
+    the desk setting (sent as ``paid_cloud``) or ``comfy.paid_cloud`` in a local
+    config decides. Nothing else (Add-ons, a key in the environment) turns it on.
+    """
+    forced = paid_env_state()
+    if forced:
+        return forced == "on"
+    return bool(requested) or bool(((cfg or {}).get("comfy") or {}).get("paid_cloud", False))
+
+
 def run_chain(engine: str, directed: dict, audio_path: Path, out_path: Path, work: Path, cfg: dict, state: dict,
               report: Callable[[str, float, str], None], *, client=None, now: float | None = None) -> dict:
     """Render the cloud plan with ``engine`` (local, cloud, mock) and write the stitched, muxed cut."""
@@ -722,6 +763,8 @@ def run_chain(engine: str, directed: dict, audio_path: Path, out_path: Path, wor
             "price_source": source, "graph_errors": errors, "prompt": prompt}
     (work / f"plan_{engine}.json").write_text(json.dumps({**plan, "graph": graph}, indent=1), encoding="utf-8")
     if engine == "cloud":
+        if not paid_cloud_enabled(cfg, bool(state.get("paid_cloud"))):
+            raise CloudRefused(OFF_MESSAGE)
         if est["over_cap"]:
             raise CloudRefused(f"US${est['usd']:.2f} is over the US${est['cap_usd']:.2f} cap for one clip.")
         why = check_token(str(state.get("cloud_confirm") or ""), est, now=now)
@@ -742,7 +785,7 @@ def run_chain(engine: str, directed: dict, audio_path: Path, out_path: Path, wor
         w, h = 1280, 720
     elif engine == "local":
         report("restyle", 0.2, f"Free local draft: {len(shots)} LTX 0.9.5 morphs on this GPU")
-        clips = _local_clips(shots, stills, work, cfg, seed, vibe, client=client)
+        clips = _local_clips(shots, stills, work, cfg, seed, vibe, client=client, cancel=state.get("_cancel"))
         w, h = 768, 432
     else:
         raise ValueError(engine)
@@ -761,7 +804,8 @@ def run_chain(engine: str, directed: dict, audio_path: Path, out_path: Path, wor
 
 
 def run_cloud_quality(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg: dict, state: dict,
-                      report: Callable[[str, float, str], None], *, local_ok: bool = True) -> tuple[dict, str]:
+                      report: Callable[[str, float, str], None], *, local_ok: bool = True,
+                      cancel: Callable[[], bool] | None = None) -> tuple[dict, str]:
     """Simple mode's Cloud quality: free local draft first (it plays), then the cloud pass.
 
     Returns ``(info, warning)``. Any cloud failure keeps the local cut and says why.
@@ -770,11 +814,19 @@ def run_cloud_quality(directed: dict, audio_path: Path, out_path: Path, work: Pa
     warning = ""
     if local_ok:
         try:
-            info["local"] = run_chain("local", directed, audio_path, out_path, work, cfg, state, report)
+            info["local"] = run_chain("local", directed, audio_path, out_path, work, cfg, {**state, "_cancel": cancel}, report)
             report("assemble", 0.7, "Free local draft playing. Cloud quality is rendering on LTX-2.5.")
         except Exception as exc:
+            from xenoform.turbo import JobCancelled
+
+            if isinstance(exc, JobCancelled):
+                raise
             log.exception("local draft")
             info["local_error"] = str(exc)[:300]
+    if cancel and cancel():
+        from xenoform.turbo import JobCancelled
+
+        raise JobCancelled("Cancelled before the cloud pass. Nothing was sent.")
     engine = "mock" if dry_run_default(cfg) else "cloud"
     try:
         info["cloud"] = run_chain(engine, directed, audio_path, out_path, work, cfg, state, report)
