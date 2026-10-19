@@ -244,6 +244,11 @@ def sdk_base_url(cfg: dict) -> str:
     base = str(comfy.get("base_url") or "").strip()
     if bool(comfy.get("send_api_key")) and not base and not proxy:
         return ""
+    # Xenoform.bat sets XENO_PROXY_URL from XENO_PROXY_PORT, so a proxy on another port
+    # reaches the SDK. It never turns Comfy Cloud (the empty return above) into a local URL.
+    env_proxy = os.environ.get("XENO_PROXY_URL", "").strip()
+    if env_proxy:
+        return env_proxy
     return proxy or "http://127.0.0.1:8189"
 
 

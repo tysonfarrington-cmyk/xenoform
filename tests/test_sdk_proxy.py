@@ -227,3 +227,14 @@ def test_build_jobs_snaps_25_and_leaves_turbo_on_095():
     assert {job["engine"] for job in turbo} == {"ltx-095"}
     assert all(job["checkpoint_name"] == FAST_CHECKPOINT for job in turbo)
     assert all(job["height"] == 288 for job in turbo)
+
+
+def test_xeno_proxy_url_env_moves_the_local_proxy_but_not_cloud(monkeypatch):
+    from xenoform.restyle import sdk_base_url
+
+    monkeypatch.setenv("XENO_PROXY_URL", "http://127.0.0.1:8190")
+    assert sdk_base_url({"comfy": {"proxy_url": "http://127.0.0.1:8189"}}) == "http://127.0.0.1:8190"
+    cloud = {"comfy": {"proxy_url": "", "base_url": "", "send_api_key": True}}
+    assert sdk_base_url(cloud) == ""
+    monkeypatch.delenv("XENO_PROXY_URL")
+    assert sdk_base_url({"comfy": {"proxy_url": "http://127.0.0.1:8189"}}) == "http://127.0.0.1:8189"
