@@ -53,14 +53,15 @@ _ETA = {
     },
     "turbo": {
         "label": "Turbo",
-        "short": "~45-85 s",
-        "first_s": 75,
+        "short": "~1 min",
+        "first_s": 60,
         "again_s": 10,
         "animatic_s": 5,
         "line": (
             "Animatic in about 5 seconds: one 384px keyframe a scene, on the beat. "
-            "The GPU morph pass took 41-65 s warm and 55-85 s on a first run for a 12-20 s song "
-            "on a 12 GB RTX 3080 Ti; the desk counts down from the real morph pace. "
+            "For a 12-20 s song on a 12 GB RTX 3080 Ti the GPU morph pass takes about 1 minute on a first run "
+            "with the GPU idle, about 2 minutes if ComfyUI just had another model loaded, and 45-65 s warm; "
+            "the desk counts down from the real morph pace. "
             "A scene you change re-renders in seconds. A 4 second proof plays before the full animatic. "
             "Turbo never loads LTX-2.3. "
             "Seed 2727 and the retime in seconds carry to Final."

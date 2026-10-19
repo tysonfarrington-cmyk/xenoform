@@ -285,7 +285,7 @@ function sliderRow(key, name, hint) {
 
 const FALLBACK_ETA = {
   live: { label: "Live", short: "now", line: "The picture is in the browser. Record writes an mp4 with no model." },
-  turbo: { label: "Turbo", short: "~45-85 s", line: "Animatic in about 5 seconds, then the GPU morph pass: 41-65 s warm and 55-85 s on a first run for a 12-20 s song on a 12 GB GPU. A live countdown follows the real pace." },
+  turbo: { label: "Turbo", short: "~1 min", line: "Animatic in about 5 seconds, then the GPU morph pass for a 12-20 s song on a 12 GB GPU: about 1 minute on a first run with the GPU idle, about 2 minutes if ComfyUI just had another model loaded, and 45-65 s warm. A live countdown follows the real pace." },
   draft: { label: "Draft", short: "~4 min", line: "512×288. About 4 minutes the first time on a 12 GB GPU." },
   final: { label: "Final", short: "~10 min", line: "640×360 at 24 fps. About 10 minutes on a 12 GB GPU. Same seed as Turbo." },
 };
@@ -1932,12 +1932,14 @@ function shotStrip(vibeId) {
 function dropCard() {
   const opener = state.opener;
   const ready = opener && opener.ready;
+  // Simple mode: plain words, not the library ids of the morph pair.
+  const noDrop = opener && !ready && opener.line;
   const pair = ready
-    ? (opener.source && opener.target ? `${opener.source} → ${opener.target}` : (opener.becomes || "Impact"))
-    : "Finding the downbeat…";
+    ? `The big moment is at ${clockText(Number(opener.at || 0))}`
+    : (noDrop ? "No big drop in this song" : "Listening for the drop.");
   const line = ready
-    ? (opener.line || "")
-    : "The song decides the object. This card lands before any GPU wait.";
+    ? "That is where the biggest change happens: one object turns into the next, right on the downbeat."
+    : (noDrop ? "The video still morphs on the beat. It just has no single big moment." : "The song decides the moment. This lands before any GPU wait.");
   return `<section class="drop-open" id="drop-open">
     <p class="eyebrow">The drop</p>
     <h3>${esc(pair)}</h3>
@@ -2078,14 +2080,17 @@ function renderEasy() {
   </div>`;
 }
 
-// Morph pass, measured on an RTX 3080 Ti (LTX 0.9.5, 512x288, 12 steps, T5 on the CPU):
-// ~16 s fixed (song read, 3 s draft, one CPU prompt encode, mux) plus ~1.75 s of GPU per
-// second of song, warm: 47.9 s for a 20 s, 7-morph clip. The first run after ComfyUI
-// starts (or after /free) also loads the checkpoint and the text encoder (~30 s).
-const EASY_ETA_FIXED_S = 16;
+// One set of figures, the same as the README. Morph pass on a 12 GB RTX 3080 Ti
+// (LTX 0.9.5, 512x288, T5 on the CPU), a 12-20 s song, seven morphs:
+//   warm                                   45-65 s  -> estimate 50 s
+//   first run, GPU idle                    about 1 minute -> 50 + 10 s
+//   ComfyUI just had another model loaded  about 2 minutes (the live countdown catches up)
+// A song longer than 20 s adds about 1.75 s per extra second (more morphs).
+const EASY_ETA_WARM_S = 50;
+const EASY_ETA_SONG_BASE_S = 20;
 const EASY_ETA_PER_SONG_S = 1.75;
-const EASY_ETA_COLD_S = 30;
-const EASY_ETA_GPU_S = 51; // 20 s clip, warm
+const EASY_ETA_COLD_S = 10;
+const EASY_ETA_GPU_S = EASY_ETA_WARM_S; // 20 s clip, warm
 const EASY_ETA_BROWSER_S = 6;
 let easyTimer = null;
 
@@ -2101,7 +2106,8 @@ function easySongSeconds() {
 
 function easyEtaGuess() {
   const cold = state.easy && state.easy.warm ? 0 : EASY_ETA_COLD_S;
-  return Math.round(EASY_ETA_FIXED_S + EASY_ETA_PER_SONG_S * Math.min(easySongSeconds(), 60) + cold);
+  const extra = Math.max(0, Math.min(easySongSeconds(), 60) - EASY_ETA_SONG_BASE_S);
+  return Math.round(EASY_ETA_WARM_S + EASY_ETA_PER_SONG_S * extra + cold);
 }
 
 // Once morphs come back, the server says "Morph k of N": re-estimate from the real pace.
@@ -2137,7 +2143,7 @@ function easyProgressText(job) {
   return detail;
 }
 
-// Measured on a 12 GB RTX 3080 Ti: 41-65 s warm, 55-85 s on a first run for a 12-20 s song.
+// Same basis as easyEtaGuess: about 1:00 on a first run with the GPU idle, about 0:50 warm.
 function easyTimeFact() {
   if (state.comfyOk === false) return "Seconds, in the browser";
   const guess = easyEtaGuess();
@@ -3841,7 +3847,7 @@ document.addEventListener("click", (event) => {
     state.easy.showcase = true;
     state.easy.playedHere = false;
     state.easy.phase = "result";
-    state.easy.note = "Made earlier on one RTX 3080 Ti with open weights: five LTX morphs, cut to the bar of our own track. Back to the song, then Make, cuts your own in about 45-85 seconds on a 12 GB GPU, with a live countdown.";
+    state.easy.note = "Made earlier on one RTX 3080 Ti with open weights: five LTX morphs, cut to the bar of our own track. Back to the song, then Make, cuts your own in about 1 minute on a 12 GB GPU (45-65 seconds once warm), with a live countdown.";
     render();
     const player = document.getElementById("player");
     if (player && player.play) player.play().catch(() => {});

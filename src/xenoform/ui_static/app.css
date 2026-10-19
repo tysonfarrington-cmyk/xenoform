@@ -2069,3 +2069,16 @@ button.easy-showcase { width: 100%; margin-top: 8px; }
 .cloud-toggle.on { border-color: #b46eff; color: #fff; }
 .cloud-card { border: 1px solid #b46eff; border-radius: 10px; padding: 12px; margin: 10px 0; background: rgba(20, 10, 30, 0.6); }
 .cloud-card .warn { color: #ffb86b; }
+
+/* Header on wide screens: keep the view links on one line. When the header is too
+   full, a whole group wraps to a second row instead of stacking the links. */
+@media (min-width: 721px) {
+  .top { flex-wrap: wrap; row-gap: 6px; }
+  .views { flex: 1 1 auto; flex-wrap: nowrap; min-width: max-content; }
+  .views a,
+  .top-actions button,
+  .top-actions summary,
+  .generate-gate { white-space: nowrap; }
+  .top-actions { flex-wrap: wrap; justify-content: flex-end; }
+  body[data-advanced="1"] .top-actions { margin-left: auto; }
+}
