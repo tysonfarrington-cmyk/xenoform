@@ -1,0 +1,241 @@
+{
+ "name": "demo1 dense cut (v2)",
+ "song": "demo1 song (Morphing Wobble, 20.0 s, 148 BPM); works as a template on any 20 s track",
+ "vibe": "black",
+ "model": "any (cut plan only; the app renders it with open-weights LTX locally)",
+ "stills": [
+  "rose",
+  "jellyfish",
+  "butterfly",
+  "swallow",
+  "dragonfly",
+  "manta ray",
+  "lotus",
+  "drop swarm",
+  "mobius",
+  "sea urchin",
+  "nautilus",
+  "torus knot",
+  "crystal cluster",
+  "ribbon",
+  "liquid orb",
+  "droplet"
+ ],
+ "shots": [
+  {
+   "start": 0.0,
+   "end": 3.275,
+   "render_s": 3,
+   "speed": 0.916,
+   "effects": [
+    {
+     "type": "punch",
+     "t": 1.216,
+     "strength": 1.0
+    },
+    {
+     "type": "stutter",
+     "t": 1.216,
+     "frames": 2,
+     "repeat": 3
+    }
+   ],
+   "event": "riser, first big kick 1.22"
+  },
+  {
+   "start": 3.275,
+   "end": 4.864,
+   "render_s": 2,
+   "speed": 1.259,
+   "effects": [],
+   "event": "downbeat, wobble pitch-sweep"
+  },
+  {
+   "start": 4.864,
+   "end": 6.453,
+   "render_s": 2,
+   "speed": 1.259,
+   "effects": [],
+   "event": "downbeat, breakdown dip"
+  },
+  {
+   "start": 6.453,
+   "end": 8.064,
+   "render_s": 2,
+   "speed": 1.241,
+   "effects": [
+    {
+     "type": "punch",
+     "t": 6.453,
+     "strength": 0.45
+    }
+   ],
+   "event": "hit + downbeat 6.45"
+  },
+  {
+   "start": 8.064,
+   "end": 9.664,
+   "render_s": 2,
+   "speed": 1.25,
+   "effects": [
+    {
+     "type": "punch",
+     "t": 8.469,
+     "strength": 0.5
+    }
+   ],
+   "event": "downbeat, strongest breakdown hit 8.47"
+  },
+  {
+   "start": 9.664,
+   "end": 11.264,
+   "render_s": 2,
+   "speed": 1.25,
+   "effects": [],
+   "event": "downbeat, quietest bar"
+  },
+  {
+   "start": 11.264,
+   "end": 12.8,
+   "render_s": 2,
+   "speed": 1.302,
+   "ease": "in",
+   "effects": [],
+   "event": "downbeat, build (morph accelerates into the drop)"
+  },
+  {
+   "start": 12.8,
+   "end": 13.6,
+   "render_s": 2,
+   "speed": 2.5,
+   "effects": [
+    {
+     "type": "punch",
+     "t": 12.8,
+     "strength": 1.0
+    },
+    {
+     "type": "stutter",
+     "t": 12.8,
+     "frames": 2,
+     "repeat": 4
+    }
+   ],
+   "event": "THE DROP 12.80"
+  },
+  {
+   "start": 13.6,
+   "end": 14.432,
+   "render_s": 2,
+   "speed": 2.404,
+   "effects": [
+    {
+     "type": "hold",
+     "t": 13.77,
+     "len": 0.12
+    },
+    {
+     "type": "punch",
+     "t": 13.899,
+     "strength": 1.0
+    },
+    {
+     "type": "skip",
+     "t": 13.899,
+     "amount": 0.3
+    }
+   ],
+   "event": "60 ms dead stop 13.77, hardest hit 13.90"
+  },
+  {
+   "start": 14.432,
+   "end": 15.211,
+   "render_s": 2,
+   "speed": 2.567,
+   "effects": [
+    {
+     "type": "punch",
+     "t": 15.104,
+     "strength": 0.45
+    }
+   ],
+   "event": "half-bar, hit 15.10"
+  },
+  {
+   "start": 15.211,
+   "end": 16.011,
+   "render_s": 2,
+   "speed": 2.5,
+   "ease": "in",
+   "effects": [
+    {
+     "type": "punch",
+     "t": 16.0,
+     "strength": 1.0
+    }
+   ],
+   "event": "half-bar into big hit 16.00"
+  },
+  {
+   "start": 16.011,
+   "end": 16.8,
+   "render_s": 2,
+   "speed": 2.535,
+   "effects": [
+    {
+     "type": "reverse",
+     "t": 16.011,
+     "len": 0.2
+    },
+    {
+     "type": "punch",
+     "t": 16.704,
+     "strength": 0.45
+    }
+   ],
+   "event": "half-bar after 16.00, hit 16.70"
+  },
+  {
+   "start": 16.8,
+   "end": 17.632,
+   "render_s": 2,
+   "speed": 2.404,
+   "effects": [
+    {
+     "type": "punch",
+     "t": 17.504,
+     "strength": 0.45
+    }
+   ],
+   "event": "half-bar, hit 17.50"
+  },
+  {
+   "start": 17.632,
+   "end": 18.4,
+   "render_s": 2,
+   "speed": 2.604,
+   "effects": [],
+   "event": "half-bar, drop tail"
+  },
+  {
+   "start": 18.4,
+   "end": 20.0,
+   "render_s": 2,
+   "speed": 1.25,
+   "effects": [
+    {
+     "type": "punch",
+     "t": 19.2,
+     "strength": 1.0
+    },
+    {
+     "type": "reverse",
+     "t": 19.2,
+     "len": 0.405
+    }
+   ],
+   "event": "outro, final big hit 19.20"
+  }
+ ],
+ "render_seconds": 31
+}
