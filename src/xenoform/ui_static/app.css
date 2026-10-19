@@ -2106,3 +2106,7 @@ button.easy-showcase { width: 100%; margin-top: 8px; }
 .licence-table { width: 100%; border-collapse: collapse; font-size: 12px; margin: 8px 0; }
 .licence-table th, .licence-table td { text-align: left; padding: 4px 6px; border-bottom: 1px solid rgba(255,255,255,.08); vertical-align: top; }
 .licence-table th { opacity: .7; font-weight: 500; }
+
+/* Simple mode: the header scrolls away instead of sitting over the Vibe cards; the side panel sticks to the top edge. */
+body[data-advanced="0"] .top { position: relative; }
+body[data-advanced="0"] .easy-side { top: 16px; }
