@@ -2075,6 +2075,7 @@ function renderEasy() {
           <input id="easy-idea" type="text" maxlength="170" value="${esc(easy.idea || "")}" aria-label="One line, optional" placeholder="Leave this empty and the vibe decides." autocomplete="off" />
         </label>
       </section>
+      ${galleryPanel()}
     </section>
     <aside class="panel easy-side" data-tour="easy-make">
       <div class="monitor" style="background-image:url(${esc(media(preview.still))})"><span class="monitor-pill">${esc(preview.name)} · sample</span></div>
@@ -2094,7 +2095,6 @@ function renderEasy() {
       <p class="note" id="easy-note">${esc(easy.note || "No ComfyUI? It plays in your browser.")}</p>
       <p class="side-foot"><a class="ow-badge" href="${esc(media("/licences"))}" title="LTX-2.3 has a revenue threshold. FLUX.2 Klein 9B is non-commercial. This desk uses the Apache 2.0 4B.">Open weights</a></p>
     </aside>
-    ${galleryPanel()}
   </div>`;
 }
 
@@ -2125,10 +2125,8 @@ function simpleOptions(easy) {
       ${simpleSeg("easy-energy", energy, [["flow", "Flow"], ["dense", "Dense"]], "Energy")}
       ${simpleSeg("easy-aspect", aspect, [["16:9", "16:9"], ["9:16", "9:16"], ["1:1", "1:1"]], "Aspect")}
       ${simpleSeg("easy-tier", tier, [["draft", "Draft"], ["final", "Final"]], "Quality")}
-      <div class="cloud-opts">
-        <button type="button" class="ghost cloud-toggle${fx ? " on" : ""}" data-act="easy-fx" aria-pressed="${fx ? "true" : "false"}">Beat FX · ${fx ? "on" : "off"}</button>
-        <button type="button" class="ghost cloud-toggle${card ? " on" : ""}" data-act="easy-card" aria-pressed="${card ? "true" : "false"}">End card · ${card ? "on" : "off"}</button>
-      </div>
+      ${simpleSeg("easy-fx", fx ? "on" : "off", [["on", "On"], ["off", "Off"]], "Beat FX")}
+      ${simpleSeg("easy-card", card ? "on" : "off", [["off", "Off"], ["on", "On"]], "End card")}
       <p class="note">${esc(energy === "dense" ? "Dense: up to 15 morphs, a shot a bar, then a shot every half bar from the drop, with stutters, holds and punches." : "Flow: one morph per section, cut on the bar.")}
       ${esc(aspect === "16:9" ? "" : " Each shot is reframed around the object as it changes.")}
       ${esc(tier === "final" ? " " + finalEtaText() : " Draft: LTX 0.9.5, the quick pass.")}
@@ -3945,10 +3943,10 @@ document.addEventListener("click", async (event) => {
     render();
     if (state.easy.tier === "final") loadSimpleOptions().then(render);
   } else if (act === "easy-fx") {
-    state.easy.fx = state.easy.fx === false;
+    state.easy.fx = el.dataset.value !== "off";
     render();
   } else if (act === "easy-card") {
-    state.easy.endCard = !state.easy.endCard;
+    state.easy.endCard = el.dataset.value === "on";
     render();
   } else if (act === "easy-hook") {
     easyHook();
@@ -3973,6 +3971,7 @@ document.addEventListener("click", async (event) => {
     const row = (state.videos || []).find((item) => item.id === el.dataset.id);
     if (!row) return;
     state.easy.reopenId = row.id;
+    if (row.vibe && vibeById(row.vibe)) state.easy.vibe = row.vibe;
     state.easy.reopenUrl = row.url;
     state.easy.recipe = row.recipe || "";
     state.easy.hookUrl = row.hook ? `/api/videos/${row.id}/hook.mp4` : "";

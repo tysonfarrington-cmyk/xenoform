@@ -2085,7 +2085,7 @@ button.easy-showcase { width: 100%; margin-top: 8px; }
 
 /* Simple finishing: energy, aspect, quality, FX, end card; remix box; My videos */
 .simple-opts { display: grid; gap: 8px; margin: 10px 0 4px; }
-.simple-seg { display: grid; grid-template-columns: 64px 1fr; align-items: center; gap: 8px; }
+.simple-seg { display: grid; grid-template-columns: 72px 1fr; align-items: center; gap: 8px; }
 .simple-seg > span { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; opacity: .7; }
 .simple-seg .toggle { display: flex; flex-wrap: wrap; }
 .simple-seg .toggle button { flex: 1 1 0; min-width: 0; }
@@ -2093,7 +2093,7 @@ button.easy-showcase { width: 100%; margin-top: 8px; }
 .remix { margin-top: 10px; }
 .remix summary { cursor: pointer; font-size: 13px; opacity: .8; }
 .recipe-line code { word-break: break-all; font-size: 12px; }
-.gallery { grid-column: 1 / -1; }
+.gallery { margin-top: 16px; }
 .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
 .gallery-card { margin: 0; display: grid; gap: 6px; }
 .gallery-card video { width: 100%; aspect-ratio: 16 / 9; object-fit: contain; background: #000; border-radius: 8px; }
