@@ -1,0 +1,58 @@
+{
+ "1": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "shot-a.png"
+  },
+  "_meta": {
+   "title": "First frame (A)"
+  }
+ },
+ "2": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "shot-b.png"
+  },
+  "_meta": {
+   "title": "Last frame (B)"
+  }
+ },
+ "3": {
+  "class_type": "LtxApi25ImageToVideo",
+  "inputs": {
+   "image": [
+    "1",
+    0
+   ],
+   "last_frame": [
+    "2",
+    0
+   ],
+   "model": "LTX-2.5 (Fast)",
+   "model.duration": "5",
+   "model.resolution": "1280x720",
+   "model.fps": "24",
+   "model.generate_audio": false,
+   "prompt": "One continuous unbroken shot, locked camera. The first object slowly liquefies and flows into the second object.",
+   "seed": 2727
+  },
+  "_meta": {
+   "title": "PAID partner node: LTX-2.5 first/last frame (Comfy credits)"
+  }
+ },
+ "4": {
+  "class_type": "SaveVideo",
+  "inputs": {
+   "video": [
+    "3",
+    0
+   ],
+   "filename_prefix": "xenoform/ltx25_partner",
+   "format": "auto",
+   "format.codec": "auto"
+  },
+  "_meta": {
+   "title": "Save"
+  }
+ }
+}
