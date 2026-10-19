@@ -140,6 +140,34 @@
    "resolution": "1280x720",
    "fps": 24,
    "seed": 2727
+  },
+  {
+   "id": "X01B",
+   "vibe": "pure-black",
+   "from": "scripts/ltx25_partner/stills/rose_black_glass_black.png",
+   "to": "scripts/ltx25_partner/stills/jellyfish_black_glass_black.png",
+   "lineage": "X01 on pure black (h08)",
+   "prompt": "One continuous unbroken macro shot with no cuts, locked camera, single object centred on a pure black void background, no floor, no reflections on the ground. A rose of molten glossy black obsidian glass with a deep violet inner glow softens, its petals loosen into slow liquid ribbons that lift and drift upward, the ribbons fuse into a translucent bell that pulses once and trails long glowing tendrils, becoming a black glass jellyfish with violet light inside, floating in darkness. Real fluid physics, surface tension, wet reflections, the object never leaves frame, it looks grown rather than built, like living alien technology. The background stays pure black throughout. No text, no people.",
+   "preview_prompt": "A rose of molten glossy black obsidian glass with a deep violet inner glow softens, its petals loosen into slow liquid ribbons that lift and drift upward, the ribbons fuse into a translucent bell that pulses once and trails long glowing tendrils, becoming a black glass jellyfish with violet light inside, floating in darkness. Pure black background.",
+   "duration": 5,
+   "model": "fast",
+   "resolution": "1280x720",
+   "fps": 24,
+   "seed": 2727
+  },
+  {
+   "id": "X11",
+   "vibe": "pure-black",
+   "from": "scripts/ltx25_partner/stills/butterfly_gr_black.png",
+   "to": "scripts/ltx25_partner/stills/swallow_gr_black.png",
+   "lineage": "h02 (drops->butterfly->swallow), butterfly->swallow on pure black",
+   "prompt": "One continuous unbroken macro shot with no cuts, locked camera, single object centred on a pure black void background, no floor, no reflections on the ground. A butterfly made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, its wings ripple and melt into a twisting ribbon of liquid metal that stretches forward, the ribbon swells and hardens into a swallow with long swept wings and a forked tail, all the same glossy black iridescent liquid metal, gliding in darkness. Real fluid physics, surface tension, wet reflections, the object never leaves frame, it looks grown rather than built, like living alien technology. The background stays pure black throughout. No text, no people.",
+   "preview_prompt": "A butterfly made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, its wings ripple and melt into a twisting ribbon of liquid metal that stretches forward, the ribbon swells and hardens into a swallow with long swept wings and a forked tail, all the same glossy black iridescent liquid metal, gliding in darkness. Pure black background.",
+   "duration": 5,
+   "model": "fast",
+   "resolution": "1280x720",
+   "fps": 24,
+   "seed": 2727
   }
  ]
 }
