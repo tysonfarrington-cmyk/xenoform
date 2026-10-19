@@ -82,6 +82,38 @@ def _story_words(state: dict) -> list[str]:
     return re.findall(r"[a-z]+", " ".join(bits).lower().replace("_", " ").replace("-", " "))
 
 
+AUTOTUNE = Path(__file__).resolve().parents[2] / "configs" / "autotune.json"
+
+
+def autotune() -> dict:
+    """Reviewed output of scripts/autotune (per-vibe settings and a bad-pair list), if installed."""
+    path = Path(os.environ.get("XENO_AUTOTUNE", str(AUTOTUNE)))
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def tuned(vibe: str) -> dict:
+    """Per-vibe morph settings from autotune; an explicit XENO_MORPH_STEPS still wins for steps."""
+    got = dict((autotune().get("vibes") or {}).get(vibe) or {})
+    if "XENO_MORPH_STEPS" in os.environ:
+        got.pop("steps", None)
+    return got
+
+
+def _drop_bad_pairs(pool: list[dict], bad: set) -> list[dict]:
+    """Reorder so no adjacent pair is on the autotune blocklist, when a reorder can do it."""
+    if not bad:
+        return pool
+    out, rest = [pool[0]], list(pool[1:])
+    while rest:
+        nxt = next((o for o in rest if (out[-1]["file"], o["file"]) not in bad), rest[0])
+        rest.remove(nxt)
+        out.append(nxt)
+    return out
+
+
 def pick_stills(state: dict, count: int) -> tuple[str, list[dict]]:
     """``count`` stills for the vibe. A story noun that names a pool object leads."""
     vibe = vibe_for(state)
@@ -90,6 +122,7 @@ def pick_stills(state: dict, count: int) -> tuple[str, list[dict]]:
     lead = next((i for i, item in enumerate(pool) if set(item["noun"].split()) & words), None)
     if lead:
         pool = pool[lead:] + pool[:lead]
+    pool = _drop_bad_pairs(pool, {tuple(p) for p in autotune().get("bad_pairs") or []})
     # Twelve objects a vibe: a 20 s clip (up to 11 handoffs) never repeats one. Longer
     # songs cycle forward, so a repeat is always a new pairing, never a ping-pong back.
     picked = [pool[i % len(pool)] for i in range(count)]
@@ -264,6 +297,7 @@ def _render(
 
     client = _make_client(cfg)
     graph = _graph_path(work, engine)
+    tune = tuned(vibe) if engine != "ltx25" else {}
     assets: dict[str, Any] = {}
 
     def asset(path: str):
@@ -286,7 +320,14 @@ def _render(
             # Distilled: the fixed 8-sigma schedule in the graph, CFG 1; audio latent sized to match.
             wf.set_input("25", "frames_number", gen_length(counts[i]))
         else:
-            wf.set_input("11", "steps", STEPS)
+            wf.set_input("11", "steps", int(tune.get("steps", STEPS)))
+            if "cfg" in tune:
+                wf.set_input("14", "cfg", float(tune["cfg"]))
+            if "img_compression" in tune:
+                wf.set_input("8", "img_compression", int(tune["img_compression"]))
+                wf.set_input("21", "img_compression", int(tune["img_compression"]))
+            if "guide_end_strength" in tune:
+                wf.set_input("22", "strength", float(tune["guide_end_strength"]))
         wf.set_input("13", "noise_seed", seed + i)
         wf.set_input("18", "fps", float(FPS))
         jobs.append(client.submit(wf))
@@ -348,7 +389,8 @@ def _render(
         "vibe": vibe,
         "render": f"{WIDTH}x{HEIGHT}",
         "output": f"{OUT_W}x{OUT_H}",
-        "steps": 8 if engine == "ltx25" else STEPS,
+        "steps": 8 if engine == "ltx25" else int(tune.get("steps", STEPS)),
+        "autotune": tune or None,
         "fps": FPS,
         "handoffs_s": [round(t, 3) for t in bounds],
         "frames": counts,
