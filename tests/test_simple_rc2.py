@@ -64,7 +64,7 @@ def test_options_route_reports_final_files_and_an_honest_eta(client):
     body = client.get("/api/simple/options?duration=20&energy=dense").json()
     assert body["aspects"] == ["16:9", "9:16", "1:1"] and body["tiers"] == ["draft", "final"]
     assert 8 <= body["shots"] <= 15
-    assert body["final"]["eta_measured"] is False and body["final"]["eta_s"] > 600
+    assert body["final"]["eta_measured"] is True and body["final"]["eta_s"] > 600
     assert body["final"]["output"] == "1280x720"
     flow = client.get("/api/simple/options?duration=20&energy=flow").json()
     assert flow["shots"] < body["shots"]

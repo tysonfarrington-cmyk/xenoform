@@ -33,11 +33,12 @@ STAGE2_SIGMAS = "0.85, 0.7250, 0.4219, 0.0"
 NEGATIVE = "text, letters, watermark, logo, two objects, cut, flicker, blurry, low quality, cartoon, people, hands"
 OOM_WORDS = ("out of memory", "outofmemory", "cuda error", "allocation", "oom")
 
-# Honest planning figures, seconds, from LTX-2.3 fp8 two-stage shots of 33-45 frames on the
-# 12 GB RTX 3080 Ti (110-175 s each in the showcase renders). The 4x upscale figure is a guess.
-# They stay labelled as estimates until a Final run in the app measures them.
-ETA = {"load_s": 90.0, "per_shot_s": 120.0, "upscale_per_shot_s": 30.0, "per_second_extra_s": 15.0,
-       "measured": False}
+# Measured in the app on the 12 GB RTX 3080 Ti, 19 Oct 2026 (demo1 Final test, ComfyUI shared
+# with another LTX-2.3 job): a 2 s shot (49 frames) took 93 s warm including the ClearReality
+# pass; a 3 s shot (73 frames) took 238 s including the first model load. Peak card memory
+# 11.8 GB of 12. The split between load, render and upscale is inferred from those two runs.
+ETA = {"load_s": 100.0, "per_shot_s": 70.0, "upscale_per_shot_s": 23.0, "per_second_extra_s": 45.0,
+       "measured": True}
 
 
 def present(root: Path | None = None) -> dict:

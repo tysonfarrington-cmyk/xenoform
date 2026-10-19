@@ -33,12 +33,12 @@ def test_lengths_are_8k_plus_1_and_capped():
     assert ft.gen_length(2) == 49 and ft.gen_length(0.5) == 25 and ft.gen_length(10) == 121
 
 
-def test_eta_is_honest_and_labelled_unmeasured():
-    shots = [{"render_s": 2}] * 15
-    cold = ft.eta_seconds(shots)
-    assert cold == int(90 + 15 * (120 + 30))
-    assert ft.eta_seconds(shots, upscale=False, warm=True) == 15 * 120
-    assert ft.ETA["measured"] is False
+def test_eta_matches_the_measured_demo1_final_test():
+    # 2 s shot warm with upscale: 93 s measured; 3 s shot cold: 238 s measured
+    assert ft.eta_seconds([{"render_s": 2}], warm=True) == 93
+    assert abs(ft.eta_seconds([{"render_s": 3}]) - 238) <= 5
+    assert ft.eta_seconds([{"render_s": 2}] * 15, upscale=False, warm=True) == 15 * 70
+    assert ft.ETA["measured"] is True
 
 
 def test_present_reports_each_file(tmp_path):
