@@ -14,3 +14,4 @@ work/
 *.wav
 !examples/*.wav
 .DS_Store
+xenoform_*.log
