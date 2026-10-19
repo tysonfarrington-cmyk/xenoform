@@ -1,16 +1,50 @@
 # Xenoform
 
-Higgsfield's Music Video Generator, rebuilt open-source on ComfyUI.
+**Every drop is a transformation.**
 
-A music video director, not a visualiser.
+Xenoform turns a song into a music video where one object keeps transforming into the next, every change landing on the beat. Free, local, open weights.
+
+Drop in a song and pick a vibe. Xenoform reads the beats, the sections and the drop, plans the cut, shows you a draft in about 3 seconds, then renders a chain of LTX morphs on your own GPU (a rose melts into a jellyfish, the jellyfish into a butterfly) with every handoff on the beat. Every video has a recipe code, so anyone with the same song can make the same film or remix it.
+
+A music video director, not a visualiser: visualisers pulse to the beat and montage tools cut between unrelated clips. In Xenoform the song decides what the subject becomes.
+
+### Simple mode, in one screen
+
+| Choice | Options | What it does |
+| --- | --- | --- |
+| Energy | **Flow** (default), **Dense** | Flow: one morph per section, cut on the bar. Dense: up to 15 morphs, a shot every bar up to the drop and every half bar after it, with stutters, holds, zoom punches and beat-reactive light (the cut in the demo video, now made by the app itself). |
+| Aspect | **16:9**, **9:16**, **1:1** | 9:16 and 1:1 reframe every shot around the object as it transforms, for Reels, Shorts, TikTok and the feed. |
+| Quality | **Draft** (default), **Final** | Draft: LTX 0.9.5 at 512×288, about a minute. Final: LTX-2.3 22B distilled fp8 at 768×448 plus a 4× upscale to 1280×720; minutes per shot, so it shows its own estimate. If a Final shot runs out of memory it retries without the upscale, then falls back to the Draft shot, and says so. |
+| Beat FX / overlay | FX on, overlay off (default) | Beat FX: kick pulse, edge light on transients, bloom on the hits. The waveform overlay is off, so the default export is clean: no UI on the picture. |
+| End card | off (default) | Burns the recipe code and the repo link into the last two seconds. |
+| After it renders | **15 s hook**, **Copy recipe code**, **My videos** | The hook cuts 15 seconds around the strongest drop. My videos lists every Simple video on this machine with its recipe code: reopen, re-render, copy. Paste a recipe code under *Make my video* to remix someone else's. |
+
+Everything above runs on open weights on your machine. Nothing is uploaded.
+
+### Models and licences
+
+Checked against each model card or licence text on 19 October 2026. Read the full list, fonts and pictures in [docs/LICENCES.md](docs/LICENCES.md). "Open weights" does not mean every licence allows every use.
+
+| Model | Used for | Licence |
+| --- | --- | --- |
+| LTX-2.3 22B distilled fp8 (Lightricks) | Final tier morphs, Advanced action shots | LTX-2 Community License Agreement (5 January 2026). Free commercial use under about US$10M annual revenue; above that a paid licence. |
+| LTX-Video 2B 0.9.5 (Lightricks) | Draft tier morphs (the default) | Lightricks Open RAIL-M (5 March 2025), with use restrictions. |
+| Z-Image Turbo (Tongyi-MAI / Alibaba) | The vibe stills | Apache 2.0. |
+| FLUX.2 Klein 4B (Black Forest Labs) | Optional stills and edits | Apache 2.0. The 9B and 9B Base are FLUX Non-Commercial and are not used. |
+| ACE-Step 1.5 (ACE Studio and StepFun) | Optional local music | MIT, per the model card. |
+| 4x-ClearReality V1 (Kim2091) | Final tier upscale | CC BY-NC-SA 4.0: **non-commercial**, credit required, share alike. For commercial work set `XENO_FINAL_UPSCALER` to another upscale model you have checked, or `XENO_FINAL_UPSCALE=0`. |
+| Bundled demo track `examples/demo.wav` | The demo song | Synthesised by `xenoform synth`; part of this MIT repo. |
+| Demo video track ("Morphing Wobble") | The contest demo video only, not shipped | Made with Suno. Usage rights follow the Suno plan it was made on; to be confirmed by the author before release. |
+
+The Xenoform code is MIT.
+
+### Open weights and the paid add-on
 
 The default path is open weights only. Stills are Z-Image Turbo, with local FLUX.2 Klein and FLUX.3 Klein optional. LTX-2.3 is the sole core video model, and this entry claims the LTX bonus. LTX 0.9.5 covers morphs, and it is what Turbo and smaller cards load. Turbo never loads LTX-2.3. Prompt encoding uses the local text encoder. Any LTX API key field stays empty. LTX-2.5 partner nodes are not in the default graphs.
 
 Add-ons are off. Settings has an Add-ons switch for FLUX 3 API, H3 API, partner nodes, and cloud LLMs. The demo, the judges page, and setup do not use it. `comfy.addons` defaults to false. CI fails if a default workflow references a partner or API node, fills an LTX API key, encodes prompts through the LTX API, or uses an LTX-2.5 partner node.
 
 **The default path is 100% open weights.** Out of the box, every picture is made on your own GPU with open-weights models, and nothing is sent to a paid API. Paid cloud renders are a separate opt-in, **off by default**: Settings → "Paid cloud renders (partner node, not open weights)", or start the desk with `XENO_PAID_CLOUD=1` (`XENO_PAID_CLOUD=0` forces it off). Only then does Simple mode show *Cloud quality*, which renders the morphs with the LTX-2.5 partner node (`LtxApi25ImageToVideo`) behind a price card and a confirm click, labels the result `cloud-rendered (LTX-2.5 partner node)`, and bills your Comfy account. With the opt-in off, `/api/cloud/estimate` answers 403 and a Make runs the open-weights morph pass. The official contest entry and its demo use the default open-weights path only.
-
-Xenoform turns a song into a cut: one action shot per section, hard-cut on the bar, then restyled with ComfyUI. The name stays. It is the form, and it is foreign to the track it grew from.
 
 ## Quick start
 
@@ -157,6 +191,16 @@ Stop after the beauty pass:
 ```bash
 xenoform run --config configs/example.json --audio examples/demo.wav --base-only --out work/base.mp4
 ```
+
+## Advanced / for power users
+
+Everything below is the Advanced desk (the *Advanced* button in the header). Simple mode does not need any of it.
+
+- **Directing**: storyboard, one action shot per section, hard cuts on the bar, literary registers (Pynchon, le Carré, Tolkien) for the treatment.
+- **Director's notes** and **lessons**: what each render learned.
+- **Connect an AI**: the MCP server, so an agent can drive the desk.
+- **Review & fix**: the critic that checks a cut and re-renders the weak shots.
+- **TouchDesigner**: OSC and CSV export for VJs.
 
 ## Directing
 

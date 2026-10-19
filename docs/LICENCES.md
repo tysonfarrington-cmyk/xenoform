@@ -33,7 +33,10 @@ Picture credits, including every unverified still and clip, are in [CREDITS.md](
 | FLUX.2 Klein 9B and 9B Base | Not a desk download | FLUX Non-Commercial License. Do not describe the 9B weights as Apache 2.0. |
 | FLUX.3 Klein | Optional local file, not downloaded by setup | Licence not checked in this audit. Do not assume one. |
 | T5-XXL fp8 | `text_encoders/t5xxl_fp8_e4m3fn_scaled.safetensors` | Licence not checked in this audit. The file comes from `comfyanonymous/flux_text_encoders`. |
-| ACE-Step | `checkpoints/ace_step_1.5_turbo_aio.safetensors` | Licence not checked in this audit. Optional. The bundled demo track does not need it. |
+| ACE-Step 1.5 | `checkpoints/ace_step_1.5_turbo_aio.safetensors` | MIT, per the ACE-Step/Ace-Step1.5 model card (checked 19 October 2026). Optional. The bundled demo track does not need it. [Model card](https://huggingface.co/ACE-Step/Ace-Step1.5) |
+| 4x-ClearReality V1 (Kim2091) | `upscale_models/4x-ClearRealityV1.safetensors` | CC BY-NC-SA 4.0, per OpenModelDB (checked 19 October 2026): non-commercial, credit required, share alike. Used only by the Simple-mode Final tier. `XENO_FINAL_UPSCALER` swaps it for another file, `XENO_FINAL_UPSCALE=0` skips it. [OpenModelDB](https://openmodeldb.info/models/4x-ClearRealityV1) |
+| LTX-2.3 spatial upscaler x2 1.1 | `latent_upscale_models/ltx-2.3-spatial-upscaler-x2-1.1.safetensors` | Licence not checked in this audit. Ships with LTX-2.3; used by the Final tier. |
+| Gemma 3 12B text encoder (fp4) | `text_encoders/gemma_3_12B_it_fp4_mixed.safetensors` | Licence not checked in this audit. Used by LTX-2.3. |
 | Wan 2.2 TI2V 5B | Optional diffusion, VAE, and text encoder | Licence not checked in this audit. Optional. Turbo never loads it. |
 
 ## Fonts shipped in the desk
@@ -50,6 +53,7 @@ Both families are SIL Open Font License 1.1. The copyright lines and the licence
 | Asset | Status |
 | --- | --- |
 | `examples/demo.wav` | Synthesized by `xenoform synth`. No third-party recording. |
+| Contest demo video track ("Morphing Wobble") | Not in the repo. Made with Suno. Usage rights follow the Suno plan it was made on; to be confirmed by the author before release. |
 | Vibe stills and library clips | No author or licence metadata in the files. Each one is TODO in [CREDITS.md](../CREDITS.md). No CC BY credit was added. |
 | `workflows/xenoform_draft.json`, `workflows/xenoform_final.json`, `workflows/xenoform_morph.json`, `workflows/ltx_v2v_api.json`, `workflows/ltx_v2v_guide_api.json`, `workflows/ltx25_a2v_api.json`, `workflows/ltx25_multishot_api.json`, `workflows/ltx25_layout_api.json` | Part of this MIT repository. The weight files they name are not. |
 

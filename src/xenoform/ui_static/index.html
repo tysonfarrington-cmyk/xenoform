@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Xenoform · music video director</title>
+  <title>Xenoform · every drop is a transformation</title>
   <script>window.XENO_BASE="";</script>
   <link rel="stylesheet" href="/static/theme.css" />
   <link rel="stylesheet" href="/static/app.css" />
@@ -14,7 +14,7 @@
       <span>
         <span class="studio">Tyso Studio</span>
         <strong>Xenoform</strong>
-        <em>A music video director, not a visualiser.</em>
+        <em>Every drop is a transformation.</em>
       </span>
     </a>
     <nav class="views" aria-label="How you direct">
@@ -54,11 +54,24 @@
     <form method="dialog">
       <p class="kicker">Tyso Studio</p>
       <h2>Xenoform</h2>
-      <p class="pitch">Higgsfield's Music Video Generator, rebuilt open-source on ComfyUI.</p>
-      <p class="tagline">A music video director, not a visualiser.</p>
-      <p><a class="ow-badge" href="/licences" title="LTX-2.3 has a revenue threshold. FLUX.2 Klein 9B is non-commercial. This desk uses the Apache 2.0 4B.">Open weights</a></p>
-      <p class="note"><a href="/credits">Picture credits</a>. A picture with no checked author is marked TODO.</p>
-      <p class="note">Z-Image Turbo stills. LTX-2.3 is the core video model. LTX 0.9.5 covers morphs. The LTX API key stays empty, and LTX-2.5 partner nodes stay out.</p>
+      <p class="tagline">Every drop is a transformation.</p>
+      <p class="subhead">A music video director, not a visualiser.</p>
+      <p class="pitch">Xenoform turns a song into a music video where one object keeps transforming into the next, every change landing on the beat. Free, local, open weights.</p>
+      <p class="note">A draft in about 3 seconds, then LTX morphs on your own GPU. Dense energy, 9:16 and 1:1, a Final tier, a 15 s hook and recipe codes are in Simple mode. Registers, storyboard, MCP, the critic and TouchDesigner OSC are under Advanced, for power users.</p>
+      <table class="licence-table">
+        <thead><tr><th>Model</th><th>Used for</th><th>Licence</th></tr></thead>
+        <tbody>
+          <tr><td>LTX-2.3 22B distilled fp8</td><td>Final tier</td><td>LTX-2 Community License; free under about US$10M revenue</td></tr>
+          <tr><td>LTX-Video 0.9.5</td><td>Draft tier (default)</td><td>Lightricks Open RAIL-M</td></tr>
+          <tr><td>Z-Image Turbo</td><td>Vibe stills</td><td>Apache 2.0</td></tr>
+          <tr><td>FLUX.2 Klein 4B</td><td>Optional stills</td><td>Apache 2.0 (the 9B is non-commercial, not used)</td></tr>
+          <tr><td>ACE-Step 1.5</td><td>Optional music</td><td>MIT</td></tr>
+          <tr><td>4x-ClearReality V1</td><td>Final upscale</td><td>CC BY-NC-SA 4.0, non-commercial</td></tr>
+          <tr><td>Bundled demo track</td><td>Demo song</td><td>Synthesised here, MIT</td></tr>
+        </tbody>
+      </table>
+      <p><a class="ow-badge" href="/licences" title="Full licence list: LTX-2.3 has a revenue threshold. 4x-ClearReality is non-commercial. FLUX.2 Klein 9B is non-commercial; this desk uses the Apache 2.0 4B.">Open weights · full licence list</a></p>
+      <p class="note"><a href="/credits">Picture credits</a>. A picture with no checked author is marked TODO. Partner nodes stay out unless you switch on paid cloud renders in Settings.</p>
       <p class="note"><a href="/judges">Judges demo</a>. Drop in any song. The cut locks to the beat in the browser.</p>
       <div class="dialog-actions">
         <button type="submit" class="generate">Close</button>
