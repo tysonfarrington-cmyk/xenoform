@@ -117,6 +117,9 @@ def test_recipe_roundtrip_keeps_turbo():
 
 def test_turbo_tier_never_loads_ltx_23(monkeypatch):
     monkeypatch.setattr("xenoform.hardware._large_model_installed", lambda: True)
+    # A machine with only the canonical LTX-2.3 weights: no user pick, no fp8/int8 file.
+    monkeypatch.setattr("xenoform.models_setup.chosen_filename", lambda key: None)
+    monkeypatch.setattr("xenoform.models_setup.quantised_file", lambda key: "")
     cfg = {
         "fps": 24,
         "render": {"width": 640, "height": 360, "max_steps": 40, "backend": "cpu"},
@@ -263,3 +266,16 @@ def test_lesson_is_on_the_log():
     text = Path("docs/LESSONS.md").read_text(encoding="utf-8")
     assert "Iteration speed beats polish; draft fast, polish once." in text
     assert any(row["lesson"] == "Iteration speed beats polish; draft fast, polish once." for row in BUILTIN)
+
+
+def test_twelve_gb_final_uses_an_installed_fp8_ltx23(monkeypatch):
+    monkeypatch.setattr("xenoform.models_setup.quantised_file", lambda key: "ltx-2.3-22b-distilled-fp8.safetensors")
+    cfg = {
+        "fps": 24,
+        "render": {"width": 640, "height": 360, "max_steps": 40, "backend": "cpu"},
+        "comfy": {"width": 640, "height": 360, "steps": 30},
+    }
+    final = apply_tier(cfg, tier_for_gb(12), quality="final")
+    assert final["comfy"]["checkpoint_name"] == "ltx-2.3-22b-distilled-fp8.safetensors"
+    turbo = apply_tier(cfg, tier_for_gb(12), quality="turbo")
+    assert turbo["comfy"]["checkpoint_name"] == FAST_CHECKPOINT

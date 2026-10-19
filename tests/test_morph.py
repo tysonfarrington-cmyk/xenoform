@@ -72,7 +72,9 @@ def test_restyle_prefers_fp8_ltx23_and_fast_stays_on_095(monkeypatch):
     assert fast["qa"]["pass"]
 
 
-def test_a_morph_cannot_name_a_new_subject():
+def test_a_morph_cannot_name_a_new_subject(monkeypatch):
+    # Pin a machine without LTX-2.3 so the result does not depend on the host's model folder.
+    monkeypatch.setattr("xenoform.hardware._ltx23_for", lambda tier_id: "")
     before, after = _pair()
     plan = plan_join(before, after, "v2v-ramp", [2.0])
     assert plan["qa"]["pass"]
@@ -120,3 +122,12 @@ def test_an_off_beat_join_fails_and_the_board_keeps_two():
     assert body["kept"] == 2
     assert "workflow" not in body["joins"][0]
     assert body["joins"][0]["qa"]["pass"] is True
+
+
+def test_a_morph_restyle_uses_the_quantised_ltx23_file_when_present(monkeypatch):
+    monkeypatch.setattr("xenoform.hardware._ltx23_for", lambda tier_id: "ltx-2.3-22b-distilled-fp8.safetensors")
+    before, after = _pair()
+    plan = plan_join(before, after, "v2v-ramp", [2.0])
+    assert plan["checkpoint"] == "ltx-2.3-22b-distilled-fp8.safetensors"
+    assert plan["qa"]["pass"]
+    assert plan["width"] % 32 == 0 and plan["height"] % 32 == 0
