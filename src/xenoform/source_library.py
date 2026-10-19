@@ -26,6 +26,7 @@ VIBE_TAGS: dict[str, tuple[str, ...]] = {
     "neon-night": ("dark", "noir", "neon", "night"),
     "ocean": ("water", "ocean", "liquid", "wave"),
     "cosmic": ("space", "spiral", "star", "cosmic"),
+    "black": ("dark", "liquid", "metal", "iridescent"),
 }
 MOOD_TAGS: dict[str, tuple[str, ...]] = {
     "dawn": ("bright", "warm", "clean"),

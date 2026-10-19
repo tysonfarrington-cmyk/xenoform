@@ -442,5 +442,79 @@
    "finish": "white paper and porcelain",
    "source": "Z-Image Turbo, seed 2011, 1024x576"
   }
+ ],
+ "black": [
+  {
+   "file": "black/00_rose_black_glass.jpg",
+   "noun": "rose",
+   "finish": "black glass",
+   "source": "library/gpu_objects/rose_black_glass.png (cut out onto pure black)"
+  },
+  {
+   "file": "black/01_jellyfish_black_glass.jpg",
+   "noun": "jellyfish",
+   "finish": "black glass",
+   "source": "library/gpu_objects/jellyfish_black_glass.png (cut out onto pure black)"
+  },
+  {
+   "file": "black/02_butterfly_gr.jpg",
+   "noun": "butterfly",
+   "finish": "iridescent liquid metal",
+   "source": "library/gpu_objects/butterfly_gr.png (cut out onto pure black)"
+  },
+  {
+   "file": "black/03_swallow_gr.jpg",
+   "noun": "swallow",
+   "finish": "iridescent liquid metal",
+   "source": "library/gpu_objects/swallow_gr.png (cut out onto pure black)"
+  },
+  {
+   "file": "black/04_droplet_swarm_gr.jpg",
+   "noun": "drop swarm",
+   "finish": "iridescent liquid metal",
+   "source": "library/gpu_objects/droplet_swarm_gr.png (cut out onto pure black)"
+  },
+  {
+   "file": "black/05_lotus_black_glass.jpg",
+   "noun": "lotus",
+   "finish": "black glass",
+   "source": "library/gpu_objects/lotus_black_glass.png (cut out onto pure black)"
+  },
+  {
+   "file": "black/06_nautilus_gr.jpg",
+   "noun": "nautilus",
+   "finish": "iridescent liquid metal",
+   "source": "library/gpu_objects/nautilus_gr.png (cut out onto pure black)"
+  },
+  {
+   "file": "black/07_sea_urchin_gr.jpg",
+   "noun": "sea urchin",
+   "finish": "iridescent liquid metal",
+   "source": "library/gpu_objects/sea_urchin_gr.png (cut out onto pure black)"
+  },
+  {
+   "file": "black/08_crystal_cluster_black_glass.jpg",
+   "noun": "crystal cluster",
+   "finish": "black glass",
+   "source": "library/gpu_objects/crystal_cluster_black_glass.png (cut out onto pure black)"
+  },
+  {
+   "file": "black/09_mobius_gr.jpg",
+   "noun": "mobius",
+   "finish": "iridescent liquid metal",
+   "source": "library/gpu_objects/mobius_gr.png (cut out onto pure black)"
+  },
+  {
+   "file": "black/10_dna_helix_gr.jpg",
+   "noun": "dna helix",
+   "finish": "iridescent liquid metal",
+   "source": "library/gpu_objects/dna_helix_gr.png (cut out onto pure black)"
+  },
+  {
+   "file": "black/11_droplet_black_glass.jpg",
+   "noun": "droplet",
+   "finish": "black glass",
+   "source": "library/gpu_objects/droplet_black_glass.png (cut out onto pure black)"
+  }
  ]
 }

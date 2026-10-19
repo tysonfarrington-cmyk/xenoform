@@ -1069,6 +1069,23 @@ def create_app(cfg: dict | None = None):
     def generate(body: dict) -> dict:
         return _start_job(body)
 
+    @app.post("/api/cloud/estimate")
+    def cloud_estimate(body: dict) -> dict:
+        """Cloud quality (PAID, off by default): the plan, its exact cost, and a confirm token.
+
+        Read only. Nothing is queued or uploaded. The token is what the explicit
+        confirm click sends back with /api/generate; without it no paid node runs.
+        """
+        from xenoform.cloud_morph import mint_token, plan_for
+
+        features = _features_for(str(body.get("audio_id") or "demo"))
+        state = {key: body.get(key) for key in ("vibe", "palette", "preset", "brief", "scenes", "customs", "seed")}
+        plan = plan_for(float(features.get("duration") or 0.0), list(features.get("beats") or []), state, cfg)
+        est = plan["estimate"]
+        plan["token"] = "" if est["over_cap"] else mint_token(est)
+        plan["can_submit"] = bool(plan["token"]) and plan["node_installed"] and (plan["key_present"] or plan["dry_run"])
+        return plan
+
     @app.get("/api/jobs/{job_id}")
     def job_status(job_id: str) -> dict:
         with _LOCK:

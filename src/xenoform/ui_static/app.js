@@ -200,6 +200,10 @@ function payload() {
     library_pins: state.libraryPins || [],
     library_bans: state.libraryBans || [],
     vibe: (state.easy && state.easy.vibe) || "",
+    // Cloud quality: optional, paid, off by default. Only the confirm click sets the token.
+    cloud_quality: !!(state.easy && state.easy.cloud && state.easy.cloudToken),
+    cloud_confirm: (state.easy && state.easy.cloud && state.easy.cloudToken) || "",
+    beat_overlay: !!(state.easy && state.easy.overlay),
     video_model: state.videoModel || "ltx-23",
     brief: state.brief || "",
     mode: state.view === "simple" ? "simple" : "director",
@@ -1819,6 +1823,17 @@ const VIBES = [
     tone: "dark",
     still: "/static/vibes/cosmic.jpg",
   },
+  {
+    id: "black",
+    name: "Black",
+    line: "Black glass grows from one living form into the next.",
+    palette: "violet",
+    register: "pynchon",
+    morph: true,
+    dark: true,
+    tone: "dark",
+    still: "/static/vibes/black.jpg",
+  },
 ];
 
 function vibeById(id) {
@@ -2002,6 +2017,7 @@ function renderEasy() {
         <div class="energy-ends"><span>Calm</span><span>Hype</span></div>
         <div class="energy-head"><h3>Try another vibe</h3><span>Same song, same story</span></div>
         <div class="vibe-grid vibe-mini" role="radiogroup" aria-label="Try another vibe">${vibeCards(easy, true)}</div>
+        ${easy.cloudPlan ? cloudCard(easy.cloudPlan) : ""}
         <button type="button" class="ghost easy-row" data-act="easy-better">Make it better</button>
         <button type="button" class="text easy-row" data-act="easy-advanced">Open in Advanced</button>
         <button type="button" class="text easy-row" data-act="easy-again">Back to the song</button>
@@ -2050,6 +2066,8 @@ function renderEasy() {
         <dt>Energy</dt><dd>Follows the song</dd>
         <dt>Time</dt><dd>About 1 minute</dd>
       </dl>
+      ${cloudToggles(easy)}
+      ${easy.cloudPlan ? cloudCard(easy.cloudPlan) : ""}
       <button type="button" class="generate easy-make" data-act="easy-make">Make my video</button>
       <button type="button" class="ghost easy-showcase" data-act="easy-showcase">Watch a finished one · plays now</button>
       <p class="note" id="easy-note">${esc(easy.note || "No ComfyUI? It plays in your browser.")}</p>
@@ -2126,9 +2144,70 @@ function tickEasy() {
   }
 }
 
+function cloudToggles(easy) {
+  const cloud = !!easy.cloud;
+  const overlay = !!easy.overlay;
+  return `<div class="cloud-opts">
+      <button type="button" class="ghost cloud-toggle${cloud ? " on" : ""}" data-act="easy-cloud" aria-pressed="${cloud ? "true" : "false"}">Cloud quality · ${cloud ? "on" : "off"}</button>
+      <button type="button" class="ghost cloud-toggle${overlay ? " on" : ""}" data-act="easy-overlay" aria-pressed="${overlay ? "true" : "false"}">Beat overlay · ${overlay ? "on" : "off"}</button>
+      <p class="note">Cloud quality renders the morphs with LTX-2.5 through a paid Comfy partner node. You see the price and confirm it first. Off, everything stays on open weights on this machine.</p>
+    </div>`;
+}
+
+function cloudCard(plan) {
+  const est = plan.estimate || {};
+  const money = `${Number(est.credits || 0).toFixed(0)} credits · US$${Number(est.usd || 0).toFixed(2)} · A$${Number(est.aud || 0).toFixed(2)}`;
+  const blockers = [];
+  if (est.over_cap) blockers.push(`Over the US$${Number(est.cap_usd || 0).toFixed(2)} cap for one clip.`);
+  if (!plan.node_installed) blockers.push("The LTX-2.5 partner node is not in this ComfyUI.");
+  if (!plan.key_present && !plan.dry_run) blockers.push("No Comfy API key on this machine (COMFY_ORG_API_KEY).");
+  const shots = (plan.shots || []).map((shot) => `${Number(shot.seconds).toFixed(1)}s→${shot.render_s}s`).join(" · ");
+  const go = plan.can_submit
+    ? `<button type="button" class="generate" data-act="easy-cloud-confirm">${plan.dry_run ? "Dry run · spend nothing" : `Confirm and render · US$${Number(est.usd || 0).toFixed(2)}`}</button>`
+    : "";
+  return `<section class="cloud-card" role="dialog" aria-label="Cloud quality price">
+      <h3>Cloud quality price</h3>
+      <p><strong>${esc(money)}</strong></p>
+      <p class="note">${esc(`${est.shots} LTX-2.5 shots, ${est.render_seconds}s at ${est.resolution} ${est.fps} fps, ${est.model}. Cap US$${Number(est.cap_usd || 0).toFixed(2)} a clip.`)}</p>
+      <p class="note">${esc(shots)}</p>
+      <p class="note">A free local draft plays while the cloud renders. If the cloud fails you keep the local cut. The result is labelled ${esc(plan.label || "cloud-rendered")}.</p>
+      ${blockers.map((line) => `<p class="note warn">${esc(line)}</p>`).join("")}
+      <div class="review-actions">
+        <button type="button" class="ghost" data-act="easy-cloud-cancel">Use the free local engine</button>
+        ${go}
+      </div>
+    </section>`;
+}
+
+async function easyCloudEstimate() {
+  const vibe = vibeById(state.easy.vibe);
+  state.easy.note = "Pricing the cloud shots. Nothing is sent yet.";
+  render();
+  try {
+    const res = await api("/api/cloud/estimate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ audio_id: state.audioId || "demo", vibe: vibe ? vibe.id : "", palette: vibe ? vibe.palette : "", brief: state.brief || "" }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    state.easy.cloudPlan = await res.json();
+    state.easy.note = "";
+  } catch (err) {
+    state.easy.cloudPlan = null;
+    state.easy.cloud = false;
+    state.easy.note = "Could not price the cloud shots, so Cloud quality is off.";
+  }
+  render();
+}
+
 async function easyMake() {
   const vibe = vibeById(state.easy.vibe);
   if (!vibe) return;
+  if (state.easy.cloud && !state.easy.cloudToken) {
+    await easyCloudEstimate();
+    return;
+  }
+  state.easy.cloudPlan = null;
   state.easy.showcase = false;
   state.easy.startedAt = Date.now();
   state.easy.firstMorph = null;
@@ -3615,6 +3694,27 @@ document.addEventListener("click", (event) => {
       return;
     }
     easyMake();
+  } else if (act === "easy-cloud") {
+    state.easy.cloud = !state.easy.cloud;
+    state.easy.cloudToken = "";
+    state.easy.cloudPlan = null;
+    render();
+  } else if (act === "easy-overlay") {
+    state.easy.overlay = !state.easy.overlay;
+    render();
+  } else if (act === "easy-cloud-confirm") {
+    const plan = state.easy.cloudPlan;
+    if (!plan || !plan.token || !plan.can_submit) return;
+    state.easy.cloudToken = plan.token;
+    state.easy.cloudPlan = null;
+    easyMake().finally(() => {
+      if (state.easy) state.easy.cloudToken = "";
+    });
+  } else if (act === "easy-cloud-cancel") {
+    state.easy.cloud = false;
+    state.easy.cloudToken = "";
+    state.easy.cloudPlan = null;
+    render();
   } else if (act === "easy-play") {
     if (state.easy && state.easy.playedHere) startLibraryCut();
     else {

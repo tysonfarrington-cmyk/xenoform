@@ -625,10 +625,17 @@ def run_turbo(
     if state.get("live"):
         report("restyle", 0.1, "GPU morphs, LTX 0.9.5 at 512x288. The draft stays up while this runs.")
         try:
-            from xenoform.morph_pass import run_morph_pass
-
             _stop(cancel)
-            morph_info = run_morph_pass(directed, scenes, Path(audio_path), out_path, work, tuned, state, report)
+            if state.get("cloud_quality"):
+                # Optional, off by default, PAID (see cloud_morph): free local draft first, then LTX-2.5.
+                from xenoform.cloud_morph import run_cloud_quality
+
+                morph_info, cloud_warning = run_cloud_quality(directed, Path(audio_path), out_path, work, tuned, state, report)
+                warning = cloud_warning or warning
+            else:
+                from xenoform.morph_pass import run_morph_pass
+
+                morph_info = run_morph_pass(directed, scenes, Path(audio_path), out_path, work, tuned, state, report)
             mode = "turbo"
             report("restyle", 1.0, "GPU morphs locked to the beat")
         except JobCancelled:

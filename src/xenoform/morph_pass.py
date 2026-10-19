@@ -54,6 +54,7 @@ VIBE_LOOK = {
     "ocean": "iridescent shell and chrome, aqua caustic light, deep teal water backdrop",
     "cosmic": "iridescent glass and pearl, cobalt and violet glow, deep indigo backdrop",
     "paper-summer": "folded white paper and glazed porcelain, warm morning sunlight, soft cream backdrop",
+    "black": "black glass and iridescent liquid metal, violet and teal edge light, pure black void, no floor",
 }
 PALETTE_VIBE = {"gold": "liquid-gold", "violet": "cosmic", "grey-green": "ocean", "bronze": "bloom", "neutral": "paper-summer"}
 NEGATIVE = "text, letters, watermark, logo, two objects, cut, flicker, blurry, low quality, cartoon, people, hands"

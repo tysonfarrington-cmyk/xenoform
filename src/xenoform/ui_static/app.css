@@ -2063,3 +2063,9 @@ body[data-advanced="1"][data-step="look"] #register-slot { display: block; }
 button.easy-showcase { width: 100%; margin-top: 8px; }
 #easy-eta { font-variant-numeric: tabular-nums; }
 .easy-making .track span { transition: width 0.9s linear; }
+
+/* Cloud quality (paid, off by default) */
+.cloud-opts { display: grid; gap: 6px; margin: 10px 0; }
+.cloud-toggle.on { border-color: #b46eff; color: #fff; }
+.cloud-card { border: 1px solid #b46eff; border-radius: 10px; padding: 12px; margin: 10px 0; background: rgba(20, 10, 30, 0.6); }
+.cloud-card .warn { color: #ffb86b; }
