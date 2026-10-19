@@ -1,0 +1,149 @@
+{
+  "name": "Fixture source library",
+  "version": 1,
+  "schema": {
+    "category": "shapes|silhouettes|loops|footage|film|stills|objects_gr|gpu_objects|gpu_morphs"
+  },
+  "items": [
+    {
+      "id": "still_gold",
+      "category": "shapes",
+      "files": {"poster": "shapes/gold.png"},
+      "motion": "static",
+      "silhouette": "round",
+      "tags": ["liquid", "metal", "crystal"],
+      "colour": {"mood": ["warm"]},
+      "licence_bucket": "own_work_procedural",
+      "licence": "Own work (procedural); free to use",
+      "face_present": false,
+      "morph_partners": [{"id": "decoy_far", "iou": 0.1}]
+    },
+    {
+      "id": "burst_fire",
+      "category": "shapes",
+      "files": {"poster": "shapes/fire.png"},
+      "motion": "bursting",
+      "tags": ["liquid", "metal", "crystal", "iridescent"],
+      "colour": {"mood": ["vivid"]},
+      "licence_bucket": "own_work_procedural",
+      "face_present": false,
+      "morph_partners": []
+    },
+    {
+      "id": "chain_src",
+      "category": "loops",
+      "file": "loops/missing-src.mp4",
+      "motion": "morphing",
+      "tags": ["liquid"],
+      "licence_bucket": "own_work_procedural",
+      "face_present": false,
+      "morph_partners": [{"id": "chain_dst", "iou": 0.95}]
+    },
+    {
+      "id": "chain_dst",
+      "category": "loops",
+      "files": {"poster": "loops/dst.png"},
+      "motion": "morphing",
+      "tags": ["metal", "crystal"],
+      "licence_bucket": "CC0",
+      "face_present": false,
+      "morph_partners": [{"id": "chain_src", "iou": 0.95}]
+    },
+    {
+      "id": "decoy_far",
+      "category": "stills",
+      "files": {"poster": "stills/paper.png"},
+      "motion": "static",
+      "tags": ["paper"],
+      "licence_bucket": "public_domain",
+      "face_present": false,
+      "morph_partners": [{"id": "still_gold", "iou": 0.1}]
+    },
+    {
+      "id": "face_close",
+      "category": "film",
+      "file": "film/face.mp4",
+      "motion": "static",
+      "tags": ["liquid", "metal", "crystal", "iridescent", "gold"],
+      "face_present": true,
+      "face_note": "hand-drawn cartoon figures, not real people",
+      "licence_bucket": "public_domain",
+      "morph_partners": [{"id": "still_gold", "iou": 0.4}]
+    },
+    {
+      "id": "pd_us_reel",
+      "category": "film",
+      "file": "film/metropolis.mp4",
+      "motion": "spinning",
+      "tags": ["liquid", "metal"],
+      "licence_bucket": "PD_US_only",
+      "pd_us": true,
+      "pd_eu": false,
+      "credit_line": "Metropolis (1927); public domain in the US, via the fixture",
+      "face_present": false,
+      "morph_partners": []
+    },
+    {
+      "id": "bismuth_credit",
+      "category": "stills",
+      "files": {"poster": "stills/bismuth.png"},
+      "motion": "static",
+      "tags": ["crystal"],
+      "licence_bucket": "CC_BY (attribution required)",
+      "attribution_required": true,
+      "author": "François Nguyen",
+      "licence": "CC BY 2.0",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Example",
+      "face_present": false,
+      "morph_partners": [{"id": "chain_dst", "iou": 0.4}]
+    },
+    {
+      "id": "cc_by_bare",
+      "category": "stills",
+      "files": {"poster": "stills/bare.png"},
+      "motion": "static",
+      "tags": ["abstract"],
+      "licence_bucket": "CC_BY (attribution required)",
+      "attribution_required": true,
+      "face_present": false
+    },
+    {
+      "id": "gpu_blob",
+      "category": "gpu_objects",
+      "files": {"poster": "gpu/blob.png"},
+      "motion": "spinning",
+      "tags": ["spiral", "space"],
+      "licence_bucket": "own_work_procedural",
+      "face_present": false,
+      "morph_partners": [{"id": "gpu_warp", "iou": 0.88}]
+    },
+    {
+      "id": "gpu_warp",
+      "category": "gpu_morphs",
+      "file": "gpu/does-not-exist.png",
+      "motion": "sdf_morph",
+      "tags": ["spiral"],
+      "licence_bucket": "own_work_procedural",
+      "face_present": false,
+      "morph_partners": [{"id": "gpu_blob", "iou": 0.88}]
+    },
+    {
+      "id": "objects_kept",
+      "category": "objects_gr",
+      "files": {"poster": "objects/kept.png"},
+      "motion": "static",
+      "tags": ["organic"],
+      "licence_bucket": "CC0",
+      "face_present": false
+    },
+    {
+      "id": "escaped",
+      "category": "stills",
+      "files": {"poster": "../../outside.png"},
+      "motion": "static",
+      "tags": ["secret"],
+      "licence_bucket": "CC0",
+      "face_present": false
+    }
+  ]
+}
