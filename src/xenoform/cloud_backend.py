@@ -9,7 +9,7 @@
 
 Cloud flow per job: upload inputs (``/api/upload/image``) -> rename models to the
 Cloud library names (configs/cloud_models.json) -> guard -> ``POST /api/prompt``
--> poll ``/api/job/{id}/status`` -> ``/api/history/{id}`` -> ``/api/view`` (302 to a
+-> poll ``/api/job/{id}/status`` -> ``/api/jobs/{id}`` -> ``/api/view`` (302 to a
 signed URL, fetched WITHOUT the key). At most ``max_parallel`` (3, Creator) jobs run.
 
 Guards (cloud only):
@@ -212,8 +212,9 @@ class CloudBackend:
         while waited <= self.timeout_s:
             st = self._json("GET", f"/api/job/{prompt_id}/status").get("status")
             if st == "success":
-                hist = self._json("GET", f"/api/history/{prompt_id}")
-                return (hist.get(prompt_id) or hist).get("outputs", {})
+                # Cloud has no /api/history (404 "Use /api/jobs/{prompt_id}"); verified 2026-10-20
+                job = self._json("GET", f"/api/jobs/{prompt_id}")
+                return job.get("outputs") or {}
             if st in TERMINAL_FAIL:
                 raise CloudJobFailed(f"job {prompt_id} ended {st}")
             self.sleep(self.poll_s)

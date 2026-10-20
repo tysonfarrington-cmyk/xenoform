@@ -45,9 +45,11 @@ class FakeCloud:
                     self.live -= 1
             return 200, {}, json.dumps({"status": st}).encode()
         if path.startswith("/api/history/"):
+            return 404, {}, b"{\"error\": {\"message\": \"Use /api/jobs/{prompt_id} instead.\"}}"
+        if path.startswith("/api/jobs/"):
             pid = path.rsplit("/", 1)[1]
-            out = {"9": {"video": [{"filename": f"{pid}.mp4", "subfolder": "", "type": "output"}]}}
-            return 200, {}, json.dumps({pid: {"outputs": out}}).encode()
+            out = {"9": {"images": [{"filename": f"{pid}.mp4", "subfolder": "", "type": "output"}], "animated": [True]}}
+            return 200, {}, json.dumps({"id": pid, "status": "completed", "outputs": out}).encode()
         if path.startswith("/api/view"):
             return 302, {"Location": "https://signed.example/x.mp4?sig=1"}, b""
         return 404, {}, b"nope"
