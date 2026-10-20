@@ -88,8 +88,42 @@ def frame_portrait(img: np.ndarray, w: int = STILL_W, h: int = STILL_H) -> np.nd
     return np.clip(canvas, 0, 255).astype(np.uint8)
 
 
-def portrait_stills(stills: list[dict], work: Path, w: int = STILL_W, h: int = STILL_H) -> list[dict]:
-    """The same stills, re-laid for portrait (cached in ``work/portrait``)."""
+def black_ground(img: np.ndarray, thresh: float = 24.0) -> np.ndarray:
+    """Crush a dark morph-still ground to pure black (guardrail morph_background).
+
+    Only a ground that is already dark (median edge under 70) is touched, so a vibe with a
+    deliberate light ground is never blackened by mistake.
+    """
+    bg = background(img)
+    if float(bg.mean()) > 70.0:
+        return img
+    f = img.astype(np.float32)
+    near = np.abs(f - bg).max(axis=2) < thresh
+    dark = f.max(axis=2) < 18.0
+    out = img.copy()
+    out[near | dark] = 0
+    return out
+
+
+def black_stills(stills: list[dict], work: Path) -> list[dict]:
+    """The stills with their ground forced to pure black (cached in ``work/black``)."""
+    out, done = [], {}
+    for s in stills:
+        src = Path(s["path"])
+        if src not in done:
+            dest = Path(work) / "black" / f"{src.stem}_black.png"
+            if not dest.is_file():
+                save_png(black_ground(load_rgb(src)), dest)
+            done[src] = dest
+        out.append({**s, "path": str(done[src]), "black_ground": True})
+    return out
+
+
+def portrait_stills(stills: list[dict], work: Path, w: int = STILL_W, h: int = STILL_H,
+                    background: str | None = None) -> list[dict]:
+    """The same stills, re-laid for portrait (cached in ``work/portrait``). background="black" crushes the ground first."""
+    if background == "black" and not all(s.get("black_ground") for s in stills):
+        stills = black_stills(stills, work)
     out, done = [], {}
     for s in stills:
         src = Path(s["path"])

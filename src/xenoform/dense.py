@@ -262,10 +262,10 @@ def shots_for(state: dict, directed: dict, audio_path: Path | None) -> tuple[lis
     return custom_shots(plan, duration), plan
 
 
-def _draft_clips(shots, stills, work, cfg, seed, vibe, client, cancel):
+def _draft_clips(shots, stills, work, cfg, seed, vibe, client, cancel, state=None):
     from xenoform.cloud_morph import _local_clips
 
-    return _local_clips(shots, stills, work, cfg, seed, vibe, client=client, cancel=cancel)
+    return _local_clips(shots, stills, work, cfg, seed, vibe, client=client, cancel=cancel, state=state)
 
 
 def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg: dict, state: dict,
@@ -278,6 +278,13 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     work.mkdir(parents=True, exist_ok=True)
     shots, plan = shots_for(state, directed, Path(audio_path))
     vibe, stills = stills_for({**state, "cut_plan": plan if plan.get("stills") else None}, len(shots) + 1)
+    from xenoform import guardrails as _guard
+
+    if state.get("still_background") == "black":
+        from xenoform.portrait import black_stills
+
+        stills = black_stills(stills, work)
+    shots = _guard.carry_block_fx(shots, state)
     seed = int(state.get("seed") or 2727)
     engine = engine or ("ltx23" if opt["tier"] == "final" else "ltx095")
     native = opt["aspect"] == "9:16" and opt["vertical"] == "native" and engine in {"ltx23", "mock"} \
@@ -294,7 +301,8 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
         if native:
             from xenoform.portrait import portrait_stills
 
-            clips = _mock_clips(shots, portrait_stills(stills, work), work, *final_tier.RENDER_916)
+            clips = _mock_clips(shots, portrait_stills(stills, work, background=state.get("still_background")), work,
+                                *final_tier.RENDER_916)
         else:
             clips = _mock_clips(shots, stills, work, 768, 432)
     elif engine == "ltx23":
@@ -307,16 +315,16 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
                 sub_stills += [stills[i], stills[i + 1]]
             got = {}
             for k, i in enumerate(indices):
-                got[i] = _draft_clips([shots[i]], [stills[i], stills[i + 1]], work, cfg, seed + i, vibe, client, cancel)[0]
+                got[i] = _draft_clips([shots[i]], [stills[i], stills[i + 1]], work, cfg, seed + i, vibe, client, cancel, state)[0]
                 renamed = work / f"draft_fallback{i:02d}.mp4"
                 shutil.move(str(got[i]), renamed)
                 got[i] = renamed
             return got
 
         clips, notes = final_clips(shots, stills, work, cfg, seed, vibe, client=client, cancel=cancel, report=report, draft=draft,
-                                   vertical=native)
+                                   vertical=native, state=state)
     else:
-        clips = _draft_clips(shots, stills, work, cfg, seed, vibe, client, cancel)
+        clips = _draft_clips(shots, stills, work, cfg, seed, vibe, client, cancel, state)
     report("assemble", 0.6, "Cutting to the beat" + (" with beat FX" if opt["fx"] else ""))
     tmp = Path(out_path).with_name(Path(out_path).stem + ".simple.mp4")
     made = beatfx.compose(clips, shots, Path(audio_path), tmp, aspect=opt["aspect"],

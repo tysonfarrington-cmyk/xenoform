@@ -2114,3 +2114,4 @@ body[data-advanced="0"] .easy-side { top: 16px; }
 .guard-expert{display:inline-flex;gap:6px;align-items:center;font-size:12px;opacity:.75;margin:6px 0}
 .guardnotes{font-size:12px;margin-top:6px;padding:6px 10px;border-left:2px solid #c9a227;opacity:.9}
 .guardnotes ul{margin:4px 0 0 16px;padding:0}
+.guard-live{color:#c9a227}

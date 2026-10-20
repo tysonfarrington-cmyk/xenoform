@@ -420,8 +420,13 @@ def pick_pair(
     banned: Any = None,
     exclude_faces: bool = True,
     allow_pd_us: bool = False,
+    min_motion: float = 0.0,
 ) -> dict[str, Any]:
-    """Source and target for one scene. Drops prefer a precomputed morph chain."""
+    """Source and target for one scene. Drops prefer a precomputed morph chain.
+
+    ``min_motion`` (guardrail footage_motion) drops near-static clips."""
+    from xenoform.guardrails import motion_ok
+
     ban = _id_set(banned)
     pins = [item_id for item_id in _id_set(pinned)]
     # Preserve pin order from the list the desk sent.
@@ -431,6 +436,7 @@ def pick_pair(
         item
         for item in library.items
         if item_allowed(item, exclude_faces=exclude_faces, allow_pd_us=allow_pd_us, banned=ban)
+        and motion_ok(item, min_motion)
     ]
     empty = {
         "source": None,
@@ -558,6 +564,7 @@ def plan_for_scenes(
     banned: Any = None,
     exclude_faces: bool = True,
     allow_pd_us: bool = False,
+    min_motion: float = 0.0,
 ) -> dict[str, Any]:
     rows = [scene for scene in (scenes or []) if isinstance(scene, dict)]
     if not rows:
@@ -569,6 +576,7 @@ def plan_for_scenes(
         "banned": banned,
         "exclude_faces": exclude_faces,
         "allow_pd_us": allow_pd_us,
+        "min_motion": min_motion,
     }
     pairs = []
     used: list[dict] = []
@@ -649,6 +657,7 @@ def library_filters(body: dict) -> dict[str, Any]:
         "banned": body.get("banned") if body.get("banned") is not None else body.get("library_bans") or [],
         "exclude_faces": _exclude_faces(body.get("exclude_faces", True)),
         "allow_pd_us": _flag(body.get("allow_pd_us", False)),
+        "min_motion": float(body.get("min_motion_score") or 0.0),
     }
 
 
@@ -666,7 +675,7 @@ def attach_library_credits(
         library,
         list(body.get("scenes") or []),
         list((features or {}).get("sections") or body.get("sections") or []),
-        **{key: filters[key] for key in ("vibe", "mood", "energy", "beat", "pinned", "banned", "exclude_faces", "allow_pd_us")},
+        **{key: filters[key] for key in ("vibe", "mood", "energy", "beat", "pinned", "banned", "exclude_faces", "allow_pd_us", "min_motion")},
     )
     used: list[dict] = []
     for pair in plan["pairs"]:

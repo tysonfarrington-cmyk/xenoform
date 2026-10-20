@@ -198,10 +198,11 @@ def apply(body: dict | None, *, expert: bool | None = None, duration: float | No
     # morph background
     r = R.get("morph_background")
     if r and blocks:
-        bg = str(body.get("still_background") or r.get("background"))
-        if bg != r.get("background") and rep.clamp("morph_background", f"morph stills on '{bg}'; set to black"):
-            bg = r.get("background")
-        body["still_background"] = bg
+        if black_ground_vibe(body.get("vibe")):
+            bg = str(body.get("still_background") or r.get("background"))
+            if bg != r.get("background") and rep.clamp("morph_background", f"morph stills on '{bg}'; set to black"):
+                bg = r.get("background")
+            body["still_background"] = bg
 
     # text encoder (hard: wrong dims crash or give noise)
     r = R.get("text_encoder")
@@ -295,3 +296,122 @@ def cached_vram() -> float | None:
         except Exception:
             _VRAM.append(None)
     return _VRAM[0]
+
+
+# ------------------------------------------------------------ consumers
+# The render code calls these so each guardrail field changes the output.
+
+HINTS = {
+    "nasa": "photographic, faithful to NASA reference imagery, one single accurate subject, physically correct features",
+    "stock-dance": "motion follows a real stock dance reference clip, smooth continuous movement, natural anatomically correct hands",
+    "black": "pure black background",
+}
+
+
+def black_ground_vibe(vibe: Any) -> bool:
+    """True for vibes whose morph stills sit on black (the black pool, or a still_style on black)."""
+    v = str(vibe or "").strip()
+    if v in ("", "black"):
+        return True
+    try:
+        from xenoform import vibes as _v
+        info = _v.get(v) or {}
+    except Exception:
+        return False
+    return "black" in str(info.get("still_style") or info.get("look") or "").lower()
+
+
+def prompt_hint(state: dict | None) -> str:
+    st = state or {}
+    parts = []
+    if st.get("anchor") in HINTS:
+        parts.append(HINTS[st["anchor"]])
+    if st.get("motion_source") in HINTS:
+        parts.append(HINTS[st["motion_source"]])
+    if st.get("still_background") == "black":
+        parts.append(HINTS["black"])
+    return ", ".join(parts)
+
+
+def _subject_text(state: dict | None) -> str:
+    st = state or {}
+    return " ".join(str(st.get(k) or "") for k in ("prompt", "idea"))
+
+
+def guard_prompt(prompt: str, state: dict | None) -> str:
+    hint = prompt_hint(state)
+    prompt = str(prompt or "")
+    if (state or {}).get("anchor") == "nasa":
+        try:  # the named real subject's NASA anchor prompt (configs/anchors.json)
+            from xenoform.anchors import harden
+            prompt = harden(prompt, _subject_text(state) + " " + prompt)
+        except Exception:
+            pass
+    if not hint or hint in prompt:
+        return prompt
+    return (prompt.rstrip().rstrip(".") + ", " + hint + ".").lstrip(", ")
+
+
+def negative_for(base: str, state: dict | None) -> str:
+    extra = str((state or {}).get("negative_extra") or "").strip()
+    base = str(base or "")
+    if (state or {}).get("anchor") == "nasa":
+        try:
+            from xenoform.anchors import harden_negative
+            base = harden_negative(base, _subject_text(state))
+        except Exception:
+            pass
+    if not extra:
+        return base
+    new = [t.strip() for t in extra.split(",") if t.strip() and t.strip().lower() not in base.lower()]
+    return ", ".join([base.rstrip(", ")] + new) if base else ", ".join(new)
+
+
+def guard_prompts(prompts: dict, state: dict | None) -> dict:
+    """The director's prompt table: hints on every positive prompt, extras on the negative."""
+    out = {}
+    for k, v in (prompts or {}).items():
+        out[k] = negative_for(v, state) if k == "negative" else guard_prompt(v, state) if isinstance(v, str) else v
+    if "negative" not in out and (state or {}).get("negative_extra"):
+        out["negative"] = negative_for("", state)
+    return out
+
+
+def motion_ok(item: dict, min_score: float) -> bool:
+    """Footage picker: drop near-static clips. Stills (no motion data) always pass."""
+    if not min_score:
+        return True
+    kind = str(item.get("kind") or item.get("type") or "").lower()
+    if kind in ("image", "still", "photo"):
+        return True
+    if item.get("motion_score") is not None:
+        return float(item["motion_score"]) >= float(min_score)
+    if item.get("motion_level") is None and not item.get("motion"):
+        return True
+    from xenoform.source_library import motion_level
+    return motion_level(item) >= float(min_score)
+
+
+def shot_fx(shot: dict | None) -> tuple[float, float]:
+    """(fx intensity 0..1, wobble 0..1) for one shot; defaults are full FX, no wobble."""
+    s = shot or {}
+    try:
+        inten = float(s.get("fx_intensity", 1.0))
+    except (TypeError, ValueError):
+        inten = 1.0
+    try:
+        wob = float(s.get("wobble") or 0.0)
+    except (TypeError, ValueError):
+        wob = 0.0
+    return max(0.0, min(1.0, inten)), max(0.0, min(1.0, wob))
+
+
+def carry_block_fx(shots: list[dict], state: dict | None) -> list[dict]:
+    """Copy per-block fx_intensity / wobble onto the shot with the same index."""
+    blocks = [b for b in ((state or {}).get("blocks") or []) if isinstance(b, dict)]
+    out = []
+    for i, shot in enumerate(shots):
+        b = blocks[i] if i < len(blocks) else {}
+        extra = {k: b[k] for k in ("fx_intensity", "wobble") if k in b and k not in shot}
+        out.append({**shot, **extra} if extra else shot)
+    return out

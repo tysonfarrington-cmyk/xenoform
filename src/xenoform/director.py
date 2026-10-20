@@ -1903,6 +1903,9 @@ def run_directed(
         tuned["comfy"]["height"] = 32
         tuned["comfy"]["steps"] = 1
     tuned["prompts"] = {**tuned.get("prompts", {}), **prompts_for_state(state)}
+    from xenoform.guardrails import guard_prompts
+
+    tuned["prompts"] = guard_prompts(tuned["prompts"], state)  # anchor / motion_source / still_background / negative_extra
 
     from xenoform.llm import release_llm
 

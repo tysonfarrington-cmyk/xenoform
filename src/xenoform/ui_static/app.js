@@ -2279,7 +2279,18 @@ function morphControl(easy, tier, aspect, vertical) {
       <input type="range" min="1" max="40" step="1" value="${Math.min(40, n)}" data-act="easy-morphs" aria-label="Number of forms">
       <input type="number" min="1" max="120" step="1" value="${n}" data-act="easy-morphs" aria-label="Number of forms" style="width:4.5em">
       <span class="note">${esc(`${n} form${n === 1 ? "" : "s"}: ${morphEstimate(n, tier, aspect, vertical)}`)}</span>
+      <span class="note guard-live">${esc(morphGuardText(n))}</span>
     </div>`;
+}
+// Live guardrail hint, mirroring configs/guardrails.json morph_density (15 sweet spot, 18 hard per 20 s).
+function morphGuardText(n) {
+  const secs = easySongSeconds() || 20;
+  const cap = Math.max(1, Math.round(secs / 20 * 15));
+  const hard = Math.max(cap, Math.round(secs / 20 * 18));
+  const expert = localStorage.getItem("xeno-guard-expert") === "1";
+  if (n > hard) return expert ? `Guardrail: ${n} forms in ${Math.round(secs)}s reads as laggy (Expert: kept)` : `Guardrail: ${n} forms in ${Math.round(secs)}s reads as laggy; renders as ${cap}`;
+  if (n > cap) return `Guardrail: above the ~${cap}-form sweet spot for ${Math.round(secs)}s`;
+  return "";
 }
 
 function remixBox(easy) {
@@ -5938,6 +5949,8 @@ document.addEventListener("input", (ev) => {
   state.easy.morphs = n;
   const box = el.closest(".morph-count");
   if (box) box.querySelectorAll("input").forEach((i) => { if (i !== el) i.value = String(Math.min(Number(i.max), n)); });
+  const hint = box && box.querySelector(".guard-live");
+  if (hint) hint.textContent = morphGuardText(n);
 });
 document.addEventListener("change", (ev) => {
   const el = ev.target;

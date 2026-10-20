@@ -207,9 +207,19 @@ def _zoom(img: np.ndarray, scale: float) -> np.ndarray:
 
 
 def beat_fx(frame: np.ndarray, *, kick: float, trans: float, punch: float, loud: float, beat_index: int,
-            zoom_scale: float = 1.0) -> np.ndarray:
-    """The demo1 look on one frame. ``zoom_scale`` < 1 softens the zoom (vertical uses 0.5)."""
+            zoom_scale: float = 1.0, intensity: float = 1.0, wobble: float = 0.0, t: float = 0.0) -> np.ndarray:
+    """The demo1 look on one frame. ``zoom_scale`` < 1 softens the zoom (vertical uses 0.5).
+
+    ``intensity`` (0..1, the shot's fx_intensity) scales every beat effect; ``wobble`` (0..1)
+    adds a subtle sideways sway of up to 2 % of the width, driven by the kick.
+    """
+    intensity = max(0.0, min(1.0, float(intensity)))
+    kick, trans, punch = kick * intensity, trans * intensity, punch * intensity
     img = frame.astype(np.float32)
+    if wobble > 0:
+        shift = int(round(float(wobble) * 0.02 * img.shape[1] * math.sin(2 * math.pi * 2.0 * t) * (0.5 + 0.5 * min(1.0, kick * 4))))
+        if shift:
+            img = np.roll(img, shift, axis=1)
     s = 1.0 + (0.035 * kick + 0.09 * punch) * zoom_scale
     img = _zoom(img, s)
     e = trans * 0.9 + punch * 0.8
@@ -253,6 +263,7 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
     already have the target aspect pass through whole; any other clip is cropped around its object.
     """
     from xenoform.cloud_morph import BeatOverlay, audio_envelope, punch_curve, shot_indices
+    from xenoform.guardrails import shot_fx
 
     aspect = norm_aspect(aspect)
     w, h = size or out_size(aspect, quality)
@@ -292,7 +303,9 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
                 frame = reframe(frames[j], aspect, c, w, h)
                 if fx and env is not None:
                     bi = int(np.searchsorted(beats, n / FPS)) if beats else 0
-                    frame = beat_fx(frame, kick=float(env["kick"][min(n, total - 1)]),
+                    s_int, s_wob = shot_fx(shot)
+                    frame = beat_fx(frame, intensity=s_int, wobble=s_wob, t=n / FPS,
+                                    kick=float(env["kick"][min(n, total - 1)]),
                                     trans=float(env["trans"][min(n, total - 1)]),
                                     punch=float(punch[n]) if n < len(punch) else 0.0,
                                     loud=float(env["loud"][min(n, total - 1)]), beat_index=bi, zoom_scale=zoom_scale)

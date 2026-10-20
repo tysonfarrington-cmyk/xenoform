@@ -632,7 +632,8 @@ def _job_result(client, job):
             job = client.jobs.get(job.id)
 
 
-def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, client=None, cancel=None) -> list[Path]:
+def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, client=None, cancel=None,
+                 state: dict | None = None) -> list[Path]:
     """Free: one LTX 0.9.5 A->B morph per shot through the existing morph graph."""
     from xenoform import morph_pass as mp
 
@@ -651,7 +652,9 @@ def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, cli
         wf = client.workflows.from_file(str(graph))
         wf.set_input("6", "image", asset(stills[i]["path"]))
         wf.set_input("7", "image", asset(stills[i + 1]["path"]))
-        wf.set_input("3", "text", mp.prompt_for(vibe))
+        from xenoform.guardrails import guard_prompt
+
+        wf.set_input("3", "text", guard_prompt(mp.prompt_for(vibe), state))
         wf.set_input("4", "text", mp.NEGATIVE)
         wf.set_input("9", "width", mp.WIDTH)
         wf.set_input("9", "height", mp.HEIGHT)

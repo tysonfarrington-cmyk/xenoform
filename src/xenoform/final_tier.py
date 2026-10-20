@@ -98,7 +98,7 @@ def gen_length(seconds: float) -> int:
 
 def graph(prompt: str, *, length: int, seed: int, upscale: bool = True, prefix: str = "xenoform/final",
           width: int = RENDER_W, height: int = RENDER_H, out_w: int = OUT_W, out_h: int = OUT_H,
-          img_compression: int = 18, end_strength: float = 1.0) -> dict:
+          img_compression: int = 18, end_strength: float = 1.0, negative: str | None = None) -> dict:
     """ComfyUI API graph for one LTX-2.3 first/last-frame morph. Images go in nodes 100 and 101."""
     if width % 64 or height % 64:
         raise ValueError(f"LTX-2.3 two-stage needs multiples of 64 (stage 1 is half size, a multiple of 32); got {width}x{height}.")
@@ -113,7 +113,7 @@ def graph(prompt: str, *, length: int, seed: int, upscale: bool = True, prefix: 
     n(2, "LTXAVTextEncoderLoader", text_encoder=TEXT_ENCODER, ckpt_name=CKPT, device="default")
     n(3, "LTXVAudioVAELoader", ckpt_name=CKPT)
     n(4, "CLIPTextEncode", clip=["2", 0], text=prompt)
-    n(5, "CLIPTextEncode", clip=["2", 0], text=NEGATIVE)
+    n(5, "CLIPTextEncode", clip=["2", 0], text=negative or NEGATIVE)
     n(6, "LTXVConditioning", positive=["4", 0], negative=["5", 0], frame_rate=float(FPS))
     n(7, "EmptyLTXVLatentVideo", width=width // 2, height=height // 2, length=length, batch_size=1)
     n(100, "LoadImage", image="a.png")
@@ -183,7 +183,7 @@ def is_oom(exc: BaseException) -> bool:
 def final_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, seed: int, vibe: str, *, client=None,
                 cancel: Callable[[], bool] | None = None, report: Callable[[str, float, str], None] | None = None,
                 draft: Callable[[list[int]], dict[int, Path]] | None = None,
-                vertical: bool = False) -> tuple[list[Path], list[dict]]:
+                vertical: bool = False, state: dict | None = None) -> tuple[list[Path], list[dict]]:
     """Render every shot on LTX-2.3 (+ ClearReality). Returns clips and one note per fallback.
 
     ``vertical`` renders native 9:16 (448x768 -> 1080x1920) from portrait stills. A shot
@@ -201,8 +201,12 @@ def final_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
     if vertical:
         from xenoform.portrait import PROMPT_SUFFIX, portrait_stills
 
-        stills = portrait_stills(stills, Path(work))
+        stills = portrait_stills(stills, Path(work), background=(state or {}).get("still_background"))
         prompt = prompt.rstrip() + PROMPT_SUFFIX
+    from xenoform.guardrails import guard_prompt, negative_for
+
+    prompt = guard_prompt(prompt, state)
+    negative = negative_for(NEGATIVE, state)
     tune = tuned(vibe)
     assets: dict = {}
     upscale = os.environ.get("XENO_FINAL_UPSCALE", "1").strip() not in {"0", "false", "off"}
@@ -213,7 +217,7 @@ def final_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
         return assets[path]
 
     def one(i: int, shot: dict, with_upscale: bool) -> Path:
-        wf = client.workflows.from_json(graph(prompt, length=gen_length(float(shot.get("render_s") or shot["seconds"])),
+        wf = client.workflows.from_json(graph(prompt, negative=negative, length=gen_length(float(shot.get("render_s") or shot["seconds"])),
                                               seed=int(seed) + i, upscale=with_upscale,
                                               width=size["render"][0], height=size["render"][1],
                                               out_w=size["out"][0], out_h=size["out"][1], **tune))
