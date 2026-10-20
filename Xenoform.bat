@@ -1,12 +1,34 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-if not exist "%~dp0.venv\Scripts\python.exe" (
-  echo Xenoform needs its own Python 3.12 environment.
-  echo Double-click install.bat first. It does not install into ComfyUI's Python.
+if exist "%~dp0.venv\Scripts\python.exe" goto ready
+echo.
+echo  First run: Xenoform needs its own Python 3.12 environment (.venv in this folder).
+echo  Setup takes about 5 minutes. It does not touch ComfyUI's Python or your models.
+echo.
+if defined XENO_YES goto setup
+choice /C YN /T 30 /D Y /M "Set it up now? (starts by itself in 30 seconds)"
+if errorlevel 2 (
+  echo OK. Run install.bat or this file again when you are ready.
   pause
   exit /b 1
 )
+:setup
+echo Running the installer...
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0install.ps1"
+if errorlevel 1 (
+  echo.
+  echo The installer stopped. The message above is the reason. Fix it and run Xenoform.bat again.
+  pause
+  exit /b 1
+)
+if not exist "%~dp0.venv\Scripts\python.exe" (
+  echo The installer finished but .venv is missing. See the messages above.
+  pause
+  exit /b 1
+)
+echo Setup done. Starting Xenoform.
+:ready
 if exist "%USERPROFILE%\AI\ComfyUI\models" set "XENO_MODELS=%USERPROFILE%\AI\ComfyUI\models"
 set "XENO_ADDONS=0"
 set "XENO_CONFIG="
