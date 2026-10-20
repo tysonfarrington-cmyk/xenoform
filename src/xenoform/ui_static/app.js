@@ -202,6 +202,9 @@ function payload() {
     vibe: (state.easy && state.easy.vibe) || "",
     // Cloud quality: optional, paid, off by default. Only the confirm click sets the token.
     paid_cloud: !!state.paidCloud,
+    // Guardrails: open-weights (contest) mode unless paid cloud is switched on; Expert keeps values, warns only.
+    open_weights_only: !state.paidCloud,
+    expert: localStorage.getItem("xeno-guard-expert") === "1",
     cloud_quality: !!(state.paidCloud && state.easy && state.easy.cloud && state.easy.cloudToken),
     cloud_confirm: (state.easy && state.easy.cloud && state.easy.cloudToken) || "",
     beat_overlay: !!(state.easy && state.easy.overlay),
@@ -3148,6 +3151,10 @@ function paintJob() {
   const note = job.tier_note ? ` ${job.tier_note}` : "";
   const label = (job.status === "done" ? "Cut ready" : job.detail || "Working") + note;
   slot.innerHTML = `<div class="jobbar"><strong>${mode}</strong><span>${esc(label)}</span><div class="track"><span style="width:${width}%"></span></div></div>`;
+  const guard = (job.guardrails && job.guardrails.messages) || [];
+  if (guard.length) {
+    slot.innerHTML += `<div class="guardnotes"><strong>Guardrails</strong><ul>${guard.map((m) => `<li>${esc(m)}</li>`).join("")}</ul></div>`;
+  }
 }
 
 const SECTION_COLOR = {
@@ -5936,3 +5943,11 @@ document.addEventListener("change", (ev) => {
   const el = ev.target;
   if (el && el.dataset && el.dataset.act === "easy-morphs") render();
 });
+
+// Guardrails Expert override toggle (persisted).
+(function guardExpert() {
+  const box = document.getElementById("guard-expert");
+  if (!box) return;
+  box.checked = localStorage.getItem("xeno-guard-expert") === "1";
+  box.addEventListener("change", () => localStorage.setItem("xeno-guard-expert", box.checked ? "1" : "0"));
+})();

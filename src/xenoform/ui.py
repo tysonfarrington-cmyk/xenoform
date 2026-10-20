@@ -1200,6 +1200,12 @@ def create_app(cfg: dict | None = None):
             features = _features_for(audio_id)
         except HTTPException:
             features = {}
+        from xenoform import guardrails as _guard
+        _gb = _guard.cached_vram()
+        guarded, guard_report = _guard.apply(body, duration=(features or {}).get("duration") or body.get("duration"),
+                                             beats=(features or {}).get("beats"), vram_gb=_gb, cfg=cfg)
+        body.clear()
+        body.update(guarded)
         try:
             from xenoform.source_library import attach_library_credits
 
@@ -1223,6 +1229,7 @@ def create_app(cfg: dict | None = None):
             "credits": library_info.get("credits") or [],
             "credits_file": library_info.get("credits_file") or "",
             "library_pairs": library_info.get("pairs") or [],
+            "guardrails": guard_report,
         }
         with _LOCK:
             running = sum(1 for item in _JOBS.values() if item.get("status") == "running")
@@ -1237,7 +1244,7 @@ def create_app(cfg: dict | None = None):
             name=f"xenoform-{job_id}",
         )
         thread.start()
-        return {"id": job_id, "only_scenes": only}
+        return {"id": job_id, "only_scenes": only, "guardrails": guard_report}
 
     @app.post("/api/animatic")
     def animatic_route(body: dict) -> dict:
@@ -1283,6 +1290,21 @@ def create_app(cfg: dict | None = None):
         from xenoform.workflow_export import storyboard_workflow
 
         return storyboard_workflow(body)
+
+    @app.get("/api/guardrails")
+    def guardrails_list() -> dict:
+        from xenoform import guardrails as _guard
+
+        return {"guardrails": _guard.summary()}
+
+    @app.post("/api/guardrails/check")
+    def guardrails_check(body: dict) -> dict:
+        """Dry run: what the guardrails would change in these settings. Nothing renders."""
+        from xenoform import guardrails as _guard
+
+        clean, report = _guard.apply(body, duration=body.get("duration"), vram_gb=body.get("vram_gb"))
+        clean.pop("guardrails", None)
+        return {"report": report, "settings": clean}
 
     @app.post("/api/generate")
     def generate(body: dict) -> dict:

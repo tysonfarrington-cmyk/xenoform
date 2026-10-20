@@ -2110,3 +2110,7 @@ button.easy-showcase { width: 100%; margin-top: 8px; }
 /* Simple mode: the header scrolls away instead of sitting over the Vibe cards; the side panel sticks to the top edge. */
 body[data-advanced="0"] .top { position: relative; }
 body[data-advanced="0"] .easy-side { top: 16px; }
+
+.guard-expert{display:inline-flex;gap:6px;align-items:center;font-size:12px;opacity:.75;margin:6px 0}
+.guardnotes{font-size:12px;margin-top:6px;padding:6px 10px;border-left:2px solid #c9a227;opacity:.9}
+.guardnotes ul{margin:4px 0 0 16px;padding:0}

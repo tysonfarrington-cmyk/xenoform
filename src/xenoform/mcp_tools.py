@@ -617,8 +617,10 @@ class App:
             board["blocks"] = [dict(b, transition=picks[i % len(picks)]) for i, b in enumerate(board.get("blocks") or [])]
         return {**board, **body}
 
-    def start(self, cloud: bool = False, confirm_spend: bool = False) -> dict:
+    def start(self, cloud: bool = False, confirm_spend: bool = False, expert: bool = False) -> dict:
         body = self.full_body()
+        body["expert"] = bool(expert)
+        body["open_weights_only"] = not cloud  # paid cloud is the only partner-node route
         cost = None
         if cloud:
             if confirm_spend is not True:
@@ -641,6 +643,7 @@ class App:
             self.jobs = dict(list(self.jobs.items())[-50:])
             self._save()
         out = {"job_id": job_id, "tier": self.project["tier"], "settings": self.settings(),
+               "guardrails": data.get("guardrails") or {},
                "recipe": self._recipe_or_blank(),
                "next": "Poll get_render_progress or call wait_for_render."}
         if running:
@@ -648,6 +651,21 @@ class App:
         if cost:
             out["cost"] = cost
         return out
+
+    def guardrails(self) -> dict:
+        from xenoform import guardrails as _guard
+
+        return {"guardrails": _guard.summary(),
+                "note": "Applied automatically on every render. start_render(expert=true) keeps your values and only warns; shimmer and the T5-on-LTX-2.x encoder fix always apply."}
+
+    def check_guardrails(self) -> dict:
+        from xenoform import guardrails as _guard
+
+        body = self.full_body()
+        clean, report = _guard.apply(body, duration=body.get("duration"))
+        return {"report": report, "would_render": {k: clean.get(k) for k in (
+            "morph_count", "vertical_mode", "motion_source", "anchor", "still_background", "min_motion_score",
+            "negative_extra", "open_weights_only") if k in clean}}
 
     def progress(self, job_id: str) -> dict:
         job_id = _job_id(job_id)
@@ -831,9 +849,19 @@ def register(server, app: App) -> None:
         return app.attach_image(path, role)
 
     @server.tool()
-    def start_render(cloud: bool = False, confirm_spend: bool = False) -> dict:
-        """Render the project with the current settings. Free open weights by default. cloud=true is PAID and also needs confirm_spend=true after the user agrees to the cost."""
-        return app.start(cloud=cloud, confirm_spend=confirm_spend)
+    def start_render(cloud: bool = False, confirm_spend: bool = False, expert: bool = False) -> dict:
+        """Render the project with the current settings. Free open weights by default. cloud=true is PAID and also needs confirm_spend=true after the user agrees to the cost. Guardrails clamp known flaky settings first (see list_guardrails); the result's 'guardrails' says what changed. expert=true keeps the user's values and only warns: use it only when the user asks to override."""
+        return app.start(cloud=cloud, confirm_spend=confirm_spend, expert=expert)
+
+    @server.tool()
+    def list_guardrails() -> dict:
+        """The built-in guardrails that stop known causes of flaky output (morph density ~15 forms per 20 s, no stutter in morph runs, native 9:16, NASA anchors for planets, stock-dance motion for characters, 12 GB VRAM limits, no shimmer, open weights only...) with their defaults."""
+        return app.guardrails()
+
+    @server.tool()
+    def check_guardrails() -> dict:
+        """Dry run: what the guardrails would change in the current project before rendering. Nothing renders."""
+        return app.check_guardrails()
 
     @server.tool()
     def get_render_progress(job_id: str) -> dict:
@@ -904,7 +932,8 @@ def register(server, app: App) -> None:
         """Onboarding: check the setup, greet, and offer starters."""
         return ("Call get_status and list_vibes. Then greet me with 'Connected to Xenoform, here's what you can do', "
                 "summarise in two lines what my PC can render (GPU tier, whether final quality is ready), "
-                "offer 4 starter ideas that fit those vibes, and ask what I want to make. Keep it short.")
+                "offer 4 starter ideas that fit those vibes, and ask what I want to make. Mention in one line that built-in guardrails "
+                "(list_guardrails) auto-fix settings known to cause flaky output, and that I can ask for an expert override. Keep it short.")
 
     @server.prompt()
     def make_music_video(idea: str, vibe: str = "black", song_path: str = "") -> str:

@@ -103,6 +103,14 @@ def build_parser() -> argparse.ArgumentParser:
     mcp.add_argument("--port", type=int, default=47319)
     mcp.add_argument("--desk", default="", help="Desk base URL. Defaults to XENO_DESK, else the desk answering on 47330 then 47317.")
 
+    guard = sub.add_parser("guardrails", help="List the guardrails, or check a settings JSON against them (no render).")
+    guard.add_argument("settings", nargs="?", default="", help="Render settings JSON to check. Omit to list the guardrails.")
+    guard.add_argument("--duration", type=float, default=None, help="Clip length in seconds (for morph density).")
+    guard.add_argument("--vram-gb", type=float, default=None)
+    guard.add_argument("--expert", action="store_true", help="Keep values; warn only (hard bans still apply).")
+    guard.add_argument("--out", default="", help="Write the clamped settings here.")
+    _add_config(guard)
+
     sample = sub.add_parser("sample-library", help="Write a few procedural shapes into ./library.")
     sample.add_argument("--out", default="library")
     sample.add_argument("--force", action="store_true", help="Replace a library.json that already has many items.")
@@ -183,7 +191,28 @@ def _dispatch(args, cfg: dict) -> None:
             print(f"streamed {features['n_frames']} frames to {host}:{port}")
         return
 
+    if args.cmd == "guardrails":
+        from xenoform import guardrails as _guard
+
+        if not args.settings:
+            for g in _guard.summary():
+                print(f"{g['id']}{' (hard)' if g['hard'] else ''}: {g['why']}")
+                print(f"    defaults: {json.dumps(g['defaults'])}")
+            return
+        body = json.loads(Path(args.settings).read_text(encoding="utf-8"))
+        clean, report = _guard.apply(body, expert=args.expert, duration=args.duration, vram_gb=args.vram_gb, cfg=cfg)
+        for line in report["messages"] or ["No changes: these settings pass every guardrail."]:
+            print(line)
+        if args.out:
+            Path(args.out).write_text(json.dumps(clean, indent=2), encoding="utf-8")
+            print(args.out)
+        return
+
     if args.cmd == "run":
+        from xenoform import guardrails as _guard
+
+        for line in _guard.check_config(cfg)["messages"]:
+            logging.getLogger("xenoform").warning("guardrail %s", line)
         if args.live and args.dry_run:
             raise RuntimeError("Pass only one of --live and --dry-run.")
         run_pipeline(
