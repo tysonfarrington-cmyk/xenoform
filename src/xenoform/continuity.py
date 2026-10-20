@@ -206,7 +206,17 @@ def ensure_stills(elements: list[dict], folder) -> list[dict]:
             continue
         name = _still_name(row.get("id") or row.get("kind") or "element", sentence)
         path = dest / name
-        if not (path.exists() and path.stat().st_size > 32):
+        from xenoform.anchors import anchor_for
+
+        anchor = anchor_for(sentence)
+        if anchor:
+            # A real subject (Jupiter, the Moon...) uses a clean public-domain photo, never a painted guess.
+            name = f"anchor-{anchor['name']}.jpg"
+            path = dest / name
+            path.write_bytes(Path(anchor["path"]).read_bytes())
+            row["anchor"] = anchor["name"]
+            row["anchor_credit"] = anchor.get("credit", "")
+        elif not (path.exists() and path.stat().st_size > 32):
             painted_path = paint_review_png(
                 dest,
                 seed=2727,

@@ -28,6 +28,14 @@ VIBE_TAGS: dict[str, tuple[str, ...]] = {
     "cosmic": ("space", "spiral", "star", "cosmic"),
     "black": ("dark", "liquid", "metal", "iridescent"),
 }
+def _extended_tags() -> None:
+    from xenoform import vibes as _vibes
+
+    for row in _vibes.extended():
+        VIBE_TAGS.setdefault(row["id"], tuple(row.get("tags") or ("dark",)))
+
+
+_extended_tags()
 MOOD_TAGS: dict[str, tuple[str, ...]] = {
     "dawn": ("bright", "warm", "clean"),
     "neon": ("neon", "dark", "vivid"),

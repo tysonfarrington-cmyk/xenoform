@@ -56,8 +56,12 @@ VIBE_LOOK = {
     "paper-summer": "folded white paper and glazed porcelain, warm morning sunlight, soft cream backdrop",
     "black": "black glass and iridescent liquid metal, violet and teal edge light, pure black void, no floor",
 }
+from xenoform import vibes as _vibes  # noqa: E402
+
+VIBE_LOOK.update({v["id"]: v["look"] for v in _vibes.extended() if v.get("look")})
 PALETTE_VIBE = {"gold": "liquid-gold", "violet": "cosmic", "grey-green": "ocean", "bronze": "bloom", "neutral": "paper-summer"}
-NEGATIVE = "text, letters, watermark, logo, two objects, cut, flicker, blurry, low quality, cartoon, people, hands"
+NEGATIVE = ("text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, "
+            "blurry, low quality, cartoon, cartoonish, warped, people, hands")
 
 
 def manifest() -> dict[str, list[dict]]:
@@ -97,7 +101,7 @@ def autotune() -> dict:
 
 def tuned(vibe: str) -> dict:
     """Per-vibe morph settings from autotune; an explicit XENO_MORPH_STEPS still wins for steps."""
-    got = dict((autotune().get("vibes") or {}).get(vibe) or {})
+    got = {**_vibes.ltx(vibe), **dict((autotune().get("vibes") or {}).get(vibe) or {})}
     if "XENO_MORPH_STEPS" in os.environ:
         got.pop("steps", None)
     return got
@@ -176,7 +180,7 @@ def prompt_for(vibe: str, engine: str = "ltx095") -> str:
     return lead + (
         "One single sculptural object slowly melts and flows into another, one continuous liquid "
         f"transformation, the object stays centred, gentle slow camera drift, {look}, "
-        "macro product photography, crisp, clean, high detail"
+        "one single object, every feature appears once, macro product photography, crisp, clean, high detail"
     )
 
 
@@ -331,6 +335,56 @@ def wait_or_cancel(job, jobs: list, cancel: Callable[[], bool] | None, poll_s: f
         time.sleep(poll_s)
 
 
+def _qa_reroll(client, graph, asset, a, b, vibe, engine, count, seed, dest, tune, cancel) -> dict:
+    """Check a finished morph (flicker, pops, optional CLIP failure prompts); reroll once if it fails.
+
+    The reroll gets a new seed and less freedom (full end guide, no compression,
+    cfg 3), and replaces the clip only if it scores better. Off with XENO_QA=0.
+    """
+    if os.environ.get("XENO_QA", "1") == "0":
+        return {}
+    from xenoform import shot_qa
+
+    good = f"a clean single sculptural object, {VIBE_LOOK.get(vibe, VIBE_LOOK['liquid-gold'])}"
+    try:
+        first = shot_qa.check(_read_frames(dest, 160, 90), good)
+    except Exception as exc:  # QA must never break a render
+        log.warning("shot QA skipped: %s", exc)
+        return {}
+    if first["ok"] or engine == "ltx25" or (cancel and cancel()):
+        return {"first": first}
+    wf = client.workflows.from_file(str(graph))
+    wf.set_input("6", "image", asset(a["path"]))
+    wf.set_input("7", "image", asset(b["path"]))
+    wf.set_input("3", "text", prompt_for(vibe, engine))
+    wf.set_input("4", "text", _vibes.negative(vibe) or NEGATIVE)
+    wf.set_input("9", "width", WIDTH)
+    wf.set_input("9", "height", HEIGHT)
+    wf.set_input("9", "length", gen_length(count))
+    wf.set_input("11", "steps", int(tune.get("steps", STEPS)))
+    wf.set_input("14", "cfg", 3.0)
+    wf.set_input("8", "img_compression", 0)
+    wf.set_input("21", "img_compression", 0)
+    wf.set_input("22", "strength", 1.0)
+    wf.set_input("13", "noise_seed", seed + 101)
+    wf.set_input("18", "fps", float(FPS))
+    try:
+        from comfy_sdk import JobFailed
+
+        result = _result(client, client.submit(wf), 0, JobFailed)
+        outputs = list(result.get_outputs("19")) or list(result.outputs)
+        alt = dest.with_name(dest.stem + "-reroll.mp4")
+        outputs[0].to_file(str(alt))
+        second = shot_qa.check(_read_frames(alt, 160, 90), good)
+    except Exception as exc:
+        log.warning("shot QA reroll failed: %s", exc)
+        return {"first": first, "reroll": "failed"}
+    if second["score"] > first["score"]:
+        alt.replace(dest)
+        return {"first": first, "reroll": second, "kept": "reroll"}
+    return {"first": first, "reroll": second, "kept": "first"}
+
+
 def run_morph_pass(
     directed: dict,
     scenes: list[dict],
@@ -406,7 +460,7 @@ def _render(
         wf.set_input("6", "image", asset(a["path"]))
         wf.set_input("7", "image", asset(b["path"]))
         wf.set_input("3", "text", prompt_for(vibe, engine))
-        wf.set_input("4", "text", NEGATIVE)
+        wf.set_input("4", "text", _vibes.negative(vibe) or NEGATIVE)
         wf.set_input("9", "width", WIDTH)
         wf.set_input("9", "height", HEIGHT)
         wf.set_input("9", "length", gen_length(counts[i]))
@@ -433,6 +487,7 @@ def _render(
     from comfy_sdk import JobFailed
 
     clips = []
+    qa_log: list[dict] = []
     timings = []
     for i, job in enumerate(jobs):
         wait_or_cancel(job, jobs, cancel)
@@ -443,6 +498,8 @@ def _render(
         chosen = next((o for o in outputs if getattr(o, "type", None) == "video"), outputs[0])
         dest = work / f"m{i:02d}.mp4"
         chosen.to_file(str(dest))
+        qa = _qa_reroll(client, graph, asset, stills[i], stills[i + 1], vibe, engine, counts[i], seed + i, dest, tune, cancel)
+        qa_log.append(qa)
         clips.append(dest)
         timings.append(round(time.perf_counter() - started, 2))
         report(
@@ -492,6 +549,7 @@ def _render(
         "handoffs_s": [round(t, 3) for t in bounds],
         "frames": counts,
         "stills": [s["file"] for s in stills],
+        "qa": qa_log,
         "submitted_s": round(submitted, 2),
         "done_s": timings,
         "seconds": round(time.perf_counter() - started, 2),

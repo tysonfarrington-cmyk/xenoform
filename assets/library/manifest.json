@@ -117,6 +117,136 @@
    "file": "assets/library/ocean/nasa_iss_soyuz_timelapse.mp4",
    "motion_score": 15.7,
    "seed_encoding": "720 wide, 5 s, CRF 25, muted, motion-verified by frame difference (mean |dI| on 96x54 gray at 4 fps)"
+  },
+  {
+   "id": "nasa_jupiter_anchor",
+   "kind": "image",
+   "title": "Jupiter (anchor still)",
+   "source": "nasa",
+   "source_url": "https://images.nasa.gov/details/PIA02873",
+   "licence": "NASA media are generally not subject to copyright in the US (public domain). Do not imply NASA endorsement; do not use NASA insignia/logos. https://www.nasa.gov/nasa-brand-center/images-and-media/",
+   "attribution": "\"Jupiter, Cassini true colour, NASA/JPL/University of Arizona\" courtesy NASA",
+   "redistribute": true,
+   "vibes": [
+    "cosmic",
+    "black"
+   ],
+   "tags": [
+    "jupiter",
+    "planet",
+    "anchor",
+    "sphere",
+    "centred"
+   ],
+   "fetch": {
+    "nasa_id": "PIA02873"
+   },
+   "file": "assets/library/cosmic/nasa_jupiter_anchor.jpg",
+   "seed_encoding": "1024x576, subject centred on black, JPEG q92"
+  },
+  {
+   "id": "nasa_saturn_anchor",
+   "kind": "image",
+   "title": "Saturn (anchor still)",
+   "source": "nasa",
+   "source_url": "https://images.nasa.gov/details/PIA06193",
+   "licence": "NASA media are generally not subject to copyright in the US (public domain). Do not imply NASA endorsement; do not use NASA insignia/logos. https://www.nasa.gov/nasa-brand-center/images-and-media/",
+   "attribution": "\"Saturn, Cassini natural colour mosaic, NASA/JPL/Space Science Institute\" courtesy NASA",
+   "redistribute": true,
+   "vibes": [
+    "cosmic",
+    "black"
+   ],
+   "tags": [
+    "saturn",
+    "planet",
+    "anchor",
+    "sphere",
+    "centred"
+   ],
+   "fetch": {
+    "nasa_id": "PIA06193"
+   },
+   "file": "assets/library/cosmic/nasa_saturn_anchor.jpg",
+   "seed_encoding": "1024x576, subject centred on black, JPEG q92"
+  },
+  {
+   "id": "nasa_earth_anchor",
+   "kind": "image",
+   "title": "Earth (anchor still)",
+   "source": "nasa",
+   "source_url": "https://images.nasa.gov/details/PIA18033",
+   "licence": "NASA media are generally not subject to copyright in the US (public domain). Do not imply NASA endorsement; do not use NASA insignia/logos. https://www.nasa.gov/nasa-brand-center/images-and-media/",
+   "attribution": "\"Earth, Blue Marble (Suomi NPP), NASA\" courtesy NASA",
+   "redistribute": true,
+   "vibes": [
+    "cosmic",
+    "black"
+   ],
+   "tags": [
+    "earth",
+    "planet",
+    "anchor",
+    "sphere",
+    "centred"
+   ],
+   "fetch": {
+    "nasa_id": "PIA18033"
+   },
+   "file": "assets/library/cosmic/nasa_earth_anchor.jpg",
+   "seed_encoding": "1024x576, subject centred on black, JPEG q92"
+  },
+  {
+   "id": "nasa_moon_anchor",
+   "kind": "image",
+   "title": "Moon (anchor still)",
+   "source": "nasa",
+   "source_url": "https://images.nasa.gov/details/PIA00405",
+   "licence": "NASA media are generally not subject to copyright in the US (public domain). Do not imply NASA endorsement; do not use NASA insignia/logos. https://www.nasa.gov/nasa-brand-center/images-and-media/",
+   "attribution": "\"Moon, Galileo, NASA/JPL\" courtesy NASA",
+   "redistribute": true,
+   "vibes": [
+    "cosmic",
+    "black"
+   ],
+   "tags": [
+    "moon",
+    "planet",
+    "anchor",
+    "sphere",
+    "centred"
+   ],
+   "fetch": {
+    "nasa_id": "PIA00405"
+   },
+   "file": "assets/library/cosmic/nasa_moon_anchor.jpg",
+   "seed_encoding": "1024x576, subject centred on black, JPEG q92"
+  },
+  {
+   "id": "nasa_mars_anchor",
+   "kind": "image",
+   "title": "Mars (anchor still)",
+   "source": "nasa",
+   "source_url": "https://images.nasa.gov/details/PIA00407",
+   "licence": "NASA media are generally not subject to copyright in the US (public domain). Do not imply NASA endorsement; do not use NASA insignia/logos. https://www.nasa.gov/nasa-brand-center/images-and-media/",
+   "attribution": "\"Mars, Viking 1 mosaic, NASA/JPL/USGS\" courtesy NASA",
+   "redistribute": true,
+   "vibes": [
+    "cosmic",
+    "black"
+   ],
+   "tags": [
+    "mars",
+    "planet",
+    "anchor",
+    "sphere",
+    "centred"
+   ],
+   "fetch": {
+    "nasa_id": "PIA00407"
+   },
+   "file": "assets/library/cosmic/nasa_mars_anchor.jpg",
+   "seed_encoding": "1024x576, subject centred on black, JPEG q92"
   }
  ]
 }

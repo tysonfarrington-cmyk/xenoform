@@ -1,0 +1,664 @@
+{
+ "version": 1,
+ "shapes": [
+  {
+   "noun": "orb",
+   "phrase": "perfect sphere"
+  },
+  {
+   "noun": "nautilus",
+   "phrase": "nautilus shell"
+  },
+  {
+   "noun": "lotus",
+   "phrase": "lotus flower"
+  },
+  {
+   "noun": "torus knot",
+   "phrase": "torus knot"
+  },
+  {
+   "noun": "jellyfish",
+   "phrase": "jellyfish"
+  },
+  {
+   "noun": "crystal",
+   "phrase": "crystal cluster"
+  },
+  {
+   "noun": "feather",
+   "phrase": "feather"
+  },
+  {
+   "noun": "ribbon",
+   "phrase": "mobius ribbon"
+  }
+ ],
+ "vibes": [
+  {
+   "id": "chrome-mercury",
+   "name": "Chrome mercury",
+   "line": "A mirror-chrome droplet pours itself into the next form.",
+   "palette": "silver",
+   "dark": true,
+   "tone": "dark",
+   "register": "pynchon",
+   "morph": true,
+   "look": "flawless liquid chrome and mercury, mirror surface reflecting soft gradient light, pure black void",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, matte, rust, colour cast, gold",
+   "lighting": "long strip softboxes, crisp specular highlights, pure black",
+   "material": "liquid mirror chrome",
+   "motion": "slow viscous pour, surface tension snaps, heavy and expensive",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "transitions": {
+    "drop": "scene-morph",
+    "switch": "liquid-melt",
+    "beat": "stutter-cut",
+    "silence": "black-hold"
+   },
+   "still_style": "Studio macro photograph, flawless liquid chrome and mercury, mirror surface reflecting soft gradient light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
+   "tags": [
+    "liquid",
+    "metal",
+    "chrome",
+    "dark"
+   ]
+  },
+  {
+   "id": "ferrofluid",
+   "name": "Ferrofluid",
+   "line": "Black magnetic liquid bristles into spikes on the kick.",
+   "palette": "graphite",
+   "dark": true,
+   "tone": "dark",
+   "register": "pynchon",
+   "morph": true,
+   "look": "jet-black glossy ferrofluid with sharp magnetic spikes and ridges, cold white rim light, pure black void",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, colourful, chrome mirror, soft",
+   "lighting": "single cold rim light, hard edge highlights",
+   "material": "oily black magnetic fluid",
+   "motion": "spikes rise and collapse in rhythm, pulsing like a speaker cone",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "transitions": {
+    "drop": "scene-morph",
+    "switch": "datamosh",
+    "beat": "stutter-cut",
+    "silence": "black-hold"
+   },
+   "still_style": "Studio macro photograph, jet-black glossy ferrofluid with sharp magnetic spikes and ridges, cold white rim light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
+   "tags": [
+    "liquid",
+    "metal",
+    "dark"
+   ]
+  },
+  {
+   "id": "glass-prism",
+   "name": "Glass prism",
+   "line": "Clear glass splits light into rainbow caustics.",
+   "palette": "spectral",
+   "dark": true,
+   "tone": "dark",
+   "register": "pynchon",
+   "morph": true,
+   "look": "faceted crystal prism glass splitting a white beam into a vivid rainbow spectrum, saturated red to violet dispersion and coloured caustic light streaks across the object, pure black void",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, frosted, opaque, plastic",
+   "lighting": "narrow white beam through glass, spectral caustics",
+   "material": "faceted prism glass with rainbow dispersion",
+   "motion": "slow rotation, light rays sweep and fan into spectra",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "transitions": {
+    "drop": "scene-morph",
+    "switch": "luma-wipe",
+    "beat": "chroma-split",
+    "silence": "black-hold"
+   },
+   "still_style": "Studio macro photograph, faceted crystal prism glass splitting a white beam into a vivid rainbow spectrum, saturated red to violet dispersion and coloured caustic light streaks across the object, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
+   "tags": [
+    "crystal",
+    "glass",
+    "dark"
+   ]
+  },
+  {
+   "id": "hologram",
+   "name": "Hologram",
+   "line": "A projected light-form flickers into being, line by line.",
+   "palette": "cyan-magenta",
+   "dark": true,
+   "tone": "dark",
+   "register": "pynchon",
+   "morph": true,
+   "look": "translucent emissive holographic light projection, cyan and magenta laser light, fine glowing contour lines, volumetric haze, pure black void",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, solid, opaque, metal, wood",
+   "lighting": "self-lit emissive cyan and magenta, faint volumetric haze",
+   "material": "projected light, no solid surface",
+   "motion": "scan-in reveal, slow orbit, tasteful line sweep",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 0.85
+   },
+   "transitions": {
+    "drop": "chroma-split",
+    "switch": "scene-morph",
+    "beat": "stutter-cut",
+    "silence": "black-hold"
+   },
+   "still_style": "Cinematic render, translucent emissive holographic light projection, cyan and magenta laser light, fine glowing contour lines, volumetric haze, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
+   "tags": [
+    "neon",
+    "abstract",
+    "dark"
+   ]
+  },
+  {
+   "id": "y2k-chrome",
+   "name": "Y2K chrome",
+   "line": "Inflated chrome and frosted ice-blue plastic, millennium-clean.",
+   "palette": "ice-blue",
+   "dark": false,
+   "tone": "bright",
+   "register": "pynchon",
+   "morph": true,
+   "look": "inflated puffy chrome and frosted translucent ice-blue plastic, glossy bubble forms, silver gradient studio, early-2000s futurism",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, dark, grungy, rust",
+   "lighting": "bright diffuse studio, glossy highlights",
+   "material": "inflated chrome, frosted plastic",
+   "motion": "bouncy squash and stretch, glossy wobble",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "transitions": {
+    "drop": "zoom-through",
+    "switch": "liquid-melt",
+    "beat": "stutter-cut",
+    "silence": "black-hold"
+   },
+   "still_style": "Studio macro photograph, inflated puffy chrome and frosted translucent ice-blue plastic, glossy bubble forms, silver gradient studio, early-2000s futurism, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
+   "tags": [
+    "metal",
+    "bright",
+    "clean"
+   ]
+  },
+  {
+   "id": "low-poly",
+   "name": "Low-poly 32-bit",
+   "line": "Flat-shaded polygons from a late-90s console intro.",
+   "palette": "primary",
+   "dark": true,
+   "tone": "dark",
+   "register": "pynchon",
+   "morph": true,
+   "look": "low-polygon 3D model with flat-shaded faceted triangles, affine-warped low-resolution textures, vertex colour gradients, late-1990s 32-bit console render, black void",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, smooth, photoreal, high poly, soft",
+   "lighting": "flat vertex lighting, no shadows, hard facets",
+   "material": "faceted polygons, pixelated textures",
+   "motion": "rigid rotation, stepped animation, polygon snap",
+   "ltx": {
+    "steps": 12,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "transitions": {
+    "drop": "stutter-cut",
+    "switch": "zoom-through",
+    "beat": "stutter-cut",
+    "silence": "black-hold"
+   },
+   "still_style": "Late-1990s real-time 3D game render, low-polygon 3D model with flat-shaded faceted triangles, affine-warped low-resolution textures, vertex colour gradients, late-1990s 32-bit console render, black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
+   "tags": [
+    "abstract",
+    "dark"
+   ]
+  },
+  {
+   "id": "seapunk",
+   "name": "Seapunk",
+   "line": "Aqua and hot-pink gloss swims through retro web 3D.",
+   "palette": "aqua-pink",
+   "dark": false,
+   "tone": "bright",
+   "register": "pynchon",
+   "morph": true,
+   "look": "glossy wet aqua teal and hot pink pearlescent surfaces, retro 1990s web 3D render, pastel ocean caustics, holographic sheen, deep teal backdrop",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, grey, muted, gritty",
+   "lighting": "pink and aqua dual key, wet highlights, caustics",
+   "material": "wet pearlescent plastic",
+   "motion": "floating, bobbing, slow spin like a screensaver",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "transitions": {
+    "drop": "liquid-melt",
+    "switch": "scene-morph",
+    "beat": "zoom-through",
+    "silence": "black-hold"
+   },
+   "still_style": "Studio macro photograph, glossy wet aqua teal and hot pink pearlescent surfaces, retro 1990s web 3D render, pastel ocean caustics, holographic sheen, deep teal backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
+   "tags": [
+    "water",
+    "iridescent",
+    "bright"
+   ]
+  },
+  {
+   "id": "psy-fractal",
+   "name": "Psy fractal",
+   "line": "Ultraviolet sacred geometry unfolds in fractal layers.",
+   "palette": "uv",
+   "dark": true,
+   "tone": "dark",
+   "register": "pynchon",
+   "morph": true,
+   "look": "glowing ultraviolet fluorescent fractal geometry, intricate recursive symmetrical patterns, blacklight neon lime magenta and violet, pure black void",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, muddy, washed out, realistic photo",
+   "lighting": "blacklight UV, fluorescent self-glow",
+   "material": "fluorescent recursive geometry",
+   "motion": "endless recursive zoom, kaleidoscopic rotation locked to the beat",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 0.85
+   },
+   "transitions": {
+    "drop": "zoom-through",
+    "switch": "scene-morph",
+    "beat": "chroma-split",
+    "silence": "black-hold"
+   },
+   "still_style": "Cinematic render, glowing ultraviolet fluorescent fractal geometry, intricate recursive symmetrical patterns, blacklight neon lime magenta and violet, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
+   "tags": [
+    "neon",
+    "spiral",
+    "abstract",
+    "dark"
+   ]
+  },
+  {
+   "id": "odd-machine",
+   "name": "Odd machine",
+   "line": "Rubbery biomechanics twitch with uncanny precision.",
+   "palette": "flesh-steel",
+   "dark": true,
+   "tone": "dark",
+   "register": "pynchon",
+   "morph": true,
+   "look": "uncanny biomechanical form, glossy flesh-pink silicone fused with precision brushed steel parts and fine wiring, harsh surgical light, pure black void",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, cute, cartoon, gore, blood",
+   "lighting": "harsh overhead surgical light, deep shadows",
+   "material": "silicone and machined steel",
+   "motion": "twitchy glitched stop-start motion, sudden reversals",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "transitions": {
+    "drop": "datamosh",
+    "switch": "tape-stop",
+    "beat": "stutter-cut",
+    "silence": "black-hold"
+   },
+   "still_style": "Studio macro photograph, uncanny biomechanical form, glossy flesh-pink silicone fused with precision brushed steel parts and fine wiring, harsh surgical light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
+   "tags": [
+    "metal",
+    "dark"
+   ]
+  },
+  {
+   "id": "brutalist",
+   "name": "Brutalist",
+   "line": "Raw concrete monoliths under a hard sun.",
+   "palette": "concrete",
+   "dark": false,
+   "tone": "bright",
+   "register": "pynchon",
+   "morph": true,
+   "look": "raw board-marked concrete monolithic sculpture, hard low raking sunlight, deep geometric shadows, overcast grey sky backdrop, architectural photography",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, colourful, glossy, neon",
+   "lighting": "hard raking sun, crisp geometric shadows",
+   "material": "raw concrete",
+   "motion": "slow heavy slab shifts, grinding weight, near-still",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "transitions": {
+    "drop": "luma-wipe",
+    "switch": "stutter-cut",
+    "beat": "stutter-cut",
+    "silence": "black-hold"
+   },
+   "still_style": "Architectural photograph, raw board-marked concrete monolithic sculpture, hard low raking sunlight, deep geometric shadows, overcast grey sky backdrop, architectural photography, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
+   "tags": [
+    "stone",
+    "clean",
+    "still"
+   ]
+  },
+  {
+   "id": "bioluminescent",
+   "name": "Bioluminescent",
+   "line": "Deep-sea life glows cyan in the dark.",
+   "palette": "cyan-green",
+   "dark": true,
+   "tone": "dark",
+   "register": "pynchon",
+   "morph": true,
+   "look": "translucent deep-sea creature-like form glowing with bioluminescent cyan and green light, soft inner glow, drifting particles, pitch black abyss",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, bright, daylight, sunlight",
+   "lighting": "self-lit bioluminescence, no key light",
+   "material": "translucent gelatinous tissue",
+   "motion": "pulsing glow, slow drifting undulation",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 0.85
+   },
+   "transitions": {
+    "drop": "scene-morph",
+    "switch": "luma-wipe",
+    "beat": "liquid-melt",
+    "silence": "black-hold"
+   },
+   "still_style": "Studio macro photograph, translucent deep-sea creature-like form glowing with bioluminescent cyan and green light, soft inner glow, drifting particles, pitch black abyss, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
+   "tags": [
+    "water",
+    "organic",
+    "dark"
+   ]
+  },
+  {
+   "id": "ink-water",
+   "name": "Ink in water",
+   "line": "Vermilion and gold ink blooms through dark water.",
+   "palette": "vermilion",
+   "dark": true,
+   "tone": "dark",
+   "register": "pynchon",
+   "morph": true,
+   "look": "billowing clouds of vermilion red and gold ink blooming in clear dark water, silky turbulent plumes, macro, pure black backdrop",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, solid object, hard edges",
+   "lighting": "side-lit tank, black backdrop",
+   "material": "ink plumes, fluid",
+   "motion": "slow billowing curls, turbulent unfolding",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 0.85
+   },
+   "transitions": {
+    "drop": "scene-morph",
+    "switch": "liquid-melt",
+    "beat": "luma-wipe",
+    "silence": "black-hold"
+   },
+   "still_style": "Studio macro photograph, billowing clouds of vermilion red and gold ink blooming in clear dark water, silky turbulent plumes, macro, pure black backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
+   "tags": [
+    "water",
+    "liquid",
+    "dark"
+   ]
+  },
+  {
+   "id": "porcelain-marble",
+   "name": "Porcelain marble",
+   "line": "White marble and blue-glazed porcelain on black velvet.",
+   "palette": "white-cobalt",
+   "dark": true,
+   "tone": "dark",
+   "register": "pynchon",
+   "morph": true,
+   "look": "polished white veined marble and fine cobalt-blue glazed porcelain, museum spotlight, soft falloff, black velvet backdrop",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, cracked, dirty, plastic",
+   "lighting": "single museum spotlight, soft falloff",
+   "material": "marble, porcelain glaze",
+   "motion": "still, slow turntable, stone flows like poured cream",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "transitions": {
+    "drop": "scene-morph",
+    "switch": "luma-wipe",
+    "beat": "zoom-through",
+    "silence": "black-hold"
+   },
+   "still_style": "Studio macro photograph, polished white veined marble and fine cobalt-blue glazed porcelain, museum spotlight, soft falloff, black velvet backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
+   "tags": [
+    "stone",
+    "clean",
+    "dark"
+   ]
+  },
+  {
+   "id": "lava-obsidian",
+   "name": "Lava obsidian",
+   "line": "Glowing magma cracks through black volcanic glass.",
+   "palette": "magma",
+   "dark": true,
+   "tone": "dark",
+   "register": "pynchon",
+   "morph": true,
+   "look": "glossy black obsidian volcanic glass with glowing orange molten lava cracks, embers, heat shimmer free, pure black void",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, blue, cold, daylight",
+   "lighting": "inner magma glow, faint warm rim",
+   "material": "obsidian, molten lava",
+   "motion": "slow cracking, molten seams pulse with the bass",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "transitions": {
+    "drop": "scene-morph",
+    "switch": "liquid-melt",
+    "beat": "stutter-cut",
+    "silence": "black-hold"
+   },
+   "still_style": "Studio macro photograph, glossy black obsidian volcanic glass with glowing orange molten lava cracks, embers, heat shimmer free, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
+   "tags": [
+    "fire",
+    "crystal",
+    "dark"
+   ]
+  },
+  {
+   "id": "thermal",
+   "name": "Thermal camera",
+   "line": "False-colour heat vision: white-hot to deep violet.",
+   "palette": "iron",
+   "dark": true,
+   "tone": "dark",
+   "register": "pynchon",
+   "morph": true,
+   "look": "thermal infrared camera image, false-colour iron palette from white-hot yellow through orange and magenta to deep violet, heat signature, black cold background",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, natural colour, photograph, texture detail",
+   "lighting": "no light, heat map only",
+   "material": "heat signature",
+   "motion": "heat blooms and cools, slight sensor smoothness",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "transitions": {
+    "drop": "luma-wipe",
+    "switch": "chroma-split",
+    "beat": "stutter-cut",
+    "silence": "black-hold"
+   },
+   "still_style": "Thermal infrared camera image, thermal infrared camera image, false-colour iron palette from white-hot yellow through orange and magenta to deep violet, heat signature, black cold background, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
+   "tags": [
+    "abstract",
+    "dark"
+   ]
+  },
+  {
+   "id": "crt-phosphor",
+   "name": "CRT phosphor",
+   "line": "A glowing tube screen, soft scanlines, warm tape bleed.",
+   "palette": "phosphor",
+   "dark": true,
+   "tone": "dark",
+   "register": "pynchon",
+   "morph": true,
+   "look": "object shown on a glowing CRT monitor, soft visible scanlines and RGB phosphor glow, gentle analogue colour bleed, dark room, tasteful vintage video",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, heavy noise, torn, unreadable, modern flat screen",
+   "lighting": "screen glow only, dark room",
+   "material": "phosphor screen",
+   "motion": "subtle roll and tracking drift, tape-stop on breaks",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 0.85
+   },
+   "transitions": {
+    "drop": "tape-stop",
+    "switch": "datamosh",
+    "beat": "stutter-cut",
+    "silence": "black-hold"
+   },
+   "still_style": "Close photograph of a glowing CRT screen, object shown on a glowing CRT monitor, soft visible scanlines and RGB phosphor glow, gentle analogue colour bleed, dark room, tasteful vintage video, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
+   "tags": [
+    "noir",
+    "neon",
+    "dark"
+   ]
+  },
+  {
+   "id": "ice-crystal",
+   "name": "Ice crystal",
+   "line": "Backlit frost crystals grow and fracture.",
+   "palette": "glacier",
+   "dark": true,
+   "tone": "dark",
+   "register": "pynchon",
+   "morph": true,
+   "look": "clear frozen ice with intricate frost crystal growth and trapped bubbles, cold blue backlight, frost ferns, pure black void",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, warm, melting puddle, fire",
+   "lighting": "cold blue backlight, white edge glints",
+   "material": "ice, frost",
+   "motion": "crystal growth spreading, crackle and fracture on hits",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "transitions": {
+    "drop": "scene-morph",
+    "switch": "luma-wipe",
+    "beat": "chroma-split",
+    "silence": "black-hold"
+   },
+   "still_style": "Studio macro photograph, clear frozen ice with intricate frost crystal growth and trapped bubbles, cold blue backlight, frost ferns, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
+   "tags": [
+    "crystal",
+    "cold",
+    "dark"
+   ]
+  },
+  {
+   "id": "origami-noir",
+   "name": "Origami noir",
+   "line": "Black and gold-foil paper folds itself into new forms.",
+   "palette": "black-gold",
+   "dark": true,
+   "tone": "dark",
+   "register": "pynchon",
+   "morph": true,
+   "look": "crisp origami folded from black paper and gold foil paper, sharp creases, elegant geometric folds, low key light, pure black void",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, white paper, crumpled, messy",
+   "lighting": "low raking key, gold edge glints",
+   "material": "black paper, gold foil",
+   "motion": "precise folding and unfolding, crisp snaps",
+   "ltx": {
+    "steps": 12,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 0.85
+   },
+   "transitions": {
+    "drop": "stutter-cut",
+    "switch": "zoom-through",
+    "beat": "stutter-cut",
+    "silence": "black-hold"
+   },
+   "still_style": "Studio macro photograph, crisp origami folded from black paper and gold foil paper, sharp creases, elegant geometric folds, low key light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
+   "tags": [
+    "paper",
+    "dark"
+   ]
+  },
+  {
+   "id": "alien-botanical",
+   "name": "Alien botanical",
+   "line": "Iridescent alien flora with glowing veins unfurls.",
+   "palette": "violet-lime",
+   "dark": true,
+   "tone": "dark",
+   "register": "pynchon",
+   "morph": true,
+   "look": "otherworldly alien plant form with iridescent violet petals, glowing lime veins, translucent tendrils and seed pods, moody dark greenhouse mist, black backdrop",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, earth plants, garden, daisy",
+   "lighting": "dark mist, glowing veins, violet rim",
+   "material": "iridescent alien plant tissue",
+   "motion": "slow unfurling, breathing pulse, tendrils curl",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 0.85
+   },
+   "transitions": {
+    "drop": "scene-morph",
+    "switch": "luma-wipe",
+    "beat": "liquid-melt",
+    "silence": "black-hold"
+   },
+   "still_style": "Studio macro photograph, otherworldly alien plant form with iridescent violet petals, glowing lime veins, translucent tendrils and seed pods, moody dark greenhouse mist, black backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
+   "tags": [
+    "organic",
+    "plant",
+    "dark"
+   ]
+  }
+ ]
+}

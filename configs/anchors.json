@@ -1,0 +1,47 @@
+{
+ "jupiter": {
+  "file": "assets/library/cosmic/nasa_jupiter_anchor.jpg",
+  "source": "https://images.nasa.gov/details/PIA02873",
+  "credit": "Jupiter, Cassini true colour, NASA/JPL/University of Arizona",
+  "licence": "Public domain (NASA imagery, not copyrighted in the US; credit given as requested)",
+  "prompt": "photoreal jupiter exactly as in the reference photograph, one single jupiter, accurate real features, black space background",
+  "negative": "duplicate features, multiple storms, extra spots, extra eyes, cartoon, illustration, warped, melted, painting, text, second great red spot, two red spots, extra moons",
+  "nasa_id": "PIA02873"
+ },
+ "saturn": {
+  "file": "assets/library/cosmic/nasa_saturn_anchor.jpg",
+  "source": "https://images.nasa.gov/details/PIA06193",
+  "credit": "Saturn, Cassini natural colour mosaic, NASA/JPL/Space Science Institute",
+  "licence": "Public domain (NASA imagery, not copyrighted in the US; credit given as requested)",
+  "prompt": "photoreal saturn exactly as in the reference photograph, one single saturn, accurate real features, black space background",
+  "negative": "duplicate features, multiple storms, extra spots, extra eyes, cartoon, illustration, warped, melted, painting, text",
+  "nasa_id": "PIA06193"
+ },
+ "earth": {
+  "file": "assets/library/cosmic/nasa_earth_anchor.jpg",
+  "source": "https://images.nasa.gov/details/PIA18033",
+  "credit": "Earth, Blue Marble (Suomi NPP), NASA",
+  "licence": "Public domain (NASA imagery, not copyrighted in the US; credit given as requested)",
+  "prompt": "photoreal earth exactly as in the reference photograph, one single earth, accurate real features, black space background",
+  "negative": "duplicate features, multiple storms, extra spots, extra eyes, cartoon, illustration, warped, melted, painting, text",
+  "nasa_id": "PIA18033"
+ },
+ "moon": {
+  "file": "assets/library/cosmic/nasa_moon_anchor.jpg",
+  "source": "https://images.nasa.gov/details/PIA00405",
+  "credit": "Moon, Galileo, NASA/JPL",
+  "licence": "Public domain (NASA imagery, not copyrighted in the US; credit given as requested)",
+  "prompt": "photoreal moon exactly as in the reference photograph, one single moon, accurate real features, black space background",
+  "negative": "duplicate features, multiple storms, extra spots, extra eyes, cartoon, illustration, warped, melted, painting, text",
+  "nasa_id": "PIA00405"
+ },
+ "mars": {
+  "file": "assets/library/cosmic/nasa_mars_anchor.jpg",
+  "source": "https://images.nasa.gov/details/PIA00407",
+  "credit": "Mars, Viking 1 mosaic, NASA/JPL/USGS",
+  "licence": "Public domain (NASA imagery, not copyrighted in the US; credit given as requested)",
+  "prompt": "photoreal mars exactly as in the reference photograph, one single mars, accurate real features, black space background",
+  "negative": "duplicate features, multiple storms, extra spots, extra eyes, cartoon, illustration, warped, melted, painting, text",
+  "nasa_id": "PIA00407"
+ }
+}
