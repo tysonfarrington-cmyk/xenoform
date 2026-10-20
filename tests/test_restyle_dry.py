@@ -57,8 +57,9 @@ def test_first_frame_defaults_to_ltx_and_wan_stays_optional(monkeypatch):
     cfg["comfy"]["checkpoint_name"] = LARGE_CHECKPOINT
     cfg["comfy"]["video_model"] = "ltx-23"
     large = build_jobs(features, cfg)
-    assert {job["engine"] for job in large} == {"ltx-23"}
-    assert all(job["checkpoint_name"] == LARGE_CHECKPOINT for job in large)
+    # The stock restyle graph has a T5 CLIPLoader, which LTX-2.3 cannot read (4096 vs 2048): stay on 0.9.5.
+    assert {job["engine"] for job in large} == {"ltx-095"}
+    assert all(job["checkpoint_name"] == FAST_CHECKPOINT and "t5" in job["clip_name"] for job in large)
 
     cfg["comfy"]["video_model"] = "wan"
     wan = build_jobs(features, cfg)

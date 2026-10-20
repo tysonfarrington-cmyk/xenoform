@@ -80,6 +80,26 @@ def _action_model(cfg: dict, quality: str, conditioning: str, checkpoint: str) -
     return "ltx-095", checkpoint or FAST_CHECKPOINT
 
 
+T5_ENCODERS = ("t5xxl",)
+
+
+def encoder_compatible(checkpoint: str, clip_name: str, engine: str = "") -> bool:
+    """LTX 0.9.5 takes T5. LTX-2.3 and 2.5 need their Gemma encoder; T5 there fails 4096 vs 2048."""
+    t5 = any(tag in str(clip_name).lower() for tag in T5_ENCODERS)
+    big = engine in {"ltx-23", "ltx-25"} or _is_ltx23(str(checkpoint)) or "2.5" in str(checkpoint)
+    return not t5 if big else t5 or engine.startswith("wan")
+
+
+def graph_has_ltx23_encoder(cfg: dict) -> bool:
+    """True when the configured restyle graph loads the LTX-2.3 text encoder (LTXAVTextEncoderLoader)."""
+    try:
+        graph = json.loads(resolve_path(cfg["comfy"]["workflow"], cfg).read_text(encoding="utf-8"))
+    except (OSError, KeyError, ValueError, TypeError):
+        return False
+    nodes = graph.values() if isinstance(graph, dict) else []
+    return any(isinstance(n, dict) and n.get("class_type") == "LTXAVTextEncoderLoader" for n in nodes)
+
+
 def build_jobs(features: dict, cfg: dict) -> list[dict[str, Any]]:
     segment = cfg["segment"]
     chunks = plan_chunks(
@@ -110,6 +130,13 @@ def build_jobs(features: dict, cfg: dict) -> list[dict[str, Any]]:
         width = int(comfy["width"])
         height = int(comfy["height"])
         clip_name = comfy["clip_name"]
+        if engine == "ltx-23" and not graph_has_ltx23_encoder(cfg):
+            # The restyle graph loads text with CLIPLoader (T5, 4096-wide). LTX-2.3 expects its Gemma
+            # encoder (2048), so the pair fails in ComfyUI: 4096 vs 2048. Stay on the T5 model.
+            from xenoform.hardware import FAST_CHECKPOINT
+
+            engine, checkpoint_name = "ltx-095", FAST_CHECKPOINT
+            model_note = "The restyle graph uses the T5 encoder, so this pass runs on LTX 0.9.5. Final quality uses LTX-2.3."
         if engine == "ltx-25":
             width = snap64(width)
             height = snap64(height)
