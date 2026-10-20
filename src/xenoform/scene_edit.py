@@ -67,25 +67,33 @@ def reader(seg, t_src, nframes, W, H, fps):
         yield fr
     p.stdout.close(); p.wait()
 
-def label_img(title, note, W):
+def label_img(title, note, W, scale=1.0):
+    """Lower-third label: bold title, one or two note lines, on a soft dark backing so it reads on any shot."""
     from PIL import Image, ImageDraw
-    ft, fn = _font(46), _font(30)
-    for f, ax in ((ft, [32, 600]), (fn, [14, 350])):
+    ft, fn = _font(int(46*scale)), _font(int(30*scale))
+    for f, ax in ((ft, [32, 700]), (fn, [14, 450])):
         try: f.set_variation_by_axes(ax)
         except Exception: pass
-    im = Image.new("RGBA",(W,230),(0,0,0,0)); d = ImageDraw.Draw(im)
+    Hh = int(230*scale)
+    im = Image.new("RGBA",(W,Hh),(0,0,0,0)); d = ImageDraw.Draw(im)
+    back = np.zeros((Hh, W, 4), np.float32)
+    back[..., 3] = (np.sin(np.linspace(0, np.pi, Hh))**0.6 * 150)[:, None]
     x = 72
-    d.rectangle([x, 40, x+46, 43], fill=(210,225,255,230))
-    d.text((x, 58), title.upper(), font=ft, fill=(255,255,255,240))
-    # wrap note
+    d.rectangle([x, int(40*scale), x+int(46*scale), int(40*scale)+4], fill=(255,120,80,240))
+    d.text((x, int(58*scale)), title.upper(), font=ft, fill=(255,255,255,255))
     words, lines, cur = note.split(), [], ""
     for w in words:
         if d.textlength(cur+" "+w, font=fn) > W-2*x: lines.append(cur); cur = w
         else: cur = (cur+" "+w).strip()
     lines.append(cur)
     for k, ln in enumerate(lines[:2]):
-        d.text((x, 122+k*40), ln, font=fn, fill=(220,225,235,205))
-    return np.asarray(im).astype(np.float32)
+        d.text((x, int((122+k*40)*scale)), ln, font=fn, fill=(235,238,245,240))
+    fg = np.asarray(im).astype(np.float32)
+    a = fg[..., 3:4]/255
+    out = back.copy(); out[..., :3] = fg[..., :3]*a
+    out[..., 3:4] = np.maximum(back[..., 3:4], fg[..., 3:4])
+    out[..., :3] = np.where(fg[..., 3:4] > 0, fg[..., :3]*a/np.maximum(out[..., 3:4]/255, 1e-3), 0)
+    return out
 
 def build(spec):
     W, H, fps = spec.get("W",1080), spec.get("H",1920), spec.get("fps",24)
@@ -141,11 +149,18 @@ def build(spec):
         et = np.array(ex["env_t"])-a_in; eb = np.array(ex["env_bass"]); er = np.array(ex["env_rms"])
         on = np.clip(np.concatenate([[0],np.diff(eb)])*8,0,1)
     stems = json.load(open(spec["stems"])) if spec.get("stems") else None
-    labels = [(fr_of(l["t0"]),fr_of(l["t1"]),label_img(l["title"],l.get("note",""),W)) for l in spec.get("labels",[])]
+    labels = [(fr_of(l["t0"]),fr_of(l["t1"]),label_img(l["title"],l.get("note",""),W,spec.get("label_scale",1.0))) for l in spec.get("labels",[])]
     out = spec["out"]
     enc = subprocess.Popen(["ffmpeg","-v","error","-y","-f","rawvideo","-pix_fmt","rgb24","-s",f"{W}x{H}","-r",str(fps),"-i","-",
         "-ss",str(a_in),"-t",f"{total:.3f}","-i",spec["audio"],"-map","0:v","-map","1:a","-c:v","libx264","-preset","medium","-crf",str(spec.get("crf",18)),
         "-pix_fmt","yuv420p","-c:a","aac","-b:a","256k","-af",f"afade=t=out:st={total-1.5:.2f}:d=1.5","-movflags","+faststart","-shortest",out], stdin=subprocess.PIPE)
+    spec = dict(spec); spec["_fxk"] = []
+    for i, s in enumerate(segs):
+        b0 = win[i-1][1] if i>0 else 0
+        b1 = win[i][0] if i < len(trs) else nT
+        spec["_fxk"] += [float(s.get("fx", 1.0))]*max(0,b1-b0)
+        if i < len(trs):
+            spec["_fxk"] += [min(float(s.get("fx",1.0)), float(segs[i+1].get("fx",1.0)))]*len(tframes[i])
     k = 0
     for i, s in enumerate(segs):
         b0 = win[i-1][1] if i>0 else 0
@@ -158,14 +173,43 @@ def build(spec):
     enc.stdin.close(); enc.wait()
     print("done", out, k/fps)
 
+def fx_scale(spec, k, fps):
+    """Per-frame effect multiplier: 0 on segments marked fx=0 (UI captures), and when
+    spec["pulse_moments"] is given, pulse/displacement only inside those [t0, t1] windows."""
+    fk = spec.get("_fxk") or []
+    m = fk[k] if k < len(fk) else 1.0
+    pm = spec.get("pulse_moments")
+    if pm is not None:
+        t = k/fps
+        m *= 1.0 if any(a <= t < b for a, b in pm) else 0.0
+    return m
+
+def grade(fr, spec, k):
+    """Optional unified grade + fine grain so mixed sources sit together."""
+    g = spec.get("grade")
+    if not g:
+        return fr
+    x = fr.astype(np.float32)/255.0
+    lift, gamma, sat = g.get("lift", 0.02), g.get("gamma", 1.0), g.get("sat", 1.0)
+    x = lift + (1-lift)*np.power(np.clip(x,0,1), gamma)
+    if sat != 1.0:
+        l = x.mean(axis=2, keepdims=True); x = l + (x-l)*sat
+    if g.get("grain", 0) > 0:
+        rng = np.random.default_rng(k)
+        n = rng.standard_normal(x.shape[:2]+(1,)).astype(np.float32)*g["grain"]
+        x = x + n
+    return (np.clip(x,0,1)*255).astype(np.uint8)
+
 def emit(enc, fr, k, fps, spec, env, labels, H, stems=None):
     t = k/fps
-    if stems is not None and spec.get("pulse", True):
+    d = spec.get("pulse_depth", 0.008) * fx_scale(spec, k, fps)
+    if d > 0 and stems is not None and spec.get("pulse", True):
         from xenoform import stem_react as SR
-        fr = SR.apply_frame(fr, stems, t + spec.get("audio_in", 0.0) - spec.get("stems_offset", 0.0), depth=spec.get("pulse_depth", 0.03))
-    elif env and spec.get("pulse", True):
+        fr = SR.apply_frame(fr, stems, t + spec.get("audio_in", 0.0) - spec.get("stems_offset", 0.0), depth=d)
+    elif d > 0 and env and spec.get("pulse", True):
         et, eb, on = env
-        fr = T.bass_pulse(fr, float(np.interp(t, et, eb)), float(np.interp(t, et, on)), depth=spec.get("pulse_depth",0.03))
+        fr = T.bass_pulse(fr, float(np.interp(t, et, eb)), float(np.interp(t, et, on)), depth=d)
+    fr = grade(fr, spec, k)
     for (l0,l1,img) in labels:
         if l0 <= k < l1:
             a = min(1,(k-l0)/(0.3*fps),(l1-k)/(0.3*fps))

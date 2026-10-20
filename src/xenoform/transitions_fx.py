@@ -309,11 +309,11 @@ def resample(frames: list[Frame], n: int) -> list[Frame]:
     return [frames[j] for j in idx]
 
 
-def bass_pulse(frame: Frame, bass: float, onset: float = 0.0, *, depth: float = 0.035) -> Frame:
+def bass_pulse(frame: Frame, bass: float, onset: float = 0.0, *, depth: float = 0.01) -> Frame:
     """Continuous post effect: tasteful scale breath on bass, small chroma kick on onsets."""
     fr = scale_frame(frame, 1.0 + depth * float(np.clip(bass, 0, 1)) ** 2)
     if onset > 0.6:
-        fr = chroma_shift(fr, int(6 * (onset - 0.6) / 0.4))
+        fr = chroma_shift(fr, int(3 * (onset - 0.6) / 0.4))
     return fr
 
 

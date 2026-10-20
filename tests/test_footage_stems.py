@@ -14,13 +14,15 @@ HAS_FFMPEG = shutil.which("ffmpeg") is not None
 
 def test_manifest_is_valid_and_seeds_exist():
     data = footage.load_manifest()
-    assert data["version"] == 1 and len(data["items"]) >= 6
+    assert data["version"] == 1 and len(data["items"]) >= 4
     vibes = {v for it in data["items"] for v in it["vibes"]}
     assert {"cosmic", "ocean", "black", "liquid-gold"} <= vibes
     for it in data["items"]:
         assert it["licence"] and it["attribution"]
         if it["redistribute"]:
             assert footage.local_path(it).is_file(), it["id"]
+        if it["source"] == "nasa" and it["kind"] == "video":
+            assert it["motion_score"] >= 3, it["id"]  # genuinely moving, not a near-still pan
 
 
 def test_validate_rejects_redistributed_pexels():

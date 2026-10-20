@@ -16,10 +16,10 @@ Xenoform's strengths are editing, beat sync, audio reactivity, transitions and m
 This is one manifest format for clips and the vibe anchor stills (`kind: image`), shared with the vibe-anchor work:
 
 ```json
-{"version": 1, "items": [{"id": "nasa_sdo_sun_gold", "kind": "video", "title": "...", "source": "nasa",
+{"version": 1, "items": [{"id": "nasa_sdo_arching_eruption", "kind": "video", "title": "...", "source": "nasa",
   "source_url": "https://images.nasa.gov/details/...", "licence": "...", "attribution": "...",
   "redistribute": true, "vibes": ["liquid-gold", "black"], "tags": ["sun", "centred"],
-  "fetch": {"nasa_id": "...", "in": 8, "out": 16}, "file": "assets/library/liquid-gold/nasa_sdo_sun_gold.mp4"}]}
+  "fetch": {"nasa_id": "...", "in": 8, "out": 16}, "file": "assets/library/liquid-gold/nasa_sdo_arching_eruption.mp4"}]}
 ```
 
 - **NASA / public domain** items are preferred. They're committed as small seeds: 720px wide, 8s, muted.
@@ -31,3 +31,10 @@ Seed clips (NASA, public domain; no NASA endorsement implied): SDO sun (gold), S
 
 ## Camera-roll morph (`xenoform.camera_roll`)
 Point it at a folder or album. `pick_best` samples stills and frames from clips, scores them (sharpness, exposure, colourfulness; faces off), and drops near-duplicates. `order_chain` then orders them nearest-neighbour by colour histogram plus a 16×16 shape layout, so each morph travels a short visual distance. `morph_pairs` gives the (a, b) pairs for LTX scene-morphs, and `edit_spec` gives a beat-cut spec where every boundary is a scene-morph.
+
+## Motion check (NASA seeds)
+
+Every committed NASA clip must genuinely move. Seeds are scored by mean absolute frame difference
+(96x54 grey, 4 fps) and stored as `motion_score`; the test suite requires >= 3. Current seeds:
+SDO arching eruption (4.3), SDO X1.6 flare (13.9), ISS Earth at night with lightning (16.3),
+ISS Soyuz relocation time-lapse (15.7). The earlier slow Earth-pan / quiet-sun seeds (score < 2) were removed.

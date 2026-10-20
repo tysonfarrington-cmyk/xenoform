@@ -146,7 +146,7 @@ def cut_points(env: dict, beats: list[float] | None = None, *, min_gap: float = 
     return pts
 
 
-def apply_frame(frame: np.ndarray, env: dict, t: float, *, depth: float = 0.03) -> np.ndarray:
+def apply_frame(frame: np.ndarray, env: dict, t: float, *, depth: float = 0.01) -> np.ndarray:
     """Stem-driven post effect for one frame (bass scale + displacement, drum chroma, other saturation)."""
     try:
         from xenoform import transitions_fx as T
@@ -158,10 +158,10 @@ def apply_frame(frame: np.ndarray, env: dict, t: float, *, depth: float = 0.03) 
     if p["displace"] > 0.55:
         h, w = fr.shape[:2]
         gx, gy = np.meshgrid(np.arange(w, dtype=np.float32), np.arange(h, dtype=np.float32))
-        amp = (p["displace"] - 0.55) / 0.45 * 6.0 * (w / 1080)
+        amp = (p["displace"] - 0.55) / 0.45 * 2.5 * (w / 1080)
         fr = T._remap(fr, gx + amp * np.sin(gy / (h / 11.0) + t * 7.0), gy)
     if p["chroma"] > 0.6:
-        fr = T.chroma_shift(fr, int(8 * (p["chroma"] - 0.6) / 0.4))
+        fr = T.chroma_shift(fr, int(4 * (p["chroma"] - 0.6) / 0.4))
     s = p["saturation"]
     if abs(s - 1.0) > 0.02:
         g = fr.mean(axis=2, keepdims=True)

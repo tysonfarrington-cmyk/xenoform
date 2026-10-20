@@ -59,8 +59,8 @@
  },
  "intensity": {
   "source": "bass",
-  "floor": 0.35,
-  "ceiling": 0.9
+  "floor": 0.2,
+  "ceiling": 0.55
  },
  "recommended": {
   "liquid-gold": {
@@ -109,7 +109,9 @@
  "post_effects": {
   "bass-pulse": {
    "enabled": true,
-   "depth": 0.03
+   "depth": 0.008,
+   "max_per_edit": 2,
+   "_doc": "Subtle by default: displacement/zoom pulse is applied only on marked key moments (max_per_edit), never on segments with fx=0 (UI captures)."
   }
  },
  "scene_morph": {

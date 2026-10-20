@@ -98,3 +98,16 @@ def test_docs_list_every_type():
     doc = (ROOT / "docs" / "transitions.md").read_text(encoding="utf-8")
     for k in T.TRANSITIONS:
         assert f"`{k}`" in doc
+
+
+def test_ui_segments_get_no_fx_and_pulse_moments_are_sparse():
+    import json
+    from pathlib import Path
+    from xenoform import scene_edit as SE
+    spec = {"_fxk": [1.0, 0.0, 1.0], "pulse_moments": [[0.0, 0.05]]}
+    assert SE.fx_scale(spec, 0, 30) == 1.0
+    assert SE.fx_scale(spec, 1, 30) == 0.0          # UI capture frame: clean
+    assert SE.fx_scale(spec, 2, 30) == 0.0          # outside the key moment
+    cfg = json.loads(Path("configs/transitions.json").read_text())
+    assert cfg["post_effects"]["bass-pulse"]["depth"] <= 0.01
+    assert cfg["intensity"]["ceiling"] <= 0.6
