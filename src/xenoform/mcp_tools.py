@@ -52,6 +52,7 @@ DEFAULTS: dict[str, Any] = {
     "images": [],
     "shot_edits": [],
     "cloud": False,
+    "morph_count": "auto",
 }
 
 
@@ -321,6 +322,17 @@ class App:
                 clean[key] = _pick("vertical_mode", value, VERTICAL)
             elif key == "tier":
                 clean[key] = _pick("tier", value, TIERS)
+            elif key == "morph_count":
+                if str(value).strip().lower() in ("auto", "", "0"):
+                    clean[key] = "auto"
+                else:
+                    try:
+                        n = int(value)
+                    except (TypeError, ValueError):
+                        raise XenoformError("morph_count is 'auto' or a whole number of forms (1-120).")
+                    if not 1 <= n <= 120:
+                        raise XenoformError("morph_count must be between 1 and 120 (or 'auto').")
+                    clean[key] = n
             elif key == "energy":
                 clean[key] = _pick("energy", value, ENERGIES)
             elif key == "prompt":
@@ -416,6 +428,7 @@ class App:
             "quality": "turbo" if p["tier"] == "preview" else p["tier"],
             "live": live, "beat_fx": p["beat_fx"], "end_card": p["end_card"],
             "transitions": p["transitions"], "hero_id": p["hero_id"],
+            "morph_count": p.get("morph_count", "auto"),
             "morph_targets": [i["path"] for i in p.get("images") or [] if i.get("path")],
             "paid_cloud": False, "cloud_quality": False, "cloud_confirm": "", "video_model": "ltx-23",
         }
@@ -444,7 +457,7 @@ class App:
     def recipe_fields(self) -> dict:
         b = self.body()
         return {k: b[k] for k in ("vibe", "idea", "aspect", "vertical_mode", "energy_preset", "quality_tier",
-                                  "beat_fx", "end_card", "song", "transitions")}
+                                  "beat_fx", "end_card", "song", "transitions", "morph_count")}
 
     def encode_recipe(self) -> dict:
         code = str(self.desk.json("POST", "/api/simple/recipe/encode", self.recipe_fields()).get("recipe") or "")
@@ -776,10 +789,11 @@ def register(server, app: App) -> None:
     def update_settings(prompt: str | None = None, vibe: str | None = None, aspect: str | None = None,
                         vertical_mode: str | None = None, tier: str | None = None, energy: str | None = None,
                         transitions: list[str] | None = None, beat_fx: bool | None = None,
-                        end_card: bool | None = None) -> dict:
-        """Change any project setting. Omitted fields stay. vertical_mode: native (rendered in portrait), crop, auto. transitions: ids from list_transitions."""
+                        end_card: bool | None = None, morph_count: int | str | None = None) -> dict:
+        """Change any project setting. Omitted fields stay. vertical_mode: native (rendered in portrait), crop, auto. transitions: ids from list_transitions. morph_count: 'auto' (from clip length + BPM) or 1-120 forms."""
         return app.update(prompt=prompt, vibe=vibe, aspect=aspect, vertical_mode=vertical_mode, tier=tier,
-                          energy=energy, transitions=transitions, beat_fx=beat_fx, end_card=end_card)
+                          energy=energy, transitions=transitions, beat_fx=beat_fx, end_card=end_card,
+                          morph_count=morph_count)
 
     @server.tool()
     def load_audio(path: str) -> dict:

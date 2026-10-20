@@ -1040,13 +1040,19 @@ def create_app(cfg: dict | None = None):
         return state
 
     @app.get("/api/simple/options")
-    def simple_options(duration: float = 20.0, energy: str = "flow", tier: str = "draft") -> dict:
+    def simple_options(duration: float = 20.0, energy: str = "flow", tier: str = "draft", bpm: float = 120.0,
+                       aspect: str = "16:9", vertical: str = "native", morphs: str = "auto") -> dict:
+        from xenoform import dense as _dense
         from xenoform import final_tier
         from xenoform.cloud_morph import plan_shots
         from xenoform.dense import dense_plan
 
         duration = max(1.0, min(float(duration or 20.0), 600.0))
-        beats = [i * 0.5 for i in range(int(duration / 0.5))]
+        step = 60.0 / max(40.0, min(float(bpm or 120.0), 240.0))
+        beats = [i * step for i in range(int(duration / step))]
+        auto = _dense.auto_morph_count(duration, beats, energy)
+        chosen = _dense.morph_count({"morph_count": morphs})
+        count = auto if chosen == "auto" else chosen
         if energy == "dense":
             shots = dense_plan(duration, beats, drop=duration * 0.6)["shots"]
         else:
@@ -1065,6 +1071,8 @@ def create_app(cfg: dict | None = None):
                       "render_916": "x".join(map(str, final_tier.RENDER_916)),
                       "output_916": "x".join(map(str, final_tier.out_916()))},
             "vertical": ["native", "crop"],
+            "morphs": {"slider": list(_dense.MORPH_SLIDER), "max": _dense.MORPH_MAX, "auto": auto, "count": count,
+                       "estimate": _dense.estimate(count, tier, aspect, vertical), "cost": _dense.COST},
         }
 
     def _video_dir(video_id: str) -> Path:

@@ -210,6 +210,7 @@ function payload() {
     aspect: (state.easy && state.easy.aspect) || "16:9",
     quality_tier: (state.easy && state.easy.tier) || "draft",
     vertical_mode: (state.easy && state.easy.vertical) || "auto",
+    morph_count: (state.easy && state.easy.morphs) || "auto",
     beat_fx: !(state.easy && state.easy.fx === false),
     end_card: !!(state.easy && state.easy.endCard),
     idea: (state.easy && state.easy.idea) || "",
@@ -2132,12 +2133,39 @@ function simpleOptions(easy) {
       ${simpleSeg("easy-aspect", aspect, [["16:9", "16:9"], ["9:16", "9:16"], ["1:1", "1:1"]], "Aspect")}
       ${simpleSeg("easy-tier", tier, [["draft", "Draft"], ["final", "Final"]], "Quality")}
       ${aspect === "9:16" && tier === "final" ? simpleSeg("easy-vertical", vertical, [["native", "Native"], ["crop", "Crop"]], "Vertical") : ""}
+      ${morphControl(easy, tier, aspect, vertical)}
       ${simpleSeg("easy-fx", fx ? "on" : "off", [["on", "On"], ["off", "Off"]], "Beat FX")}
       ${simpleSeg("easy-card", card ? "on" : "off", [["off", "Off"], ["on", "On"]], "End card")}
       <p class="note">${esc(energy === "dense" ? "Dense: up to 15 morphs, a shot a bar, then a shot every half bar from the drop, with stutters, holds and punches." : "Flow: one morph per section, cut on the bar.")}
       ${esc(vertNote)}
       ${esc(tier === "final" ? " " + finalEtaText() : " Draft: LTX 0.9.5, the quick pass.")}
       ${esc(easy.overlay ? "" : " Clean export: no waveform or text on the picture.")}</p>
+    </div>`;
+}
+
+// Morph count: Auto (from clip length + BPM) or a fixed number of forms, with a time/VRAM estimate.
+const MORPH_COST = {draft: {s: 35, vram_gb: 7.5}, final: {s: 110, vram_gb: 11.2}, final_916: {s: 140, vram_gb: 11.4}};
+function autoMorphs(energy) {
+  const m = state.simpleOptions && state.simpleOptions.morphs;
+  if (m && m.auto) return m.auto;
+  const secs = easySongSeconds() || 20;
+  const bar = 4 * 60 / (Number(state.tempo) || 120);
+  return Math.max(1, Math.round(secs / (energy === "dense" ? bar / 2 : Math.max(bar * 2, 4))));
+}
+function morphEstimate(count, tier, aspect, vertical) {
+  const key = tier === "final" && aspect === "9:16" && vertical === "native" ? "final_916" : (tier === "final" ? "final" : "draft");
+  const c = MORPH_COST[key];
+  const secs = c.s * count + 20;
+  return `about ${clockText(secs)}, peak VRAM ~${c.vram_gb} GB`;
+}
+function morphControl(easy, tier, aspect, vertical) {
+  const auto = !easy.morphs || easy.morphs === "auto";
+  const n = auto ? autoMorphs(easy.energyPreset || "flow") : Number(easy.morphs);
+  return `<div class="seg morph-count" data-tour="easy-morphs"><span class="seg-label">Forms</span>
+      <button type="button" data-act="easy-morphs-auto" class="${auto ? "on" : ""}">Auto${auto ? ` (${n})` : ""}</button>
+      <input type="range" min="1" max="40" step="1" value="${Math.min(40, n)}" data-act="easy-morphs" aria-label="Number of forms">
+      <input type="number" min="1" max="120" step="1" value="${n}" data-act="easy-morphs" aria-label="Number of forms" style="width:4.5em">
+      <span class="note">${esc(`${n} form${n === 1 ? "" : "s"}: ${morphEstimate(n, tier, aspect, vertical)}`)}</span>
     </div>`;
 }
 
@@ -2209,6 +2237,7 @@ function applySimpleRecipe(recipe) {
   easy.aspect = recipe.aspect || "16:9";
   easy.tier = recipe.quality_tier || "draft";
   easy.vertical = recipe.vertical_mode || "";
+  easy.morphs = recipe.morph_count || "auto";
   easy.fx = recipe.beat_fx !== false;
   easy.overlay = !!recipe.beat_overlay;
   easy.endCard = !!recipe.end_card;
@@ -3945,6 +3974,9 @@ document.addEventListener("click", async (event) => {
     loadSimpleOptions().then(render);
   } else if (act === "easy-aspect") {
     state.easy.aspect = ["16:9", "9:16", "1:1"].includes(el.dataset.value) ? el.dataset.value : "16:9";
+    render();
+  } else if (act === "easy-morphs-auto") {
+    state.easy.morphs = "auto";
     render();
   } else if (act === "easy-vertical") {
     state.easy.vertical = el.dataset.value === "crop" ? "crop" : "native";
@@ -5780,3 +5812,17 @@ async function boot() {
 }
 
 boot();
+
+// Forms slider / number box: live value without re-rendering on every tick, re-render on change.
+document.addEventListener("input", (ev) => {
+  const el = ev.target;
+  if (!el || !el.dataset || el.dataset.act !== "easy-morphs" || !state.easy) return;
+  const n = Math.max(1, Math.min(120, Math.round(Number(el.value) || 1)));
+  state.easy.morphs = n;
+  const box = el.closest(".morph-count");
+  if (box) box.querySelectorAll("input").forEach((i) => { if (i !== el) i.value = String(Math.min(Number(i.max), n)); });
+});
+document.addEventListener("change", (ev) => {
+  const el = ev.target;
+  if (el && el.dataset && el.dataset.act === "easy-morphs") render();
+});

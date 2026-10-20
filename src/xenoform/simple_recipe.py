@@ -23,6 +23,14 @@ class RecipeError(ValueError):
     pass
 
 
+def _morphs(value) -> int | str:
+    try:
+        n = int(value)
+    except (TypeError, ValueError):
+        return "auto"
+    return max(1, min(120, n)) if n > 0 else "auto"
+
+
 def _clean(state: dict) -> dict:
     out = {
         "vibe": str(state.get("vibe") or "")[:40],
@@ -35,6 +43,7 @@ def _clean(state: dict) -> dict:
         "overlay": bool(state.get("beat_overlay")),
         "card": bool(state.get("end_card")),
         "vertical": state.get("vertical_mode") if state.get("vertical_mode") in ("native", "crop") else "auto",
+        "morphs": _morphs(state.get("morph_count")),
     }
     song = str(state.get("song") or "")[:80]
     if song:
@@ -46,9 +55,9 @@ def _clean(state: dict) -> dict:
 
 
 _SHORT = {"vibe": "v", "idea": "i", "seed": "s", "energy": "e", "aspect": "a", "tier": "t", "fx": "f",
-          "overlay": "o", "card": "c", "song": "g", "plan": "p", "vertical": "vm"}
+          "overlay": "o", "card": "c", "song": "g", "plan": "p", "vertical": "vm", "morphs": "n"}
 _DEFAULTS = {"idea": "", "seed": 2727, "energy": "flow", "aspect": "16:9", "tier": "draft", "fx": True,
-             "overlay": False, "card": False, "vertical": "auto"}
+             "overlay": False, "card": False, "vertical": "auto", "morphs": "auto"}
 
 
 def encode(state: dict) -> str:
@@ -76,10 +85,13 @@ def decode(code: str) -> dict:
                     "energy_preset": data.get("energy"), "aspect": data.get("aspect"),
                     "quality_tier": data.get("tier"), "beat_fx": data.get("fx", True),
                     "beat_overlay": data.get("overlay"), "end_card": data.get("card"), "song": data.get("song"),
-                    "vertical_mode": data.get("vertical"), "cut_plan": data.get("plan")})
+                    "vertical_mode": data.get("vertical"), "cut_plan": data.get("plan"),
+                    "morph_count": data.get("morphs")})
     state = {"vibe": clean["vibe"], "idea": clean["idea"], "seed": clean["seed"], "energy_preset": clean["energy"],
              "aspect": clean["aspect"], "quality_tier": clean["tier"], "beat_fx": clean["fx"],
              "beat_overlay": clean["overlay"], "end_card": clean["card"], "song": clean.get("song", "")}
+    if clean["morphs"] != "auto":
+        state["morph_count"] = clean["morphs"]
     if clean["vertical"] != "auto":
         state["vertical_mode"] = clean["vertical"]
     if "plan" in clean:

@@ -70,7 +70,7 @@ def test_dense_plan_without_beats_still_plans():
 def test_options_default_to_flow_draft_wide_and_open_weights():
     opt = dense.options({})
     assert opt == {"energy": "flow", "aspect": "16:9", "tier": "draft", "fx": True, "overlay": False,
-                   "end_card": False, "recipe": "", "vertical": "crop"}
+                   "end_card": False, "recipe": "", "vertical": "crop", "morph_count": "auto"}
     assert not dense.wants_finishing({})
     assert dense.wants_finishing({"energy_preset": "dense"})
     assert dense.wants_finishing({"aspect": "9:16"})

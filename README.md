@@ -629,3 +629,9 @@ claude mcp add xenoform -- C:\path\to\xenoform\.venv\Scripts\python.exe -m xenof
 ```
 
 The server stays local, never returns secrets, and never spends money unless you pass `confirm_spend=true`. Copy-paste configs are in [docs/mcp.md](docs/mcp.md).
+
+### Forms (morph count)
+
+Forms control: **Auto** (default) picks the count from clip length and BPM: one form per half bar on Dense, one per two bars (at least 4 s) on Flow. Or set a number with the slider (1-40) or the number box (up to 120); cuts snap to beats, the drop is always a cut, and forms come twice as fast after it. The desk shows an estimated render time and peak VRAM next to it. Recipe codes carry it (
+) and the MCP `update_settings(morph_count=...)` sets it.
+
