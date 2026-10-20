@@ -24,10 +24,11 @@ PROMPT = ("a smooth biomechanical morph, iridescent chrome surface flowing into 
           "studio lighting, black background, cinematic")
 
 
-def smoke_graph(seconds: float) -> dict:
+def smoke_graph(seconds: float, vertical: bool = False) -> dict:
     fps = int(getattr(ft, "FPS", 24))
     length = int(round(seconds * fps / 8)) * 8 + 1
-    return ft.graph(PROMPT, length=length, seed=4242, upscale=False, prefix="xenoform/cloud_smoke")
+    return ft.graph(PROMPT, length=length, seed=4242, upscale=False, prefix="xenoform/cloud_smoke",
+                    **(dict(width=448, height=768, out_w=720, out_h=1280) if vertical else {}))
 
 
 def combo_options(spec) -> list | None:
@@ -67,12 +68,13 @@ def main() -> int:
     ap.add_argument("--yes", action="store_true", help="confirm ONE paid Cloud job")
     ap.add_argument("--a", type=Path)
     ap.add_argument("--b", type=Path)
+    ap.add_argument("--vertical", action="store_true", help="native 9:16 448x768 -> 720x1280")
     ap.add_argument("--seconds", type=float, default=5.0)
     ap.add_argument("--out", type=Path, default=ROOT / "work" / "cloud_smoke")
     a = ap.parse_args()
 
     b = cb.CloudBackend()
-    g = b.prepare(smoke_graph(a.seconds), open_weights=True)  # guard + model map, local only
+    g = b.prepare(smoke_graph(a.seconds, a.vertical), open_weights=True)  # guard + model map, local only
     print(f"graph OK: {len(g)} nodes, no partner/upscale nodes; models: "
           f"{sorted({v for n in g.values() for k, v in n['inputs'].items() if k in cb.MODEL_FIELDS})}")
     if not (a.preflight or a.run):
