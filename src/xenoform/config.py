@@ -70,6 +70,7 @@ DEFAULTS: dict[str, Any] = {
     },
     "comfy": {
         "mode": "dry-run",
+        "backend": "local",  # local | cloud (comfy.cloud_url, cloud_parallel<=3; key in COMFY_ORG_API_KEY)
         "base_url": "http://127.0.0.1:8188",
         "proxy_url": "http://127.0.0.1:8189",
         "send_api_key": False,

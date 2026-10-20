@@ -1,0 +1,17 @@
+{
+  "_note": "Local filename -> Comfy Cloud library filename. Identity entries are names Cloud's catalog lists with the same HF filename; scripts/cloud_smoke.py --preflight checks every one against /api/object_info (free, no GPU) and prints any that need fixing.",
+  "map": {
+    "ltx-2.3-22b-distilled-fp8.safetensors": "ltx-2.3-22b-distilled-fp8.safetensors",
+    "ltx-2.3-22b-distilled.safetensors": "ltx-2.3-22b-distilled-fp8.safetensors",
+    "ltx-2.3-spatial-upscaler-x2-1.1.safetensors": "ltx-2.3-spatial-upscaler-x2-1.1.safetensors",
+    "gemma_3_12B_it_fp4_mixed.safetensors": "gemma_3_12B_it_fp4_mixed.safetensors",
+    "wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors": "wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors",
+    "wan2.2_i2v_low_noise_14B_fp8_scaled.safetensors": "wan2.2_i2v_low_noise_14B_fp8_scaled.safetensors",
+    "wan_animate_2_int8_convrot.safetensors": "wan_animate_2_int8_convrot.safetensors",
+    "wan_2.1_vae.safetensors": "wan_2.1_vae.safetensors",
+    "wan2.2_vae.safetensors": "wan2.2_vae.safetensors",
+    "umt5_xxl_fp8_e4m3fn_scaled.safetensors": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+    "clip_vision_h.safetensors": "clip_vision_h.safetensors",
+    "lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors": "lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors"
+  }
+}
