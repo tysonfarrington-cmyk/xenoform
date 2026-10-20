@@ -15,7 +15,7 @@ def test_graph_is_open_weights_two_stage_with_upscale():
     kinds = {node["class_type"] for node in g.values()}
     assert PARTNER_NODE not in kinds and not any("Api" in k for k in kinds)
     assert g["1"]["inputs"]["ckpt_name"] == "ltx-2.3-22b-distilled-fp8.safetensors"
-    assert g["40"]["inputs"]["model_name"] == "4x-ClearRealityV1.safetensors"
+    assert g["40"]["inputs"]["model_name"] == "RealESRGAN_x4plus.pth"  # BSD-3 default; ClearReality is opt-in
     assert g["7"]["inputs"]["width"] == 384 and g["7"]["inputs"]["height"] == 224
     assert (g["42"]["inputs"]["width"], g["42"]["inputs"]["height"]) == (1280, 720)
     frames = [g[k]["inputs"]["frame_idx"] for k in ("110", "111", "120", "121")]

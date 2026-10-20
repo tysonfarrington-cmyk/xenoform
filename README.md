@@ -33,7 +33,8 @@ Checked against each model card or licence text on 19 October 2026. Read the ful
 | Z-Image Turbo (Tongyi-MAI / Alibaba) | The vibe stills | Apache 2.0. |
 | FLUX.2 Klein 4B (Black Forest Labs) | Optional stills and edits | Apache 2.0. The 9B and 9B Base are FLUX Non-Commercial and are not used. |
 | ACE-Step 1.5 (ACE Studio and StepFun) | Optional local music | MIT, per the model card. |
-| 4x-ClearReality V1 (Kim2091) | Final tier upscale | CC BY-NC-SA 4.0: **non-commercial**, credit required, share alike. For commercial work set `XENO_FINAL_UPSCALER` to another upscale model you have checked, or `XENO_FINAL_UPSCALE=0`. |
+| Real-ESRGAN x4plus (Xintao Wang) | Final tier upscale (default) | BSD-3-Clause: commercial use allowed, keep the copyright notice. |
+| 4x-ClearReality V1 (Kim2091) | Final tier upscale, opt-in (`XENO_FINAL_UPSCALER=4x-ClearRealityV1.safetensors`) | CC BY-NC-SA 4.0: **non-commercial**, credit required, share alike. A touch crisper on fine edges. |
 | Bundled demo track `examples/demo.wav` | The demo song | Synthesised by `xenoform synth`; part of this MIT repo. |
 | Demo video track ("Morphing Wobble") | The contest demo video only, not shipped | Made with Suno. Usage rights follow the Suno plan it was made on; to be confirmed by the author before release. |
 

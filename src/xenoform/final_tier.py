@@ -1,8 +1,8 @@
-"""Final quality tier for Simple mode: LTX-2.3 fp8 morphs plus a 4x-ClearReality upscale.
+"""Final quality tier for Simple mode: LTX-2.3 fp8 morphs plus a 4x Real-ESRGAN upscale.
 
 Draft (the default) stays LTX 0.9.5 at 512x288. Final renders each A->B morph with
 LTX-2.3 22B distilled fp8 in two stages (384x224 -> x2 latent upsample -> 768x448),
-then upscales the decoded frames with 4x-ClearReality and scales them to 1280x720.
+then upscales the decoded frames with RealESRGAN_x4plus (BSD-3) and scales them to 1280x720.
 All open weights, all local.
 
 Native vertical (9:16, the default for Final 9:16): the same two stages at 448x768
@@ -26,9 +26,11 @@ from typing import Callable
 CKPT = "ltx-2.3-22b-distilled-fp8.safetensors"
 TEXT_ENCODER = "gemma_3_12B_it_fp4_mixed.safetensors"
 LATENT_UPSCALER = "ltx-2.3-spatial-upscaler-x2-1.1.safetensors"
-# 4x-ClearReality (Kim2091) is CC BY-NC-SA 4.0: non-commercial. XENO_FINAL_UPSCALER names another
-# file in models/upscale_models (for a commercial release), or XENO_FINAL_UPSCALE=0 skips it.
-UPSCALER = os.environ.get("XENO_FINAL_UPSCALER", "").strip() or "4x-ClearRealityV1.safetensors"
+# Default: RealESRGAN_x4plus (Xintao Wang, BSD-3-Clause: commercial use fine). A/B on a native 9:16
+# demo1 shot, 20 Oct 2026: close to 4x-ClearReality (a little softer on fine edges), 10.3 GB peak.
+# XENO_FINAL_UPSCALER=4x-ClearRealityV1.safetensors opts back in to ClearReality (CC BY-NC-SA 4.0,
+# non-commercial); 4xNomos8kSC.pth (CC-BY-4.0) also works but peaked 11.8 GB. XENO_FINAL_UPSCALE=0 skips it.
+UPSCALER = os.environ.get("XENO_FINAL_UPSCALER", "").strip() or "RealESRGAN_x4plus.pth"
 FILES = (("checkpoints", CKPT), ("text_encoders", TEXT_ENCODER), ("latent_upscale_models", LATENT_UPSCALER),
          ("upscale_models", UPSCALER))
 RENDER_W, RENDER_H = 768, 448  # multiples of 64, so stage 1 (half size) is still a multiple of 32

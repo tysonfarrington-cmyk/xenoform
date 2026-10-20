@@ -229,7 +229,7 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     if opt["end_card"]:
         card = beatfx.end_card(tmp, opt["recipe"] or "(none)")
     shutil.copyfile(tmp, out_path)
-    info = {"engine": {"ltx23": "LTX-2.3 22B distilled fp8 + 4x-ClearReality (Final)", "ltx095": "LTX 0.9.5 (Draft)",
+    info = {"engine": {"ltx23": "LTX-2.3 22B distilled fp8 + 4x upscale (Final)", "ltx095": "LTX 0.9.5 (Draft)",
                        "mock": "mock cross-fades (test)"}[engine],
             "open_weights": True, "energy": opt["energy"], "aspect": opt["aspect"], "tier": opt["tier"],
             "vertical": ("native" if native else "crop") if opt["aspect"] == "9:16" else None,
