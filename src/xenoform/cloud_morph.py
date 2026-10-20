@@ -659,6 +659,11 @@ def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, cli
         wf.set_input("11", "steps", int(tune.get("steps", mp.STEPS)))
         if "cfg" in tune:
             wf.set_input("14", "cfg", float(tune["cfg"]))
+        if "img_compression" in tune:  # configs/autotune.json, per vibe (docs/AUTOTUNE.md)
+            wf.set_input("8", "img_compression", int(tune["img_compression"]))
+            wf.set_input("21", "img_compression", int(tune["img_compression"]))
+        if "guide_end_strength" in tune:
+            wf.set_input("22", "strength", float(tune["guide_end_strength"]))
         wf.set_input("13", "noise_seed", int(seed) + i)
         wf.set_input("18", "fps", float(FPS))
         mp.stop_queued(jobs, cancel)

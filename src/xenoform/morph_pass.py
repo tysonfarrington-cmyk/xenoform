@@ -104,9 +104,10 @@ def tuned(vibe: str) -> dict:
 
 
 def _drop_bad_pairs(pool: list[dict], bad: set) -> list[dict]:
-    """Reorder so no adjacent pair is on the autotune blocklist, when a reorder can do it."""
+    """Reorder so no adjacent pair is on the autotune blocklist (either order), when a reorder can do it."""
     if not bad:
         return pool
+    bad = set(bad) | {(b, a) for a, b in bad}
     out, rest = [pool[0]], list(pool[1:])
     while rest:
         nxt = next((o for o in rest if (out[-1]["file"], o["file"]) not in bad), rest[0])
