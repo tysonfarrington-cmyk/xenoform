@@ -1,5 +1,5 @@
 {
-  "_note": "Local filename -> Comfy Cloud library filename. Identity entries are names Cloud's catalog lists with the same HF filename; scripts/cloud_smoke.py --preflight checks every one against /api/object_info (free, no GPU) and prints any that need fixing.",
+  "_note": "Local filename -> Comfy Cloud library filename. All entries checked against Cloud /api/object_info on 2026-10-20 16:05 AEDT. scripts/cloud_smoke.py --preflight re-checks them (free, no GPU).",
   "map": {
     "ltx-2.3-22b-distilled-fp8.safetensors": "ltx-2.3-22b-distilled-fp8.safetensors",
     "ltx-2.3-22b-distilled.safetensors": "ltx-2.3-22b-distilled-fp8.safetensors",
@@ -12,6 +12,18 @@
     "wan2.2_vae.safetensors": "wan2.2_vae.safetensors",
     "umt5_xxl_fp8_e4m3fn_scaled.safetensors": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
     "clip_vision_h.safetensors": "clip_vision_h.safetensors",
-    "lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors": "lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors"
-  }
+    "lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors": "lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors",
+    "ltx-2.5-22b-distilled-transformer-comfy-int8-convrot.safetensors": "ltx-2.5-22b-distilled-transformer-comfy-int8-convrot.safetensors",
+    "ltx-2.5-audio-vae-bf16.safetensors": "ltx-2.5-audio-vae-bf16.safetensors",
+    "ltx-2.5-video-vae-bf16.safetensors": "ltx-2.5-video-vae-bf16.safetensors",
+    "gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors": "gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors"
+  },
+  "needs_import": {
+    "ltx-2.5-22b-ic-lora-layout-to-render-1.0.safetensors": {
+      "source": "https://huggingface.co/Lightricks/LTX-2.5 (gated; access granted to HF user Tysito)",
+      "how": "Creator: Model Library > Import > paste the HF file link; add the HF token under Cloud Settings > Secrets first (gated repo). Then add an identity entry to map.",
+      "status": "not in Cloud library as of 2026-10-20"
+    }
+  },
+  "_ltx25_note": "LTX-2.5 base weights (transformer int8/bf16/nvfp4, video/audio VAE, gemma4 encoder, latent spatial/temporal upscalers) are already in the Cloud library, so no import is needed. Only the layout IC-LoRA has to be imported from Lightricks/LTX-2.5."
 }

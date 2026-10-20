@@ -170,3 +170,14 @@ def test_timeout(tmp_path, key):
 def test_model_map_file_loads():
     m = cb.load_model_map()
     assert "ltx-2.3-22b-distilled-fp8.safetensors" in m
+
+
+def test_smoke_combo_options_both_styles():
+    import importlib.util, pathlib
+    p = pathlib.Path(__file__).resolve().parents[1] / "scripts" / "cloud_smoke.py"
+    spec = importlib.util.spec_from_file_location("cloud_smoke", p)
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    assert m.combo_options([["a.safetensors"], {}]) == ["a.safetensors"]
+    assert m.combo_options(["COMBO", {"options": ["b.safetensors"]}]) == ["b.safetensors"]
+    assert m.combo_options(["INT", {"default": 1}]) is None

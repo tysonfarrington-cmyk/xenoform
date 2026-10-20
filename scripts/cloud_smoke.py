@@ -30,6 +30,17 @@ def smoke_graph(seconds: float) -> dict:
     return ft.graph(PROMPT, length=length, seed=4242, upscale=False, prefix="xenoform/cloud_smoke")
 
 
+def combo_options(spec) -> list | None:
+    """Option list for both object_info styles: [[...], {..}] and ["COMBO", {"options": [...]}]."""
+    if not isinstance(spec, list) or not spec:
+        return None
+    if isinstance(spec[0], list):
+        return spec[0]
+    if len(spec) > 1 and isinstance(spec[1], dict) and isinstance(spec[1].get("options"), list):
+        return spec[1]["options"]
+    return None
+
+
 def preflight(b: cb.CloudBackend, g: dict) -> list[str]:
     info = b.object_info()
     issues = []
@@ -42,9 +53,7 @@ def preflight(b: cb.CloudBackend, g: dict) -> list[str]:
         req = {**(spec.get("input", {}).get("required") or {}), **(spec.get("input", {}).get("optional") or {})}
         for k, v in node["inputs"].items():
             if k in cb.MODEL_FIELDS and isinstance(v, str) and k in req:
-                opts = req[k][0] if isinstance(req[k], list) and req[k] else None
-                if isinstance(opts, dict):
-                    opts = opts.get("options")
+                opts = combo_options(req[k])
                 if isinstance(opts, list) and v not in opts:
                     near = [o for o in opts if isinstance(o, str) and v.split(".")[0][:10] in o][:5]
                     issues.append(f"node {nid} {ct}.{k}: '{v}' not in Cloud library; close: {near}")
