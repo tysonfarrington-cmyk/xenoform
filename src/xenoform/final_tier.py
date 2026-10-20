@@ -97,7 +97,8 @@ def gen_length(seconds: float) -> int:
 
 
 def graph(prompt: str, *, length: int, seed: int, upscale: bool = True, prefix: str = "xenoform/final",
-          width: int = RENDER_W, height: int = RENDER_H, out_w: int = OUT_W, out_h: int = OUT_H) -> dict:
+          width: int = RENDER_W, height: int = RENDER_H, out_w: int = OUT_W, out_h: int = OUT_H,
+          img_compression: int = 18, end_strength: float = 1.0) -> dict:
     """ComfyUI API graph for one LTX-2.3 first/last-frame morph. Images go in nodes 100 and 101."""
     if width % 64 or height % 64:
         raise ValueError(f"LTX-2.3 two-stage needs multiples of 64 (stage 1 is half size, a multiple of 32); got {width}x{height}.")
@@ -117,13 +118,13 @@ def graph(prompt: str, *, length: int, seed: int, upscale: bool = True, prefix: 
     n(7, "EmptyLTXVLatentVideo", width=width // 2, height=height // 2, length=length, batch_size=1)
     n(100, "LoadImage", image="a.png")
     n(101, "LoadImage", image="b.png")
-    n(102, "LTXVPreprocess", image=["100", 0], img_compression=18)
-    n(103, "LTXVPreprocess", image=["101", 0], img_compression=18)
+    n(102, "LTXVPreprocess", image=["100", 0], img_compression=int(img_compression))
+    n(103, "LTXVPreprocess", image=["101", 0], img_compression=int(img_compression))
 
     def guides(base: int, pos, neg, lat):
         n(base, "LTXVAddGuide", positive=pos, negative=neg, vae=["1", 2], latent=lat, image=["102", 0], frame_idx=0, strength=1.0)
         n(base + 1, "LTXVAddGuide", positive=[str(base), 0], negative=[str(base), 1], vae=["1", 2], latent=[str(base), 2],
-          image=["103", 0], frame_idx=-1, strength=1.0)
+          image=["103", 0], frame_idx=-1, strength=float(end_strength))
         return [str(base + 1), 0], [str(base + 1), 1], [str(base + 1), 2]
 
     p1, n1, l1 = guides(110, ["6", 0], ["6", 1], ["7", 0])
@@ -158,6 +159,22 @@ def graph(prompt: str, *, length: int, seed: int, upscale: bool = True, prefix: 
     return g
 
 
+def tuned(vibe: str) -> dict:
+    """The per-vibe autotune knobs that carry over to LTX-2.3 Final (its distilled sigmas fix steps and cfg)."""
+    try:
+        from xenoform.morph_pass import autotune
+
+        v = (autotune().get("vibes") or {}).get(vibe) or {}
+    except Exception:  # noqa: BLE001 - no autotune file: the defaults
+        v = {}
+    out = {}
+    if "img_compression" in v:
+        out["img_compression"] = max(0, min(50, int(v["img_compression"])))
+    if "guide_end_strength" in v:
+        out["end_strength"] = max(0.0, min(1.0, float(v["guide_end_strength"])))
+    return out
+
+
 def is_oom(exc: BaseException) -> bool:
     text = str(exc).lower()
     return any(word in text for word in OOM_WORDS)
@@ -186,6 +203,7 @@ def final_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
 
         stills = portrait_stills(stills, Path(work))
         prompt = prompt.rstrip() + PROMPT_SUFFIX
+    tune = tuned(vibe)
     assets: dict = {}
     upscale = os.environ.get("XENO_FINAL_UPSCALE", "1").strip() not in {"0", "false", "off"}
 
@@ -198,7 +216,7 @@ def final_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
         wf = client.workflows.from_json(graph(prompt, length=gen_length(float(shot.get("render_s") or shot["seconds"])),
                                               seed=int(seed) + i, upscale=with_upscale,
                                               width=size["render"][0], height=size["render"][1],
-                                              out_w=size["out"][0], out_h=size["out"][1]))
+                                              out_w=size["out"][0], out_h=size["out"][1], **tune))
         wf.set_input("100", "image", asset(stills[i]["path"]))
         wf.set_input("101", "image", asset(stills[i + 1]["path"]))
         job = client.submit(wf)

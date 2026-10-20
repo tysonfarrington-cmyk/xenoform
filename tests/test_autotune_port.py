@@ -70,3 +70,15 @@ def test_simple_path_applies_compression_and_end_strength(monkeypatch, tmp_path)
     assert got[("11", "steps")] == 12 and got[("14", "cfg")] == 4.0
     assert got[("8", "img_compression")] == 0 and got[("21", "img_compression")] == 0
     assert got[("22", "strength")] == 0.85
+
+
+def test_final_tier_uses_the_vibe_autotune():
+    from xenoform import final_tier
+    from xenoform.morph_pass import autotune
+
+    v = autotune()["vibes"]["black"]
+    t = final_tier.tuned("black")
+    assert t == {"img_compression": int(v["img_compression"]), "end_strength": float(v["guide_end_strength"])}
+    g = final_tier.graph("x", length=49, seed=1, **t)
+    assert g["102"]["inputs"]["img_compression"] == t["img_compression"]
+    assert g["111"]["inputs"]["strength"] == t["end_strength"]
