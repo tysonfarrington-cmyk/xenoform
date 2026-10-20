@@ -425,7 +425,10 @@ class App:
             "idea": p["prompt"], "brief": p["prompt"], "aspect": p["aspect"],
             "vertical_mode": p["vertical_mode"], "energy_preset": p["energy"],
             "quality_tier": "final" if p["tier"] == "final" else "draft",
-            "quality": "turbo" if p["tier"] == "preview" else p["tier"],
+            # Always "turbo", exactly like the desk's Simple Make: turbo runs the animatic and then,
+            # with live on, the morph / final tier picked by quality_tier. quality "draft" or "final"
+            # would select the legacy Advanced restyle graph instead (regression: job 2e4717fe).
+            "quality": "turbo",
             "live": live, "beat_fx": p["beat_fx"], "end_card": p["end_card"],
             "transitions": p["transitions"], "hero_id": p["hero_id"],
             "morph_count": p.get("morph_count", "auto"),
@@ -694,6 +697,16 @@ class App:
 
     def output(self, job_id: str, save_to: str = "") -> dict:
         job_id = _job_id(job_id)
+        state = self.progress(job_id)
+        status = state.get("status")
+        if status in {"error", "failed"}:
+            raise XenoformError(f"Render {job_id} failed: {state.get('error') or state.get('detail') or 'no detail'}. "
+                                "Nothing was written. Fix the cause, then start_render again.")
+        if status == "cancelled":
+            raise XenoformError(f"Render {job_id} was cancelled, so there is no video.")
+        if status != "done":
+            raise XenoformError(f"Render {job_id} is still {state.get('stage') or status} "
+                                f"({float(state.get('progress') or 0):.0%}). Call wait_for_render first.")
         url = f"/api/jobs/{job_id}/video"
         out: dict[str, Any] = {"job_id": job_id, "url": self.desk.base + url}
         local = self._local_path(job_id)

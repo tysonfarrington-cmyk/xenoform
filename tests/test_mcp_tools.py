@@ -372,3 +372,27 @@ def test_animatic_follows_aspect_only_when_not_live():
     assert turbo.animatic_size({"aspect": "16:9"}) == (384, 216)
     assert turbo.animatic_size({"aspect": "9:16", "live": True}) == (384, 216)
     assert turbo.animatic_size(None) == (384, 216)
+
+
+def test_draft_and_final_use_the_simple_turbo_path_not_legacy_restyle(app):
+    """Regression for job 2e4717fe: quality 'draft' picked the Advanced restyle graph (LTX-2.3 ckpt + T5) and ComfyUI failed 4096 vs 2048."""
+    app.create("x")
+    for tier, live, qt in (("preview", False, "draft"), ("draft", True, "draft"), ("final", True, "final")):
+        app.update(tier=tier)
+        b = app.body()
+        assert (b["quality"], b["live"], b["quality_tier"], b["aspect"], b["vertical_mode"]) == ("turbo", live, qt, "9:16", "native")
+
+
+def test_get_output_reports_the_failure(app):
+    app.create("x")
+    job = app.start()["job_id"]
+    app.desk.jobs[job].update(status="error", error="Sizes of tensors must match. Expected size 4096 but got size 2048")
+    with pytest.raises(mt.XenoformError, match="failed: Sizes of tensors"):
+        app.output(job)
+    job2 = app.start()["job_id"]
+    app.desk.jobs[job2]["progress"] = -5  # stays running on this poll
+    with pytest.raises(mt.XenoformError, match="wait_for_render"):
+        app.output(job2)
+    app.cancel(job2)
+    with pytest.raises(mt.XenoformError, match="cancelled"):
+        app.output(job2)
