@@ -1,89 +1,240 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Xenoform · Live VJ</title>
+<link rel="stylesheet" href="/static/theme.css">
 <style>
- html,body{margin:0;height:100%;background:#000;color:#dfe5f0;font:14px/1.4 Inter,system-ui,sans-serif;overflow:hidden}
- canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
- #ui{position:fixed;left:16px;bottom:16px;right:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;transition:opacity .4s}
- #ui.hide{opacity:0;pointer-events:none}
- button,select,label.btn{background:#111a;border:1px solid #9ab3ff55;color:#e8eeff;border-radius:6px;padding:7px 12px;cursor:pointer;font:inherit}
- #meters{display:flex;gap:4px;align-items:flex-end;height:28px}
- #meters i{display:block;width:8px;background:#cfe0ff;opacity:.8}
- #hint{opacity:.55;font-size:12px}
+ :root{--glass:rgba(14,14,22,.62);--line:rgba(255,255,255,.10);--txt:#ecebf5;--mut:#9a9ab0;--grad:linear-gradient(135deg,#ff5a36,#e2368f 48%,#7b84ff)}
+ html,body{margin:0;height:100%;background:#000;color:var(--txt);font:13px/1.4 "Space Grotesk",Inter,system-ui,sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased}
+ #stage{position:fixed;inset:0;display:grid;place-items:center;background:#000}
+ canvas{display:block;max-width:100vw;max-height:100vh;object-fit:contain}
+ .glass{background:var(--glass);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);border:1px solid var(--line);border-radius:16px;box-shadow:0 30px 80px -30px #000}
+ #ui{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;padding:10px 12px;max-width:calc(100vw - 32px);transition:opacity .45s cubic-bezier(.2,.7,.2,1),transform .45s cubic-bezier(.2,.7,.2,1)}
+ #ui.hide{opacity:0;transform:translate(-50%,16px);pointer-events:none}
+ #ui .brand{font-weight:700;letter-spacing:-.02em;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;padding:0 6px 0 4px}
+ button,select,label.btn{background:rgba(255,255,255,.05);border:1px solid var(--line);color:var(--txt);border-radius:999px;padding:7px 13px;cursor:pointer;font:inherit;transition:background .18s,border-color .18s,transform .12s}
+ button:hover,label.btn:hover,select:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2)}
+ button:active{transform:scale(.97)} button.on{background:#f4f3fb;color:#0a0a10;border-color:transparent}
+ button.rec.on{background:#ff3b3b;color:#fff;box-shadow:0 0 24px #ff3b3b88}
+ select option{background:#111}
+ .sep{width:1px;height:22px;background:var(--line)}
+ #hud{position:fixed;top:16px;left:16px;padding:12px 14px;min-width:230px;font:12px/1.5 "Share Tech Mono",ui-monospace,monospace;color:#cfd2ff;transition:opacity .3s}
+ #hud.hide{opacity:0;pointer-events:none}
+ #hud .row{display:flex;justify-content:space-between;gap:16px} #hud b{color:#fff;font-weight:400}
+ #bars{display:flex;gap:5px;margin:8px 0 4px} #bars i{flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,.12);transition:background .08s}
+ #bars i.on{background:#fff;box-shadow:0 0 10px #fff}
+ #meters{display:flex;gap:4px;align-items:flex-end;height:30px;margin-top:6px} #meters i{flex:1;border-radius:2px;background:var(--grad);opacity:.9}
+ #help{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.55)} #help.show{display:grid}
+ #help .glass{padding:22px 26px;max-width:560px} #help h2{margin:0 0 10px;font-size:20px;letter-spacing:-.02em}
+ #help table{border-collapse:collapse;width:100%} #help td{padding:4px 8px;border-bottom:1px solid var(--line)} #help td:first-child{font-family:"Share Tech Mono",monospace;color:#fff;white-space:nowrap}
+ #toast{position:fixed;top:18px;left:50%;transform:translateX(-50%);padding:8px 16px;opacity:0;transition:opacity .3s;pointer-events:none;font-weight:500}
+ #toast.show{opacity:1}
+ body.clean #ui,body.clean #hud,body.clean #toast{display:none!important}
 </style></head><body>
-<canvas id="c"></canvas>
-<div id="ui">
- <button id="mic">Start mic / line-in</button>
+<div id="stage"><canvas id="c"></canvas></div>
+<div id="hud" class="glass hide">
+ <div class="row"><span>FPS</span><b id="h-fps">0</b></div>
+ <div class="row"><span>BPM</span><b id="h-bpm">-</b></div>
+ <div class="row"><span>BEAT</span><b id="h-beat">0</b></div>
+ <div id="bars"><i></i><i></i><i></i><i></i></div>
+ <div class="row"><span>SCENE</span><b id="h-scene">-</b></div>
+ <div class="row"><span>TRANSITION</span><b id="h-fx">-</b></div>
+ <div class="row"><span>SWITCH</span><b id="h-every">-</b></div>
+ <div class="row"><span>INTENSITY</span><b id="h-int">-</b></div>
+ <div class="row"><span>MIDI</span><b id="h-midi">off</b></div>
+ <div id="meters"><i id="mb"></i><i id="mm"></i><i id="mh"></i></div>
+</div>
+<div id="ui" class="glass">
+ <span class="brand">Xenoform VJ</span>
+ <label class="btn">Load track<input id="track" type="file" accept="audio/*" hidden></label>
+ <button id="mic">Mic / line-in</button>
  <select id="input" title="Audio input"></select>
  <label class="btn">Add loops<input id="files" type="file" accept="video/*" multiple hidden></label>
+ <span class="sep"></span>
  <select id="fx" title="Transition on the beat">
-  <option value="0">scene morph (liquid)</option><option value="1">luma wipe</option>
-  <option value="2">chroma split</option><option value="3">zoom-through</option><option value="4">hard cut + stutter</option>
+  <option value="auto">Auto transitions</option>
+  <option value="0">1 · Liquid morph</option><option value="1">2 · Luma wipe</option><option value="2">3 · Chroma split</option>
+  <option value="3">4 · Zoom-through</option><option value="4">5 · Hard cut + stutter</option><option value="5">6 · Iris bloom</option>
+  <option value="6">7 · Slice glitch</option><option value="7">8 · Prism dissolve</option>
  </select>
- <button id="fs">Fullscreen</button>
- <div id="meters"><i id="mb"></i><i id="mm"></i><i id="mh"></i></div>
- <span id="hint">space = next · 1-5 = transition · F = fullscreen · H = hide · drops switch loops</span>
+ <select id="every" title="Switch scene every"><option value="0">Follow the song</option><option value="1">Every beat</option><option value="2">Every 2 beats</option><option value="4">Every bar</option><option value="8">Every 2 bars</option></select>
+ <button id="kal" title="K">Kaleido</button><button id="mir" title="M">Mirror</button><button id="stb" title="S">Strobe</button>
+ <span class="sep"></span>
+ <button id="hudb" title="P">HUD</button><button id="recb" class="rec" title="R">● Rec</button><button id="fs" title="F">Fullscreen</button><button id="helpb" title="?">?</button>
 </div>
+<div id="help"><div class="glass"><h2>Controls</h2><table>
+ <tr><td>Space / →</td><td>Next scene with the current transition</td></tr>
+ <tr><td>←</td><td>Previous scene (hard cut)</td></tr>
+ <tr><td>1–8 · 0</td><td>Pick a transition · 0 = auto</td></tr>
+ <tr><td>[ ]</td><td>Switch slower / faster (follow, 1, 2, 4, 8 beats)</td></tr>
+ <tr><td>↑ ↓</td><td>Effect intensity</td></tr>
+ <tr><td>K · M · S</td><td>Kaleido · Mirror · Strobe</td></tr>
+ <tr><td>T</td><td>Tap tempo (mic mode)</td></tr>
+ <tr><td>P · H · F</td><td>HUD · Hide controls · Fullscreen</td></tr>
+ <tr><td>R</td><td>Record a clean clip (webm, with audio)</td></tr>
+ <tr><td>MIDI</td><td>Notes 36–43 = transitions 1–8 + next · CC1 intensity · CC2 switch rate</td></tr>
+</table></div></div>
+<div id="toast" class="glass"></div>
 <script>
-// Xenoform live VJ: pre-rendered morph loops + audio-reactive WebGL effects. No server work, no GPU render.
-// Bass -> displacement + scale, highs/transients -> chroma split, beats (energy flux) -> switch loop with the chosen transition.
-const $ = id => document.getElementById(id);
-const cv = $('c'), gl = cv.getContext('webgl', {premultipliedAlpha:false});
-const VS = `attribute vec2 p;varying vec2 uv;void main(){uv=p*.5+.5;uv.y=1.-uv.y;gl_Position=vec4(p,0,1);}`;
-const FS = `precision mediump float;varying vec2 uv;uniform sampler2D A,B;uniform float t,mixv,bass,high,fx,aspA,aspB,aspS;
-vec2 fit(vec2 u,float a){float r=a/aspS;vec2 c=u-.5;if(r>1.)c.y*=r;else c.x/=r;return c+.5;}
-vec4 tex(sampler2D s,vec2 u,float a){vec2 q=fit(u,a);if(q.x<0.||q.x>1.||q.y<0.||q.y>1.)return vec4(0,0,0,1);return texture2D(s,q);}
-void main(){vec2 u=uv-.5;u/=1.+.04*bass*bass;u+=.5;
- float w=sin(uv.y*18.+t*3.)*cos(uv.x*7.-t*2.)*.012*bass;float m=mixv;
- vec2 ua=u,ub=u;
- if(fx<.5){float k=sin(3.1416*m);ua+=vec2(w+k*.03*sin(uv.y*22.+t*6.),k*.02*cos(uv.x*15.));ub-=vec2(w+k*.03*sin(uv.y*22.+t*6.),k*.02*cos(uv.x*15.));}
- else if(fx<3.5&&fx>2.5){ua=(ua-.5)/(1.+2.*m*m)+.5;ub=(ub-.5)/(1.+.4*(1.-m))+.5;}
- else{ua.x+=w;ub.x+=w;}
- float cs=(.002+.012*high)+(fx>1.5&&fx<2.5?.04*sin(3.1416*m):0.);
- vec4 a=vec4(tex(A,ua+vec2(cs,0),aspA).r,tex(A,ua,aspA).g,tex(A,ua-vec2(cs,0),aspA).b,1);
- vec4 b=vec4(tex(B,ub+vec2(cs,0),aspB).r,tex(B,ub,aspB).g,tex(B,ub-vec2(cs,0),aspB).b,1);
- float mm=m;if(fx>.5&&fx<1.5){float L=dot(a.rgb,vec3(.299,.587,.114));mm=clamp((m*1.1-L)/.1,0.,1.);}
- if(fx>3.5)mm=step(.5,m);
- gl_FragColor=mix(a,b,mm);}`;
-function sh(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);return s}
+// Xenoform live VJ v4: pre-rendered loops + beat-locked WebGL transitions. No server work, no GPU render.
+// Track mode: the song is analysed once in the browser (onset envelope + tempo + phase) so every switch lands on the grid.
+// Mic mode: AnalyserNode (createAnalyser) energy flux beats, or tap tempo.
+const $=id=>document.getElementById(id), Q=new URLSearchParams(location.search);
+const cv=$('c'), gl=cv.getContext('webgl',{premultipliedAlpha:false,preserveDrawingBuffer:false,antialias:false});
+let seed=+(Q.get('seed')||7); const rnd=()=>{seed=(seed*16807)%2147483647;return (seed-1)/2147483646};
+const FXN=['Liquid morph','Luma wipe','Chroma split','Zoom-through','Hard cut + stutter','Iris bloom','Slice glitch','Prism dissolve'];
+const VS=`attribute vec2 p;varying vec2 uv;void main(){uv=p*.5+.5;uv.y=1.-uv.y;gl_Position=vec4(p,0,1);}`;
+const FS=`precision highp float;varying vec2 uv;uniform sampler2D A,B;
+uniform float t,m,bass,high,fx,aspA,aspB,aspS,beat,kal,mir,stb,inten;
+float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+vec2 cover(vec2 u,float a){vec2 c=u-.5;if(a>aspS)c.x*=aspS/a;else c.y*=a/aspS;u=c+.5;return 1.-abs(1.-mod(u,2.));}
+vec3 tx(sampler2D s,vec2 u,float a){return texture2D(s,cover(u,a)).rgb;}
+vec3 rgb(sampler2D s,vec2 u,float a,float cs){return vec3(tx(s,u+vec2(cs,0.),a).r,tx(s,u,a).g,tx(s,u-vec2(cs,0.),a).b);}
+void main(){vec2 p=uv;
+ if(kal>.5){vec2 c=p-.5;c.x*=aspS;float r=length(c),an=atan(c.y,c.x),sg=6.28318/6.;an=mod(an+t*.04,sg);an=abs(an-sg*.5);c=r*vec2(cos(an),sin(an));c.x/=aspS;p=c+.5;}
+ if(mir>.5){p.x=p.x<.5?p.x:1.-p.x;}
+ float z=1.+.045*inten*beat+.025*bass*inten;vec2 u=(p-.5)/z+.5;
+ u.x+=sin(p.y*14.+t*2.)*cos(p.x*9.-t*1.6)*.005*bass*inten;
+ float k=sin(3.14159*m),mm=smoothstep(0.,1.,m),cs=.0012+.005*high*inten,edge=0.;vec2 ua=u,ub=u;int f=int(fx+.5);
+ if(f==0){vec2 d=vec2(sin(u.y*18.+t*5.),cos(u.x*14.-t*4.))*.04*k;ua+=d;ub-=d;}
+ else if(f==2){cs+=.045*k;mm=smoothstep(.25,.75,m);}
+ else if(f==3){ua=(u-.5)/(1.+3.5*m*m)+.5;ub=(u-.5)*(1.+1.2*(1.-m))+.5;mm=smoothstep(.35,.7,m);}
+ else if(f==4){mm=step(.5,m);float j=step(.5,hash(vec2(floor(t*24.),3.)))*k;ua.y+=.03*j;ub.y-=.03*j;cs+=.01*j;}
+ else if(f==5){vec2 c=uv-.5;c.x*=aspS;float r=length(c),R=m*1.15;mm=1.-smoothstep(R-.04,R,r);edge=smoothstep(.035,0.,abs(r-R))*k;}
+ else if(f==6){float row=floor(uv.y*28.),h=hash(vec2(row,floor(t*18.)));ua.x+=(h-.5)*.22*k;ub.x-=(h-.5)*.22*k;mm=step(h*.9+.05,m);cs+=.012*k;}
+ else if(f==7){float n=hash(floor(uv*vec2(aspS,1.)*90.));mm=smoothstep(n-.15,n+.15,m*1.3-.15);cs+=.025*k;}
+ vec3 a=rgb(A,ua,aspA,cs),b=rgb(B,ub,aspB,cs);
+ if(f==1){float L=dot(a,vec3(.299,.587,.114));mm=smoothstep(L-.08,L+.08,m*1.16-.08);}
+ vec3 col=mix(a,b,mm)+vec3(.85,.88,1.)*edge*.7;
+ col+=stb*beat*beat*.22;
+ vec2 vc=uv-.5;col*=1.-.55*dot(vc,vc);col+=(hash(uv*vec2(1999.,1777.)+fract(t))-.5)*.022;
+ gl_FragColor=vec4(col,1.);}`;
+function sh(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))console.error(gl.getShaderInfoLog(s));return s}
 const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,VS));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,FS));gl.linkProgram(pr);gl.useProgram(pr);
 gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
 const loc=gl.getAttribLocation(pr,'p');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
-const U=n=>gl.getUniformLocation(pr,n);
+const UL={};const U=n=>UL[n]||(UL[n]=gl.getUniformLocation(pr,n));
 function mkTex(unit){const t=gl.createTexture();gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,t);
- [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T].forEach(k=>gl.texParameteri(gl.TEXTURE_2D,k,gl.CLAMP_TO_EDGE));gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);return t}
-const texA=mkTex(0),texB=mkTex(1);gl.uniform1i(U('A'),0);gl.uniform1i(U('B'),1);
+ [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T].forEach(k=>gl.texParameteri(gl.TEXTURE_2D,k,gl.CLAMP_TO_EDGE));gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);return t}
+mkTex(0);mkTex(1);gl.uniform1i(U('A'),0);gl.uniform1i(U('B'),1);
 
-// loops: library clips from the desk, or the user's own files
-let loops=[],cur=0,nxt=1,mixv=0,trans=false,transStart=0,TRANS_MS=900;
-function vid(src){const v=document.createElement('video');v.src=src;v.loop=true;v.muted=true;v.playsInline=true;v.crossOrigin='anonymous';v.play().catch(()=>{});return v}
-async function loadLibrary(){try{const r=await fetch('/api/footage?kind=video');const j=await r.json();(j.items||[]).forEach(it=>it.url&&loops.push(vid(it.url)))}catch(e){}
- if(!loops.length)['/static/library/loop_a.mp4','/static/library/loop_b.mp4'].forEach(s=>loops.push(vid(s)))}
-$('files').onchange=e=>{[...e.target.files].forEach(f=>loops.push(vid(URL.createObjectURL(f))))};
-function next(){if(loops.length<2||trans)return;nxt=(cur+1+Math.floor(Math.random()*(loops.length-1)))%loops.length;trans=true;transStart=performance.now()}
+// output size: fixed buffer (?w=&h=) for clean recordings, else the window
+const FIXW=+Q.get('w')||0,FIXH=+Q.get('h')||0;
+function size(){const W=FIXW||Math.round(innerWidth*devicePixelRatio),H=FIXH||Math.round(innerHeight*devicePixelRatio);
+ if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;gl.viewport(0,0,W,H)}
+ const s=Math.min(innerWidth/W,innerHeight/H);cv.style.width=W*s+'px';cv.style.height=H*s+'px'}
 
-// audio: mic or line-in via getUserMedia, analysed with WebAudio
-let an=null,buf=null,prevE=0,avgFlux=0,lastBeat=0,bassS=0,highS=0;
-async function listInputs(){const d=await navigator.mediaDevices.enumerateDevices();$('input').innerHTML=d.filter(x=>x.kind==='audioinput').map(x=>`<option value="${x.deviceId}">${x.label||'input'}</option>`).join('')}
-$('mic').onclick=async()=>{const id=$('input').value;const st=await navigator.mediaDevices.getUserMedia({audio:{deviceId:id?{exact:id}:undefined,echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
- const ac=new AudioContext();an=ac.createAnalyser();an.fftSize=2048;an.smoothingTimeConstant=.55;ac.createMediaStreamSource(st).connect(an);buf=new Uint8Array(an.frequencyBinCount);$('mic').textContent='Listening';listInputs()};
-function bands(){if(!an)return{b:0,m:0,h:0,flux:0};an.getByteFrequencyData(buf);const hz=an.context.sampleRate/an.fftSize;
+// scenes: library vibe loops, the desk footage library, or your own files
+const S={scenes:[],cur:0,nxt:1,trans:false,t0:0,dur:900,fx:Q.get('fx')||'auto',curFx:0,every:+(Q.get('every')||0),kal:+(Q.get('kal')||0),mir:+(Q.get('mir')||0),stb:+(Q.get('strobe')||0),inten:+(Q.get('intensity')||1),hud:false,beats:0,bpm:0};
+function vid(src,name){const v=document.createElement('video');v.src=src;v.loop=true;v.muted=true;v.playsInline=true;v.preload='auto';v.crossOrigin='anonymous';
+ const sc={v,name};v.addEventListener('error',()=>{S.scenes=S.scenes.filter(x=>x!==sc)});return sc}
+const DEF_VIBES=['neon-night','ferrofluid','chrome-mercury','lava-obsidian','cosmic','black','origami-noir','ice-crystal','porcelain-marble','y2k-chrome'];
+async function loadLibrary(){
+ const vibes=(Q.get('vibes')||DEF_VIBES.join(',')).split(',').filter(Boolean),shots=(Q.get('shots')||'wide,reveal,close,medium').split(',');
+ vibes.forEach(vb=>shots.forEach(sh=>S.scenes.push(vid(`/static/library/${vb}/${sh}.mp4`,`${vb} · ${sh}`))));
+ if(Q.get('footage')!=='0'){try{const r=await fetch('/api/footage?kind=video');const j=await r.json();(j.items||[]).filter(i=>i.url&&i.available!==false).slice(0,+(Q.get('footageMax')||8)).forEach(it=>S.scenes.push(vid(it.url,it.title||it.id||'footage')))}catch(e){}}
+ // shuffle with the seed so a run is repeatable
+ for(let i=S.scenes.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[S.scenes[i],S.scenes[j]]=[S.scenes[j],S.scenes[i]]}
+ if(S.scenes[0])S.scenes[0].v.play().catch(()=>{});}
+$('files').onchange=e=>{[...e.target.files].forEach(f=>S.scenes.push(vid(URL.createObjectURL(f),f.name)));toast(`${e.target.files.length} loop(s) added`)};
+function pickFx(){if(S.fx!=='auto')return +S.fx;let f;do{f=Math.floor(rnd()*8)}while(f===S.curFx&&rnd()<.85);return f}
+function next(fxOverride){const n=S.scenes.length;if(n<2||S.trans)return;
+ S.nxt=(S.cur+1)%n;const nv=S.scenes[S.nxt].v;nv.currentTime=0;nv.play().catch(()=>{});
+ S.curFx=fxOverride!=null?fxOverride:pickFx();const beatMs=S.bpm?60000/S.bpm:500;
+ S.dur=S.curFx===4?Math.min(260,beatMs*.5):Math.max(380,Math.min(1300,beatMs*(S.curFx===5||S.curFx===3?1:1.5)));
+ S.trans=true;S.t0=performance.now()}
+function prev(){const n=S.scenes.length;if(n<2)return;S.scenes[S.cur].v.pause();S.cur=(S.cur-1+n)%n;S.scenes[S.cur].v.play().catch(()=>{});S.trans=false}
+
+// audio graph
+let AC=null,an=null,buf=null,recDest=null,trackEl=null,grid=null;
+function ensureAC(){if(!AC){AC=new AudioContext();an=AC.createAnalyser();an.fftSize=2048;an.smoothingTimeConstant=.5;buf=new Uint8Array(an.frequencyBinCount);recDest=AC.createMediaStreamDestination()}return AC}
+async function listInputs(){const d=await navigator.mediaDevices.enumerateDevices();$('input').innerHTML=d.filter(x=>x.kind==='audioinput').map(x=>`<option value="${x.deviceId}">${x.label||'Audio input'}</option>`).join('')}
+$('mic').onclick=async()=>{ensureAC();const id=$('input').value;const st=await navigator.mediaDevices.getUserMedia({audio:{deviceId:id?{exact:id}:undefined,echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+ AC.createMediaStreamSource(st).connect(an);grid=null;$('mic').classList.add('on');$('mic').textContent='Listening';toast('Mic live, beats from energy flux. T = tap tempo');listInputs()};
+async function analyse(arrayBuf){ // onset envelope (low band) -> tempo (autocorrelation 80-170 BPM) -> phase
+ const ab=await ensureAC().decodeAudioData(arrayBuf.slice(0));const sr=ab.sampleRate,ch=ab.getChannelData(0),hop=512,n=Math.floor(ch.length/hop);
+ const off=new OfflineAudioContext(1,ab.length,sr),src=off.createBufferSource();src.buffer=ab;const lp=off.createBiquadFilter();lp.type='lowpass';lp.frequency.value=160;src.connect(lp);lp.connect(off.destination);src.start();
+ const low=(await off.startRendering()).getChannelData(0);const env=new Float32Array(n);let prevE=0;
+ for(let i=0;i<n;i++){let e=0,el=0;for(let k=i*hop;k<(i+1)*hop;k++){e+=ch[k]*ch[k];el+=low[k]*low[k]}e=Math.sqrt(e/hop)+2*Math.sqrt(el/hop);env[i]=Math.max(0,e-prevE);prevE=e}
+ const fps=sr/hop;let best=0,bestL=0;for(let L=Math.round(fps*60/170);L<=Math.round(fps*60/80);L++){let s=0;for(let i=L;i<n;i++)s+=env[i]*env[i-L];if(s>best){best=s;bestL=L}}
+ // refine to fractional period
+ let period=bestL/fps,bpm=60/period;bpm=Math.round(bpm*10)/10;period=60/bpm;
+ let bestP=0,bestS=-1;for(let ph=0;ph<period;ph+=1/fps){let s=0;for(let tt=ph;tt<ab.duration;tt+=period)s+=env[Math.round(tt*fps)]||0;if(s>bestS){bestS=s;bestP=ph}}
+ // energy per beat (for "follow the song" switching) and downbeat phase (bar = 4 beats with the most low-end hits)
+ const nb=Math.floor((ab.duration-bestP)/period),en=new Float32Array(nb);for(let b=0;b<nb;b++){let s=0;const a=Math.round((bestP+b*period)*fps),z=Math.round((bestP+(b+1)*period)*fps);for(let i=a;i<z&&i<n;i++){let e=0;for(let k=i*hop;k<(i+1)*hop;k+=4)e+=Math.abs(low[k]);s+=e}en[b]=s/Math.max(1,z-a)}
+ let dsum=[0,0,0,0];for(let b=0;b<nb;b++)dsum[b%4]+=en[b];const down=dsum.indexOf(Math.max(...dsum));
+ const sorted=[...en].sort((x,y)=>x-y),med=sorted[Math.floor(nb/2)]||1,hi=sorted[Math.floor(nb*.8)]||1;
+ return {bpm,period,phase:bestP,down,en,med,hi,duration:ab.duration}}
+async function loadTrack(file){trackEl&&trackEl.pause();const url=URL.createObjectURL(file);ensureAC();
+ toast('Analysing the track…');grid=await analyse(await file.arrayBuffer());S.bpm=grid.bpm;
+ trackEl=new Audio(url);trackEl.crossOrigin='anonymous';const src=AC.createMediaElementSource(trackEl);src.connect(an);an.connect(AC.destination);src.connect(recDest);
+ trackEl.onplay=()=>AC.resume();toast(`Locked to ${grid.bpm} BPM. Space to play`);return grid}
+$('track').onchange=async e=>{const f=e.target.files[0];if(f){await loadTrack(f);trackEl.play()}};
+function bands(){if(!an)return{b:0,m:0,h:0,flux:0};an.getByteFrequencyData(buf);const hz=AC.sampleRate/an.fftSize;
  const avg=(a,b)=>{let s=0,n=0;for(let i=Math.floor(a/hz);i<Math.min(buf.length,b/hz);i++){s+=buf[i];n++}return n?s/n/255:0};
- const b=avg(30,150),m=avg(150,2000),h=avg(4000,12000);const e=b*2+m+h;const flux=Math.max(0,e-prevE);prevE=e;return{b,m,h,flux}}
+ const b=avg(30,150),m=avg(150,2000),h=avg(4000,12000);const e=b*2+m+h;const flux=Math.max(0,e-bands.p);bands.p=e;return{b,m,h,flux}}bands.p=0;
+let taps=[];function tap(){const now=performance.now();taps=taps.filter(x=>now-x<3000);taps.push(now);if(taps.length>=3){const p=(taps[taps.length-1]-taps[0])/(taps.length-1)/1000;S.bpm=Math.round(600/p)/10;grid={tap:true,period:p,phase:(now/1000)%p};toast(`Tap tempo ${S.bpm} BPM`)}}
 
-function frame(now){requestAnimationFrame(frame);
- const W=cv.clientWidth*devicePixelRatio,H=cv.clientHeight*devicePixelRatio;if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;gl.viewport(0,0,W,H)}
+// beat handling
+let lastBeatIdx=-1,beatPulse=0,lastFluxBeat=0,avgFlux=0,bassS=0,highS=0;
+function switchEvery(idx){if(S.every)return S.every;if(!grid||!grid.en)return 4;const e=grid.en[idx]||0;return e>grid.hi?1:e>grid.med*1.05?2:4}
+function onBeat(idx){beatPulse=1;S.beats++;const bi=grid&&grid.down!=null?((idx-grid.down)%4+4)%4:S.beats%4;
+ document.querySelectorAll('#bars i').forEach((el,i)=>el.classList.toggle('on',i===bi));
+ const N=switchEvery(idx);const pos=grid&&grid.down!=null?idx-grid.down:S.beats;if(((pos%N)+N)%N===0)next()}
+
+// render loop
+let fpsN=0,fpsT=performance.now();
+function frame(now){requestAnimationFrame(frame);size();
  const a=bands();bassS+=(a.b-bassS)*.35;highS+=(a.h-highS)*.5;avgFlux=avgFlux*.95+a.flux*.05;
- if(a.flux>avgFlux*2.6&&a.flux>.04&&now-lastBeat>1400&&a.b>.45){lastBeat=now;next()}
- $('mb').style.height=(4+24*bassS)+'px';$('mm').style.height=(4+24*a.m)+'px';$('mh').style.height=(4+24*highS)+'px';
- if(trans){mixv=Math.min(1,(now-transStart)/TRANS_MS);if(mixv>=1){cur=nxt;trans=false;mixv=0}}
- const A=loops[cur],B=loops[trans?nxt:cur];
+ if(grid&&trackEl&&!trackEl.paused){const idx=Math.floor((trackEl.currentTime-grid.phase)/grid.period);if(idx!==lastBeatIdx&&idx>=0){lastBeatIdx=idx;onBeat(idx)}}
+ else if(grid&&grid.tap){const idx=Math.floor((now/1000-grid.phase)/grid.period);if(idx!==lastBeatIdx){lastBeatIdx=idx;onBeat(idx)}}
+ else if(an&&a.flux>avgFlux*2.6&&a.flux>.04&&now-lastFluxBeat>350&&a.b>.4){lastFluxBeat=now;onBeat(S.beats)}
+ beatPulse*=.9;
+ let mixv=0;if(S.trans){mixv=Math.min(1,(now-S.t0)/S.dur);if(mixv>=1){S.scenes[S.cur]&&S.scenes[S.cur].v.pause();S.cur=S.nxt;S.trans=false;mixv=0}}
+ const A=S.scenes[S.cur]&&S.scenes[S.cur].v,B=S.trans?S.scenes[S.nxt].v:A;
  [[A,0],[B,1]].forEach(([v,u])=>{if(v&&v.readyState>=2){gl.activeTexture(gl.TEXTURE0+u);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,v)}});
- gl.uniform1f(U('t'),now/1000);gl.uniform1f(U('mixv'),mixv);gl.uniform1f(U('bass'),bassS);gl.uniform1f(U('high'),highS);gl.uniform1f(U('fx'),+$('fx').value);
- gl.uniform1f(U('aspA'),A&&A.videoWidth?A.videoWidth/A.videoHeight:1);gl.uniform1f(U('aspB'),B&&B.videoWidth?B.videoWidth/B.videoHeight:1);gl.uniform1f(U('aspS'),W/H);
- gl.drawArrays(gl.TRIANGLE_STRIP,0,4)}
+ const f1=(n,v)=>gl.uniform1f(U(n),v);f1('t',now/1000);f1('m',mixv);f1('bass',bassS);f1('high',highS);f1('fx',S.curFx);f1('beat',beatPulse);
+ f1('kal',S.kal);f1('mir',S.mir);f1('stb',S.stb);f1('inten',S.inten);
+ f1('aspA',A&&A.videoWidth?A.videoWidth/A.videoHeight:1);f1('aspB',B&&B.videoWidth?B.videoWidth/B.videoHeight:1);f1('aspS',cv.width/cv.height);
+ gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+ fpsN++;if(now-fpsT>500){if(S.hud){$('h-fps').textContent=Math.round(fpsN*1000/(now-fpsT));$('h-bpm').textContent=S.bpm||'-';$('h-beat').textContent=S.beats;
+  $('h-scene').textContent=(S.scenes[S.cur]||{}).name||'-';$('h-fx').textContent=(S.fx==='auto'?'auto · ':'')+FXN[S.curFx];$('h-every').textContent=S.every?S.every+' beat(s)':'follow song';$('h-int').textContent=S.inten.toFixed(2)}fpsN=0;fpsT=now}
+ if(S.hud){$('mb').style.height=(3+27*bassS)+'px';$('mm').style.height=(3+27*a.m)+'px';$('mh').style.height=(3+27*highS)+'px'}}
+
+// recording: canvas + track audio -> webm download
+let rec=null;function record(sec){return new Promise(res=>{if(rec){rec.stop();return res(null)}
+ const st=cv.captureStream(+(Q.get('fps')||30));if(recDest)recDest.stream.getAudioTracks().forEach(t=>st.addTrack(t));
+ const mt=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(x=>MediaRecorder.isTypeSupported(x));
+ rec=new MediaRecorder(st,{mimeType:mt,videoBitsPerSecond:+(Q.get('vbr')||24e6)});const ch=[];rec.ondataavailable=e=>e.data.size&&ch.push(e.data);
+ rec.onstop=()=>{const b=new Blob(ch,{type:'video/webm'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`xenoform_vj_${cv.width}x${cv.height}_${Date.now()}.webm`;document.body.appendChild(a);a.click();
+  rec=null;$('recb').classList.remove('on');toast('Clip saved');res(a.download)};
+ rec.start(1000);$('recb').classList.add('on');if(sec)setTimeout(()=>rec&&rec.stop(),sec*1000)})}
+// automation hook for scripted demo captures
+window.VJ={S,loadTrack,next,record,async go({start=0,seconds=12}={}){await AC.resume();trackEl.currentTime=start;lastBeatIdx=Math.floor((start-grid.phase)/grid.period);await trackEl.play();
+ const name=await record(seconds);trackEl.pause();return name},ready:()=>S.scenes.filter(s=>s.v.readyState>=3).length};
+
+// controls
+function toast(t){const el=$('toast');el.textContent=t;el.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove('show'),1800)}
+function setFx(v){S.fx=v;$('fx').value=v;toast(v==='auto'?'Auto transitions':FXN[+v])}
+const EV=[0,1,2,4,8];function rate(d){let i=EV.indexOf(S.every);i=Math.max(0,Math.min(EV.length-1,i+d));S.every=EV[i];$('every').value=S.every;toast(S.every?`Switch every ${S.every} beat(s)`:'Follow the song')}
+function tog(k,btn){S[k]=S[k]?0:1;$(btn).classList.toggle('on',!!S[k])}
+function hud(){S.hud=!S.hud;$('hud').classList.toggle('hide',!S.hud);$('hudb').classList.toggle('on',S.hud)}
+$('fx').onchange=e=>setFx(e.target.value);$('every').onchange=e=>{S.every=+e.target.value};$('every').value=S.every;$('fx').value=S.fx;
+$('kal').onclick=()=>tog('kal','kal');$('mir').onclick=()=>tog('mir','mir');$('stb').onclick=()=>tog('stb','stb');$('stb').classList.toggle('on',!!S.stb);$('kal').classList.toggle('on',!!S.kal);$('mir').classList.toggle('on',!!S.mir);
+$('hudb').onclick=hud;$('recb').onclick=()=>record();$('helpb').onclick=()=>$('help').classList.toggle('show');$('help').onclick=()=>$('help').classList.remove('show');
 $('fs').onclick=()=>document.documentElement.requestFullscreen();
-addEventListener('keydown',e=>{if(e.key===' '){e.preventDefault();next()}else if('12345'.includes(e.key))$('fx').value=+e.key-1;
- else if(e.key==='f'||e.key==='F')document.documentElement.requestFullscreen();else if(e.key==='h'||e.key==='H')$('ui').classList.toggle('hide')});
+addEventListener('keydown',e=>{if(e.target.tagName==='SELECT')return;const k=e.key;
+ if(k===' '||k==='ArrowRight'){e.preventDefault();if(trackEl&&trackEl.paused&&!S.played){S.played=1;AC.resume();trackEl.play()}else next()}
+ else if(k==='ArrowLeft')prev();else if(k>='1'&&k<='8')setFx(String(+k-1));else if(k==='0'||k==='a'||k==='A')setFx('auto');
+ else if(k==='[')rate(-1);else if(k===']')rate(1);else if(k==='ArrowUp'){e.preventDefault();S.inten=Math.min(2,S.inten+.1);toast('Intensity '+S.inten.toFixed(1))}
+ else if(k==='ArrowDown'){e.preventDefault();S.inten=Math.max(0,S.inten-.1);toast('Intensity '+S.inten.toFixed(1))}
+ else if(/^[kK]$/.test(k))tog('kal','kal');else if(/^[mM]$/.test(k))tog('mir','mir');else if(/^[sS]$/.test(k))tog('stb','stb');
+ else if(/^[tT]$/.test(k))tap();else if(/^[pP]$/.test(k))hud();else if(/^[hH]$/.test(k))$('ui').classList.toggle('hide');
+ else if(/^[rR]$/.test(k))record();else if(/^[fF]$/.test(k))document.documentElement.requestFullscreen();else if(k==='?')$('help').classList.toggle('show')});
+// MIDI-style control (Web MIDI when the browser has it)
+if(navigator.requestMIDIAccess)navigator.requestMIDIAccess().then(acc=>{const bind=()=>{let n=0;acc.inputs.forEach(inp=>{n++;inp.onmidimessage=ev=>{const [st,d1,d2]=ev.data,c=st&0xf0;
+ if(c===0x90&&d2>0){if(d1>=36&&d1<=43){setFx(String(d1-36));next(d1-36)}else next()}
+ else if(c===0xB0&&d1===1)S.inten=d2/63.5;else if(c===0xB0&&d1===2){S.every=EV[Math.min(4,Math.floor(d2/26))];$('every').value=S.every}}});$('h-midi').textContent=n?n+' input(s)':'none'};bind();acc.onstatechange=bind}).catch(()=>{});
+if(Q.get('clean')==='1')document.body.classList.add('clean');if(Q.get('hud')==='1')hud();
+let idle;addEventListener('mousemove',()=>{$('ui').classList.remove('hide');clearTimeout(idle);idle=setTimeout(()=>{if(!$('help').classList.contains('show'))$('ui').classList.add('hide')},3500)});
 loadLibrary();listInputs().catch(()=>{});requestAnimationFrame(frame);
 </script></body></html>

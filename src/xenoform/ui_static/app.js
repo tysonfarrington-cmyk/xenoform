@@ -2311,7 +2311,7 @@ function galleryPanel() {
   }
   const cards = rows
     .map((row) => `<figure class="gallery-card" data-aspect="${esc(row.aspect)}">
-        <video muted playsinline preload="metadata" src="${esc(media(row.url))}#t=0.5"></video>
+        <video muted playsinline preload="metadata" loop src="${esc(media(row.url))}#t=1.5"></video>
         <figcaption><strong>${esc(row.song || row.vibe || row.id)}</strong>
           <span>${esc([row.vibe, row.energy, row.aspect, row.tier].filter(Boolean).join(" · "))}</span>
           <span class="mono">${esc(String(row.created || "").replace("T", " ").slice(0, 16))}</span>
