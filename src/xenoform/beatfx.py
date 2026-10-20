@@ -241,6 +241,22 @@ def _ffmpeg() -> str:
     return find()
 
 
+def _conformed(clip: Path, out_path: Path) -> Path:
+    """A clip at the project fps (guardrail lag_qa): mismatched clips are re-timed first."""
+    try:
+        from xenoform.post_qa import conform, probe
+
+        got = probe(clip)["fps"]
+        if got and abs(got - FPS) > 0.05:
+            dest = Path(out_path).with_name(f"{Path(clip).stem}.{FPS}fps.mp4")
+            if not dest.is_file():
+                conform(clip, dest, FPS)
+            return dest
+    except Exception:
+        pass
+    return clip
+
+
 def read_frames(path: Path) -> np.ndarray:
     probe = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v", "-show_entries", "stream=width,height",
                             "-of", "csv=p=0", str(path)], capture_output=True, text=True)
@@ -289,7 +305,7 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
     centres = []
     try:
         for si, (clip, shot) in enumerate(zip(clips, shots)):
-            frames = read_frames(Path(clip))
+            frames = read_frames(_conformed(Path(clip), out_path))
             if len(frames) == 0:
                 raise RuntimeError(f"Shot {si + 1} came back with no frames.")
             a, b = shot_centres(frames) if aspect != "16:9" else ((0.5, 0.5), (0.5, 0.5))

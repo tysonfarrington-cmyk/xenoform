@@ -72,7 +72,7 @@
  <tr><td>Classic</td><td>Wipe, iris, slice, stutter, zoom: in the menu only, or in Auto with ?classic=1</td></tr>
  <tr><td>[ ]</td><td>Switch slower / faster (follow, 1, 2, 4, 8 beats)</td></tr>
  <tr><td>↑ ↓</td><td>Effect intensity</td></tr>
- <tr><td>K · M · S</td><td>Kaleido · Mirror · Strobe</td></tr>
+ <tr><td>M · S (K)</td><td>Mirror · Strobe (Kaleido: expert only, ?expert=1)</td></tr>
  <tr><td>T</td><td>Tap tempo (mic mode)</td></tr>
  <tr><td>P · H · F</td><td>HUD · Hide controls · Fullscreen</td></tr>
  <tr><td>R</td><td>Record a clean clip (webm, with audio)</td></tr>
@@ -87,7 +87,7 @@ const $=id=>document.getElementById(id), Q=new URLSearchParams(location.search);
 const cv=$('c'), gl=cv.getContext('webgl',{premultipliedAlpha:false,preserveDrawingBuffer:false,antialias:false});
 let seed=+(Q.get('seed')||7); const rnd=()=>{seed=(seed*16807)%2147483647;return (seed-1)/2147483646};
 const FXN=['Liquid flow','Luma wipe (classic)','Chroma split (classic)','Zoom-through (classic)','Hard cut + stutter (classic)','Iris (classic)','Slice (classic)','Pixel dissolve (classic)','Clean cut','Match-cut','Flow carry','Depth parallax','Lens breath','Chrome refraction','Echo trail'];
-const KEYFX=[8,9,10,0,11,12,13,14],CLASSIC=[1,2,3,4,5,6,7],CLASSIC_OK=Q.get('classic')==='1';
+const KEYFX=[8,9,10,0,11,12,13,14],CLASSIC=[1,2,3,4,5,6,7],CLASSIC_OK=Q.get('classic')==='1';const EXPERT=Q.get('expert')==='1';
 const W8={9:3,10:3,0:2,11:1.5,12:1.2,13:1,14:.8};
 const VS=`attribute vec2 p;varying vec2 uv;void main(){uv=p*.5+.5;uv.y=1.-uv.y;gl_Position=vec4(p,0,1);}`;
 const FS=`precision highp float;varying vec2 uv;uniform sampler2D A,B;
@@ -141,7 +141,7 @@ function size(){const W=FIXW||Math.round(innerWidth*devicePixelRatio),H=FIXH||Ma
  const s=Math.min(innerWidth/W,innerHeight/H);cv.style.width=W*s+'px';cv.style.height=H*s+'px'}
 
 // scenes: library vibe loops, the desk footage library, or your own files
-const S={scenes:[],cur:0,nxt:1,trans:false,t0:0,dur:900,fx:Q.get('fx')||'auto',curFx:0,every:+(Q.get('every')||0),kal:+(Q.get('kal')||0),mir:+(Q.get('mir')||0),stb:+(Q.get('strobe')||0),inten:+(Q.get('intensity')||1),hud:false,beats:0,bpm:0};
+const S={scenes:[],cur:0,nxt:1,trans:false,t0:0,dur:900,fx:Q.get('fx')||'auto',curFx:0,every:+(Q.get('every')||0),kal:EXPERT?+(Q.get('kal')||0):0,used:new Set(),mir:+(Q.get('mir')||0),stb:+(Q.get('strobe')||0),inten:+(Q.get('intensity')||1),hud:false,beats:0,bpm:0};
 function vid(src,name){const v=document.createElement('video');v.src=src;v.loop=true;v.muted=true;v.playsInline=true;v.preload='auto';v.crossOrigin='anonymous';
  const sc={v,name};v.addEventListener('error',()=>{S.scenes=S.scenes.filter(x=>x!==sc)});return sc}
 const DEF_VIBES=['neon-night','ferrofluid','chrome-mercury','lava-obsidian','cosmic','black','origami-noir','ice-crystal','porcelain-marble','y2k-chrome'];
@@ -161,8 +161,12 @@ const recent=[];
 function pickFx(premiumMoment){if(S.fx!=='auto')return +S.fx;if(!premiumMoment)return 8;
  const pool=Object.entries(W8).filter(([k])=>recent.filter(x=>x==k).length<2&&+k!==S.curFx);if(CLASSIC_OK)CLASSIC.forEach(c=>pool.push([c,.3]));
  let tot=pool.reduce((a,[,w])=>a+w,0),r=rnd()*tot;for(const [k,w] of pool){if((r-=w)<=0){recent.push(+k);recent.length>8&&recent.shift();return +k}}return 8}
+// guardrail no_repeat: each loop plays once per set; when the pool runs dry, warn and start a fresh pass
+function nextUnused(){const n=S.scenes.length;S.used.add(S.scenes[S.cur].v.src);
+ for(let k=1;k<n;k++){const j=(S.cur+k)%n;if(!S.used.has(S.scenes[j].v.src))return j}
+ toast('Every loop has played: add loops (or footage) to avoid repeats');S.used=new Set([S.scenes[S.cur].v.src]);return (S.cur+1)%n}
 function next(fxOverride,premiumMoment=true){const n=S.scenes.length;if(n<2||S.trans)return;
- S.nxt=(S.cur+1)%n;const nv=S.scenes[S.nxt].v;nv.currentTime=0;nv.play().catch(()=>{});
+ S.nxt=nextUnused();const nv=S.scenes[S.nxt].v;nv.currentTime=0;nv.play().catch(()=>{});
  S.curFx=fxOverride!=null?fxOverride:pickFx(premiumMoment);const beatMs=S.bpm?60000/S.bpm:500;
  if(S.curFx===9){const a=box(S.scenes[S.cur].v),b=box(nv);gl.uniform3f(U('ca'),a[0],a[1],a[2]);gl.uniform3f(U('cb'),b[0],b[1],b[2])}
  {const an=rnd()*6.283;gl.uniform2f(U('dir'),Math.cos(an),Math.sin(an)*.4)}
@@ -245,7 +249,7 @@ const EV=[0,1,2,4,8];function rate(d){let i=EV.indexOf(S.every);i=Math.max(0,Mat
 function tog(k,btn){S[k]=S[k]?0:1;$(btn).classList.toggle('on',!!S[k])}
 function hud(){S.hud=!S.hud;$('hud').classList.toggle('hide',!S.hud);$('hudb').classList.toggle('on',S.hud)}
 $('fx').onchange=e=>setFx(e.target.value);$('every').onchange=e=>{S.every=+e.target.value};$('every').value=S.every;$('fx').value=S.fx;
-$('kal').onclick=()=>tog('kal','kal');$('mir').onclick=()=>tog('mir','mir');$('stb').onclick=()=>tog('stb','stb');$('stb').classList.toggle('on',!!S.stb);$('kal').classList.toggle('on',!!S.kal);$('mir').classList.toggle('on',!!S.mir);
+if(!EXPERT){$('kal').style.display='none'}$('kal').onclick=()=>{if(EXPERT)tog('kal','kal')};$('mir').onclick=()=>tog('mir','mir');$('stb').onclick=()=>tog('stb','stb');$('stb').classList.toggle('on',!!S.stb);$('kal').classList.toggle('on',!!S.kal);$('mir').classList.toggle('on',!!S.mir);
 $('hudb').onclick=hud;$('recb').onclick=()=>record();$('helpb').onclick=()=>$('help').classList.toggle('show');$('help').onclick=()=>$('help').classList.remove('show');
 $('fs').onclick=()=>document.documentElement.requestFullscreen();
 addEventListener('keydown',e=>{if(e.target.tagName==='SELECT')return;const k=e.key;
@@ -253,7 +257,7 @@ addEventListener('keydown',e=>{if(e.target.tagName==='SELECT')return;const k=e.k
  else if(k==='ArrowLeft')prev();else if(k>='1'&&k<='8')setFx(String(KEYFX[+k-1]));else if(k==='0'||k==='a'||k==='A')setFx('auto');
  else if(k==='[')rate(-1);else if(k===']')rate(1);else if(k==='ArrowUp'){e.preventDefault();S.inten=Math.min(2,S.inten+.1);toast('Intensity '+S.inten.toFixed(1))}
  else if(k==='ArrowDown'){e.preventDefault();S.inten=Math.max(0,S.inten-.1);toast('Intensity '+S.inten.toFixed(1))}
- else if(/^[kK]$/.test(k))tog('kal','kal');else if(/^[mM]$/.test(k))tog('mir','mir');else if(/^[sS]$/.test(k))tog('stb','stb');
+ else if(/^[kK]$/.test(k)){if(EXPERT)tog('kal','kal');else toast('Kaleido is expert only (?expert=1)')}else if(/^[mM]$/.test(k))tog('mir','mir');else if(/^[sS]$/.test(k))tog('stb','stb');
  else if(/^[tT]$/.test(k))tap();else if(/^[pP]$/.test(k))hud();else if(/^[hH]$/.test(k))$('ui').classList.toggle('hide');
  else if(/^[rR]$/.test(k))record();else if(/^[fF]$/.test(k))document.documentElement.requestFullscreen();else if(k==='?')$('help').classList.toggle('show')});
 // MIDI-style control (Web MIDI when the browser has it)

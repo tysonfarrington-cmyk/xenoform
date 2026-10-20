@@ -263,6 +263,66 @@ def apply(body: dict | None, *, expert: bool | None = None, duration: float | No
             if rep.clamp("ui_effects", f"FX {body['fx_intensity']} on an app shot; {r['max_fx_intensity']}"):
                 body["fx_intensity"] = r["max_fx_intensity"]
 
+    # no repeats: one use per source within a video
+    r = R.get("no_repeat")
+    if r:
+        for key in ("segments", "footage", "clips"):
+            rows = body.get(key)
+            if not isinstance(rows, list):
+                continue
+            seen, keep, dups = set(), [], []
+            for row in rows:
+                src = str((row or {}).get("src") or (row or {}).get("path") or (row or {}).get("id") or "") if isinstance(row, dict) else str(row)
+                k = (src.lower(), str((row or {}).get("phash") or "") if isinstance(row, dict) else "")
+                if src and (src.lower() in {x[0] for x in seen} or (k[1] and k[1] in {x[1] for x in seen})):
+                    dups.append(src)
+                    continue
+                seen.add(k)
+                keep.append(row)
+            if dups and rep.clamp("no_repeat", f"{len(dups)} repeated source(s) in {key} removed ({', '.join(Path(d).name for d in dups[:3])})"):
+                body[key] = keep
+
+    # character sparing
+    r = R.get("character_sparing")
+    if r and duration:
+        match = [m.lower() for m in r.get("match") or []]
+        t, count = 0.0, 0
+        rows = blocks if blocks else [x for x in body.get("segments") or [] if isinstance(x, dict)]
+        for row in rows:
+            dur = float(row.get("hold") or row.get("dur") or 0.0)
+            name = _words(row.get("form"), row.get("src"), row.get("kind"), row.get("name"), row.get("title"))
+            if row.get("character") or any(m in name for m in match):
+                count += 1
+                early = t < float(r.get("not_before_frac", 0.15)) * duration
+                over = count > int(r.get("max_appearances", 3))
+                if (early or over) and rep.clamp("character_sparing",
+                        f"character shot at {t:.1f}s {'in the opening 15%' if early else 'over the ' + str(r['max_appearances']) + '-appearance cap'}; dropped"):
+                    row["_drop"] = True
+                    count -= 1
+            t += dur
+        if blocks:
+            blocks[:] = [b for b in blocks if not b.pop("_drop", False)]
+        elif body.get("segments"):
+            body["segments"] = [x for x in body["segments"] if not (isinstance(x, dict) and x.pop("_drop", False))]
+
+    # beat alignment: snap explicit cut times
+    r = R.get("beat_alignment")
+    grid = beats or body.get("beats") or []
+    if r and grid and isinstance(body.get("cuts"), list) and body["cuts"]:
+        from xenoform.post_qa import snap_cuts
+        snapped = snap_cuts(body["cuts"], grid, float(r["tolerance_s"]), float(r["max_snap_s"]))
+        moved = sum(1 for a, b in zip(body["cuts"], snapped) if abs(float(a) - b) > 1e-6)
+        if moved and rep.clamp("beat_alignment", f"{moved} cut(s) more than {int(r['tolerance_s'] * 1000)} ms off the beat snapped"):
+            body["cuts"] = snapped
+
+    # kaleidoscope: expert only
+    r = R.get("kaleidoscope")
+    if r:
+        tr = [t for t in body.get("transitions") or [] if isinstance(t, str)]
+        if (body.get("kal") or any("kaleid" in t.lower() for t in tr)) and rep.clamp("kaleidoscope", "kaleidoscope is retired (expert only); off"):
+            body["kal"] = 0
+            body["transitions"] = [t for t in tr if "kaleid" not in t.lower()]
+
     # open weights
     r = R.get("open_weights")
     if r:
@@ -427,3 +487,53 @@ def carry_block_fx(shots: list[dict], state: dict | None) -> list[dict]:
         extra = {k: b[k] for k in ("fx_intensity", "wobble") if k in b and k not in shot}
         out.append({**shot, **extra} if extra else shot)
     return out
+
+
+# ------------------------------------------------------------ no-repeat / character helpers
+def dhash(img) -> str:
+    """64-bit difference hash of an RGB/gray frame (hex)."""
+    import numpy as np
+    g = np.asarray(img, dtype=np.float32)
+    if g.ndim == 3:
+        g = g.mean(axis=2)
+    h, w = g.shape
+    ys = (np.arange(8) * h / 8).astype(int)
+    xs = (np.arange(9) * w / 9).astype(int)
+    small = g[np.ix_(ys, xs)]
+    bits = (small[:, 1:] > small[:, :-1]).flatten()
+    return "%016x" % int("".join("1" if b else "0" for b in bits), 2)
+
+
+def hamming(a: str, b: str) -> int:
+    try:
+        return bin(int(a, 16) ^ int(b, 16)).count("1")
+    except (TypeError, ValueError):
+        return 64
+
+
+class SourceTracker:
+    """One use per source (path) and per look (perceptual hash) within a video."""
+
+    def __init__(self, max_hamming: int | None = None):
+        r = rules().get("no_repeat") or {}
+        self.max_hamming = int(r.get("max_hamming", 6) if max_hamming is None else max_hamming)
+        self.sources: set[str] = set()
+        self.hashes: list[str] = []
+
+    def seen(self, src: str, phash: str | None = None) -> bool:
+        if str(src).lower() in self.sources:
+            return True
+        return bool(phash) and any(hamming(phash, h) <= self.max_hamming for h in self.hashes)
+
+    def add(self, src: str, phash: str | None = None) -> None:
+        self.sources.add(str(src).lower())
+        if phash:
+            self.hashes.append(phash)
+
+
+def is_character(item: dict) -> bool:
+    r = rules().get("character_sparing") or {}
+    if item.get("character"):
+        return True
+    text = _words(item.get("title"), item.get("id"), item.get("src"), item.get("path"), " ".join(item.get("tags") or []))
+    return any(m in text for m in r.get("match") or [])

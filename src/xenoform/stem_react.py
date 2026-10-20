@@ -128,6 +128,8 @@ def drive(env: dict, t: float) -> dict:
         "displace": b,                        # bass: liquid displacement
         "saturation": 0.85 + 0.35 * o,        # other: colour / texture
         "grain": o,
+        "emission": max(o, at(env, t, "vocals")),  # other/vocals: glow on the bright parts
+        "hue": at(env, t, "vocals"),               # vocals: colour drift
     }
 
 
@@ -154,12 +156,20 @@ def apply_frame(frame: np.ndarray, env: dict, t: float, *, depth: float = 0.01) 
         import transitions_fx as T
 
     p = drive(env, t)
-    fr = T.scale_frame(frame, 1.0 + depth * p["scale"] ** 2)
-    if p["displace"] > 0.55:
-        h, w = fr.shape[:2]
+    fr = T.scale_frame(frame, 1.0 + 3.0 * depth * p["scale"])  # bass: scale, linear so quiet bass still breathes
+    h, w = fr.shape[:2]
+    if p["displace"] > 0.05:  # bass: continuous liquid displacement (was only above 0.55)
         gx, gy = np.meshgrid(np.arange(w, dtype=np.float32), np.arange(h, dtype=np.float32))
-        amp = (p["displace"] - 0.55) / 0.45 * 2.5 * (w / 1080)
+        amp = p["displace"] * 3.0 * max(1.0, w / 1080)
         fr = T._remap(fr, gx + amp * np.sin(gy / (h / 11.0) + t * 7.0), gy)
+    if p["emission"] > 0.05:  # other/vocals: emission glow on the bright parts
+        f = fr.astype(np.float32)
+        lum = f.mean(axis=2, keepdims=True) / 255.0
+        fr = np.clip(f + f * (lum ** 2) * 0.6 * p["emission"], 0, 255).astype(np.uint8)
+    if p["hue"] > 0.05:  # vocals: warm colour drift
+        f = fr.astype(np.float32)
+        k = 0.12 * p["hue"]
+        fr = np.clip(np.stack([f[..., 0] * (1 + k), f[..., 1], f[..., 2] * (1 - k)], axis=2), 0, 255).astype(np.uint8)
     if p["chroma"] > 0.6:
         fr = T.chroma_shift(fr, int(4 * (p["chroma"] - 0.6) / 0.4))
     s = p["saturation"]

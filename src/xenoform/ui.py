@@ -1751,8 +1751,29 @@ def _run_job(job_id: str, audio_path: Path, body: dict, cfg: dict, out: Path, ca
 
     try:
         result, tier_id, note = run_resilient(once, detect_tier())
+        qa_report = None
+        if not cancel_event.is_set() and Path(out).is_file() and not body.get("tiny"):
+            on_progress("qa", 0.5, "Checking for lag, artifacts and off-beat cuts")
+            try:
+                from xenoform import post_qa
+
+                beats = []
+                fpath = work / "features.json"
+                if fpath.is_file():
+                    beats = list((json.loads(fpath.read_text(encoding="utf-8")) or {}).get("beats") or [])
+                fix = bool((post_qa._rule("lag_qa") or {}).get("auto_fix", True))
+                qa_report = post_qa.run(out, fps=24.0, beats=beats, vj=bool(body.get("vj")), fix=fix)
+            except Exception:
+                log.exception("post QA")
         with _LOCK:
             job = _JOBS[job_id]
+            if qa_report is not None:
+                job["qa"] = qa_report
+                gr = job.setdefault("guardrails", {"applied": [], "warnings": [], "messages": []})
+                for line in qa_report.get("issues") or []:
+                    gr.setdefault("messages", []).append(f"[qa] {line}")
+                if (qa_report.get("lag_fix") or {}).get("fixed"):
+                    gr.setdefault("messages", []).append(f"[qa] lag fixed: {qa_report['lag_fix']['method']}")
             if cancel_event.is_set():
                 job["status"] = "cancelled"
                 job["detail"] = "Cancelled. The card changed."

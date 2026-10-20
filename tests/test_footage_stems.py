@@ -1,4 +1,4 @@
-import json
+﻿import json
 import shutil
 import subprocess
 from pathlib import Path
@@ -40,7 +40,8 @@ def test_plan_edit_cuts_on_grid_and_morph_mode():
     beats = [i * 0.5 for i in range(80)]
     items = [{"path": "a.mp4", "kind": "video"}, {"path": "b.png", "kind": "image", "mode": "morph-into-next"},
              {"path": "c.mp4", "kind": "video"}]
-    spec = footage.plan_edit(items, beats, 20.0, vibe="black", bars_per_shot=1, sections=[8.0])
+    spec = footage.plan_edit(items, beats, 20.0, vibe="black", bars_per_shot=1, sections=[8.0],
+                                 allow_repeats=True)  # grid/transition behaviour; no-repeat is in test_audit_v4
     segs, trs = spec["segments"], spec["transitions"]
     assert len(trs) == len(segs) - 1
     assert abs(sum(s["dur"] for s in segs) - 20.0) < 1e-6

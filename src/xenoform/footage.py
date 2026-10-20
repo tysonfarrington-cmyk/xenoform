@@ -153,7 +153,8 @@ def detect_scenes(path: str, threshold: float = 0.3, min_len: float = 0.8) -> li
 
 def plan_edit(items: list[dict], beats: list[float], duration: float, *, vibe: str = "black",
               bars_per_shot: int = 2, beats_per_bar: int = 4, sections: list[float] | None = None,
-              modes: dict[int, str] | None = None) -> dict:
+              modes: dict[int, str] | None = None, allow_repeats: bool = False, hash_fn=None,
+              more=None, expert: bool = False) -> dict:
     """Turn footage (scan_folder output, optionally with 'scenes') into a scene_edit spec.
 
     Cuts land on the beat grid (every ``bars_per_shot`` bars); boundaries that fall on a
@@ -162,19 +163,64 @@ def plan_edit(items: list[dict], beats: list[float], duration: float, *, vibe: s
     """
     from xenoform import transitions_fx as T
 
+    from xenoform import guardrails as G
+
     modes = modes or {}
-    shots = []
-    for i, it in enumerate(items):
+    warnings: list[str] = []
+    hash_fn = hash_fn or _frame_hash
+    tracker = G.SourceTracker()
+
+    def add_item(i, it, shots):
         mode = modes.get(i, it.get("mode", "as-is"))
         if mode not in MODES:
             raise ValueError(f"mode must be one of {MODES}")
-        for a, b in it.get("scenes") or [(0.0, None)]:
-            shots.append({"src": it["path"], "in": a, "kind": it["kind"], "mode": mode, "fit": "crop"})
+        if (it.get("quality") or it.get("qa") or {}).get("verdict") == "reject":
+            warnings.append(f"{Path(str(it['path'])).name}: below the output resolution, skipped")
+            return
+        # one use per source within a video: the first scene of each source (allow_repeats keeps them all)
+        for a, b in (it.get("scenes") or [(0.0, None)])[: None if allow_repeats else 1]:
+            ph = None if allow_repeats else hash_fn(it["path"], a)
+            if not allow_repeats and tracker.seen(it["path"], ph):
+                warnings.append(f"{Path(str(it['path'])).name}: same source or look as an earlier shot, skipped")
+                continue
+            tracker.add(it["path"], ph)
+            shots.append({"src": it["path"], "in": a, "kind": it["kind"], "mode": mode, "fit": "crop",
+                          "character": G.is_character(it),
+                          "upscale": (it.get("quality") or it.get("qa") or {}).get("verdict") == "upscale"})
+
+    shots: list[dict] = []
+    for i, it in enumerate(items):
+        add_item(i, it, shots)
     if not shots:
         raise ValueError("no footage")
     step = max(1, bars_per_shot * beats_per_bar)
     grid = [b for b in beats[::step] if 0 < b < duration] or [duration / 2]
     edges = [0.0] + grid + [duration]
+    need = len(edges) - 1
+    if not allow_repeats and need > len(shots) and more is not None:
+        try:  # pool ran dry: pull more (library clips for this vibe, or anything the caller can generate)
+            for j, it in enumerate(more(need - len(shots)) or []):
+                add_item(len(items) + j, it, shots)
+        except Exception as exc:
+            warnings.append(f"could not pull more footage: {exc}")
+    # character sparing: not in the opening 15%, at most N appearances
+    cs = G.rules().get("character_sparing") or {}
+    if not expert and cs:
+        chars = [s for s in shots if s.get("character")]
+        rest = [s for s in shots if not s.get("character")]
+        cap = int(cs.get("max_appearances", 3))
+        if len(chars) > cap:
+            warnings.append(f"{len(chars) - cap} character shot(s) over the {cap}-appearance cap dropped")
+            chars = chars[:cap]
+        early = max(1, int(round(need * float(cs.get("not_before_frac", 0.15)) + 0.4999)))
+        order = rest[:early] + [x for pair in zip(chars, rest[early:]) for x in pair]
+        used = {id(x) for x in order}
+        order += [x for x in chars + rest if id(x) not in used]
+        shots = order
+    if not allow_repeats and need > len(shots):
+        warnings.append(f"only {len(shots)} unique source(s) for {need} beat slots: using fewer, longer shots instead of repeating. Add footage for faster cutting.")
+        keep = sorted(set(round(i * need / len(shots)) for i in range(1, len(shots))))
+        edges = [0.0] + [edges[i] for i in keep] + [duration]
     sections = sections or []
     segs, trs = [], []
     for k in range(len(edges) - 1):
@@ -198,7 +244,36 @@ def plan_edit(items: list[dict], beats: list[float], duration: float, *, vibe: s
                 kind = "cut"
             trs.append({"kind": kind, "win": round(T.TRANSITIONS[kind]["beats"] * (beats[1] - beats[0] if len(beats) > 1 else 0.5), 3),
                         "intensity": 0.6})
-    return {"segments": segs, "transitions": trs, "vibe": vibe}
+    return {"segments": segs, "transitions": trs, "vibe": vibe, "warnings": warnings}
+
+
+def _frame_hash(path, t: float = 0.0) -> str | None:
+    """Perceptual hash of the frame at ``t`` (None when it cannot be read)."""
+    try:
+        from xenoform.guardrails import dhash
+        from xenoform.post_qa import frames_at
+
+        got = frames_at(path, [float(t or 0.0) + 0.1], short=64)
+        return dhash(got[0]) if got else None
+    except Exception:
+        return None
+
+
+def qa_item(item: dict, root: Path = ROOT, out_w: int = 1080, out_h: int = 1920) -> dict:
+    """Size, sharpness and motion for one library item; NASA clips also need a min size + motion."""
+    from xenoform.guardrails import rules
+    from xenoform.post_qa import source_quality
+
+    r = rules().get("source_quality") or {}
+    path = local_path(item, root)
+    q = source_quality(path, out_w, out_h, video=item.get("kind") == "video")
+    if item.get("source") == "nasa" and item.get("kind") == "video":
+        small = min(q["width"], q["height"]) < int(r.get("nasa_min_short_side", 720))
+        still = q.get("motion_score", 1.0) < float(r.get("nasa_min_motion", 0.15))
+        q["soft"] = bool(q["soft"] or small or still)
+        if still:
+            q["note"] = "near-static"
+    return q
 
 
 ANIMATE_PROMPT = ("Use the provided start image as the first frame and the provided end image as the final frame anchor. "

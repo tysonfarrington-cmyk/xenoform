@@ -29,16 +29,24 @@
    },
    "file": "assets/library/liquid-gold/nasa_sdo_arching_eruption.mp4",
    "motion_score": 4.3,
-   "seed_encoding": "720 wide, 4.5 s, CRF 25, muted, motion-verified by frame difference (mean |dI| on 96x54 gray at 4 fps)"
+   "seed_encoding": "720 wide, 4.5 s, CRF 25, muted, motion-verified by frame difference (mean |dI| on 96x54 gray at 4 fps)",
+   "qa": {
+    "width": 720,
+    "height": 406,
+    "sharpness": 84.7,
+    "verdict": "upscale",
+    "soft": true,
+    "motion_score": 0.6574
+   }
   },
   {
    "id": "nasa_sdo_x16_flare",
    "kind": "video",
-   "title": "SDO: X1.6 flare erupting in 131 Å (teal)",
+   "title": "SDO: X1.6 flare erupting in 131 \u00c5 (teal)",
    "source": "nasa",
    "source_url": "https://images.nasa.gov/details/GSFC_20141024_SDO_m11718_Flares",
    "licence": "NASA media are generally not subject to copyright in the US (public domain). Do not imply NASA endorsement; do not use NASA insignia/logos. https://www.nasa.gov/nasa-brand-center/images-and-media/",
-   "attribution": "\"SDO: X1.6 flare erupting in 131 Å (teal)\" courtesy NASA",
+   "attribution": "\"SDO: X1.6 flare erupting in 131 \u00c5 (teal)\" courtesy NASA",
    "redistribute": true,
    "vibes": [
     "cosmic",
@@ -58,7 +66,15 @@
    },
    "file": "assets/library/cosmic/nasa_sdo_x16_flare.mp4",
    "motion_score": 10.0,
-   "seed_encoding": "720 wide, 4 s, CRF 25, muted, motion-verified by frame difference (mean |dI| on 96x54 gray at 4 fps)"
+   "seed_encoding": "720 wide, 4 s, CRF 25, muted, motion-verified by frame difference (mean |dI| on 96x54 gray at 4 fps)",
+   "qa": {
+    "width": 720,
+    "height": 406,
+    "sharpness": 31.9,
+    "verdict": "upscale",
+    "soft": true,
+    "motion_score": 0.7021
+   }
   },
   {
    "id": "nasa_iss_earth_night_lightning",
@@ -87,7 +103,15 @@
    },
    "file": "assets/library/cosmic/nasa_iss_earth_night_lightning.mp4",
    "motion_score": 13.7,
-   "seed_encoding": "720 wide, 3.2 s, CRF 25, muted, motion-verified by frame difference (mean |dI| on 96x54 gray at 4 fps)"
+   "seed_encoding": "720 wide, 3.2 s, CRF 25, muted, motion-verified by frame difference (mean |dI| on 96x54 gray at 4 fps)",
+   "qa": {
+    "width": 720,
+    "height": 406,
+    "sharpness": 267.4,
+    "verdict": "upscale",
+    "soft": true,
+    "motion_score": 1.0
+   }
   },
   {
    "id": "nasa_iss_soyuz_timelapse",
@@ -116,7 +140,15 @@
    },
    "file": "assets/library/ocean/nasa_iss_soyuz_timelapse.mp4",
    "motion_score": 15.7,
-   "seed_encoding": "720 wide, 5 s, CRF 25, muted, motion-verified by frame difference (mean |dI| on 96x54 gray at 4 fps)"
+   "seed_encoding": "720 wide, 5 s, CRF 25, muted, motion-verified by frame difference (mean |dI| on 96x54 gray at 4 fps)",
+   "qa": {
+    "width": 720,
+    "height": 406,
+    "sharpness": 246.2,
+    "verdict": "upscale",
+    "soft": true,
+    "motion_score": 1.0
+   }
   },
   {
    "id": "nasa_jupiter_anchor",
@@ -142,7 +174,14 @@
     "nasa_id": "PIA02873"
    },
    "file": "assets/library/cosmic/nasa_jupiter_anchor.jpg",
-   "seed_encoding": "1024x576, subject centred on black, JPEG q92"
+   "seed_encoding": "1024x576, subject centred on black, JPEG q92",
+   "qa": {
+    "width": 1024,
+    "height": 576,
+    "sharpness": 28.7,
+    "verdict": "reject",
+    "soft": true
+   }
   },
   {
    "id": "nasa_saturn_anchor",
@@ -168,7 +207,14 @@
     "nasa_id": "PIA06193"
    },
    "file": "assets/library/cosmic/nasa_saturn_anchor.jpg",
-   "seed_encoding": "1024x576, subject centred on black, JPEG q92"
+   "seed_encoding": "1024x576, subject centred on black, JPEG q92",
+   "qa": {
+    "width": 1024,
+    "height": 576,
+    "sharpness": 129.4,
+    "verdict": "upscale",
+    "soft": false
+   }
   },
   {
    "id": "nasa_earth_anchor",
@@ -194,7 +240,14 @@
     "nasa_id": "PIA18033"
    },
    "file": "assets/library/cosmic/nasa_earth_anchor.jpg",
-   "seed_encoding": "1024x576, subject centred on black, JPEG q92"
+   "seed_encoding": "1024x576, subject centred on black, JPEG q92",
+   "qa": {
+    "width": 1024,
+    "height": 576,
+    "sharpness": 870.0,
+    "verdict": "upscale",
+    "soft": false
+   }
   },
   {
    "id": "nasa_moon_anchor",
@@ -220,7 +273,14 @@
     "nasa_id": "PIA00405"
    },
    "file": "assets/library/cosmic/nasa_moon_anchor.jpg",
-   "seed_encoding": "1024x576, subject centred on black, JPEG q92"
+   "seed_encoding": "1024x576, subject centred on black, JPEG q92",
+   "qa": {
+    "width": 1024,
+    "height": 576,
+    "sharpness": 379.7,
+    "verdict": "upscale",
+    "soft": false
+   }
   },
   {
    "id": "nasa_mars_anchor",
@@ -246,7 +306,14 @@
     "nasa_id": "PIA00407"
    },
    "file": "assets/library/cosmic/nasa_mars_anchor.jpg",
-   "seed_encoding": "1024x576, subject centred on black, JPEG q92"
+   "seed_encoding": "1024x576, subject centred on black, JPEG q92",
+   "qa": {
+    "width": 1024,
+    "height": 576,
+    "sharpness": 185.1,
+    "verdict": "upscale",
+    "soft": false
+   }
   }
  ]
 }

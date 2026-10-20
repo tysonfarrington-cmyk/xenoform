@@ -2,19 +2,188 @@
   "version": 1,
   "about": "Known causes of flaky Xenoform output, stopped before a render. Each rule clamps or warns; expert=true turns clamps into warnings except hard bans.",
   "rules": {
-    "morph_density": {"max_forms_per_20s": 15, "hard_max_forms_per_20s": 18, "why": "22 forms in 20 s read as laggy; about 15 per 20 s is the sweet spot."},
-    "morph_run_clean": {"strip": ["stutter", "wobble", "skip", "reverse"], "why": "A stutter or wobble inside a morph run reads as lag (the 12.8 s stutter in forms22)."},
-    "simple_objects": {"simple": ["cup", "mug", "ball", "sphere", "cube", "box", "plate", "bowl", "bottle", "can", "egg"], "max_share": 0.34, "why": "Simple objects morph boringly; use complex shapes (feather, flower, coral, skull, machine)."},
-    "duplicate_features": {"subjects": ["jupiter", "saturn", "mars", "earth", "moon", "sun", "planet", "galaxy", "nebula"], "anchor": "nasa", "negative": "multiple storms, duplicate eyes, duplicate features, extra rings, cartoon, illustration", "why": "Generated planets hallucinate duplicate features (the multi-storm Jupiter). Anchor on NASA images."},
-    "character_motion": {"subjects": ["dancer", "dance", "dancing", "person", "woman", "man", "girl", "polly", "character"], "motion_source": "stock-dance", "negative": "extra fingers, fused fingers, deformed hands, pose snapping, jerky limbs", "why": "Free-generated character motion snaps between poses and breaks hands; drive it from stock dance clips."},
-    "footage_motion": {"min_motion_score": 0.15, "why": "Near-static NASA/archive clips look frozen; skip clips under this motion score."},
-    "native_vertical": {"width": 448, "height": 768, "upscaler": "realesrgan-x4", "why": "Wide renders cropped to 9:16 lose the subject; render native 448x768 and upscale."},
-    "morph_background": {"background": "black", "why": "Non-black morph stills leak colour fringes and break the black-pool chain."},
-    "text_encoder": {"ltx2_models": ["ltx-2", "ltx2", "ltx-2.3", "ltx-2.5"], "ltx2_encoder": "gemma_3_12B_it_fp4_mixed.safetensors", "bad": ["t5"], "why": "LTX-2.x wants the Gemma encoder (2048 dims); T5 gives 4096 and fails or renders noise."},
-    "vram": {"gb": 12, "max_pixels": 344064, "max_render_s": 5, "max_local_parallel": 1, "why": "12 GB cards OOM above 448x768 per shot, over 5 s per render, or with parallel local jobs."},
-    "ui_effects": {"max_fx_intensity": 0.25, "max_wobble": 0.1, "max_wobble_moments": 2, "ui_kinds": ["ui", "app", "screen", "desk", "screencap"], "why": "Heavy FX on app shots looks messy; wobble sparingly and subtly."},
-    "shimmer": {"banned": ["shimmer", "wavy", "warp"], "hard": true, "why": "The wavy shimmer look ruins visuals and is banned outright."},
-    "transition_variety": {"max_per_type": 2, "max_fx_share": 0.35, "classic_expert_only": true, "exempt": ["cut", "scene-morph", "black-hold"], "why": "Wipes, iris, slice and stutter look cheap and PowerPoint-like when overused; at most 2 of any one transition per video, most cuts clean on the beat."},
-    "open_weights": {"contest_mode": true, "why": "Partner/API nodes (hosted LTX-2.5) are not open weights; off in contest mode unless expert."}
+    "morph_density": {
+      "max_forms_per_20s": 15,
+      "hard_max_forms_per_20s": 18,
+      "why": "22 forms in 20 s read as laggy; about 15 per 20 s is the sweet spot."
+    },
+    "morph_run_clean": {
+      "strip": [
+        "stutter",
+        "wobble",
+        "skip",
+        "reverse"
+      ],
+      "why": "A stutter or wobble inside a morph run reads as lag (the 12.8 s stutter in forms22)."
+    },
+    "simple_objects": {
+      "simple": [
+        "cup",
+        "mug",
+        "ball",
+        "sphere",
+        "cube",
+        "box",
+        "plate",
+        "bowl",
+        "bottle",
+        "can",
+        "egg"
+      ],
+      "max_share": 0.34,
+      "why": "Simple objects morph boringly; use complex shapes (feather, flower, coral, skull, machine)."
+    },
+    "duplicate_features": {
+      "subjects": [
+        "jupiter",
+        "saturn",
+        "mars",
+        "earth",
+        "moon",
+        "sun",
+        "planet",
+        "galaxy",
+        "nebula"
+      ],
+      "anchor": "nasa",
+      "negative": "multiple storms, duplicate eyes, duplicate features, extra rings, cartoon, illustration",
+      "why": "Generated planets hallucinate duplicate features (the multi-storm Jupiter). Anchor on NASA images."
+    },
+    "character_motion": {
+      "subjects": [
+        "dancer",
+        "dance",
+        "dancing",
+        "person",
+        "woman",
+        "man",
+        "girl",
+        "polly",
+        "character"
+      ],
+      "motion_source": "stock-dance",
+      "negative": "extra fingers, fused fingers, deformed hands, pose snapping, jerky limbs",
+      "why": "Free-generated character motion snaps between poses and breaks hands; drive it from stock dance clips."
+    },
+    "footage_motion": {
+      "min_motion_score": 0.15,
+      "why": "Near-static NASA/archive clips look frozen; skip clips under this motion score."
+    },
+    "native_vertical": {
+      "width": 448,
+      "height": 768,
+      "upscaler": "realesrgan-x4",
+      "why": "Wide renders cropped to 9:16 lose the subject; render native 448x768 and upscale."
+    },
+    "morph_background": {
+      "background": "black",
+      "why": "Non-black morph stills leak colour fringes and break the black-pool chain."
+    },
+    "text_encoder": {
+      "ltx2_models": [
+        "ltx-2",
+        "ltx2",
+        "ltx-2.3",
+        "ltx-2.5"
+      ],
+      "ltx2_encoder": "gemma_3_12B_it_fp4_mixed.safetensors",
+      "bad": [
+        "t5"
+      ],
+      "why": "LTX-2.x wants the Gemma encoder (2048 dims); T5 gives 4096 and fails or renders noise."
+    },
+    "vram": {
+      "gb": 12,
+      "max_pixels": 344064,
+      "max_render_s": 5,
+      "max_local_parallel": 1,
+      "why": "12 GB cards OOM above 448x768 per shot, over 5 s per render, or with parallel local jobs."
+    },
+    "ui_effects": {
+      "max_fx_intensity": 0.25,
+      "max_wobble": 0.1,
+      "max_wobble_moments": 2,
+      "ui_kinds": [
+        "ui",
+        "app",
+        "screen",
+        "desk",
+        "screencap"
+      ],
+      "why": "Heavy FX on app shots looks messy; wobble sparingly and subtly."
+    },
+    "shimmer": {
+      "banned": [
+        "shimmer",
+        "wavy",
+        "warp"
+      ],
+      "hard": true,
+      "why": "The wavy shimmer look ruins visuals and is banned outright."
+    },
+    "transition_variety": {
+      "max_per_type": 2,
+      "max_fx_share": 0.35,
+      "classic_expert_only": true,
+      "exempt": [
+        "cut",
+        "scene-morph",
+        "black-hold"
+      ],
+      "why": "Wipes, iris, slice and stutter look cheap and PowerPoint-like when overused; at most 2 of any one transition per video, most cuts clean on the beat."
+    },
+    "open_weights": {
+      "contest_mode": true,
+      "why": "Partner/API nodes (hosted LTX-2.5) are not open weights; off in contest mode unless expert."
+    },
+    "no_repeat": {
+      "key": "source+phash",
+      "max_hamming": 6,
+      "on_dry": "pull more from the library, else fewer longer shots + warning",
+      "why": "A clip or source reused within one video reads as a loop (demo v4 audit)."
+    },
+    "lag_qa": {
+      "freeze_noise": 0.003,
+      "freeze_min_s": 0.25,
+      "lag_freeze_max_s": 0.6,
+      "max_short_freezes": 3,
+      "max_dup_ratio": 0.15,
+      "auto_fix": true,
+      "why": "Held/duplicate frames and fps mismatches read as lag; conform to the project fps or interpolate held frames."
+    },
+    "source_quality": {
+      "min_sharpness": 60.0,
+      "min_short_side": 360,
+      "upscale_factor": 4,
+      "nasa_min_short_side": 720,
+      "nasa_min_motion": 0.15,
+      "why": "Sources below the output resolution look soft; upgrade (RealESRGAN x4) or reject. NASA clips need size + motion."
+    },
+    "artifact_qa": {
+      "max_chroma_px": 3,
+      "max_glitch_rows": 0.03,
+      "vj_exempt": true,
+      "why": "Heavy chromatic aberration or glitch bands on non-VJ shots look broken."
+    },
+    "beat_alignment": {
+      "tolerance_s": 0.04,
+      "max_snap_s": 0.25,
+      "why": "Cuts more than ~40 ms off the beat feel late; snap them to the grid."
+    },
+    "character_sparing": {
+      "max_appearances": 3,
+      "not_before_frac": 0.15,
+      "match": [
+        "polly",
+        "character",
+        "dancer"
+      ],
+      "why": "Overused characters (Polly) cheapen the cut; keep them out of the opening 15%."
+    },
+    "kaleidoscope": {
+      "vj_default": false,
+      "expert_only": true,
+      "why": "The kaleidoscope reads as a cheap screensaver; retired from VJ defaults (expert only)."
+    }
   }
 }
