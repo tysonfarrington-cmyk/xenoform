@@ -115,3 +115,27 @@ def test_final_clips_native_uses_portrait_stills_and_prompt(tmp_path, monkeypatc
     assert "portrait" in g["4"]["inputs"]["text"].lower()
     assert all("portrait" in str(v) for _, v in seen["inputs"])
     assert [n["fallback"] for n in notes] == ["ltx095-draft"] and notes[0]["oom"]  # OOM fallback kept
+
+
+def test_fill_is_bigger_but_never_clips():
+    from xenoform import portrait
+
+    assert (portrait.FILL_W, portrait.FILL_H) == (0.95, 0.72)
+    wide = frame_portrait(_wide_object(), 720, 1280)
+    x0, y0, x1, y1 = subject_box(wide, np.zeros(3, np.float32))
+    assert x0 > 0 and x1 < 720 and (x1 - x0) / 720 >= 0.80  # fills the width, stays whole
+    tall = np.zeros((720, 1280, 3), np.uint8)
+    tall[40:680, 600:700] = 200
+    out = frame_portrait(tall, 720, 1280)
+    x0, y0, x1, y1 = subject_box(out, np.zeros(3, np.float32))
+    assert y0 > 0 and y1 < 1280 and (y1 - y0) / 1280 <= 0.72 and (y1 - y0) / 1280 >= 0.6  # height-limited
+
+
+def test_every_entry_defaults_9x16_final_to_native():
+    from pathlib import Path
+
+    assert dense.options({"aspect": "9:16", "quality_tier": "final", "cut_plan": dense.demo1_plan()})["vertical"] == "native"
+    code = simple_recipe.encode({"vibe": "black", "aspect": "9:16", "quality_tier": "final"})
+    assert dense.options(simple_recipe.decode(code))["vertical"] == "native"
+    js = (Path(dense.ROOT) / "src" / "xenoform" / "ui_static" / "app.js").read_text(encoding="utf-8")
+    assert 'easy.vertical === "crop" ? "crop" : "native"' in js and '["native", "Native"], ["crop", "Crop"]' in js

@@ -16,7 +16,7 @@ import numpy as np
 
 PROMPT_SUFFIX = (" Vertical 9:16 portrait framing: one object centred in the frame, whole and fully in view, "
                  "empty background above and below it, locked-off camera.")
-FILL_W, FILL_H = 0.84, 0.62  # the object's box fills at most this share of the canvas
+FILL_W, FILL_H = 0.95, 0.72  # the padded object box fills at most this share; min() of the two keeps it whole
 STILL_W, STILL_H = 720, 1280
 
 

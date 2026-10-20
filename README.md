@@ -13,7 +13,7 @@ A music video director, not a visualiser: visualisers pulse to the beat and mont
 | Choice | Options | What it does |
 | --- | --- | --- |
 | Energy | **Flow** (default), **Dense** | Flow: one morph per section, cut on the bar. Dense: up to 15 morphs, a shot every bar up to the drop and every half bar after it, with stutters, holds, zoom punches and beat-reactive light (the cut in the demo video, now made by the app itself). |
-| Aspect | **16:9**, **9:16**, **1:1** | 9:16 and 1:1 reframe every shot around the object as it transforms, for Reels, Shorts, TikTok and the feed. |
+| Aspect | **16:9**, **9:16**, **1:1** | 1:1, and 9:16 on Draft, reframe every shot around the object as it transforms. 9:16 on **Final** renders natively in portrait (LTX-2.3 at 448×768 from stills re-laid with the whole object centred, 4× upscale to 1080×1920); **Crop** (cut from the 16:9 render) stays as a toggle. For Reels, Shorts, TikTok and the feed. |
 | Quality | **Draft** (default), **Final** | Draft: LTX 0.9.5 at 512×288, about a minute. Final: LTX-2.3 22B distilled fp8 at 768×448 plus a 4× upscale to 1280×720; minutes per shot, so it shows its own estimate. If a Final shot runs out of memory it retries without the upscale, then falls back to the Draft shot, and says so. |
 | Beat FX / overlay | FX on, overlay off (default) | Beat FX: kick pulse, edge light on transients, bloom on the hits. The waveform overlay is off, so the default export is clean: no UI on the picture. |
 | End card | off (default) | Burns the recipe code and the repo link into the last two seconds. |
