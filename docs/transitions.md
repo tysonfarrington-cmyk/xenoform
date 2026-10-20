@@ -58,3 +58,21 @@ python -m xenoform.scene_edit spec.json
 ```
 
 See the docstring in `scene_edit.py` for the spec. The contest tech reel (every transition, labelled, cut to Morph Engine v2) was built with this.
+
+## v5: premium transitions ("new spells") and Classic
+
+Wipes, iris, slice and hard stutter read as cheap and PowerPoint-like when they're overused. From v5, **most boundaries are a clean beat cut** (`cut`). A section change gets one premium transition, and the `transition_variety` guardrail (`configs/guardrails.json`) allows **at most 2 of any one type per video**. Any extra use becomes a clean cut. `cut`, `scene-morph` and `black-hold` are exempt from the cap.
+
+| id | Name | Length | What it does |
+|---|---|---|---|
+| `cut` | Clean beat cut | 0 | A straight cut on the beat. This is the default boundary. |
+| `match-cut` | Match-cut | 2 beats | The dominant subject of B (from a soft luma mask) is aligned onto A's silhouette in position and scale at the cut, then glides home to its own framing. Favoured by auto-pick. |
+| `flow-carry` | Flow carry | 2 beats | A's own optical flow (from its last two frames) pushes through the cut, and B arrives already moving the same way, so it reads as one take. Favoured by auto-pick. |
+| `depth-parallax` | Depth parallax dissolve | 2 beats | A depth estimate (soft luma + local sharpness + a floor prior, tuned for a lit subject on a dark ground) drives parallax: near layers drift further, and B resolves near-first. |
+| `lens-breath` | Lens breath | 2 beats | Rack-defocus with real disc bokeh in linear light. The swap is hidden at peak defocus, with a 1.5% focus-breathing scale and a faint warm leak. |
+| `chrome-refract` | Chrome refraction carry | 2 beats | B is seen through A's surface normals like liquid-chrome glass, and the refraction relaxes as B takes over. |
+| `echo-trail` | Echo trail | 2 beats | A leaves a decaying ghost trail, the cut lands on the beat (mid-window), and the afterimage fades off B. |
+
+Each one is a single smooth bump (`sin(pi t)`) with no oscillation over time, so there's **no shimmer**, and each one ends exactly on clip B.
+
+**Classic (expert only, off by default):** `luma-wipe`, `stutter-cut`, `zoom-through`. Without Expert, the guardrail swaps them for a premium pick. `recommend()` maps old picks to `depth-parallax`, `cut` and `match-cut`. `transitions_fx.plan()` and `guard()` are the auto-pick and the guardrail. The VJ page (`/vj`) follows the same rules: mostly clean cuts, with premium spells on bar lines, and its Classic group only joins Auto with `?classic=1`.

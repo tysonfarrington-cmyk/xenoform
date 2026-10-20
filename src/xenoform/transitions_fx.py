@@ -42,19 +42,35 @@ TRANSITIONS: dict[str, dict] = {
                      "note": "push into the centre of A and land inside B"},
     "black-hold": {"label": "Silence = black", "beats": 2, "gpu": False,
                    "note": "drop to black for the gap in the music, B returns on the hit"},
+    "cut": {"label": "Clean beat cut", "beats": 1, "gpu": False, "tier": "core",
+             "note": "a straight cut on the beat; most boundaries should be this"},
+    "match-cut": {"label": "Match-cut", "beats": 2, "gpu": False, "tier": "premium",
+             "note": "B's dominant subject is aligned onto A's silhouette (position + scale) at the cut, then glides home"},
+    "flow-carry": {"label": "Flow carry", "beats": 2, "gpu": False, "tier": "premium",
+             "note": "A's optical-flow motion pushes through the cut and B arrives already moving the same way"},
+    "depth-parallax": {"label": "Depth parallax dissolve", "beats": 2, "gpu": False, "tier": "premium",
+             "note": "near layers drift further than far ones (depth estimate); B resolves near-first"},
+    "lens-breath": {"label": "Lens breath", "beats": 2, "gpu": False, "tier": "premium",
+             "note": "rack-defocus with real disc bokeh in linear light, swap hidden at peak defocus, faint warm leak"},
+    "chrome-refract": {"label": "Chrome refraction carry", "beats": 2, "gpu": False, "tier": "premium",
+             "note": "B is seen through A's surface normals like liquid chrome glass, relaxing as B takes over"},
+    "echo-trail": {"label": "Echo trail", "beats": 2, "gpu": False, "tier": "premium",
+             "note": "A leaves a decaying ghost trail, the cut lands on the beat and the afterimage fades off B"},
 }
+for _k, _v in TRANSITIONS.items():
+    _v.setdefault("tier", "classic" if _k in ("luma-wipe", "stutter-cut", "zoom-through") else "core")
 # a continuous effect, not a boundary transition
 POST_EFFECTS = {"bass-pulse": "scale breathes with the bass; chroma kick on onsets"}
 
 RECOMMENDED: dict[str, dict[str, str]] = {
-    # section boundary kind -> transition, per vibe
-    "liquid-gold": {"drop": "scene-morph", "switch": "liquid-melt", "beat": "stutter-cut", "silence": "black-hold"},
-    "neon-night": {"drop": "chroma-split", "switch": "datamosh", "beat": "stutter-cut", "silence": "black-hold"},
-    "paper-summer": {"drop": "scene-morph", "switch": "luma-wipe", "beat": "zoom-through", "silence": "black-hold"},
-    "ocean": {"drop": "scene-morph", "switch": "liquid-melt", "beat": "luma-wipe", "silence": "black-hold"},
-    "cosmic": {"drop": "zoom-through", "switch": "scene-morph", "beat": "chroma-split", "silence": "black-hold"},
-    "black": {"drop": "scene-morph", "switch": "tape-stop", "beat": "stutter-cut", "silence": "black-hold"},
-    "bloom": {"drop": "scene-morph", "switch": "luma-wipe", "beat": "liquid-melt", "silence": "black-hold"},
+    # section boundary kind -> transition, per vibe. Most on-beat boundaries are clean cuts (v5).
+    "liquid-gold": {"drop": "scene-morph", "switch": "chrome-refract", "beat": "cut", "silence": "black-hold"},
+    "neon-night": {"drop": "flow-carry", "switch": "echo-trail", "beat": "cut", "silence": "black-hold"},
+    "paper-summer": {"drop": "scene-morph", "switch": "depth-parallax", "beat": "cut", "silence": "black-hold"},
+    "ocean": {"drop": "scene-morph", "switch": "flow-carry", "beat": "cut", "silence": "black-hold"},
+    "cosmic": {"drop": "match-cut", "switch": "scene-morph", "beat": "cut", "silence": "black-hold"},
+    "black": {"drop": "scene-morph", "switch": "match-cut", "beat": "cut", "silence": "black-hold"},
+    "bloom": {"drop": "scene-morph", "switch": "lens-breath", "beat": "cut", "silence": "black-hold"},
 }
 
 
@@ -73,13 +89,17 @@ def _registry_recommendations() -> None:
 _registry_recommendations()
 
 
-def recommend(vibe: str, boundary: str = "drop") -> str:
+_REMAP = {"luma-wipe": "depth-parallax", "stutter-cut": "cut", "zoom-through": "match-cut"}
+
+
+def recommend(vibe: str, boundary: str = "drop", *, classic: bool = False) -> str:
     table = RECOMMENDED.get(vibe, RECOMMENDED["black"])
-    return table.get(boundary, table["switch"])
+    k = table.get(boundary, table["switch"])
+    return k if classic else _REMAP.get(k, k)
 
 
 def public_list() -> list[dict]:
-    return [{"id": k, "label": v["label"], "note": v["note"], "gpu": v["gpu"], "beats": v["beats"]}
+    return [{"id": k, "label": v["label"], "note": v["note"], "gpu": v["gpu"], "beats": v["beats"], "tier": v["tier"]}
             for k, v in TRANSITIONS.items()]
 
 
@@ -302,6 +322,289 @@ _FUNCS: dict[str, Callable] = {
     "tape-stop": _tape_stop, "datamosh": _datamosh, "chroma-split": _chroma, "zoom-through": _zoom,
     "black-hold": _black,
 }
+
+
+# ---------------------------------------------------------------- premium "new spells" (v5)
+# Subtle, beat-aware, no shimmer: every displacement is a single smooth bump (sin(pi t)), never an
+# oscillation in time, and every one ends exactly on clip B.
+def _blur(img: np.ndarray, sigma: float) -> np.ndarray:
+    if sigma <= 0.3:
+        return img
+    if cv2 is not None:
+        return cv2.GaussianBlur(img, (0, 0), sigma)
+    k = max(1, int(sigma))
+    out = img.astype(np.float32)
+    for ax in (0, 1):
+        out = sum(np.roll(out, s, axis=ax) for s in range(-k, k + 1)) / (2 * k + 1)
+    return out
+
+
+def depth_proxy(img: Frame) -> np.ndarray:
+    """Cheap monocular depth estimate in 0..1 (1 = near): soft luma + local sharpness + a floor prior.
+    Xenoform shots are mostly a lit subject on a dark ground, which is where this proxy is reliable."""
+    L = _luma(img)
+    h, w = L.shape
+    s = max(1.0, w / 270)
+    lum = _blur(L, 6 * s)
+    if cv2 is not None:
+        sharp = _blur(np.abs(cv2.Laplacian(L, cv2.CV_32F)), 8 * s)
+    else:
+        sharp = _blur(np.abs(L - _blur(L, 2 * s)), 8 * s)
+    sharp = sharp / (float(sharp.max()) + 1e-6)
+    floor = np.linspace(0.0, 1.0, h, dtype=np.float32)[:, None] * np.ones((1, w), np.float32)
+    d = 0.5 * lum / (float(lum.max()) + 1e-6) + 0.35 * sharp + 0.15 * floor
+    return np.clip(_blur(d.astype(np.float32), 4 * s), 0, 1).astype(np.float32)
+
+
+def subject_box(img: Frame) -> tuple[float, float, float]:
+    """Dominant subject (cx, cy, size) from a soft luma mask against the ground."""
+    L = _blur(_luma(img), max(1.0, img.shape[1] / 360))
+    h, w = L.shape
+    thr = max(0.1, float(np.percentile(L, 70)))
+    m = L > thr
+    if m.mean() < 0.005 or m.mean() > 0.95:
+        m = L > float(L.mean())
+    ys, xs = np.nonzero(m)
+    if len(xs) < 8:
+        return w / 2, h / 2, 1.0
+    return float(xs.mean()), float(ys.mean()), float(np.sqrt(m.mean()))
+
+
+def _match_cut(a, b, i):
+    """Match-cut: B's dominant subject is aligned onto A's (position + scale) at the cut, then glides home."""
+    n = len(a); out = []
+    h, w = a[0].shape[:2]
+    gx, gy = _grid(h, w)
+    ax, ay, asz = subject_box(a[-1])
+    bx, by, bsz = subject_box(b[0])
+    k0 = float(np.clip(asz / max(bsz, 1e-3), 0.6, 1.6))
+    for k in range(n):
+        t = (k + 1) / (n + 1)
+        e = float(_ease(t))
+        kk = k0 ** (1 - e)
+        cx, cy = ax * (1 - e) + bx * e, ay * (1 - e) + by * e
+        wb = _remap(b[k], bx + (gx - cx) / kk, by + (gy - cy) / kk)
+        mix = float(_ease(min(1.0, t / 0.3)))  # the cut itself is fast: a 30% soft dissolve
+        out.append(_mix(a[k], wb, mix))
+    return out
+
+
+def _flow_carry(a, b, i):
+    """Optical-flow carry: A's own motion (flow of its last two frames) pushes through the cut and
+    B arrives already moving the same way, so the motion reads as one continuous take."""
+    n = len(a); out = []
+    h, w = a[0].shape[:2]
+    gx, gy = _grid(h, w)
+    vx = np.zeros((h, w), np.float32); vy = np.zeros((h, w), np.float32)
+    if cv2 is not None and n >= 2:
+        sm = 0.25
+        g0 = cv2.resize(cv2.cvtColor(a[-2], cv2.COLOR_RGB2GRAY), None, fx=sm, fy=sm)
+        g1 = cv2.resize(cv2.cvtColor(a[-1], cv2.COLOR_RGB2GRAY), None, fx=sm, fy=sm)
+        f = cv2.calcOpticalFlowFarneback(g0, g1, None, 0.5, 4, 31, 4, 7, 1.5, 0)
+        f = cv2.GaussianBlur(f, (0, 0), 6)
+        f = cv2.resize(f, (w, h)) / sm
+        vx, vy = f[..., 0], f[..., 1]
+    # global carry plus a gentle push-in so a static shot still flows
+    gm = float(np.hypot(vx.mean(), vy.mean()))
+    cap = 0.02 * w
+    sc = min(1.0, cap / (gm + 1e-6)) if gm > 0 else 1.0
+    vx, vy = vx * sc, vy * sc
+    span = n * (0.6 + 0.6 * i)
+    for k in range(n):
+        t = (k + 1) / (n + 1)
+        e = float(_ease(t))
+        push = 1 + 0.025 * (0.5 + i) * np.sin(np.pi * t)
+        wa = _remap(a[k], (gx - vx * span * t - w / 2) / push + w / 2, (gy - vy * span * t - h / 2) / push + h / 2)
+        wb = _remap(b[k], (gx + vx * span * (1 - t) - w / 2) / push + w / 2, (gy + vy * span * (1 - t) - h / 2) / push + h / 2)
+        out.append(_mix(wa, wb, e))
+    return out
+
+
+def _depth_parallax(a, b, i):
+    """Depth-aware parallax dissolve: near layers drift further than far ones, and B resolves near-first."""
+    n = len(a); out = []
+    h, w = a[0].shape[:2]
+    gx, gy = _grid(h, w)
+    da, db = depth_proxy(a[-1]), depth_proxy(b[0])
+    amp = (0.015 + 0.02 * i) * w
+    for k in range(n):
+        t = (k + 1) / (n + 1)
+        wa = _remap(a[k], gx - da * amp * t, gy - da * amp * 0.25 * t)
+        wb = _remap(b[k], gx + db * amp * (1 - t), gy + db * amp * 0.25 * (1 - t))
+        m = np.clip((t - 0.35 * (1 - db)) / 0.65, 0, 1)
+        out.append(_mix(wa, wb, _ease(m)))
+    return out
+
+
+def _disk(r: int) -> np.ndarray:
+    y, x = np.mgrid[-r:r + 1, -r:r + 1]
+    k = ((x * x + y * y) <= r * r).astype(np.float32)
+    return k / k.sum()
+
+
+def _bokeh(img: Frame, r: float) -> np.ndarray:
+    f = (img.astype(np.float32) / 255.0) ** 2.2  # linear light, so highlights bloom into discs
+    if r < 1:
+        return f
+    if cv2 is not None:
+        sm = 0.5 if img.shape[1] > 720 else 1.0
+        small = cv2.resize(f, None, fx=sm, fy=sm, interpolation=cv2.INTER_AREA) if sm < 1 else f
+        small = cv2.filter2D(small, -1, _disk(max(1, int(r * sm))), borderType=cv2.BORDER_REFLECT)
+        return cv2.resize(small, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_LINEAR) if sm < 1 else small
+    return _blur(f, r / 2)
+
+
+def _lens_breath(a, b, i):
+    """Lens breath: a rack-defocus with real disc bokeh in linear light, the swap hidden at peak
+    defocus, a 1.5% focus-breathing scale and a faint warm leak. Refocuses on B."""
+    n = len(a); out = []
+    h, w = a[0].shape[:2]
+    gx, gy = _grid(h, w)
+    R = (0.008 + 0.01 * i) * w
+    leak = np.clip(1 - np.hypot((gx - w * 0.9) / w, (gy - h * 0.1) / h) * 1.6, 0, 1) ** 2
+    warm = np.stack([leak, leak * 0.55, leak * 0.25], -1).astype(np.float32)
+    for k in range(n):
+        t = (k + 1) / (n + 1)
+        bump = float(np.sin(np.pi * t))
+        s = 1 + 0.015 * bump
+        src = a[k] if t < 0.5 else b[k]
+        fr = scale_frame(src, s)
+        lin = _bokeh(fr, R * bump)
+        if 0.35 < t < 0.65:  # cross the swap inside the defocus
+            other = _bokeh(scale_frame(b[k] if t < 0.5 else a[k], s), R * bump)
+            q = (t - 0.35) / 0.3
+            lin = lin * (1 - q) + other * q if t < 0.5 else other * (1 - q) + lin * q
+        lin = lin + warm * (0.10 * bump * (0.4 + i))
+        out.append(np.clip((np.clip(lin, 0, 1) ** (1 / 2.2)) * 255, 0, 255).astype(np.uint8))
+    return out
+
+
+def _chrome_refract(a, b, i):
+    """Liquid-chrome refraction carry-through: B is seen through A's surface normals (as if A were
+    glass), the refraction relaxes as B takes over. One smooth bump, no ripple in time."""
+    n = len(a); out = []
+    h, w = a[0].shape[:2]
+    gx, gy = _grid(h, w)
+    s = max(1.0, w / 360)
+    La, Lb = _blur(_luma(a[-1]), 3 * s), _blur(_luma(b[0]), 3 * s)
+    ny_a, nx_a = np.gradient(La); ny_b, nx_b = np.gradient(Lb)
+    norm = max(float(np.abs(nx_a).max()), float(np.abs(ny_a).max()), 1e-6)
+    nx_a, ny_a = nx_a / norm, ny_a / norm
+    normb = max(float(np.abs(nx_b).max()), float(np.abs(ny_b).max()), 1e-6)
+    nx_b, ny_b = nx_b / normb, ny_b / normb
+    amp = (0.02 + 0.03 * i) * w
+    spec = np.clip(np.hypot(nx_a, ny_a), 0, 1) ** 3
+    for k in range(n):
+        t = (k + 1) / (n + 1)
+        bump = float(np.sin(np.pi * t))
+        e = float(_ease(t))
+        wb = _remap(b[k], gx + nx_a * amp * bump * (1 - e), gy + ny_a * amp * bump * (1 - e))
+        wa = _remap(a[k], gx - nx_b * amp * bump * e, gy - ny_b * amp * bump * e)
+        m = _mix(wa, wb, e).astype(np.float32) + (spec * 28 * bump * (0.5 + i))[..., None]
+        out.append(np.clip(m, 0, 255).astype(np.uint8))
+    return out
+
+
+def _echo_trail(a, b, i):
+    """Temporal echo on the beat: A leaves a decaying ghost trail, the cut lands on the beat (the
+    middle of the window) and A's afterimage fades off B by the end."""
+    n = len(a); out = []
+    mid = n // 2
+    acc = a[0].astype(np.float32)
+    decay = 0.6 + 0.25 * i
+    for k in range(n):
+        if k < mid:
+            acc = acc * decay + a[k].astype(np.float32) * (1 - decay)
+            fr = a[k].astype(np.float32)
+            out.append(np.clip(fr + np.maximum(0, acc - fr) * 0.55, 0, 255).astype(np.uint8))
+        else:
+            g = 0.5 * (1 - (k - mid + 1) / max(1, n - mid)) ** 2
+            fr = b[k].astype(np.float32)
+            out.append(np.clip(fr + np.maximum(0, acc - fr) * g, 0, 255).astype(np.uint8))
+    return out
+
+
+def _cut(a, b, i):
+    return [f.copy() for f in b]
+
+
+# ---------------------------------------------------------------- auto-pick (v5)
+CLASSIC = ("luma-wipe", "stutter-cut", "zoom-through")
+PREMIUM = ("match-cut", "flow-carry", "depth-parallax", "lens-breath", "chrome-refract", "echo-trail")
+# favour match-cut and flow; scene-morph stays the signature on drops when a morph is rendered
+AUTO_WEIGHTS = {"match-cut": 3.0, "flow-carry": 3.0, "depth-parallax": 1.5, "lens-breath": 1.2,
+                "chrome-refract": 1.0, "echo-trail": 0.8}
+EXEMPT_FROM_CAP = ("cut", "scene-morph", "black-hold")
+
+
+def _cfg_rules() -> dict:
+    try:
+        import json as _json
+        from pathlib import Path as _P
+        p = _P(__file__).resolve().parents[2] / "configs" / "guardrails.json"
+        return _json.loads(p.read_text(encoding="utf-8"))["rules"].get("transition_variety", {})
+    except Exception:
+        return {}
+
+
+def pick_premium(used: dict[str, int], rng: np.random.Generator, *, max_per_type: int = 2) -> str:
+    pool = {k: w for k, w in AUTO_WEIGHTS.items() if used.get(k, 0) < max_per_type}
+    if not pool:
+        return "cut"
+    keys = list(pool); p = np.asarray([pool[k] for k in keys], float); p /= p.sum()
+    return str(rng.choice(keys, p=p))
+
+
+def plan(boundaries: Sequence[dict], *, seed: int = 0, classic: bool = False) -> list[str]:
+    """Pick a transition per boundary. boundaries: [{"section": bool, "morph": bool, "silence": bool}].
+    Most boundaries are clean beat cuts; section changes get one premium spell, each type at most
+    max_per_type times per video, and premium moments stay under max_fx_share of all boundaries."""
+    r = _cfg_rules()
+    cap = int(r.get("max_per_type", 2)); share = float(r.get("max_fx_share", 0.35))
+    rng = np.random.default_rng(seed)
+    used: dict[str, int] = {}
+    out: list[str] = []
+    budget = max(1, int(round(share * max(1, len(boundaries)))))
+    for bd in boundaries:
+        if bd.get("morph"):
+            out.append("scene-morph"); continue
+        if bd.get("silence"):
+            out.append("black-hold"); continue
+        if bd.get("section") and budget > 0:
+            k = pick_premium(used, rng, max_per_type=cap)
+            if k != "cut":
+                used[k] = used.get(k, 0) + 1; budget -= 1
+            out.append(k); continue
+        out.append("cut")
+    return out
+
+
+def guard(kinds: Sequence[str], *, expert: bool = False, seed: int = 0) -> tuple[list[str], list[str]]:
+    """Guardrail: classic wipes are expert-only, and no one transition type appears more than
+    max_per_type times. Overflow becomes a clean cut. Returns (kinds, messages)."""
+    r = _cfg_rules()
+    cap = int(r.get("max_per_type", 2))
+    classic_ok = expert or not r.get("classic_expert_only", True)
+    rng = np.random.default_rng(seed)
+    used: dict[str, int] = {}
+    out, msgs = [], []
+    for k in kinds:
+        nk = k
+        if k in CLASSIC and not classic_ok:
+            nk = pick_premium(used, rng, max_per_type=cap)
+            msgs.append(f"{k} is a Classic transition (expert only); using {nk}")
+        if nk in TRANSITIONS and nk not in EXEMPT_FROM_CAP:
+            if used.get(nk, 0) >= cap and not expert:
+                msgs.append(f"{nk} already used {cap}x; this boundary is a clean beat cut")
+                nk = "cut"
+            used[nk] = used.get(nk, 0) + 1
+        out.append(nk)
+    return out, msgs
+
+
+_FUNCS.update({"cut": _cut, "match-cut": _match_cut, "flow-carry": _flow_carry, "depth-parallax": _depth_parallax,
+               "lens-breath": _lens_breath, "chrome-refract": _chrome_refract, "echo-trail": _echo_trail})
+
 
 
 def apply(kind: str, a_tail: Sequence[Frame], b_head: Sequence[Frame], intensity: float = 0.5,

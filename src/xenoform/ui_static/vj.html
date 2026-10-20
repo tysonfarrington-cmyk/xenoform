@@ -50,11 +50,15 @@
  <select id="input" title="Audio input"></select>
  <label class="btn">Add loops<input id="files" type="file" accept="video/*" multiple hidden></label>
  <span class="sep"></span>
- <select id="fx" title="Transition on the beat">
-  <option value="auto">Auto transitions</option>
-  <option value="0">1 · Liquid morph</option><option value="1">2 · Luma wipe</option><option value="2">3 · Chroma split</option>
-  <option value="3">4 · Zoom-through</option><option value="4">5 · Hard cut + stutter</option><option value="5">6 · Iris bloom</option>
-  <option value="6">7 · Slice glitch</option><option value="7">8 · Prism dissolve</option>
+ <select id="fx" title="Transition">
+  <option value="auto">Auto (mostly clean cuts)</option>
+  <optgroup label="Premium">
+  <option value="8">1 · Clean cut</option><option value="9">2 · Match-cut</option><option value="10">3 · Flow carry</option>
+  <option value="0">4 · Liquid flow</option><option value="11">5 · Depth parallax</option><option value="12">6 · Lens breath</option>
+  <option value="13">7 · Chrome refraction</option><option value="14">8 · Echo trail</option></optgroup>
+  <optgroup label="Classic (expert)">
+  <option value="1">Luma wipe</option><option value="2">Chroma split</option><option value="3">Zoom-through</option><option value="4">Hard cut + stutter</option>
+  <option value="5">Iris</option><option value="6">Slice</option><option value="7">Pixel dissolve</option></optgroup>
  </select>
  <select id="every" title="Switch scene every"><option value="0">Follow the song</option><option value="1">Every beat</option><option value="2">Every 2 beats</option><option value="4">Every bar</option><option value="8">Every 2 bars</option></select>
  <button id="kal" title="K">Kaleido</button><button id="mir" title="M">Mirror</button><button id="stb" title="S">Strobe</button>
@@ -64,14 +68,15 @@
 <div id="help"><div class="glass"><h2>Controls</h2><table>
  <tr><td>Space / →</td><td>Next scene with the current transition</td></tr>
  <tr><td>←</td><td>Previous scene (hard cut)</td></tr>
- <tr><td>1–8 · 0</td><td>Pick a transition · 0 = auto</td></tr>
+ <tr><td>1–8 · 0</td><td>Premium: clean cut, match-cut, flow carry, liquid flow, depth parallax, lens breath, chrome refraction, echo trail · 0 = auto (mostly clean cuts, a premium spell every 2 bars, max 2 of a kind in any 8 switches)</td></tr>
+ <tr><td>Classic</td><td>Wipe, iris, slice, stutter, zoom: in the menu only, or in Auto with ?classic=1</td></tr>
  <tr><td>[ ]</td><td>Switch slower / faster (follow, 1, 2, 4, 8 beats)</td></tr>
  <tr><td>↑ ↓</td><td>Effect intensity</td></tr>
  <tr><td>K · M · S</td><td>Kaleido · Mirror · Strobe</td></tr>
  <tr><td>T</td><td>Tap tempo (mic mode)</td></tr>
  <tr><td>P · H · F</td><td>HUD · Hide controls · Fullscreen</td></tr>
  <tr><td>R</td><td>Record a clean clip (webm, with audio)</td></tr>
- <tr><td>MIDI</td><td>Notes 36–43 = transitions 1–8 + next · CC1 intensity · CC2 switch rate</td></tr>
+ <tr><td>MIDI</td><td>Notes 36–43 = premium transitions 1–8 + next · CC1 intensity · CC2 switch rate</td></tr>
 </table></div></div>
 <div id="toast" class="glass"></div>
 <script>
@@ -81,10 +86,12 @@
 const $=id=>document.getElementById(id), Q=new URLSearchParams(location.search);
 const cv=$('c'), gl=cv.getContext('webgl',{premultipliedAlpha:false,preserveDrawingBuffer:false,antialias:false});
 let seed=+(Q.get('seed')||7); const rnd=()=>{seed=(seed*16807)%2147483647;return (seed-1)/2147483646};
-const FXN=['Liquid morph','Luma wipe','Chroma split','Zoom-through','Hard cut + stutter','Iris bloom','Slice glitch','Prism dissolve'];
+const FXN=['Liquid flow','Luma wipe (classic)','Chroma split (classic)','Zoom-through (classic)','Hard cut + stutter (classic)','Iris (classic)','Slice (classic)','Pixel dissolve (classic)','Clean cut','Match-cut','Flow carry','Depth parallax','Lens breath','Chrome refraction','Echo trail'];
+const KEYFX=[8,9,10,0,11,12,13,14],CLASSIC=[1,2,3,4,5,6,7],CLASSIC_OK=Q.get('classic')==='1';
+const W8={9:3,10:3,0:2,11:1.5,12:1.2,13:1,14:.8};
 const VS=`attribute vec2 p;varying vec2 uv;void main(){uv=p*.5+.5;uv.y=1.-uv.y;gl_Position=vec4(p,0,1);}`;
 const FS=`precision highp float;varying vec2 uv;uniform sampler2D A,B;
-uniform float t,m,bass,high,fx,aspA,aspB,aspS,beat,kal,mir,stb,inten;
+uniform float t,m,bass,high,fx,aspA,aspB,aspS,beat,kal,mir,stb,inten;uniform vec3 ca,cb;uniform vec2 dir;
 float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 vec2 cover(vec2 u,float a){vec2 c=u-.5;if(a>aspS)c.x*=aspS/a;else c.y*=a/aspS;u=c+.5;return 1.-abs(1.-mod(u,2.));}
 vec3 tx(sampler2D s,vec2 u,float a){return texture2D(s,cover(u,a)).rgb;}
@@ -101,8 +108,18 @@ void main(){vec2 p=uv;
  else if(f==4){mm=step(.5,m);float j=step(.5,hash(vec2(floor(t*24.),3.)))*k;ua.y+=.03*j;ub.y-=.03*j;cs+=.01*j;}
  else if(f==5){vec2 c=uv-.5;c.x*=aspS;float r=length(c),R=m*1.15;mm=1.-smoothstep(R-.04,R,r);edge=smoothstep(.035,0.,abs(r-R))*k;}
  else if(f==6){float row=floor(uv.y*28.),h=hash(vec2(row,floor(t*18.)));ua.x+=(h-.5)*.22*k;ub.x-=(h-.5)*.22*k;mm=step(h*.9+.05,m);cs+=.012*k;}
+
+ else if(f==8){mm=step(.001,m);}
+ else if(f==9){float e=mm,kk=pow(clamp(ca.z/max(cb.z,.001),.6,1.6),1.-e);vec2 c=mix(ca.xy,cb.xy,e);ub=cb.xy+(u-c)/kk;mm=smoothstep(0.,.3,m);}
+ else if(f==10){vec2 v=dir*(.06+.05*inten);ua=u-v*m;ub=u+v*(1.-m);float pz=1.+.025*k;ua=(ua-.5)/pz+.5;ub=(ub-.5)/pz+.5;}
+ else if(f==11){float da=dot(tx(A,u,aspA),vec3(.33)),db=dot(tx(B,u,aspB),vec3(.33));vec2 v=dir*(.03+.02*inten);ua=u-v*da*m;ub=u+v*db*(1.-m);mm=smoothstep(0.,1.,clamp((m-.35*(1.-db))/.65,0.,1.));}
+ else if(f==13){vec2 e=vec2(.004,0.);float l0=dot(tx(A,u,aspA),vec3(.33));vec2 g=vec2(dot(tx(A,u+e.xy,aspA),vec3(.33))-l0,dot(tx(A,u+e.yx,aspA),vec3(.33))-l0)*12.;ub=u+g*(.03+.03*inten)*k*(1.-mm);ua=u-g*.01*k*mm;edge=clamp(length(g),0.,1.)*k*.25;}
  else if(f==7){float n=hash(floor(uv*vec2(aspS,1.)*90.));mm=smoothstep(n-.15,n+.15,m*1.3-.15);cs+=.025*k;}
  vec3 a=rgb(A,ua,aspA,cs),b=rgb(B,ub,aspB,cs);
+
+ if(f==12){float r=(.006+.008*inten)*k;vec3 sa=vec3(0),sb=vec3(0);for(int j=0;j<16;j++){float an=float(j)*2.39996,rr=r*sqrt((float(j)+.5)/16.);vec2 o=vec2(cos(an),sin(an))*rr;o.x/=aspS;sa+=pow(tx(A,u+o,aspA),vec3(2.2));sb+=pow(tx(B,u+o,aspB),vec3(2.2));}
+  a=pow(sa/16.,vec3(1./2.2));b=pow(sb/16.,vec3(1./2.2));mm=smoothstep(.35,.65,m);edge=0.;a+=vec3(.10,.055,.025)*k*inten;b+=vec3(.10,.055,.025)*k*inten;}
+ if(f==14){vec3 g=vec3(0);for(int j=1;j<6;j++){float sc=1.+.018*float(j)*inten;g=max(g,tx(A,(u-.5)/sc+.5,aspA)*(1.-float(j)/6.));}float gm=m<.5?.55:.5*pow(1.-(m-.5)*2.,2.);mm=step(.5,m);a=max(a,g*.55);b=max(b,g*gm);}
  if(f==1){float L=dot(a,vec3(.299,.587,.114));mm=smoothstep(L-.08,L+.08,m*1.16-.08);}
  vec3 col=mix(a,b,mm)+vec3(.85,.88,1.)*edge*.7;
  col+=stb*beat*beat*.22;
@@ -136,11 +153,20 @@ async function loadLibrary(){
  for(let i=S.scenes.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[S.scenes[i],S.scenes[j]]=[S.scenes[j],S.scenes[i]]}
  if(S.scenes[0])S.scenes[0].v.play().catch(()=>{});}
 $('files').onchange=e=>{[...e.target.files].forEach(f=>S.scenes.push(vid(URL.createObjectURL(f),f.name)));toast(`${e.target.files.length} loop(s) added`)};
-function pickFx(){if(S.fx!=='auto')return +S.fx;let f;do{f=Math.floor(rnd()*8)}while(f===S.curFx&&rnd()<.85);return f}
-function next(fxOverride){const n=S.scenes.length;if(n<2||S.trans)return;
+const sc2=document.createElement('canvas');sc2.width=sc2.height=48;const c2=sc2.getContext('2d',{willReadFrequently:true});
+function box(v){try{c2.drawImage(v,0,0,48,48);const d=c2.getImageData(0,0,48,48).data;let L=[],mx=0;for(let i=0;i<d.length;i+=4){const l=(d[i]*.299+d[i+1]*.587+d[i+2]*.114)/255;L.push(l)}
+ const srt=[...L].sort((x,y)=>x-y),thr=Math.max(.1,srt[Math.floor(L.length*.7)]);let sx=0,sy=0,n=0;L.forEach((l,i)=>{if(l>thr){sx+=i%48;sy+=Math.floor(i/48);n++}});
+ if(n<4)return[.5,.5,1];return[(sx/n+.5)/48,(sy/n+.5)/48,Math.sqrt(n/L.length)]}catch(e){return[.5,.5,1]}}
+const recent=[];
+function pickFx(premiumMoment){if(S.fx!=='auto')return +S.fx;if(!premiumMoment)return 8;
+ const pool=Object.entries(W8).filter(([k])=>recent.filter(x=>x==k).length<2&&+k!==S.curFx);if(CLASSIC_OK)CLASSIC.forEach(c=>pool.push([c,.3]));
+ let tot=pool.reduce((a,[,w])=>a+w,0),r=rnd()*tot;for(const [k,w] of pool){if((r-=w)<=0){recent.push(+k);recent.length>8&&recent.shift();return +k}}return 8}
+function next(fxOverride,premiumMoment=true){const n=S.scenes.length;if(n<2||S.trans)return;
  S.nxt=(S.cur+1)%n;const nv=S.scenes[S.nxt].v;nv.currentTime=0;nv.play().catch(()=>{});
- S.curFx=fxOverride!=null?fxOverride:pickFx();const beatMs=S.bpm?60000/S.bpm:500;
- S.dur=S.curFx===4?Math.min(260,beatMs*.5):Math.max(380,Math.min(1300,beatMs*(S.curFx===5||S.curFx===3?1:1.5)));
+ S.curFx=fxOverride!=null?fxOverride:pickFx(premiumMoment);const beatMs=S.bpm?60000/S.bpm:500;
+ if(S.curFx===9){const a=box(S.scenes[S.cur].v),b=box(nv);gl.uniform3f(U('ca'),a[0],a[1],a[2]);gl.uniform3f(U('cb'),b[0],b[1],b[2])}
+ {const an=rnd()*6.283;gl.uniform2f(U('dir'),Math.cos(an),Math.sin(an)*.4)}
+ S.dur=S.curFx===8?16:S.curFx===4?Math.min(260,beatMs*.5):S.curFx===14?beatMs:Math.max(420,Math.min(1400,beatMs*1.5));
  S.trans=true;S.t0=performance.now()}
 function prev(){const n=S.scenes.length;if(n<2)return;S.scenes[S.cur].v.pause();S.cur=(S.cur-1+n)%n;S.scenes[S.cur].v.play().catch(()=>{});S.trans=false}
 
@@ -179,7 +205,7 @@ let lastBeatIdx=-1,beatPulse=0,lastFluxBeat=0,avgFlux=0,bassS=0,highS=0;
 function switchEvery(idx){if(S.every)return S.every;if(!grid||!grid.en)return 4;const e=grid.en[idx]||0;return e>grid.hi?1:e>grid.med*1.05?2:4}
 function onBeat(idx){beatPulse=1;S.beats++;const bi=grid&&grid.down!=null?((idx-grid.down)%4+4)%4:S.beats%4;
  document.querySelectorAll('#bars i').forEach((el,i)=>el.classList.toggle('on',i===bi));
- const N=switchEvery(idx);const pos=grid&&grid.down!=null?idx-grid.down:S.beats;if(((pos%N)+N)%N===0)next()}
+ const N=switchEvery(idx);const pos=grid&&grid.down!=null?idx-grid.down:S.beats;if(((pos%N)+N)%N===0)next(null,((pos%8)+8)%8===0)}
 
 // render loop
 let fpsN=0,fpsT=performance.now();
@@ -224,7 +250,7 @@ $('hudb').onclick=hud;$('recb').onclick=()=>record();$('helpb').onclick=()=>$('h
 $('fs').onclick=()=>document.documentElement.requestFullscreen();
 addEventListener('keydown',e=>{if(e.target.tagName==='SELECT')return;const k=e.key;
  if(k===' '||k==='ArrowRight'){e.preventDefault();if(trackEl&&trackEl.paused&&!S.played){S.played=1;AC.resume();trackEl.play()}else next()}
- else if(k==='ArrowLeft')prev();else if(k>='1'&&k<='8')setFx(String(+k-1));else if(k==='0'||k==='a'||k==='A')setFx('auto');
+ else if(k==='ArrowLeft')prev();else if(k>='1'&&k<='8')setFx(String(KEYFX[+k-1]));else if(k==='0'||k==='a'||k==='A')setFx('auto');
  else if(k==='[')rate(-1);else if(k===']')rate(1);else if(k==='ArrowUp'){e.preventDefault();S.inten=Math.min(2,S.inten+.1);toast('Intensity '+S.inten.toFixed(1))}
  else if(k==='ArrowDown'){e.preventDefault();S.inten=Math.max(0,S.inten-.1);toast('Intensity '+S.inten.toFixed(1))}
  else if(/^[kK]$/.test(k))tog('kal','kal');else if(/^[mM]$/.test(k))tog('mir','mir');else if(/^[sS]$/.test(k))tog('stb','stb');
@@ -232,7 +258,7 @@ addEventListener('keydown',e=>{if(e.target.tagName==='SELECT')return;const k=e.k
  else if(/^[rR]$/.test(k))record();else if(/^[fF]$/.test(k))document.documentElement.requestFullscreen();else if(k==='?')$('help').classList.toggle('show')});
 // MIDI-style control (Web MIDI when the browser has it)
 if(navigator.requestMIDIAccess)navigator.requestMIDIAccess().then(acc=>{const bind=()=>{let n=0;acc.inputs.forEach(inp=>{n++;inp.onmidimessage=ev=>{const [st,d1,d2]=ev.data,c=st&0xf0;
- if(c===0x90&&d2>0){if(d1>=36&&d1<=43){setFx(String(d1-36));next(d1-36)}else next()}
+ if(c===0x90&&d2>0){if(d1>=36&&d1<=43){const f=KEYFX[d1-36];setFx(String(f));next(f)}else next()}
  else if(c===0xB0&&d1===1)S.inten=d2/63.5;else if(c===0xB0&&d1===2){S.every=EV[Math.min(4,Math.floor(d2/26))];$('every').value=S.every}}});$('h-midi').textContent=n?n+' input(s)':'none'};bind();acc.onstatechange=bind}).catch(()=>{});
 if(Q.get('clean')==='1')document.body.classList.add('clean');if(Q.get('hud')==='1')hud();
 let idle;addEventListener('mousemove',()=>{$('ui').classList.remove('hide');clearTimeout(idle);idle=setTimeout(()=>{if(!$('help').classList.contains('show'))$('ui').classList.add('hide')},3500)});

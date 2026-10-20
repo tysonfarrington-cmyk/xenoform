@@ -4,52 +4,104 @@
   "scene-morph": {
    "label": "Scene morph",
    "beats": 4,
-   "gpu": true
+   "gpu": true,
+   "tier": "core"
   },
   "flow-morph": {
    "label": "Flow morph",
    "beats": 2,
-   "gpu": false
+   "gpu": false,
+   "tier": "core"
   },
   "liquid-melt": {
    "label": "Liquid chrome melt",
    "beats": 2,
-   "gpu": false
+   "gpu": false,
+   "tier": "core"
   },
   "luma-wipe": {
    "label": "Luma matte wipe",
    "beats": 2,
-   "gpu": false
+   "gpu": false,
+   "tier": "classic"
   },
   "stutter-cut": {
    "label": "Beat cut + stutter",
    "beats": 1,
-   "gpu": false
+   "gpu": false,
+   "tier": "classic"
   },
   "tape-stop": {
    "label": "Tape-stop warp",
    "beats": 2,
-   "gpu": false
+   "gpu": false,
+   "tier": "core"
   },
   "datamosh": {
    "label": "Datamosh burst",
    "beats": 1,
-   "gpu": false
+   "gpu": false,
+   "tier": "core"
   },
   "chroma-split": {
    "label": "Chromatic split",
    "beats": 1,
-   "gpu": false
+   "gpu": false,
+   "tier": "core"
   },
   "zoom-through": {
    "label": "Zoom-through",
    "beats": 1,
-   "gpu": false
+   "gpu": false,
+   "tier": "classic"
   },
   "black-hold": {
    "label": "Silence = black",
    "beats": 2,
-   "gpu": false
+   "gpu": false,
+   "tier": "core"
+  },
+  "cut": {
+   "label": "Clean beat cut",
+   "beats": 1,
+   "gpu": false,
+   "tier": "core"
+  },
+  "match-cut": {
+   "label": "Match-cut",
+   "beats": 2,
+   "gpu": false,
+   "tier": "premium"
+  },
+  "flow-carry": {
+   "label": "Flow carry",
+   "beats": 2,
+   "gpu": false,
+   "tier": "premium"
+  },
+  "depth-parallax": {
+   "label": "Depth parallax dissolve",
+   "beats": 2,
+   "gpu": false,
+   "tier": "premium"
+  },
+  "lens-breath": {
+   "label": "Lens breath",
+   "beats": 2,
+   "gpu": false,
+   "tier": "premium"
+  },
+  "chrome-refract": {
+   "label": "Chrome refraction carry",
+   "beats": 2,
+   "gpu": false,
+   "tier": "premium"
+  },
+  "echo-trail": {
+   "label": "Echo trail",
+   "beats": 2,
+   "gpu": false,
+   "tier": "premium"
   }
  },
  "beat_snap": {
@@ -65,44 +117,104 @@
  "recommended": {
   "liquid-gold": {
    "drop": "scene-morph",
-   "switch": "liquid-melt",
-   "beat": "stutter-cut",
+   "switch": "chrome-refract",
+   "beat": "cut",
    "silence": "black-hold"
   },
   "neon-night": {
-   "drop": "chroma-split",
-   "switch": "datamosh",
-   "beat": "stutter-cut",
+   "drop": "flow-carry",
+   "switch": "echo-trail",
+   "beat": "cut",
    "silence": "black-hold"
   },
   "paper-summer": {
    "drop": "scene-morph",
-   "switch": "luma-wipe",
-   "beat": "zoom-through",
+   "switch": "depth-parallax",
+   "beat": "cut",
    "silence": "black-hold"
   },
   "ocean": {
    "drop": "scene-morph",
-   "switch": "liquid-melt",
-   "beat": "luma-wipe",
+   "switch": "flow-carry",
+   "beat": "cut",
    "silence": "black-hold"
   },
   "cosmic": {
-   "drop": "zoom-through",
+   "drop": "match-cut",
    "switch": "scene-morph",
-   "beat": "chroma-split",
+   "beat": "cut",
    "silence": "black-hold"
   },
   "black": {
    "drop": "scene-morph",
-   "switch": "tape-stop",
-   "beat": "stutter-cut",
+   "switch": "match-cut",
+   "beat": "cut",
    "silence": "black-hold"
   },
   "bloom": {
    "drop": "scene-morph",
-   "switch": "luma-wipe",
-   "beat": "liquid-melt",
+   "switch": "lens-breath",
+   "beat": "cut",
+   "silence": "black-hold"
+  },
+  "chrome-mercury": {
+   "drop": "scene-morph",
+   "switch": "liquid-melt",
+   "beat": "cut",
+   "silence": "black-hold"
+  },
+  "ferrofluid": {
+   "drop": "scene-morph",
+   "switch": "datamosh",
+   "beat": "cut",
+   "silence": "black-hold"
+  },
+  "y2k-chrome": {
+   "drop": "match-cut",
+   "switch": "liquid-melt",
+   "beat": "cut",
+   "silence": "black-hold"
+  },
+  "low-poly": {
+   "drop": "cut",
+   "switch": "match-cut",
+   "beat": "cut",
+   "silence": "black-hold"
+  },
+  "odd-machine": {
+   "drop": "datamosh",
+   "switch": "tape-stop",
+   "beat": "cut",
+   "silence": "black-hold"
+  },
+  "brutalist": {
+   "drop": "depth-parallax",
+   "switch": "cut",
+   "beat": "cut",
+   "silence": "black-hold"
+  },
+  "porcelain-marble": {
+   "drop": "scene-morph",
+   "switch": "depth-parallax",
+   "beat": "cut",
+   "silence": "black-hold"
+  },
+  "lava-obsidian": {
+   "drop": "scene-morph",
+   "switch": "liquid-melt",
+   "beat": "cut",
+   "silence": "black-hold"
+  },
+  "ice-crystal": {
+   "drop": "scene-morph",
+   "switch": "depth-parallax",
+   "beat": "cut",
+   "silence": "black-hold"
+  },
+  "origami-noir": {
+   "drop": "cut",
+   "switch": "match-cut",
+   "beat": "cut",
    "silence": "black-hold"
   }
  },
@@ -126,5 +238,26 @@
   ],
   "seconds": 2.0,
   "fallback": "flow-morph"
+ },
+ "classic": {
+  "enabled": false,
+  "types": [
+   "luma-wipe",
+   "stutter-cut",
+   "zoom-through"
+  ],
+  "_doc": "Wipe / stutter / zoom-through read as cheap; expert only."
+ },
+ "auto_pick": {
+  "weights": {
+   "match-cut": 3.0,
+   "flow-carry": 3.0,
+   "depth-parallax": 1.5,
+   "lens-breath": 1.2,
+   "chrome-refract": 1.0,
+   "echo-trail": 0.8
+  },
+  "default_boundary": "cut",
+  "_doc": "Most cuts are clean beat cuts; section changes get one premium spell. Favour match-cut and flow-carry."
  }
 }

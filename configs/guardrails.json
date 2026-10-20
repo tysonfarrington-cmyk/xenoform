@@ -14,6 +14,7 @@
     "vram": {"gb": 12, "max_pixels": 344064, "max_render_s": 5, "max_local_parallel": 1, "why": "12 GB cards OOM above 448x768 per shot, over 5 s per render, or with parallel local jobs."},
     "ui_effects": {"max_fx_intensity": 0.25, "max_wobble": 0.1, "max_wobble_moments": 2, "ui_kinds": ["ui", "app", "screen", "desk", "screencap"], "why": "Heavy FX on app shots looks messy; wobble sparingly and subtly."},
     "shimmer": {"banned": ["shimmer", "wavy", "warp"], "hard": true, "why": "The wavy shimmer look ruins visuals and is banned outright."},
+    "transition_variety": {"max_per_type": 2, "max_fx_share": 0.35, "classic_expert_only": true, "exempt": ["cut", "scene-morph", "black-hold"], "why": "Wipes, iris, slice and stutter look cheap and PowerPoint-like when overused; at most 2 of any one transition per video, most cuts clean on the beat."},
     "open_weights": {"contest_mode": true, "why": "Partner/API nodes (hosted LTX-2.5) are not open weights; off in contest mode unless expert."}
   }
 }

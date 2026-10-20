@@ -100,6 +100,15 @@ def build(spec):
     segs, trs = spec["segments"], spec["transitions"]
     if len(trs) != len(segs)-1:
         raise ValueError("need one transition per boundary (len(segments)-1)")
+    if spec.get("guardrails", True):
+        kinds, msgs = T.guard([t["kind"] for t in trs], expert=bool(spec.get("expert")))
+        for m in msgs:
+            print("guardrail transition_variety:", m, flush=True)
+        for t, k in zip(trs, kinds):
+            if k != t["kind"]:
+                t["kind"] = k
+                if k == "cut":
+                    t["win"] = 0
     if spec.get("beat_snap") and spec.get("analysis"):
         bs = spec["beat_snap"] if isinstance(spec["beat_snap"], dict) else {}
         beats = [b - spec.get("audio_in", 0.0) for b in json.load(open(spec["analysis"]))["beats"]]

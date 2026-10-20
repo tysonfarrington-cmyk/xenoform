@@ -187,8 +187,15 @@ def plan_edit(items: list[dict], beats: list[float], duration: float, *, vibe: s
             at_section = any(abs(t - x) < 0.5 for x in sections)
             if prev_mode == "morph-into-next":
                 kind = "scene-morph"
-            else:
-                kind = T.recommend(vibe, "drop" if at_section else "beat")
+            elif at_section:  # one premium spell per section change, each type at most twice
+                kind = T.recommend(vibe, "drop")
+                used = {}
+                for x in trs:
+                    used[x["kind"]] = used.get(x["kind"], 0) + 1
+                if kind not in T.EXEMPT_FROM_CAP and used.get(kind, 0) >= 2:
+                    kind = T.pick_premium(used, T.np.random.default_rng(k))
+            else:  # most boundaries: a clean cut on the beat
+                kind = "cut"
             trs.append({"kind": kind, "win": round(T.TRANSITIONS[kind]["beats"] * (beats[1] - beats[0] if len(beats) > 1 else 0.5), 3),
                         "intensity": 0.6})
     return {"segments": segs, "transitions": trs, "vibe": vibe}

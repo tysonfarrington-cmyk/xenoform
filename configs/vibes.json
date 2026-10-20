@@ -74,7 +74,7 @@
    "transitions": {
     "drop": "scene-morph",
     "switch": "liquid-melt",
-    "beat": "stutter-cut",
+    "beat": "cut",
     "silence": "black-hold"
    },
    "still_style": "Studio macro photograph, flawless liquid chrome and mercury, mirror surface reflecting soft gradient light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
@@ -109,7 +109,7 @@
    "transitions": {
     "drop": "scene-morph",
     "switch": "datamosh",
-    "beat": "stutter-cut",
+    "beat": "cut",
     "silence": "black-hold"
    },
    "still_style": "Studio macro photograph, jet-black glossy ferrofluid with sharp magnetic spikes and ridges, cold white rim light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
@@ -142,8 +142,8 @@
    },
    "transitions": {
     "drop": "scene-morph",
-    "switch": "luma-wipe",
-    "beat": "chroma-split",
+    "switch": "depth-parallax",
+    "beat": "cut",
     "silence": "black-hold"
    },
    "still_style": "Studio macro photograph, faceted crystal prism glass splitting a white beam into a vivid rainbow spectrum, saturated red to violet dispersion and coloured caustic light streaks across the object, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
@@ -177,7 +177,7 @@
    "transitions": {
     "drop": "chroma-split",
     "switch": "scene-morph",
-    "beat": "stutter-cut",
+    "beat": "cut",
     "silence": "black-hold"
    },
    "still_style": "Cinematic render, translucent emissive holographic light projection, cyan and magenta laser light, fine glowing contour lines, volumetric haze, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
@@ -209,9 +209,9 @@
     "guide_end_strength": 1.0
    },
    "transitions": {
-    "drop": "zoom-through",
+    "drop": "match-cut",
     "switch": "liquid-melt",
-    "beat": "stutter-cut",
+    "beat": "cut",
     "silence": "black-hold"
    },
    "still_style": "Studio macro photograph, inflated puffy chrome and frosted translucent ice-blue plastic, glossy bubble forms, silver gradient studio, early-2000s futurism, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
@@ -243,9 +243,9 @@
     "guide_end_strength": 1.0
    },
    "transitions": {
-    "drop": "stutter-cut",
-    "switch": "zoom-through",
-    "beat": "stutter-cut",
+    "drop": "cut",
+    "switch": "match-cut",
+    "beat": "cut",
     "silence": "black-hold"
    },
    "still_style": "Late-1990s real-time 3D game render, low-polygon 3D model with flat-shaded faceted triangles, affine-warped low-resolution textures, vertex colour gradients, late-1990s 32-bit console render, black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
@@ -278,7 +278,7 @@
    "transitions": {
     "drop": "liquid-melt",
     "switch": "scene-morph",
-    "beat": "zoom-through",
+    "beat": "cut",
     "silence": "black-hold"
    },
    "still_style": "Studio macro photograph, glossy wet aqua teal and hot pink pearlescent surfaces, retro 1990s web 3D render, pastel ocean caustics, holographic sheen, deep teal backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
@@ -310,9 +310,9 @@
     "guide_end_strength": 0.85
    },
    "transitions": {
-    "drop": "zoom-through",
+    "drop": "match-cut",
     "switch": "scene-morph",
-    "beat": "chroma-split",
+    "beat": "cut",
     "silence": "black-hold"
    },
    "still_style": "Cinematic render, glowing ultraviolet fluorescent fractal geometry, intricate recursive symmetrical patterns, blacklight neon lime magenta and violet, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
@@ -347,7 +347,7 @@
    "transitions": {
     "drop": "datamosh",
     "switch": "tape-stop",
-    "beat": "stutter-cut",
+    "beat": "cut",
     "silence": "black-hold"
    },
    "still_style": "Studio macro photograph, uncanny biomechanical form, glossy flesh-pink silicone fused with precision brushed steel parts and fine wiring, harsh surgical light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
@@ -378,9 +378,9 @@
     "guide_end_strength": 1.0
    },
    "transitions": {
-    "drop": "luma-wipe",
-    "switch": "stutter-cut",
-    "beat": "stutter-cut",
+    "drop": "depth-parallax",
+    "switch": "cut",
+    "beat": "cut",
     "silence": "black-hold"
    },
    "still_style": "Architectural photograph, raw board-marked concrete monolithic sculpture, hard low raking sunlight, deep geometric shadows, overcast grey sky backdrop, architectural photography, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
@@ -413,8 +413,8 @@
    },
    "transitions": {
     "drop": "scene-morph",
-    "switch": "luma-wipe",
-    "beat": "liquid-melt",
+    "switch": "depth-parallax",
+    "beat": "cut",
     "silence": "black-hold"
    },
    "still_style": "Studio macro photograph, translucent deep-sea creature-like form glowing with bioluminescent cyan and green light, soft inner glow, drifting particles, pitch black abyss, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
@@ -448,7 +448,7 @@
    "transitions": {
     "drop": "scene-morph",
     "switch": "liquid-melt",
-    "beat": "luma-wipe",
+    "beat": "cut",
     "silence": "black-hold"
    },
    "still_style": "Studio macro photograph, a crisp sculpted form made of dense swirling vermilion red and gold ink frozen mid-bloom in clear dark water, the silhouette sharply readable, fine ink filaments trailing from its edges, pure black backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
@@ -481,8 +481,8 @@
    },
    "transitions": {
     "drop": "scene-morph",
-    "switch": "luma-wipe",
-    "beat": "zoom-through",
+    "switch": "depth-parallax",
+    "beat": "cut",
     "silence": "black-hold"
    },
    "still_style": "Studio macro photograph, polished white veined marble and fine cobalt-blue glazed porcelain, museum spotlight, soft falloff, black velvet backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
@@ -516,7 +516,7 @@
    "transitions": {
     "drop": "scene-morph",
     "switch": "liquid-melt",
-    "beat": "stutter-cut",
+    "beat": "cut",
     "silence": "black-hold"
    },
    "still_style": "Studio macro photograph, glossy black obsidian volcanic glass with glowing orange molten lava cracks, embers, heat shimmer free, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
@@ -548,9 +548,9 @@
     "guide_end_strength": 1.0
    },
    "transitions": {
-    "drop": "luma-wipe",
+    "drop": "depth-parallax",
     "switch": "chroma-split",
-    "beat": "stutter-cut",
+    "beat": "cut",
     "silence": "black-hold"
    },
    "still_style": "Thermal infrared camera image, thermal infrared camera image, false-colour iron palette from white-hot yellow through orange and magenta to deep violet, heat signature, black cold background, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
@@ -583,7 +583,7 @@
    "transitions": {
     "drop": "tape-stop",
     "switch": "datamosh",
-    "beat": "stutter-cut",
+    "beat": "cut",
     "silence": "black-hold"
    },
    "still_style": "Close photograph of a glowing CRT screen, object shown on a glowing CRT monitor, soft visible scanlines and RGB phosphor glow, gentle analogue colour bleed, dark room, tasteful vintage video, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
@@ -616,8 +616,8 @@
    },
    "transitions": {
     "drop": "scene-morph",
-    "switch": "luma-wipe",
-    "beat": "chroma-split",
+    "switch": "depth-parallax",
+    "beat": "cut",
     "silence": "black-hold"
    },
    "still_style": "Studio macro photograph, clear frozen ice with intricate frost crystal growth and trapped bubbles, cold blue backlight, frost ferns, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
@@ -649,9 +649,9 @@
     "guide_end_strength": 0.85
    },
    "transitions": {
-    "drop": "stutter-cut",
-    "switch": "zoom-through",
-    "beat": "stutter-cut",
+    "drop": "cut",
+    "switch": "match-cut",
+    "beat": "cut",
     "silence": "black-hold"
    },
    "still_style": "Studio macro photograph, crisp origami folded from black paper and gold foil paper, sharp creases, elegant geometric folds, low key light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
@@ -683,8 +683,8 @@
    },
    "transitions": {
     "drop": "scene-morph",
-    "switch": "luma-wipe",
-    "beat": "liquid-melt",
+    "switch": "depth-parallax",
+    "beat": "cut",
     "silence": "black-hold"
    },
    "still_style": "Studio macro photograph, otherworldly alien plant form with iridescent violet petals, glowing lime veins, translucent tendrils and seed pods, moody dark greenhouse mist, black backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",

@@ -111,3 +111,47 @@ def test_ui_segments_get_no_fx_and_pulse_moments_are_sparse():
     cfg = json.loads(Path("configs/transitions.json").read_text())
     assert cfg["post_effects"]["bass-pulse"]["depth"] <= 0.01
     assert cfg["intensity"]["ceiling"] <= 0.6
+
+
+def test_v5_classic_is_expert_only_and_cap_two_per_type():
+    kinds = ["luma-wipe", "match-cut", "match-cut", "match-cut", "stutter-cut", "cut", "scene-morph", "scene-morph", "scene-morph"]
+    out, msgs = T.guard(kinds)
+    assert not set(out) & set(T.CLASSIC)
+    from collections import Counter
+    c = Counter(k for k in out if k not in T.EXEMPT_FROM_CAP)
+    assert max(c.values()) <= 2 and msgs
+    assert out[-3:] == ["scene-morph"] * 3
+    keep, _ = T.guard(kinds, expert=True)
+    assert keep[0] == "luma-wipe"
+    assert {t["id"]: t["tier"] for t in T.public_list()}["luma-wipe"] == "classic"
+
+
+def test_v5_plan_mostly_clean_cuts_and_favours_match_and_flow():
+    bds = [{"section": k % 4 == 0} for k in range(40)]
+    picks = T.plan(bds, seed=3)
+    assert picks.count("cut") / len(picks) >= 0.6
+    from collections import Counter
+    c = Counter(p for p in picks if p != "cut")
+    assert c and max(c.values()) <= 2
+    assert T.AUTO_WEIGHTS["match-cut"] >= max(T.AUTO_WEIGHTS.values()) and T.AUTO_WEIGHTS["flow-carry"] >= max(T.AUTO_WEIGHTS.values())
+    for vibe in T.RECOMMENDED:
+        assert T.recommend(vibe, "beat") not in T.CLASSIC
+
+
+def test_v5_premium_on_real_texture_ends_on_b():
+    rng = np.random.default_rng(1)
+    a = [np.clip(rng.normal(60, 40, (96, 54, 3)), 0, 255).astype(np.uint8) for _ in range(10)]
+    b = [np.clip(rng.normal(180, 30, (96, 54, 3)), 0, 255).astype(np.uint8) for _ in range(10)]
+    for k in T.PREMIUM:
+        out = T.apply(k, a, b, 0.6)
+        assert abs(float(out[-1].astype(float).mean()) - float(b[-1].mean())) < 20, k
+        assert T.depth_proxy(a[0]).shape == (96, 54)
+
+
+def test_v5_scene_edit_and_guardrails_apply_the_variety_rule():
+    from xenoform import guardrails as G
+    body = {"scene_transitions": ["luma-wipe"] + ["echo-trail"] * 4}
+    clean, rep = G.apply(body)
+    ks = clean["scene_transitions"]
+    assert "luma-wipe" not in ks and ks.count("echo-trail") <= 2
+    assert any("transition_variety" in m for m in rep["messages"])

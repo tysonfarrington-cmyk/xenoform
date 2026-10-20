@@ -107,6 +107,18 @@ def apply(body: dict | None, *, expert: bool | None = None, duration: float | No
                 rep.clamp("shimmer", f"{key} '{body.get(key)}' is banned; cleared", hard=True)
                 body[key] = ""
 
+    # transition variety: classic wipes expert-only, max 2 of any one type, overflow -> clean cut
+    r = R.get("transition_variety")
+    st = body.get("scene_transitions")
+    if r and isinstance(st, list) and st:
+        from xenoform import transitions_fx as _T
+        kinds = [t.get("kind") if isinstance(t, dict) else t for t in st]
+        new, msgs = _T.guard(kinds, expert=expert)
+        for m in msgs:
+            rep.clamp("transition_variety", m) if not expert else rep.warn("transition_variety", m)
+        if not expert:
+            body["scene_transitions"] = [dict(t, kind=k) if isinstance(t, dict) else k for t, k in zip(st, new)]
+
     # morph density
     r = R.get("morph_density")
     if r and duration:
