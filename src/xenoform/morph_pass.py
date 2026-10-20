@@ -50,7 +50,7 @@ LTX25_FILES = (
 VIBE_LOOK = {
     "liquid-gold": "molten gold and liquid mercury, warm amber studio glow, dark umber backdrop",
     "bloom": "iridescent petals and pearly glass, soft magenta rim light, fresh spring-green backdrop",
-    "neon-night": "black glass and oil-slick metal, hot magenta glow, deep crimson-black backdrop",
+    "neon-night": "rain-slick black glass and smoked chrome, hot magenta and sodium-amber neon reflections, deep crimson-black backdrop",
     "ocean": "iridescent shell and chrome, aqua caustic light, deep teal water backdrop",
     "cosmic": "iridescent glass and pearl, cobalt and violet glow, deep indigo backdrop",
     "paper-summer": "folded white paper and glazed porcelain, warm morning sunlight, soft cream backdrop",
@@ -347,7 +347,10 @@ def _qa_reroll(client, graph, asset, a, b, vibe, engine, count, seed, dest, tune
 
     good = f"a clean single sculptural object, {VIBE_LOOK.get(vibe, VIBE_LOOK['liquid-gold'])}"
     try:
-        first = shot_qa.check(_read_frames(dest, 160, 90), good)
+        from xenoform.anchors import subject_in
+
+        subject = subject_in(f"{a.get('noun', '')} {b.get('noun', '')}")
+        first = shot_qa.check(_read_frames(dest, 320, 180), good, subject)
     except Exception as exc:  # QA must never break a render
         log.warning("shot QA skipped: %s", exc)
         return {}
@@ -375,7 +378,7 @@ def _qa_reroll(client, graph, asset, a, b, vibe, engine, count, seed, dest, tune
         outputs = list(result.get_outputs("19")) or list(result.outputs)
         alt = dest.with_name(dest.stem + "-reroll.mp4")
         outputs[0].to_file(str(alt))
-        second = shot_qa.check(_read_frames(alt, 160, 90), good)
+        second = shot_qa.check(_read_frames(alt, 320, 180), good, subject)
     except Exception as exc:
         log.warning("shot QA reroll failed: %s", exc)
         return {"first": first, "reroll": "failed"}

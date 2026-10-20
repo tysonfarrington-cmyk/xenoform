@@ -30,9 +30,14 @@ def registry() -> dict:
     return _load(os.environ.get("XENO_VIBES", str(REGISTRY)))
 
 
-def extended() -> list[dict]:
-    """The registry vibes, in display order."""
+def every() -> list[dict]:
+    """Every registry entry, including ones whose assets are still being made."""
     return list(registry().get("vibes") or [])
+
+
+def extended() -> list[dict]:
+    """The registry vibes that ship assets (``ready`` is not false), in display order."""
+    return [v for v in every() if v.get("ready", True)]
 
 
 def get(vibe: str) -> dict:

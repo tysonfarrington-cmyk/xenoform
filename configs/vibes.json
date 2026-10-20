@@ -32,6 +32,22 @@
   {
    "noun": "ribbon",
    "phrase": "mobius ribbon"
+  },
+  {
+   "noun": "dna helix",
+   "phrase": "double helix"
+  },
+  {
+   "noun": "seed pod",
+   "phrase": "seed pod"
+  },
+  {
+   "noun": "conch",
+   "phrase": "conch shell"
+  },
+  {
+   "noun": "butterfly",
+   "phrase": "butterfly"
   }
  ],
  "vibes": [
@@ -67,7 +83,8 @@
     "metal",
     "chrome",
     "dark"
-   ]
+   ],
+   "ready": true
   },
   {
    "id": "ferrofluid",
@@ -100,7 +117,8 @@
     "liquid",
     "metal",
     "dark"
-   ]
+   ],
+   "ready": true
   },
   {
    "id": "glass-prism",
@@ -133,7 +151,8 @@
     "crystal",
     "glass",
     "dark"
-   ]
+   ],
+   "ready": false
   },
   {
    "id": "hologram",
@@ -166,7 +185,8 @@
     "neon",
     "abstract",
     "dark"
-   ]
+   ],
+   "ready": false
   },
   {
    "id": "y2k-chrome",
@@ -199,7 +219,8 @@
     "metal",
     "bright",
     "clean"
-   ]
+   ],
+   "ready": true
   },
   {
    "id": "low-poly",
@@ -231,7 +252,8 @@
    "tags": [
     "abstract",
     "dark"
-   ]
+   ],
+   "ready": true
   },
   {
    "id": "seapunk",
@@ -264,7 +286,8 @@
     "water",
     "iridescent",
     "bright"
-   ]
+   ],
+   "ready": false
   },
   {
    "id": "psy-fractal",
@@ -298,7 +321,8 @@
     "spiral",
     "abstract",
     "dark"
-   ]
+   ],
+   "ready": false
   },
   {
    "id": "odd-machine",
@@ -330,7 +354,8 @@
    "tags": [
     "metal",
     "dark"
-   ]
+   ],
+   "ready": true
   },
   {
    "id": "brutalist",
@@ -363,7 +388,8 @@
     "stone",
     "clean",
     "still"
-   ]
+   ],
+   "ready": true
   },
   {
    "id": "bioluminescent",
@@ -396,7 +422,8 @@
     "water",
     "organic",
     "dark"
-   ]
+   ],
+   "ready": false
   },
   {
    "id": "ink-water",
@@ -407,10 +434,10 @@
    "tone": "dark",
    "register": "pynchon",
    "morph": true,
-   "look": "billowing clouds of vermilion red and gold ink blooming in clear dark water, silky turbulent plumes, macro, pure black backdrop",
+   "look": "a crisp sculpted form made of dense swirling vermilion red and gold ink frozen mid-bloom in clear dark water, the silhouette sharply readable, fine ink filaments trailing from its edges, pure black backdrop",
    "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, solid object, hard edges",
    "lighting": "side-lit tank, black backdrop",
-   "material": "ink plumes, fluid",
+   "material": "dense swirling vermilion and gold ink, sharply shaped",
    "motion": "slow billowing curls, turbulent unfolding",
    "ltx": {
     "steps": 16,
@@ -424,12 +451,13 @@
     "beat": "luma-wipe",
     "silence": "black-hold"
    },
-   "still_style": "Studio macro photograph, billowing clouds of vermilion red and gold ink blooming in clear dark water, silky turbulent plumes, macro, pure black backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
+   "still_style": "Studio macro photograph, a crisp sculpted form made of dense swirling vermilion red and gold ink frozen mid-bloom in clear dark water, the silhouette sharply readable, fine ink filaments trailing from its edges, pure black backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
    "tags": [
     "water",
     "liquid",
     "dark"
-   ]
+   ],
+   "ready": false
   },
   {
    "id": "porcelain-marble",
@@ -462,7 +490,8 @@
     "stone",
     "clean",
     "dark"
-   ]
+   ],
+   "ready": true
   },
   {
    "id": "lava-obsidian",
@@ -495,7 +524,8 @@
     "fire",
     "crystal",
     "dark"
-   ]
+   ],
+   "ready": true
   },
   {
    "id": "thermal",
@@ -527,7 +557,8 @@
    "tags": [
     "abstract",
     "dark"
-   ]
+   ],
+   "ready": false
   },
   {
    "id": "crt-phosphor",
@@ -560,7 +591,8 @@
     "noir",
     "neon",
     "dark"
-   ]
+   ],
+   "ready": false
   },
   {
    "id": "ice-crystal",
@@ -593,7 +625,8 @@
     "crystal",
     "cold",
     "dark"
-   ]
+   ],
+   "ready": true
   },
   {
    "id": "origami-noir",
@@ -625,7 +658,8 @@
    "tags": [
     "paper",
     "dark"
-   ]
+   ],
+   "ready": true
   },
   {
    "id": "alien-botanical",
@@ -658,7 +692,8 @@
     "organic",
     "plant",
     "dark"
-   ]
+   ],
+   "ready": false
   }
  ]
 }

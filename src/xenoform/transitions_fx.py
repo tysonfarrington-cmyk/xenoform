@@ -58,6 +58,21 @@ RECOMMENDED: dict[str, dict[str, str]] = {
 }
 
 
+def _registry_recommendations() -> None:
+    """Extended vibes carry their own picks in configs/vibes.json."""
+    try:
+        from xenoform import vibes as _vibes
+    except Exception:  # pragma: no cover
+        return
+    for row in _vibes.extended():
+        picks = {k: v for k, v in (row.get("transitions") or {}).items() if v in TRANSITIONS}
+        if picks:
+            RECOMMENDED.setdefault(row["id"], picks)
+
+
+_registry_recommendations()
+
+
 def recommend(vibe: str, boundary: str = "drop") -> str:
     table = RECOMMENDED.get(vibe, RECOMMENDED["black"])
     return table.get(boundary, table["switch"])

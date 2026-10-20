@@ -546,5 +546,745 @@
    "finish": "iridescent liquid metal",
    "source": "library/gpu_objects/soap_orb_gr.png (cut out onto pure black)"
   }
+ ],
+ "chrome-mercury": [
+  {
+   "file": "chrome-mercury/00_orb.jpg",
+   "noun": "orb",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "chrome-mercury/01_nautilus.jpg",
+   "noun": "nautilus",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "chrome-mercury/02_lotus.jpg",
+   "noun": "lotus",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "chrome-mercury/03_torus_knot.jpg",
+   "noun": "torus knot",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "chrome-mercury/04_jellyfish.jpg",
+   "noun": "jellyfish",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "chrome-mercury/05_crystal.jpg",
+   "noun": "crystal",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "chrome-mercury/06_feather.jpg",
+   "noun": "feather",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "chrome-mercury/07_ribbon.jpg",
+   "noun": "ribbon",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "chrome-mercury/08_dna_helix.jpg",
+   "noun": "dna helix",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "chrome-mercury/09_seed_pod.jpg",
+   "noun": "seed pod",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "chrome-mercury/10_conch.jpg",
+   "noun": "conch",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "chrome-mercury/11_butterfly.jpg",
+   "noun": "butterfly",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  }
+ ],
+ "ferrofluid": [
+  {
+   "file": "ferrofluid/00_orb.jpg",
+   "noun": "orb",
+   "finish": "oily black magnetic fluid",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "ferrofluid/01_nautilus.jpg",
+   "noun": "nautilus",
+   "finish": "oily black magnetic fluid",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "ferrofluid/02_lotus.jpg",
+   "noun": "lotus",
+   "finish": "oily black magnetic fluid",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "ferrofluid/03_torus_knot.jpg",
+   "noun": "torus knot",
+   "finish": "oily black magnetic fluid",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "ferrofluid/04_jellyfish.jpg",
+   "noun": "jellyfish",
+   "finish": "oily black magnetic fluid",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "ferrofluid/05_crystal.jpg",
+   "noun": "crystal",
+   "finish": "oily black magnetic fluid",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "ferrofluid/06_feather.jpg",
+   "noun": "feather",
+   "finish": "oily black magnetic fluid",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "ferrofluid/07_ribbon.jpg",
+   "noun": "ribbon",
+   "finish": "oily black magnetic fluid",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "ferrofluid/08_dna_helix.jpg",
+   "noun": "dna helix",
+   "finish": "oily black magnetic fluid",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "ferrofluid/09_seed_pod.jpg",
+   "noun": "seed pod",
+   "finish": "oily black magnetic fluid",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "ferrofluid/10_conch.jpg",
+   "noun": "conch",
+   "finish": "oily black magnetic fluid",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "ferrofluid/11_butterfly.jpg",
+   "noun": "butterfly",
+   "finish": "oily black magnetic fluid",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  }
+ ],
+ "y2k-chrome": [
+  {
+   "file": "y2k-chrome/00_orb.jpg",
+   "noun": "orb",
+   "finish": "inflated chrome, frosted plastic",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "y2k-chrome/01_nautilus.jpg",
+   "noun": "nautilus",
+   "finish": "inflated chrome, frosted plastic",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "y2k-chrome/02_lotus.jpg",
+   "noun": "lotus",
+   "finish": "inflated chrome, frosted plastic",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "y2k-chrome/03_torus_knot.jpg",
+   "noun": "torus knot",
+   "finish": "inflated chrome, frosted plastic",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "y2k-chrome/04_jellyfish.jpg",
+   "noun": "jellyfish",
+   "finish": "inflated chrome, frosted plastic",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "y2k-chrome/05_crystal.jpg",
+   "noun": "crystal",
+   "finish": "inflated chrome, frosted plastic",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "y2k-chrome/06_feather.jpg",
+   "noun": "feather",
+   "finish": "inflated chrome, frosted plastic",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "y2k-chrome/07_ribbon.jpg",
+   "noun": "ribbon",
+   "finish": "inflated chrome, frosted plastic",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "y2k-chrome/08_dna_helix.jpg",
+   "noun": "dna helix",
+   "finish": "inflated chrome, frosted plastic",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "y2k-chrome/09_seed_pod.jpg",
+   "noun": "seed pod",
+   "finish": "inflated chrome, frosted plastic",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "y2k-chrome/10_conch.jpg",
+   "noun": "conch",
+   "finish": "inflated chrome, frosted plastic",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "y2k-chrome/11_butterfly.jpg",
+   "noun": "butterfly",
+   "finish": "inflated chrome, frosted plastic",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  }
+ ],
+ "low-poly": [
+  {
+   "file": "low-poly/00_orb.jpg",
+   "noun": "orb",
+   "finish": "faceted polygons, pixelated textures",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "low-poly/01_nautilus.jpg",
+   "noun": "nautilus",
+   "finish": "faceted polygons, pixelated textures",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "low-poly/02_lotus.jpg",
+   "noun": "lotus",
+   "finish": "faceted polygons, pixelated textures",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "low-poly/03_torus_knot.jpg",
+   "noun": "torus knot",
+   "finish": "faceted polygons, pixelated textures",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "low-poly/04_jellyfish.jpg",
+   "noun": "jellyfish",
+   "finish": "faceted polygons, pixelated textures",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "low-poly/05_crystal.jpg",
+   "noun": "crystal",
+   "finish": "faceted polygons, pixelated textures",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "low-poly/06_feather.jpg",
+   "noun": "feather",
+   "finish": "faceted polygons, pixelated textures",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "low-poly/07_ribbon.jpg",
+   "noun": "ribbon",
+   "finish": "faceted polygons, pixelated textures",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "low-poly/08_dna_helix.jpg",
+   "noun": "dna helix",
+   "finish": "faceted polygons, pixelated textures",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "low-poly/09_seed_pod.jpg",
+   "noun": "seed pod",
+   "finish": "faceted polygons, pixelated textures",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "low-poly/10_conch.jpg",
+   "noun": "conch",
+   "finish": "faceted polygons, pixelated textures",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "low-poly/11_butterfly.jpg",
+   "noun": "butterfly",
+   "finish": "faceted polygons, pixelated textures",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  }
+ ],
+ "odd-machine": [
+  {
+   "file": "odd-machine/00_orb.jpg",
+   "noun": "orb",
+   "finish": "silicone and machined steel",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "odd-machine/01_nautilus.jpg",
+   "noun": "nautilus",
+   "finish": "silicone and machined steel",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "odd-machine/02_lotus.jpg",
+   "noun": "lotus",
+   "finish": "silicone and machined steel",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "odd-machine/03_torus_knot.jpg",
+   "noun": "torus knot",
+   "finish": "silicone and machined steel",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "odd-machine/04_jellyfish.jpg",
+   "noun": "jellyfish",
+   "finish": "silicone and machined steel",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "odd-machine/05_crystal.jpg",
+   "noun": "crystal",
+   "finish": "silicone and machined steel",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "odd-machine/06_feather.jpg",
+   "noun": "feather",
+   "finish": "silicone and machined steel",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "odd-machine/07_ribbon.jpg",
+   "noun": "ribbon",
+   "finish": "silicone and machined steel",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "odd-machine/08_dna_helix.jpg",
+   "noun": "dna helix",
+   "finish": "silicone and machined steel",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "odd-machine/09_seed_pod.jpg",
+   "noun": "seed pod",
+   "finish": "silicone and machined steel",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "odd-machine/10_conch.jpg",
+   "noun": "conch",
+   "finish": "silicone and machined steel",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "odd-machine/11_butterfly.jpg",
+   "noun": "butterfly",
+   "finish": "silicone and machined steel",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  }
+ ],
+ "brutalist": [
+  {
+   "file": "brutalist/00_orb.jpg",
+   "noun": "orb",
+   "finish": "raw concrete",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "brutalist/01_nautilus.jpg",
+   "noun": "nautilus",
+   "finish": "raw concrete",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "brutalist/02_lotus.jpg",
+   "noun": "lotus",
+   "finish": "raw concrete",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "brutalist/03_torus_knot.jpg",
+   "noun": "torus knot",
+   "finish": "raw concrete",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "brutalist/04_jellyfish.jpg",
+   "noun": "jellyfish",
+   "finish": "raw concrete",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "brutalist/05_crystal.jpg",
+   "noun": "crystal",
+   "finish": "raw concrete",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "brutalist/06_feather.jpg",
+   "noun": "feather",
+   "finish": "raw concrete",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "brutalist/07_ribbon.jpg",
+   "noun": "ribbon",
+   "finish": "raw concrete",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "brutalist/08_dna_helix.jpg",
+   "noun": "dna helix",
+   "finish": "raw concrete",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "brutalist/09_seed_pod.jpg",
+   "noun": "seed pod",
+   "finish": "raw concrete",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "brutalist/10_conch.jpg",
+   "noun": "conch",
+   "finish": "raw concrete",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "brutalist/11_butterfly.jpg",
+   "noun": "butterfly",
+   "finish": "raw concrete",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  }
+ ],
+ "porcelain-marble": [
+  {
+   "file": "porcelain-marble/00_orb.jpg",
+   "noun": "orb",
+   "finish": "marble, porcelain glaze",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "porcelain-marble/01_nautilus.jpg",
+   "noun": "nautilus",
+   "finish": "marble, porcelain glaze",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "porcelain-marble/02_lotus.jpg",
+   "noun": "lotus",
+   "finish": "marble, porcelain glaze",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "porcelain-marble/03_torus_knot.jpg",
+   "noun": "torus knot",
+   "finish": "marble, porcelain glaze",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "porcelain-marble/04_jellyfish.jpg",
+   "noun": "jellyfish",
+   "finish": "marble, porcelain glaze",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "porcelain-marble/05_crystal.jpg",
+   "noun": "crystal",
+   "finish": "marble, porcelain glaze",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "porcelain-marble/06_feather.jpg",
+   "noun": "feather",
+   "finish": "marble, porcelain glaze",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "porcelain-marble/07_ribbon.jpg",
+   "noun": "ribbon",
+   "finish": "marble, porcelain glaze",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "porcelain-marble/08_dna_helix.jpg",
+   "noun": "dna helix",
+   "finish": "marble, porcelain glaze",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "porcelain-marble/09_seed_pod.jpg",
+   "noun": "seed pod",
+   "finish": "marble, porcelain glaze",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "porcelain-marble/10_conch.jpg",
+   "noun": "conch",
+   "finish": "marble, porcelain glaze",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "porcelain-marble/11_butterfly.jpg",
+   "noun": "butterfly",
+   "finish": "marble, porcelain glaze",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  }
+ ],
+ "lava-obsidian": [
+  {
+   "file": "lava-obsidian/00_orb.jpg",
+   "noun": "orb",
+   "finish": "obsidian, molten lava",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "lava-obsidian/01_nautilus.jpg",
+   "noun": "nautilus",
+   "finish": "obsidian, molten lava",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "lava-obsidian/02_lotus.jpg",
+   "noun": "lotus",
+   "finish": "obsidian, molten lava",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "lava-obsidian/03_torus_knot.jpg",
+   "noun": "torus knot",
+   "finish": "obsidian, molten lava",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "lava-obsidian/04_jellyfish.jpg",
+   "noun": "jellyfish",
+   "finish": "obsidian, molten lava",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "lava-obsidian/05_crystal.jpg",
+   "noun": "crystal",
+   "finish": "obsidian, molten lava",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "lava-obsidian/06_feather.jpg",
+   "noun": "feather",
+   "finish": "obsidian, molten lava",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "lava-obsidian/07_ribbon.jpg",
+   "noun": "ribbon",
+   "finish": "obsidian, molten lava",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "lava-obsidian/08_dna_helix.jpg",
+   "noun": "dna helix",
+   "finish": "obsidian, molten lava",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "lava-obsidian/09_seed_pod.jpg",
+   "noun": "seed pod",
+   "finish": "obsidian, molten lava",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "lava-obsidian/10_conch.jpg",
+   "noun": "conch",
+   "finish": "obsidian, molten lava",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "lava-obsidian/11_butterfly.jpg",
+   "noun": "butterfly",
+   "finish": "obsidian, molten lava",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  }
+ ],
+ "ice-crystal": [
+  {
+   "file": "ice-crystal/00_orb.jpg",
+   "noun": "orb",
+   "finish": "ice, frost",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "ice-crystal/01_nautilus.jpg",
+   "noun": "nautilus",
+   "finish": "ice, frost",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "ice-crystal/02_lotus.jpg",
+   "noun": "lotus",
+   "finish": "ice, frost",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "ice-crystal/03_torus_knot.jpg",
+   "noun": "torus knot",
+   "finish": "ice, frost",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "ice-crystal/04_jellyfish.jpg",
+   "noun": "jellyfish",
+   "finish": "ice, frost",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "ice-crystal/05_crystal.jpg",
+   "noun": "crystal",
+   "finish": "ice, frost",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "ice-crystal/06_feather.jpg",
+   "noun": "feather",
+   "finish": "ice, frost",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "ice-crystal/07_ribbon.jpg",
+   "noun": "ribbon",
+   "finish": "ice, frost",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "ice-crystal/08_dna_helix.jpg",
+   "noun": "dna helix",
+   "finish": "ice, frost",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "ice-crystal/09_seed_pod.jpg",
+   "noun": "seed pod",
+   "finish": "ice, frost",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "ice-crystal/10_conch.jpg",
+   "noun": "conch",
+   "finish": "ice, frost",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "ice-crystal/11_butterfly.jpg",
+   "noun": "butterfly",
+   "finish": "ice, frost",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  }
+ ],
+ "origami-noir": [
+  {
+   "file": "origami-noir/00_orb.jpg",
+   "noun": "orb",
+   "finish": "black paper, gold foil",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "origami-noir/01_nautilus.jpg",
+   "noun": "nautilus",
+   "finish": "black paper, gold foil",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "origami-noir/02_lotus.jpg",
+   "noun": "lotus",
+   "finish": "black paper, gold foil",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "origami-noir/03_torus_knot.jpg",
+   "noun": "torus knot",
+   "finish": "black paper, gold foil",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "origami-noir/04_jellyfish.jpg",
+   "noun": "jellyfish",
+   "finish": "black paper, gold foil",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "origami-noir/05_crystal.jpg",
+   "noun": "crystal",
+   "finish": "black paper, gold foil",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "origami-noir/06_feather.jpg",
+   "noun": "feather",
+   "finish": "black paper, gold foil",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "origami-noir/07_ribbon.jpg",
+   "noun": "ribbon",
+   "finish": "black paper, gold foil",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "origami-noir/08_dna_helix.jpg",
+   "noun": "dna helix",
+   "finish": "black paper, gold foil",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "origami-noir/09_seed_pod.jpg",
+   "noun": "seed pod",
+   "finish": "black paper, gold foil",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "origami-noir/10_conch.jpg",
+   "noun": "conch",
+   "finish": "black paper, gold foil",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "origami-noir/11_butterfly.jpg",
+   "noun": "butterfly",
+   "finish": "black paper, gold foil",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  }
  ]
 }

@@ -23,7 +23,9 @@ from typing import Any
 REPO = Path(__file__).resolve().parents[2]
 GUIDE_FILE = REPO / "docs" / "AI_GUIDE.md"
 
-VIBES = ("liquid-gold", "bloom", "neon-night", "ocean", "cosmic", "paper-summer", "black")
+from xenoform import vibes as _vibes  # noqa: E402
+
+VIBES = tuple(_vibes.ids())  # the 7 originals, then configs/vibes.json
 ASPECTS = ("9:16", "16:9", "1:1")
 VERTICAL = ("native", "crop", "auto")
 ENERGIES = ("flow", "dense")

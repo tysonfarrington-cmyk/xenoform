@@ -1,0 +1,126 @@
+{
+ "version": 1,
+ "note": "Pre-rendered, hand-checked default clips per vibe. All files are generated locally with open weights (Z-Image Turbo stills, LTX-Video 0.9.5 morphs) and ship in the repo; nothing to fetch.",
+ "vibes": {
+  "chrome-mercury": {
+   "clips": [
+    "library/chrome-mercury/wide.mp4",
+    "library/chrome-mercury/medium.mp4",
+    "library/chrome-mercury/close.mp4",
+    "library/chrome-mercury/reveal.mp4"
+   ],
+   "source_morph": "00_orb -> 01_nautilus",
+   "autotune_score": 90.04,
+   "qa": true,
+   "checked": "contact sheet reviewed 2026-10-20"
+  },
+  "ferrofluid": {
+   "clips": [
+    "library/ferrofluid/wide.mp4",
+    "library/ferrofluid/medium.mp4",
+    "library/ferrofluid/close.mp4",
+    "library/ferrofluid/reveal.mp4"
+   ],
+   "source_morph": "00_orb -> 01_nautilus",
+   "autotune_score": 78.34,
+   "qa": true,
+   "checked": "contact sheet reviewed 2026-10-20"
+  },
+  "y2k-chrome": {
+   "clips": [
+    "library/y2k-chrome/wide.mp4",
+    "library/y2k-chrome/medium.mp4",
+    "library/y2k-chrome/close.mp4",
+    "library/y2k-chrome/reveal.mp4"
+   ],
+   "source_morph": "00_orb -> 01_nautilus",
+   "autotune_score": 92.07,
+   "qa": true,
+   "checked": "contact sheet reviewed 2026-10-20"
+  },
+  "low-poly": {
+   "clips": [
+    "library/low-poly/wide.mp4",
+    "library/low-poly/medium.mp4",
+    "library/low-poly/close.mp4",
+    "library/low-poly/reveal.mp4"
+   ],
+   "source_morph": "00_orb -> 01_nautilus",
+   "autotune_score": 82.68,
+   "qa": true,
+   "checked": "contact sheet reviewed 2026-10-20"
+  },
+  "odd-machine": {
+   "clips": [
+    "library/odd-machine/wide.mp4",
+    "library/odd-machine/medium.mp4",
+    "library/odd-machine/close.mp4",
+    "library/odd-machine/reveal.mp4"
+   ],
+   "source_morph": "00_orb -> 01_nautilus",
+   "autotune_score": 87.14,
+   "qa": true,
+   "checked": "contact sheet reviewed 2026-10-20"
+  },
+  "brutalist": {
+   "clips": [
+    "library/brutalist/wide.mp4",
+    "library/brutalist/medium.mp4",
+    "library/brutalist/close.mp4",
+    "library/brutalist/reveal.mp4"
+   ],
+   "source_morph": "00_orb -> 01_nautilus",
+   "autotune_score": 94.07,
+   "qa": true,
+   "checked": "contact sheet reviewed 2026-10-20"
+  },
+  "porcelain-marble": {
+   "clips": [
+    "library/porcelain-marble/wide.mp4",
+    "library/porcelain-marble/medium.mp4",
+    "library/porcelain-marble/close.mp4",
+    "library/porcelain-marble/reveal.mp4"
+   ],
+   "source_morph": "00_orb -> 01_nautilus",
+   "autotune_score": 93.34,
+   "qa": true,
+   "checked": "contact sheet reviewed 2026-10-20"
+  },
+  "lava-obsidian": {
+   "clips": [
+    "library/lava-obsidian/wide.mp4",
+    "library/lava-obsidian/medium.mp4",
+    "library/lava-obsidian/close.mp4",
+    "library/lava-obsidian/reveal.mp4"
+   ],
+   "source_morph": "00_orb -> 01_nautilus",
+   "autotune_score": 85.04,
+   "qa": true,
+   "checked": "contact sheet reviewed 2026-10-20"
+  },
+  "ice-crystal": {
+   "clips": [
+    "library/ice-crystal/wide.mp4",
+    "library/ice-crystal/medium.mp4",
+    "library/ice-crystal/close.mp4",
+    "library/ice-crystal/reveal.mp4"
+   ],
+   "source_morph": "00_orb -> 01_nautilus",
+   "autotune_score": 88.87,
+   "qa": true,
+   "checked": "contact sheet reviewed 2026-10-20"
+  },
+  "origami-noir": {
+   "clips": [
+    "library/origami-noir/wide.mp4",
+    "library/origami-noir/medium.mp4",
+    "library/origami-noir/close.mp4",
+    "library/origami-noir/reveal.mp4"
+   ],
+   "source_morph": "00_orb -> 01_nautilus",
+   "autotune_score": 74.07,
+   "qa": true,
+   "checked": "contact sheet reviewed 2026-10-20"
+  }
+ }
+}

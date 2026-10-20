@@ -1,0 +1,1182 @@
+{
+ "chrome-mercury": [
+  {
+   "name": "00_orb",
+   "noun": "orb",
+   "prompt": "Studio macro photograph, flawless liquid chrome and mercury, mirror surface reflecting soft gradient light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single perfect sphere made of liquid mirror chrome."
+  },
+  {
+   "name": "01_nautilus",
+   "noun": "nautilus",
+   "prompt": "Studio macro photograph, flawless liquid chrome and mercury, mirror surface reflecting soft gradient light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single nautilus shell made of liquid mirror chrome."
+  },
+  {
+   "name": "02_lotus",
+   "noun": "lotus",
+   "prompt": "Studio macro photograph, flawless liquid chrome and mercury, mirror surface reflecting soft gradient light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single lotus flower made of liquid mirror chrome."
+  },
+  {
+   "name": "03_torus_knot",
+   "noun": "torus knot",
+   "prompt": "Studio macro photograph, flawless liquid chrome and mercury, mirror surface reflecting soft gradient light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single torus knot made of liquid mirror chrome."
+  },
+  {
+   "name": "04_jellyfish",
+   "noun": "jellyfish",
+   "prompt": "Studio macro photograph, flawless liquid chrome and mercury, mirror surface reflecting soft gradient light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single jellyfish made of liquid mirror chrome."
+  },
+  {
+   "name": "05_crystal",
+   "noun": "crystal",
+   "prompt": "Studio macro photograph, flawless liquid chrome and mercury, mirror surface reflecting soft gradient light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single crystal cluster made of liquid mirror chrome."
+  },
+  {
+   "name": "06_feather",
+   "noun": "feather",
+   "prompt": "Studio macro photograph, flawless liquid chrome and mercury, mirror surface reflecting soft gradient light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single feather made of liquid mirror chrome."
+  },
+  {
+   "name": "07_ribbon",
+   "noun": "ribbon",
+   "prompt": "Studio macro photograph, flawless liquid chrome and mercury, mirror surface reflecting soft gradient light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single mobius ribbon made of liquid mirror chrome."
+  },
+  {
+   "name": "08_dna_helix",
+   "noun": "dna helix",
+   "prompt": "Studio macro photograph, flawless liquid chrome and mercury, mirror surface reflecting soft gradient light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single double helix made of liquid mirror chrome."
+  },
+  {
+   "name": "09_seed_pod",
+   "noun": "seed pod",
+   "prompt": "Studio macro photograph, flawless liquid chrome and mercury, mirror surface reflecting soft gradient light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single seed pod made of liquid mirror chrome."
+  },
+  {
+   "name": "10_conch",
+   "noun": "conch",
+   "prompt": "Studio macro photograph, flawless liquid chrome and mercury, mirror surface reflecting soft gradient light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single conch shell made of liquid mirror chrome."
+  },
+  {
+   "name": "11_butterfly",
+   "noun": "butterfly",
+   "prompt": "Studio macro photograph, flawless liquid chrome and mercury, mirror surface reflecting soft gradient light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single butterfly made of liquid mirror chrome."
+  }
+ ],
+ "ferrofluid": [
+  {
+   "name": "00_orb",
+   "noun": "orb",
+   "prompt": "Studio macro photograph, jet-black glossy ferrofluid with sharp magnetic spikes and ridges, cold white rim light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single perfect sphere made of oily black magnetic fluid."
+  },
+  {
+   "name": "01_nautilus",
+   "noun": "nautilus",
+   "prompt": "Studio macro photograph, jet-black glossy ferrofluid with sharp magnetic spikes and ridges, cold white rim light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single nautilus shell made of oily black magnetic fluid."
+  },
+  {
+   "name": "02_lotus",
+   "noun": "lotus",
+   "prompt": "Studio macro photograph, jet-black glossy ferrofluid with sharp magnetic spikes and ridges, cold white rim light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single lotus flower made of oily black magnetic fluid."
+  },
+  {
+   "name": "03_torus_knot",
+   "noun": "torus knot",
+   "prompt": "Studio macro photograph, jet-black glossy ferrofluid with sharp magnetic spikes and ridges, cold white rim light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single torus knot made of oily black magnetic fluid."
+  },
+  {
+   "name": "04_jellyfish",
+   "noun": "jellyfish",
+   "prompt": "Studio macro photograph, jet-black glossy ferrofluid with sharp magnetic spikes and ridges, cold white rim light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single jellyfish made of oily black magnetic fluid."
+  },
+  {
+   "name": "05_crystal",
+   "noun": "crystal",
+   "prompt": "Studio macro photograph, jet-black glossy ferrofluid with sharp magnetic spikes and ridges, cold white rim light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single crystal cluster made of oily black magnetic fluid."
+  },
+  {
+   "name": "06_feather",
+   "noun": "feather",
+   "prompt": "Studio macro photograph, jet-black glossy ferrofluid with sharp magnetic spikes and ridges, cold white rim light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single feather made of oily black magnetic fluid. Pure black background, dark studio.",
+   "seed": 4106
+  },
+  {
+   "name": "07_ribbon",
+   "noun": "ribbon",
+   "prompt": "Studio macro photograph, jet-black glossy ferrofluid with sharp magnetic spikes and ridges, cold white rim light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single mobius ribbon made of oily black magnetic fluid."
+  },
+  {
+   "name": "08_dna_helix",
+   "noun": "dna helix",
+   "prompt": "Studio macro photograph, jet-black glossy ferrofluid with sharp magnetic spikes and ridges, cold white rim light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single double helix made of oily black magnetic fluid."
+  },
+  {
+   "name": "09_seed_pod",
+   "noun": "seed pod",
+   "prompt": "Studio macro photograph, jet-black glossy ferrofluid with sharp magnetic spikes and ridges, cold white rim light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single seed pod made of oily black magnetic fluid."
+  },
+  {
+   "name": "10_conch",
+   "noun": "conch",
+   "prompt": "Studio macro photograph, jet-black glossy ferrofluid with sharp magnetic spikes and ridges, cold white rim light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single conch shell made of oily black magnetic fluid."
+  },
+  {
+   "name": "11_butterfly",
+   "noun": "butterfly",
+   "prompt": "Studio macro photograph, jet-black glossy ferrofluid with sharp magnetic spikes and ridges, cold white rim light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single butterfly made of oily black magnetic fluid."
+  }
+ ],
+ "glass-prism": [
+  {
+   "name": "00_orb",
+   "noun": "orb",
+   "prompt": "Studio macro photograph, faceted crystal prism glass splitting a white beam into a vivid rainbow spectrum, saturated red to violet dispersion and coloured caustic light streaks across the object, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single perfect sphere made of faceted prism glass with rainbow dispersion."
+  },
+  {
+   "name": "01_nautilus",
+   "noun": "nautilus",
+   "prompt": "Studio macro photograph, faceted crystal prism glass splitting a white beam into a vivid rainbow spectrum, saturated red to violet dispersion and coloured caustic light streaks across the object, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single nautilus shell made of faceted prism glass with rainbow dispersion."
+  },
+  {
+   "name": "02_lotus",
+   "noun": "lotus",
+   "prompt": "Studio macro photograph, faceted crystal prism glass splitting a white beam into a vivid rainbow spectrum, saturated red to violet dispersion and coloured caustic light streaks across the object, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single lotus flower made of faceted prism glass with rainbow dispersion."
+  },
+  {
+   "name": "03_torus_knot",
+   "noun": "torus knot",
+   "prompt": "Studio macro photograph, faceted crystal prism glass splitting a white beam into a vivid rainbow spectrum, saturated red to violet dispersion and coloured caustic light streaks across the object, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single torus knot made of faceted prism glass with rainbow dispersion."
+  },
+  {
+   "name": "04_jellyfish",
+   "noun": "jellyfish",
+   "prompt": "Studio macro photograph, faceted crystal prism glass splitting a white beam into a vivid rainbow spectrum, saturated red to violet dispersion and coloured caustic light streaks across the object, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single jellyfish made of faceted prism glass with rainbow dispersion."
+  },
+  {
+   "name": "05_crystal",
+   "noun": "crystal",
+   "prompt": "Studio macro photograph, faceted crystal prism glass splitting a white beam into a vivid rainbow spectrum, saturated red to violet dispersion and coloured caustic light streaks across the object, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single crystal cluster made of faceted prism glass with rainbow dispersion."
+  },
+  {
+   "name": "06_feather",
+   "noun": "feather",
+   "prompt": "Studio macro photograph, faceted crystal prism glass splitting a white beam into a vivid rainbow spectrum, saturated red to violet dispersion and coloured caustic light streaks across the object, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single feather made of faceted prism glass with rainbow dispersion."
+  },
+  {
+   "name": "07_ribbon",
+   "noun": "ribbon",
+   "prompt": "Studio macro photograph, faceted crystal prism glass splitting a white beam into a vivid rainbow spectrum, saturated red to violet dispersion and coloured caustic light streaks across the object, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single mobius ribbon made of faceted prism glass with rainbow dispersion."
+  },
+  {
+   "name": "08_dna_helix",
+   "noun": "dna helix",
+   "prompt": "Studio macro photograph, faceted crystal prism glass splitting a white beam into a vivid rainbow spectrum, saturated red to violet dispersion and coloured caustic light streaks across the object, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single double helix made of faceted prism glass with rainbow dispersion."
+  },
+  {
+   "name": "09_seed_pod",
+   "noun": "seed pod",
+   "prompt": "Studio macro photograph, faceted crystal prism glass splitting a white beam into a vivid rainbow spectrum, saturated red to violet dispersion and coloured caustic light streaks across the object, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single seed pod made of faceted prism glass with rainbow dispersion."
+  },
+  {
+   "name": "10_conch",
+   "noun": "conch",
+   "prompt": "Studio macro photograph, faceted crystal prism glass splitting a white beam into a vivid rainbow spectrum, saturated red to violet dispersion and coloured caustic light streaks across the object, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single conch shell made of faceted prism glass with rainbow dispersion."
+  },
+  {
+   "name": "11_butterfly",
+   "noun": "butterfly",
+   "prompt": "Studio macro photograph, faceted crystal prism glass splitting a white beam into a vivid rainbow spectrum, saturated red to violet dispersion and coloured caustic light streaks across the object, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single butterfly made of faceted prism glass with rainbow dispersion."
+  }
+ ],
+ "hologram": [
+  {
+   "name": "00_orb",
+   "noun": "orb",
+   "prompt": "Cinematic render, translucent emissive holographic light projection, cyan and magenta laser light, fine glowing contour lines, volumetric haze, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single perfect sphere made of projected light, no solid surface."
+  },
+  {
+   "name": "01_nautilus",
+   "noun": "nautilus",
+   "prompt": "Cinematic render, translucent emissive holographic light projection, cyan and magenta laser light, fine glowing contour lines, volumetric haze, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single nautilus shell made of projected light, no solid surface."
+  },
+  {
+   "name": "02_lotus",
+   "noun": "lotus",
+   "prompt": "Cinematic render, translucent emissive holographic light projection, cyan and magenta laser light, fine glowing contour lines, volumetric haze, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single lotus flower made of projected light, no solid surface."
+  },
+  {
+   "name": "03_torus_knot",
+   "noun": "torus knot",
+   "prompt": "Cinematic render, translucent emissive holographic light projection, cyan and magenta laser light, fine glowing contour lines, volumetric haze, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single torus knot made of projected light, no solid surface."
+  },
+  {
+   "name": "04_jellyfish",
+   "noun": "jellyfish",
+   "prompt": "Cinematic render, translucent emissive holographic light projection, cyan and magenta laser light, fine glowing contour lines, volumetric haze, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single jellyfish made of projected light, no solid surface."
+  },
+  {
+   "name": "05_crystal",
+   "noun": "crystal",
+   "prompt": "Cinematic render, translucent emissive holographic light projection, cyan and magenta laser light, fine glowing contour lines, volumetric haze, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single crystal cluster made of projected light, no solid surface."
+  },
+  {
+   "name": "06_feather",
+   "noun": "feather",
+   "prompt": "Cinematic render, translucent emissive holographic light projection, cyan and magenta laser light, fine glowing contour lines, volumetric haze, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single feather made of projected light, no solid surface."
+  },
+  {
+   "name": "07_ribbon",
+   "noun": "ribbon",
+   "prompt": "Cinematic render, translucent emissive holographic light projection, cyan and magenta laser light, fine glowing contour lines, volumetric haze, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single mobius ribbon made of projected light, no solid surface."
+  },
+  {
+   "name": "08_dna_helix",
+   "noun": "dna helix",
+   "prompt": "Cinematic render, translucent emissive holographic light projection, cyan and magenta laser light, fine glowing contour lines, volumetric haze, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single double helix made of projected light, no solid surface."
+  },
+  {
+   "name": "09_seed_pod",
+   "noun": "seed pod",
+   "prompt": "Cinematic render, translucent emissive holographic light projection, cyan and magenta laser light, fine glowing contour lines, volumetric haze, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single seed pod made of projected light, no solid surface."
+  },
+  {
+   "name": "10_conch",
+   "noun": "conch",
+   "prompt": "Cinematic render, translucent emissive holographic light projection, cyan and magenta laser light, fine glowing contour lines, volumetric haze, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single conch shell made of projected light, no solid surface."
+  },
+  {
+   "name": "11_butterfly",
+   "noun": "butterfly",
+   "prompt": "Cinematic render, translucent emissive holographic light projection, cyan and magenta laser light, fine glowing contour lines, volumetric haze, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single butterfly made of projected light, no solid surface."
+  }
+ ],
+ "y2k-chrome": [
+  {
+   "name": "00_orb",
+   "noun": "orb",
+   "prompt": "Studio macro photograph, inflated puffy chrome and frosted translucent ice-blue plastic, glossy bubble forms, silver gradient studio, early-2000s futurism, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single perfect sphere made of inflated chrome, frosted plastic."
+  },
+  {
+   "name": "01_nautilus",
+   "noun": "nautilus",
+   "prompt": "Studio macro photograph, inflated puffy chrome and frosted translucent ice-blue plastic, glossy bubble forms, silver gradient studio, early-2000s futurism, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single nautilus shell made of inflated chrome, frosted plastic."
+  },
+  {
+   "name": "02_lotus",
+   "noun": "lotus",
+   "prompt": "Studio macro photograph, inflated puffy chrome and frosted translucent ice-blue plastic, glossy bubble forms, silver gradient studio, early-2000s futurism, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single lotus flower made of inflated chrome, frosted plastic."
+  },
+  {
+   "name": "03_torus_knot",
+   "noun": "torus knot",
+   "prompt": "Studio macro photograph, inflated puffy chrome and frosted translucent ice-blue plastic, glossy bubble forms, silver gradient studio, early-2000s futurism, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single torus knot made of inflated chrome, frosted plastic."
+  },
+  {
+   "name": "04_jellyfish",
+   "noun": "jellyfish",
+   "prompt": "Studio macro photograph, inflated puffy chrome and frosted translucent ice-blue plastic, glossy bubble forms, silver gradient studio, early-2000s futurism, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single jellyfish made of inflated chrome, frosted plastic."
+  },
+  {
+   "name": "05_crystal",
+   "noun": "crystal",
+   "prompt": "Studio macro photograph, inflated puffy chrome and frosted translucent ice-blue plastic, glossy bubble forms, silver gradient studio, early-2000s futurism, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single crystal cluster made of inflated chrome, frosted plastic."
+  },
+  {
+   "name": "06_feather",
+   "noun": "feather",
+   "prompt": "Studio macro photograph, inflated puffy chrome and frosted translucent ice-blue plastic, glossy bubble forms, silver gradient studio, early-2000s futurism, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single feather made of inflated chrome, frosted plastic."
+  },
+  {
+   "name": "07_ribbon",
+   "noun": "ribbon",
+   "prompt": "Studio macro photograph, inflated puffy chrome and frosted translucent ice-blue plastic, glossy bubble forms, silver gradient studio, early-2000s futurism, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single mobius ribbon made of inflated chrome, frosted plastic."
+  },
+  {
+   "name": "08_dna_helix",
+   "noun": "dna helix",
+   "prompt": "Studio macro photograph, inflated puffy chrome and frosted translucent ice-blue plastic, glossy bubble forms, silver gradient studio, early-2000s futurism, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single double helix made of inflated chrome, frosted plastic."
+  },
+  {
+   "name": "09_seed_pod",
+   "noun": "seed pod",
+   "prompt": "Studio macro photograph, inflated puffy chrome and frosted translucent ice-blue plastic, glossy bubble forms, silver gradient studio, early-2000s futurism, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single seed pod made of inflated chrome, frosted plastic."
+  },
+  {
+   "name": "10_conch",
+   "noun": "conch",
+   "prompt": "Studio macro photograph, inflated puffy chrome and frosted translucent ice-blue plastic, glossy bubble forms, silver gradient studio, early-2000s futurism, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single conch shell made of inflated chrome, frosted plastic."
+  },
+  {
+   "name": "11_butterfly",
+   "noun": "butterfly",
+   "prompt": "Studio macro photograph, inflated puffy chrome and frosted translucent ice-blue plastic, glossy bubble forms, silver gradient studio, early-2000s futurism, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single butterfly made of inflated chrome, frosted plastic."
+  }
+ ],
+ "low-poly": [
+  {
+   "name": "00_orb",
+   "noun": "orb",
+   "prompt": "Late-1990s real-time 3D game render, low-polygon 3D model with flat-shaded faceted triangles, affine-warped low-resolution textures, vertex colour gradients, late-1990s 32-bit console render, black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single perfect sphere made of faceted polygons, pixelated textures."
+  },
+  {
+   "name": "01_nautilus",
+   "noun": "nautilus",
+   "prompt": "Late-1990s real-time 3D game render, low-polygon 3D model with flat-shaded faceted triangles, affine-warped low-resolution textures, vertex colour gradients, late-1990s 32-bit console render, black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single nautilus shell made of faceted polygons, pixelated textures."
+  },
+  {
+   "name": "02_lotus",
+   "noun": "lotus",
+   "prompt": "Late-1990s real-time 3D game render, low-polygon 3D model with flat-shaded faceted triangles, affine-warped low-resolution textures, vertex colour gradients, late-1990s 32-bit console render, black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single lotus flower made of faceted polygons, pixelated textures."
+  },
+  {
+   "name": "03_torus_knot",
+   "noun": "torus knot",
+   "prompt": "Late-1990s real-time 3D game render, low-polygon 3D model with flat-shaded faceted triangles, affine-warped low-resolution textures, vertex colour gradients, late-1990s 32-bit console render, black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single torus knot made of faceted polygons, pixelated textures."
+  },
+  {
+   "name": "04_jellyfish",
+   "noun": "jellyfish",
+   "prompt": "Late-1990s real-time 3D game render, low-polygon 3D model with flat-shaded faceted triangles, affine-warped low-resolution textures, vertex colour gradients, late-1990s 32-bit console render, black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single jellyfish made of faceted polygons, pixelated textures."
+  },
+  {
+   "name": "05_crystal",
+   "noun": "crystal",
+   "prompt": "Late-1990s real-time 3D game render, low-polygon 3D model with flat-shaded faceted triangles, affine-warped low-resolution textures, vertex colour gradients, late-1990s 32-bit console render, black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single crystal cluster made of faceted polygons, pixelated textures."
+  },
+  {
+   "name": "06_feather",
+   "noun": "feather",
+   "prompt": "Late-1990s real-time 3D game render, low-polygon 3D model with flat-shaded faceted triangles, affine-warped low-resolution textures, vertex colour gradients, late-1990s 32-bit console render, black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single feather made of faceted polygons, pixelated textures."
+  },
+  {
+   "name": "07_ribbon",
+   "noun": "ribbon",
+   "prompt": "Late-1990s real-time 3D game render, low-polygon 3D model with flat-shaded faceted triangles, affine-warped low-resolution textures, vertex colour gradients, late-1990s 32-bit console render, black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single mobius ribbon made of faceted polygons, pixelated textures."
+  },
+  {
+   "name": "08_dna_helix",
+   "noun": "dna helix",
+   "prompt": "Late-1990s real-time 3D game render, low-polygon 3D model with flat-shaded faceted triangles, affine-warped low-resolution textures, vertex colour gradients, late-1990s 32-bit console render, black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single double helix made of faceted polygons, pixelated textures."
+  },
+  {
+   "name": "09_seed_pod",
+   "noun": "seed pod",
+   "prompt": "Late-1990s real-time 3D game render, low-polygon 3D model with flat-shaded faceted triangles, affine-warped low-resolution textures, vertex colour gradients, late-1990s 32-bit console render, black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single seed pod made of faceted polygons, pixelated textures."
+  },
+  {
+   "name": "10_conch",
+   "noun": "conch",
+   "prompt": "Late-1990s real-time 3D game render, low-polygon 3D model with flat-shaded faceted triangles, affine-warped low-resolution textures, vertex colour gradients, late-1990s 32-bit console render, black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single conch shell made of faceted polygons, pixelated textures."
+  },
+  {
+   "name": "11_butterfly",
+   "noun": "butterfly",
+   "prompt": "Late-1990s real-time 3D game render, low-polygon 3D model with flat-shaded faceted triangles, affine-warped low-resolution textures, vertex colour gradients, late-1990s 32-bit console render, black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single butterfly made of faceted polygons, pixelated textures."
+  }
+ ],
+ "seapunk": [
+  {
+   "name": "00_orb",
+   "noun": "orb",
+   "prompt": "Studio macro photograph, glossy wet aqua teal and hot pink pearlescent surfaces, retro 1990s web 3D render, pastel ocean caustics, holographic sheen, deep teal backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single perfect sphere made of wet pearlescent plastic."
+  },
+  {
+   "name": "01_nautilus",
+   "noun": "nautilus",
+   "prompt": "Studio macro photograph, glossy wet aqua teal and hot pink pearlescent surfaces, retro 1990s web 3D render, pastel ocean caustics, holographic sheen, deep teal backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single nautilus shell made of wet pearlescent plastic."
+  },
+  {
+   "name": "02_lotus",
+   "noun": "lotus",
+   "prompt": "Studio macro photograph, glossy wet aqua teal and hot pink pearlescent surfaces, retro 1990s web 3D render, pastel ocean caustics, holographic sheen, deep teal backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single lotus flower made of wet pearlescent plastic."
+  },
+  {
+   "name": "03_torus_knot",
+   "noun": "torus knot",
+   "prompt": "Studio macro photograph, glossy wet aqua teal and hot pink pearlescent surfaces, retro 1990s web 3D render, pastel ocean caustics, holographic sheen, deep teal backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single torus knot made of wet pearlescent plastic."
+  },
+  {
+   "name": "04_jellyfish",
+   "noun": "jellyfish",
+   "prompt": "Studio macro photograph, glossy wet aqua teal and hot pink pearlescent surfaces, retro 1990s web 3D render, pastel ocean caustics, holographic sheen, deep teal backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single jellyfish made of wet pearlescent plastic."
+  },
+  {
+   "name": "05_crystal",
+   "noun": "crystal",
+   "prompt": "Studio macro photograph, glossy wet aqua teal and hot pink pearlescent surfaces, retro 1990s web 3D render, pastel ocean caustics, holographic sheen, deep teal backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single crystal cluster made of wet pearlescent plastic."
+  },
+  {
+   "name": "06_feather",
+   "noun": "feather",
+   "prompt": "Studio macro photograph, glossy wet aqua teal and hot pink pearlescent surfaces, retro 1990s web 3D render, pastel ocean caustics, holographic sheen, deep teal backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single feather made of wet pearlescent plastic."
+  },
+  {
+   "name": "07_ribbon",
+   "noun": "ribbon",
+   "prompt": "Studio macro photograph, glossy wet aqua teal and hot pink pearlescent surfaces, retro 1990s web 3D render, pastel ocean caustics, holographic sheen, deep teal backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single mobius ribbon made of wet pearlescent plastic."
+  },
+  {
+   "name": "08_dna_helix",
+   "noun": "dna helix",
+   "prompt": "Studio macro photograph, glossy wet aqua teal and hot pink pearlescent surfaces, retro 1990s web 3D render, pastel ocean caustics, holographic sheen, deep teal backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single double helix made of wet pearlescent plastic."
+  },
+  {
+   "name": "09_seed_pod",
+   "noun": "seed pod",
+   "prompt": "Studio macro photograph, glossy wet aqua teal and hot pink pearlescent surfaces, retro 1990s web 3D render, pastel ocean caustics, holographic sheen, deep teal backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single seed pod made of wet pearlescent plastic."
+  },
+  {
+   "name": "10_conch",
+   "noun": "conch",
+   "prompt": "Studio macro photograph, glossy wet aqua teal and hot pink pearlescent surfaces, retro 1990s web 3D render, pastel ocean caustics, holographic sheen, deep teal backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single conch shell made of wet pearlescent plastic."
+  },
+  {
+   "name": "11_butterfly",
+   "noun": "butterfly",
+   "prompt": "Studio macro photograph, glossy wet aqua teal and hot pink pearlescent surfaces, retro 1990s web 3D render, pastel ocean caustics, holographic sheen, deep teal backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single butterfly made of wet pearlescent plastic."
+  }
+ ],
+ "psy-fractal": [
+  {
+   "name": "00_orb",
+   "noun": "orb",
+   "prompt": "Cinematic render, glowing ultraviolet fluorescent fractal geometry, intricate recursive symmetrical patterns, blacklight neon lime magenta and violet, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single perfect sphere made of fluorescent recursive geometry."
+  },
+  {
+   "name": "01_nautilus",
+   "noun": "nautilus",
+   "prompt": "Cinematic render, glowing ultraviolet fluorescent fractal geometry, intricate recursive symmetrical patterns, blacklight neon lime magenta and violet, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single nautilus shell made of fluorescent recursive geometry."
+  },
+  {
+   "name": "02_lotus",
+   "noun": "lotus",
+   "prompt": "Cinematic render, glowing ultraviolet fluorescent fractal geometry, intricate recursive symmetrical patterns, blacklight neon lime magenta and violet, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single lotus flower made of fluorescent recursive geometry."
+  },
+  {
+   "name": "03_torus_knot",
+   "noun": "torus knot",
+   "prompt": "Cinematic render, glowing ultraviolet fluorescent fractal geometry, intricate recursive symmetrical patterns, blacklight neon lime magenta and violet, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single torus knot made of fluorescent recursive geometry."
+  },
+  {
+   "name": "04_jellyfish",
+   "noun": "jellyfish",
+   "prompt": "Cinematic render, glowing ultraviolet fluorescent fractal geometry, intricate recursive symmetrical patterns, blacklight neon lime magenta and violet, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single jellyfish made of fluorescent recursive geometry."
+  },
+  {
+   "name": "05_crystal",
+   "noun": "crystal",
+   "prompt": "Cinematic render, glowing ultraviolet fluorescent fractal geometry, intricate recursive symmetrical patterns, blacklight neon lime magenta and violet, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single crystal cluster made of fluorescent recursive geometry."
+  },
+  {
+   "name": "06_feather",
+   "noun": "feather",
+   "prompt": "Cinematic render, glowing ultraviolet fluorescent fractal geometry, intricate recursive symmetrical patterns, blacklight neon lime magenta and violet, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single feather made of fluorescent recursive geometry."
+  },
+  {
+   "name": "07_ribbon",
+   "noun": "ribbon",
+   "prompt": "Cinematic render, glowing ultraviolet fluorescent fractal geometry, intricate recursive symmetrical patterns, blacklight neon lime magenta and violet, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single mobius ribbon made of fluorescent recursive geometry."
+  },
+  {
+   "name": "08_dna_helix",
+   "noun": "dna helix",
+   "prompt": "Cinematic render, glowing ultraviolet fluorescent fractal geometry, intricate recursive symmetrical patterns, blacklight neon lime magenta and violet, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single double helix made of fluorescent recursive geometry."
+  },
+  {
+   "name": "09_seed_pod",
+   "noun": "seed pod",
+   "prompt": "Cinematic render, glowing ultraviolet fluorescent fractal geometry, intricate recursive symmetrical patterns, blacklight neon lime magenta and violet, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single seed pod made of fluorescent recursive geometry."
+  },
+  {
+   "name": "10_conch",
+   "noun": "conch",
+   "prompt": "Cinematic render, glowing ultraviolet fluorescent fractal geometry, intricate recursive symmetrical patterns, blacklight neon lime magenta and violet, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single conch shell made of fluorescent recursive geometry."
+  },
+  {
+   "name": "11_butterfly",
+   "noun": "butterfly",
+   "prompt": "Cinematic render, glowing ultraviolet fluorescent fractal geometry, intricate recursive symmetrical patterns, blacklight neon lime magenta and violet, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single butterfly made of fluorescent recursive geometry."
+  }
+ ],
+ "odd-machine": [
+  {
+   "name": "00_orb",
+   "noun": "orb",
+   "prompt": "Studio macro photograph, uncanny biomechanical form, glossy flesh-pink silicone fused with precision brushed steel parts and fine wiring, harsh surgical light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single perfect sphere made of silicone and machined steel."
+  },
+  {
+   "name": "01_nautilus",
+   "noun": "nautilus",
+   "prompt": "Studio macro photograph, uncanny biomechanical form, glossy flesh-pink silicone fused with precision brushed steel parts and fine wiring, harsh surgical light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single nautilus shell made of silicone and machined steel."
+  },
+  {
+   "name": "02_lotus",
+   "noun": "lotus",
+   "prompt": "Studio macro photograph, uncanny biomechanical form, glossy flesh-pink silicone fused with precision brushed steel parts and fine wiring, harsh surgical light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single lotus flower made of silicone and machined steel."
+  },
+  {
+   "name": "03_torus_knot",
+   "noun": "torus knot",
+   "prompt": "Studio macro photograph, uncanny biomechanical form, glossy flesh-pink silicone fused with precision brushed steel parts and fine wiring, harsh surgical light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single torus knot made of silicone and machined steel."
+  },
+  {
+   "name": "04_jellyfish",
+   "noun": "jellyfish",
+   "prompt": "Studio macro photograph, uncanny biomechanical form, glossy flesh-pink silicone fused with precision brushed steel parts and fine wiring, harsh surgical light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single jellyfish made of silicone and machined steel."
+  },
+  {
+   "name": "05_crystal",
+   "noun": "crystal",
+   "prompt": "Studio macro photograph, uncanny biomechanical form, glossy flesh-pink silicone fused with precision brushed steel parts and fine wiring, harsh surgical light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single crystal cluster made of silicone and machined steel."
+  },
+  {
+   "name": "06_feather",
+   "noun": "feather",
+   "prompt": "Studio macro photograph, uncanny biomechanical form, glossy flesh-pink silicone fused with precision brushed steel parts and fine wiring, harsh surgical light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single feather made of silicone and machined steel."
+  },
+  {
+   "name": "07_ribbon",
+   "noun": "ribbon",
+   "prompt": "Studio macro photograph, uncanny biomechanical form, glossy flesh-pink silicone fused with precision brushed steel parts and fine wiring, harsh surgical light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single mobius ribbon made of silicone and machined steel."
+  },
+  {
+   "name": "08_dna_helix",
+   "noun": "dna helix",
+   "prompt": "Studio macro photograph, uncanny biomechanical form, glossy flesh-pink silicone fused with precision brushed steel parts and fine wiring, harsh surgical light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single double helix made of silicone and machined steel."
+  },
+  {
+   "name": "09_seed_pod",
+   "noun": "seed pod",
+   "prompt": "Studio macro photograph, uncanny biomechanical form, glossy flesh-pink silicone fused with precision brushed steel parts and fine wiring, harsh surgical light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single seed pod made of silicone and machined steel."
+  },
+  {
+   "name": "10_conch",
+   "noun": "conch",
+   "prompt": "Studio macro photograph, uncanny biomechanical form, glossy flesh-pink silicone fused with precision brushed steel parts and fine wiring, harsh surgical light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single conch shell made of silicone and machined steel."
+  },
+  {
+   "name": "11_butterfly",
+   "noun": "butterfly",
+   "prompt": "Studio macro photograph, uncanny biomechanical form, glossy flesh-pink silicone fused with precision brushed steel parts and fine wiring, harsh surgical light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single butterfly made of silicone and machined steel."
+  }
+ ],
+ "brutalist": [
+  {
+   "name": "00_orb",
+   "noun": "orb",
+   "prompt": "Architectural photograph, raw board-marked concrete monolithic sculpture, hard low raking sunlight, deep geometric shadows, overcast grey sky backdrop, architectural photography, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single perfect sphere made of raw concrete."
+  },
+  {
+   "name": "01_nautilus",
+   "noun": "nautilus",
+   "prompt": "Architectural photograph, raw board-marked concrete monolithic sculpture, hard low raking sunlight, deep geometric shadows, overcast grey sky backdrop, architectural photography, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single nautilus shell made of raw concrete."
+  },
+  {
+   "name": "02_lotus",
+   "noun": "lotus",
+   "prompt": "Architectural photograph, raw board-marked concrete monolithic sculpture, hard low raking sunlight, deep geometric shadows, overcast grey sky backdrop, architectural photography, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single lotus flower made of raw concrete."
+  },
+  {
+   "name": "03_torus_knot",
+   "noun": "torus knot",
+   "prompt": "Architectural photograph, raw board-marked concrete monolithic sculpture, hard low raking sunlight, deep geometric shadows, overcast grey sky backdrop, architectural photography, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single torus knot made of raw concrete."
+  },
+  {
+   "name": "04_jellyfish",
+   "noun": "jellyfish",
+   "prompt": "Architectural photograph, raw board-marked concrete monolithic sculpture, hard low raking sunlight, deep geometric shadows, overcast grey sky backdrop, architectural photography, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single jellyfish made of raw concrete."
+  },
+  {
+   "name": "05_crystal",
+   "noun": "crystal",
+   "prompt": "Architectural photograph, raw board-marked concrete monolithic sculpture, hard low raking sunlight, deep geometric shadows, overcast grey sky backdrop, architectural photography, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single crystal cluster made of raw concrete."
+  },
+  {
+   "name": "06_feather",
+   "noun": "feather",
+   "prompt": "Architectural photograph, raw board-marked concrete monolithic sculpture, hard low raking sunlight, deep geometric shadows, overcast grey sky backdrop, architectural photography, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single feather made of raw concrete."
+  },
+  {
+   "name": "07_ribbon",
+   "noun": "ribbon",
+   "prompt": "Architectural photograph, raw board-marked concrete monolithic sculpture, hard low raking sunlight, deep geometric shadows, overcast grey sky backdrop, architectural photography, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single mobius ribbon made of raw concrete."
+  },
+  {
+   "name": "08_dna_helix",
+   "noun": "dna helix",
+   "prompt": "Architectural photograph, raw board-marked concrete monolithic sculpture, hard low raking sunlight, deep geometric shadows, overcast grey sky backdrop, architectural photography, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single double helix made of raw concrete."
+  },
+  {
+   "name": "09_seed_pod",
+   "noun": "seed pod",
+   "prompt": "Architectural photograph, raw board-marked concrete monolithic sculpture, hard low raking sunlight, deep geometric shadows, overcast grey sky backdrop, architectural photography, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single seed pod made of raw concrete."
+  },
+  {
+   "name": "10_conch",
+   "noun": "conch",
+   "prompt": "Architectural photograph, raw board-marked concrete monolithic sculpture, hard low raking sunlight, deep geometric shadows, overcast grey sky backdrop, architectural photography, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single conch shell made of raw concrete."
+  },
+  {
+   "name": "11_butterfly",
+   "noun": "butterfly",
+   "prompt": "Architectural photograph, raw board-marked concrete monolithic sculpture, hard low raking sunlight, deep geometric shadows, overcast grey sky backdrop, architectural photography, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single butterfly made of raw concrete."
+  }
+ ],
+ "bioluminescent": [
+  {
+   "name": "00_orb",
+   "noun": "orb",
+   "prompt": "Studio macro photograph, translucent deep-sea creature-like form glowing with bioluminescent cyan and green light, soft inner glow, drifting particles, pitch black abyss, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single perfect sphere made of translucent gelatinous tissue."
+  },
+  {
+   "name": "01_nautilus",
+   "noun": "nautilus",
+   "prompt": "Studio macro photograph, translucent deep-sea creature-like form glowing with bioluminescent cyan and green light, soft inner glow, drifting particles, pitch black abyss, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single nautilus shell made of translucent gelatinous tissue."
+  },
+  {
+   "name": "02_lotus",
+   "noun": "lotus",
+   "prompt": "Studio macro photograph, translucent deep-sea creature-like form glowing with bioluminescent cyan and green light, soft inner glow, drifting particles, pitch black abyss, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single lotus flower made of translucent gelatinous tissue."
+  },
+  {
+   "name": "03_torus_knot",
+   "noun": "torus knot",
+   "prompt": "Studio macro photograph, translucent deep-sea creature-like form glowing with bioluminescent cyan and green light, soft inner glow, drifting particles, pitch black abyss, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single torus knot made of translucent gelatinous tissue."
+  },
+  {
+   "name": "04_jellyfish",
+   "noun": "jellyfish",
+   "prompt": "Studio macro photograph, translucent deep-sea creature-like form glowing with bioluminescent cyan and green light, soft inner glow, drifting particles, pitch black abyss, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single jellyfish made of translucent gelatinous tissue."
+  },
+  {
+   "name": "05_crystal",
+   "noun": "crystal",
+   "prompt": "Studio macro photograph, translucent deep-sea creature-like form glowing with bioluminescent cyan and green light, soft inner glow, drifting particles, pitch black abyss, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single crystal cluster made of translucent gelatinous tissue."
+  },
+  {
+   "name": "06_feather",
+   "noun": "feather",
+   "prompt": "Studio macro photograph, translucent deep-sea creature-like form glowing with bioluminescent cyan and green light, soft inner glow, drifting particles, pitch black abyss, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single feather made of translucent gelatinous tissue."
+  },
+  {
+   "name": "07_ribbon",
+   "noun": "ribbon",
+   "prompt": "Studio macro photograph, translucent deep-sea creature-like form glowing with bioluminescent cyan and green light, soft inner glow, drifting particles, pitch black abyss, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single mobius ribbon made of translucent gelatinous tissue."
+  },
+  {
+   "name": "08_dna_helix",
+   "noun": "dna helix",
+   "prompt": "Studio macro photograph, translucent deep-sea creature-like form glowing with bioluminescent cyan and green light, soft inner glow, drifting particles, pitch black abyss, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single double helix made of translucent gelatinous tissue."
+  },
+  {
+   "name": "09_seed_pod",
+   "noun": "seed pod",
+   "prompt": "Studio macro photograph, translucent deep-sea creature-like form glowing with bioluminescent cyan and green light, soft inner glow, drifting particles, pitch black abyss, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single seed pod made of translucent gelatinous tissue."
+  },
+  {
+   "name": "10_conch",
+   "noun": "conch",
+   "prompt": "Studio macro photograph, translucent deep-sea creature-like form glowing with bioluminescent cyan and green light, soft inner glow, drifting particles, pitch black abyss, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single conch shell made of translucent gelatinous tissue."
+  },
+  {
+   "name": "11_butterfly",
+   "noun": "butterfly",
+   "prompt": "Studio macro photograph, translucent deep-sea creature-like form glowing with bioluminescent cyan and green light, soft inner glow, drifting particles, pitch black abyss, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single butterfly made of translucent gelatinous tissue."
+  }
+ ],
+ "ink-water": [
+  {
+   "name": "00_orb",
+   "noun": "orb",
+   "prompt": "Studio macro photograph, a crisp sculpted form made of dense swirling vermilion red and gold ink frozen mid-bloom in clear dark water, the silhouette sharply readable, fine ink filaments trailing from its edges, pure black backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single perfect sphere shape, clearly recognisable, made of dense swirling vermilion and gold ink, sharply shaped."
+  },
+  {
+   "name": "01_nautilus",
+   "noun": "nautilus",
+   "prompt": "Studio macro photograph, a crisp sculpted form made of dense swirling vermilion red and gold ink frozen mid-bloom in clear dark water, the silhouette sharply readable, fine ink filaments trailing from its edges, pure black backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single nautilus shell shape, clearly recognisable, made of dense swirling vermilion and gold ink, sharply shaped."
+  },
+  {
+   "name": "02_lotus",
+   "noun": "lotus",
+   "prompt": "Studio macro photograph, a crisp sculpted form made of dense swirling vermilion red and gold ink frozen mid-bloom in clear dark water, the silhouette sharply readable, fine ink filaments trailing from its edges, pure black backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single lotus flower shape, clearly recognisable, made of dense swirling vermilion and gold ink, sharply shaped."
+  },
+  {
+   "name": "03_torus_knot",
+   "noun": "torus knot",
+   "prompt": "Studio macro photograph, a crisp sculpted form made of dense swirling vermilion red and gold ink frozen mid-bloom in clear dark water, the silhouette sharply readable, fine ink filaments trailing from its edges, pure black backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single torus knot shape, clearly recognisable, made of dense swirling vermilion and gold ink, sharply shaped."
+  },
+  {
+   "name": "04_jellyfish",
+   "noun": "jellyfish",
+   "prompt": "Studio macro photograph, a crisp sculpted form made of dense swirling vermilion red and gold ink frozen mid-bloom in clear dark water, the silhouette sharply readable, fine ink filaments trailing from its edges, pure black backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single jellyfish shape, clearly recognisable, made of dense swirling vermilion and gold ink, sharply shaped."
+  },
+  {
+   "name": "05_crystal",
+   "noun": "crystal",
+   "prompt": "Studio macro photograph, a crisp sculpted form made of dense swirling vermilion red and gold ink frozen mid-bloom in clear dark water, the silhouette sharply readable, fine ink filaments trailing from its edges, pure black backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single crystal cluster shape, clearly recognisable, made of dense swirling vermilion and gold ink, sharply shaped."
+  },
+  {
+   "name": "06_feather",
+   "noun": "feather",
+   "prompt": "Studio macro photograph, a crisp sculpted form made of dense swirling vermilion red and gold ink frozen mid-bloom in clear dark water, the silhouette sharply readable, fine ink filaments trailing from its edges, pure black backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single feather shape, clearly recognisable, made of dense swirling vermilion and gold ink, sharply shaped."
+  },
+  {
+   "name": "07_ribbon",
+   "noun": "ribbon",
+   "prompt": "Studio macro photograph, a crisp sculpted form made of dense swirling vermilion red and gold ink frozen mid-bloom in clear dark water, the silhouette sharply readable, fine ink filaments trailing from its edges, pure black backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single mobius ribbon shape, clearly recognisable, made of dense swirling vermilion and gold ink, sharply shaped."
+  },
+  {
+   "name": "08_dna_helix",
+   "noun": "dna helix",
+   "prompt": "Studio macro photograph, a crisp sculpted form made of dense swirling vermilion red and gold ink frozen mid-bloom in clear dark water, the silhouette sharply readable, fine ink filaments trailing from its edges, pure black backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single double helix shape, clearly recognisable, made of dense swirling vermilion and gold ink, sharply shaped."
+  },
+  {
+   "name": "09_seed_pod",
+   "noun": "seed pod",
+   "prompt": "Studio macro photograph, a crisp sculpted form made of dense swirling vermilion red and gold ink frozen mid-bloom in clear dark water, the silhouette sharply readable, fine ink filaments trailing from its edges, pure black backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single seed pod shape, clearly recognisable, made of dense swirling vermilion and gold ink, sharply shaped."
+  },
+  {
+   "name": "10_conch",
+   "noun": "conch",
+   "prompt": "Studio macro photograph, a crisp sculpted form made of dense swirling vermilion red and gold ink frozen mid-bloom in clear dark water, the silhouette sharply readable, fine ink filaments trailing from its edges, pure black backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single conch shell shape, clearly recognisable, made of dense swirling vermilion and gold ink, sharply shaped."
+  },
+  {
+   "name": "11_butterfly",
+   "noun": "butterfly",
+   "prompt": "Studio macro photograph, a crisp sculpted form made of dense swirling vermilion red and gold ink frozen mid-bloom in clear dark water, the silhouette sharply readable, fine ink filaments trailing from its edges, pure black backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single butterfly shape, clearly recognisable, made of dense swirling vermilion and gold ink, sharply shaped."
+  }
+ ],
+ "porcelain-marble": [
+  {
+   "name": "00_orb",
+   "noun": "orb",
+   "prompt": "Studio macro photograph, polished white veined marble and fine cobalt-blue glazed porcelain, museum spotlight, soft falloff, black velvet backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single perfect sphere made of marble, porcelain glaze."
+  },
+  {
+   "name": "01_nautilus",
+   "noun": "nautilus",
+   "prompt": "Studio macro photograph, polished white veined marble and fine cobalt-blue glazed porcelain, museum spotlight, soft falloff, black velvet backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single nautilus shell made of marble, porcelain glaze."
+  },
+  {
+   "name": "02_lotus",
+   "noun": "lotus",
+   "prompt": "Studio macro photograph, polished white veined marble and fine cobalt-blue glazed porcelain, museum spotlight, soft falloff, black velvet backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single lotus flower made of marble, porcelain glaze."
+  },
+  {
+   "name": "03_torus_knot",
+   "noun": "torus knot",
+   "prompt": "Studio macro photograph, polished white veined marble and fine cobalt-blue glazed porcelain, museum spotlight, soft falloff, black velvet backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single torus knot made of marble, porcelain glaze."
+  },
+  {
+   "name": "04_jellyfish",
+   "noun": "jellyfish",
+   "prompt": "Studio macro photograph, polished white veined marble and fine cobalt-blue glazed porcelain, museum spotlight, soft falloff, black velvet backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single jellyfish made of marble, porcelain glaze."
+  },
+  {
+   "name": "05_crystal",
+   "noun": "crystal",
+   "prompt": "Studio macro photograph, polished white veined marble and fine cobalt-blue glazed porcelain, museum spotlight, soft falloff, black velvet backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single crystal cluster made of marble, porcelain glaze."
+  },
+  {
+   "name": "06_feather",
+   "noun": "feather",
+   "prompt": "Studio macro photograph, polished white veined marble and fine cobalt-blue glazed porcelain, museum spotlight, soft falloff, black velvet backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single feather made of marble, porcelain glaze."
+  },
+  {
+   "name": "07_ribbon",
+   "noun": "ribbon",
+   "prompt": "Studio macro photograph, polished white veined marble and fine cobalt-blue glazed porcelain, museum spotlight, soft falloff, black velvet backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single mobius ribbon made of marble, porcelain glaze."
+  },
+  {
+   "name": "08_dna_helix",
+   "noun": "dna helix",
+   "prompt": "Studio macro photograph, polished white veined marble and fine cobalt-blue glazed porcelain, museum spotlight, soft falloff, black velvet backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single double helix made of marble, porcelain glaze."
+  },
+  {
+   "name": "09_seed_pod",
+   "noun": "seed pod",
+   "prompt": "Studio macro photograph, polished white veined marble and fine cobalt-blue glazed porcelain, museum spotlight, soft falloff, black velvet backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single seed pod made of marble, porcelain glaze."
+  },
+  {
+   "name": "10_conch",
+   "noun": "conch",
+   "prompt": "Studio macro photograph, polished white veined marble and fine cobalt-blue glazed porcelain, museum spotlight, soft falloff, black velvet backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single conch shell made of marble, porcelain glaze."
+  },
+  {
+   "name": "11_butterfly",
+   "noun": "butterfly",
+   "prompt": "Studio macro photograph, polished white veined marble and fine cobalt-blue glazed porcelain, museum spotlight, soft falloff, black velvet backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single butterfly made of marble, porcelain glaze."
+  }
+ ],
+ "lava-obsidian": [
+  {
+   "name": "00_orb",
+   "noun": "orb",
+   "prompt": "Studio macro photograph, glossy black obsidian volcanic glass with glowing orange molten lava cracks, embers, heat shimmer free, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single perfect sphere made of obsidian, molten lava."
+  },
+  {
+   "name": "01_nautilus",
+   "noun": "nautilus",
+   "prompt": "Studio macro photograph, glossy black obsidian volcanic glass with glowing orange molten lava cracks, embers, heat shimmer free, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single nautilus shell made of obsidian, molten lava."
+  },
+  {
+   "name": "02_lotus",
+   "noun": "lotus",
+   "prompt": "Studio macro photograph, glossy black obsidian volcanic glass with glowing orange molten lava cracks, embers, heat shimmer free, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single lotus flower made of obsidian, molten lava."
+  },
+  {
+   "name": "03_torus_knot",
+   "noun": "torus knot",
+   "prompt": "Studio macro photograph, glossy black obsidian volcanic glass with glowing orange molten lava cracks, embers, heat shimmer free, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single torus knot made of obsidian, molten lava."
+  },
+  {
+   "name": "04_jellyfish",
+   "noun": "jellyfish",
+   "prompt": "Studio macro photograph, glossy black obsidian volcanic glass with glowing orange molten lava cracks, embers, heat shimmer free, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single jellyfish made of obsidian, molten lava."
+  },
+  {
+   "name": "05_crystal",
+   "noun": "crystal",
+   "prompt": "Studio macro photograph, glossy black obsidian volcanic glass with glowing orange molten lava cracks, embers, heat shimmer free, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single crystal cluster made of obsidian, molten lava."
+  },
+  {
+   "name": "06_feather",
+   "noun": "feather",
+   "prompt": "Studio macro photograph, glossy black obsidian volcanic glass with glowing orange molten lava cracks, embers, heat shimmer free, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single feather made of obsidian, molten lava. Pure black background, dark studio.",
+   "seed": 4106
+  },
+  {
+   "name": "07_ribbon",
+   "noun": "ribbon",
+   "prompt": "Studio macro photograph, glossy black obsidian volcanic glass with glowing orange molten lava cracks, embers, heat shimmer free, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single mobius ribbon made of obsidian, molten lava."
+  },
+  {
+   "name": "08_dna_helix",
+   "noun": "dna helix",
+   "prompt": "Studio macro photograph, glossy black obsidian volcanic glass with glowing orange molten lava cracks, embers, heat shimmer free, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single double helix made of obsidian, molten lava."
+  },
+  {
+   "name": "09_seed_pod",
+   "noun": "seed pod",
+   "prompt": "Studio macro photograph, glossy black obsidian volcanic glass with glowing orange molten lava cracks, embers, heat shimmer free, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single seed pod made of obsidian, molten lava."
+  },
+  {
+   "name": "10_conch",
+   "noun": "conch",
+   "prompt": "Studio macro photograph, glossy black obsidian volcanic glass with glowing orange molten lava cracks, embers, heat shimmer free, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single conch shell made of obsidian, molten lava."
+  },
+  {
+   "name": "11_butterfly",
+   "noun": "butterfly",
+   "prompt": "Studio macro photograph, glossy black obsidian volcanic glass with glowing orange molten lava cracks, embers, heat shimmer free, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single butterfly made of obsidian, molten lava."
+  }
+ ],
+ "thermal": [
+  {
+   "name": "00_orb",
+   "noun": "orb",
+   "prompt": "Thermal infrared camera image, thermal infrared camera image, false-colour iron palette from white-hot yellow through orange and magenta to deep violet, heat signature, black cold background, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single perfect sphere made of heat signature."
+  },
+  {
+   "name": "01_nautilus",
+   "noun": "nautilus",
+   "prompt": "Thermal infrared camera image, thermal infrared camera image, false-colour iron palette from white-hot yellow through orange and magenta to deep violet, heat signature, black cold background, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single nautilus shell made of heat signature."
+  },
+  {
+   "name": "02_lotus",
+   "noun": "lotus",
+   "prompt": "Thermal infrared camera image, thermal infrared camera image, false-colour iron palette from white-hot yellow through orange and magenta to deep violet, heat signature, black cold background, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single lotus flower made of heat signature."
+  },
+  {
+   "name": "03_torus_knot",
+   "noun": "torus knot",
+   "prompt": "Thermal infrared camera image, thermal infrared camera image, false-colour iron palette from white-hot yellow through orange and magenta to deep violet, heat signature, black cold background, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single torus knot made of heat signature."
+  },
+  {
+   "name": "04_jellyfish",
+   "noun": "jellyfish",
+   "prompt": "Thermal infrared camera image, thermal infrared camera image, false-colour iron palette from white-hot yellow through orange and magenta to deep violet, heat signature, black cold background, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single jellyfish made of heat signature."
+  },
+  {
+   "name": "05_crystal",
+   "noun": "crystal",
+   "prompt": "Thermal infrared camera image, thermal infrared camera image, false-colour iron palette from white-hot yellow through orange and magenta to deep violet, heat signature, black cold background, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single crystal cluster made of heat signature."
+  },
+  {
+   "name": "06_feather",
+   "noun": "feather",
+   "prompt": "Thermal infrared camera image, thermal infrared camera image, false-colour iron palette from white-hot yellow through orange and magenta to deep violet, heat signature, black cold background, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single feather made of heat signature."
+  },
+  {
+   "name": "07_ribbon",
+   "noun": "ribbon",
+   "prompt": "Thermal infrared camera image, thermal infrared camera image, false-colour iron palette from white-hot yellow through orange and magenta to deep violet, heat signature, black cold background, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single mobius ribbon made of heat signature."
+  },
+  {
+   "name": "08_dna_helix",
+   "noun": "dna helix",
+   "prompt": "Thermal infrared camera image, thermal infrared camera image, false-colour iron palette from white-hot yellow through orange and magenta to deep violet, heat signature, black cold background, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single double helix made of heat signature."
+  },
+  {
+   "name": "09_seed_pod",
+   "noun": "seed pod",
+   "prompt": "Thermal infrared camera image, thermal infrared camera image, false-colour iron palette from white-hot yellow through orange and magenta to deep violet, heat signature, black cold background, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single seed pod made of heat signature."
+  },
+  {
+   "name": "10_conch",
+   "noun": "conch",
+   "prompt": "Thermal infrared camera image, thermal infrared camera image, false-colour iron palette from white-hot yellow through orange and magenta to deep violet, heat signature, black cold background, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single conch shell made of heat signature."
+  },
+  {
+   "name": "11_butterfly",
+   "noun": "butterfly",
+   "prompt": "Thermal infrared camera image, thermal infrared camera image, false-colour iron palette from white-hot yellow through orange and magenta to deep violet, heat signature, black cold background, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single butterfly made of heat signature."
+  }
+ ],
+ "crt-phosphor": [
+  {
+   "name": "00_orb",
+   "noun": "orb",
+   "prompt": "Close photograph of a glowing CRT screen, object shown on a glowing CRT monitor, soft visible scanlines and RGB phosphor glow, gentle analogue colour bleed, dark room, tasteful vintage video, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single perfect sphere made of phosphor screen."
+  },
+  {
+   "name": "01_nautilus",
+   "noun": "nautilus",
+   "prompt": "Close photograph of a glowing CRT screen, object shown on a glowing CRT monitor, soft visible scanlines and RGB phosphor glow, gentle analogue colour bleed, dark room, tasteful vintage video, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single nautilus shell made of phosphor screen."
+  },
+  {
+   "name": "02_lotus",
+   "noun": "lotus",
+   "prompt": "Close photograph of a glowing CRT screen, object shown on a glowing CRT monitor, soft visible scanlines and RGB phosphor glow, gentle analogue colour bleed, dark room, tasteful vintage video, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single lotus flower made of phosphor screen."
+  },
+  {
+   "name": "03_torus_knot",
+   "noun": "torus knot",
+   "prompt": "Close photograph of a glowing CRT screen, object shown on a glowing CRT monitor, soft visible scanlines and RGB phosphor glow, gentle analogue colour bleed, dark room, tasteful vintage video, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single torus knot made of phosphor screen."
+  },
+  {
+   "name": "04_jellyfish",
+   "noun": "jellyfish",
+   "prompt": "Close photograph of a glowing CRT screen, object shown on a glowing CRT monitor, soft visible scanlines and RGB phosphor glow, gentle analogue colour bleed, dark room, tasteful vintage video, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single jellyfish made of phosphor screen."
+  },
+  {
+   "name": "05_crystal",
+   "noun": "crystal",
+   "prompt": "Close photograph of a glowing CRT screen, object shown on a glowing CRT monitor, soft visible scanlines and RGB phosphor glow, gentle analogue colour bleed, dark room, tasteful vintage video, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single crystal cluster made of phosphor screen."
+  },
+  {
+   "name": "06_feather",
+   "noun": "feather",
+   "prompt": "Close photograph of a glowing CRT screen, object shown on a glowing CRT monitor, soft visible scanlines and RGB phosphor glow, gentle analogue colour bleed, dark room, tasteful vintage video, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single feather made of phosphor screen."
+  },
+  {
+   "name": "07_ribbon",
+   "noun": "ribbon",
+   "prompt": "Close photograph of a glowing CRT screen, object shown on a glowing CRT monitor, soft visible scanlines and RGB phosphor glow, gentle analogue colour bleed, dark room, tasteful vintage video, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single mobius ribbon made of phosphor screen."
+  },
+  {
+   "name": "08_dna_helix",
+   "noun": "dna helix",
+   "prompt": "Close photograph of a glowing CRT screen, object shown on a glowing CRT monitor, soft visible scanlines and RGB phosphor glow, gentle analogue colour bleed, dark room, tasteful vintage video, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single double helix made of phosphor screen."
+  },
+  {
+   "name": "09_seed_pod",
+   "noun": "seed pod",
+   "prompt": "Close photograph of a glowing CRT screen, object shown on a glowing CRT monitor, soft visible scanlines and RGB phosphor glow, gentle analogue colour bleed, dark room, tasteful vintage video, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single seed pod made of phosphor screen."
+  },
+  {
+   "name": "10_conch",
+   "noun": "conch",
+   "prompt": "Close photograph of a glowing CRT screen, object shown on a glowing CRT monitor, soft visible scanlines and RGB phosphor glow, gentle analogue colour bleed, dark room, tasteful vintage video, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single conch shell made of phosphor screen."
+  },
+  {
+   "name": "11_butterfly",
+   "noun": "butterfly",
+   "prompt": "Close photograph of a glowing CRT screen, object shown on a glowing CRT monitor, soft visible scanlines and RGB phosphor glow, gentle analogue colour bleed, dark room, tasteful vintage video, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single butterfly made of phosphor screen."
+  }
+ ],
+ "ice-crystal": [
+  {
+   "name": "00_orb",
+   "noun": "orb",
+   "prompt": "Studio macro photograph, clear frozen ice with intricate frost crystal growth and trapped bubbles, cold blue backlight, frost ferns, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single perfect sphere made of ice, frost."
+  },
+  {
+   "name": "01_nautilus",
+   "noun": "nautilus",
+   "prompt": "Studio macro photograph, clear frozen ice with intricate frost crystal growth and trapped bubbles, cold blue backlight, frost ferns, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single nautilus shell made of ice, frost."
+  },
+  {
+   "name": "02_lotus",
+   "noun": "lotus",
+   "prompt": "Studio macro photograph, clear frozen ice with intricate frost crystal growth and trapped bubbles, cold blue backlight, frost ferns, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single lotus flower made of ice, frost."
+  },
+  {
+   "name": "03_torus_knot",
+   "noun": "torus knot",
+   "prompt": "Studio macro photograph, clear frozen ice with intricate frost crystal growth and trapped bubbles, cold blue backlight, frost ferns, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single torus knot made of ice, frost."
+  },
+  {
+   "name": "04_jellyfish",
+   "noun": "jellyfish",
+   "prompt": "Studio macro photograph, clear frozen ice with intricate frost crystal growth and trapped bubbles, cold blue backlight, frost ferns, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single jellyfish made of ice, frost."
+  },
+  {
+   "name": "05_crystal",
+   "noun": "crystal",
+   "prompt": "Studio macro photograph, clear frozen ice with intricate frost crystal growth and trapped bubbles, cold blue backlight, frost ferns, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single crystal cluster made of ice, frost."
+  },
+  {
+   "name": "06_feather",
+   "noun": "feather",
+   "prompt": "Studio macro photograph, clear frozen ice with intricate frost crystal growth and trapped bubbles, cold blue backlight, frost ferns, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single feather made of ice, frost."
+  },
+  {
+   "name": "07_ribbon",
+   "noun": "ribbon",
+   "prompt": "Studio macro photograph, clear frozen ice with intricate frost crystal growth and trapped bubbles, cold blue backlight, frost ferns, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single mobius ribbon made of ice, frost."
+  },
+  {
+   "name": "08_dna_helix",
+   "noun": "dna helix",
+   "prompt": "Studio macro photograph, clear frozen ice with intricate frost crystal growth and trapped bubbles, cold blue backlight, frost ferns, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single double helix made of ice, frost."
+  },
+  {
+   "name": "09_seed_pod",
+   "noun": "seed pod",
+   "prompt": "Studio macro photograph, clear frozen ice with intricate frost crystal growth and trapped bubbles, cold blue backlight, frost ferns, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single seed pod made of ice, frost."
+  },
+  {
+   "name": "10_conch",
+   "noun": "conch",
+   "prompt": "Studio macro photograph, clear frozen ice with intricate frost crystal growth and trapped bubbles, cold blue backlight, frost ferns, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single conch shell made of ice, frost."
+  },
+  {
+   "name": "11_butterfly",
+   "noun": "butterfly",
+   "prompt": "Studio macro photograph, clear frozen ice with intricate frost crystal growth and trapped bubbles, cold blue backlight, frost ferns, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single butterfly made of ice, frost."
+  }
+ ],
+ "origami-noir": [
+  {
+   "name": "00_orb",
+   "noun": "orb",
+   "prompt": "Studio macro photograph, crisp origami folded from black paper and gold foil paper, sharp creases, elegant geometric folds, low key light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single perfect sphere made of black paper, gold foil."
+  },
+  {
+   "name": "01_nautilus",
+   "noun": "nautilus",
+   "prompt": "Studio macro photograph, crisp origami folded from black paper and gold foil paper, sharp creases, elegant geometric folds, low key light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single nautilus shell made of black paper, gold foil."
+  },
+  {
+   "name": "02_lotus",
+   "noun": "lotus",
+   "prompt": "Studio macro photograph, crisp origami folded from black paper and gold foil paper, sharp creases, elegant geometric folds, low key light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single lotus flower made of black paper, gold foil."
+  },
+  {
+   "name": "03_torus_knot",
+   "noun": "torus knot",
+   "prompt": "Studio macro photograph, crisp origami folded from black paper and gold foil paper, sharp creases, elegant geometric folds, low key light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single torus knot made of black paper, gold foil."
+  },
+  {
+   "name": "04_jellyfish",
+   "noun": "jellyfish",
+   "prompt": "Studio macro photograph, crisp origami folded from black paper and gold foil paper, sharp creases, elegant geometric folds, low key light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single jellyfish made of black paper, gold foil."
+  },
+  {
+   "name": "05_crystal",
+   "noun": "crystal",
+   "prompt": "Studio macro photograph, crisp origami folded from black paper and gold foil paper, sharp creases, elegant geometric folds, low key light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single crystal cluster made of black paper, gold foil."
+  },
+  {
+   "name": "06_feather",
+   "noun": "feather",
+   "prompt": "Studio macro photograph, crisp origami folded from black paper and gold foil paper, sharp creases, elegant geometric folds, low key light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single feather made of black paper, gold foil."
+  },
+  {
+   "name": "07_ribbon",
+   "noun": "ribbon",
+   "prompt": "Studio macro photograph, crisp origami folded from black paper and gold foil paper, sharp creases, elegant geometric folds, low key light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single mobius ribbon made of black paper, gold foil."
+  },
+  {
+   "name": "08_dna_helix",
+   "noun": "dna helix",
+   "prompt": "Studio macro photograph, crisp origami folded from black paper and gold foil paper, sharp creases, elegant geometric folds, low key light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single double helix made of black paper, gold foil."
+  },
+  {
+   "name": "09_seed_pod",
+   "noun": "seed pod",
+   "prompt": "Studio macro photograph, crisp origami folded from black paper and gold foil paper, sharp creases, elegant geometric folds, low key light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single seed pod made of black paper, gold foil."
+  },
+  {
+   "name": "10_conch",
+   "noun": "conch",
+   "prompt": "Studio macro photograph, crisp origami folded from black paper and gold foil paper, sharp creases, elegant geometric folds, low key light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single conch shell made of black paper, gold foil."
+  },
+  {
+   "name": "11_butterfly",
+   "noun": "butterfly",
+   "prompt": "Studio macro photograph, crisp origami folded from black paper and gold foil paper, sharp creases, elegant geometric folds, low key light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single butterfly made of black paper, gold foil."
+  }
+ ],
+ "alien-botanical": [
+  {
+   "name": "00_orb",
+   "noun": "orb",
+   "prompt": "Studio macro photograph, otherworldly alien plant form with iridescent violet petals, glowing lime veins, translucent tendrils and seed pods, moody dark greenhouse mist, black backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single perfect sphere made of iridescent alien plant tissue."
+  },
+  {
+   "name": "01_nautilus",
+   "noun": "nautilus",
+   "prompt": "Studio macro photograph, otherworldly alien plant form with iridescent violet petals, glowing lime veins, translucent tendrils and seed pods, moody dark greenhouse mist, black backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single nautilus shell made of iridescent alien plant tissue."
+  },
+  {
+   "name": "02_lotus",
+   "noun": "lotus",
+   "prompt": "Studio macro photograph, otherworldly alien plant form with iridescent violet petals, glowing lime veins, translucent tendrils and seed pods, moody dark greenhouse mist, black backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single lotus flower made of iridescent alien plant tissue."
+  },
+  {
+   "name": "03_torus_knot",
+   "noun": "torus knot",
+   "prompt": "Studio macro photograph, otherworldly alien plant form with iridescent violet petals, glowing lime veins, translucent tendrils and seed pods, moody dark greenhouse mist, black backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single torus knot made of iridescent alien plant tissue."
+  },
+  {
+   "name": "04_jellyfish",
+   "noun": "jellyfish",
+   "prompt": "Studio macro photograph, otherworldly alien plant form with iridescent violet petals, glowing lime veins, translucent tendrils and seed pods, moody dark greenhouse mist, black backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single jellyfish made of iridescent alien plant tissue."
+  },
+  {
+   "name": "05_crystal",
+   "noun": "crystal",
+   "prompt": "Studio macro photograph, otherworldly alien plant form with iridescent violet petals, glowing lime veins, translucent tendrils and seed pods, moody dark greenhouse mist, black backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single crystal cluster made of iridescent alien plant tissue."
+  },
+  {
+   "name": "06_feather",
+   "noun": "feather",
+   "prompt": "Studio macro photograph, otherworldly alien plant form with iridescent violet petals, glowing lime veins, translucent tendrils and seed pods, moody dark greenhouse mist, black backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single feather made of iridescent alien plant tissue."
+  },
+  {
+   "name": "07_ribbon",
+   "noun": "ribbon",
+   "prompt": "Studio macro photograph, otherworldly alien plant form with iridescent violet petals, glowing lime veins, translucent tendrils and seed pods, moody dark greenhouse mist, black backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single mobius ribbon made of iridescent alien plant tissue."
+  },
+  {
+   "name": "08_dna_helix",
+   "noun": "dna helix",
+   "prompt": "Studio macro photograph, otherworldly alien plant form with iridescent violet petals, glowing lime veins, translucent tendrils and seed pods, moody dark greenhouse mist, black backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single double helix made of iridescent alien plant tissue."
+  },
+  {
+   "name": "09_seed_pod",
+   "noun": "seed pod",
+   "prompt": "Studio macro photograph, otherworldly alien plant form with iridescent violet petals, glowing lime veins, translucent tendrils and seed pods, moody dark greenhouse mist, black backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single seed pod made of iridescent alien plant tissue."
+  },
+  {
+   "name": "10_conch",
+   "noun": "conch",
+   "prompt": "Studio macro photograph, otherworldly alien plant form with iridescent violet petals, glowing lime veins, translucent tendrils and seed pods, moody dark greenhouse mist, black backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single conch shell made of iridescent alien plant tissue."
+  },
+  {
+   "name": "11_butterfly",
+   "noun": "butterfly",
+   "prompt": "Studio macro photograph, otherworldly alien plant form with iridescent violet petals, glowing lime veins, translucent tendrils and seed pods, moody dark greenhouse mist, black backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single butterfly made of iridescent alien plant tissue."
+  }
+ ]
+}
