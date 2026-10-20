@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Xenoform Moves</title>
+<link rel="stylesheet" href="/static/app.css">
+<style>body{max-width:980px;margin:24px auto;padding:0 16px;font-family:system-ui,sans-serif}
+.moves{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.move{border:1px solid #444;border-radius:8px;padding:10px;cursor:pointer}.move.sel{outline:2px solid #5be1d7}
+.fit{font-size:12px;opacity:.75}label{display:block;margin:10px 0}textarea{width:100%;min-height:70px}
+video{max-height:70vh}</style></head>
+<body>
+<p><a href="/">&larr; Back to the desk</a></p>
+<h1>Moves</h1>
+<p>Pick a character picture and a move. Wan Animate 2 copies the dancer's motion frame by frame onto your character, so the motion is continuous. Local, open weights, 480&times;832, 3.4 s, about 12 GB.</p>
+<label>Character picture (full body, plain background works best) <input type="file" id="img" accept="image/png,image/jpeg,image/webp"></label>
+<label>Describe the character (face, hair, clothes) <textarea id="look" placeholder="A 22-year-old woman with fair skin, light freckles, grey-blue eyes, a soft ash-silver bob, white bomber jacket, light blue jeans, white sneakers"></textarea></label>
+<p class="fit">Always added: closed-mouth smile, calm expression, detailed hands.</p>
+<h2>Move</h2><div class="moves" id="moves">Loading...</div>
+<p><button id="go" disabled>Render this move</button> <span id="status"></span></p>
+<div id="out"></div>
+<script>
+let pick = null;
+const $ = (id) => document.getElementById(id);
+async function load() {
+  const res = await fetch("/api/moves"); const data = await res.json();
+  $("moves").innerHTML = data.moves.map((m) => `<div class="move" data-id="${m.id}"><b>${m.title}</b><div class="fit">${m.fit}${m.fit_note ? " - " + m.fit_note : ""}${m.local ? "" : " - not downloaded"}</div><div class="fit">${m.attribution}</div></div>`).join("");
+  document.querySelectorAll(".move").forEach((el) => el.onclick = () => {
+    document.querySelectorAll(".move").forEach((x) => x.classList.remove("sel")); el.classList.add("sel"); pick = el.dataset.id; $("go").disabled = false; });
+}
+async function poll(id) {
+  const res = await fetch(`/api/moves/jobs/${id}`); const job = await res.json();
+  $("status").textContent = job.status + (job.error ? ": " + job.error : "");
+  if (job.status === "done") { $("out").innerHTML = `<video controls autoplay loop src="${job.url}"></video>`; $("go").disabled = false; return; }
+  if (job.status === "error") { $("go").disabled = false; return; }
+  setTimeout(() => poll(id), 3000);
+}
+$("go").onclick = async () => {
+  const file = $("img").files[0]; if (!file) { $("status").textContent = "Pick a character picture first."; return; }
+  const body = new FormData(); body.append("file", file); body.append("move", pick); body.append("appearance", $("look").value);
+  $("go").disabled = true; $("status").textContent = "Starting...";
+  const res = await fetch("/api/moves/render", {method: "POST", body}); const job = await res.json();
+  if (!res.ok) { $("status").textContent = job.detail || "Could not start."; $("go").disabled = false; return; }
+  poll(job.id);
+};
+load();
+</script></body></html>

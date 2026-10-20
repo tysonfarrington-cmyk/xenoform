@@ -22,6 +22,10 @@ A music video director, not a visualiser: visualisers pulse to the beat and mont
 
 Everything above runs on open weights on your machine. Nothing is uploaded.
 
+### Moves (beta)
+
+Open **/moves** (linked from Simple): pick a full-body character picture and a move, and Wan Animate 2 copies a real dancer's motion onto your character frame by frame, so the motion is continuous, with no pose-snapping. Local and open weights, 480×832, 81 frames, about 11.6 GB peak. The 15 driving clips (Pexels/Mixkit) are listed with their licences and attribution in `configs/moves.json`. Their licences forbid redistributing the mp4s, so fetch them with `python scripts/fetch_moves.py`. The default prompt adds *closed-mouth smile, calm expression, detailed hands*.
+
 ### Models and licences
 
 Checked against each model card or licence text on 19 October 2026. Read the full list, fonts and pictures in [docs/LICENCES.md](docs/LICENCES.md). "Open weights" does not mean every licence allows every use.

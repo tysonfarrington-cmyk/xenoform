@@ -2092,6 +2092,7 @@ function renderEasy() {
       ${easy.cloudPlan ? cloudCard(easy.cloudPlan) : ""}
       <button type="button" class="generate easy-make" data-act="easy-make">Make my video</button>
       ${remixBox(easy)}
+      <p class="note"><a href="/moves">Moves: make a character dance to a real dance clip (Wan Animate 2) &rarr;</a></p>
       <button type="button" class="ghost easy-showcase" data-act="easy-showcase">Watch a finished one · plays now</button>
       <p class="note" id="easy-note">${esc(easy.note || "No ComfyUI? It plays in your browser.")}</p>
       <p class="side-foot"><a class="ow-badge" href="${esc(media("/licences"))}" title="LTX-2.3 has a revenue threshold. FLUX.2 Klein 9B is non-commercial. This desk uses the Apache 2.0 4B.">Open weights</a></p>

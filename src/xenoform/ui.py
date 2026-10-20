@@ -745,6 +745,67 @@ def create_app(cfg: dict | None = None):
             str(body.get("flash") or "normal"),
         )
 
+    # ---------------------------------------------------------------- Moves library (Wan Animate 2)
+    _MOVE_JOBS: dict = {}
+
+    @app.get("/moves")
+    def moves_page() -> FileResponse:
+        return FileResponse(Path(__file__).parent / "ui_static" / "moves.html")
+
+    @app.get("/api/moves")
+    def moves_list(all: bool = False) -> dict:
+        from xenoform import moves as mv
+
+        return {"moves": mv.moves(include_avoid=all), "style": mv.DEFAULT_STYLE,
+                "size": f"{mv.W}x{mv.H}", "frames": mv.FRAMES}
+
+    @app.post("/api/moves/render")
+    async def moves_render(request: Request) -> dict:
+        from xenoform import moves as mv
+
+        form = await request.form()
+        upload, move_id = form.get("file"), str(form.get("move") or "")
+        appearance = str(form.get("appearance") or "")
+        if upload is None or not move_id:
+            raise HTTPException(400, "Send a character picture and a move.")
+        try:
+            mv.clip(move_id)
+        except mv.MovesError as exc:
+            raise HTTPException(404, str(exc)) from exc
+        if not (mv.LIBRARY / f"{move_id}.mp4").is_file():
+            raise HTTPException(409, f"{move_id} is not downloaded yet. Run: python scripts/fetch_moves.py {move_id}")
+        job_id = uuid.uuid4().hex[:10]
+        folder = work_dir() / "moves" / job_id
+        folder.mkdir(parents=True, exist_ok=True)
+        suffix = Path(getattr(upload, "filename", "") or "character.png").suffix.lower() or ".png"
+        image = folder / f"upload{suffix}"
+        image.write_bytes(await upload.read())
+        _MOVE_JOBS[job_id] = {"status": "rendering"}
+
+        def run() -> None:
+            try:
+                out = mv.render(image, move_id, appearance, folder, cfg)
+                _MOVE_JOBS[job_id] = {"status": "done", "path": str(out), "url": f"/media/moves/{job_id}"}
+            except Exception as exc:  # noqa: BLE001 - shown to the user
+                _MOVE_JOBS[job_id] = {"status": "error", "error": str(exc)[:300]}
+
+        threading.Thread(target=run, daemon=True, name=f"moves-{job_id}").start()
+        return {"id": job_id, "status": "rendering"}
+
+    @app.get("/api/moves/jobs/{job_id}")
+    def moves_job(job_id: str) -> dict:
+        job = _MOVE_JOBS.get(job_id)
+        if job is None:
+            raise HTTPException(404, "No such move render.")
+        return {k: v for k, v in job.items() if k != "path"}
+
+    @app.get("/media/moves/{job_id}")
+    def moves_media(job_id: str) -> FileResponse:
+        job = _MOVE_JOBS.get(job_id) or {}
+        if not job.get("path") or not Path(job["path"]).is_file():
+            raise HTTPException(404, "That move render is gone.")
+        return FileResponse(job["path"], media_type="video/mp4")
+
     @app.post("/api/hero")
     async def add_hero(file: UploadFile = File(...)) -> dict:
         suffix = Path(file.filename or "hero.png").suffix.lower() or ".png"
