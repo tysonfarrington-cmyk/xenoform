@@ -617,3 +617,15 @@ MIT. See [LICENSE](LICENSE).
 Model weights, the two desk fonts, and the pictures are not covered by that MIT grant. The badge says "Open weights" and links to [docs/LICENCES.md](docs/LICENCES.md), which the desk also serves at `/licences`.
 
 LTX-2.3 is under the LTX-2 Community License: free commercial use under about $10M annual revenue, and a paid licence above that, through 11 August 2026. FLUX.2 Klein 9B is non-commercial. The desk's optional Klein file is the Apache 2.0 4B, `flux-2-klein-4b-fp8.safetensors`. Picture credits are in [CREDITS.md](CREDITS.md) and at `/credits`. Anything without a checked author is TODO. The font copyright lines are in [src/xenoform/ui_static/fonts/OFL.txt](src/xenoform/ui_static/fonts/OFL.txt).
+
+## Drive Xenoform from any AI (MCP)
+
+Xenoform has a built-in MCP server, so Claude Desktop, Claude Code, Cursor, Grok Bot, or any MCP client can run the whole app from chat. It can pick vibes and transitions, render, poll, cancel, list videos, share recipe codes, and re-cut like an editor. Keep the desk running, then:
+
+```bat
+Xenoform-MCP.bat              :: stdio, for Claude Desktop / Cursor
+Xenoform-MCP.bat --http       :: http://127.0.0.1:47319/mcp (localhost only)
+claude mcp add xenoform -- C:\path\to\xenoform\.venv\Scripts\python.exe -m xenoform.mcp
+```
+
+The server stays local, never returns secrets, and never spends money unless you pass `confirm_spend=true`. Copy-paste configs are in [docs/mcp.md](docs/mcp.md).

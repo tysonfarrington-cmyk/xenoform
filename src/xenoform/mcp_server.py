@@ -59,14 +59,12 @@ def build_server(desk: str | None = None):
             "The agent extra is not installed. Run: pip install 'xenoform[agent]'. The desk itself is unchanged."
         ) from exc
 
+    from xenoform.mcp_tools import INSTRUCTIONS, App, Desk, register
+
     base = desk_url(desk)
     server = MCPServer(
         "Xenoform",
-        instructions=(
-            "You direct a music video on the local Xenoform desk. "
-            "Change the storyboard, run a review, and render only when asked. "
-            "Live plays in the browser with no model. Prefer it for a first look."
-        ),
+        instructions=INSTRUCTIONS,
     )
 
     def call(method: str, path: str, body: dict | None = None, timeout: float = 120.0) -> dict:
@@ -209,6 +207,7 @@ def build_server(desk: str | None = None):
     def transitions_resource() -> str:
         return json.dumps(call("GET", "/api/v1/transitions"))
 
+    register(server, App(Desk(base)))
     return server
 
 
