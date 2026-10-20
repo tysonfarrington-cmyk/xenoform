@@ -54,3 +54,6 @@ Every render (desk, MCP, CLI) first passes through `configs/guardrails.json`, wh
 - **Characters (Polly):** at most 3 appearances and none in the first 15% unless expert.
 - **Kaleidoscope:** retired from VJ defaults (expert only).
 - **Stem-reactive:** bass drives scale and displacement, drums drive chroma and stutter, other/vocals drive emission glow and colour.
+- **No repeated stills in morphs:** when a vibe's still pool would wrap, the morph path uses fewer, longer morphs and says so.
+- **High-res first:** the auto-editor orders sources sharp, then upscale, then soft, then rejected. NASA clips download from the original master.
+- **VJ stems:** separate uniforms for drums (chroma split), bass (scale and displacement), other (colour) and vocals (emission). They come from `?stems=<stem_react JSON>` or an in-browser band split.

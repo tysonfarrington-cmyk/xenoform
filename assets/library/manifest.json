@@ -25,18 +25,19 @@
    "fetch": {
     "nasa_id": "GSFC_20150630_SDO_m11908_ArchingEruption",
     "in": 62,
-    "out": 66.5
+    "out": 66.5,
+    "variant": "~orig"
    },
    "file": "assets/library/liquid-gold/nasa_sdo_arching_eruption.mp4",
    "motion_score": 4.3,
    "seed_encoding": "720 wide, 4.5 s, CRF 25, muted, motion-verified by frame difference (mean |dI| on 96x54 gray at 4 fps)",
    "qa": {
-    "width": 720,
-    "height": 406,
-    "sharpness": 84.7,
-    "verdict": "upscale",
-    "soft": true,
-    "motion_score": 0.6574
+    "width": 1920,
+    "height": 1080,
+    "sharpness": 132.7,
+    "verdict": "ok",
+    "soft": false,
+    "motion_score": 0.6572
    }
   },
   {
@@ -62,18 +63,19 @@
    "fetch": {
     "nasa_id": "GSFC_20141024_SDO_m11718_Flares",
     "in": 70.2,
-    "out": 74.2
+    "out": 74.2,
+    "variant": "~orig"
    },
    "file": "assets/library/cosmic/nasa_sdo_x16_flare.mp4",
    "motion_score": 10.0,
    "seed_encoding": "720 wide, 4 s, CRF 25, muted, motion-verified by frame difference (mean |dI| on 96x54 gray at 4 fps)",
    "qa": {
-    "width": 720,
-    "height": 406,
-    "sharpness": 31.9,
-    "verdict": "upscale",
-    "soft": true,
-    "motion_score": 0.7021
+    "width": 1920,
+    "height": 1080,
+    "sharpness": 279.1,
+    "verdict": "ok",
+    "soft": false,
+    "motion_score": 0.9149
    }
   },
   {
@@ -99,17 +101,18 @@
    "fetch": {
     "nasa_id": "GSFC_20181022_ICON_m12902_Airglow",
     "in": 161.6,
-    "out": 164.8
+    "out": 164.8,
+    "variant": "~orig"
    },
    "file": "assets/library/cosmic/nasa_iss_earth_night_lightning.mp4",
    "motion_score": 13.7,
    "seed_encoding": "720 wide, 3.2 s, CRF 25, muted, motion-verified by frame difference (mean |dI| on 96x54 gray at 4 fps)",
    "qa": {
-    "width": 720,
-    "height": 406,
-    "sharpness": 267.4,
-    "verdict": "upscale",
-    "soft": true,
+    "width": 1920,
+    "height": 1080,
+    "sharpness": 346.3,
+    "verdict": "ok",
+    "soft": false,
     "motion_score": 1.0
    }
   },
@@ -136,17 +139,18 @@
    "fetch": {
     "nasa_id": "jsc2021m000100_Expedition_64_Soyuz_MS17_Relocation_Timelapse_210319",
     "in": 51,
-    "out": 56.0
+    "out": 56.0,
+    "variant": "~orig"
    },
    "file": "assets/library/ocean/nasa_iss_soyuz_timelapse.mp4",
    "motion_score": 15.7,
    "seed_encoding": "720 wide, 5 s, CRF 25, muted, motion-verified by frame difference (mean |dI| on 96x54 gray at 4 fps)",
    "qa": {
-    "width": 720,
-    "height": 406,
-    "sharpness": 246.2,
+    "width": 1280,
+    "height": 720,
+    "sharpness": 334.1,
     "verdict": "upscale",
-    "soft": true,
+    "soft": false,
     "motion_score": 1.0
    }
   },

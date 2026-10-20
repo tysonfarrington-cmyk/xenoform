@@ -76,7 +76,7 @@ def local_path(item: dict, root: Path = ROOT) -> Path:
     return root / "assets" / "library" / sub / f"{item['id']}{ext}"
 
 
-def nasa_media_url(nasa_id: str, prefer: Iterable[str] = ("~large.mp4", "~medium.mp4", "~orig.mp4", "~small.mp4")) -> str:
+def nasa_media_url(nasa_id: str, prefer: Iterable[str] = ("~orig.mp4", "~large.mp4", "~medium.mp4", "~small.mp4")) -> str:
     q = urllib.parse.quote(nasa_id)
     with urllib.request.urlopen(f"https://images-assets.nasa.gov/video/{q}/collection.json", timeout=30) as r:
         urls = json.load(r)
@@ -189,8 +189,10 @@ def plan_edit(items: list[dict], beats: list[float], duration: float, *, vibe: s
                           "upscale": (it.get("quality") or it.get("qa") or {}).get("verdict") == "upscale"})
 
     shots: list[dict] = []
-    for i, it in enumerate(items):
-        add_item(i, it, shots)
+    # guardrail source_quality: high-res sources first, soft (e.g. 720x406 NASA) ones last
+    order = sorted(range(len(items)), key=lambda i: quality_rank(items[i]))
+    for i in order:
+        add_item(i, items[i], shots)
     if not shots:
         raise ValueError("no footage")
     step = max(1, bars_per_shot * beats_per_bar)
@@ -245,6 +247,18 @@ def plan_edit(items: list[dict], beats: list[float], duration: float, *, vibe: s
             trs.append({"kind": kind, "win": round(T.TRANSITIONS[kind]["beats"] * (beats[1] - beats[0] if len(beats) > 1 else 0.5), 3),
                         "intensity": 0.6})
     return {"segments": segs, "transitions": trs, "vibe": vibe, "warnings": warnings}
+
+
+def quality_rank(item: dict) -> int:
+    """0 = sharp at output size, 1 = needs upscale, 2 = soft, 3 = reject (sorts first to last)."""
+    q = item.get("quality") or item.get("qa") or {}
+    if not q:
+        return 1
+    if q.get("verdict") == "reject":
+        return 3
+    if q.get("soft"):
+        return 2
+    return 0 if q.get("verdict") == "ok" else 1
 
 
 def _frame_hash(path, t: float = 0.0) -> str | None:

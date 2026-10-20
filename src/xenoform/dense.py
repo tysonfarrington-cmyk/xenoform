@@ -262,6 +262,25 @@ def shots_for(state: dict, directed: dict, audio_path: Path | None) -> tuple[lis
     return custom_shots(plan, duration), plan
 
 
+def _stretch(shots: list[dict], duration: float) -> list[dict]:
+    """Scale shot lengths so they still fill ``duration`` after dropping some."""
+    total = sum(float(s.get("seconds") or 0.0) for s in shots)
+    if not shots or total <= 0 or duration <= 0:
+        return shots
+    k = duration / total
+    out, t = [], 0.0
+    for s in shots:
+        sec = float(s.get("seconds") or 0.0) * k
+        row = {**s, "seconds": round(sec, 4)}
+        if "start" in row:
+            row["start"] = round(t, 4)
+        if "frames" in row:
+            row["frames"] = max(1, int(round(sec * 24)))
+        out.append(row)
+        t += sec
+    return out
+
+
 def _draft_clips(shots, stills, work, cfg, seed, vibe, client, cancel, state=None):
     from xenoform.cloud_morph import _local_clips
 
@@ -278,6 +297,18 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     work.mkdir(parents=True, exist_ok=True)
     shots, plan = shots_for(state, directed, Path(audio_path))
     vibe, stills = stills_for({**state, "cut_plan": plan if plan.get("stills") else None}, len(shots) + 1)
+    repeat_note = ""
+    unique = len({str(s.get("path")) for s in stills})
+    if unique < len(stills) and not plan.get("stills"):
+        # guardrail no_repeat: the still pool wrapped. Use fewer, longer morphs so no still repeats.
+        n = max(1, unique - 1)
+        shots, plan = shots_for({**state, "morph_count": n}, directed, Path(audio_path))
+        if len(shots) > n:  # a planner that ignores the count: keep the first n shots, stretched to fill
+            shots = _stretch(shots[:n], float(directed.get("duration") or 0.0))
+        vibe, stills = stills_for({**state, "cut_plan": None}, len(shots) + 1)
+        repeat_note = (f"Only {unique} distinct stills in the {vibe} pool: {len(shots)} longer morphs instead of "
+                       f"repeating stills. Add stills (or pick a bigger vibe) for faster morphing.")
+        report("restyle", 0.05, repeat_note)
     from xenoform import guardrails as _guard
 
     if state.get("still_background") == "black":

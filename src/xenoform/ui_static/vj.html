@@ -91,7 +91,7 @@ const KEYFX=[8,9,10,0,11,12,13,14],CLASSIC=[1,2,3,4,5,6,7],CLASSIC_OK=Q.get('cla
 const W8={9:3,10:3,0:2,11:1.5,12:1.2,13:1,14:.8};
 const VS=`attribute vec2 p;varying vec2 uv;void main(){uv=p*.5+.5;uv.y=1.-uv.y;gl_Position=vec4(p,0,1);}`;
 const FS=`precision highp float;varying vec2 uv;uniform sampler2D A,B;
-uniform float t,m,bass,high,fx,aspA,aspB,aspS,beat,kal,mir,stb,inten;uniform vec3 ca,cb;uniform vec2 dir;
+uniform float t,m,bass,high,fx,aspA,aspB,aspS,beat,kal,mir,stb,inten,sDrum,sBass,sOther,sVoc;uniform vec3 ca,cb;uniform vec2 dir;
 float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 vec2 cover(vec2 u,float a){vec2 c=u-.5;if(a>aspS)c.x*=aspS/a;else c.y*=a/aspS;u=c+.5;return 1.-abs(1.-mod(u,2.));}
 vec3 tx(sampler2D s,vec2 u,float a){return texture2D(s,cover(u,a)).rgb;}
@@ -99,9 +99,10 @@ vec3 rgb(sampler2D s,vec2 u,float a,float cs){return vec3(tx(s,u+vec2(cs,0.),a).
 void main(){vec2 p=uv;
  if(kal>.5){vec2 c=p-.5;c.x*=aspS;float r=length(c),an=atan(c.y,c.x),sg=6.28318/6.;an=mod(an+t*.04,sg);an=abs(an-sg*.5);c=r*vec2(cos(an),sin(an));c.x/=aspS;p=c+.5;}
  if(mir>.5){p.x=p.x<.5?p.x:1.-p.x;}
- float z=1.+.045*inten*beat+.025*bass*inten;vec2 u=(p-.5)/z+.5;
- u.x+=sin(p.y*14.+t*2.)*cos(p.x*9.-t*1.6)*.005*bass*inten;
- float k=sin(3.14159*m),mm=smoothstep(0.,1.,m),cs=.0012+.005*high*inten,edge=0.;vec2 ua=u,ub=u;int f=int(fx+.5);
+ // stems: bass = scale + liquid displacement, drums = chroma split, other = colour, vocals = emission
+ float z=1.+.045*inten*beat+.035*sBass*inten;vec2 u=(p-.5)/z+.5;
+ u+=vec2(sin(p.y*14.+t*2.)*cos(p.x*9.-t*1.6),cos(p.x*11.+t*1.7)*sin(p.y*8.-t*1.3))*.007*sBass*inten;
+ float k=sin(3.14159*m),mm=smoothstep(0.,1.,m),cs=.0012+.007*sDrum*inten,edge=0.;vec2 ua=u,ub=u;int f=int(fx+.5);
  if(f==0){vec2 d=vec2(sin(u.y*18.+t*5.),cos(u.x*14.-t*4.))*.04*k;ua+=d;ub-=d;}
  else if(f==2){cs+=.045*k;mm=smoothstep(.25,.75,m);}
  else if(f==3){ua=(u-.5)/(1.+3.5*m*m)+.5;ub=(u-.5)*(1.+1.2*(1.-m))+.5;mm=smoothstep(.35,.7,m);}
@@ -122,6 +123,8 @@ void main(){vec2 p=uv;
  if(f==14){vec3 g=vec3(0);for(int j=1;j<6;j++){float sc=1.+.018*float(j)*inten;g=max(g,tx(A,(u-.5)/sc+.5,aspA)*(1.-float(j)/6.));}float gm=m<.5?.55:.5*pow(1.-(m-.5)*2.,2.);mm=step(.5,m);a=max(a,g*.55);b=max(b,g*gm);}
  if(f==1){float L=dot(a,vec3(.299,.587,.114));mm=smoothstep(L-.08,L+.08,m*1.16-.08);}
  vec3 col=mix(a,b,mm)+vec3(.85,.88,1.)*edge*.7;
+ {float g=dot(col,vec3(.299,.587,.114));col=mix(vec3(g),col,.85+.45*sOther*inten);}
+ col+=col*col*.55*sVoc*inten;
  col+=stb*beat*beat*.22;
  vec2 vc=uv-.5;col*=1.-.55*dot(vc,vc);col+=(hash(uv*vec2(1999.,1777.)+fract(t))-.5)*.022;
  gl_FragColor=vec4(col,1.);}`;
@@ -199,6 +202,16 @@ async function loadTrack(file){trackEl&&trackEl.pause();const url=URL.createObje
  trackEl=new Audio(url);trackEl.crossOrigin='anonymous';const src=AC.createMediaElementSource(trackEl);src.connect(an);an.connect(AC.destination);src.connect(recDest);
  trackEl.onplay=()=>AC.resume();toast(`Locked to ${grid.bpm} BPM. Space to play`);return grid}
 $('track').onchange=async e=>{const f=e.target.files[0];if(f){await loadTrack(f);trackEl.play()}};
+// Per-stem energies: precomputed stem_react envelopes (?stems=url of the JSON, synced to the track) when given,
+// else an in-browser band split (drums = transient flux + kick, bass 30-150 Hz, other 150-300 + 3.4-8k, vocals 300-3400).
+let STEMS=null;if(Q.get('stems'))fetch(Q.get('stems')).then(r=>r.json()).then(j=>{STEMS=j;toast('Stems loaded ('+(j.engine||'?')+')')}).catch(()=>{});
+function stemAt(name,t){const v=STEMS&&STEMS[name];if(!v||!v.length)return 0;return +v[Math.min(v.length-1,Math.max(0,Math.round(t*(STEMS.fps||24))))]||0}
+const SE={drums:0,bass:0,other:0,vocals:0,pf:0};
+function stems(a){if(STEMS&&trackEl){const t=trackEl.currentTime;return{drums:stemAt('drums',t),bass:stemAt('bass',t),other:stemAt('other',t),vocals:stemAt('vocals',t)}}
+ if(!an)return{drums:0,bass:0,other:0,vocals:0};const hz=AC.sampleRate/an.fftSize;
+ const avg=(lo,hi)=>{let s=0,n=0;for(let i=Math.floor(lo/hz);i<Math.min(buf.length,hi/hz);i++){s+=buf[i];n++}return n?s/n/255:0};
+ const voc=avg(300,3400),oth=(avg(150,300)+avg(3400,8000))/2,kick=avg(40,110);const tr=Math.max(0,avg(2000,9000)+kick-SE.pf);SE.pf=avg(2000,9000)+kick;
+ return{drums:Math.min(1,tr*6+(a.flux>avgFlux*2?.5:0)),bass:a.b,other:Math.min(1,oth*1.6),vocals:Math.min(1,voc*1.4)}}
 function bands(){if(!an)return{b:0,m:0,h:0,flux:0};an.getByteFrequencyData(buf);const hz=AC.sampleRate/an.fftSize;
  const avg=(a,b)=>{let s=0,n=0;for(let i=Math.floor(a/hz);i<Math.min(buf.length,b/hz);i++){s+=buf[i];n++}return n?s/n/255:0};
  const b=avg(30,150),m=avg(150,2000),h=avg(4000,12000);const e=b*2+m+h;const flux=Math.max(0,e-bands.p);bands.p=e;return{b,m,h,flux}}bands.p=0;
@@ -215,6 +228,7 @@ function onBeat(idx){beatPulse=1;S.beats++;const bi=grid&&grid.down!=null?((idx-
 let fpsN=0,fpsT=performance.now();
 function frame(now){requestAnimationFrame(frame);size();
  const a=bands();bassS+=(a.b-bassS)*.35;highS+=(a.h-highS)*.5;avgFlux=avgFlux*.95+a.flux*.05;
+ {const st=stems(a);SE.drums=Math.max(st.drums,SE.drums*.82);SE.bass+=(st.bass-SE.bass)*.35;SE.other+=(st.other-SE.other)*.2;SE.vocals+=(st.vocals-SE.vocals)*.25;}
  if(grid&&trackEl&&!trackEl.paused){const idx=Math.floor((trackEl.currentTime-grid.phase)/grid.period);if(idx!==lastBeatIdx&&idx>=0){lastBeatIdx=idx;onBeat(idx)}}
  else if(grid&&grid.tap){const idx=Math.floor((now/1000-grid.phase)/grid.period);if(idx!==lastBeatIdx){lastBeatIdx=idx;onBeat(idx)}}
  else if(an&&a.flux>avgFlux*2.6&&a.flux>.04&&now-lastFluxBeat>350&&a.b>.4){lastFluxBeat=now;onBeat(S.beats)}
@@ -224,6 +238,7 @@ function frame(now){requestAnimationFrame(frame);size();
  [[A,0],[B,1]].forEach(([v,u])=>{if(v&&v.readyState>=2){gl.activeTexture(gl.TEXTURE0+u);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,v)}});
  const f1=(n,v)=>gl.uniform1f(U(n),v);f1('t',now/1000);f1('m',mixv);f1('bass',bassS);f1('high',highS);f1('fx',S.curFx);f1('beat',beatPulse);
  f1('kal',S.kal);f1('mir',S.mir);f1('stb',S.stb);f1('inten',S.inten);
+ f1('sDrum',SE.drums);f1('sBass',SE.bass);f1('sOther',SE.other);f1('sVoc',SE.vocals);window.__xfStems=SE;
  f1('aspA',A&&A.videoWidth?A.videoWidth/A.videoHeight:1);f1('aspB',B&&B.videoWidth?B.videoWidth/B.videoHeight:1);f1('aspS',cv.width/cv.height);
  gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
  fpsN++;if(now-fpsT>500){if(S.hud){$('h-fps').textContent=Math.round(fpsN*1000/(now-fpsT));$('h-bpm').textContent=S.bpm||'-';$('h-beat').textContent=S.beats;
