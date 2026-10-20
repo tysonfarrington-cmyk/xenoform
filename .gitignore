@@ -17,3 +17,4 @@ work/
 xenoform_*.log
 # Moves driving clips: fetched by scripts/fetch_moves.py, never committed (Pexels/Mixkit licences)
 library/moves/
+assets/library/fetched/

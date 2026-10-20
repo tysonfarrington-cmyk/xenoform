@@ -13,9 +13,28 @@ import urllib.request
 from typing import Any
 
 
+DESK_PORTS = (47330, 47317)  # the contest rc2 desk first, then Xenoform.bat's default
+
+
+def _answers(url: str) -> bool:
+    try:
+        with urllib.request.urlopen(url + "/api/v1/health", timeout=1.5) as response:
+            return b"xenoform" in response.read(400)
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError):
+        return False
+
+
 def desk_url(explicit: str | None = None) -> str:
-    raw = (explicit or os.environ.get("XENO_DESK") or "http://127.0.0.1:47317").strip()
-    return raw.rstrip("/")
+    """--desk, then XENO_DESK, then XENO_PORT, then the first desk answering on 47330 or 47317."""
+    raw = (explicit or os.environ.get("XENO_DESK") or "").strip()
+    if raw:
+        return raw.rstrip("/")
+    ports = [int(p) for p in [os.environ.get("XENO_PORT", "")] if p.strip().isdigit()] + list(DESK_PORTS)
+    for port in ports:
+        url = f"http://127.0.0.1:{port}"
+        if _answers(url):
+            return url
+    return f"http://127.0.0.1:{ports[0]}"
 
 
 def _request(base: str, method: str, path: str, body: dict | None = None, timeout: float = 60.0) -> dict:
@@ -178,7 +197,10 @@ def build_server(desk: str | None = None):
     @server.tool()
     def get_frames() -> dict:
         """Contact sheet for the current board. The url is a PNG on the local desk."""
-        return call("GET", "/api/v1/frames")
+        out = call("GET", "/api/v1/frames")
+        if str(out.get("url") or "").startswith("/"):
+            out["url"] = base + out["url"]
+        return out
 
     @server.tool()
     def list_versions() -> dict:

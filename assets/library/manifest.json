@@ -1,0 +1,168 @@
+{
+ "version": 1,
+ "_doc": "Real footage library. Shared format for clips and vibe anchor stills (kind=image). redistribute=true items are committed; the rest are fetched by scripts/fetch_library.py into assets/library/fetched/ (git-ignored). Pexels/Mixkit items must have redistribute=false.",
+ "items": [
+  {
+   "id": "nasa_sdo_sun_gold",
+   "kind": "video",
+   "title": "SDO: the Sun in extreme ultraviolet (gold)",
+   "source": "nasa",
+   "source_url": "https://images.nasa.gov/details/GSFC_20160426_SDO_m12224_SolarFlare",
+   "licence": "NASA media are generally not subject to copyright in the US (public domain). Do not imply NASA endorsement; do not use NASA insignia/logos. https://www.nasa.gov/nasa-brand-center/images-and-media/",
+   "attribution": "\"SDO: the Sun in extreme ultraviolet (gold)\" courtesy NASA",
+   "redistribute": true,
+   "vibes": [
+    "liquid-gold",
+    "black",
+    "cosmic"
+   ],
+   "tags": [
+    "sun",
+    "sphere",
+    "plasma",
+    "centred"
+   ],
+   "fetch": {
+    "nasa_id": "GSFC_20160426_SDO_m12224_SolarFlare",
+    "in": 8,
+    "out": 16
+   },
+   "file": "assets/library/liquid-gold/nasa_sdo_sun_gold.mp4",
+   "seed_encoding": "720 wide, 8 s, CRF 25, muted (fetch_library.py --force re-pulls at up to 1920)"
+  },
+  {
+   "id": "nasa_sdo_limb_violet",
+   "kind": "video",
+   "title": "SDO: M6.7 flare on the solar limb (violet)",
+   "source": "nasa",
+   "source_url": "https://images.nasa.gov/details/GSFC_20160426_SDO_m12224_SolarFlare",
+   "licence": "NASA media are generally not subject to copyright in the US (public domain). Do not imply NASA endorsement; do not use NASA insignia/logos. https://www.nasa.gov/nasa-brand-center/images-and-media/",
+   "attribution": "\"SDO: M6.7 flare on the solar limb (violet)\" courtesy NASA",
+   "redistribute": true,
+   "vibes": [
+    "cosmic",
+    "neon-night",
+    "black"
+   ],
+   "tags": [
+    "sun",
+    "flare",
+    "limb"
+   ],
+   "fetch": {
+    "nasa_id": "GSFC_20160426_SDO_m12224_SolarFlare",
+    "in": 24,
+    "out": 32
+   },
+   "file": "assets/library/cosmic/nasa_sdo_limb_violet.mp4",
+   "seed_encoding": "720 wide, 8 s, CRF 25, muted (fetch_library.py --force re-pulls at up to 1920)"
+  },
+  {
+   "id": "nasa_sdo_teal",
+   "kind": "video",
+   "title": "SDO: active region in 131 \u00c5 (teal)",
+   "source": "nasa",
+   "source_url": "https://images.nasa.gov/details/GSFC_20160426_SDO_m12224_SolarFlare",
+   "licence": "NASA media are generally not subject to copyright in the US (public domain). Do not imply NASA endorsement; do not use NASA insignia/logos. https://www.nasa.gov/nasa-brand-center/images-and-media/",
+   "attribution": "\"SDO: active region in 131 \u00c5 (teal)\" courtesy NASA",
+   "redistribute": true,
+   "vibes": [
+    "ocean",
+    "neon-night"
+   ],
+   "tags": [
+    "sun",
+    "teal",
+    "plasma"
+   ],
+   "fetch": {
+    "nasa_id": "GSFC_20160426_SDO_m12224_SolarFlare",
+    "in": 40,
+    "out": 48
+   },
+   "file": "assets/library/ocean/nasa_sdo_teal.mp4",
+   "seed_encoding": "720 wide, 8 s, CRF 25, muted (fetch_library.py --force re-pulls at up to 1920)"
+  },
+  {
+   "id": "nasa_iss_earth_limb",
+   "kind": "video",
+   "title": "Earth views from the ISS: blue limb",
+   "source": "nasa",
+   "source_url": "https://images.nasa.gov/details/NHQ_2020_1221_Earth%20Views",
+   "licence": "NASA media are generally not subject to copyright in the US (public domain). Do not imply NASA endorsement; do not use NASA insignia/logos. https://www.nasa.gov/nasa-brand-center/images-and-media/",
+   "attribution": "\"Earth views from the ISS: blue limb\" courtesy NASA",
+   "redistribute": true,
+   "vibes": [
+    "cosmic",
+    "ocean",
+    "paper-summer"
+   ],
+   "tags": [
+    "earth",
+    "horizon",
+    "clouds"
+   ],
+   "fetch": {
+    "nasa_id": "NHQ_2020_1221_Earth Views",
+    "in": 270,
+    "out": 278
+   },
+   "file": "assets/library/cosmic/nasa_iss_earth_limb.mp4",
+   "seed_encoding": "720 wide, 8 s, CRF 25, muted (fetch_library.py --force re-pulls at up to 1920)"
+  },
+  {
+   "id": "nasa_iss_ocean_swirl",
+   "kind": "video",
+   "title": "Earth views from the ISS: ocean cloud swirl",
+   "source": "nasa",
+   "source_url": "https://images.nasa.gov/details/NHQ_2020_1221_Earth%20Views",
+   "licence": "NASA media are generally not subject to copyright in the US (public domain). Do not imply NASA endorsement; do not use NASA insignia/logos. https://www.nasa.gov/nasa-brand-center/images-and-media/",
+   "attribution": "\"Earth views from the ISS: ocean cloud swirl\" courtesy NASA",
+   "redistribute": true,
+   "vibes": [
+    "ocean",
+    "bloom"
+   ],
+   "tags": [
+    "earth",
+    "ocean",
+    "swirl"
+   ],
+   "fetch": {
+    "nasa_id": "NHQ_2020_1221_Earth Views",
+    "in": 1620,
+    "out": 1628
+   },
+   "file": "assets/library/ocean/nasa_iss_ocean_swirl.mp4",
+   "seed_encoding": "720 wide, 8 s, CRF 25, muted (fetch_library.py --force re-pulls at up to 1920)"
+  },
+  {
+   "id": "nasa_iss_hurricane_eye",
+   "kind": "video",
+   "title": "ISS flyover of Hurricane Ian: the eye",
+   "source": "nasa",
+   "source_url": "https://images.nasa.gov/details/jsc2022m000251_Expedition_67_Space_Station_Flyover_of_Hurricane_Ian_220928",
+   "licence": "NASA media are generally not subject to copyright in the US (public domain). Do not imply NASA endorsement; do not use NASA insignia/logos. https://www.nasa.gov/nasa-brand-center/images-and-media/",
+   "attribution": "\"ISS flyover of Hurricane Ian: the eye\" courtesy NASA",
+   "redistribute": true,
+   "vibes": [
+    "black",
+    "ocean",
+    "cosmic"
+   ],
+   "tags": [
+    "earth",
+    "storm",
+    "spiral",
+    "centred"
+   ],
+   "fetch": {
+    "nasa_id": "jsc2022m000251_Expedition_67_Space_Station_Flyover_of_Hurricane_Ian_220928",
+    "in": 236,
+    "out": 244
+   },
+   "file": "assets/library/black/nasa_iss_hurricane_eye.mp4",
+   "seed_encoding": "720 wide, 8 s, CRF 25, muted (fetch_library.py --force re-pulls at up to 1920)"
+  }
+ ]
+}

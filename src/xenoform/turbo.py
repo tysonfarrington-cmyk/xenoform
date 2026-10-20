@@ -1,7 +1,7 @@
 """Turbo: an animatic in seconds, then a small LTX pass on the same seed.
 
 The animatic never calls a video model. One keyframe per scene (4 steps at
-384×216) sits on the beat grid. Hard cuts join the shots. A signature scene
+384Ã—216) sits on the beat grid. Hard cuts join the shots. A signature scene
 crossfades, with a zoom regather, and a beat flash rides the picture. Dry run
 stops there. Live mode then replaces it with a chain of A->B guided morphs
 between per-vibe stills (LTX 0.9.5 at 512x288, see ``morph_pass``), one per
@@ -31,6 +31,26 @@ ANIMATIC_W = 384
 ANIMATIC_H = 216
 VIDEO_W = 384
 VIDEO_H = 224
+
+import contextvars as _contextvars
+
+# The animatic follows the cut's aspect: a portrait sketch for 9:16, square for 1:1.
+_SIZE = _contextvars.ContextVar("xeno_animatic_size", default=(ANIMATIC_W, ANIMATIC_H))
+
+
+def animatic_size(state: dict | None = None) -> tuple[int, int]:
+    if not state or state.get("live"):
+        return ANIMATIC_W, ANIMATIC_H  # live keyframes guide the 384x224 video model; keep them landscape
+    aspect = str(state.get("aspect") or "")
+    return {"9:16": (ANIMATIC_H, ANIMATIC_W), "1:1": (288, 288)}.get(aspect, (ANIMATIC_W, ANIMATIC_H))
+
+
+def _aw() -> int:
+    return _SIZE.get()[0]
+
+
+def _ah() -> int:
+    return _SIZE.get()[1]
 KEY_STEPS = 4
 VIDEO_STEPS = 4
 FPS = 12
@@ -72,14 +92,14 @@ _ETA = {
         "short": "~4 min",
         "first_s": 240,
         "again_s": 50,
-        "line": "512×288, 12 steps, or 704×384 on a 12 GB card when an fp8 LTX-2.3 file is present, about 210 seconds a shot. LTX-2.3 is the core action model. LTX 0.9.5 covers morphs and Turbo. About 4 minutes the first time on LTX 0.9.5.",
+        "line": "512Ã—288, 12 steps, or 704Ã—384 on a 12 GB card when an fp8 LTX-2.3 file is present, about 210 seconds a shot. LTX-2.3 is the core action model. LTX 0.9.5 covers morphs and Turbo. About 4 minutes the first time on LTX 0.9.5.",
     },
     "final": {
         "label": "Final",
         "short": "~10 min",
         "first_s": 600,
         "again_s": 160,
-        "line": "640×360 at 24 fps, or 768×432 on 24 GB with LTX-2.3 as the core model. LTX 0.9.5 covers morphs. Same seed, same guides, same retime in seconds.",
+        "line": "640Ã—360 at 24 fps, or 768Ã—432 on 24 GB with LTX-2.3 as the core model. LTX 0.9.5 covers morphs. Same seed, same guides, same retime in seconds.",
     },
 }
 
@@ -235,7 +255,7 @@ def _paint(features: dict, scene: dict, seed: int, palette: str) -> np.ndarray:
     phase = unit(int(seed), frame_index, salt=7) / fps
     sample = _frame_at(features, locked + phase)
     form = form_from_frame(sample)
-    rgb, _depth, _mask = render_frame(form, ANIMATIC_W, ANIMATIC_H, max_steps=KEY_STEPS)
+    rgb, _depth, _mask = render_frame(form, _aw(), _ah(), max_steps=KEY_STEPS)
     return _tint(rgb, palette)
 
 
@@ -246,13 +266,13 @@ def _load_keyframe(path: Path) -> np.ndarray | None:
         frame = np.load(path)
     except Exception:
         return None
-    if getattr(frame, "shape", None) != (ANIMATIC_H, ANIMATIC_W, 3) or frame.dtype != np.uint8:
+    if getattr(frame, "shape", None) != (_ah(), _aw(), 3) or frame.dtype != np.uint8:
         return None
     return frame
 
 
 def keyframe_key(scene: dict, seed: int, palette: str) -> str:
-    return segment_key(scene, seed, ANIMATIC_MODEL, f"{ANIMATIC_W}x{ANIMATIC_H}") + ":" + str(palette or "neutral")
+    return segment_key(scene, seed, ANIMATIC_MODEL, f"{_aw()}x{_ah()}") + ":" + str(palette or "neutral")
 
 
 def plan_segments(scenes: list[dict], seed: int) -> list[dict]:
@@ -273,7 +293,7 @@ def plan_segments(scenes: list[dict], seed: int) -> list[dict]:
                 "model": TURBO_MODEL,
                 "checkpoint": guard_checkpoint(FAST_CHECKPOINT),
                 "resolution": f"{VIDEO_W}x{VIDEO_H}",
-                "animatic_resolution": f"{ANIMATIC_W}x{ANIMATIC_H}",
+                "animatic_resolution": f"{_aw()}x{_ah()}",
                 "steps": VIDEO_STEPS,
                 "guide": render_guide(scene) or scene.get("guide") or "",
                 "guide_strengths": scene.get("guide_strengths"),
@@ -408,8 +428,8 @@ def render_animatic(
         "paint_s": round(paint_s, 3),
         "segments": segments,
         "fps": fps,
-        "width": ANIMATIC_W,
-        "height": ANIMATIC_H,
+        "width": _aw(),
+        "height": _ah(),
         "steps": KEY_STEPS,
         "batches": batch_by_checkpoint(segments),
     }
@@ -487,7 +507,7 @@ def keyframe_backend() -> str:
     return "cpu-keyframe"
 
 
-def run_turbo(
+def _run_turbo(
     cfg: dict,
     audio_path: Path,
     state: dict,
@@ -578,8 +598,8 @@ def run_turbo(
             sample_times,
             spec=delivery_spec("turbo", duration=4.0),
             actual={
-                "width": ANIMATIC_W,
-                "height": ANIMATIC_H,
+                "width": _aw(),
+                "height": _ah(),
                 "fps": float(FPS),
                 "duration": len(proof_frames) / float(FPS),
             },
@@ -668,7 +688,7 @@ def run_turbo(
         "checkpoint": tuned["comfy"]["checkpoint_name"],
         "steps": int(morph_info.get("steps") or tuned["comfy"]["steps"]),
         "resolution": morph_info.get("render") or f"{VIDEO_W}x{VIDEO_H}",
-        "animatic_resolution": f"{ANIMATIC_W}x{ANIMATIC_H}",
+        "animatic_resolution": f"{_aw()}x{_ah()}",
         "keyframe_model": keyframe_backend(),
         "keyframe_steps": KEY_STEPS,
         "fps": FPS,
@@ -700,7 +720,7 @@ def run_turbo(
         logging.getLogger("xenoform").exception("director notes")
     detail = f"Animatic ready in {elapsed:.1f}s"
     if painted["hits"]:
-        detail += f" · {painted['hits']} cached"
+        detail += f" Â· {painted['hits']} cached"
     if warning:
         detail = warning
     report("assemble", 1.0, detail)
@@ -718,3 +738,15 @@ def run_turbo(
         "warning": warning,
         "quality": "turbo",
     }
+
+
+def run_turbo(*args, **kwargs):
+    """Turbo/animatic run, sized to the cut's aspect (see animatic_size)."""
+    state = kwargs.get("state")
+    if state is None:
+        state = next((a for a in args if isinstance(a, dict) and ("aspect" in a or "scenes" in a or "blocks" in a)), None)
+    token = _SIZE.set(animatic_size(state))
+    try:
+        return _run_turbo(*args, **kwargs)
+    finally:
+        _SIZE.reset(token)

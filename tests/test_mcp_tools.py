@@ -1,4 +1,5 @@
-﻿"""Unit tests for the MCP Simple-path tools, with the desk mocked."""
+from pathlib import Path
+"""Unit tests for the MCP Simple-path tools, with the desk mocked."""
 
 import json
 import threading
@@ -127,7 +128,7 @@ def test_create_with_audio_and_image(app, tmp_path):
     pic = tmp_path / "hero.png"
     pic.write_bytes(b"png")
     out = app.create("chrome jellyfish", vibe="ocean", audio_path=str(song), image_paths=[str(pic)])
-    assert out["project"]["audio_id"] == "aud1" and out["project"]["hero_id"] == "hero1"
+    assert out["project"]["audio_id"] == "aud1" and out["project"]["images"][0]["name"] == "hero.png"
     assert out["project"]["vibe"] == "ocean"
 
 
@@ -284,3 +285,90 @@ def test_director_timeline_and_edits(app):
     app.start()
     sent = [c[2] for c in app.desk.calls if c[1] == "/api/generate"][-1]
     assert [b["hold"] for b in sent["blocks"]] == [1.0, 2.0]
+
+
+def test_images_as_morph_targets_and_first_frame(app, tmp_path):
+    a, b = tmp_path / "koi.png", tmp_path / "rose.jpg"
+    a.write_bytes(b"x")
+    b.write_bytes(b"x")
+    app.create("x")
+    app.attach_image(str(a))
+    app.attach_image(str(b))
+    app.attach_image(str(a))  # re-adding moves it last, no duplicate
+    assert app.body()["morph_targets"] == [str(b.resolve()), str(a.resolve())]
+    assert app.attach_image(str(a), role="first_frame")["image_id"] == "hero1"
+    assert app.body()["hero_id"] == "hero1"
+    with pytest.raises(mt.XenoformError, match="role"):
+        app.attach_image(str(a), role="background")
+
+
+def test_pick_stills_leads_with_user_targets(tmp_path):
+    from xenoform import morph_pass
+
+    a = tmp_path / "my_koi.png"
+    a.write_bytes(b"x")
+    vibe, stills = morph_pass.pick_stills({"vibe": "black", "morph_targets": [str(a), str(tmp_path / "gone.png"), "C:/x.txt"]}, 3)
+    assert stills[0]["path"] == str(a.resolve()) and stills[0]["noun"] == "my koi"
+    assert not stills[1].get("user") and Path(stills[1]["path"]).is_file()
+    _, plain = morph_pass.pick_stills({"vibe": "black"}, 2)
+    assert not any(s.get("user") for s in plain)
+
+
+def test_recipe_v2_roundtrip_and_back_compat(app):
+    _recipe_desk(app)
+    app.create("x")
+    assert app.encode_recipe()["recipe"] == "xf1.CODE"  # nothing extra: plain v1 code
+    app.update(transitions=["ribbon"])
+    app.boards = {"demo": {"blocks": [{"form": "sphere", "hold": 2.0, "transition": "snap"}]}}
+    app.apply_edits([{"index": 0, "hold": 1.5}])
+    code = app.encode_recipe()["recipe"]
+    assert code.startswith("xf2.")
+    dec = app.decode_recipe(code)
+    assert dec["vibe"] == "ocean" and dec["transitions"] == ["ribbon"] and dec["blocks"][0]["hold"] == 1.5
+    app.create("fresh")
+    assert app.settings()["shot_edits"] == []
+    p = app.remix(code)["project"]
+    assert p["transitions"] == ["ribbon"] and p["shot_edits"][0]["hold"] == 1.5
+    app.start()
+    sent = [c[2] for c in app.desk.calls if c[1] == "/api/generate"][-1]
+    assert sent["blocks"][0]["hold"] == 1.5 and "shot_edits_blocks" not in sent
+    assert app.remix("xf1.CODE")["project"]["shot_edits"] == []  # v1 still remixes
+
+
+def test_recipe_v2_rejects_damage_and_newer():
+    import base64
+    import zlib
+
+    with pytest.raises(mt.XenoformError, match="damaged"):
+        mt.decode_v2("xf2.!!!!")
+    newer = "xf2." + base64.urlsafe_b64encode(zlib.compress(json.dumps({"v": 9, "base": "xf1.A"}).encode())).decode()
+    with pytest.raises(mt.XenoformError, match="newer"):
+        mt.decode_v2(newer)
+    assert mt.decode_v2(mt.encode_v2("xf1.A", ["snap"], [{"form": "x", "hold": 1, "junk": 2}]))["blocks"] == [{"form": "x", "hold": 1}]
+
+
+def test_desk_url_order(monkeypatch):
+    from xenoform import mcp_server
+
+    monkeypatch.setenv("XENO_DESK", "http://127.0.0.1:5/")
+    assert mcp_server.desk_url() == "http://127.0.0.1:5"
+    assert mcp_server.desk_url("http://h:1") == "http://h:1"
+    monkeypatch.delenv("XENO_DESK")
+    monkeypatch.delenv("XENO_PORT", raising=False)
+    seen = []
+    monkeypatch.setattr(mcp_server, "_answers", lambda url: seen.append(url) or url.endswith(":47317"))
+    assert mcp_server.desk_url() == "http://127.0.0.1:47317" and seen[0].endswith(":47330")
+    monkeypatch.setattr(mcp_server, "_answers", lambda url: False)
+    assert mcp_server.desk_url() == "http://127.0.0.1:47330"
+    monkeypatch.setenv("XENO_PORT", "47322")
+    assert mcp_server.desk_url() == "http://127.0.0.1:47322"
+
+
+def test_animatic_follows_aspect_only_when_not_live():
+    from xenoform import turbo
+
+    assert turbo.animatic_size({"aspect": "9:16"}) == (216, 384)
+    assert turbo.animatic_size({"aspect": "1:1"}) == (288, 288)
+    assert turbo.animatic_size({"aspect": "16:9"}) == (384, 216)
+    assert turbo.animatic_size({"aspect": "9:16", "live": True}) == (384, 216)
+    assert turbo.animatic_size(None) == (384, 216)

@@ -748,6 +748,34 @@ def create_app(cfg: dict | None = None):
     # ---------------------------------------------------------------- Moves library (Wan Animate 2)
     _MOVE_JOBS: dict = {}
 
+    @app.get("/vj")
+    def vj_page() -> FileResponse:
+        """Live VJ mode: mic/line-in reactive playback of morph loops (WebAudio + WebGL)."""
+        return FileResponse(Path(__file__).parent / "ui_static" / "vj.html")
+
+    @app.get("/api/footage")
+    def footage_list(vibe: str = "", kind: str = "") -> dict:
+        from xenoform import footage
+
+        data = footage.load_manifest()
+        items = []
+        for it in data["items"]:
+            if (vibe and vibe not in it["vibes"]) or (kind and it["kind"] != kind):
+                continue
+            have = footage.local_path(it).is_file()
+            items.append({**it, "available": have, "url": f"/library-media/{it['id']}" if have else None})
+        return {"items": items}
+
+    @app.get("/library-media/{item_id}")
+    def footage_media(item_id: str) -> FileResponse:
+        from fastapi import HTTPException
+        from xenoform import footage
+
+        for it in footage.load_manifest()["items"]:
+            if it["id"] == item_id and footage.local_path(it).is_file():
+                return FileResponse(footage.local_path(it))
+        raise HTTPException(status_code=404, detail="not in the library (run scripts/fetch_library.py)")
+
     @app.get("/moves")
     def moves_page() -> FileResponse:
         return FileResponse(Path(__file__).parent / "ui_static" / "moves.html")

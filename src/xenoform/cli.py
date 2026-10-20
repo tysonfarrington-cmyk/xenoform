@@ -101,7 +101,7 @@ def build_parser() -> argparse.ArgumentParser:
     mcp.add_argument("--http", action="store_true", help="Streamable HTTP on 127.0.0.1. Off unless you pass this.")
     mcp.add_argument("--host", default="127.0.0.1")
     mcp.add_argument("--port", type=int, default=47319)
-    mcp.add_argument("--desk", default="", help="Desk base URL. Defaults to XENO_DESK or http://127.0.0.1:47317.")
+    mcp.add_argument("--desk", default="", help="Desk base URL. Defaults to XENO_DESK, else the desk answering on 47330 then 47317.")
 
     sample = sub.add_parser("sample-library", help="Write a few procedural shapes into ./library.")
     sample.add_argument("--out", default="library")

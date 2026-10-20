@@ -1,0 +1,128 @@
+{
+ "_doc": "Scene/edit transitions (between whole clips). See docs/transitions.md. Object-morph styles stay in director.TRANSITIONS.",
+ "types": {
+  "scene-morph": {
+   "label": "Scene morph",
+   "beats": 4,
+   "gpu": true
+  },
+  "flow-morph": {
+   "label": "Flow morph",
+   "beats": 2,
+   "gpu": false
+  },
+  "liquid-melt": {
+   "label": "Liquid chrome melt",
+   "beats": 2,
+   "gpu": false
+  },
+  "luma-wipe": {
+   "label": "Luma matte wipe",
+   "beats": 2,
+   "gpu": false
+  },
+  "stutter-cut": {
+   "label": "Beat cut + stutter",
+   "beats": 1,
+   "gpu": false
+  },
+  "tape-stop": {
+   "label": "Tape-stop warp",
+   "beats": 2,
+   "gpu": false
+  },
+  "datamosh": {
+   "label": "Datamosh burst",
+   "beats": 1,
+   "gpu": false
+  },
+  "chroma-split": {
+   "label": "Chromatic split",
+   "beats": 1,
+   "gpu": false
+  },
+  "zoom-through": {
+   "label": "Zoom-through",
+   "beats": 1,
+   "gpu": false
+  },
+  "black-hold": {
+   "label": "Silence = black",
+   "beats": 2,
+   "gpu": false
+  }
+ },
+ "beat_snap": {
+  "enabled": true,
+  "every": 1,
+  "max_shift": 0.35
+ },
+ "intensity": {
+  "source": "bass",
+  "floor": 0.35,
+  "ceiling": 0.9
+ },
+ "recommended": {
+  "liquid-gold": {
+   "drop": "scene-morph",
+   "switch": "liquid-melt",
+   "beat": "stutter-cut",
+   "silence": "black-hold"
+  },
+  "neon-night": {
+   "drop": "chroma-split",
+   "switch": "datamosh",
+   "beat": "stutter-cut",
+   "silence": "black-hold"
+  },
+  "paper-summer": {
+   "drop": "scene-morph",
+   "switch": "luma-wipe",
+   "beat": "zoom-through",
+   "silence": "black-hold"
+  },
+  "ocean": {
+   "drop": "scene-morph",
+   "switch": "liquid-melt",
+   "beat": "luma-wipe",
+   "silence": "black-hold"
+  },
+  "cosmic": {
+   "drop": "zoom-through",
+   "switch": "scene-morph",
+   "beat": "chroma-split",
+   "silence": "black-hold"
+  },
+  "black": {
+   "drop": "scene-morph",
+   "switch": "tape-stop",
+   "beat": "stutter-cut",
+   "silence": "black-hold"
+  },
+  "bloom": {
+   "drop": "scene-morph",
+   "switch": "luma-wipe",
+   "beat": "liquid-melt",
+   "silence": "black-hold"
+  }
+ },
+ "post_effects": {
+  "bass-pulse": {
+   "enabled": true,
+   "depth": 0.03
+  }
+ },
+ "scene_morph": {
+  "engine": "LTX-2.3 22B distilled fp8, first/last-frame",
+  "render": [
+   448,
+   768
+  ],
+  "out": [
+   1080,
+   1920
+  ],
+  "seconds": 2.0,
+  "fallback": "flow-morph"
+ }
+}

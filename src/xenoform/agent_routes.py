@@ -696,8 +696,9 @@ def mount(
     @app.get("/api/v1/transitions")
     def transitions() -> dict:
         from xenoform.director import public_transitions
+        from xenoform.transitions_fx import RECOMMENDED, public_list
 
-        return {"transitions": public_transitions()}
+        return {"transitions": public_transitions(), "scene_transitions": public_list(), "scene_recommended": RECOMMENDED}
 
     @app.get("/api/v1/mcp/status")
     def mcp_status(request: Request) -> dict:

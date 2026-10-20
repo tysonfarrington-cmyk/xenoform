@@ -10,7 +10,7 @@ def main(argv=None) -> None:
     parser.add_argument("--http", action="store_true", help="Streamable HTTP on 127.0.0.1 instead of stdio.")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=47319)
-    parser.add_argument("--desk", default="", help="Desk URL. Defaults to XENO_DESK or http://127.0.0.1:47317.")
+    parser.add_argument("--desk", default="", help="Desk URL. Defaults to XENO_DESK, else the desk answering on 47330 then 47317.")
     args = parser.parse_args(argv)
     try:
         serve("streamable-http" if args.http else "stdio", host=args.host, port=args.port, desk=args.desk or None)

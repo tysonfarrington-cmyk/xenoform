@@ -4,7 +4,7 @@ Xenoform turns a song into a music video: a liquid object morphs on the beat, th
 
 ## Flow
 1. `get_status`: desk, ComfyUI, GPU tier, final-tier readiness, recent jobs.
-2. `create_project(prompt, vibe)`: a one-line idea and/or `image_paths`.
+2. `create_project(prompt, vibe)`: a one-line idea and/or `image_paths`. These images become **morph targets**: the object morphs through them on draft and final.
 3. `load_audio(path)` (optional; the built-in demo track otherwise).
 4. `update_settings(...)`: vibe, aspect, tier, energy, transitions, beat FX.
 5. `start_render` → `wait_for_render` / `get_render_progress` → `get_output`.
@@ -28,6 +28,9 @@ liquid-gold, bloom, neon-night, ocean, cosmic, paper-summer, black. Each has an 
 
 ## Transitions
 `list_transitions` gives in-shot morph transitions (pour/harden, droplet burst, ribbon, snap…) and whole-scene transitions with picks per vibe. Use the vibe's recommendation unless the user asks.
+
+## Recipe codes
+`encode_recipe` gives a shareable code (`xf1.` or, with transitions or shot edits, `xf2.`). `remix_recipe(code)` loads it back.
 
 ## Energy
 `flow` (fewer, longer shots) or `dense` (cuts on more beats, harder drop).

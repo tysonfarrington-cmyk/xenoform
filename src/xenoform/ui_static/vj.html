@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Xenoform · Live VJ</title>
+<style>
+ html,body{margin:0;height:100%;background:#000;color:#dfe5f0;font:14px/1.4 Inter,system-ui,sans-serif;overflow:hidden}
+ canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+ #ui{position:fixed;left:16px;bottom:16px;right:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;transition:opacity .4s}
+ #ui.hide{opacity:0;pointer-events:none}
+ button,select,label.btn{background:#111a;border:1px solid #9ab3ff55;color:#e8eeff;border-radius:6px;padding:7px 12px;cursor:pointer;font:inherit}
+ #meters{display:flex;gap:4px;align-items:flex-end;height:28px}
+ #meters i{display:block;width:8px;background:#cfe0ff;opacity:.8}
+ #hint{opacity:.55;font-size:12px}
+</style></head><body>
+<canvas id="c"></canvas>
+<div id="ui">
+ <button id="mic">Start mic / line-in</button>
+ <select id="input" title="Audio input"></select>
+ <label class="btn">Add loops<input id="files" type="file" accept="video/*" multiple hidden></label>
+ <select id="fx" title="Transition on the beat">
+  <option value="0">scene morph (liquid)</option><option value="1">luma wipe</option>
+  <option value="2">chroma split</option><option value="3">zoom-through</option><option value="4">hard cut + stutter</option>
+ </select>
+ <button id="fs">Fullscreen</button>
+ <div id="meters"><i id="mb"></i><i id="mm"></i><i id="mh"></i></div>
+ <span id="hint">space = next · 1-5 = transition · F = fullscreen · H = hide · drops switch loops</span>
+</div>
+<script>
+// Xenoform live VJ: pre-rendered morph loops + audio-reactive WebGL effects. No server work, no GPU render.
+// Bass -> displacement + scale, highs/transients -> chroma split, beats (energy flux) -> switch loop with the chosen transition.
+const $ = id => document.getElementById(id);
+const cv = $('c'), gl = cv.getContext('webgl', {premultipliedAlpha:false});
+const VS = `attribute vec2 p;varying vec2 uv;void main(){uv=p*.5+.5;uv.y=1.-uv.y;gl_Position=vec4(p,0,1);}`;
+const FS = `precision mediump float;varying vec2 uv;uniform sampler2D A,B;uniform float t,mixv,bass,high,fx,aspA,aspB,aspS;
+vec2 fit(vec2 u,float a){float r=a/aspS;vec2 c=u-.5;if(r>1.)c.y*=r;else c.x/=r;return c+.5;}
+vec4 tex(sampler2D s,vec2 u,float a){vec2 q=fit(u,a);if(q.x<0.||q.x>1.||q.y<0.||q.y>1.)return vec4(0,0,0,1);return texture2D(s,q);}
+void main(){vec2 u=uv-.5;u/=1.+.04*bass*bass;u+=.5;
+ float w=sin(uv.y*18.+t*3.)*cos(uv.x*7.-t*2.)*.012*bass;float m=mixv;
+ vec2 ua=u,ub=u;
+ if(fx<.5){float k=sin(3.1416*m);ua+=vec2(w+k*.03*sin(uv.y*22.+t*6.),k*.02*cos(uv.x*15.));ub-=vec2(w+k*.03*sin(uv.y*22.+t*6.),k*.02*cos(uv.x*15.));}
+ else if(fx<3.5&&fx>2.5){ua=(ua-.5)/(1.+2.*m*m)+.5;ub=(ub-.5)/(1.+.4*(1.-m))+.5;}
+ else{ua.x+=w;ub.x+=w;}
+ float cs=(.002+.012*high)+(fx>1.5&&fx<2.5?.04*sin(3.1416*m):0.);
+ vec4 a=vec4(tex(A,ua+vec2(cs,0),aspA).r,tex(A,ua,aspA).g,tex(A,ua-vec2(cs,0),aspA).b,1);
+ vec4 b=vec4(tex(B,ub+vec2(cs,0),aspB).r,tex(B,ub,aspB).g,tex(B,ub-vec2(cs,0),aspB).b,1);
+ float mm=m;if(fx>.5&&fx<1.5){float L=dot(a.rgb,vec3(.299,.587,.114));mm=clamp((m*1.1-L)/.1,0.,1.);}
+ if(fx>3.5)mm=step(.5,m);
+ gl_FragColor=mix(a,b,mm);}`;
+function sh(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);return s}
+const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,VS));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,FS));gl.linkProgram(pr);gl.useProgram(pr);
+gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+const loc=gl.getAttribLocation(pr,'p');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+const U=n=>gl.getUniformLocation(pr,n);
+function mkTex(unit){const t=gl.createTexture();gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,t);
+ [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T].forEach(k=>gl.texParameteri(gl.TEXTURE_2D,k,gl.CLAMP_TO_EDGE));gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);return t}
+const texA=mkTex(0),texB=mkTex(1);gl.uniform1i(U('A'),0);gl.uniform1i(U('B'),1);
+
+// loops: library clips from the desk, or the user's own files
+let loops=[],cur=0,nxt=1,mixv=0,trans=false,transStart=0,TRANS_MS=900;
+function vid(src){const v=document.createElement('video');v.src=src;v.loop=true;v.muted=true;v.playsInline=true;v.crossOrigin='anonymous';v.play().catch(()=>{});return v}
+async function loadLibrary(){try{const r=await fetch('/api/footage?kind=video');const j=await r.json();(j.items||[]).forEach(it=>it.url&&loops.push(vid(it.url)))}catch(e){}
+ if(!loops.length)['/static/library/loop_a.mp4','/static/library/loop_b.mp4'].forEach(s=>loops.push(vid(s)))}
+$('files').onchange=e=>{[...e.target.files].forEach(f=>loops.push(vid(URL.createObjectURL(f))))};
+function next(){if(loops.length<2||trans)return;nxt=(cur+1+Math.floor(Math.random()*(loops.length-1)))%loops.length;trans=true;transStart=performance.now()}
+
+// audio: mic or line-in via getUserMedia, analysed with WebAudio
+let an=null,buf=null,prevE=0,avgFlux=0,lastBeat=0,bassS=0,highS=0;
+async function listInputs(){const d=await navigator.mediaDevices.enumerateDevices();$('input').innerHTML=d.filter(x=>x.kind==='audioinput').map(x=>`<option value="${x.deviceId}">${x.label||'input'}</option>`).join('')}
+$('mic').onclick=async()=>{const id=$('input').value;const st=await navigator.mediaDevices.getUserMedia({audio:{deviceId:id?{exact:id}:undefined,echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+ const ac=new AudioContext();an=ac.createAnalyser();an.fftSize=2048;an.smoothingTimeConstant=.55;ac.createMediaStreamSource(st).connect(an);buf=new Uint8Array(an.frequencyBinCount);$('mic').textContent='Listening';listInputs()};
+function bands(){if(!an)return{b:0,m:0,h:0,flux:0};an.getByteFrequencyData(buf);const hz=an.context.sampleRate/an.fftSize;
+ const avg=(a,b)=>{let s=0,n=0;for(let i=Math.floor(a/hz);i<Math.min(buf.length,b/hz);i++){s+=buf[i];n++}return n?s/n/255:0};
+ const b=avg(30,150),m=avg(150,2000),h=avg(4000,12000);const e=b*2+m+h;const flux=Math.max(0,e-prevE);prevE=e;return{b,m,h,flux}}
+
+function frame(now){requestAnimationFrame(frame);
+ const W=cv.clientWidth*devicePixelRatio,H=cv.clientHeight*devicePixelRatio;if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;gl.viewport(0,0,W,H)}
+ const a=bands();bassS+=(a.b-bassS)*.35;highS+=(a.h-highS)*.5;avgFlux=avgFlux*.95+a.flux*.05;
+ if(a.flux>avgFlux*2.6&&a.flux>.04&&now-lastBeat>1400&&a.b>.45){lastBeat=now;next()}
+ $('mb').style.height=(4+24*bassS)+'px';$('mm').style.height=(4+24*a.m)+'px';$('mh').style.height=(4+24*highS)+'px';
+ if(trans){mixv=Math.min(1,(now-transStart)/TRANS_MS);if(mixv>=1){cur=nxt;trans=false;mixv=0}}
+ const A=loops[cur],B=loops[trans?nxt:cur];
+ [[A,0],[B,1]].forEach(([v,u])=>{if(v&&v.readyState>=2){gl.activeTexture(gl.TEXTURE0+u);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,v)}});
+ gl.uniform1f(U('t'),now/1000);gl.uniform1f(U('mixv'),mixv);gl.uniform1f(U('bass'),bassS);gl.uniform1f(U('high'),highS);gl.uniform1f(U('fx'),+$('fx').value);
+ gl.uniform1f(U('aspA'),A&&A.videoWidth?A.videoWidth/A.videoHeight:1);gl.uniform1f(U('aspB'),B&&B.videoWidth?B.videoWidth/B.videoHeight:1);gl.uniform1f(U('aspS'),W/H);
+ gl.drawArrays(gl.TRIANGLE_STRIP,0,4)}
+$('fs').onclick=()=>document.documentElement.requestFullscreen();
+addEventListener('keydown',e=>{if(e.key===' '){e.preventDefault();next()}else if('12345'.includes(e.key))$('fx').value=+e.key-1;
+ else if(e.key==='f'||e.key==='F')document.documentElement.requestFullscreen();else if(e.key==='h'||e.key==='H')$('ui').classList.toggle('hide')});
+loadLibrary();listInputs().catch(()=>{});requestAnimationFrame(frame);
+</script></body></html>

@@ -50,6 +50,7 @@ DEFAULTS: dict[str, Any] = {
     "song": "Built-in demo track",
     "hero_id": "",
     "images": [],
+    "shot_edits": [],
     "cloud": False,
 }
 
@@ -158,6 +159,38 @@ def _local_file(path: str, suffixes: set[str], kind: str) -> Path:
     if file.stat().st_size > MAX_UPLOAD:
         raise XenoformError(f"{file.name} is over 200 MB.")
     return file
+
+
+RECIPE_VERSION = 2
+
+
+def encode_v2(base: str, transitions: list, blocks: list) -> str:
+    """xf2.<base64url(zlib(json))>: the desk's xf1 code plus transitions and shot edits."""
+    import base64
+    import zlib
+
+    keep = [{k: b[k] for k in ("form", "hold", "transition", "energy") if k in b} for b in blocks][:64]
+    raw = json.dumps({"v": RECIPE_VERSION, "base": base, "transitions": list(transitions)[:32], "blocks": keep},
+                     separators=(",", ":")).encode("utf-8")
+    return "xf2." + base64.urlsafe_b64encode(zlib.compress(raw, 9)).decode("ascii").rstrip("=")
+
+
+def decode_v2(code: str) -> dict:
+    import base64
+    import binascii
+    import zlib
+
+    body = code[4:]
+    try:
+        data = json.loads(zlib.decompress(base64.urlsafe_b64decode(body + "=" * (-len(body) % 4))).decode("utf-8"))
+    except (binascii.Error, zlib.error, ValueError, UnicodeDecodeError):
+        raise XenoformError("That xf2 recipe code is damaged. Copy it again.") from None
+    if not isinstance(data, dict) or not str(data.get("base") or "").startswith(("xf1.", "XF-")):
+        raise XenoformError("That xf2 recipe code is damaged. Copy it again.")
+    if int(data.get("v") or 0) > RECIPE_VERSION:
+        raise XenoformError("That recipe comes from a newer Xenoform. Update to remix it.")
+    return {"base": data["base"], "transitions": [str(t) for t in data.get("transitions") or []],
+            "blocks": [b for b in data.get("blocks") or [] if isinstance(b, dict)], "recipe_version": int(data.get("v") or 2)}
 
 
 def read_guide() -> str:
@@ -353,16 +386,23 @@ class App:
         return {"audio_id": audio_id, "song": file.stem, "duration": data.get("duration"),
                 "tempo": data.get("tempo") or data.get("bpm")}
 
-    def attach_image(self, path: str) -> dict:
+    def attach_image(self, path: str, role: str = "morph_target") -> dict:
+        role = _pick("role", role, ("morph_target", "first_frame"))
         file = _local_file(path, IMAGE_SUFFIXES, "image")
-        data = self.desk.upload("/api/hero", file)
-        hero = str(data.get("id") or "")
+        if role == "first_frame":
+            hero = str(self.desk.upload("/api/hero", file).get("id") or "")
+            with self.lock:
+                self.project["hero_id"] = hero
+                self._save()
+            return {"image_id": hero, "role": role, "detail": "This picture is the first frame of every shot."}
         with self.lock:
-            images = list(self.project.get("images") or []) + [{"id": hero, "name": file.name}]
-            self.project.update(images=images[-8:], hero_id=self.project.get("hero_id") or hero)
+            images = [i for i in self.project.get("images") or [] if i.get("path") != str(file.resolve())]
+            images.append({"name": file.name, "path": str(file.resolve())})
+            self.project["images"] = images[-12:]
             self._save()
-        return {"image_id": hero, "hero_id": self.project["hero_id"],
-                "detail": "The first image is the first frame of every shot."}
+            count = len(self.project["images"])
+        return {"role": role, "morph_targets": count,
+                "detail": "The object morphs through your images in order, then the vibe's own objects (draft and final)."}
 
     # ---- renders -----------------------------------------------------
     def body(self) -> dict:
@@ -376,6 +416,7 @@ class App:
             "quality": "turbo" if p["tier"] == "preview" else p["tier"],
             "live": live, "beat_fx": p["beat_fx"], "end_card": p["end_card"],
             "transitions": p["transitions"], "hero_id": p["hero_id"],
+            "morph_targets": [i["path"] for i in p.get("images") or [] if i.get("path")],
             "paid_cloud": False, "cloud_quality": False, "cloud_confirm": "", "video_model": "ltx-23",
         }
 
@@ -385,10 +426,14 @@ class App:
             cached = self.boards.get(audio_id)
         if cached:
             return dict(cached)
+        edits = self.settings().get("shot_edits") or []
         if audio_id != "demo":
             raise XenoformError("The desk no longer has that song (it restarted?). Call load_audio again.")
         data = self.desk.json("GET", "/api/demo")
-        return {k: data[k] for k in BOARD_KEYS if k in data}
+        board = {k: data[k] for k in BOARD_KEYS if k in data}
+        if edits:
+            board["blocks"] = [dict(b) for b in edits]
+        return board
 
     def _set_board(self, audio_id: str, board: dict) -> None:
         with self.lock:
@@ -403,6 +448,9 @@ class App:
 
     def encode_recipe(self) -> dict:
         code = str(self.desk.json("POST", "/api/simple/recipe/encode", self.recipe_fields()).get("recipe") or "")
+        p = self.settings()
+        if code and (p.get("transitions") or p.get("shot_edits")):
+            code = encode_v2(code, p.get("transitions") or [], p.get("shot_edits") or [])
         return {"recipe": code, "settings": self.recipe_fields(),
                 "detail": "Paste this code into Xenoform (or remix_recipe) to remake the look."}
 
@@ -416,8 +464,14 @@ class App:
         code = str(code or "").strip()
         if not code or len(code) > 4000:
             raise XenoformError("Paste a recipe code (it starts with xf1. or XF-).")
+        extra: dict[str, Any] = {}
+        if code.startswith("xf2."):
+            extra = decode_v2(code)
+            code = extra.pop("base")
         path = "/api/simple/recipe/decode" if code.startswith("xf") else "/api/recipe/decode"
-        return scrub(self.desk.json("POST", path, {"recipe": code}))
+        out = scrub(self.desk.json("POST", path, {"recipe": code}))
+        out.update(extra)
+        return out
 
     def remix(self, code: str, prompt: str | None = None, vibe: str | None = None, aspect: str | None = None,
               tier: str | None = None) -> dict:
@@ -434,10 +488,18 @@ class App:
         for key in ("beat_fx", "end_card"):
             if key in state:
                 changes[key] = bool(state[key])
+        if isinstance(state.get("transitions"), list):
+            changes["transitions"] = [str(t) for t in state["transitions"]]
         for key, value in (("prompt", prompt), ("vibe", vibe), ("aspect", aspect), ("tier", tier)):
             if value:
                 changes[key] = value
-        return {"project": self.update(**changes), "from_recipe": {k: state.get(k) for k in ("vibe", "idea", "aspect", "seed")},
+        project = self.update(**changes)
+        blocks = state.get("blocks")
+        with self.lock:
+            self.project["shot_edits"] = [dict(b) for b in blocks if isinstance(b, dict)][:64] if isinstance(blocks, list) else []
+            self._save()
+            project = dict(self.project)
+        return {"project": project, "from_recipe": {k: state.get(k) for k in ("vibe", "idea", "aspect", "seed")},
                 "next": "Call start_render."}
 
     # ---- director ----------------------------------------------------
@@ -513,11 +575,19 @@ class App:
                 block["energy"] = str(edit["energy"])[:20]
         board["blocks"] = [b for b in blocks if b is not None]
         self._set_board(audio_id, board)
+        with self.lock:
+            self.project["shot_edits"] = board["blocks"]
+            self._save()
         return self.timeline()
 
     def full_body(self) -> dict:
         body = self.body()
+        edits = self.settings().get("shot_edits") or []
+        if edits:
+            body["shot_edits_blocks"] = [dict(b) for b in edits]
         board = self.board(body["audio_id"])
+        if body.get("shot_edits_blocks"):
+            board["blocks"] = body.pop("shot_edits_blocks")
         picks = list(body.get("transitions") or [])
         if picks:
             try:
@@ -717,9 +787,9 @@ def register(server, app: App) -> None:
         return app.load_audio(path)
 
     @server.tool()
-    def attach_image(path: str) -> dict:
-        """Upload a local image (png, jpg, webp). The first one becomes the first frame of every shot."""
-        return app.attach_image(path)
+    def attach_image(path: str, role: str = "morph_target") -> dict:
+        """Use a local image (png, jpg, webp). role morph_target (default): the object morphs through your images, in order, on draft/final. role first_frame: the picture opens every shot."""
+        return app.attach_image(path, role)
 
     @server.tool()
     def start_render(cloud: bool = False, confirm_spend: bool = False) -> dict:
@@ -753,7 +823,7 @@ def register(server, app: App) -> None:
 
     @server.tool()
     def encode_recipe() -> dict:
-        """A short shareable recipe code (xf1.?) for the current settings. Every render's code also shows in My videos."""
+        """A short shareable recipe code for the current settings: xf1.? or, with transitions or shot edits, xf2.? (both remix). Every render's code also shows in My videos."""
         return app.encode_recipe()
 
     @server.tool()

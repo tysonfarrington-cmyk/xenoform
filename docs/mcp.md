@@ -7,7 +7,7 @@ Xenoform ships a native [Model Context Protocol](https://modelcontextprotocol.io
 - It never returns keys or tokens.
 - Cloud (paid) quality is off unless the call passes `cloud=true` **and** `confirm_spend=true`.
 
-The desk URL comes from `XENO_DESK` (default `http://127.0.0.1:47317`). Set it if your desk runs on a different port, for example `http://127.0.0.1:47330`.
+The desk URL comes from `--desk` or `XENO_DESK`. If neither is set, the server uses `XENO_PORT`, or else whichever desk answers first: the contest rc2 desk on 47330, then `Xenoform.bat`'s default 47317.
 
 ## Install
 
@@ -34,7 +34,7 @@ Add this to `%APPDATA%\Claude\claude_desktop_config.json`, then restart Claude:
     "xenoform": {
       "command": "C:\\Projects\\xenoform-rc2\\.venv\\Scripts\\python.exe",
       "args": ["-m", "xenoform.mcp"],
-      "env": { "XENO_DESK": "http://127.0.0.1:47317" }
+      "env": { "XENO_DESK": "http://127.0.0.1:47330" }
     }
   }
 }
@@ -43,7 +43,7 @@ Add this to `%APPDATA%\Claude\claude_desktop_config.json`, then restart Claude:
 ## Claude Code
 
 ```bat
-claude mcp add xenoform --env XENO_DESK=http://127.0.0.1:47317 -- C:\Projects\xenoform-rc2\.venv\Scripts\python.exe -m xenoform.mcp
+claude mcp add xenoform --env XENO_DESK=http://127.0.0.1:47330 -- C:\Projects\xenoform-rc2\.venv\Scripts\python.exe -m xenoform.mcp
 :: or, with Xenoform-MCP.bat --http already running:
 claude mcp add --transport http xenoform http://127.0.0.1:47319/mcp
 ```
@@ -57,7 +57,7 @@ Put this in `%USERPROFILE%\.cursor\mcp.json` (all projects) or `.cursor\mcp.json
     "xenoform": {
       "command": "C:\\Projects\\xenoform-rc2\\.venv\\Scripts\\python.exe",
       "args": ["-m", "xenoform.mcp"],
-      "env": { "XENO_DESK": "http://127.0.0.1:47317" }
+      "env": { "XENO_DESK": "http://127.0.0.1:47330" }
     }
   }
 }
@@ -102,3 +102,10 @@ On connect, the server's **instructions** tell the AI what Xenoform is, the work
 ```
 - Unit tests run every tool against a mocked desk.
 - Client tests use the real MCP client SDK in memory, over stdio and over HTTP. They cover a server restart and the refusal of a non-localhost bind.
+
+## Images, recipe codes, preview
+
+- **Your images as morph targets:** `attach_image(path)` (role `morph_target`, the default) makes the object morph through your pictures in order before the vibe's own objects, on draft and final. With `role="first_frame"`, the picture opens every shot instead.
+- **Recipe codes:** `xf1.…` is the desk's code (vibe, idea, aspect, seed, energy, tier). When transitions or shot edits are set, `encode_recipe` returns a versioned `xf2.…` code that wraps the `xf1` code plus those transitions and edits. `decode_recipe` and `remix_recipe` accept `xf1.`, `xf2.` and the advanced `XF-` codes. A code from a newer version is refused with a clear message.
+- **Preview** is a portrait 216×384 sketch for 9:16 (square for 1:1, landscape for 16:9).
+- **`get_frames`** returns an absolute URL.

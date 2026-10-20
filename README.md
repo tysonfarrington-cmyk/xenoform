@@ -40,7 +40,7 @@ Checked against each model card or licence text on 19 October 2026. Read the ful
 | Real-ESRGAN x4plus (Xintao Wang) | Final tier upscale (default) | BSD-3-Clause: commercial use allowed, keep the copyright notice. |
 | 4x-ClearReality V1 (Kim2091) | Final tier upscale, opt-in (`XENO_FINAL_UPSCALER=4x-ClearRealityV1.safetensors`) | CC BY-NC-SA 4.0: **non-commercial**, credit required, share alike. A touch crisper on fine edges. |
 | Bundled demo track `examples/demo.wav` | The demo song | Synthesised by `xenoform synth`; part of this MIT repo. |
-| Demo video track ("Morphing Wobble") | The contest demo video only, not shipped | Made with Suno. Usage rights follow the Suno plan it was made on; to be confirmed by the author before release. |
+| Demo video track ("Morph Engine v2") | The contest demo video and transitions reel only, not shipped | Made by the author on Suno Pro on 20 Oct 2026 (inside the Pro billing period), so the author owns it with commercial-use rights under Suno's terms. |
 
 The Xenoform code is MIT.
 

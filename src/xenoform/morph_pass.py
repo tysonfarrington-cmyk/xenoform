@@ -127,8 +127,19 @@ def pick_stills(state: dict, count: int) -> tuple[str, list[dict]]:
     pool = _drop_bad_pairs(pool, {tuple(p) for p in autotune().get("bad_pairs") or []})
     # Twelve objects a vibe: a 20 s clip (up to 11 handoffs) never repeats one. Longer
     # songs cycle forward, so a repeat is always a new pairing, never a ping-pong back.
+    pool = user_targets(state) + pool
     picked = [pool[i % len(pool)] for i in range(count)]
-    return vibe, [{**item, "path": str(OBJECTS / item["file"])} for item in picked]
+    return vibe, [{**item, "path": item.get("path") or str(OBJECTS / item["file"])} for item in picked]
+
+
+def user_targets(state: dict) -> list[dict]:
+    """The user's own images as morph targets (state["morph_targets"]: local paths). They lead, in order."""
+    out = []
+    for raw in list((state or {}).get("morph_targets") or [])[:12]:
+        path = Path(str(raw))
+        if path.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp"} and path.is_file():
+            out.append({"noun": path.stem.replace("_", " ")[:40] or "image", "file": path.name, "path": str(path.resolve()), "user": True})
+    return out
 
 
 def handoffs(scenes: list[dict], beats: list, duration: float) -> list[float]:

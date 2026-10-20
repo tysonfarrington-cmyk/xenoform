@@ -55,7 +55,7 @@ Both families are SIL Open Font License 1.1. The copyright lines and the licence
 | Asset | Status |
 | --- | --- |
 | `examples/demo.wav` | Synthesized by `xenoform synth`. No third-party recording. |
-| Contest demo video track ("Morphing Wobble") | Not in the repo. Made with Suno. Usage rights follow the Suno plan it was made on; to be confirmed by the author before release. |
+| Demo video track ("Morph Engine v2") | The contest demo video and transitions reel only, not shipped | Made by the author on Suno Pro on 20 Oct 2026 (inside the Pro billing period), so the author owns it with commercial-use rights under Suno's terms. |
 | Vibe stills and library clips | No author or licence metadata in the files. Each one is TODO in [CREDITS.md](../CREDITS.md). No CC BY credit was added. |
 | `workflows/xenoform_draft.json`, `workflows/xenoform_final.json`, `workflows/xenoform_morph.json`, `workflows/ltx_v2v_api.json`, `workflows/ltx_v2v_guide_api.json`, `workflows/ltx25_a2v_api.json`, `workflows/ltx25_multishot_api.json`, `workflows/ltx25_layout_api.json` | Part of this MIT repository. The weight files they name are not. |
 
