@@ -116,6 +116,17 @@ def prepare_character(image: Path, dest: Path) -> Path:
     return Path(dest)
 
 
+def comfy_input_dir() -> Path | None:
+    """ComfyUI's input folder next to its models folder (local ComfyUI), if it exists."""
+    try:
+        from xenoform.models_setup import models_root
+
+        path = Path(models_root()).parent / "input"
+    except Exception:
+        return None
+    return path if path.is_dir() else None
+
+
 def render(image: Path, move_id: str, appearance: str, work: Path, cfg: dict, *, seed: int = 712, start: float = 0.0,
            client=None, style: str = DEFAULT_STYLE) -> Path:
     """Render one move for one character on the local ComfyUI. Returns the mp4."""
@@ -128,10 +139,24 @@ def render(image: Path, move_id: str, appearance: str, work: Path, cfg: dict, *,
     drive = prepare_drive(move_id, work / "drive.mp4", start=start)
     client = client or _client(cfg)
     wf = client.workflows.from_json(graph(appearance, move, seed=seed, style=style))
-    wf.set_input("9", "image", client.assets.from_file(str(char)))
-    wf.set_input("10", "file", client.assets.from_file(str(drive)))
+    inputs = comfy_input_dir()
+    if inputs is not None:
+        # LoadVideo reads ComfyUI/input by name; stage both files there under unique names.
+        import shutil
+        import uuid
+
+        tag = uuid.uuid4().hex[:8]
+        shutil.copyfile(char, inputs / f"xf_moves_{tag}.png")
+        shutil.copyfile(drive, inputs / f"xf_moves_{tag}.mp4")
+        wf.set_input("9", "image", f"xf_moves_{tag}.png")
+        wf.set_input("10", "file", f"xf_moves_{tag}.mp4")
+    else:
+        wf.set_input("9", "image", client.assets.from_file(str(char)))
+        wf.set_input("10", "file", client.assets.from_file(str(drive)))
     job = client.submit(wf)
-    job.wait()
+    from xenoform import morph_pass as mp
+
+    mp.wait_or_cancel(job, [job], None)
     result = _job_result(client, job)
     outs = list(result.get_outputs("31")) or list(result.outputs)
     if not outs:
