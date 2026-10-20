@@ -396,3 +396,21 @@ def test_get_output_reports_the_failure(app):
     app.cancel(job2)
     with pytest.raises(mt.XenoformError, match="cancelled"):
         app.output(job2)
+
+
+def test_wait_survives_a_desk_blip_and_explains_a_lost_job(app):
+    app.create("x")
+    job = app.start()["job_id"]
+    real = app.desk.json
+    blips = {"n": 0}
+
+    def flaky(method, path, body=None, timeout=None):
+        if path.startswith("/api/jobs/") and blips["n"] < 2:
+            blips["n"] += 1
+            raise mt.XenoformError("Cannot reach the Xenoform desk at x")
+        return real(method, path, body, timeout)
+
+    app.desk.json = flaky
+    assert app.wait(job, timeout_s=5, poll_s=0.01)["status"] == "done"
+    with pytest.raises(mt.XenoformError, match="restarted"):
+        app.wait("gone1", timeout_s=1, poll_s=0.01)

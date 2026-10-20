@@ -663,7 +663,17 @@ class App:
         timeout_s = max(1.0, min(float(timeout_s), 780.0))
         end = time.monotonic() + timeout_s
         while True:
-            state = self.progress(job_id)
+            try:
+                state = self.progress(job_id)
+            except XenoformError as exc:
+                text = str(exc)
+                if "Cannot reach" in text and time.monotonic() < end:
+                    time.sleep(max(0.2, poll_s))  # the desk is restarting; keep waiting
+                    continue
+                if "No such cut" in text:
+                    raise XenoformError(f"The desk no longer knows render {job_id}. It probably restarted mid-render, "
+                                        "which drops running jobs. Start the render again.") from None
+                raise
             if state.get("status") in {"done", "error", "failed", "cancelled"}:
                 if state.get("status") == "done":
                     state["output"] = self.output(job_id)
