@@ -138,6 +138,29 @@ def options(state: dict) -> dict:
     }
 
 
+def macros(state: dict) -> dict:
+    """The Simple macro knobs (0..1 each, 0.5 neutral) from the desk, clamped; missing keys are neutral."""
+    raw = state.get("macros") or {}
+    out = {}
+    for k, d in (("intensity", 0.5), ("speed", 0.5), ("chaos", 0.3), ("glow", 0.4)):
+        try:
+            out[k] = max(0.0, min(1.0, float(raw.get(k, d))))
+        except (TypeError, ValueError, AttributeError):
+            out[k] = d
+    return out
+
+
+def apply_macros(shots: list[dict], m: dict) -> list[dict]:
+    """Intensity scales each shot's beat-FX intensity (0.5 = as planned); Chaos above 0.5 adds wobble."""
+    gain = 0.4 + 1.2 * m.get("intensity", 0.5)
+    wob = max(0.0, (m.get("chaos", 0.3) - 0.5) * 0.6)
+    for s in shots:
+        s["fx_intensity"] = round(min(1.0, float(s.get("fx_intensity", 1.0)) * gain), 3)
+        if wob:
+            s["wobble"] = round(max(float(s.get("wobble") or 0.0), wob), 3)
+    return shots
+
+
 def wants_finishing(state: dict) -> bool:
     """True when the plain morph pass cannot do what was asked (anything beyond flow/draft/16:9)."""
     opt = options(state)
@@ -358,6 +381,7 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
         clips = _draft_clips(shots, stills, work, cfg, seed, vibe, client, cancel, state)
     report("assemble", 0.6, "Cutting to the beat" + (" with beat FX" if opt["fx"] else ""))
     tmp = Path(out_path).with_name(Path(out_path).stem + ".simple.mp4")
+    apply_macros(shots, macros(state))
     made = beatfx.compose(clips, shots, Path(audio_path), tmp, aspect=opt["aspect"],
                           quality="final" if engine == "ltx23" else "draft", fx=opt["fx"], overlay=opt["overlay"],
                           beats=directed.get("beats") or [], report=report, size=size)

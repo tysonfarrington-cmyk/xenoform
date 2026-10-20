@@ -53,18 +53,18 @@
  "vibes": [
   {
    "id": "chrome-mercury",
-   "name": "Chrome mercury",
-   "line": "A mirror-chrome droplet pours itself into the next form.",
+   "name": "Liquid chrome",
+   "line": "A mirror-chrome drop pours itself into the next form.",
    "palette": "silver",
    "dark": true,
    "tone": "dark",
    "register": "pynchon",
    "morph": true,
-   "look": "flawless liquid chrome and mercury, mirror surface reflecting soft gradient light, pure black void",
-   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, matte, rust, colour cast, gold",
-   "lighting": "long strip softboxes, crisp specular highlights, pure black",
+   "look": "flawless liquid chrome and mercury, mirror surface reflecting soft gradient light, deep graphite void",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces",
+   "lighting": "long strip softboxes, crisp specular highlights",
    "material": "liquid mirror chrome",
-   "motion": "slow viscous pour, surface tension snaps, heavy and expensive",
+   "motion": "slow viscous pour, surface tension snaps",
    "ltx": {
     "steps": 16,
     "cfg": 4,
@@ -77,14 +77,563 @@
     "beat": "cut",
     "silence": "black-hold"
    },
-   "still_style": "Studio macro photograph, flawless liquid chrome and mercury, mirror surface reflecting soft gradient light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
+   "still_style": "flawless liquid chrome and mercury, mirror surface reflecting soft gradient light, deep graphite void, long strip softboxes, crisp specular highlights, one single subject centred, filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, no text, no letters.",
    "tags": [
     "liquid",
     "metal",
-    "chrome",
-    "dark"
+    "chrome"
    ],
-   "ready": true
+   "ready": true,
+   "fx_defaults": {
+    "feedback": 0.15,
+    "glow": 0.2,
+    "chaos": 0.25
+   },
+   "featured": 1,
+   "v6_gate": {
+    "subjects": [
+     "a glass heart sculpture",
+     "an orchid flower",
+     "a human face mask"
+    ],
+    "passed": 3,
+    "note": ""
+   }
+  },
+  {
+   "id": "neon-noir",
+   "name": "Neon noir",
+   "line": "Wet streets, magenta and cyan rim light, rain in the haze.",
+   "palette": "magenta-cyan",
+   "dark": true,
+   "tone": "dark",
+   "register": "pynchon",
+   "morph": true,
+   "look": "cinematic neon noir, wet glossy surfaces with magenta and cyan rim light, light rain haze and reflections on black wet asphalt, volumetric mist",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces",
+   "lighting": "hard magenta key from left, cyan rim from right, haze",
+   "material": "wet lacquer and glass",
+   "motion": "slow rain drift, neon flicker on hits",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "transitions": {
+    "drop": "scene-morph",
+    "switch": "liquid-melt",
+    "beat": "cut",
+    "silence": "black-hold"
+   },
+   "still_style": "cinematic neon noir, wet glossy surfaces with magenta and cyan rim light, light rain haze and reflections on black wet asphalt, volumetric mist, hard magenta key from left, cyan rim from right, haze, one single subject centred, filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, no text, no letters.",
+   "tags": [
+    "neon",
+    "noir",
+    "wet"
+   ],
+   "ready": true,
+   "fx_defaults": {
+    "feedback": 0.1,
+    "glow": 0.6,
+    "rgb": 0.4,
+    "chaos": 0.3
+   },
+   "featured": 2,
+   "v6_gate": {
+    "subjects": [
+     "a glass heart sculpture",
+     "an orchid flower",
+     "a human face mask"
+    ],
+    "passed": 3,
+    "note": ""
+   }
+  },
+  {
+   "id": "porcelain-kintsugi",
+   "name": "Porcelain & gold",
+   "line": "White porcelain that cracks open in gold on the beat.",
+   "palette": "ivory-gold",
+   "dark": false,
+   "tone": "bright",
+   "register": "pynchon",
+   "morph": true,
+   "look": "glossy white porcelain broken and repaired with bright shining gold kintsugi seams running across the surface, soft museum light on a warm pale grey backdrop",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed",
+   "lighting": "large soft overhead, gentle falloff",
+   "material": "glazed porcelain with gold repair lines",
+   "motion": "cracks open in gold on the beat, slow rotation",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "transitions": {
+    "drop": "scene-morph",
+    "switch": "liquid-melt",
+    "beat": "cut",
+    "silence": "black-hold"
+   },
+   "still_style": "glossy white porcelain with fine kintsugi gold seams, soft museum light on a warm pale grey backdrop, large soft overhead, gentle falloff, one single subject centred, filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, no text, no letters.",
+   "tags": [
+    "porcelain",
+    "clean",
+    "gold"
+   ],
+   "ready": true,
+   "fx_defaults": {
+    "glow": 0.15,
+    "chaos": 0.1
+   },
+   "featured": 3,
+   "v6_gate": {
+    "subjects": [
+     "a glass heart sculpture",
+     "an orchid flower",
+     "a human face mask"
+    ],
+    "passed": 3,
+    "note": ""
+   }
+  },
+  {
+   "id": "bioluminescent",
+   "name": "Deep-sea glow",
+   "line": "Deep-sea forms that glow from inside.",
+   "palette": "teal-violet",
+   "dark": true,
+   "tone": "dark",
+   "register": "pynchon",
+   "morph": true,
+   "look": "bioluminescent deep-sea organism glowing teal and violet from within, translucent tissue, floating particles, abyssal black water",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces",
+   "lighting": "self-lit glow, faint blue ambient",
+   "material": "translucent glowing gel",
+   "motion": "slow pulsing tendrils, drifting",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 0.85
+   },
+   "transitions": {
+    "drop": "scene-morph",
+    "switch": "depth-parallax",
+    "beat": "cut",
+    "silence": "black-hold"
+   },
+   "still_style": "bioluminescent deep-sea organism glowing teal and violet from within, translucent tissue, floating particles, abyssal black water, self-lit glow, faint blue ambient, one single subject centred, filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, no text, no letters.",
+   "tags": [
+    "water",
+    "organic",
+    "glow"
+   ],
+   "ready": true,
+   "fx_defaults": {
+    "glow": 0.7,
+    "feedback": 0.25,
+    "chaos": 0.2
+   },
+   "featured": 4,
+   "v6_gate": {
+    "subjects": [
+     "a glass heart sculpture",
+     "an orchid flower",
+     "a human face mask"
+    ],
+    "passed": 3,
+    "note": ""
+   }
+  },
+  {
+   "id": "risograph",
+   "name": "Risograph",
+   "line": "Two-colour print grain, inks sliding out of register.",
+   "palette": "pink-blue",
+   "dark": false,
+   "tone": "bright",
+   "register": "pynchon",
+   "morph": true,
+   "look": "risograph print illustration, flat graphic shapes in two fluorescent ink colours pink and blue only, visible halftone grain and slight misregistration, off-white paper texture, not a photograph",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces",
+   "lighting": "flat print, no shading beyond halftone",
+   "material": "ink on uncoated paper",
+   "motion": "ink layers slide and re-register on hits",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "transitions": {
+    "drop": "scene-morph",
+    "switch": "liquid-melt",
+    "beat": "cut",
+    "silence": "black-hold"
+   },
+   "still_style": "risograph print, two-colour fluorescent pink and blue ink, visible halftone grain and slight misregistration, off-white paper texture, flat print, no shading beyond halftone, one single subject centred, filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, no text, no letters.",
+   "tags": [
+    "print",
+    "graphic",
+    "flat"
+   ],
+   "ready": true,
+   "fx_defaults": {
+    "rgb": 0.5,
+    "chaos": 0.35
+   },
+   "featured": 5,
+   "v6_gate": {
+    "subjects": [
+     "a glass heart sculpture",
+     "an orchid flower",
+     "a human face mask"
+    ],
+    "passed": 2,
+    "note": "renders 'face mask' as a printed portrait; use object subjects"
+   }
+  },
+  {
+   "id": "iridescent-glass",
+   "name": "Iridescent glass",
+   "line": "Blown glass with a rainbow film and swimming caustics.",
+   "palette": "pearl-rainbow",
+   "dark": false,
+   "tone": "bright",
+   "register": "pynchon",
+   "morph": true,
+   "look": "hand-blown iridescent glass with thin-film rainbow sheen, caustics and refractions, soft pearl-grey gradient backdrop",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces",
+   "lighting": "backlit softbox, bright caustics",
+   "material": "dichroic glass",
+   "motion": "refractions swim, slow turn",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "transitions": {
+    "drop": "scene-morph",
+    "switch": "liquid-melt",
+    "beat": "cut",
+    "silence": "black-hold"
+   },
+   "still_style": "hand-blown iridescent glass with thin-film rainbow sheen, caustics and refractions, soft pearl-grey gradient backdrop, backlit softbox, bright caustics, one single subject centred, filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, no text, no letters.",
+   "tags": [
+    "glass",
+    "crystal",
+    "iridescent"
+   ],
+   "ready": true,
+   "fx_defaults": {
+    "glow": 0.3,
+    "rgb": 0.2,
+    "chaos": 0.15
+   },
+   "featured": 6,
+   "v6_gate": {
+    "subjects": [
+     "a glass heart sculpture",
+     "an orchid flower",
+     "a human face mask"
+    ],
+    "passed": 3,
+    "note": ""
+   }
+  },
+  {
+   "id": "liquid-gold",
+   "name": "Molten gold",
+   "line": "Molten gold that pours, drips and cools to a polish.",
+   "palette": "gold",
+   "dark": true,
+   "tone": "dark",
+   "register": "pynchon",
+   "morph": true,
+   "look": "molten 24k gold, glowing orange-hot edges cooling to polished gold, drips and splashes, dark forge smoke",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces",
+   "lighting": "warm underglow, single hard key",
+   "material": "molten and polished gold",
+   "motion": "heavy pour, drips on the beat",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "transitions": {
+    "drop": "scene-morph",
+    "switch": "liquid-melt",
+    "beat": "cut",
+    "silence": "black-hold"
+   },
+   "still_style": "molten 24k gold, glowing orange-hot edges cooling to polished gold, drips and splashes, dark forge smoke, warm underglow, single hard key, one single subject centred, filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, no text, no letters.",
+   "tags": [
+    "liquid",
+    "metal",
+    "gold"
+   ],
+   "ready": true,
+   "fx_defaults": {
+    "glow": 0.45,
+    "chaos": 0.2
+   },
+   "featured": 7,
+   "v6_gate": {
+    "subjects": [
+     "a glass heart sculpture",
+     "an orchid flower",
+     "a human face mask"
+    ],
+    "passed": 3,
+    "note": ""
+   }
+  },
+  {
+   "id": "ink-wash",
+   "name": "Ink & paper",
+   "line": "Sumi ink blooming across wet paper.",
+   "palette": "sumi",
+   "dark": false,
+   "tone": "bright",
+   "register": "pynchon",
+   "morph": true,
+   "look": "Japanese sumi-e ink wash painting, black ink bleeding into wet rice paper, expressive brush strokes, generous empty space",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces",
+   "lighting": "even daylight on paper",
+   "material": "sumi ink on washi paper",
+   "motion": "ink blooms and bleeds outward",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "transitions": {
+    "drop": "scene-morph",
+    "switch": "liquid-melt",
+    "beat": "cut",
+    "silence": "black-hold"
+   },
+   "still_style": "Japanese sumi-e ink wash painting, black ink bleeding into wet rice paper, expressive brush strokes, generous empty space, even daylight on paper, one single subject centred, filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, no text, no letters.",
+   "tags": [
+    "ink",
+    "paper",
+    "calm"
+   ],
+   "ready": true,
+   "fx_defaults": {
+    "feedback": 0.3,
+    "chaos": 0.1
+   },
+   "featured": 8,
+   "v6_gate": {
+    "subjects": [
+     "a glass heart sculpture",
+     "an orchid flower",
+     "a human face mask"
+    ],
+    "passed": 3,
+    "note": ""
+   }
+  },
+  {
+   "id": "cyberspace-95",
+   "name": "Cyberspace 1995",
+   "line": "Green wireframe on an endless grid, 1995.",
+   "palette": "green-cyan",
+   "dark": true,
+   "tone": "dark",
+   "register": "pynchon",
+   "morph": true,
+   "look": "1995 cyberspace, glowing green and cyan wireframe and low-poly gouraud shading, scanlines, phosphor glow, infinite grid floor, black",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed",
+   "lighting": "self-lit wireframe glow",
+   "material": "vector wireframe",
+   "motion": "rotates on the beat, grid scrolls",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "transitions": {
+    "drop": "scene-morph",
+    "switch": "liquid-melt",
+    "beat": "cut",
+    "silence": "black-hold"
+   },
+   "still_style": "1995 cyberspace, glowing green and cyan wireframe and low-poly gouraud shading, scanlines, phosphor glow, infinite grid floor, black, self-lit wireframe glow, one single subject centred, filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, no text, no letters.",
+   "tags": [
+    "retro",
+    "wireframe",
+    "digital"
+   ],
+   "ready": true,
+   "fx_defaults": {
+    "rgb": 0.3,
+    "glow": 0.5,
+    "chaos": 0.4,
+    "scan": 0.5
+   },
+   "featured": 9,
+   "v6_gate": {
+    "subjects": [
+     "a glass heart sculpture",
+     "an orchid flower",
+     "a human face mask"
+    ],
+    "passed": 3,
+    "note": ""
+   }
+  },
+  {
+   "id": "wet-paint",
+   "name": "Wet paint",
+   "line": "Thick glossy paint folding into the next shape.",
+   "palette": "primary",
+   "dark": false,
+   "tone": "bright",
+   "register": "pynchon",
+   "morph": true,
+   "look": "thick glossy wet acrylic paint, swirling ribbons of cobalt, vermilion and cream, impasto ridges, studio macro on cream backdrop",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces",
+   "lighting": "soft key with glossy highlights",
+   "material": "wet oil and acrylic paint",
+   "motion": "paint folds and swirls into the next form",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "transitions": {
+    "drop": "scene-morph",
+    "switch": "liquid-melt",
+    "beat": "cut",
+    "silence": "black-hold"
+   },
+   "still_style": "thick glossy wet acrylic paint, swirling ribbons of cobalt, vermilion and cream, impasto ridges, studio macro on cream backdrop, soft key with glossy highlights, one single subject centred, filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, no text, no letters.",
+   "tags": [
+    "paint",
+    "liquid",
+    "colour"
+   ],
+   "ready": true,
+   "fx_defaults": {
+    "chaos": 0.3,
+    "feedback": 0.2
+   },
+   "featured": 10,
+   "v6_gate": {
+    "subjects": [
+     "a glass heart sculpture",
+     "an orchid flower",
+     "a human face mask"
+    ],
+    "passed": 3,
+    "note": ""
+   }
+  },
+  {
+   "id": "shadow-self",
+   "name": "Shadow self",
+   "line": "A backlit silhouette and smoke in one shaft of light.",
+   "palette": "noir",
+   "dark": true,
+   "tone": "dark",
+   "register": "pynchon",
+   "morph": true,
+   "look": "high-contrast film noir, a strong backlit silhouette, smoke curling in a single shaft of hard light, deep black shadows, 35mm grain",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed",
+   "lighting": "single hard backlight through haze",
+   "material": "smoke, silhouette",
+   "motion": "smoke unfurls slowly, light strobes on hits",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "transitions": {
+    "drop": "scene-morph",
+    "switch": "liquid-melt",
+    "beat": "cut",
+    "silence": "black-hold"
+   },
+   "still_style": "high-contrast film noir, a strong backlit silhouette, smoke curling in a single shaft of hard light, deep black shadows, 35mm grain, single hard backlight through haze, one single subject centred, filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, no text, no letters.",
+   "tags": [
+    "noir",
+    "figure",
+    "smoke"
+   ],
+   "ready": true,
+   "fx_defaults": {
+    "glow": 0.2,
+    "chaos": 0.2,
+    "grain": 0.4
+   },
+   "featured": 11,
+   "v6_gate": {
+    "subjects": [
+     "a glass heart sculpture",
+     "an orchid flower",
+     "a human face mask"
+    ],
+    "passed": 3,
+    "note": ""
+   }
+  },
+  {
+   "id": "botanical",
+   "name": "Bloom timelapse",
+   "line": "A single bloom on black, scrubbed by the song.",
+   "palette": "natural",
+   "dark": true,
+   "tone": "dark",
+   "register": "pynchon",
+   "morph": true,
+   "look": "macro botanical timelapse photograph, a single flower on pure black, delicate petals, dewy, rich natural colour, shallow depth of field",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces",
+   "lighting": "soft side light on black",
+   "material": "living petals",
+   "motion": "blooms open and close with the playhead",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "transitions": {
+    "drop": "scene-morph",
+    "switch": "liquid-melt",
+    "beat": "cut",
+    "silence": "black-hold"
+   },
+   "still_style": "macro botanical timelapse photograph, a single flower on pure black, delicate petals, dewy, rich natural colour, shallow depth of field, soft side light on black, one single subject centred, filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, no text, no letters.",
+   "tags": [
+    "organic",
+    "plant",
+    "timelapse"
+   ],
+   "ready": true,
+   "fx_defaults": {
+    "scrub": 0.6,
+    "chaos": 0.1
+   },
+   "featured": 12,
+   "v6_gate": {
+    "subjects": [
+     "a glass heart sculpture",
+     "an orchid flower",
+     "a human face mask"
+    ],
+    "passed": 3,
+    "note": ""
+   }
   },
   {
    "id": "ferrofluid",
@@ -118,7 +667,8 @@
     "metal",
     "dark"
    ],
-   "ready": true
+   "ready": true,
+   "featured": 0
   },
   {
    "id": "glass-prism",
@@ -152,7 +702,8 @@
     "glass",
     "dark"
    ],
-   "ready": false
+   "ready": false,
+   "featured": 0
   },
   {
    "id": "hologram",
@@ -186,7 +737,8 @@
     "abstract",
     "dark"
    ],
-   "ready": false
+   "ready": false,
+   "featured": 0
   },
   {
    "id": "y2k-chrome",
@@ -220,7 +772,8 @@
     "bright",
     "clean"
    ],
-   "ready": true
+   "ready": true,
+   "featured": 0
   },
   {
    "id": "low-poly",
@@ -253,7 +806,8 @@
     "abstract",
     "dark"
    ],
-   "ready": true
+   "ready": true,
+   "featured": 0
   },
   {
    "id": "seapunk",
@@ -287,7 +841,8 @@
     "iridescent",
     "bright"
    ],
-   "ready": false
+   "ready": false,
+   "featured": 0
   },
   {
    "id": "psy-fractal",
@@ -322,7 +877,8 @@
     "abstract",
     "dark"
    ],
-   "ready": false
+   "ready": false,
+   "featured": 0
   },
   {
    "id": "odd-machine",
@@ -355,7 +911,8 @@
     "metal",
     "dark"
    ],
-   "ready": true
+   "ready": true,
+   "featured": 0
   },
   {
    "id": "brutalist",
@@ -389,41 +946,8 @@
     "clean",
     "still"
    ],
-   "ready": true
-  },
-  {
-   "id": "bioluminescent",
-   "name": "Bioluminescent",
-   "line": "Deep-sea life glows cyan in the dark.",
-   "palette": "cyan-green",
-   "dark": true,
-   "tone": "dark",
-   "register": "pynchon",
-   "morph": true,
-   "look": "translucent deep-sea creature-like form glowing with bioluminescent cyan and green light, soft inner glow, drifting particles, pitch black abyss",
-   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, bright, daylight, sunlight",
-   "lighting": "self-lit bioluminescence, no key light",
-   "material": "translucent gelatinous tissue",
-   "motion": "pulsing glow, slow drifting undulation",
-   "ltx": {
-    "steps": 16,
-    "cfg": 4,
-    "img_compression": 0,
-    "guide_end_strength": 0.85
-   },
-   "transitions": {
-    "drop": "scene-morph",
-    "switch": "depth-parallax",
-    "beat": "cut",
-    "silence": "black-hold"
-   },
-   "still_style": "Studio macro photograph, translucent deep-sea creature-like form glowing with bioluminescent cyan and green light, soft inner glow, drifting particles, pitch black abyss, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
-   "tags": [
-    "water",
-    "organic",
-    "dark"
-   ],
-   "ready": false
+   "ready": true,
+   "featured": 0
   },
   {
    "id": "ink-water",
@@ -457,7 +981,8 @@
     "liquid",
     "dark"
    ],
-   "ready": false
+   "ready": false,
+   "featured": 0
   },
   {
    "id": "porcelain-marble",
@@ -491,7 +1016,8 @@
     "clean",
     "dark"
    ],
-   "ready": true
+   "ready": true,
+   "featured": 0
   },
   {
    "id": "lava-obsidian",
@@ -525,7 +1051,8 @@
     "crystal",
     "dark"
    ],
-   "ready": true
+   "ready": true,
+   "featured": 0
   },
   {
    "id": "thermal",
@@ -558,7 +1085,8 @@
     "abstract",
     "dark"
    ],
-   "ready": false
+   "ready": false,
+   "featured": 0
   },
   {
    "id": "crt-phosphor",
@@ -592,7 +1120,8 @@
     "neon",
     "dark"
    ],
-   "ready": false
+   "ready": false,
+   "featured": 0
   },
   {
    "id": "ice-crystal",
@@ -626,7 +1155,8 @@
     "cold",
     "dark"
    ],
-   "ready": true
+   "ready": true,
+   "featured": 0
   },
   {
    "id": "origami-noir",
@@ -659,7 +1189,8 @@
     "paper",
     "dark"
    ],
-   "ready": true
+   "ready": true,
+   "featured": 0
   },
   {
    "id": "alien-botanical",
@@ -693,7 +1224,8 @@
     "plant",
     "dark"
    ],
-   "ready": false
+   "ready": false,
+   "featured": 0
   }
  ]
 }

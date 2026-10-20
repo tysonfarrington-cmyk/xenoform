@@ -1,0 +1,104 @@
+/* Xenoform UI v6: light studio glass. Loaded last; remaps the v4 dark tokens to a warm off-white desk with frosted panels,
+   pill glass buttons and synth-style macro knobs. Text never below 11px; motion 150-200ms ease-out. */
+:root{
+  color-scheme: light;
+  --page-bg:#efeee9; --bg:#efeee9; --page-text:#1c1c1e;
+  --panel:rgba(255,255,255,.58); --panel-2:rgba(255,255,255,.72); --field:rgba(255,255,255,.85); --paper:#f6f5f1;
+  --zinc-50:#f7f6f2; --zinc-100:#f0efea; --zinc-200:#e3e1db; --zinc-300:#d2d0c9; --zinc-400:#a19f99;
+  --zinc-500:#7c7a75; --zinc-600:#5d5b57; --zinc-700:#43423f;
+  --lavender:#eceaf8; --nightshade:#2a2552; --peri:#6b4cff; --vermilion:#ff5a36;
+  --line:rgba(28,28,30,.08); --line-strong:rgba(28,28,30,.15);
+  --text:#1c1c1e; --muted:#5d5b57; --faint:#8a8883; --ink:#1c1c1e; --on-primary:#fff; --good:#1f8a55;
+  --header-bg:rgba(239,238,233,.72);
+  --accent:#6b4cff; --brass:#6b4cff;
+  --glass:linear-gradient(180deg,rgba(255,255,255,.78),rgba(255,255,255,.52));
+  --glass-edge:inset 0 1px 0 rgba(255,255,255,.95), inset 0 -1px 0 rgba(28,28,30,.04);
+  --shadow-xs:0 1px 2px rgba(28,28,30,.06);
+  --shadow-md:0 18px 40px -18px rgba(40,36,60,.28);
+  --shadow-overlay:0 40px 100px -30px rgba(40,36,60,.4);
+  --grad:linear-gradient(135deg,#7a5cff 0%,#5b3df5 55%,#3d2fd6 100%);
+  --glow:0 0 0 1.5px #6b4cff,0 10px 30px -10px rgba(107,76,255,.55);
+  --st-drums:#ff6b4a; --st-bass:#5b5cf0; --st-vocals:#f2a93b; --st-other:#1bb3a6;
+  --font-ui:"Inter","SF Pro Text","Segoe UI Variable","Segoe UI",var(--font-space-grotesk);
+}
+html,body{background:
+  radial-gradient(1100px 620px at 85% -10%,rgba(107,76,255,.10),transparent 60%),
+  radial-gradient(900px 520px at -5% 0%,rgba(255,154,120,.10),transparent 60%),
+  linear-gradient(180deg,#f3f2ee,#ebe9e3);background-color:#eeede8;background-attachment:scroll;min-height:100%;color:var(--text)}
+html{background:#eeede8}
+body{font-family:var(--font-ui);letter-spacing:-.006em}
+h1,h2,h3,strong{color:var(--text)}
+.easy-intro h2{background:linear-gradient(180deg,#1c1c1e 40%,#4a4766);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:650}
+.top{background:var(--header-bg);backdrop-filter:blur(22px) saturate(1.6);-webkit-backdrop-filter:blur(22px) saturate(1.6);border-bottom:1px solid var(--line)}
+.brand strong{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand .studio,.brand em{color:var(--faint)}
+.views a{color:var(--muted)} .views a:hover{color:var(--text);background:rgba(28,28,30,.05)}
+.views a[aria-current="page"]{color:var(--text);background:#fff;box-shadow:var(--shadow-xs),var(--glass-edge)}
+/* frosted panels */
+.panel,.drop-open,.easy-make-grid>aside,.simple-opts,.gallery,#my-videos,.remix,.vibe-card,.gallery-card,dialog,.tour-card,.tour-offer,.jobbar{
+  background:var(--glass)!important;backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);
+  border:1px solid rgba(255,255,255,.7)!important;box-shadow:var(--glass-edge),0 16px 40px -24px rgba(40,36,60,.35)!important;color:var(--text)}
+.drop-open{background:linear-gradient(135deg,rgba(255,154,120,.16),rgba(107,76,255,.12)),var(--glass)!important}
+.drop-open .drop-line,.note,.hint,.eyebrow,.kicker{color:var(--muted)}
+input,select,textarea{background:var(--field);color:var(--text);border:1px solid var(--line-strong);box-shadow:inset 0 1px 2px rgba(28,28,30,.05)}
+input::placeholder,textarea::placeholder{color:var(--faint)}
+/* glass pill buttons */
+button.ghost,.upload,.idea-chip,.chips .chip,.morph-count button,.toggle,.top-actions button.text,.more-menu summary{
+  background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(246,245,241,.8))!important;color:var(--text)!important;
+  border:1px solid rgba(28,28,30,.1)!important;box-shadow:var(--glass-edge),0 2px 6px -2px rgba(28,28,30,.12)!important}
+button.ghost:hover:not(:disabled),.upload:hover,.idea-chip:hover:not(:disabled){background:#fff!important;box-shadow:var(--glass-edge),0 6px 16px -6px rgba(28,28,30,.2)!important}
+button.generate,.upload.solid{background:var(--grad)!important;color:#fff!important;border:0!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 -2px 6px rgba(20,10,80,.25),0 12px 30px -12px rgba(91,61,245,.7)!important}
+button.generate:hover:not(:disabled){filter:brightness(1.06)}
+button.easy-make{animation:none;font-weight:600;letter-spacing:-.01em}
+button.text{color:var(--muted)} button.text:hover:not(:disabled){color:var(--text)}
+.toggle{border-radius:999px;padding:3px}
+.toggle button{color:var(--muted);background:transparent!important;border:0!important;box-shadow:none!important}
+.toggle button.on{background:#fff!important;color:var(--text)!important;box-shadow:0 1px 3px rgba(28,28,30,.15),var(--glass-edge)!important}
+.morph-count button.on{background:var(--text)!important;color:#fff!important}
+.morph-count input[type=range]{accent-color:#6b4cff}
+.seg-label,.simple-opts .seg>span:first-child{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint)}
+/* vibe cards */
+.vibe-card{padding:6px;border-radius:16px}
+.vibe-card:hover{transform:translateY(-2px)}
+.vibe-card.on{box-shadow:var(--glow)!important}
+.vibe-card strong,.vibe-card.is-dark strong{color:var(--text)}
+.vibe-card em{color:var(--faint)}
+.vibe-thumb,.easy-desk .vibe-thumb{border-radius:11px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+.vibe-tick{background:var(--grad)!important}
+.monitor,.easy-result .screen{box-shadow:0 0 0 1px rgba(255,255,255,.8),0 30px 70px -30px rgba(40,36,60,.55)}
+.easy .track,.jobbar .track{background:rgba(28,28,30,.08)}
+.easy .track span,.jobbar .track span{background:var(--grad);box-shadow:0 0 14px rgba(107,76,255,.45)}
+.ow-badge{background:rgba(31,138,85,.1);color:#1f7a4c;border:1px solid rgba(31,138,85,.25)}
+.wave i{background:#c9c6d8} .wave i.on{background:#6b4cff}
+.guard-expert{color:var(--faint)}
+dialog::backdrop{background:rgba(30,28,40,.25);backdrop-filter:blur(6px)}
+.tl-qa.bad{color:#c2410c}
+/* synth macro strip */
+.xf-macros{margin:6px 0 4px;padding:12px 10px 10px;border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.9),rgba(244,243,239,.75));
+  border:1px solid rgba(255,255,255,.8);box-shadow:var(--glass-edge),0 10px 26px -18px rgba(40,36,60,.4)}
+.xf-macros-head{display:flex;justify-content:space-between;align-items:center;margin:0 4px 8px}
+.xf-macros-head span{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint)}
+.xf-macros-head button{font-size:11px;padding:2px 10px;min-height:22px}
+.xf-knobs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.xf-knob{display:flex;flex-direction:column;align-items:center;gap:5px;user-select:none;touch-action:none;cursor:ns-resize}
+.xf-knob .dial{position:relative;width:54px;height:54px;border-radius:50%}
+.xf-knob svg{position:absolute;inset:0;overflow:visible}
+.xf-knob .cap{position:absolute;inset:9px;border-radius:50%;
+  background:radial-gradient(circle at 35% 28%,#fff 0%,#f4f3ef 45%,#dcdad3 100%);
+  box-shadow:0 4px 10px -3px rgba(28,28,30,.35),inset 0 1px 0 #fff,inset 0 -2px 4px rgba(28,28,30,.12)}
+.xf-knob .cap i{position:absolute;left:50%;top:5px;width:2px;height:10px;margin-left:-1px;border-radius:2px;background:#1c1c1e;transform-origin:50% 13px}
+.xf-knob b{font-size:11px;font-weight:600;color:var(--text);letter-spacing:.01em}
+.xf-knob small{font-size:11px;color:var(--faint);font-variant-numeric:tabular-nums;min-height:13px}
+.xf-adv{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
+.xf-adv summary{font-size:12px;color:var(--muted);cursor:pointer;list-style:none}
+.xf-adv summary::before{content:"+ ";color:var(--faint)} .xf-adv[open] summary::before{content:"\2212  "}
+.xf-lanes{display:grid;gap:8px;margin-top:8px}
+.xf-lane{display:grid;grid-template-columns:62px 1fr 34px;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.xf-lane i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.xf-lane input[type=range]{-webkit-appearance:none;appearance:none;height:4px;border-radius:4px;background:linear-gradient(90deg,var(--c) var(--p),rgba(28,28,30,.12) var(--p));border:0;box-shadow:none;padding:0}
+.xf-lane input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#fff;border:0;box-shadow:0 1px 4px rgba(28,28,30,.35),inset 0 -1px 2px rgba(28,28,30,.1)}
+.xf-lane output{font-variant-numeric:tabular-nums;text-align:right;color:var(--faint)}
+
+.strip-shot.xf-missing{display:none}
+.xf-strip-empty{display:none!important}

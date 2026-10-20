@@ -216,6 +216,7 @@ function payload() {
     morph_count: (state.easy && state.easy.morphs) || "auto",
     beat_fx: !(state.easy && state.easy.fx === false),
     end_card: !!(state.easy && state.easy.endCard),
+    macros: (window.XENO_MACROS ? window.XENO_MACROS() : null),
     idea: (state.easy && state.easy.idea) || "",
     song: (state.easy && state.easy.songLabel) || "",
     cut_plan: (state.easy && (state.easy.cloud || state.easy.remixPlan) && (state.easy.cutPlan || state.easy.remixPlan)) || null,
@@ -1771,7 +1772,21 @@ function renderConnect() {
   </section>`;
 }
 
-const VIBES = [
+const V6_VIBES = [
+  {"id": "chrome-mercury", "name": "Liquid chrome", "line": "A mirror-chrome drop pours itself into the next form.", "palette": "silver", "register": "pynchon", "morph": true, "dark": true, "tone": "dark", "still": "/static/vibes/chrome-mercury.jpg", "featured": true},
+  {"id": "neon-noir", "name": "Neon noir", "line": "Wet streets, magenta and cyan rim light, rain in the haze.", "palette": "magenta-cyan", "register": "pynchon", "morph": true, "dark": true, "tone": "dark", "still": "/static/vibes/neon-noir.jpg", "featured": true},
+  {"id": "porcelain-kintsugi", "name": "Porcelain & gold", "line": "White porcelain that cracks open in gold on the beat.", "palette": "ivory-gold", "register": "pynchon", "morph": true, "dark": false, "tone": "bright", "still": "/static/vibes/porcelain-kintsugi.jpg", "featured": true},
+  {"id": "bioluminescent", "name": "Deep-sea glow", "line": "Deep-sea forms that glow from inside.", "palette": "teal-violet", "register": "pynchon", "morph": true, "dark": true, "tone": "dark", "still": "/static/vibes/bioluminescent.jpg", "featured": true},
+  {"id": "risograph", "name": "Risograph", "line": "Two-colour print grain, inks sliding out of register.", "palette": "pink-blue", "register": "pynchon", "morph": true, "dark": false, "tone": "bright", "still": "/static/vibes/risograph.jpg", "featured": true},
+  {"id": "iridescent-glass", "name": "Iridescent glass", "line": "Blown glass with a rainbow film and swimming caustics.", "palette": "pearl-rainbow", "register": "pynchon", "morph": true, "dark": false, "tone": "bright", "still": "/static/vibes/iridescent-glass.jpg", "featured": true},
+  {"id": "liquid-gold", "name": "Molten gold", "line": "Molten gold that pours, drips and cools to a polish.", "palette": "gold", "register": "pynchon", "morph": true, "dark": true, "tone": "dark", "still": "/static/vibes/liquid-gold.jpg", "featured": true},
+  {"id": "ink-wash", "name": "Ink & paper", "line": "Sumi ink blooming across wet paper.", "palette": "sumi", "register": "pynchon", "morph": true, "dark": false, "tone": "bright", "still": "/static/vibes/ink-wash.jpg", "featured": true},
+  {"id": "cyberspace-95", "name": "Cyberspace 1995", "line": "Green wireframe on an endless grid, 1995.", "palette": "green-cyan", "register": "pynchon", "morph": true, "dark": true, "tone": "dark", "still": "/static/vibes/cyberspace-95.jpg", "featured": true},
+  {"id": "wet-paint", "name": "Wet paint", "line": "Thick glossy paint folding into the next shape.", "palette": "primary", "register": "pynchon", "morph": true, "dark": false, "tone": "bright", "still": "/static/vibes/wet-paint.jpg", "featured": true},
+  {"id": "shadow-self", "name": "Shadow self", "line": "A backlit silhouette and smoke in one shaft of light.", "palette": "noir", "register": "pynchon", "morph": true, "dark": true, "tone": "dark", "still": "/static/vibes/shadow-self.jpg", "featured": true},
+  {"id": "botanical", "name": "Bloom timelapse", "line": "A single bloom on black, scrubbed by the song.", "palette": "natural", "register": "pynchon", "morph": true, "dark": true, "tone": "dark", "still": "/static/vibes/botanical.jpg", "featured": true}
+];
+const VIBES_LEGACY = [
   {
     id: "liquid-gold",
     name: "Liquid gold",
@@ -1960,6 +1975,7 @@ const VIBES = [
     still: "/static/vibes/origami-noir.jpg",
   },
 ];
+const VIBES = V6_VIBES.concat(VIBES_LEGACY.filter((v) => !V6_VIBES.some((f) => f.id === v.id)).map((v) => Object.assign({}, v, {legacy: true})));
 
 function vibeById(id) {
   return VIBES.find((item) => item.id === id) || null;
@@ -2037,7 +2053,7 @@ function easyMedia() {
 }
 
 function vibeCards(easy, compact) {
-  return VIBES.map((vibe) => {
+  return VIBES.filter((vibe) => !vibe.legacy || vibe.id === easy.vibe || document.body.dataset.advanced === "1").map((vibe) => {
     const on = vibe.id === easy.vibe;
     const tone = vibe.tone || (vibe.dark ? "dark" : "bright");
     return `<button type="button" class="vibe-card${vibe.dark ? " is-dark" : ""}${on ? " on" : ""}${compact ? " is-mini" : ""}" role="radio" aria-checked="${on ? "true" : "false"}" tabindex="${on || (!easy.vibe && vibe.id === VIBES[0].id) ? "0" : "-1"}" data-act="easy-vibe" data-vibe="${esc(vibe.id)}">
