@@ -147,6 +147,16 @@ def macros(state: dict) -> dict:
             out[k] = max(0.0, min(1.0, float(raw.get(k, d))))
         except (TypeError, ValueError, AttributeError):
             out[k] = d
+    st = raw.get("stems") if isinstance(raw, dict) else None
+    if isinstance(st, dict):  # per-stem reaction gains, any stem names, up to stem_react.MAX_STEMS
+        from xenoform.stem_react import MAX_STEMS
+        g = {}
+        for name, v in list(st.items())[:MAX_STEMS]:
+            try:
+                g[str(name)[:64]] = max(0.0, min(1.0, float(v)))
+            except (TypeError, ValueError):
+                continue
+        out["stems"] = g
     return out
 
 

@@ -214,7 +214,7 @@ def emit(enc, fr, k, fps, spec, env, labels, H, stems=None):
     d = spec.get("pulse_depth", 0.008) * fx_scale(spec, k, fps)
     if d > 0 and stems is not None and spec.get("pulse", True):
         from xenoform import stem_react as SR
-        fr = SR.apply_frame(fr, stems, t + spec.get("audio_in", 0.0) - spec.get("stems_offset", 0.0), depth=d)
+        fr = SR.apply_frame(fr, stems, t + spec.get("audio_in", 0.0) - spec.get("stems_offset", 0.0), depth=d, gains=spec.get("stem_gains"))
     elif d > 0 and env and spec.get("pulse", True):
         et, eb, on = env
         fr = T.bass_pulse(fr, float(np.interp(t, et, eb)), float(np.interp(t, et, on)), depth=d)

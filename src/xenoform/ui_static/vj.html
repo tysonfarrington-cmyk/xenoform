@@ -207,7 +207,12 @@ $('track').onchange=async e=>{const f=e.target.files[0];if(f){await loadTrack(f)
 let STEMS=null;if(Q.get('stems'))fetch(Q.get('stems')).then(r=>r.json()).then(j=>{STEMS=j;toast('Stems loaded ('+(j.engine||'?')+')')}).catch(()=>{});
 function stemAt(name,t){const v=STEMS&&STEMS[name];if(!v||!v.length)return 0;return +v[Math.min(v.length-1,Math.max(0,Math.round(t*(STEMS.fps||24))))]||0}
 const SE={drums:0,bass:0,other:0,vocals:0,pf:0};
-function stems(a){if(STEMS&&trackEl){const t=trackEl.currentTime;return{drums:stemAt('drums',t),bass:stemAt('bass',t),other:stemAt('other',t),vocals:stemAt('vocals',t)}}
+const ROLE=n=>{n=String(n).toLowerCase();return /drum|kick|snare|hat|perc|beat|cymbal|tom|clap/.test(n)?'drums':/bass|sub|808/.test(n)?'bass':/vocal|vox|voice|choir|sing/.test(n)?'vocals':'other'};
+function gains(){try{return (JSON.parse(localStorage.getItem('xeno-macros')||'{}'))}catch(e){return{}}}
+function stems(a){if(STEMS&&trackEl){const t=trackEl.currentTime;
+  if(Array.isArray(STEMS.stems)&&STEMS.stems.length){const g=gains(),o={drums:0,bass:0,other:0,vocals:0};  // any number of stems, each with its own gain
+    for(const n of STEMS.stems.slice(0,32)){const r=(STEMS.roles&&STEMS.roles[n])||ROLE(n),k=g['stem:'+n];o[r]=Math.max(o[r],stemAt(n,t)*(k==null?1:k));}return o;}
+  return{drums:stemAt('drums',t),bass:stemAt('bass',t),other:stemAt('other',t),vocals:stemAt('vocals',t)}}
  if(!an)return{drums:0,bass:0,other:0,vocals:0};const hz=AC.sampleRate/an.fftSize;
  const avg=(lo,hi)=>{let s=0,n=0;for(let i=Math.floor(lo/hz);i<Math.min(buf.length,hi/hz);i++){s+=buf[i];n++}return n?s/n/255:0};
  const voc=avg(300,3400),oth=(avg(150,300)+avg(3400,8000))/2,kick=avg(40,110);const tr=Math.max(0,avg(2000,9000)+kick-SE.pf);SE.pf=avg(2000,9000)+kick;

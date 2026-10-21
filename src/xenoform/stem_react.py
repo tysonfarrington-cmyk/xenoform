@@ -19,7 +19,41 @@ from pathlib import Path
 
 import numpy as np
 
-STEMS = ("drums", "bass", "other", "vocals")
+STEMS = ("drums", "bass", "other", "vocals")  # the four routing roles (and Demucs' default stems)
+MAX_STEMS = 32  # any number of named stems up to this, each with its own reaction gain
+_ROLE_WORDS = (("drums", ("drum", "kick", "snare", "hat", "perc", "beat", "cymbal", "tom", "clap")),
+               ("bass", ("bass", "sub", "808")),
+               ("vocals", ("vocal", "vox", "voice", "lead vox", "choir", "sing")))
+
+
+def role(name: str) -> str:
+    """Which routing role a stem name feeds: drums, bass, vocals or other (any unknown name)."""
+    n = str(name).lower()
+    for r, words in _ROLE_WORDS:
+        if any(w in n for w in words):
+            return r
+    return "other"
+
+
+def stem_names(stems: dict) -> list[str]:
+    """Stem names in a split/envelope dict (everything that is not metadata), capped at MAX_STEMS."""
+    meta = {"engine", "fps", "frames", "drum_hits", "drum_strong", "stems", "roles"}
+    names = [k for k in stems if k not in meta]
+    if len(names) > MAX_STEMS:
+        raise ValueError(f"{len(names)} stems given; Xenoform handles up to {MAX_STEMS}")
+    return names
+
+
+def from_files(paths, *, engine: str = "user") -> dict[str, str]:
+    """Use stems the user already has (a DAW export, any count up to MAX_STEMS). ``paths`` is a list of
+    wav paths (named by file stem) or a {name: path} dict."""
+    if not isinstance(paths, dict):
+        paths = {Path(p).stem: str(p) for p in paths}
+    if not paths:
+        raise ValueError("no stems given")
+    if len(paths) > MAX_STEMS:
+        raise ValueError(f"{len(paths)} stems given; Xenoform handles up to {MAX_STEMS}")
+    return {**{str(k): str(v) for k, v in paths.items()}, "engine": engine}
 
 
 def demucs_available(python: str | None = None) -> bool:
@@ -40,8 +74,8 @@ def split(track: str | Path, out_dir: str | Path, *, model: str = "htdemucs", de
         cmd = [py, "-m", "demucs", "-n", model, "-d", device, "-j", "2", "-o", str(out), str(track)]
         subprocess.run(cmd, check=True)
         folder = out / model / Path(track).stem
-        paths = {s: str(folder / f"{s}.wav") for s in STEMS if (folder / f"{s}.wav").exists()}
-        if len(paths) == 4:
+        paths = {w.stem: str(w) for w in sorted(folder.glob("*.wav"))[:MAX_STEMS]}  # 4 for htdemucs, 6 for htdemucs_6s, ...
+        if paths:
             return {**paths, "engine": f"demucs:{model}"}
     if engine == "demucs":
         raise RuntimeError("Demucs is not installed (pip install demucs)")
@@ -74,32 +108,42 @@ def _norm(x: np.ndarray) -> np.ndarray:
 
 
 def envelopes(stems: dict[str, str], *, fps: int = 24, sr: int = 22050) -> dict:
-    """Per-frame 0..1 curves: drums (onset strength), bass/other/vocals (RMS), plus drum hit times."""
+    """Per-frame 0..1 curves for every stem (any count up to MAX_STEMS): drum-role stems give onset
+    strength, the rest RMS. Also the four role curves (drums/bass/other/vocals = max of their members)
+    and drum hit times from the drum role."""
     import librosa
 
     hop = int(round(sr / fps))
     out: dict = {"fps": fps, "engine": stems.get("engine", "?")}
-    n = None
-    for s in STEMS:
-        if s not in stems:
-            continue
+    names = stem_names(stems)
+    curves: dict[str, np.ndarray] = {}
+    onsets: list[np.ndarray] = []
+    for s in names:
         y, _ = librosa.load(stems[s], sr=sr, mono=True)
-        if s == "drums":
+        if role(s) == "drums":
             v = librosa.onset.onset_strength(y=y, sr=sr, hop_length=hop)
-            hits = librosa.onset.onset_detect(onset_envelope=v, sr=sr, hop_length=hop, units="time",
-                                              delta=0.25, wait=max(1, fps // 8))
-            strong = [float(t) for t in hits if v[min(len(v) - 1, int(round(t * fps)))] >= np.percentile(v, 90)]
-            out["drum_hits"] = [round(float(t), 3) for t in hits]
-            out["drum_strong"] = [round(t, 3) for t in strong]
+            onsets.append(v)
         else:
             v = librosa.feature.rms(y=y, hop_length=hop)[0]
-        v = _norm(v)
-        n = len(v) if n is None else min(n, len(v))
-        out[s] = v
-    for s in STEMS:
-        if s in out:
-            out[s] = [round(float(x), 4) for x in out[s][:n]]
-    out["frames"] = n or 0
+        curves[s] = _norm(v)
+    n = min((len(v) for v in curves.values()), default=0)
+    if onsets:
+        m = min(len(v) for v in onsets); v = np.max([o[:m] for o in onsets], axis=0)
+        hits = librosa.onset.onset_detect(onset_envelope=v, sr=sr, hop_length=hop, units="time",
+                                          delta=0.25, wait=max(1, fps // 8))
+        strong = [float(t) for t in hits if v[min(len(v) - 1, int(round(t * fps)))] >= np.percentile(v, 90)]
+        out["drum_hits"] = [round(float(t), 3) for t in hits]
+        out["drum_strong"] = [round(t, 3) for t in strong]
+    for s in names:
+        out[s] = [round(float(x), 4) for x in curves[s][:n]]
+    out["stems"] = names
+    out["roles"] = {s: role(s) for s in names}
+    for r in STEMS:  # role curves, unless a stem already carries that exact name
+        if r not in curves:
+            mem = [curves[s][:n] for s in names if role(s) == r]
+            if mem:
+                out[r] = [round(float(x), 4) for x in np.max(mem, axis=0)]
+    out["frames"] = n
     return out
 
 
@@ -118,9 +162,24 @@ def at(env: dict, t: float, stem: str) -> float:
     return float(v[min(max(k, 0), len(v) - 1)])
 
 
-def drive(env: dict, t: float) -> dict:
-    """What the picture does at time t: the stem-to-effect routing."""
-    d, b, o = at(env, t, "drums"), at(env, t, "bass"), max(at(env, t, "other"), at(env, t, "vocals") * 0.5)
+def role_levels(env: dict, t: float, gains: dict | None = None) -> dict[str, float]:
+    """Role energies at t. With per-stem ``gains`` (name -> 0..1, 1 = full reaction) each stem is
+    weighted before it feeds its role; without gains the precomputed role curves are used."""
+    names = env.get("stems")
+    if not names or not gains:
+        return {r: at(env, t, r) for r in STEMS}
+    roles = env.get("roles") or {s: role(s) for s in names}
+    lv = {r: 0.0 for r in STEMS}
+    for s in names:
+        g = float(np.clip(gains.get(s, 1.0), 0.0, 1.0))
+        lv[roles.get(s, "other")] = max(lv[roles.get(s, "other")], at(env, t, s) * g)
+    return lv
+
+
+def drive(env: dict, t: float, gains: dict | None = None) -> dict:
+    """What the picture does at time t: the stem-to-effect routing (any number of stems via roles)."""
+    L = role_levels(env, t, gains)
+    d, b, o = L["drums"], L["bass"], max(L["other"], L["vocals"] * 0.5)
     return {
         "stutter": d if d > 0.75 else 0.0,  # drums: stutter/cut energy
         "chroma": d,                          # drums: transient RGB kick
@@ -128,8 +187,8 @@ def drive(env: dict, t: float) -> dict:
         "displace": b,                        # bass: liquid displacement
         "saturation": 0.85 + 0.35 * o,        # other: colour / texture
         "grain": o,
-        "emission": max(o, at(env, t, "vocals")),  # other/vocals: glow on the bright parts
-        "hue": at(env, t, "vocals"),               # vocals: colour drift
+        "emission": max(o, L["vocals"]),      # other/vocals: glow on the bright parts
+        "hue": L["vocals"],                   # vocals: colour drift
     }
 
 
@@ -148,14 +207,14 @@ def cut_points(env: dict, beats: list[float] | None = None, *, min_gap: float = 
     return pts
 
 
-def apply_frame(frame: np.ndarray, env: dict, t: float, *, depth: float = 0.01) -> np.ndarray:
+def apply_frame(frame: np.ndarray, env: dict, t: float, *, depth: float = 0.01, gains: dict | None = None) -> np.ndarray:
     """Stem-driven post effect for one frame (bass scale + displacement, drum chroma, other saturation)."""
     try:
         from xenoform import transitions_fx as T
     except ImportError:  # running from a loose checkout
         import transitions_fx as T
 
-    p = drive(env, t)
+    p = drive(env, t, gains)
     fr = T.scale_frame(frame, 1.0 + 3.0 * depth * p["scale"])  # bass: scale, linear so quiet bass still breathes
     h, w = fr.shape[:2]
     if p["displace"] > 0.05:  # bass: continuous liquid displacement (was only above 0.55)

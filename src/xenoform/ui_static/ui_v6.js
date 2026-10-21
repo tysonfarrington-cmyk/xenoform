@@ -3,10 +3,20 @@
 (function(){
   const KEY="xeno-macros";
   const KNOBS=[["intensity","Intensity"],["speed","Speed"],["chaos","Chaos"],["glow","Glow"]];
-  const LANES=[["drums","Drums","var(--st-drums)"],["bass","Bass","var(--st-bass)"],["vocals","Vocals","var(--st-vocals)"],["other","Other","var(--st-other)"]];
+  // Per-stem reaction lanes: the default four, or one lane per stem the song actually has (up to MAX_STEMS),
+  // set with window.XENO_SET_STEMS(["Kick","Snare","Sub bass",...]) once stems are split or uploaded.
+  const MAX_STEMS=32;
+  const ROLE=n=>{n=String(n).toLowerCase();return /drum|kick|snare|hat|perc|beat|cymbal|tom|clap/.test(n)?"drums":/bass|sub|808/.test(n)?"bass":/vocal|vox|voice|choir|sing/.test(n)?"vocals":"other"};
+  const lanesFor=names=>names.slice(0,MAX_STEMS).map(n=>["stem:"+n,n,`var(--st-${ROLE(n)})`]);
+  let LANES=[["drums","Drums","var(--st-drums)"],["bass","Bass","var(--st-bass)"],["vocals","Vocals","var(--st-vocals)"],["other","Other","var(--st-other)"]];
   const DEF={intensity:.5,speed:.5,chaos:.3,glow:.4,drums:.7,bass:.7,vocals:.5,other:.4};
   const load=()=>{try{return Object.assign({},DEF,JSON.parse(localStorage.getItem(KEY)||"{}"))}catch(e){return Object.assign({},DEF)}};
-  let M=load(); window.XENO_MACROS=()=>Object.assign({},M);
+  let M=load();
+  // payload: the four knobs/role lanes as before, plus macros.stems = {name: 0..1} for per-stem lanes
+  window.XENO_MACROS=()=>{const o={},st={};for(const k in M){if(k.startsWith("stem:"))st[k.slice(5)]=M[k];else o[k]=M[k];}
+    if(Object.keys(st).length)o.stems=st;return o;};
+  window.XENO_SET_STEMS=names=>{LANES=(names&&names.length)?lanesFor(names):LANES;
+    for(const [k] of LANES)if(M[k]==null)M[k]=0.7;const s=document.querySelector(".xf-macros");s&&s.remove();mount();};
   const save=()=>{localStorage.setItem(KEY,JSON.stringify(M));};
   const pct=v=>Math.round(v*100);
   const ARC=(v)=>{const a0=-135,a1=a0+270*v,r=25,c=27,p=a=>[c+r*Math.sin(a*Math.PI/180),c-r*Math.cos(a*Math.PI/180)];
@@ -16,11 +26,11 @@
   const knob=([k,l])=>`<div class="xf-knob" data-k="${k}" role="slider" tabindex="0" aria-label="${l}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct(M[k])}">
       <div class="dial"><svg viewBox="0 0 54 54"><defs><linearGradient id="xfg" x1="0" x2="1"><stop offset="0" stop-color="#8f74ff"/><stop offset="1" stop-color="#4b33e6"/></linearGradient></defs>${ARC(M[k])}</svg>
       <div class="cap"><i style="transform:rotate(${-135+270*M[k]}deg)"></i></div></div><b>${l}</b><small>${pct(M[k])}</small></div>`;
-  const lane=([k,l,c])=>`<label class="xf-lane"><span><i style="background:${c}"></i>${l}</span>
+  const lane=([k,l,c])=>`<label class="xf-lane" title="${l}"><span><i style="background:${c}"></i>${l}</span>
       <input type="range" min="0" max="100" value="${pct(M[k])}" data-k="${k}" style="--c:${c};--p:${pct(M[k])}%" aria-label="${l} reaction"><output>${pct(M[k])}</output></label>`;
   const html=()=>`<section class="xf-macros" data-tour="easy-macros"><div class="xf-macros-head"><span>Macros</span><button type="button" class="ghost" data-xf-reset>Reset</button></div>
       <div class="xf-knobs">${KNOBS.map(knob).join("")}</div>
-      <details class="xf-adv"><summary>Stem reactions</summary><div class="xf-lanes">${LANES.map(lane).join("")}</div></details></section>`;
+      <details class="xf-adv"><summary>Stem reactions</summary><div class="xf-lanes${LANES.length>8?" xf-many":""}" data-count="${LANES.length}">${LANES.map(lane).join("")}</div></details></section>`;
   function paint(el,k){const v=M[k];el.setAttribute("aria-valuenow",pct(v));el.querySelector("svg").innerHTML=el.querySelector("svg defs").outerHTML+ARC(v);
     el.querySelector(".cap i").style.transform=`rotate(${-135+270*v}deg)`;el.querySelector("small").textContent=pct(v);}
   function mount(){const host=document.querySelector(".simple-opts"); if(!host||host.querySelector(".xf-macros"))return;
