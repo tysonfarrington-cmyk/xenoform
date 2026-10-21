@@ -23,7 +23,10 @@ def test_no_geometry_change(preset):
         out = fx.apply(f, {"drums": 1, "bass": 1, "other": 1, "vocals": 1, "beat": 1})
     for c in range(3):  # every channel keeps the same brightest region
         col = out[..., c].astype(float)
-        ys, xs = np.nonzero(col >= np.percentile(col, 99))
+        if D.PRESETS[preset].get("invert"):  # a negative flips luma: the subject becomes the darkest region, in place
+            ys, xs = np.nonzero(col <= np.percentile(col, 1))
+        else:
+            ys, xs = np.nonzero(col >= np.percentile(col, 99))
         assert 60 <= ys.mean() < 150 and 40 <= xs.mean() < 70
 
 
@@ -75,3 +78,16 @@ def test_bloom_rush_is_deterministic_and_old_presets_unchanged():
     assert np.array_equal(a, b)
     for name in ("warm-leak", "cool-echo", "noir-glow"):
         assert "wash" not in D.PRESETS[name] and "bleed" not in D.PRESETS[name]
+
+
+def test_negative_rush_inverts_luma_and_eases():
+    import numpy as np
+    from xenoform import dance_fx as D
+    assert "negative-rush" in D.PRESETS and "invert" in D.PASSES and "dance-invert" in D.POST_EFFECTS
+    f = np.full((32, 24, 3), 40, np.uint8); f[:, 12:] = 220
+    fx = D.DanceFX("negative-rush", intensity=1.0); d = {"drums": 0, "bass": 1, "other": 0, "vocals": 0, "beat": 1}
+    outs = [fx.apply(f, d).astype(float).mean(2) for _ in range(12)]
+    # eased: the flip grows over frames rather than snapping in one
+    c = [o[:, :12].mean() - o[:, 12:].mean() for o in outs]
+    assert c[0] < c[-1]
+    assert c[-1] > 0  # dark side is now brighter than the bright side: negative

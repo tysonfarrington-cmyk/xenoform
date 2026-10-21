@@ -23,7 +23,7 @@ try:
 except ImportError:  # pragma: no cover
     cv2 = None
 
-PASSES = ("grade", "halation", "echo", "edge_tint", "light_leak", "glass", "wash", "bleed", "fade")
+PASSES = ("grade", "halation", "echo", "edge_tint", "light_leak", "glass", "wash", "bleed", "invert", "fade")
 
 PRESETS: dict[str, dict] = {
     # name: per-pass amount (0 = off). Kept low on purpose: tasteful, never distorting.
@@ -38,6 +38,11 @@ PRESETS: dict[str, dict] = {
                    "wash": 0.9, "bleed": 0.85, "echo_decay": 0.86,
                    "shadow": (0.90, 0.97, 1.12), "high": (1.08, 1.0, 0.94), "edge": (120, 220, 255),
                    "wash_a": (40, 210, 255), "wash_b": (255, 70, 170)},
+    # bloom-rush plus a stem-driven negative: luma flips on the bass/beat (hue kept), eased in and out
+    "negative-rush": {"grade": 0.7, "halation": 0.9, "echo": 0.9, "edge_tint": 0.4, "light_leak": 0.8, "glass": 0.0,
+                      "wash": 0.5, "bleed": 0.6, "invert": 0.9, "echo_decay": 0.84,
+                      "shadow": (0.92, 0.97, 1.10), "high": (1.06, 1.0, 0.96), "edge": (140, 200, 255),
+                      "wash_a": (40, 210, 255), "wash_b": (190, 90, 255)},
 }
 
 POST_EFFECTS = {
@@ -50,6 +55,7 @@ POST_EFFECTS = {
     "dance-fade": "soft fade in/out from black at scene heads and tails",
     "dance-wash": "stem-driven two-colour gradient wash that drifts with the vocals and swells on the bass",
     "dance-bleed": "chroma bleed: colour spreads past edges like wet ink, structure stays put",
+    "dance-invert": "stem-driven negative look: luma inverts on the bass/beat with the hue kept, eased",
 }
 
 
@@ -67,7 +73,7 @@ class DanceFX:
         if preset not in PRESETS:
             raise ValueError(f"unknown dance preset {preset!r}; one of {', '.join(PRESETS)}")
         self.p = PRESETS[preset]; self.k = float(np.clip(intensity, 0, 1.5)); self.seed = seed
-        self._acc = None; self._glass = None; self._leak = None; self._phase = 0.0
+        self._acc = None; self._glass = None; self._leak = None; self._phase = 0.0; self._inv = 0.0
 
     def _static(self, h: int, w: int):
         if self._glass is None:
@@ -126,6 +132,12 @@ class DanceFX:
             col = np.array(p.get("wash_a", (40, 210, 255)), np.float32) * (1 - g) + np.array(p.get("wash_b", (255, 70, 170)), np.float32) * g
             amt = float(np.clip((0.06 + 0.28 * max(ba, beat) + 0.08 * vo) * p["wash"] * k, 0, 0.6))
             f = 255 - (255 - f) * (255 - col * amt) / 255
+        if p.get("invert", 0) > 0 or p.get("invert_floor", 0) > 0:  # negative: flip luma only (hue/chroma kept); amount eased through a follower
+            tgt = float(np.clip(max(p.get("invert_floor", 0.0), p.get("invert", 0) * k * (0.15 + 0.85 * max(ba, beat))), 0, 1))
+            self._inv += (tgt - self._inv) * 0.25
+            if self._inv > 1e-3:
+                L = f.mean(axis=2, keepdims=True)
+                f = f + (255.0 - 2.0 * L) * self._inv
         glass, leak = self._static(h, w)
         if p["light_leak"] > 0:
             f = f + leak[..., None] * np.array([255, 150, 70], np.float32) * (0.05 + 0.30 * beat) * p["light_leak"] * k
