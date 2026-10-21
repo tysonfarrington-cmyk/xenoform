@@ -23,7 +23,7 @@ def test_no_geometry_change(preset):
         out = fx.apply(f, {"drums": 1, "bass": 1, "other": 1, "vocals": 1, "beat": 1})
     for c in range(3):  # every channel keeps the same brightest region
         col = out[..., c].astype(float)
-        if D.PRESETS[preset].get("invert"):  # a negative flips luma: the subject becomes the darkest region, in place
+        if D.PRESETS[preset].get("invert") or D.PRESETS[preset].get("invert_hits"):  # a negative flips luma: the subject becomes the darkest region, in place
             ys, xs = np.nonzero(col <= np.percentile(col, 1))
         else:
             ys, xs = np.nonzero(col >= np.percentile(col, 99))
@@ -91,3 +91,17 @@ def test_negative_rush_inverts_luma_and_eases():
     c = [o[:, :12].mean() - o[:, 12:].mean() for o in outs]
     assert c[0] < c[-1]
     assert c[-1] > 0  # dark side is now brighter than the bright side: negative
+
+
+def test_cyan_flash_is_beat_synced_blue_and_in_place():
+    import numpy as np
+    from xenoform import dance_fx as D
+    assert "cyan-flash" in D.PRESETS and "dance-flash" in D.POST_EFFECTS
+    f = np.zeros((64, 36, 3), np.uint8); f[20:44, 10:26] = 90
+    q = {"drums": 0.5, "bass": 0.2, "other": 0, "vocals": 0}
+    p = dict(D.PRESETS["cyan-flash"], invert_hits=0.0)
+    a = D.DanceFX("cyan-flash"); a.p = p; b = D.DanceFX("cyan-flash"); b.p = p
+    calm = a.apply(f, dict(q, beat=0.0)).astype(float); hit = b.apply(f, dict(q, beat=1.0)).astype(float)
+    dlt = (hit - calm)[20:44, 10:26].mean(axis=(0, 1))
+    assert dlt[2] > dlt[0] + 5  # the hit adds blue, not white
+    assert hit[0:8].mean() < 60  # background stays dark

@@ -23,7 +23,7 @@ try:
 except ImportError:  # pragma: no cover
     cv2 = None
 
-PASSES = ("grade", "halation", "echo", "edge_tint", "light_leak", "glass", "wash", "bleed", "invert", "fade")
+PASSES = ("grade", "halation", "echo", "edge_tint", "light_leak", "glass", "wash", "bleed", "invert", "flash", "sweep", "depth_bloom", "breath", "blue_morph", "fade")
 
 PRESETS: dict[str, dict] = {
     # name: per-pass amount (0 = off). Kept low on purpose: tasteful, never distorting.
@@ -43,6 +43,13 @@ PRESETS: dict[str, dict] = {
                       "wash": 0.5, "bleed": 0.6, "invert": 0.9, "echo_decay": 0.84,
                       "shadow": (0.92, 0.97, 1.10), "high": (1.06, 1.0, 0.96), "edge": (140, 200, 255),
                       "wash_a": (40, 210, 255), "wash_b": (190, 90, 255)},
+    # electric-blue flashes on the beat over bloom-rush, negative pulse only on big hits, slow diagonal light sweep,
+    # depth bloom on the bass, a rhythmic exposure breath, and an in-shape blue morph (same subject, crystal-blue variant)
+    "cyan-flash": {"grade": 0.8, "halation": 1.0, "echo": 1.0, "edge_tint": 0.5, "light_leak": 0.7, "glass": 0.0,
+                   "wash": 0.45, "bleed": 0.6, "echo_decay": 0.82, "flash": 1.0, "sweep": 0.6, "depth_bloom": 0.7,
+                   "breath": 0.5, "invert_hits": 0.85, "blue_morph": 0.0,
+                   "shadow": (0.90, 0.98, 1.12), "high": (1.0, 1.02, 1.06), "edge": (90, 200, 255),
+                   "wash_a": (30, 200, 255), "wash_b": (90, 110, 255), "flash_rgb": (70, 200, 255)},
 }
 
 POST_EFFECTS = {
@@ -55,6 +62,7 @@ POST_EFFECTS = {
     "dance-fade": "soft fade in/out from black at scene heads and tails",
     "dance-wash": "stem-driven two-colour gradient wash that drifts with the vocals and swells on the bass",
     "dance-bleed": "chroma bleed: colour spreads past edges like wet ink, structure stays put",
+    "dance-flash": "beat-synced cyan/electric-blue flash on the subject, with a light sweep, depth bloom and exposure breath",
     "dance-invert": "stem-driven negative look: luma inverts on the bass/beat with the hue kept, eased",
 }
 
@@ -73,7 +81,7 @@ class DanceFX:
         if preset not in PRESETS:
             raise ValueError(f"unknown dance preset {preset!r}; one of {', '.join(PRESETS)}")
         self.p = PRESETS[preset]; self.k = float(np.clip(intensity, 0, 1.5)); self.seed = seed
-        self._acc = None; self._glass = None; self._leak = None; self._phase = 0.0; self._inv = 0.0
+        self._acc = None; self._glass = None; self._leak = None; self._phase = 0.0; self._inv = 0.0; self._fl = 0.0; self._ih = 0.0; self._sw = 0.0; self._br = 1.0
 
     def _static(self, h: int, w: int):
         if self._glass is None:
@@ -138,6 +146,33 @@ class DanceFX:
             if self._inv > 1e-3:
                 L = f.mean(axis=2, keepdims=True)
                 f = f + (255.0 - 2.0 * L) * self._inv
+        if p.get("blue_morph", 0) > 0:  # same subject, crystal-blue variant: luma kept, chroma pulled to electric blue
+            L = f.mean(axis=2, keepdims=True); bm = float(np.clip(p["blue_morph"], 0, 1))
+            blue = L * np.array([0.55, 0.92, 1.35], np.float32) + (f - L) * 0.25
+            f = f * (1 - bm) + blue * bm
+        if p.get("flash", 0) > 0:  # beat flash: electric blue lands on the subject (bright areas), with a soft halo
+            self._fl = max(self._fl * 0.72, beat)
+            if self._fl > 1e-3:
+                m = np.clip((f.mean(axis=2, keepdims=True) - 40) / 160, 0, 1)
+                s = max(1.0, w / 1080)
+                halo = (_blur(np.ascontiguousarray(m[..., 0] * 255.0), 30 * s) / 255.0).reshape(h, w, 1)
+                f = f + (m * 0.8 + halo * 0.5) * np.array(p.get("flash_rgb", (70, 200, 255)), np.float32) * self._fl * p["flash"] * k * (0.5 + 0.5 * dr)
+        if p.get("invert_hits", 0) > 0:  # negative pulse on the big hits only, eased out fast
+            self._ih = max(self._ih * 0.70, float(beat > 0.85) * (0.5 + 0.5 * ba) * p["invert_hits"])
+            if self._ih > 1e-3:
+                L = f.mean(axis=2, keepdims=True); f = f + (255.0 - 2.0 * L) * min(self._ih, 1.0)
+        if p.get("sweep", 0) > 0:  # slow diagonal light band, screen-blended
+            self._sw += 0.012 + 0.02 * ot
+            yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+            u = (xx / w * 0.6 + yy / h) - ((self._sw % 2.2) - 0.4)
+            band = np.exp(-(u / 0.09) ** 2)[..., None] * (0.35 + 0.65 * max(vo, ot))
+            f = 255 - (255 - f) * (1 - band * 0.45 * p["sweep"] * k)
+        if p.get("depth_bloom", 0) > 0:  # wide soft bloom, deepens on the bass
+            s = max(1.0, w / 1080)
+            f = f + _blur(f, 60 * s) * (0.10 + 0.30 * ba) * p["depth_bloom"] * k
+        if p.get("breath", 0) > 0:  # rhythmic exposure breath following the bass, eased
+            self._br += ((1.0 + 0.22 * ba) - self._br) * 0.15
+            f = f * (1 + (self._br - 1) * p["breath"] * k * 2)
         glass, leak = self._static(h, w)
         if p["light_leak"] > 0:
             f = f + leak[..., None] * np.array([255, 150, 70], np.float32) * (0.05 + 0.30 * beat) * p["light_leak"] * k
