@@ -15,15 +15,24 @@ FIELDS = ("id", "name", "line", "look", "negative", "palette", "lighting", "mate
 BANNED = ("aphex", "tipper", "amon tobin", "sega", "playstation", "ps1", "nintendo", "vaporwave", "hr giger", "giger")
 
 
+def _pool_backed(vid: str) -> bool:
+    """A vibe that ships its own object stills (and so a 4-shot library strip and a clip pack)."""
+    return (STATIC / "objects" / vid).is_dir()
+
+
 def test_registry_is_big_distinct_and_complete():
     from xenoform import transitions_fx  # noqa: F401  (names must be real transitions)
     from xenoform.transitions_fx import TRANSITIONS
+    from xenoform.vibes import ORIGINAL
 
     vibes = ALL
     assert len(vibes) >= 15 and len(REG["vibes"]) >= 10
     ids = [v["id"] for v in vibes]
     assert len(set(ids)) == len(ids)
-    assert not set(ids) & {"liquid-gold", "paper-summer", "bloom", "neon-night", "ocean", "cosmic", "black"}
+    # The seven originals keep their hand-tuned entries in morph_pass/autotune; the registry only
+    # re-lists one when it is a featured Simple-mode vibe (liquid-gold since UI v6).
+    relisted = set(ids) & set(ORIGINAL)
+    assert all(next(v for v in vibes if v["id"] == r).get("featured", 0) > 0 for r in relisted), relisted
     looks = [v["look"] for v in vibes]
     assert len(set(looks)) == len(looks)
     for v in vibes:
@@ -37,15 +46,27 @@ def test_registry_is_big_distinct_and_complete():
         assert 8 <= v["ltx"]["steps"] <= 20 and 1 <= v["ltx"]["cfg"] <= 5
 
 
-def test_each_new_vibe_ships_pool_still_and_clip_pack():
+def test_each_ready_vibe_ships_a_hero_still_and_a_usable_pool():
+    """Every ready vibe has a picker thumbnail and resolves to an object pool: its own, or the one
+    its ``pool`` key names (the look prompt stays the vibe's own; only the guide stills are borrowed).
+    A vibe that ships its own pool also ships the 4-shot library strip and a clip pack."""
+    from xenoform import vibes
+
     objects = json.loads((STATIC / "objects" / "objects.json").read_text(encoding="utf-8"))
     pack = json.loads((ROOT / "configs" / "clip_pack.json").read_text(encoding="utf-8"))
     for v in REG["vibes"]:
         vid = v["id"]
+        assert (STATIC / "vibes" / f"{vid}.jpg").stat().st_size > 20_000, vid
+        pool = vibes.pool(vid)
+        assert pool and pool in objects, (vid, "no object pool of its own and no usable `pool` fallback")
+        if pool != vid:
+            assert v["pool"] == pool and v.get("featured", 0) > 0, (vid, "only featured vibes may borrow a pool")
+            continue
         assert len(objects[vid]) >= 8
         for row in objects[vid]:
             assert (STATIC / "objects" / row["file"]).stat().st_size > 8_000
-        assert (STATIC / "vibes" / f"{vid}.jpg").stat().st_size > 20_000
+        if vid in vibes.ORIGINAL:
+            continue  # the originals' library clips and packs predate clip_pack.json
         for shot in SHOTS:
             size = (STATIC / "library" / vid / f"{shot}.mp4").stat().st_size
             assert 500 < size < 1_200_000
@@ -53,13 +74,34 @@ def test_each_new_vibe_ships_pool_still_and_clip_pack():
         assert pack["vibes"][vid]["clips"]
 
 
+def test_borrowed_pool_keeps_the_vibes_own_look():
+    from xenoform import morph_pass as mp, vibes
+
+    borrowed = [v for v in REG["vibes"] if v.get("pool")]
+    assert borrowed, "UI v6 ships featured vibes that borrow stills; keep at least one covered"
+    for v in borrowed:
+        assert mp.vibe_for({"vibe": v["id"]}) == v["pool"]
+        look_vibe, stills = mp.pick_stills({"vibe": v["id"]}, 3)
+        assert look_vibe == v["id"] and len(stills) == 3
+        assert all(Path(s["path"]).parent.name == v["pool"] for s in stills)
+        assert v["look"] in mp.prompt_for(look_vibe) and v["negative"] == vibes.negative(look_vibe)
+    assert vibes.pool("no-such-vibe") == ""
+
+
 def test_ui_lists_every_vibe():
+    """app.js (Simple + Advanced desk) lists every ready vibe; judges.html cuts a pre-rendered
+    shot library, so it lists exactly the pool-backed vibes and no vibe whose library is missing."""
     app = (STATIC / "app.js").read_text(encoding="utf-8")
     page = (STATIC / "judges.html").read_text(encoding="utf-8")
     for v in REG["vibes"]:
-        assert f'id: "{v["id"]}"' in app
-        assert f'data-vibe="{v["id"]}"' in page
-        assert f"vibes/{v['id']}.jpg" in page
+        vid = v["id"]
+        assert f'id: "{vid}"' in app or f'"id": "{vid}"' in app, vid
+        listed = f'data-vibe="{vid}"' in page
+        assert listed == _pool_backed(vid), (vid, "judges page vs library strip")
+        if listed:
+            assert f"vibes/{vid}.jpg" in page
+    featured = [v for v in REG["vibes"] if v.get("featured", 0) > 0]
+    assert len(featured) == 12 and all(f'"id": "{v["id"]}"' in app for v in featured)
 
 
 def test_morph_pass_uses_the_registry():

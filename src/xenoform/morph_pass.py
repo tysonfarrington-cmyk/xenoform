@@ -73,6 +73,12 @@ def vibe_for(state: dict) -> str:
     pools = manifest()
     if vibe in pools:
         return vibe
+    borrowed = _vibes.pool(vibe)
+    if borrowed in pools:
+        log.info("vibe %s has no stills of its own; borrowing the %s pool (look prompt stays %s)", vibe, borrowed, vibe)
+        return borrowed
+    if vibe:
+        log.warning("vibe %r has no object pool and no declared fallback; using liquid-gold stills", vibe)
     if str(state.get("preset") or "") == "liquid-metal":
         return "liquid-gold"
     return PALETTE_VIBE.get(str(state.get("palette") or ""), "liquid-gold")
@@ -121,9 +127,16 @@ def _drop_bad_pairs(pool: list[dict], bad: set) -> list[dict]:
 
 
 def pick_stills(state: dict, count: int) -> tuple[str, list[dict]]:
-    """``count`` stills for the vibe. A story noun that names a pool object leads."""
+    """``count`` stills for the vibe. A story noun that names a pool object leads.
+
+    Returns the *look* vibe (what the prompt, negative and tuning use) and the stills.
+    A registry vibe without stills of its own borrows the pool ``vibes.pool()`` names,
+    but keeps its own look, so "neon-noir" renders neon-night stills with the neon-noir prompt.
+    """
     vibe = vibe_for(state)
     pool = list(manifest()[vibe])
+    asked = str(state.get("vibe") or "")
+    look_vibe = asked if asked in VIBE_LOOK else vibe
     words = set(_story_words(state))
     lead = next((i for i, item in enumerate(pool) if set(item["noun"].split()) & words), None)
     if lead:
@@ -133,7 +146,7 @@ def pick_stills(state: dict, count: int) -> tuple[str, list[dict]]:
     # songs cycle forward, so a repeat is always a new pairing, never a ping-pong back.
     pool = user_targets(state) + pool
     picked = [pool[i % len(pool)] for i in range(count)]
-    return vibe, [{**item, "path": item.get("path") or str(OBJECTS / item["file"])} for item in picked]
+    return look_vibe, [{**item, "path": item.get("path") or str(OBJECTS / item["file"])} for item in picked]
 
 
 def user_targets(state: dict) -> list[dict]:
