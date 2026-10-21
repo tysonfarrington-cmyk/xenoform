@@ -48,3 +48,30 @@ def test_render_shot_fades_and_env():
     env = {"fps": 24, "drums": [1.0] * 10, "bass": [0.5] * 10, "other": [0.2] * 10, "vocals": [0.0] * 10, "drum_strong": [0.0]}
     out = list(D.render_shot([_frame()] * 10, env, 0.0, "noir-glow", fade_in=3, fade_out=3))
     assert len(out) == 10 and out[0].mean() < out[5].mean() and out[-1].mean() < out[5].mean()
+
+
+def test_bloom_rush_wash_and_bleed_are_colour_only():
+    import numpy as np
+    from xenoform import dance_fx as D
+    assert "bloom-rush" in D.PRESETS and {"wash", "bleed"} <= set(D.PASSES)
+    assert "dance-wash" in D.POST_EFFECTS and "dance-bleed" in D.POST_EFFECTS
+    rng = np.random.default_rng(1); f = np.zeros((96, 64, 3), np.uint8); f[30:60, 20:40] = (230, 40, 60)
+    f = (f + rng.integers(0, 8, f.shape)).astype(np.uint8)
+    fx = D.DanceFX("bloom-rush", intensity=1.5)
+    out = fx.apply(f, {"drums": 1, "bass": 1, "other": 1, "vocals": 1, "beat": 1})
+    assert out.shape == f.shape and out.dtype == np.uint8
+    assert not np.array_equal(out, f)
+    # structure stays put: the luma edge of the block is still at the same place
+    lum = out.astype(np.float32).mean(2); col = lum[:, 30]
+    assert abs(int(np.argmax(np.abs(np.diff(col)))) - 29) <= 2 or abs(int(np.argmax(np.abs(np.diff(col)))) - 59) <= 2
+
+
+def test_bloom_rush_is_deterministic_and_old_presets_unchanged():
+    import numpy as np
+    from xenoform import dance_fx as D
+    f = (np.random.default_rng(3).random((48, 32, 3)) * 255).astype(np.uint8)
+    d = {"drums": 0.5, "bass": 0.7, "other": 0.2, "vocals": 0.4, "beat": 0.6}
+    a = D.DanceFX("bloom-rush", seed=2).apply(f, d); b = D.DanceFX("bloom-rush", seed=2).apply(f, d)
+    assert np.array_equal(a, b)
+    for name in ("warm-leak", "cool-echo", "noir-glow"):
+        assert "wash" not in D.PRESETS[name] and "bleed" not in D.PRESETS[name]
