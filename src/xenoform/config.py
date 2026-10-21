@@ -160,3 +160,9 @@ def resolve_path(path: str | Path, cfg: dict | None = None) -> Path:
             return parent
     cwd = Path.cwd() / raw
     return cwd
+
+
+# demo_house: the contest demo's look/mix is the default profile (see demo_house.py; config/defaults_demo.json mirrors it)
+from xenoform.demo_house import DEMO_HOUSE as _DEMO_HOUSE  # noqa: E402
+DEFAULTS.setdefault("house", deepcopy(_DEMO_HOUSE))
+
