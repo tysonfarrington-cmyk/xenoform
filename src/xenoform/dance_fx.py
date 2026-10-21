@@ -45,10 +45,10 @@ PRESETS: dict[str, dict] = {
                       "wash_a": (40, 210, 255), "wash_b": (190, 90, 255)},
     # electric-blue flashes on the beat over bloom-rush, negative pulse only on big hits, slow diagonal light sweep,
     # depth bloom on the bass, a rhythmic exposure breath, and an in-shape blue morph (same subject, crystal-blue variant)
-    "cyan-flash": {"grade": 0.8, "halation": 1.0, "echo": 1.0, "edge_tint": 0.5, "light_leak": 0.7, "glass": 0.0,
-                   "wash": 0.45, "bleed": 0.6, "echo_decay": 0.82, "flash": 1.0, "sweep": 0.6, "depth_bloom": 0.7,
-                   "breath": 0.5, "invert_hits": 0.85, "blue_morph": 0.0,
-                   "shadow": (0.90, 0.98, 1.12), "high": (1.0, 1.02, 1.06), "edge": (90, 200, 255),
+    "cyan-flash": {"grade": 1.0, "halation": 0.55, "echo": 0.9, "edge_tint": 0.45, "light_leak": 0.35, "glass": 0.0,
+                   "wash": 0.18, "bleed": 0.5, "echo_decay": 0.80, "flash": 0.55, "sweep": 0.35, "depth_bloom": 0.22,
+                   "breath": 0.3, "invert_hits": 0.7, "blue_morph": 0.0,
+                   "shadow": (0.55, 0.68, 0.90), "high": (1.0, 1.02, 1.06), "edge": (90, 200, 255),
                    "wash_a": (30, 200, 255), "wash_b": (90, 110, 255), "flash_rgb": (70, 200, 255)},
 }
 
