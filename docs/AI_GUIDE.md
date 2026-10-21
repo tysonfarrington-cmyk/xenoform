@@ -57,3 +57,5 @@ Every render (desk, MCP, CLI) first passes through `configs/guardrails.json`, wh
 - **No repeated stills in morphs:** when a vibe's still pool would wrap, the morph path uses fewer, longer morphs and says so.
 - **High-res first:** the auto-editor orders sources sharp, then upscale, then soft, then rejected. NASA clips download from the original master.
 - **VJ stems:** separate uniforms for drums (chroma split), bass (scale and displacement), other (colour) and vocals (emission). They come from `?stems=<stem_react JSON>` or an in-browser band split.
+
+- Dance FX (`xenoform.dance_fx`): subject-safe, stem-reactive in-scene passes for character shots: stem-driven split-tone grade, highlight halation / light bleed, light frame echo trail, edge tint (no offset), beat light leak, static glass texture, soft fades. Presets warm-leak / cool-echo / noir-glow. Colour and light only: never warp, displace, scale or offset a dancer.
