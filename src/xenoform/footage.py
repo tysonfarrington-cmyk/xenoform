@@ -23,10 +23,12 @@ import shutil
 import subprocess
 import urllib.parse
 import urllib.request
+import logging
 from pathlib import Path
 from typing import Iterable
 
 ROOT = Path(__file__).resolve().parents[2]
+log = logging.getLogger("xenoform.footage")
 MANIFEST = ROOT / "assets" / "library" / "manifest.json"
 VIDEO_EXT = {".mp4", ".mov", ".m4v", ".webm", ".mkv", ".avi"}
 IMAGE_EXT = {".png", ".jpg", ".jpeg", ".webp", ".bmp"}
@@ -111,6 +113,48 @@ def fetch_item(item: dict, root: Path = ROOT, *, force: bool = False) -> Path:
             "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(dest)]
     subprocess.run(cmd, check=True)
     return dest
+
+
+def missing_seeds(root: Path = ROOT, data: dict | None = None) -> list[dict]:
+    """Redistributable video seeds (NASA, public domain) that are not on disk yet.
+
+    The clips are not committed (32 MB of mp4 kept the repo heavy); they are
+    re-created from their NASA ids on the first run or by ``scripts/fetch_library.py``.
+    """
+    data = data or load_manifest()
+    return [it for it in data["items"] if it.get("redistribute") and it["kind"] == "video"
+            and not local_path(it, root).is_file()]
+
+
+def fetch_seeds(root: Path = ROOT, *, background: bool = True) -> list[dict]:
+    """Fetch every missing seed clip; in the background by default so the desk opens at once.
+
+    Returns the list that was missing when called. ``XENO_OFFLINE=1`` skips the fetch.
+    """
+    import os
+    import threading
+
+    try:
+        missing = missing_seeds(root)
+    except (OSError, ValueError) as exc:
+        log.warning("library manifest unreadable: %s", exc)
+        return []
+    if not missing or os.environ.get("XENO_OFFLINE", "").strip() in {"1", "true", "yes"}:
+        return missing
+
+    def work() -> None:
+        for it in missing:
+            try:
+                fetch_item(it, root)
+                log.info("library seed fetched: %s", it["id"])
+            except Exception as exc:  # one dead link must not stop the rest
+                log.warning("library seed %s not fetched (%s); run scripts/fetch_library.py later", it["id"], exc)
+
+    if background:
+        threading.Thread(target=work, name="xeno-seeds", daemon=True).start()
+    else:
+        work()
+    return missing
 
 
 # ------------------------------------------------------------------ your footage

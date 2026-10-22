@@ -70,7 +70,8 @@ def test_dense_plan_without_beats_still_plans():
 def test_options_default_to_flow_draft_wide_and_open_weights():
     opt = dense.options({})
     assert opt == {"energy": "flow", "aspect": "16:9", "tier": "draft", "fx": True, "overlay": False,
-                   "end_card": False, "recipe": "", "vertical": "crop", "morph_count": "auto"}
+                   "end_card": False, "recipe": "", "vertical": "crop", "morph_count": "auto",
+                   "dance_fx": "auto", "stem_orbit": True}
     assert not dense.wants_finishing({})
     assert dense.wants_finishing({"energy_preset": "dense"})
     assert dense.wants_finishing({"aspect": "9:16"})
@@ -130,8 +131,10 @@ def test_dense_mock_run_writes_a_vertical_fx_cut_with_an_end_card(tmp_path):
     out = tmp_path / "xenoform.mp4"
     stages = []
     info = dense.run_simple(directed, DEMO, out, tmp_path, {}, {"vibe": "black", "energy_preset": "dense", "aspect": "9:16",
-                            "end_card": True, "simple_recipe": "xf1.test"}, lambda *a: stages.append(a), engine="mock")
+                            "end_card": True, "simple_recipe": "xf1.test", "dance_fx": "off", "stem_orbit": False},
+                            lambda *a: stages.append(a), engine="mock")
     assert out.is_file() and info["render"] == "432x768" and info["open_weights"]
+    assert info["look"]["dance_fx"] == "off" and info["fps"] == 24 and info["house"] == "demo_house"
     assert info["energy"] == "dense" and len(info["shots"]) >= 6
     assert info["frames"] == round(FEATURES["duration"] * 24)
     probe = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v", "-show_entries", "stream=width,height",
@@ -147,12 +150,48 @@ def test_final_9x16_mock_run_is_native_portrait(tmp_path):
     directed = {"duration": FEATURES["duration"], "beats": FEATURES["beats"]}
     out = tmp_path / "xenoform.mp4"
     info = dense.run_simple(directed, DEMO, out, tmp_path, {}, {"vibe": "black", "energy_preset": "dense", "aspect": "9:16",
-                            "quality_tier": "final"}, lambda *a: None, engine="mock")
+                            "quality_tier": "final", "dance_fx": "off", "stem_orbit": False}, lambda *a: None, engine="mock")
     assert info["vertical"] == "native" and info["render"] == "1080x1920"
     probe = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v", "-show_entries", "stream=width,height",
                             "-of", "csv=p=0", str(out)], capture_output=True, text=True).stdout.strip()
     assert probe == "1080,1920"
     assert any((tmp_path / "simple" / "portrait").glob("*_720x1280.png"))
     crop = dense.run_simple(directed, DEMO, tmp_path / "crop.mp4", tmp_path / "c", {}, {"vibe": "black", "aspect": "9:16",
-                            "quality_tier": "final", "vertical_mode": "crop"}, lambda *a: None, engine="mock")
+                            "quality_tier": "final", "vertical_mode": "crop", "dance_fx": "off", "stem_orbit": False},
+                            lambda *a: None, engine="mock")
     assert crop["vertical"] == "crop" and crop["render"] == "432x768"  # the mock composes at Draft size
+
+
+def test_run_simple_hands_the_house_look_to_compose(tmp_path, monkeypatch):
+    """The Simple payload keys (dance_fx / stem_orbit / macros / stems_path) and the house format reach compose."""
+    seen = {}
+
+    def fake_compose(clips, shots, audio, out, **kw):
+        seen.update(kw)
+        Path(out).write_bytes(b"mp4")
+        return {"frames": 24, "seconds": 1.0, "size": "1080x1920", "aspect": kw["aspect"], "fx": True, "overlay": False,
+                "centres": [], "fps": kw.get("fps"), "look": {"dance_fx": kw.get("dance_fx"), "frames": 24, "seconds": 0.5}}
+
+    monkeypatch.setattr(dense, "stills_for", lambda state, n: ("black", [{"path": "a.png", "file": "a.png"}] * n))
+    monkeypatch.setattr(dense, "shots_for", lambda state, directed, audio: ([{"start": 0.0, "end": 1.0, "seconds": 1.0, "frames": 24,
+                                                                            "render_s": 2, "speed": 2.0, "effects": []}], {"name": "t", "shots": []}))
+    import xenoform.cloud_morph as cm
+    monkeypatch.setattr(cm, "_mock_clips", lambda shots, stills, work, w, h: [tmp_path / "m.mp4"])
+    monkeypatch.setattr(beatfx, "compose", fake_compose)
+    monkeypatch.setattr("xenoform.portrait.black_stills", lambda stills, work: stills)
+    monkeypatch.setattr("xenoform.portrait.portrait_stills", lambda stills, work, background=None: stills)
+    stems = tmp_path / "stems.json"
+    stems.write_text(json.dumps({"fps": 24, "drums": [1.0] * 24, "bass": [0.5] * 24, "other": [0.2] * 24, "vocals": [0.0] * 24,
+                                 "drum_strong": [0.0], "engine": "demucs:htdemucs", "stems": ["drums", "bass", "other", "vocals"]}))
+    state = {"vibe": "black", "aspect": "9:16", "quality_tier": "final", "dance_fx": "noir-glow", "stem_orbit": False,
+             "macros": {"speed": 0.9, "glow": 0.8, "chaos": 1.0, "stems": {"drums": 0.3}}, "stems_path": str(stems), "end_card": True}
+    info = dense.run_simple({"duration": 1.0, "beats": [0.0, 0.5]}, DEMO, tmp_path / "x.mp4", tmp_path, {}, state, lambda *a: None, engine="mock")
+    assert seen["dance_fx"] == "noir-glow" and seen["stem_orbit"] is False and seen["fps"] == 24 and seen["end_card"] is True
+    assert seen["stem_env"]["engine"] == "demucs:htdemucs" and seen["macros"]["stems"] == {"drums": 0.3} and seen["macros"]["speed"] == 0.9
+    assert seen["size"] == (1080, 1920) and seen["house"]["name"] == "demo_house"
+    assert info["look"]["dance_fx"] == "noir-glow" and info["stems_path"] == str(stems) and info["macros"]["glow"] == 0.8
+    assert "wobble" not in info["shots"][0]  # the house look (9:16) keeps character wobble off even at chaos 1.0
+    seen.clear()
+    dense.run_simple({"duration": 1.0, "beats": [0.0]}, DEMO, tmp_path / "y.mp4", tmp_path / "y", {}, {"vibe": "black", "aspect": "16:9"},
+                     lambda *a: None, engine="mock")
+    assert seen["dance_fx"] == "house" and seen["stem_orbit"] is True and seen["stem_env"] is None and seen["size"] is None

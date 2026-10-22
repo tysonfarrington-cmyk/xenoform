@@ -64,9 +64,24 @@ def demucs_available(python: str | None = None) -> bool:
         return False
 
 
+ENGINES = ("auto", "demucs", "bands")  # "bands" is the librosa HPSS/band fallback ("librosa" is accepted as an alias)
+
+
+def engines_available(python: str | None = None) -> dict[str, bool]:
+    """Which separation engines this machine can run right now."""
+    return {"demucs": demucs_available(python), "bands": True}
+
+
 def split(track: str | Path, out_dir: str | Path, *, model: str = "htdemucs", device: str = "cpu",
           python: str | None = None, engine: str = "auto") -> dict[str, str]:
-    """Separate ``track`` into stems. Returns {stem: wav path, "engine": ...}."""
+    """Separate ``track`` into stems. Returns {stem: wav path, "engine": ...}.
+
+    ``engine``: "auto" (Demucs when installed, else the band split), "demucs" (error if missing),
+    or "bands"/"librosa" (the dependency-free fallback; reported as ``engine="librosa"``)."""
+    if engine == "librosa":
+        engine = "bands"
+    if engine not in ENGINES:
+        raise ValueError(f"unknown stem engine {engine!r}; use one of {', '.join(ENGINES)}")
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     py = python or sys.executable
@@ -138,11 +153,12 @@ def envelopes(stems: dict[str, str], *, fps: int = 24, sr: int = 22050) -> dict:
         out[s] = [round(float(x), 4) for x in curves[s][:n]]
     out["stems"] = names
     out["roles"] = {s: role(s) for s in names}
-    for r in STEMS:  # role curves, unless a stem already carries that exact name
-        if r not in curves:
-            mem = [curves[s][:n] for s in names if role(s) == r]
-            if mem:
-                out[r] = [round(float(x), 4) for x in np.max(mem, axis=0)]
+    for r in STEMS:  # role curves: the max over every stem mapped to that role (a stem literally named
+        # "other"/"drums"/... is one member among the rest, so guitar/piano still drive "other").
+        # Matches role_levels() with all gains at 1.0.
+        mem = [curves[s][:n] for s in names if role(s) == r]
+        if mem:
+            out[r] = [round(float(x), 4) for x in np.max(mem, axis=0)]
     out["frames"] = n
     return out
 

@@ -1,96 +1,74 @@
-# Picture credits
+# Credits
 
-Checked on 18 October 2026. The check was the file itself, the commit that added it, and a search of this repository for a Wikimedia Commons page, a NASA page, an author, or a licence sidecar.
+Checked on 22 October 2026 against the files, the commit that added each one, `src/xenoform/ui_static/objects/objects.json` (which records a source per still), `configs/clip_pack.json`, `scripts/vibe_objects/README.md`, `assets/library/manifest.json` and `configs/moves.json`. Where the repo holds no record of how a file was made, the row says **origin unrecorded**. That is not permission and it was not filled in from a guess.
 
-No JPEG has an EXIF, XMP, or IPTC block. The only JPEG comment is `Lavc60.31.102`, which is the ffmpeg that wrote the file. No clip has a title or artist metadata. No commit message names a photographer, a Commons file, or a NASA image. No sidecar sits next to the files.
+No picture or clip in this repo is a CC BY work that needs a credit line, so none is stated.
 
-**No CC BY credit is stated below.** A row marked TODO has no verified author and no verified licence. Do not treat TODO as permission, and do not fill it in from a guess.
+## Vibe stills (`src/xenoform/ui_static/objects/<vibe>/`)
 
-## Vibe stills
-
-| File | What was found | Credit |
+| Vibes | How they were made | Credit |
 | --- | --- | --- |
-| `src/xenoform/ui_static/vibes/liquid-gold.jpg` | JPEG comment `Lavc60.31.102` only. Added in `cfd1623`. | TODO |
-| `src/xenoform/ui_static/vibes/paper-summer.jpg` | JPEG comment `Lavc60.31.102` only. Added in `cfd1623`. | TODO |
-| `src/xenoform/ui_static/vibes/bloom.jpg` | JPEG comment `Lavc60.31.102` only. Added in `cfd1623`. | TODO |
-| `src/xenoform/ui_static/vibes/neon-night.jpg` | JPEG comment `Lavc60.31.102` only. Added in `cfd1623`. | TODO |
-| `src/xenoform/ui_static/vibes/ocean.jpg` | JPEG comment `Lavc60.31.102` only. Added in `cfd1623`. | TODO |
-| `src/xenoform/ui_static/vibes/cosmic.jpg` | JPEG comment `Lavc60.31.102` only. Added in `cfd1623`. | TODO |
+| The 20 extended vibes: chrome-mercury, ferrofluid, y2k-chrome, low-poly, odd-machine, brutalist, porcelain-marble, lava-obsidian, ice-crystal, origami-noir, neon-noir, porcelain-kintsugi, bioluminescent, risograph, iridescent-glass, ink-wash, cyberspace-95, wet-paint, shadow-self, botanical (12 stills each) | Generated locally by the author with Z-Image Turbo (Apache 2.0) through comfy-sdk and comfy-api-proxy: `scripts/vibe_objects/gen_extended.py`, prompts in `extended_prompts.json` and `featured_prompts.json`. `objects.json` names the script and model for every still. | Author's own output. |
+| paper-summer (12 stills) | Z-Image Turbo, seeds 2000 to 2011, 1024x576, close framing: `scripts/vibe_objects/zimage_batch.py` with `paper_prompts2.json` (`scripts/vibe_objects/README.md`). | Author's own output. |
+| liquid-gold, bloom, neon-night, ocean, cosmic (12 each) and black (17) | Regraded or cut out from the author's local `library/gpu_objects/` stills (liquid mercury, chrome, iridescent glass, oil-slick, black glass objects) with `scripts/vibe_objects/grade.py`. `objects.json` names the source file of every still. The source stills are not in the repo, and the repo holds no record of the model or seeds that made them. | Author's own regrades; source stills origin unrecorded. |
 
-## Library stills
+## Picker thumbnails (`src/xenoform/ui_static/vibes/<vibe>.jpg`)
 
-Each frame is a JPEG with the same `Lavc60.31.102` comment and nothing else. Added in `3b2d436`.
+| Files | Credit |
+| --- | --- |
+| The 20 extended vibes and `black.jpg` | Written by the same local Z-Image Turbo and LTX-Video 0.9.5 runs as the stills and clip packs above (commits `9c50818`, `43c626b` and later). Author's own output. |
+| `liquid-gold.jpg`, `paper-summer.jpg`, `bloom.jpg`, `neon-night.jpg`, `ocean.jpg`, `cosmic.jpg` | JPEG comment `Lavc60.31.102` (ffmpeg) only. They arrived in the first snapshot commit (`68790ba`) with no generation script or seed in the repo. Origin unrecorded. |
+
+## Default clip packs (`src/xenoform/ui_static/library/<vibe>/{wide,medium,close,reveal}.{mp4,jpg}`)
+
+| Files | Credit |
+| --- | --- |
+| The 20 extended vibes | Cut by `scripts/vibe_objects/make_library.py` from one hand-checked orb to nautilus morph rendered locally with LTX-Video 0.9.5 (Lightricks Open RAIL-M) from the vibe's own Z-Image Turbo stills. `configs/clip_pack.json` records each clip's autotune score and QA note: "All files are generated locally with open weights (Z-Image Turbo stills, LTX-Video 0.9.5 morphs)". Author's own output. |
+| liquid-gold, paper-summer, bloom, neon-night, ocean, cosmic, and the four root files `library/{wide,medium,close,reveal}.mp4` (byte-identical to the neon-night clips) | x264 encoder string only, no title or artist. They arrived in the first snapshot commit (`68790ba`) with no generation script or seed in the repo. `bloom/wide.mp4` is byte-identical to `ocean/close.mp4`. Origin unrecorded. |
+
+## Showcase reel and poster
 
 | File | Credit |
 | --- | --- |
-| `src/xenoform/ui_static/library/liquid-gold/wide.jpg` | TODO |
-| `src/xenoform/ui_static/library/liquid-gold/medium.jpg` | TODO |
-| `src/xenoform/ui_static/library/liquid-gold/close.jpg` | TODO |
-| `src/xenoform/ui_static/library/liquid-gold/reveal.jpg` | TODO |
-| `src/xenoform/ui_static/library/paper-summer/wide.jpg` | TODO |
-| `src/xenoform/ui_static/library/paper-summer/medium.jpg` | TODO |
-| `src/xenoform/ui_static/library/paper-summer/close.jpg` | TODO |
-| `src/xenoform/ui_static/library/paper-summer/reveal.jpg` | TODO |
-| `src/xenoform/ui_static/library/bloom/wide.jpg` | TODO |
-| `src/xenoform/ui_static/library/bloom/medium.jpg` | TODO |
-| `src/xenoform/ui_static/library/bloom/close.jpg` | TODO |
-| `src/xenoform/ui_static/library/bloom/reveal.jpg` | TODO |
-| `src/xenoform/ui_static/library/neon-night/wide.jpg` | TODO |
-| `src/xenoform/ui_static/library/neon-night/medium.jpg` | TODO |
-| `src/xenoform/ui_static/library/neon-night/close.jpg` | TODO |
-| `src/xenoform/ui_static/library/neon-night/reveal.jpg` | TODO |
-| `src/xenoform/ui_static/library/ocean/wide.jpg` | TODO |
-| `src/xenoform/ui_static/library/ocean/medium.jpg` | TODO |
-| `src/xenoform/ui_static/library/ocean/close.jpg` | TODO |
-| `src/xenoform/ui_static/library/ocean/reveal.jpg` | TODO |
-| `src/xenoform/ui_static/library/cosmic/wide.jpg` | TODO |
-| `src/xenoform/ui_static/library/cosmic/medium.jpg` | TODO |
-| `src/xenoform/ui_static/library/cosmic/close.jpg` | TODO |
-| `src/xenoform/ui_static/library/cosmic/reveal.jpg` | TODO |
+| `src/xenoform/ui_static/showcase/showcase.mp4`, `.jpg`, `.json` | Built by `scripts/build_showcase.py` from finished local LTX morph clips cut to the bars of `examples/demo.wav`. Author's own output. |
+| `src/xenoform/ui_static/poster.jpg` | JPEG comment `Lavc60.31.102` only; first snapshot commit. Origin unrecorded. |
 
-## Library clips
+## NASA library (`assets/library/manifest.json`)
 
-Each mp4 carries an x264 encoder string and no title or artist. The four clips the judges page plays are byte-identical to the Neon night clips. `library/bloom/wide.mp4` is byte-identical to `library/ocean/close.mp4`. That is a copy, not a source.
+Public domain. NASA media are generally not subject to copyright in the United States. No NASA endorsement is implied and no NASA insignia is used (https://www.nasa.gov/nasa-brand-center/images-and-media/). The anchor stills are committed; the clips are fetched on first run and by `scripts/fetch_library.py`.
+
+| Item | Source |
+| --- | --- |
+| SDO: arching eruption off the solar limb (clip) | https://images.nasa.gov/details/GSFC_20150630_SDO_m11908_ArchingEruption |
+| SDO: X1.6 flare in 131 Å (clip) | https://images.nasa.gov/details/GSFC_20141024_SDO_m11718_Flares |
+| ISS: Earth at night, city lights and lightning (clip) | https://images.nasa.gov/details/GSFC_20181022_ICON_m12902_Airglow |
+| ISS: Soyuz relocation time-lapse over Earth (clip) | https://images.nasa.gov/details/jsc2021m000100_Expedition_64_Soyuz_MS17_Relocation_Timelapse_210319 |
+| Jupiter, Cassini true colour (anchor still), NASA/JPL/University of Arizona | https://images.nasa.gov/details/PIA02873 |
+| Saturn, Cassini natural colour mosaic (anchor still), NASA/JPL/Space Science Institute | https://images.nasa.gov/details/PIA06193 |
+| Earth, Blue Marble, Suomi NPP (anchor still) | https://images.nasa.gov/details/PIA18033 |
+| Moon, Galileo (anchor still), NASA/JPL | https://images.nasa.gov/details/PIA00405 |
+| Mars, Viking 1 mosaic (anchor still), NASA/JPL/USGS | https://images.nasa.gov/details/PIA00407 |
+
+## Moves driving clips (`configs/moves.json`)
+
+Fifteen dance clips, ten from Pexels and five from Mixkit, used only as motion sources for Wan Animate 2; the dancer's face never appears in the output. Their licences allow free use but forbid redistributing the unaltered files, so the mp4s are not shipped. `python scripts/fetch_moves.py` downloads them into `library/moves/` (git-ignored). Every clip's title, author, source URL, licence and attribution line is in `configs/moves.json`.
+
+## Fonts
+
+Both families are under the SIL Open Font License 1.1; the copyright lines and licence text are in `src/xenoform/ui_static/fonts/OFL.txt`.
+
+| Font | Copyright |
+| --- | --- |
+| Space Grotesk | Copyright 2020 The Space Grotesk Project Authors |
+| Share Tech Mono | Copyright (c) 2012, Carrois Type Design, Ralph du Carrois, with Reserved Font Name 'Share' |
+
+## Sound
 
 | File | Credit |
 | --- | --- |
-| `src/xenoform/ui_static/library/wide.mp4` | TODO. Same bytes as `library/neon-night/wide.mp4`. |
-| `src/xenoform/ui_static/library/medium.mp4` | TODO. Same bytes as `library/neon-night/medium.mp4`. |
-| `src/xenoform/ui_static/library/close.mp4` | TODO. Same bytes as `library/neon-night/close.mp4`. |
-| `src/xenoform/ui_static/library/reveal.mp4` | TODO. Same bytes as `library/neon-night/reveal.mp4`. |
-| `src/xenoform/ui_static/library/liquid-gold/wide.mp4` | TODO |
-| `src/xenoform/ui_static/library/liquid-gold/medium.mp4` | TODO |
-| `src/xenoform/ui_static/library/liquid-gold/close.mp4` | TODO |
-| `src/xenoform/ui_static/library/liquid-gold/reveal.mp4` | TODO |
-| `src/xenoform/ui_static/library/paper-summer/wide.mp4` | TODO |
-| `src/xenoform/ui_static/library/paper-summer/medium.mp4` | TODO |
-| `src/xenoform/ui_static/library/paper-summer/close.mp4` | TODO |
-| `src/xenoform/ui_static/library/paper-summer/reveal.mp4` | TODO |
-| `src/xenoform/ui_static/library/bloom/wide.mp4` | TODO. Same bytes as `library/ocean/close.mp4`. |
-| `src/xenoform/ui_static/library/bloom/medium.mp4` | TODO |
-| `src/xenoform/ui_static/library/bloom/close.mp4` | TODO |
-| `src/xenoform/ui_static/library/bloom/reveal.mp4` | TODO |
-| `src/xenoform/ui_static/library/neon-night/wide.mp4` | TODO |
-| `src/xenoform/ui_static/library/neon-night/medium.mp4` | TODO |
-| `src/xenoform/ui_static/library/neon-night/close.mp4` | TODO |
-| `src/xenoform/ui_static/library/neon-night/reveal.mp4` | TODO |
-| `src/xenoform/ui_static/library/ocean/wide.mp4` | TODO |
-| `src/xenoform/ui_static/library/ocean/medium.mp4` | TODO |
-| `src/xenoform/ui_static/library/ocean/close.mp4` | TODO. Same bytes as `library/bloom/wide.mp4`. |
-| `src/xenoform/ui_static/library/ocean/reveal.mp4` | TODO |
-| `src/xenoform/ui_static/library/cosmic/wide.mp4` | TODO |
-| `src/xenoform/ui_static/library/cosmic/medium.mp4` | TODO |
-| `src/xenoform/ui_static/library/cosmic/close.mp4` | TODO |
-| `src/xenoform/ui_static/library/cosmic/reveal.mp4` | TODO |
+| `examples/demo.wav` | Synthesised by `xenoform synth` in this repository. No third-party recording. |
+| "Morph Engine v2" (the song in the contest demo video) | Made by the author on Suno Pro on 20 October 2026, inside the Pro billing period, so the author owns it with commercial-use rights under Suno's terms. Not shipped. |
 
-## Other pictures
+## Models
 
-| File | What was found | Credit |
-| --- | --- | --- |
-| `src/xenoform/ui_static/poster.jpg` | JPEG comment `Lavc60.31.102` only. | TODO |
-
-## Sound that is accounted for
-
-| File | Credit |
-| --- | --- |
-| `examples/demo.wav` | Synthesized by `xenoform synth` in this repository. No third-party recording, and not a CC BY track. |
+Model licences (LTX-Video 0.9.5, LTX-2.3, Z-Image Turbo, Wan Animate 2, Real-ESRGAN, FLUX.2 Klein, ACE-Step) are in [docs/LICENCES.md](docs/LICENCES.md).

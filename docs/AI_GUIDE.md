@@ -58,4 +58,34 @@ Every render (desk, MCP, CLI) first passes through `configs/guardrails.json`, wh
 - **High-res first:** the auto-editor orders sources sharp, then upscale, then soft, then rejected. NASA clips download from the original master.
 - **VJ stems:** separate uniforms for drums (chroma split), bass (scale and displacement), other (colour) and vocals (emission). They come from `?stems=<stem_react JSON>` or an in-browser band split.
 
-- Dance FX (`xenoform.dance_fx`): subject-safe, stem-reactive in-scene passes for character shots: stem-driven split-tone grade, highlight halation / light bleed, light frame echo trail, edge tint (no offset), beat light leak, static glass texture, soft fades. Presets warm-leak / cool-echo / noir-glow. Colour and light only: never warp, displace, scale or offset a dancer.
+- Dance FX (`xenoform.dance_fx`): subject-safe, stem-reactive in-scene passes for character shots: stem-driven split-tone grade, highlight halation / light bleed, light frame echo trail, edge tint (no offset), beat light leak, static glass texture, soft fades. Colour and light only: never warp, displace, scale or offset a dancer. Presets are listed under **The house look** below.
+
+## The house look (demo_house)
+
+`xenoform.demo_house.DEMO_HOUSE` is the contest demo's profile, merged into `config.load_config()["house"]` and read through `config.house(section)`. Every look module falls back to it when an argument is `None`: `dance_fx.DanceFX(preset=None, intensity=None, role=...)` and `dance_fx.render_shot(..., fps=None)`, `transitions_fx.apply(intensity=None)` / `guard` / `plan` / `recommend` (`cap`, `allowed`, `banned`, `classic`), `stem_orbit.plan/apply/render_shot` (`fps`, `focal`, every `DEFAULTS` key). The profile: 9:16 native 1080x1920 at 24 fps, black morph stills, no shimmer, no character wobble, 15 morph forms, transitions allowed `flow-morph` / `echo-trail` / `lens-breath` (banned: wipe, iris, stutter, kaleidoscope, mid-morph-stutter; at most 2 of a type; at most 3 shots in the first 15 s), -14 LUFS / -2 dBTP, 120 s cap.
+
+**dance_fx presets** (all colour and light only; `list_looks` returns these notes):
+| preset | look |
+|---|---|
+| warm-leak | warm split-tone grade, film halation on the bass, corner light leak on the beat; no echo |
+| cool-echo | cool blue grade, light ghost trail on 'other', cyan edge tint on the drums, frosted glass (the house VJ look) |
+| noir-glow | high-contrast noir grade, violet edges, moderate halation and leak, a touch of glass |
+| bloom-rush | hero / flower preset: long trails, heavy bloom, cyan-magenta gradient wash and chroma bleed |
+| negative-rush | bloom-rush plus a stem-driven negative: luma flips on the bass/beat, hue kept, eased |
+| cyan-flash | electric-blue beat flashes, negative pulse on big hits, slow light sweep, depth bloom, exposure breath |
+
+House roles (`DEMO_HOUSE["dance_fx"]`): intro = cyan-flash 1.25, vj = cool-echo 1.4, flower = bloom-rush 1.5, into_card = negative-rush 1.2 with `invert_floor_ramp_frames` 14 (the last 14 frames ramp to a full negative so the shot lands inverted on the end card). In a Simple render the first shot is `intro`, the last shot `into_card` when the end card is on, every other shot `vj`.
+
+**stem_orbit** (`xenoform.stem_orbit`): a rigid camera orbit of the subject (yaw from the bass, eased kicks from strong drum hits, a little pitch from 'other'), spring-damped, no warp. Parameters are the house `stem_orbit` block (max_yaw 28, max_pitch 4, max_roll 1.5, bass 1.0, drums 0.7, other 0.4, spin 0, stiffness 6, focal 1.6). It needs OpenCV on the desk; without it the frames pass through and the job's `look.notes` say so.
+
+**Stems:** a render uses the job's split stems when `state["stems_path"]` points at a `stem_react.envelopes` JSON (`POST /api/stems` writes `work/ui/stems/<hash>/stems.json`); otherwise a 4-role envelope is derived from the mix (kick flux -> bass, transient flux -> drums, loudness -> other) with the beat grid as drum hits. Up to **32 named stems** are accepted (`stem_react.MAX_STEMS`); `macros.stems {name: gain 0..1}` weights each stem before it feeds its role (drums / bass / other / vocals).
+
+**/api/generate payload keys** for the look (Simple mode, read by `dense.options` / `dense.macros`):
+- `dance_fx`: `"auto"` (default: the vibe's `fx_defaults.dance_fx` from configs/vibes.json when set, else the house role presets) | `"off"` | a preset name.
+- `stem_orbit`: `true` (default) | `false`.
+- `macros`: `{"intensity": 0..1, "speed": 0..1, "chaos": 0..1, "glow": 0..1, "stems": {"<stem>": 0..1}}` (0.5 / 0.5 / 0.3 / 0.4 neutral). `intensity` scales the beat FX, `chaos` above 0.5 adds wobble (never in the 9:16 house look), `speed` biases the auto morph count (x0.6 .. x1.4) and shortens dance_fx echo trails, `glow` scales halation / depth bloom and the beat-FX bloom, `stems` are the per-stem gains.
+- `stems_path`: the job's `stems.json` (optional; set by the desk when the song was split).
+- `look_profile`: `"demo_house"` (the only profile today).
+The finished job's `simple.json` carries `look` (preset per shot, stem_orbit on/off, seconds spent, notes), `fps`, `macros` and `stems_path`.
+
+**MCP tools for the look:** `set_look(project_id="", profile="demo_house", dance_fx="auto"|preset|"off", stem_orbit=bool, macros={...})` writes those keys into the project that `start_render` sends; `list_looks()` returns the presets with notes, the house summary, the stem_orbit parameters and the 32-stem cap; `review_render(job_id)` runs `media_qa.run_file` on the finished file (loudness vs the house target, clicks, black / freeze, static shots, opening cuts, duration, transition rules) and keeps the report; `get_qa(job_id)` returns that report with the desk's own post-render QA.

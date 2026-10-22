@@ -51,3 +51,34 @@ def test_ui_lanes_are_dynamic():
     assert "XENO_SET_STEMS" in js and "MAX_STEMS=32" in js and "xf-many" in js
     vj = (Path(S.__file__).parent / "ui_static" / "vj.html").read_text(encoding="utf-8")
     assert "STEMS.stems" in vj
+
+
+def test_role_curve_without_gains_equals_all_gains_at_one_with_six_demucs_stems():
+    """Demucs 6-stem names: guitar and piano are 'other' members, so the precomputed 'other' curve (no gains)
+    must equal role_levels with every gain at 1.0, and sit above the guitar curve."""
+    names = ["drums", "bass", "other", "vocals", "guitar", "piano"]
+    curves = {"drums": [0.2, 0.3], "bass": [0.1, 0.1], "other": [0.1, 0.2], "vocals": [0.0, 0.0],
+              "guitar": [0.9, 0.4], "piano": [0.3, 0.8]}
+    env = {"fps": 24, "frames": 2, "stems": names, "roles": {s: S.role(s) for s in names}, **curves}
+    for r in S.STEMS:  # the envelopes() role loop
+        mem = [np.asarray(curves[s]) for s in names if S.role(s) == r]
+        env[r] = np.max(mem, axis=0).tolist()
+    for t in (0.0, 1 / 24):
+        assert S.role_levels(env, t, None) == S.role_levels(env, t, {s: 1.0 for s in names})
+        assert S.role_levels(env, t, None)["other"] >= S.at(env, t, "guitar")
+    assert env["other"] == [0.9, 0.8]
+
+
+def test_stems_on_demand_api_and_state_key(tmp_path, monkeypatch):
+    """The desk splits only when asked (POST /api/stems); stems_path_for() is what state["stems_path"] carries."""
+    from xenoform import stems_api
+    monkeypatch.setattr(stems_api, "stems_root", lambda: tmp_path / "stems")
+    wav = _wav(tmp_path / "s.wav", 110, sec=1.5)
+    assert stems_api.stems_path_for(wav) is None
+    p = stems_api.stems_path_for(wav, build=True, engine="bands")
+    env = json.loads(p.read_text(encoding="utf-8"))
+    assert p.name == "stems.json" and env["stems"] == list(S.STEMS) and env["engine"] == "librosa" and S.stem_names(env)
+    assert stems_api.stems_path_for(wav) == p  # cached by song hash
+    from pathlib import Path
+    js = (Path(S.__file__).parent / "ui_static" / "ui_v6.js").read_text(encoding="utf-8")
+    assert "XENO_MACRO_SET" in js and "/api/stems" in js and "stems_id" in js

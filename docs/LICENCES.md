@@ -40,6 +40,8 @@ Picture credits, including every unverified still and clip, are in [CREDITS.md](
 | LTX-2.3 spatial upscaler x2 1.1 | `latent_upscale_models/ltx-2.3-spatial-upscaler-x2-1.1.safetensors` | Licence not checked in this audit. Ships with LTX-2.3; used by the Final tier. |
 | Gemma 3 12B text encoder (fp4) | `text_encoders/gemma_3_12B_it_fp4_mixed.safetensors` | Licence not checked in this audit. Used by LTX-2.3. |
 | Wan 2.2 TI2V 5B | Optional diffusion, VAE, and text encoder | Licence not checked in this audit. Optional. Turbo never loads it. |
+| Wan Animate 2 (Wan-AI Wan2.2-Animate-2-14B, Comfy-Org repack) | `diffusion_models/wan_animate_2_int8_convrot.safetensors`, `text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors`, `clip_vision/clip_vision_h.safetensors`, `vae/wan_2.1_vae.safetensors`; graph `workflows/moves_wan_animate2.json` | Apache 2.0, per the [Wan-AI/Wan2.2-Animate-2-14B model card](https://huggingface.co/Wan-AI/Wan2.2-Animate-2-14B) ("This project is licensed under the Apache License 2.0", weights released 7 August 2026) and the [Comfy-Org/Wan2.2-Animate-2 repack card](https://huggingface.co/Comfy-Org/Wan2.2-Animate-2) (licence field `apache-2.0`). Checked 22 October 2026. Used by Moves only; fetched by hand, not by Setup. |
+| lightx2v I2V 14B 480p cfg/step-distill LoRA, rank 64 | `loras/lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors` (the 6-step LoRA in the Moves graph) | Apache 2.0: the file ships in the Comfy-Org Wan2.2-Animate-2 repack above (licence field `apache-2.0`), and the lightx2v upstream card [Wan2.1-I2V-14B-480P-StepDistill-CfgDistill-Lightx2v](https://huggingface.co/lightx2v/Wan2.1-I2V-14B-480P-StepDistill-CfgDistill-Lightx2v) states Apache 2.0 for its distilled models. Checked 22 October 2026. |
 
 ## Fonts shipped in the desk
 
@@ -56,7 +58,9 @@ Both families are SIL Open Font License 1.1. The copyright lines and the licence
 | --- | --- |
 | `examples/demo.wav` | Synthesized by `xenoform synth`. No third-party recording. |
 | Demo video track ("Morph Engine v2") | The contest demo video and transitions reel only, not shipped | Made by the author on Suno Pro on 20 Oct 2026 (inside the Pro billing period), so the author owns it with commercial-use rights under Suno's terms. |
-| Vibe stills and library clips | No author or licence metadata in the files. Each one is TODO in [CREDITS.md](../CREDITS.md). No CC BY credit was added. |
-| `workflows/xenoform_draft.json`, `workflows/xenoform_final.json`, `workflows/xenoform_morph.json`, `workflows/ltx_v2v_api.json`, `workflows/ltx_v2v_guide_api.json`, `workflows/ltx25_a2v_api.json`, `workflows/ltx25_multishot_api.json`, `workflows/ltx25_layout_api.json` | Part of this MIT repository. The weight files they name are not. |
+| Vibe stills and default clip packs | The 20 extended vibes and paper-summer were generated locally by the author with Z-Image Turbo (stills) and LTX-Video 0.9.5 (clips); the six original vibes' thumbnails and clips, and the regrade sources of their stills, have no generation record in the repo (origin unrecorded). Row by row in [CREDITS.md](../CREDITS.md). No CC BY credit is needed. |
+| NASA clips and anchor stills (`assets/library/manifest.json`) | Public domain, source URL per item in the manifest and in [CREDITS.md](../CREDITS.md). No NASA endorsement implied. |
+| Moves driving clips (`configs/moves.json`) | Pexels and Mixkit licences: free use, no redistribution of the unaltered files, so they are fetched by `scripts/fetch_moves.py` and not shipped. |
+| `workflows/xenoform_draft.json`, `workflows/xenoform_final.json`, `workflows/xenoform_morph.json`, `workflows/moves_wan_animate2.json`, `workflows/ltx_v2v_api.json`, `workflows/ltx_v2v_guide_api.json`, `workflows/ltx25_morph_api.json`, `workflows/ltx25_a2v_api.json`, `workflows/ltx25_multishot_api.json`, `workflows/ltx25_layout_api.json`, `workflows/ltx25_partner_flf_api.json` (paid path, off by default) | Part of this MIT repository. The weight files they name are not. |
 
 `COMFY_API_KEY` stays in the environment. It is not written into the repo.

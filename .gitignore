@@ -18,3 +18,5 @@ xenoform_*.log
 # Moves driving clips: fetched by scripts/fetch_moves.py, never committed (Pexels/Mixkit licences)
 library/moves/
 assets/library/fetched/
+# NASA seed clips are fetched on first run (footage.fetch_seeds) or by scripts/fetch_library.py
+assets/library/**/*.mp4

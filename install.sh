@@ -38,6 +38,8 @@ fi
 echo "Installing Python packages into $PACK/.venv"
 "$PACK/.venv/bin/python" -m pip install --upgrade pip
 "$PACK/.venv/bin/python" -m pip install -r "$PACK/requirements.txt"
+# The package itself (so `python -m xenoform` and the comfy-api-proxy entry point resolve), mirroring install.ps1.
+"$PACK/.venv/bin/pip" install --no-deps -e "$PACK"
 
 if [[ "$LINK" == "1" ]]; then
   COMFY="${COMFYUI_DIR:-}"
@@ -74,4 +76,4 @@ echo "Start the desk with: $PACK/.venv/bin/python -m xenoform ui --host 127.0.0.
 echo "Open http://127.0.0.1:47317"
 echo "ComfyUI stays on http://127.0.0.1:8188. The desk pings /system_stats there."
 echo "Live renders use comfy-sdk against comfy-api-proxy on http://127.0.0.1:8189."
-echo "Start it with: comfy-api-proxy --comfyui http://127.0.0.1:8188 --port 8189"
+echo "Start it with: $PACK/.venv/bin/comfy-api-proxy run --comfyui http://127.0.0.1:8188 --port 8189"

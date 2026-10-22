@@ -22,7 +22,7 @@ This is one manifest format for clips and the vibe anchor stills (`kind: image`)
   "fetch": {"nasa_id": "...", "in": 8, "out": 16}, "file": "assets/library/liquid-gold/nasa_sdo_arching_eruption.mp4"}]}
 ```
 
-- **NASA / public domain** items are preferred. They're committed as small seeds: 720px wide, 8s, muted.
+- **NASA / public domain** items are preferred. Their mp4s are not committed (32 MB); the desk fetches the missing seeds in the background on first run (`footage.fetch_seeds`, skipped with `XENO_OFFLINE=1`), and `scripts/fetch_library.py` does the same by hand. The anchor stills stay in git.
 - **Pexels/Mixkit** items must be `redistribute: false`. `scripts/fetch_library.py` downloads them into `assets/library/fetched/` (git-ignored). The validator rejects a Pexels/Mixkit item marked redistributable.
 - `python scripts/fetch_library.py [--vibe ocean] [--force]` re-pulls everything (NASA seeds at up to 1920px).
 - The desk serves `GET /api/footage?vibe=&kind=` and `/library-media/<id>`.

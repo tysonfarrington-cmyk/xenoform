@@ -414,3 +414,148 @@ def test_wait_survives_a_desk_blip_and_explains_a_lost_job(app):
     assert app.wait(job, timeout_s=5, poll_s=0.01)["status"] == "done"
     with pytest.raises(mt.XenoformError, match="restarted"):
         app.wait("gone1", timeout_s=1, poll_s=0.01)
+
+
+def test_wait_is_capped_and_reports_done_false_on_timeout(app, monkeypatch):
+    assert mt.App.WAIT_MAX_S == 120.0
+    app.create("x")
+    job = app.start()["job_id"]
+    app.desk.jobs[job]["progress"] = -100.0  # never reaches 1.0 in this test
+    import inspect
+    assert inspect.signature(app.wait).parameters["timeout_s"].default == 60.0
+    state = app.wait(job, timeout_s=0.2, poll_s=0.01)
+    assert state["done"] is False and state["status"] == "running" and "wait_for_render again" in state["detail"]
+    ticks = []
+    real_monotonic = mt.time.monotonic
+    monkeypatch.setattr(mt.time, "monotonic", lambda: (ticks.append(1), real_monotonic() + 1000 * len(ticks))[1])
+    state = app.wait(job, timeout_s=10_000, poll_s=0.01)  # asked for far more than the cap: still returns
+    assert state["done"] is False
+    app.desk.jobs[job]["progress"] = 0.5
+    monkeypatch.setattr(mt.time, "monotonic", real_monotonic)
+    fin = app.wait(job, timeout_s=5, poll_s=0.01)
+    assert fin["done"] is True and fin["status"] == "done"
+
+
+def test_progress_passes_the_qa_report_through(app):
+    app.create("x")
+    job = app.start()["job_id"]
+    assert "qa" not in app.progress(job)
+    app.desk.jobs[job]["qa"] = {"issues": ["off-beat cut at 3.2s"], "lag_fix": {"fixed": True, "method": "shift"}}
+    app.desk.jobs[job]["report"] = {"score": 0.8}
+    p = app.progress(job)
+    assert p["qa"]["issues"] == ["off-beat cut at 3.2s"] and p["report"] == {"score": 0.8}
+    fin = app.wait(job, timeout_s=5, poll_s=0.01)
+    assert fin["qa"]["lag_fix"]["fixed"] is True
+
+
+# ---------------------------------------------------------------- the house look tools (set_look / list_looks / review_render / get_qa)
+def test_set_look_writes_the_payload_keys_and_persists(app, tmp_path):
+    app.create("x")
+    b = app.body()
+    assert b["dance_fx"] == "auto" and b["look_profile"] == "demo_house" and b["macros"] == {} and "stem_orbit" not in b
+    out = app.set_look("", "demo_house", "cool-echo", True, {"speed": 0.9, "glow": 2, "chaos": "0.1", "stems": {"kick": 0.2, "Pad": 1.5}})
+    assert out["look"]["dance_fx"] == "cool-echo" and out["look"]["stem_orbit"] is True
+    assert out["look"]["macros"] == {"speed": 0.9, "glow": 1.0, "chaos": 0.1, "stems": {"kick": 0.2, "Pad": 1.0}}
+    b = app.body()
+    assert (b["dance_fx"], b["stem_orbit"], b["macros"]["stems"]["kick"]) == ("cool-echo", True, 0.2)
+    app.start()
+    sent = [c[2] for c in app.desk.calls if c[1] == "/api/generate"][-1]
+    assert sent["dance_fx"] == "cool-echo" and sent["stem_orbit"] is True and sent["macros"]["speed"] == 0.9
+    again = mt.App(FakeDesk(), state_path=tmp_path / "state.json")
+    assert again.settings()["dance_fx"] == "cool-echo" and again.settings()["macros"]["glow"] == 1.0
+    app.set_look(dance_fx="off", stem_orbit=False)
+    assert app.body()["dance_fx"] == "off" and app.body()["stem_orbit"] is False
+    assert app.set_look("current", profile=None, dance_fx=None)["look"]["dance_fx"] == "off"  # None leaves a key alone
+
+
+@pytest.mark.parametrize("kwargs", [{"dance_fx": "shimmer-wipe"}, {"profile": "vegas"}, {"macros": ["x"]}, {"macros": {"glow": "hot"}},
+                                    {"macros": {"stems": "kick"}}, {"macros": {"stems": {"k": "loud"}}}, {"project_id": "other-project"}])
+def test_set_look_rejects_bad_values(app, kwargs):
+    with pytest.raises(mt.XenoformError):
+        app.set_look(**kwargs)
+
+
+def test_set_look_caps_the_stem_count(app):
+    from xenoform.stem_react import MAX_STEMS
+
+    ok = app.set_look(macros={"stems": {f"s{i}": 0.5 for i in range(MAX_STEMS)}})
+    assert len(ok["look"]["macros"]["stems"]) == MAX_STEMS
+    with pytest.raises(mt.XenoformError, match="32"):
+        app.set_look(macros={"stems": {f"s{i}": 0.5 for i in range(MAX_STEMS + 1)}})
+
+
+def test_list_looks_has_presets_house_and_orbit(app):
+    from xenoform import dance_fx as D
+    from xenoform.demo_house import DEMO_HOUSE
+
+    looks = app.looks()
+    ids = [p["id"] for p in looks["dance_fx"]["presets"]]
+    assert ids == list(D.PRESETS) and len(ids) == 6 and all(p["note"] for p in looks["dance_fx"]["presets"])
+    assert looks["dance_fx"]["roles"] == DEMO_HOUSE["dance_fx"]
+    assert looks["house"]["name"] == "demo_house" and looks["house"]["format"]["height"] == 1920
+    assert looks["stem_orbit"]["params"]["max_yaw"] == DEMO_HOUSE["stem_orbit"]["max_yaw"]
+    assert looks["stems"]["max"] == 32 and looks["current"]["dance_fx"] == "auto"
+    assert "secret" not in json.dumps(looks)
+
+
+def test_review_render_runs_media_qa_and_get_qa_returns_it(app, monkeypatch):
+    import sys
+    import types
+
+    app.create("x")
+    job = app.start()["job_id"]
+    app.wait(job, timeout_s=5, poll_s=0.01)
+    seen = {}
+
+    def fake_run_file(path, transitions_used=None, transcript=None, expected_lines=None):
+        seen["path"] = path
+        return {"path": path, "duration": 12.0, "findings": [{"check": "loudness", "severity": "warn", "msg": "x"}], "pass": True, "api_key": "no"}
+
+    monkeypatch.setitem(sys.modules, "xenoform.media_qa", types.SimpleNamespace(run_file=fake_run_file))
+    rep = app.review_render(job)
+    assert rep["pass"] is True and rep["job_id"] == job and seen["path"].endswith(".mp4") and "api_key" not in rep
+    qa = app.get_qa(job)
+    assert qa["review"]["findings"][0]["check"] == "loudness" and qa["desk"]["status"] == "done" and qa["note"] == ""
+    fresh = app.start()["job_id"]
+    app.desk.jobs[fresh]["progress"] = -5  # stays running while get_qa polls it
+    assert app.get_qa(fresh)["review"] is None and "review_render" in app.get_qa(fresh)["note"]
+    with pytest.raises(mt.XenoformError, match="wait_for_render"):
+        app.review_render(fresh)
+    with pytest.raises(mt.XenoformError, match="job_id"):
+        app.get_qa("../x")
+
+
+def test_review_render_reports_a_qa_failure(app, monkeypatch):
+    import sys
+    import types
+
+    app.create("x")
+    job = app.start()["job_id"]
+    app.wait(job, timeout_s=5, poll_s=0.01)
+
+    def boom(path, **kw):
+        raise RuntimeError("ffmpeg missing")
+
+    monkeypatch.setitem(sys.modules, "xenoform.media_qa", types.SimpleNamespace(run_file=boom))
+    with pytest.raises(mt.XenoformError, match="ffmpeg missing"):
+        app.review_render(job)
+
+
+def test_look_tools_are_registered():
+    names = []
+
+    class Server:
+        def tool(self):
+            def deco(fn):
+                names.append(fn.__name__)
+                return fn
+            return deco
+
+        def prompt(self):
+            return lambda fn: fn
+
+        def resource(self, *a, **k):
+            return lambda fn: fn
+
+    mt.register(Server(), mt.App(FakeDesk(), state_path=Path("nope") / "s.json"))
+    assert {"set_look", "list_looks", "review_render", "get_qa"} <= set(names)

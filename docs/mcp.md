@@ -7,62 +7,50 @@ Xenoform ships a native [Model Context Protocol](https://modelcontextprotocol.io
 - It never returns keys or tokens.
 - Cloud (paid) quality is off unless the call passes `cloud=true` **and** `confirm_spend=true`.
 
-The desk URL comes from `--desk` or `XENO_DESK`. If neither is set, the server uses `XENO_PORT`, or else whichever desk answers first: the contest rc2 desk on 47330, then `Xenoform.bat`'s default 47317.
+The desk URL comes from `--desk` or `XENO_DESK`; set it to `http://127.0.0.1:47317`, the desk `Xenoform.bat` starts. If neither is set, the server uses `XENO_PORT`, or else whichever desk answers first on 47330 or 47317.
 
 ## Install
 
+From the repo folder:
+
 ```bat
-cd C:\Projects\xenoform-rc2
 .venv\Scripts\python -m pip install -e ".[agent]"
 ```
-`Xenoform-MCP.bat` installs `mcp` on first run if it is missing.
+`Xenoform-MCP.bat` installs `mcp` on first run if it is missing. Linux and macOS: `.venv/bin/python -m pip install -e ".[agent]"`.
 
 ## Run
 
 ```bat
 Xenoform-MCP.bat                 :: stdio
 Xenoform-MCP.bat --http          :: http://127.0.0.1:47319/mcp
-python -m xenoform.mcp [--http] [--port 47319] [--desk http://127.0.0.1:47330]
+python -m xenoform.mcp [--http] [--port 47319] [--desk http://127.0.0.1:47317]
 ```
 
-## Claude Desktop
+## Connect a client
 
-Add this to `%APPDATA%\Claude\claude_desktop_config.json`, then restart Claude:
+One snippet for every client. Replace `.venv/Scripts/python.exe` with the absolute path of the checkout's `.venv` Python on your machine (`.venv/bin/python` on Linux and macOS); MCP clients do not resolve relative paths.
+
+Claude Desktop (`%APPDATA%\Claude\claude_desktop_config.json`, then restart Claude) and Cursor (`%USERPROFILE%\.cursor\mcp.json` for all projects, or `.cursor\mcp.json` for one):
 ```json
 {
   "mcpServers": {
     "xenoform": {
-      "command": "C:\\Projects\\xenoform-rc2\\.venv\\Scripts\\python.exe",
+      "command": ".venv/Scripts/python.exe",
       "args": ["-m", "xenoform.mcp"],
-      "env": { "XENO_DESK": "http://127.0.0.1:47330" }
+      "env": { "XENO_DESK": "http://127.0.0.1:47317" }
     }
   }
 }
 ```
 
-## Claude Code
-
+Claude Code:
 ```bat
-claude mcp add xenoform --env XENO_DESK=http://127.0.0.1:47330 -- C:\Projects\xenoform-rc2\.venv\Scripts\python.exe -m xenoform.mcp
+claude mcp add xenoform --env XENO_DESK=http://127.0.0.1:47317 -- .venv\Scripts\python.exe -m xenoform.mcp
 :: or, with Xenoform-MCP.bat --http already running:
 claude mcp add --transport http xenoform http://127.0.0.1:47319/mcp
 ```
 
-## Cursor
-
-Put this in `%USERPROFILE%\.cursor\mcp.json` (all projects) or `.cursor\mcp.json` (one project):
-```json
-{
-  "mcpServers": {
-    "xenoform": {
-      "command": "C:\\Projects\\xenoform-rc2\\.venv\\Scripts\\python.exe",
-      "args": ["-m", "xenoform.mcp"],
-      "env": { "XENO_DESK": "http://127.0.0.1:47330" }
-    }
-  }
-}
-```
-For HTTP instead, use `{ "mcpServers": { "xenoform": { "url": "http://127.0.0.1:47319/mcp" } } }`.
+For HTTP in Cursor or any other client, use `{ "mcpServers": { "xenoform": { "url": "http://127.0.0.1:47319/mcp" } } }`.
 
 ## Grok Bot or any HTTP client
 Run `Xenoform-MCP.bat --http` and point the client at `http://127.0.0.1:47319/mcp`. The client has to run on the same PC.
@@ -71,17 +59,21 @@ Run `Xenoform-MCP.bat --http` and point the client at `http://127.0.0.1:47319/mc
 
 On connect, the server's **instructions** tell the AI what Xenoform is, the workflow, the defaults (native 9:16, black vibe, preview tier, open weights only), and the spend rules. They also tell it to greet you with "Connected to Xenoform, here's what you can do", suggest a few starters, and ask what you want to make.
 
-**Tools**
+**Tools (45)**
 
 | area | tools |
 |---|---|
 | status | `get_status` (desk, ComfyUI, GPU tier, models / final readiness, recent jobs, settings) |
 | catalogue | `list_vibes`, `list_shapes`, `list_transitions`, `list_presets`, `get_autotune_recipe` |
 | project | `create_project`, `update_settings`, `get_settings`, `load_audio`, `attach_image` |
+| look and QA | `set_look` (profile, `dance_fx` preset or `auto`, `stem_orbit`, macros), `list_looks`, `review_render` (runs `media_qa` on a finished file), `get_qa` |
+| guardrails | `list_guardrails`, `check_guardrails` |
 | render | `start_render`, `get_render_progress`, `wait_for_render`, `cancel_render`, `get_output`, `list_videos` |
 | recipes | `encode_recipe`, `decode_recipe`, `remix_recipe` |
 | AI director | `get_audio_analysis`, `get_cut_timeline`, `apply_edit_list`, `get_frames`, `run_review` (built-in critique) |
 | storyboard (director view) | `list_registers`, `get_register`, `set_register`, `set_preset`, `analyse_track`, `create_storyboard`, `edit_scene_card`, `set_params`, `apply_note`, `render`, `get_render_status`, `list_versions`, `revert`, `export` |
+
+The look tools are described in [AI_GUIDE.md](AI_GUIDE.md) under *The house look*.
 
 **Prompts:** `get_started`, `make_music_video(idea, vibe, song_path)`, and `review_cut`.
 

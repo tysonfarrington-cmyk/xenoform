@@ -155,3 +155,16 @@ def test_v5_scene_edit_and_guardrails_apply_the_variety_rule():
     ks = clean["scene_transitions"]
     assert "luma-wipe" not in ks and ks.count("echo-trail") <= 2
     assert any("transition_variety" in m for m in rep["messages"])
+
+
+def test_house_rules_are_the_fallback_for_none_args():
+    from xenoform.demo_house import DEMO_HOUSE
+    rules = DEMO_HOUSE["transitions"]
+    assert T._resolve_rules(None, None, None) == (rules["max_uses_per_type"], rules["allowed"], rules["banned"])
+    picks = [p for p in T.plan([{"section": True}] * 10, seed=2) if p != "cut"]
+    assert picks and set(picks) <= set(rules["allowed"])
+    out, msgs = T.guard(["echo-trail"] * 3)
+    assert out.count("echo-trail") == rules["max_uses_per_type"] and out[-1] == "cut"
+    a, b = _clips(4)
+    assert all(np.array_equal(p, q) for p, q in zip(T.apply("luma-wipe", a, b), T.apply("luma-wipe", a, b, 0.5)))
+    assert T.recommend("black", "switch") == T.recommend("black", "switch", classic=False)

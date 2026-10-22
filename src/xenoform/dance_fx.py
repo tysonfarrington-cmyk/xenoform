@@ -52,6 +52,17 @@ PRESETS: dict[str, dict] = {
                    "wash_a": (30, 200, 255), "wash_b": (90, 110, 255), "flash_rgb": (70, 200, 255)},
 }
 
+PRESET_NOTES = {  # one line each, for list_looks / the desk
+    "warm-leak": "warm split-tone grade, film halation on the bass and a corner light leak on the beat; no echo",
+    "cool-echo": "cool blue grade, light ghost trail on 'other', cyan edge tint on the drums, frosted glass (the house VJ look)",
+    "noir-glow": "high-contrast noir grade, violet edges, moderate halation and leak, a touch of glass",
+    "bloom-rush": "hero / flower preset: long trails, heavy bloom, cyan-magenta gradient wash and chroma bleed (colour only)",
+    "negative-rush": "bloom-rush plus a stem-driven negative: luma flips on the bass/beat with the hue kept, eased",
+    "cyan-flash": "electric-blue beat flashes, negative pulse on big hits, slow light sweep, depth bloom and exposure breath",
+}
+ROLES = ("intro", "vj", "flower", "into_card")  # DEMO_HOUSE["dance_fx"] roles; "vj" is the default
+DEFAULT_ROLE = "vj"
+
 POST_EFFECTS = {
     "dance-grade": "stem-driven split-tone grade (bass contrast, other warmth, vocals tint)",
     "dance-halation": "highlight bloom with a warm film-halation fringe on the bass",
@@ -67,20 +78,60 @@ POST_EFFECTS = {
 }
 
 
+def _house(section: str) -> dict:
+    """The house profile block (config.house), or {} when config is not importable (loose checkout)."""
+    try:
+        from xenoform.config import house
+    except ImportError:  # pragma: no cover
+        try:
+            from config import house
+        except ImportError:
+            return {}
+    return house(section)
+
+
+def resolve(preset: str | None = None, intensity: float | None = None, role: str | None = None,
+            house: dict | None = None) -> tuple[str, float, dict]:
+    """(preset, intensity, role_cfg): explicit values win, else the house ``dance_fx`` entry for ``role``
+    (default "vj"). ``house`` is the ``dance_fx`` block (``{"vj": {"preset":..., "intensity":...}, ...}``)."""
+    table = house if isinstance(house, dict) else _house("dance_fx")
+    role = role or DEFAULT_ROLE
+    cfg = table.get(role) if isinstance(table.get(role), dict) else (table.get(DEFAULT_ROLE) or {})
+    if preset is None:
+        preset = str(cfg.get("preset") or "warm-leak")
+    if intensity is None:
+        intensity = float(cfg.get("intensity", 1.0))
+    return preset, float(intensity), dict(cfg)
+
+
 def _blur(img: np.ndarray, sigma: float) -> np.ndarray:
     if cv2 is not None:
         return cv2.GaussianBlur(img, (0, 0), sigma)
-    from scipy.ndimage import gaussian_filter  # pragma: no cover
-    return gaussian_filter(img, (sigma, sigma, 0) if img.ndim == 3 else sigma)
+    from scipy.ndimage import gaussian_filter, zoom  # pragma: no cover
+    k = int(sigma / 3)
+    if k < 2 or img.ndim != 3 or min(img.shape[:2]) < 4 * k:
+        return gaussian_filter(img, (sigma, sigma, 0) if img.ndim == 3 else sigma)
+    # wide blurs: block-average down by k, blur there, bilinear back up (6-8x faster, visually the same)
+    h, w = img.shape[:2]
+    hh, ww = h // k * k, w // k * k
+    small = img[:hh, :ww].reshape(hh // k, k, ww // k, k, img.shape[2]).mean(axis=(1, 3))
+    small = gaussian_filter(small, (sigma / k, sigma / k, 0))
+    return zoom(small, (h / small.shape[0], w / small.shape[1], 1), order=1).astype(np.float32)
 
 
 class DanceFX:
     """Stateful per-shot effect chain (the echo needs the previous frames)."""
 
-    def __init__(self, preset: str = "warm-leak", *, seed: int = 0, intensity: float = 1.0):
+    def __init__(self, preset: str | None = None, *, seed: int = 0, intensity: float | None = None,
+                 role: str | None = None, house: dict | None = None):
+        """``preset`` / ``intensity`` None fall back to the house ``dance_fx`` entry for ``role``
+        (intro / vj / flower / into_card; default vj). The preset table is copied, never aliased."""
+        preset, intensity, cfg = resolve(preset, intensity, role, house)
         if preset not in PRESETS:
             raise ValueError(f"unknown dance preset {preset!r}; one of {', '.join(PRESETS)}")
-        self.p = PRESETS[preset]; self.k = float(np.clip(intensity, 0, 1.5)); self.seed = seed
+        self.preset = preset; self.role = role or DEFAULT_ROLE
+        self.p = dict(PRESETS[preset]); self.k = float(np.clip(intensity, 0, 1.5)); self.seed = seed
+        self.invert_floor_ramp_frames = int(cfg.get("invert_floor_ramp_frames") or 0)
         self._acc = None; self._glass = None; self._leak = None; self._phase = 0.0; self._inv = 0.0; self._fl = 0.0; self._ih = 0.0; self._sw = 0.0; self._br = 1.0
 
     def _static(self, h: int, w: int):
@@ -95,12 +146,13 @@ class DanceFX:
         return self._glass, self._leak
 
     def apply(self, frame: np.ndarray, d: dict, *, fade: float = 1.0) -> np.ndarray:
-        """frame: HxWx3 uint8 RGB. d: {"drums","bass","other","vocals","beat"} in 0..1."""
+        """frame: HxWx3 uint8 RGB. d: {"drums","bass","other","vocals","beat"} in 0..1 (None or missing = 0)."""
         p, k = self.p, self.k
         f = frame.astype(np.float32)
         h, w = f.shape[:2]
-        dr, ba, ot, vo = (float(np.clip(d.get(s, 0.0), 0, 1)) for s in ("drums", "bass", "other", "vocals"))
-        beat = float(np.clip(d.get("beat", 0.0), 0, 1))
+        d = d or {}
+        dr, ba, ot, vo = (float(np.clip(d.get(s) or 0.0, 0, 1)) for s in ("drums", "bass", "other", "vocals"))
+        beat = float(np.clip(d.get("beat") or 0.0, 0, 1))
         if p["echo"] > 0:  # light ghost trail: only brighter-than-now remnants, decaying fast
             dec = p.get("echo_decay", 0.70) + 0.12 * ot
             self._acc = f.copy() if self._acc is None else np.maximum(self._acc * dec, f)
@@ -183,23 +235,34 @@ class DanceFX:
         return np.clip(f, 0, 255).astype(np.uint8)
 
 
-def drive_from_env(env: dict, t: float, beats: list[float] | None = None) -> dict:
-    """Stem values at time t (``stem_react`` envelope format) plus a decaying beat pulse."""
+def drive_from_env(env: dict, t: float, beats: list[float] | None = None, gains: dict | None = None) -> dict:
+    """Stem values at time t (``stem_react`` envelope format) plus a decaying beat pulse. ``gains``
+    ({stem name: 0..1}, the Simple ``macros.stems`` knob) weights each named stem before it feeds its role."""
     try:
-        from xenoform.stem_react import at
+        from xenoform.stem_react import role_levels
     except ImportError:  # loose checkout
-        from stem_react import at
-    d = {s: at(env, t, s) for s in ("drums", "bass", "other", "vocals")}
+        from stem_react import role_levels
+    env = env or {}
+    d = {s: float(v or 0.0) for s, v in role_levels(env, t, gains or None).items()}
     hits = beats if beats is not None else (env.get("drum_strong") or [])
     past = [t - h for h in hits if 0 <= t - h < 0.6]
     d["beat"] = float(np.exp(-min(past) / 0.14)) if past else 0.0
     return d
 
 
-def render_shot(frames, env: dict, t0: float, preset: str, *, fps: int = 24, fade_in: int = 0, fade_out: int = 0,
-                seed: int = 0, intensity: float = 1.0, beats: list[float] | None = None):
-    """Run one shot through a preset. Yields processed frames."""
-    fx = DanceFX(preset, seed=seed, intensity=intensity)
+def render_shot(frames, env: dict, t0: float, preset: str | None = None, *, fps: int | None = None, fade_in: int = 0,
+                fade_out: int = 0, seed: int = 0, intensity: float | None = None, beats: list[float] | None = None,
+                role: str | None = None, invert_floor_ramp_frames: int | None = None, gains: dict | None = None,
+                house: dict | None = None):
+    """Run one shot through a preset. Yields processed frames.
+
+    ``preset`` / ``intensity`` None: the house entry for ``role`` (default vj). ``fps`` None: the house format fps.
+    ``invert_floor_ramp_frames`` (None: the role's value, 14 for into_card): over the last N frames the preset's
+    ``invert_floor`` ramps 0 -> 1, so the shot lands fully inverted on the card."""
+    fx = DanceFX(preset, seed=seed, intensity=intensity, role=role, house=(house or {}).get("dance_fx") if house else None)
+    if fps is None:
+        fps = int(((house or {}).get("format") or _house("format")).get("fps") or 24)
+    ramp = fx.invert_floor_ramp_frames if invert_floor_ramp_frames is None else int(invert_floor_ramp_frames)
     frames = list(frames); n = len(frames)
     for i, fr in enumerate(frames):
         fd = 1.0
@@ -207,4 +270,6 @@ def render_shot(frames, env: dict, t0: float, preset: str, *, fps: int = 24, fad
             fd = (i + 1) / (fade_in + 1)
         if fade_out and i >= n - fade_out:
             fd = min(fd, (n - i) / (fade_out + 1))
-        yield fx.apply(fr, drive_from_env(env, t0 + i / fps, beats), fade=fd)
+        if ramp > 0 and i >= n - ramp:
+            fx.p["invert_floor"] = float(np.clip((i - (n - ramp) + 1) / ramp, 0.0, 1.0))
+        yield fx.apply(fr, drive_from_env(env, t0 + i / fps, beats, gains), fade=fd)

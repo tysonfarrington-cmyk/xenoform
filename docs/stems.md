@@ -13,3 +13,15 @@ Stems drive the picture. Each stem has its own job:
 - The routing lives in `drive(env, t)` and can be changed in one place.
 
 The contest demo v2 was cut with Demucs stems of Morph Engine v2.
+
+## Stems in the desk (on demand)
+
+Splitting runs only when you ask for it: open the **Stem reactions** drawer under Macros, or press **Use this song's stems** on the VJ page. Nothing is split on Make.
+
+- `POST /api/stems` with `{"audio_id": "<id from /api/analyze, or demo>"}` or `{"path": "C:/song.wav"}`, optional `"engine": "auto"|"demucs"|"bands"` and `"fps"`. Returns `{"id": <16-hex song hash>, "status": "running"|"done", "engine", "engines": {"demucs": bool, "bands": true}}`; a song already split answers `done` at once with `"cached": true`.
+- `GET /api/stems/<id>` → `{"status", "engine", "stems": [names], "count", "roles", "frames", "fps", "envelopes": "/api/stems/<id>/envelopes.json", "error"?}`.
+- `GET /api/stems/<id>/envelopes.json` → the `save_envelopes` JSON (per-stem curves, role curves, `drum_hits`, `stems`, `roles`, `fps`, `frames`, plus `engine`, `song`, `files` = stem wav paths). `vj.html` reads it via `?stems=`. `GET /api/stems/<id>/<name>.wav` serves one stem.
+- Files live in `work/ui/stems/<song hash>/{stems.json, drums.wav, ...}`; the hash is of the audio bytes, so a renamed copy shares the cache. Up to 32 stems.
+- `xenoform stems song.wav [--out dir] [--engine auto|demucs|bands] [--fps 24]` writes the same files from the command line (`--engine bands` never needs Demucs; it reports `engine: librosa`).
+- The desk's drawer shows `splitting stems…` then `4 stems (librosa)` / `6 stems (demucs:htdemucs_6s)` and rebuilds the lanes, one per real stem; their gains ride on the job as `macros.stems` and the split's id as `macros.stems_id`.
+- For a render: `stems_api.stems_path_for(audio_path)` returns the cached `stems.json` (or `None`; `build=True` splits now). The job state key is **`state["stems_path"]`**: the path of that file, so `dense.run_simple` can feed `stem_react.apply_frame` without splitting again.

@@ -19,8 +19,10 @@ def test_manifest_is_valid_and_seeds_exist():
     assert {"cosmic", "ocean", "black", "liquid-gold"} <= vibes
     for it in data["items"]:
         assert it["licence"] and it["attribution"]
-        if it["redistribute"]:
+        if it["redistribute"] and it["kind"] == "image":
             assert footage.local_path(it).is_file(), it["id"]
+        if it["redistribute"] and it["kind"] == "video":  # fetched on first run, not committed
+            assert it["fetch"].get("nasa_id") or it["fetch"].get("url"), it["id"]
         if it["source"] == "nasa" and it["kind"] == "video":
             assert it["motion_score"] >= 3, it["id"]  # genuinely moving, not a near-still pan
 
@@ -155,3 +157,37 @@ def test_camera_roll_pick_best_folder(tmp_path):
     picks = CR.pick_best(tmp_path, k=2)
     assert len(picks) == 2 and "b.png" not in [Path(p["path"]).name for p in picks]
     assert all("_f" not in p for p in CR.public(picks))
+
+
+def test_vj_stems_button_and_midi_layer():
+    html = (ROOT / "src" / "xenoform" / "ui_static" / "vj.html").read_text(encoding="utf-8")
+    assert "Use this song's stems" in html and "/api/stems" in html and "/static/midi.js" in html and "XenoMidi.init" in html
+    assert "const DANCE=" in html and "function dance(" in html and "roleGain(" in html
+    try:
+        from fastapi.testclient import TestClient
+        from xenoform.ui import create_app
+    except Exception:
+        pytest.skip("desk app factory not importable here")
+    c = TestClient(create_app())
+    assert c.get("/static/midi.js").status_code == 200
+    assert c.get("/api/midi/status").json()["listeners"] == 0
+    with c.websocket_connect("/ws/midi") as ws:
+        assert ws.receive_json()["type"] == "hello"
+
+
+def test_seed_clips_are_fetched_on_first_run_not_committed(tmp_path, monkeypatch):
+    """The 32 MB of NASA mp4s stay out of git: missing seeds are listed and fetched in the background."""
+    import subprocess
+
+    tracked = subprocess.run(["git", "ls-files", "assets/library"], capture_output=True, text=True, cwd=footage.ROOT).stdout
+    assert not any(line.endswith(".mp4") for line in tracked.splitlines())
+    missing = footage.missing_seeds(tmp_path)
+    assert missing and all(it["kind"] == "video" and it["redistribute"] for it in missing)
+    monkeypatch.setenv("XENO_OFFLINE", "1")
+    assert footage.fetch_seeds(tmp_path) == missing  # offline: reported, not downloaded
+    assert not list(tmp_path.rglob("*.mp4"))
+    calls = []
+    monkeypatch.delenv("XENO_OFFLINE")
+    monkeypatch.setattr(footage, "fetch_item", lambda it, root: calls.append(it["id"]))
+    footage.fetch_seeds(tmp_path, background=False)
+    assert calls == [it["id"] for it in missing]

@@ -162,7 +162,22 @@ def resolve_path(path: str | Path, cfg: dict | None = None) -> Path:
     return cwd
 
 
-# demo_house: the contest demo's look/mix is the default profile (see demo_house.py; config/defaults_demo.json mirrors it)
+# demo_house: the contest demo's look/mix is the default profile (see demo_house.py; configs/defaults_demo.json mirrors it)
 from xenoform.demo_house import DEMO_HOUSE as _DEMO_HOUSE  # noqa: E402
 DEFAULTS.setdefault("house", deepcopy(_DEMO_HOUSE))
+
+
+def house(section: str | None = None, cfg: dict | None = None) -> dict:
+    """The house profile (``cfg["house"]`` when a loaded config carries one, else ``DEFAULTS["house"]``,
+    which is demo_house.DEMO_HOUSE). ``section`` picks one block ("dance_fx", "stem_orbit", "format"...).
+    Always a fresh copy, so callers may mutate it. This is what dance_fx / transitions_fx / stem_orbit /
+    beatfx fall back to when an argument is None."""
+    src = (cfg or {}).get("house") if isinstance(cfg, dict) else None
+    if not isinstance(src, dict):
+        src = DEFAULTS["house"]
+    out = deepcopy(src)
+    if section is None:
+        return out
+    part = out.get(section)
+    return part if isinstance(part, dict) else {}
 

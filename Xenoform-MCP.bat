@@ -6,6 +6,10 @@ setlocal
 cd /d "%~dp0"
 rem XENO_DESK picks the desk; unset, the server finds the one on 47330, then 47317.
 set PY=.venv\Scripts\python.exe
-if not exist "%PY%" set PY=python
+if not exist "%PY%" (
+  echo Xenoform's .venv was not found at "%~dp0.venv".
+  echo Run install.bat first, then start Xenoform-MCP.bat again.
+  exit /b 1
+)
 "%PY%" -c "import mcp" 2>nul || "%PY%" -m pip install -q "mcp>=2.3,<3"
 "%PY%" -m xenoform.mcp %*

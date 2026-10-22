@@ -183,3 +183,13 @@ def test_tiny_dry_run_needs_no_weights(tmp_path, monkeypatch):
     assert Path(result["path"]).stat().st_size > 100
     assert "dry run" in result["message"]
     assert "Traceback" not in result["message"]
+
+
+def test_defaults_demo_json_lives_in_configs_and_mirrors_the_house_profile():
+    from xenoform.config import load_config
+    from xenoform.demo_house import DEMO_HOUSE
+
+    root = Path(__file__).resolve().parents[1]
+    assert not (root / "config").exists(), "config/ was folded into configs/"
+    data = json.loads((root / "configs" / "defaults_demo.json").read_text(encoding="utf-8"))
+    assert data["house"] == DEMO_HOUSE == load_config()["house"]

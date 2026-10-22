@@ -114,6 +114,30 @@ def build_parser() -> argparse.ArgumentParser:
     sample = sub.add_parser("sample-library", help="Write a few procedural shapes into ./library.")
     sample.add_argument("--out", default="library")
     sample.add_argument("--force", action="store_true", help="Replace a library.json that already has many items.")
+
+    stems = sub.add_parser("stems", help="Split a song into stems and write per-frame envelopes (stems.json + wavs).")
+    stems.add_argument("audio")
+    stems.add_argument("--out", default="", help="Folder for stems.json and the stem wavs. Default: work/ui/stems/<song hash>.")
+    stems.add_argument("--engine", default="auto", choices=["auto", "demucs", "bands"],
+                       help="auto = Demucs when installed, else the band split; bands never needs Demucs.")
+    stems.add_argument("--fps", type=int, default=24)
+    _add_config(stems)
+
+    midi = sub.add_parser("midi", help="MIDI controller bridge (needs: pip install \"xenoform[midi]\").")
+    midi_sub = midi.add_subparsers(dest="midi_cmd", required=True)
+    midi_sub.add_parser("list", help="List MIDI input ports.")
+    serve_p = midi_sub.add_parser("serve", help="Forward a controller to the desk so every open page reacts.")
+    serve_p.add_argument("--port", default="", help="Input port name (substring). Default: the first MiniLab, else the first port.")
+    serve_p.add_argument("--desk", default="http://127.0.0.1:47317")
+    serve_p.add_argument("--seconds", type=float, default=None, help="Stop after this long (default: until Ctrl-C).")
+    serve_p.add_argument("--quiet", action="store_true")
+    rec_p = midi_sub.add_parser("record", help="Record a timed performance (knob rides, pad hits) to a take JSON.")
+    rec_p.add_argument("out")
+    rec_p.add_argument("--seconds", type=float, default=60.0)
+    rec_p.add_argument("--port", default="")
+    rec_p.add_argument("--profile", default="minilab3", choices=["minilab3", "generic"])
+    rec_p.add_argument("--envelopes", default="", help="Also write the per-frame curves (automation_to_envelopes) here.")
+    rec_p.add_argument("--fps", type=int, default=24)
     return parser
 
 
@@ -256,6 +280,50 @@ def _dispatch(args, cfg: dict) -> None:
 
         dest = write_sample_library(args.out, force=bool(args.force))
         print(dest)
+        return
+
+    if args.cmd == "stems":
+        from xenoform import stem_react
+        from xenoform.stems_api import run_split
+
+        audio = Path(args.audio)
+        if not audio.is_file():
+            raise RuntimeError(f"{audio} is not a file")
+        if args.out:
+            out = Path(args.out)
+            stems = stem_react.split(audio, out, engine=args.engine)
+            env = stem_react.envelopes(stems, fps=int(args.fps))
+            env["song"] = str(audio)
+            env["files"] = {k: str(v) for k, v in stems.items() if k != "engine"}
+            path = stem_react.save_envelopes(env, out / "stems.json")
+            rec = {"engine": env["engine"], "stems": env["stems"], "frames": env["frames"], "path": str(path), "cached": False}
+        else:
+            rec = run_split(audio, engine=args.engine, fps=int(args.fps))
+        print(f"{len(rec['stems'])} stems ({rec['engine']}{', cached' if rec.get('cached') else ''}), "
+              f"{rec['frames']} frames -> {rec['path']}")
+        return
+
+    if args.cmd == "midi":
+        from xenoform import midi_bridge as mb
+
+        try:
+            if args.midi_cmd == "list":
+                ports = mb.list_ports()
+                print("\n".join(ports) if ports else "No MIDI inputs. Plug the controller in and try again.")
+            elif args.midi_cmd == "serve":
+                echo = None if args.quiet else (lambda ev: print(f"{ev['type']:5} ch{ev['ch']:<2} {ev['num']:3} = {ev['value']:3}"))
+                n = mb.serve(args.port or None, args.desk, seconds=args.seconds, echo=echo)
+                print(f"{n} events forwarded to {args.desk}")
+            elif args.midi_cmd == "record":
+                take = mb.record(args.out, seconds=float(args.seconds), port=args.port or None, profile=args.profile,
+                                 echo=lambda ev: print(f"{ev['t']:8.3f} {ev['type']:5} ch{ev['ch']:<2} {ev['num']:3} = {ev['value']:3}"))
+                print(f"{len(take['events'])} events over {take['seconds']}s -> {args.out}")
+                if args.envelopes:
+                    env = mb.automation_to_envelopes(take, fps=int(args.fps))
+                    Path(args.envelopes).write_text(json.dumps(env), encoding="utf-8")
+                    print(f"{len(env['targets'])} target curves, {env['frames']} frames -> {args.envelopes}")
+        except mb.MidiUnavailable as exc:
+            raise SystemExit(str(exc)) from exc
         return
 
     raise RuntimeError(f"Unknown command {args.cmd}")

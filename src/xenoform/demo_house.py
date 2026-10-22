@@ -1,8 +1,10 @@
 """'demo_house': the contest demo's look and mix, as the app's default profile.
 
-Merged into config.DEFAULTS["house"]; render code should read from there.
-TODO(wire): dance_fx / transitions_fx / stem_orbit / mixer callers still take explicit args. Have them fall back to
-cfg["house"] when an arg is None.
+Merged into config.DEFAULTS["house"] and read through ``config.house(section)``. Consumed by: dance_fx
+(DanceFX / render_shot role presets, fps), transitions_fx (apply / guard / plan / recommend fallbacks),
+stem_orbit (DEFAULTS, fps, focal), beatfx.compose + dense.run_simple (format fps / native 9:16 size, look,
+the Simple ``dance_fx`` / ``stem_orbit`` payload defaults), media_qa (audio + transition rules) and the
+MCP ``set_look`` / ``list_looks`` tools.
 """
 from __future__ import annotations
 

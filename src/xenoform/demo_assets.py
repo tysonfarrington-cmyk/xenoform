@@ -32,6 +32,14 @@ def ensure_demo_assets(root: Path | None = None) -> dict[str, str]:
 
         try_demo(tiny=True, work=base / "work" / "demo-seed", out=video)
         made["video"] = str(video)
+    try:  # the NASA seed clips are fetched, not committed; this returns at once
+        from xenoform import footage
+
+        pending = footage.fetch_seeds(base)
+        if pending:
+            made["seeds_fetching"] = ",".join(it["id"] for it in pending)
+    except Exception as exc:  # the desk must open even with no network or manifest
+        log.warning("library seeds not fetched: %s", exc)
     features = examples / "demo_features.json"
     if wav.is_file() and (not features.is_file() or features.stat().st_size < 20):
         from xenoform.analyze import analyze_audio, write_features

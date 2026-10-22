@@ -9,10 +9,20 @@ import json, subprocess, sys
 from pathlib import Path
 import numpy as np
 from xenoform import transitions_fx as T
+from xenoform.video import find_font as _find_font
 
-FONTS = ["/usr/share/fonts/truetype/sand-box/google/Inter/Inter-VariableFont_opsz,wght.ttf",
+FONTS = [f for f in [_find_font(("C:/Windows/Fonts/segoeui.ttf", "C:/Windows/Fonts/arial.ttf",
+                                  "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"))] if f] + [
          "C:/Windows/Fonts/segoeui.ttf", "C:/Windows/Fonts/arial.ttf",
          "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"]
+
+
+def _afade_out(total: float, fade: float = 1.5) -> str:
+    """ffmpeg afade-out filter for a clip of ``total`` seconds; the fade shrinks on clips shorter than
+    ``fade`` so its start time never goes negative."""
+    d = max(0.05, min(float(fade), float(total)))
+    st = max(0.0, float(total) - d)
+    return f"afade=t=out:st={st:.2f}:d={d:.2f}"
 
 
 def _font(size):
@@ -162,7 +172,7 @@ def build(spec):
     out = spec["out"]
     enc = subprocess.Popen(["ffmpeg","-v","error","-y","-f","rawvideo","-pix_fmt","rgb24","-s",f"{W}x{H}","-r",str(fps),"-i","-",
         "-ss",str(a_in),"-t",f"{total:.3f}","-i",spec["audio"],"-map","0:v","-map","1:a","-c:v","libx264","-preset","medium","-crf",str(spec.get("crf",18)),
-        "-pix_fmt","yuv420p","-c:a","aac","-b:a","256k","-af",f"afade=t=out:st={total-1.5:.2f}:d=1.5","-movflags","+faststart","-shortest",out], stdin=subprocess.PIPE)
+        "-pix_fmt","yuv420p","-c:a","aac","-b:a","256k","-af",_afade_out(total),"-movflags","+faststart","-shortest",out], stdin=subprocess.PIPE)
     spec = dict(spec); spec["_fxk"] = []
     for i, s in enumerate(segs):
         b0 = win[i-1][1] if i>0 else 0

@@ -13,6 +13,8 @@ import urllib.request
 from typing import Any
 
 
+from xenoform.mcp_tools import XenoformError  # a ToolError: the SDK returns it as an isError result
+
 DESK_PORTS = (47330, 47317)  # the contest rc2 desk first, then Xenoform.bat's default
 
 
@@ -38,6 +40,8 @@ def desk_url(explicit: str | None = None) -> str:
 
 
 def _request(base: str, method: str, path: str, body: dict | None = None, timeout: float = 60.0) -> dict:
+    """Call the desk's REST API. HTTP errors, an unreachable desk and non-JSON replies raise XenoformError
+    (a ToolError) so the client sees ``isError`` instead of a dict that looks like a result."""
     data = None if body is None else json.dumps(body).encode("utf-8")
     request = urllib.request.Request(
         base + path,
@@ -52,21 +56,21 @@ def _request(base: str, method: str, path: str, body: dict | None = None, timeou
         detail = exc.read().decode("utf-8", errors="replace")
         try:
             parsed = json.loads(detail)
+            message = parsed.get("detail") if isinstance(parsed, dict) else None
         except json.JSONDecodeError:
-            parsed = {"detail": detail[:400] or f"The desk answered {exc.code}."}
-        parsed.setdefault("detail", f"The desk answered {exc.code}.")
-        return parsed
+            message = detail[:400]
+        raise XenoformError(f"Desk answered {exc.code} for {path}: {str(message or '')[:400] or 'no detail'}") from None
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
-        return {
-            "detail": "Open the Xenoform desk on this machine. The agent talks to it over localhost and does not start a model on its own.",
-            "error": str(exc),
-        }
+        raise XenoformError(
+            f"Cannot reach the Xenoform desk at {base} ({exc}). Open the desk on this machine: the agent talks to it "
+            "over localhost and does not start a model on its own."
+        ) from None
     if not raw:
         return {}
     try:
         return json.loads(raw)
     except json.JSONDecodeError:
-        return {"detail": raw[:400]}
+        raise XenoformError(f"Desk sent something that is not JSON for {path}: {raw[:200]!r}") from None
 
 
 def build_server(desk: str | None = None):

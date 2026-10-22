@@ -92,7 +92,27 @@ _registry_recommendations()
 _REMAP = {"luma-wipe": "depth-parallax", "stutter-cut": "cut", "zoom-through": "match-cut"}
 
 
-def recommend(vibe: str, boundary: str = "drop", *, classic: bool = False) -> str:
+def _house_rules() -> dict:
+    """The house ``transitions`` block (allowed / banned / max_uses_per_type / intensity / classic), or {}."""
+    try:
+        from xenoform.config import house
+    except ImportError:  # pragma: no cover - loose checkout
+        try:
+            from config import house
+        except ImportError:
+            return {}
+    return house("transitions")
+
+
+def _is_banned(kind: str, banned: Sequence[str]) -> bool:
+    k = str(kind).lower()
+    return any(str(b).lower() in k for b in banned or ())
+
+
+def recommend(vibe: str, boundary: str = "drop", *, classic: bool | None = None) -> str:
+    """``classic`` None falls back to the house rule (False: classic wipes are remapped to premium picks)."""
+    if classic is None:
+        classic = bool(_house_rules().get("classic", False))
     table = RECOMMENDED.get(vibe, RECOMMENDED["black"])
     k = table.get(boundary, table["switch"])
     return k if classic else _REMAP.get(k, k)
@@ -547,20 +567,41 @@ def _cfg_rules() -> dict:
         return {}
 
 
-def pick_premium(used: dict[str, int], rng: np.random.Generator, *, max_per_type: int = 2) -> str:
-    pool = {k: w for k, w in AUTO_WEIGHTS.items() if used.get(k, 0) < max_per_type}
+def _resolve_rules(cap: int | None, allowed: Sequence[str] | None, banned: Sequence[str] | None) -> tuple[int, list[str], list[str]]:
+    """Explicit values win; None falls back to the house ``transitions`` block, then configs/guardrails.json.
+    ``allowed`` [] (or any empty sequence) means no whitelist; None means the house list."""
+    h = _house_rules(); r = _cfg_rules()
+    if cap is None:
+        cap = h.get("max_uses_per_type", r.get("max_per_type", 2))
+    if allowed is None:
+        allowed = h.get("allowed") or []
+    if banned is None:
+        banned = h.get("banned") or []
+    return max(1, int(cap)), [str(a) for a in allowed], [str(b) for b in banned]
+
+
+def pick_premium(used: dict[str, int], rng: np.random.Generator, *, max_per_type: int = 2,
+                 allowed: Sequence[str] | None = None, banned: Sequence[str] | None = None) -> str:
+    """A weighted premium pick under the per-type cap. ``allowed`` (a non-empty whitelist) and ``banned``
+    (substrings) narrow the pool; None falls back to the house rules. "cut" when nothing is left."""
+    _, allowed, banned = _resolve_rules(max_per_type, allowed, banned)
+    pool = {k: w for k, w in AUTO_WEIGHTS.items() if used.get(k, 0) < max_per_type
+            and (not allowed or k in allowed) and not _is_banned(k, banned)}
     if not pool:
         return "cut"
     keys = list(pool); p = np.asarray([pool[k] for k in keys], float); p /= p.sum()
     return str(rng.choice(keys, p=p))
 
 
-def plan(boundaries: Sequence[dict], *, seed: int = 0, classic: bool = False) -> list[str]:
+def plan(boundaries: Sequence[dict], *, seed: int = 0, classic: bool | None = None, cap: int | None = None,
+         allowed: Sequence[str] | None = None, banned: Sequence[str] | None = None) -> list[str]:
     """Pick a transition per boundary. boundaries: [{"section": bool, "morph": bool, "silence": bool}].
     Most boundaries are clean beat cuts; section changes get one premium spell, each type at most
-    max_per_type times per video, and premium moments stay under max_fx_share of all boundaries."""
+    ``cap`` times per video, and premium moments stay under max_fx_share of all boundaries.
+    ``cap`` / ``allowed`` / ``banned`` / ``classic`` None fall back to the house transitions rules."""
     r = _cfg_rules()
-    cap = int(r.get("max_per_type", 2)); share = float(r.get("max_fx_share", 0.35))
+    cap, allowed, banned = _resolve_rules(cap, allowed, banned)
+    share = float(r.get("max_fx_share", 0.35))
     rng = np.random.default_rng(seed)
     used: dict[str, int] = {}
     out: list[str] = []
@@ -571,7 +612,7 @@ def plan(boundaries: Sequence[dict], *, seed: int = 0, classic: bool = False) ->
         if bd.get("silence"):
             out.append("black-hold"); continue
         if bd.get("section") and budget > 0:
-            k = pick_premium(used, rng, max_per_type=cap)
+            k = pick_premium(used, rng, max_per_type=cap, allowed=allowed, banned=banned)
             if k != "cut":
                 used[k] = used.get(k, 0) + 1; budget -= 1
             out.append(k); continue
@@ -579,11 +620,14 @@ def plan(boundaries: Sequence[dict], *, seed: int = 0, classic: bool = False) ->
     return out
 
 
-def guard(kinds: Sequence[str], *, expert: bool = False, seed: int = 0) -> tuple[list[str], list[str]]:
-    """Guardrail: classic wipes are expert-only, and no one transition type appears more than
-    max_per_type times. Overflow becomes a clean cut. Returns (kinds, messages)."""
+def guard(kinds: Sequence[str], *, expert: bool = False, seed: int = 0, cap: int | None = None,
+          allowed: Sequence[str] | None = None, banned: Sequence[str] | None = None) -> tuple[list[str], list[str]]:
+    """Guardrail: classic wipes are expert-only, house-banned kinds (substring match, e.g. "wipe", "stutter")
+    are re-picked, and no one transition type appears more than ``cap`` times. Overflow becomes a clean
+    cut. ``expert`` keeps the user's values and only warns. ``cap`` / ``allowed`` / ``banned`` None fall back
+    to the house rules. Returns (kinds, messages)."""
     r = _cfg_rules()
-    cap = int(r.get("max_per_type", 2))
+    cap, allowed, banned = _resolve_rules(cap, allowed, banned)
     classic_ok = expert or not r.get("classic_expert_only", True)
     rng = np.random.default_rng(seed)
     used: dict[str, int] = {}
@@ -591,8 +635,14 @@ def guard(kinds: Sequence[str], *, expert: bool = False, seed: int = 0) -> tuple
     for k in kinds:
         nk = k
         if k in CLASSIC and not classic_ok:
-            nk = pick_premium(used, rng, max_per_type=cap)
+            nk = pick_premium(used, rng, max_per_type=cap, allowed=allowed, banned=banned)
             msgs.append(f"{k} is a Classic transition (expert only); using {nk}")
+        elif nk in TRANSITIONS and nk not in EXEMPT_FROM_CAP and _is_banned(nk, banned):
+            if expert:
+                msgs.append(f"{nk} is banned by the house rules (kept: expert)")
+            else:
+                nk = pick_premium(used, rng, max_per_type=cap, allowed=allowed, banned=banned)
+                msgs.append(f"{k} is banned by the house rules; using {nk}")
         if nk in TRANSITIONS and nk not in EXEMPT_FROM_CAP:
             if used.get(nk, 0) >= cap and not expert:
                 msgs.append(f"{nk} already used {cap}x; this boundary is a clean beat cut")
@@ -607,13 +657,19 @@ _FUNCS.update({"cut": _cut, "match-cut": _match_cut, "flow-carry": _flow_carry, 
 
 
 
-def apply(kind: str, a_tail: Sequence[Frame], b_head: Sequence[Frame], intensity: float = 0.5,
+DEFAULT_INTENSITY = 0.5
+
+
+def apply(kind: str, a_tail: Sequence[Frame], b_head: Sequence[Frame], intensity: float | None = None,
           morph_frames: Sequence[Frame] | None = None) -> list[Frame]:
-    """Render the frames that replace the boundary window. Length = len(a_tail)."""
+    """Render the frames that replace the boundary window. Length = len(a_tail).
+    ``intensity`` None falls back to the house ``transitions.intensity`` (else 0.5)."""
     if kind not in TRANSITIONS:
         raise ValueError(f"unknown transition {kind!r}; one of {', '.join(TRANSITIONS)}")
     if len(a_tail) != len(b_head) or not len(a_tail):
         raise ValueError("a_tail and b_head must be the same non-zero length")
+    if intensity is None:
+        intensity = float(_house_rules().get("intensity", DEFAULT_INTENSITY))
     i = float(np.clip(intensity, 0, 1))
     if kind == "scene-morph":
         if morph_frames:

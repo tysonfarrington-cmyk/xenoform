@@ -121,6 +121,126 @@
    "autotune_score": 74.07,
    "qa": true,
    "checked": "contact sheet reviewed 2026-10-20"
+  },
+  "neon-noir": {
+   "clips": [
+    "library/neon-noir/wide.mp4",
+    "library/neon-noir/medium.mp4",
+    "library/neon-noir/close.mp4",
+    "library/neon-noir/reveal.mp4"
+   ],
+   "source_morph": "00_orb -> 01_nautilus",
+   "autotune_score": 88.88,
+   "qa": true,
+   "checked": "generated 2026-10-22, pending Tys review"
+  },
+  "porcelain-kintsugi": {
+   "clips": [
+    "library/porcelain-kintsugi/wide.mp4",
+    "library/porcelain-kintsugi/medium.mp4",
+    "library/porcelain-kintsugi/close.mp4",
+    "library/porcelain-kintsugi/reveal.mp4"
+   ],
+   "source_morph": "00_orb -> 01_nautilus",
+   "autotune_score": 96.27,
+   "qa": true,
+   "checked": "generated 2026-10-22, pending Tys review"
+  },
+  "bioluminescent": {
+   "clips": [
+    "library/bioluminescent/wide.mp4",
+    "library/bioluminescent/medium.mp4",
+    "library/bioluminescent/close.mp4",
+    "library/bioluminescent/reveal.mp4"
+   ],
+   "source_morph": "00_orb -> 01_nautilus",
+   "autotune_score": 74.45,
+   "qa": true,
+   "checked": "generated 2026-10-22, pending Tys review"
+  },
+  "risograph": {
+   "clips": [
+    "library/risograph/wide.mp4",
+    "library/risograph/medium.mp4",
+    "library/risograph/close.mp4",
+    "library/risograph/reveal.mp4"
+   ],
+   "source_morph": "00_orb -> 01_nautilus",
+   "autotune_score": 68.19,
+   "qa": true,
+   "checked": "generated 2026-10-22, pending Tys review"
+  },
+  "iridescent-glass": {
+   "clips": [
+    "library/iridescent-glass/wide.mp4",
+    "library/iridescent-glass/medium.mp4",
+    "library/iridescent-glass/close.mp4",
+    "library/iridescent-glass/reveal.mp4"
+   ],
+   "source_morph": "00_orb -> 01_nautilus",
+   "autotune_score": 95.67,
+   "qa": true,
+   "checked": "generated 2026-10-22, pending Tys review"
+  },
+  "ink-wash": {
+   "clips": [
+    "library/ink-wash/wide.mp4",
+    "library/ink-wash/medium.mp4",
+    "library/ink-wash/close.mp4",
+    "library/ink-wash/reveal.mp4"
+   ],
+   "source_morph": "00_orb -> 01_nautilus",
+   "autotune_score": 85.71,
+   "qa": true,
+   "checked": "generated 2026-10-22, pending Tys review"
+  },
+  "cyberspace-95": {
+   "clips": [
+    "library/cyberspace-95/wide.mp4",
+    "library/cyberspace-95/medium.mp4",
+    "library/cyberspace-95/close.mp4",
+    "library/cyberspace-95/reveal.mp4"
+   ],
+   "source_morph": "00_orb -> 01_nautilus",
+   "autotune_score": 82.53,
+   "qa": true,
+   "checked": "generated 2026-10-22, pending Tys review"
+  },
+  "wet-paint": {
+   "clips": [
+    "library/wet-paint/wide.mp4",
+    "library/wet-paint/medium.mp4",
+    "library/wet-paint/close.mp4",
+    "library/wet-paint/reveal.mp4"
+   ],
+   "source_morph": "00_orb -> 01_nautilus",
+   "autotune_score": 93.65,
+   "qa": true,
+   "checked": "generated 2026-10-22, pending Tys review"
+  },
+  "shadow-self": {
+   "clips": [
+    "library/shadow-self/wide.mp4",
+    "library/shadow-self/medium.mp4",
+    "library/shadow-self/close.mp4",
+    "library/shadow-self/reveal.mp4"
+   ],
+   "source_morph": "00_orb -> 01_nautilus",
+   "autotune_score": 75.73,
+   "qa": true,
+   "checked": "generated 2026-10-22, pending Tys review"
+  },
+  "botanical": {
+   "clips": [
+    "library/botanical/wide.mp4",
+    "library/botanical/medium.mp4",
+    "library/botanical/close.mp4",
+    "library/botanical/reveal.mp4"
+   ],
+   "source_morph": "00_orb -> 01_nautilus",
+   "autotune_score": 69.8,
+   "qa": true,
+   "checked": "generated 2026-10-22, pending Tys review"
   }
  }
 }

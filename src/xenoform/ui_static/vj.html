@@ -61,9 +61,11 @@
   <option value="5">Iris</option><option value="6">Slice</option><option value="7">Pixel dissolve</option></optgroup>
  </select>
  <select id="every" title="Switch scene every"><option value="0">Follow the song</option><option value="1">Every beat</option><option value="2">Every 2 beats</option><option value="4">Every bar</option><option value="8">Every 2 bars</option></select>
- <button id="kal" title="K">Kaleido</button><button id="mir" title="M">Mirror</button><button id="stb" title="S">Strobe</button>
+ <button id="kal" title="K" data-midi="kaleido">Kaleido</button><button id="mir" title="M" data-midi="mirror">Mirror</button><button id="stb" title="S" data-midi="strobe">Strobe</button>
  <span class="sep"></span>
- <button id="hudb" title="P">HUD</button><button id="recb" class="rec" title="R">● Rec</button><button id="fs" title="F">Fullscreen</button><button id="helpb" title="?">?</button>
+ <button id="stemsb" title="Split the loaded track into stems on the desk, then drive the picture from them">Use this song's stems</button>
+ <span class="sep"></span>
+ <button id="hudb" title="P" data-midi="hud">HUD</button><button id="recb" class="rec" title="R" data-midi="record">● Rec</button><button id="fs" title="F">Fullscreen</button><button id="helpb" title="?">?</button>
 </div>
 <div id="help"><div class="glass"><h2>Controls</h2><table>
  <tr><td>Space / →</td><td>Next scene with the current transition</td></tr>
@@ -76,9 +78,11 @@
  <tr><td>T</td><td>Tap tempo (mic mode)</td></tr>
  <tr><td>P · H · F</td><td>HUD · Hide controls · Fullscreen</td></tr>
  <tr><td>R</td><td>Record a clean clip (webm, with audio)</td></tr>
- <tr><td>MIDI</td><td>Notes 36–43 = premium transitions 1–8 + next · CC1 intensity · CC2 switch rate</td></tr>
-</table></div></div>
+ <tr><td>Stems</td><td><b>Use this song's stems</b> splits the loaded track on the desk (Demucs when installed, else the band split) and reloads with <code>?stems=</code> so drums/bass/other/vocals drive the picture. Per-stem gains come from the desk's Stem reactions lanes.</td></tr>
+ <tr><td>MIDI</td><td>MiniLab 3 out of the box: pads A1–A8 = premium transitions 1–8, pads B1–B6 = dance presets, B7 strobe, B8 record · knob 1 / mod strip intensity · knob 2 switch rate · knobs 3–6 drums/bass/other/vocals gain · knobs 7–8 + faders = stem gains · encoder steps the transition. <b>L</b> = learn mode (click a control, move a knob). No Web MIDI (Firefox/Safari)? Run <code>xenoform midi serve</code>.</td></tr>
+</table><div id="midi-panel"></div></div></div>
 <div id="toast" class="glass"></div>
+<script src="/static/midi.js"></script>
 <script>
 // Xenoform live VJ v4: pre-rendered loops + beat-locked WebGL transitions. No server work, no GPU render.
 // Track mode: the song is analysed once in the browser (onset envelope + tempo + phase) so every switch lands on the grid.
@@ -144,7 +148,14 @@ function size(){const W=FIXW||Math.round(innerWidth*devicePixelRatio),H=FIXH||Ma
  const s=Math.min(innerWidth/W,innerHeight/H);cv.style.width=W*s+'px';cv.style.height=H*s+'px'}
 
 // scenes: library vibe loops, the desk footage library, or your own files
-const S={scenes:[],cur:0,nxt:1,trans:false,t0:0,dur:900,fx:Q.get('fx')||'auto',curFx:0,every:+(Q.get('every')||0),kal:EXPERT?+(Q.get('kal')||0):0,used:new Set(),mir:+(Q.get('mir')||0),stb:+(Q.get('strobe')||0),inten:+(Q.get('intensity')||1),hud:false,beats:0,bpm:0};
+const S={scenes:[],cur:0,nxt:1,trans:false,t0:0,dur:900,fx:Q.get('fx')||'auto',curFx:0,every:+(Q.get('every')||0),kal:EXPERT?+(Q.get('kal')||0):0,used:new Set(),mir:+(Q.get('mir')||0),stb:+(Q.get('strobe')||0),inten:+(Q.get('intensity')||1),hud:false,beats:0,bpm:0,
+ dance:0,gain:{drums:1,bass:1,other:1,vocals:1},stemsId:Q.get('stemsId')||'',trackId:Q.get('track')||''};
+// Dance presets (MIDI pads B1-B6, S.dance): there is no separate post-look in the VJ page, so a preset is a
+// combination of the transition pick, mirror, strobe and intensity. 1 always brings the picture back to clean.
+const DANCE=[null,{name:'Clean',fx:'auto',mir:0,stb:0,inten:1},{name:'Mirror',mir:1,stb:0},{name:'Strobe',stb:1},{name:'Mirror + strobe',mir:1,stb:1,inten:1.3},
+ {name:'Echo trail',fx:'14',stb:0,inten:1.4},{name:'Chrome mirror',fx:'13',mir:1,inten:1.6}];
+function dance(i){const d=DANCE[i];if(!d)return;S.dance=i;if(d.fx!=null)setFx(String(d.fx));if(d.mir!=null){S.mir=d.mir;$('mir').classList.toggle('on',!!S.mir)}
+ if(d.stb!=null){S.stb=d.stb;$('stb').classList.toggle('on',!!S.stb)}if(d.inten!=null)S.inten=d.inten;toast('Dance '+i+' · '+d.name);if(S.scenes.length>1)next()}
 function vid(src,name){const v=document.createElement('video');v.src=src;v.loop=true;v.muted=true;v.playsInline=true;v.preload='auto';v.crossOrigin='anonymous';
  const sc={v,name};v.addEventListener('error',()=>{S.scenes=S.scenes.filter(x=>x!==sc)});return sc}
 const DEF_VIBES=['neon-night','ferrofluid','chrome-mercury','lava-obsidian','cosmic','black','origami-noir','ice-crystal','porcelain-marble','y2k-chrome'];
@@ -201,7 +212,7 @@ async function loadTrack(file){trackEl&&trackEl.pause();const url=URL.createObje
  toast('Analysing the track…');grid=await analyse(await file.arrayBuffer());S.bpm=grid.bpm;
  trackEl=new Audio(url);trackEl.crossOrigin='anonymous';const src=AC.createMediaElementSource(trackEl);src.connect(an);an.connect(AC.destination);src.connect(recDest);
  trackEl.onplay=()=>AC.resume();toast(`Locked to ${grid.bpm} BPM. Space to play`);return grid}
-$('track').onchange=async e=>{const f=e.target.files[0];if(f){await loadTrack(f);trackEl.play()}};
+$('track').onchange=async e=>{const f=e.target.files[0];if(f){trackFile=f;S.trackId='';await loadTrack(f);trackEl.play()}};
 // Per-stem energies: precomputed stem_react envelopes (?stems=url of the JSON, synced to the track) when given,
 // else an in-browser band split (drums = transient flux + kick, bass 30-150 Hz, other 150-300 + 3.4-8k, vocals 300-3400).
 let STEMS=null;if(Q.get('stems'))fetch(Q.get('stems')).then(r=>r.json()).then(j=>{STEMS=j;toast('Stems loaded ('+(j.engine||'?')+')')}).catch(()=>{});
@@ -209,14 +220,31 @@ function stemAt(name,t){const v=STEMS&&STEMS[name];if(!v||!v.length)return 0;ret
 const SE={drums:0,bass:0,other:0,vocals:0,pf:0};
 const ROLE=n=>{n=String(n).toLowerCase();return /drum|kick|snare|hat|perc|beat|cymbal|tom|clap/.test(n)?'drums':/bass|sub|808/.test(n)?'bass':/vocal|vox|voice|choir|sing/.test(n)?'vocals':'other'};
 function gains(){try{return (JSON.parse(localStorage.getItem('xeno-macros')||'{}'))}catch(e){return{}}}
+function setStemGain(name,v){const g=gains();g['stem:'+name]=Math.max(0,Math.min(1,v));try{localStorage.setItem('xeno-macros',JSON.stringify(g))}catch(e){}}
+const roleGain=o=>({drums:o.drums*S.gain.drums,bass:o.bass*S.gain.bass,other:o.other*S.gain.other,vocals:o.vocals*S.gain.vocals});
 function stems(a){if(STEMS&&trackEl){const t=trackEl.currentTime;
   if(Array.isArray(STEMS.stems)&&STEMS.stems.length){const g=gains(),o={drums:0,bass:0,other:0,vocals:0};  // any number of stems, each with its own gain
-    for(const n of STEMS.stems.slice(0,32)){const r=(STEMS.roles&&STEMS.roles[n])||ROLE(n),k=g['stem:'+n];o[r]=Math.max(o[r],stemAt(n,t)*(k==null?1:k));}return o;}
-  return{drums:stemAt('drums',t),bass:stemAt('bass',t),other:stemAt('other',t),vocals:stemAt('vocals',t)}}
+    for(const n of STEMS.stems.slice(0,32)){const r=(STEMS.roles&&STEMS.roles[n])||ROLE(n),k=g['stem:'+n];o[r]=Math.max(o[r],stemAt(n,t)*(k==null?1:k));}return roleGain(o);}
+  return roleGain({drums:stemAt('drums',t),bass:stemAt('bass',t),other:stemAt('other',t),vocals:stemAt('vocals',t)})}
  if(!an)return{drums:0,bass:0,other:0,vocals:0};const hz=AC.sampleRate/an.fftSize;
  const avg=(lo,hi)=>{let s=0,n=0;for(let i=Math.floor(lo/hz);i<Math.min(buf.length,hi/hz);i++){s+=buf[i];n++}return n?s/n/255:0};
  const voc=avg(300,3400),oth=(avg(150,300)+avg(3400,8000))/2,kick=avg(40,110);const tr=Math.max(0,avg(2000,9000)+kick-SE.pf);SE.pf=avg(2000,9000)+kick;
- return{drums:Math.min(1,tr*6+(a.flux>avgFlux*2?.5:0)),bass:a.b,other:Math.min(1,oth*1.6),vocals:Math.min(1,voc*1.4)}}
+ return roleGain({drums:Math.min(1,tr*6+(a.flux>avgFlux*2?.5:0)),bass:a.b,other:Math.min(1,oth*1.6),vocals:Math.min(1,voc*1.4)})}
+// "Use this song's stems": the loaded track goes to the desk (/api/analyze gives it an id), POST /api/stems splits it
+// (cached by song hash, so the second time is instant), then the page reloads with ?stems=<envelopes>&track=<id>
+// and picks the same track back up from /media/audio/<id>, in sync with the envelopes.
+let trackFile=null;
+async function useStems(){if(!trackFile){toast('Load a track first (Mic mode has no stems)');return}
+ const btn=$('stemsb');btn.disabled=true;btn.textContent='Uploading…';
+ try{let id=S.trackId;if(!id){const fd=new FormData();fd.append('file',trackFile,trackFile.name||'track.wav');const r=await fetch('/api/analyze',{method:'POST',body:fd});const j=await r.json();if(!r.ok)throw new Error(j.detail||'upload failed');id=j.audio_id}
+  btn.textContent='Splitting stems…';let st=await (await fetch('/api/stems',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({audio_id:id})})).json();
+  if(st.detail)throw new Error(st.detail);
+  while(st.status==='running'){await new Promise(r=>setTimeout(r,1200));st=await (await fetch('/api/stems/'+st.id)).json();btn.textContent='Splitting stems… ('+(st.engine||'')+')'}
+  if(st.status!=='done')throw new Error(st.error||'stems failed');
+  toast(st.count+' stems ('+st.engine+')');const u=new URL(location.href);u.searchParams.set('stems',st.envelopes);u.searchParams.set('stemsId',st.id);u.searchParams.set('track',id);location.href=u.toString()}
+ catch(e){toast('Stems: '+e.message);btn.disabled=false;btn.textContent="Use this song's stems"}}
+$('stemsb').onclick=useStems;
+if(S.trackId)fetch('/media/audio/'+encodeURIComponent(S.trackId)).then(r=>r.ok?r.blob():Promise.reject()).then(async b=>{trackFile=b;await loadTrack(b);if(Q.get('stems')){$('stemsb').textContent='Stems on ('+(STEMS&&STEMS.engine||'…')+')';$('stemsb').classList.add('on');toast('Track + stems ready. Space to play')}}).catch(()=>toast('That track is no longer on the desk; load it again'));
 function bands(){if(!an)return{b:0,m:0,h:0,flux:0};an.getByteFrequencyData(buf);const hz=AC.sampleRate/an.fftSize;
  const avg=(a,b)=>{let s=0,n=0;for(let i=Math.floor(a/hz);i<Math.min(buf.length,b/hz);i++){s+=buf[i];n++}return n?s/n/255:0};
  const b=avg(30,150),m=avg(150,2000),h=avg(4000,12000);const e=b*2+m+h;const flux=Math.max(0,e-bands.p);bands.p=e;return{b,m,h,flux}}bands.p=0;
@@ -279,11 +307,25 @@ addEventListener('keydown',e=>{if(e.target.tagName==='SELECT')return;const k=e.k
  else if(k==='ArrowDown'){e.preventDefault();S.inten=Math.max(0,S.inten-.1);toast('Intensity '+S.inten.toFixed(1))}
  else if(/^[kK]$/.test(k)){if(EXPERT)tog('kal','kal');else toast('Kaleido is expert only (?expert=1)')}else if(/^[mM]$/.test(k))tog('mir','mir');else if(/^[sS]$/.test(k))tog('stb','stb');
  else if(/^[tT]$/.test(k))tap();else if(/^[pP]$/.test(k))hud();else if(/^[hH]$/.test(k))$('ui').classList.toggle('hide');
- else if(/^[rR]$/.test(k))record();else if(/^[fF]$/.test(k))document.documentElement.requestFullscreen();else if(k==='?')$('help').classList.toggle('show')});
-// MIDI-style control (Web MIDI when the browser has it)
-if(navigator.requestMIDIAccess)navigator.requestMIDIAccess().then(acc=>{const bind=()=>{let n=0;acc.inputs.forEach(inp=>{n++;inp.onmidimessage=ev=>{const [st,d1,d2]=ev.data,c=st&0xf0;
- if(c===0x90&&d2>0){if(d1>=36&&d1<=43){const f=KEYFX[d1-36];setFx(String(f));next(f)}else next()}
- else if(c===0xB0&&d1===1)S.inten=d2/63.5;else if(c===0xB0&&d1===2){S.every=EV[Math.min(4,Math.floor(d2/26))];$('every').value=S.every}}});$('h-midi').textContent=n?n+' input(s)':'none'};bind();acc.onstatechange=bind}).catch(()=>{});
+ else if(/^[rR]$/.test(k))record();else if(/^[fF]$/.test(k))document.documentElement.requestFullscreen();else if(k==='?')$('help').classList.toggle('show')
+ else if(/^[lL]$/.test(k)){XenoMidi.setLearnMode(!XenoMidi.learnMode);if(XenoMidi.learnMode)$('help').classList.add('show')}});
+// MIDI: Web MIDI and the desk bridge (/ws/midi) through the shared mapping layer (midi.js). Default map = MiniLab 3.
+const setTog=(k,btn,on)=>{S[k]=on?1:0;$(btn).classList.toggle('on',!!S[k])};
+let intenToast=0;const stemName=n=>/^\d+$/.test(n)?((STEMS&&STEMS.stems)||[])[+n-1]||null:n;
+XenoMidi.init({page:'vj',toast,elements:{fx:'fx:next',every:'every',stemsb:'stem:1'},
+ onStatus:s=>{$('h-midi').textContent=s.inputs.length?s.inputs.length+' input(s)'+(s.bridge==='bridge'?' + bridge':''):s.bridge==='bridge'?'bridge':s.bridge==='sse'?'bridge (sse)':'none'},
+ targets:{
+  intensity:v=>{S.inten=Math.max(0,Math.min(2,v));const now=performance.now();if(now-intenToast>250){intenToast=now;toast('Intensity '+S.inten.toFixed(2))}},
+  every:v=>{S.every=EV[Math.min(4,Math.floor(v*4.999))];$('every').value=S.every},
+  'fx:*':(n,v)=>{if(n==='next')next();else if(n==='prev')prev();else if(n==='auto')setFx('auto');
+   else if(n==='step'){const i=KEYFX.indexOf(+S.fx),j=((i<0?0:i)+(v>0?1:-1)+KEYFX.length)%KEYFX.length;setFx(String(KEYFX[j]))}
+   else{const f=KEYFX[+n-1];if(f!=null){setFx(String(f));next(f)}}},
+  'dance:*':n=>dance(+n),
+  mirror:v=>setTog('mir','mir',v>0),strobe:v=>setTog('stb','stb',v>0),kaleido:v=>{if(EXPERT)setTog('kal','kal',v>0);else toast('Kaleido is expert only (?expert=1)')},
+  record:v=>{if((v>0)!==!!rec)record()},tap:()=>tap(),hud:v=>{if((v>0)!==S.hud)hud()},
+  drums:v=>{S.gain.drums=v},bass:v=>{S.gain.bass=v},other:v=>{S.gain.other=v},vocals:v=>{S.gain.vocals=v},
+  'stem:*':(n,v)=>{const name=stemName(n);if(name)setStemGain(name,v);else toast('No stem '+n+' (use this song\'s stems first)')}}});
+XenoMidi.panel($('midi-panel'));
 if(Q.get('clean')==='1')document.body.classList.add('clean');if(Q.get('hud')==='1')hud();
 let idle;addEventListener('mousemove',()=>{$('ui').classList.remove('hide');clearTimeout(idle);idle=setTimeout(()=>{if(!$('help').classList.contains('show'))$('ui').classList.add('hide')},3500)});
 loadLibrary();listInputs().catch(()=>{});requestAnimationFrame(frame);

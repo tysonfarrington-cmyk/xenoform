@@ -1,0 +1,768 @@
+{
+ "neon-noir": [
+  {
+   "name": "00_orb",
+   "noun": "orb",
+   "prompt": "Cinematic studio photograph, neon noir, a sculpture of glossy black glass and smoked chrome beaded with rain droplets, standing on black rain-slick asphalt, hard magenta key light from the left and cyan rim light from the right, light rain haze and volumetric mist, neon reflections in the wet ground, deep black background, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single perfect sphere of glossy rain-beaded black glass, magenta and cyan reflections curving across it.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "01_nautilus",
+   "noun": "nautilus",
+   "prompt": "Cinematic studio photograph, neon noir, a sculpture of glossy black glass and smoked chrome beaded with rain droplets, standing on black rain-slick asphalt, hard magenta key light from the left and cyan rim light from the right, light rain haze and volumetric mist, neon reflections in the wet ground, deep black background, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single nautilus shell sculpted from glossy black glass and smoked chrome, its spiral chambers catching magenta and cyan rim light.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "02_lotus",
+   "noun": "lotus",
+   "prompt": "Cinematic studio photograph, neon noir, a sculpture of glossy black glass and smoked chrome beaded with rain droplets, standing on black rain-slick asphalt, hard magenta key light from the left and cyan rim light from the right, light rain haze and volumetric mist, neon reflections in the wet ground, deep black background, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single lotus flower sculpted from glossy black glass, each petal edge rimmed in magenta and cyan neon.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "03_torus_knot",
+   "noun": "torus knot",
+   "prompt": "Cinematic studio photograph, neon noir, a sculpture of glossy black glass and smoked chrome beaded with rain droplets, standing on black rain-slick asphalt, hard magenta key light from the left and cyan rim light from the right, light rain haze and volumetric mist, neon reflections in the wet ground, deep black background, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single torus knot of smoked chrome and black glass, neon rim light tracing its loops.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "04_jellyfish",
+   "noun": "jellyfish",
+   "prompt": "Cinematic studio photograph, neon noir, a sculpture of glossy black glass and smoked chrome beaded with rain droplets, standing on black rain-slick asphalt, hard magenta key light from the left and cyan rim light from the right, light rain haze and volumetric mist, neon reflections in the wet ground, deep black background, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single jellyfish sculpted from translucent smoked glass, its bell and trailing tentacles lit magenta and cyan.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "05_crystal",
+   "noun": "crystal",
+   "prompt": "Cinematic studio photograph, neon noir, a sculpture of glossy black glass and smoked chrome beaded with rain droplets, standing on black rain-slick asphalt, hard magenta key light from the left and cyan rim light from the right, light rain haze and volumetric mist, neon reflections in the wet ground, deep black background, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single crystal cluster of black glass shards, rain-wet, neon light splitting on its facets.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "06_feather",
+   "noun": "feather",
+   "prompt": "Cinematic studio photograph, neon noir, a sculpture of glossy black glass and smoked chrome beaded with rain droplets, standing on black rain-slick asphalt, hard magenta key light from the left and cyan rim light from the right, light rain haze and volumetric mist, neon reflections in the wet ground, deep black background, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single feather sculpted from black glass with fine chrome barbs, magenta and cyan rim light.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "07_ribbon",
+   "noun": "ribbon",
+   "prompt": "Cinematic studio photograph, neon noir, a sculpture of glossy black glass and smoked chrome beaded with rain droplets, standing on black rain-slick asphalt, hard magenta key light from the left and cyan rim light from the right, light rain haze and volumetric mist, neon reflections in the wet ground, deep black background, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single mobius strip, a single twisted band with one half-twist, a continuous looped ribbon, not two rings, not an awareness ribbon, made of glossy rain-beaded black glass, neon rim light along its twist.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces",
+   "seed": 4207
+  },
+  {
+   "name": "08_dna_helix",
+   "noun": "dna helix",
+   "prompt": "Cinematic studio photograph, neon noir, a sculpture of glossy black glass and smoked chrome beaded with rain droplets, standing on black rain-slick asphalt, hard magenta key light from the left and cyan rim light from the right, light rain haze and volumetric mist, neon reflections in the wet ground, deep black background, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single double helix of smoked chrome and black glass, neon rim light on every rung.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "09_seed_pod",
+   "noun": "seed pod",
+   "prompt": "Cinematic studio photograph, neon noir, a sculpture of glossy black glass and smoked chrome beaded with rain droplets, standing on black rain-slick asphalt, hard magenta key light from the left and cyan rim light from the right, light rain haze and volumetric mist, neon reflections in the wet ground, deep black background, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single seed pod sculpted from black glass, split open to show chrome seeds, rain-beaded.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "10_conch",
+   "noun": "conch",
+   "prompt": "Cinematic studio photograph, neon noir, a sculpture of glossy black glass and smoked chrome beaded with rain droplets, standing on black rain-slick asphalt, hard magenta key light from the left and cyan rim light from the right, light rain haze and volumetric mist, neon reflections in the wet ground, deep black background, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single conch shell of glossy black glass and smoked chrome, neon light glowing in its mouth.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "11_butterfly",
+   "noun": "butterfly",
+   "prompt": "Cinematic studio photograph, neon noir, a sculpture of glossy black glass and smoked chrome beaded with rain droplets, standing on black rain-slick asphalt, hard magenta key light from the left and cyan rim light from the right, light rain haze and volumetric mist, neon reflections in the wet ground, deep black background, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single butterfly sculpted from black glass with chrome veins, wings rimmed magenta and cyan.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  }
+ ],
+ "porcelain-kintsugi": [
+  {
+   "name": "00_orb",
+   "noun": "orb",
+   "prompt": "Studio photograph, a sculpture of glossy white porcelain broken and repaired with bright shining gold kintsugi seams running across its surface, soft diffuse museum lighting, gentle falloff, plain warm pale grey seamless backdrop filling the whole background, no softbox, no lamp, no light fixture visible, no studio equipment, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single perfect sphere of white porcelain, gold kintsugi seams running across it.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed",
+   "seed": 4200
+  },
+  {
+   "name": "01_nautilus",
+   "noun": "nautilus",
+   "prompt": "Studio photograph, a sculpture of glossy white porcelain broken and repaired with bright shining gold kintsugi seams running across its surface, soft diffuse museum lighting, gentle falloff, plain warm pale grey seamless backdrop filling the whole background, no softbox, no lamp, no light fixture visible, no studio equipment, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single nautilus shell of white porcelain, its spiral chambers traced by gold kintsugi seams.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed",
+   "seed": 4201
+  },
+  {
+   "name": "02_lotus",
+   "noun": "lotus",
+   "prompt": "Studio photograph, a sculpture of glossy white porcelain broken and repaired with bright shining gold kintsugi seams running across its surface, soft diffuse museum lighting, gentle falloff, plain warm pale grey seamless backdrop filling the whole background, no softbox, no lamp, no light fixture visible, no studio equipment, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single lotus flower of white porcelain, gold kintsugi seams running across the petals.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed",
+   "seed": 4202
+  },
+  {
+   "name": "03_torus_knot",
+   "noun": "torus knot",
+   "prompt": "Studio photograph, a sculpture of glossy white porcelain broken and repaired with bright shining gold kintsugi seams running across its surface, soft diffuse museum lighting, gentle falloff, plain warm pale grey seamless backdrop filling the whole background, no softbox, no lamp, no light fixture visible, no studio equipment, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single torus knot of white porcelain mended with gold kintsugi seams.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed",
+   "seed": 4203
+  },
+  {
+   "name": "04_jellyfish",
+   "noun": "jellyfish",
+   "prompt": "Studio photograph, a sculpture of glossy white porcelain broken and repaired with bright shining gold kintsugi seams running across its surface, soft diffuse museum lighting, gentle falloff, plain warm pale grey seamless backdrop filling the whole background, no softbox, no lamp, no light fixture visible, no studio equipment, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single jellyfish of thin translucent white porcelain, gold kintsugi seams on the bell and trailing tentacles.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed",
+   "seed": 4204
+  },
+  {
+   "name": "05_crystal",
+   "noun": "crystal",
+   "prompt": "Studio photograph, a sculpture of glossy white porcelain broken and repaired with bright shining gold kintsugi seams running across its surface, soft diffuse museum lighting, gentle falloff, plain warm pale grey seamless backdrop filling the whole background, no softbox, no lamp, no light fixture visible, no studio equipment, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single crystal cluster of white porcelain spires joined by gold kintsugi seams.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed",
+   "seed": 4205
+  },
+  {
+   "name": "06_feather",
+   "noun": "feather",
+   "prompt": "Studio photograph, a sculpture of glossy white porcelain broken and repaired with bright shining gold kintsugi seams running across its surface, soft diffuse museum lighting, gentle falloff, plain warm pale grey seamless backdrop filling the whole background, no softbox, no lamp, no light fixture visible, no studio equipment, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single large feather of white porcelain with fine gold kintsugi veins, lying alone, no vase, no pot.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed",
+   "seed": 4206
+  },
+  {
+   "name": "07_ribbon",
+   "noun": "ribbon",
+   "prompt": "Studio photograph, a sculpture of glossy white porcelain broken and repaired with bright shining gold kintsugi seams running across its surface, soft diffuse museum lighting, gentle falloff, plain warm pale grey seamless backdrop filling the whole background, no softbox, no lamp, no light fixture visible, no studio equipment, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single mobius ribbon of white porcelain, gold kintsugi seams along the twisting loop.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed",
+   "seed": 4207
+  },
+  {
+   "name": "08_dna_helix",
+   "noun": "dna helix",
+   "prompt": "Studio photograph, a sculpture of glossy white porcelain broken and repaired with bright shining gold kintsugi seams running across its surface, soft diffuse museum lighting, gentle falloff, plain warm pale grey seamless backdrop filling the whole background, no softbox, no lamp, no light fixture visible, no studio equipment, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single double helix of white porcelain with gold kintsugi seams on every rung.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed",
+   "seed": 4208
+  },
+  {
+   "name": "09_seed_pod",
+   "noun": "seed pod",
+   "prompt": "Studio photograph, a sculpture of glossy white porcelain broken and repaired with bright shining gold kintsugi seams running across its surface, soft diffuse museum lighting, gentle falloff, plain warm pale grey seamless backdrop filling the whole background, no softbox, no lamp, no light fixture visible, no studio equipment, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single seed pod of white porcelain split open, gold kintsugi seams around the seeds.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed",
+   "seed": 4209
+  },
+  {
+   "name": "10_conch",
+   "noun": "conch",
+   "prompt": "Studio photograph, a sculpture of glossy white porcelain broken and repaired with bright shining gold kintsugi seams running across its surface, soft diffuse museum lighting, gentle falloff, plain warm pale grey seamless backdrop filling the whole background, no softbox, no lamp, no light fixture visible, no studio equipment, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single conch shell of white porcelain, gold kintsugi seams spiralling into its mouth.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed",
+   "seed": 4210
+  },
+  {
+   "name": "11_butterfly",
+   "noun": "butterfly",
+   "prompt": "Studio photograph, a sculpture of glossy white porcelain broken and repaired with bright shining gold kintsugi seams running across its surface, soft diffuse museum lighting, gentle falloff, plain warm pale grey seamless backdrop filling the whole background, no softbox, no lamp, no light fixture visible, no studio equipment, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single butterfly of white porcelain, wings veined with gold kintsugi seams.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed",
+   "seed": 4211
+  }
+ ],
+ "bioluminescent": [
+  {
+   "name": "00_orb",
+   "noun": "orb",
+   "prompt": "Studio macro photograph, translucent deep-sea creature-like form glowing with bioluminescent cyan and green light, soft inner glow, drifting particles, pitch black abyss, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single perfect sphere made of translucent gelatinous tissue.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "01_nautilus",
+   "noun": "nautilus",
+   "prompt": "Studio macro photograph, translucent deep-sea creature-like form glowing with bioluminescent cyan and green light, soft inner glow, drifting particles, pitch black abyss, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single nautilus shell made of translucent gelatinous tissue.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "02_lotus",
+   "noun": "lotus",
+   "prompt": "Studio macro photograph, translucent deep-sea creature-like form glowing with bioluminescent cyan and green light, soft inner glow, drifting particles, pitch black abyss, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single lotus flower made of translucent gelatinous tissue.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "03_torus_knot",
+   "noun": "torus knot",
+   "prompt": "Studio macro photograph, translucent deep-sea creature-like form glowing with bioluminescent cyan and green light, soft inner glow, drifting particles, pitch black abyss, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single torus knot made of translucent gelatinous tissue.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "04_jellyfish",
+   "noun": "jellyfish",
+   "prompt": "Studio macro photograph, translucent deep-sea creature-like form glowing with bioluminescent cyan and green light, soft inner glow, drifting particles, pitch black abyss, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single jellyfish made of translucent gelatinous tissue.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "05_crystal",
+   "noun": "crystal",
+   "prompt": "Studio macro photograph, translucent deep-sea creature-like form glowing with bioluminescent cyan and green light, soft inner glow, drifting particles, pitch black abyss, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single crystal cluster made of translucent gelatinous tissue.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "06_feather",
+   "noun": "feather",
+   "prompt": "Studio macro photograph, translucent deep-sea creature-like form glowing with bioluminescent cyan and green light, soft inner glow, drifting particles, pitch black abyss, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single feather made of translucent gelatinous tissue.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "07_ribbon",
+   "noun": "ribbon",
+   "prompt": "Studio macro photograph, translucent deep-sea creature-like form glowing with bioluminescent cyan and green light, soft inner glow, drifting particles, pitch black abyss, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single mobius ribbon made of translucent gelatinous tissue.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "08_dna_helix",
+   "noun": "dna helix",
+   "prompt": "Studio macro photograph, translucent deep-sea creature-like form glowing with bioluminescent cyan and green light, soft inner glow, drifting particles, pitch black abyss, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single double helix made of translucent gelatinous tissue.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "09_seed_pod",
+   "noun": "seed pod",
+   "prompt": "Studio macro photograph, translucent deep-sea creature-like form glowing with bioluminescent cyan and green light, soft inner glow, drifting particles, pitch black abyss, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single seed pod made of translucent gelatinous tissue.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "10_conch",
+   "noun": "conch",
+   "prompt": "Studio macro photograph, translucent deep-sea creature-like form glowing with bioluminescent cyan and green light, soft inner glow, drifting particles, pitch black abyss, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single conch shell made of translucent gelatinous tissue.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "11_butterfly",
+   "noun": "butterfly",
+   "prompt": "Studio macro photograph, translucent deep-sea creature-like form glowing with bioluminescent cyan and green light, soft inner glow, drifting particles, pitch black abyss, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people. One single butterfly made of translucent gelatinous tissue.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  }
+ ],
+ "risograph": [
+  {
+   "name": "00_orb",
+   "noun": "orb",
+   "prompt": "Risograph print illustration, flat graphic shapes in exactly two fluorescent ink colours, fluorescent pink and bright blue, visible halftone grain, slight misregistration of the two ink layers, off-white textured paper background, flat print with no shading beyond halftone, not a photograph, bold simplified design, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single perfect sphere printed in halftone pink and blue inks.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "01_nautilus",
+   "noun": "nautilus",
+   "prompt": "Risograph print illustration, flat graphic shapes in exactly two fluorescent ink colours, fluorescent pink and bright blue, visible halftone grain, slight misregistration of the two ink layers, off-white textured paper background, flat print with no shading beyond halftone, not a photograph, bold simplified design, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single nautilus shell, its spiral chambers in overlapping pink and blue inks.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "02_lotus",
+   "noun": "lotus",
+   "prompt": "Risograph print illustration, flat graphic shapes in exactly two fluorescent ink colours, fluorescent pink and bright blue, visible halftone grain, slight misregistration of the two ink layers, off-white textured paper background, flat print with no shading beyond halftone, not a photograph, bold simplified design, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single lotus flower, petals in pink ink over a blue halftone shadow.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "03_torus_knot",
+   "noun": "torus knot",
+   "prompt": "Risograph print illustration, flat graphic shapes in exactly two fluorescent ink colours, fluorescent pink and bright blue, visible halftone grain, slight misregistration of the two ink layers, off-white textured paper background, flat print with no shading beyond halftone, not a photograph, bold simplified design, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single trefoil knot sculpture: one closed tube that crosses over and under itself three times forming three equal lobes arranged around a centre, a clearly three-lobed knot, not a figure eight, not an infinity symbol, not two rings, printed flat in interlocking pink and blue halftone bands with misregistration.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces",
+   "seed": 5300
+  },
+  {
+   "name": "04_jellyfish",
+   "noun": "jellyfish",
+   "prompt": "Risograph print illustration, flat graphic shapes in exactly two fluorescent ink colours, fluorescent pink and bright blue, visible halftone grain, slight misregistration of the two ink layers, off-white textured paper background, flat print with no shading beyond halftone, not a photograph, bold simplified design, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single jellyfish, a blue halftone bell with pink trailing tentacles.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "05_crystal",
+   "noun": "crystal",
+   "prompt": "Risograph print illustration, flat graphic shapes in exactly two fluorescent ink colours, fluorescent pink and bright blue, visible halftone grain, slight misregistration of the two ink layers, off-white textured paper background, flat print with no shading beyond halftone, not a photograph, bold simplified design, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single crystal cluster of sharp faceted spires in pink and blue halftone.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "06_feather",
+   "noun": "feather",
+   "prompt": "Risograph print illustration, flat graphic shapes in exactly two fluorescent ink colours, fluorescent pink and bright blue, visible halftone grain, slight misregistration of the two ink layers, off-white textured paper background, flat print with no shading beyond halftone, not a photograph, bold simplified design, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single feather with fine pink barbs and a blue halftone shadow.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "07_ribbon",
+   "noun": "ribbon",
+   "prompt": "Risograph print illustration, flat graphic shapes in exactly two fluorescent ink colours, fluorescent pink and bright blue, visible halftone grain, slight misregistration of the two ink layers, off-white textured paper background, flat print with no shading beyond halftone, not a photograph, bold simplified design, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single mobius ribbon, a twisting loop in overlapping pink and blue inks.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "08_dna_helix",
+   "noun": "dna helix",
+   "prompt": "Risograph print illustration, flat graphic shapes in exactly two fluorescent ink colours, fluorescent pink and bright blue, visible halftone grain, slight misregistration of the two ink layers, off-white textured paper background, flat print with no shading beyond halftone, not a photograph, bold simplified design, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single double helix in pink and blue halftone bands.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "09_seed_pod",
+   "noun": "seed pod",
+   "prompt": "Risograph print illustration, flat graphic shapes in exactly two fluorescent ink colours, fluorescent pink and bright blue, visible halftone grain, slight misregistration of the two ink layers, off-white textured paper background, flat print with no shading beyond halftone, not a photograph, bold simplified design, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single seed pod split open, pink seeds in a blue husk.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "10_conch",
+   "noun": "conch",
+   "prompt": "Risograph print illustration, flat graphic shapes in exactly two fluorescent ink colours, fluorescent pink and bright blue, visible halftone grain, slight misregistration of the two ink layers, off-white textured paper background, flat print with no shading beyond halftone, not a photograph, bold simplified design, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single conch shell with spiral ridges in pink and blue halftone.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "11_butterfly",
+   "noun": "butterfly",
+   "prompt": "Risograph print illustration, flat graphic shapes in exactly two fluorescent ink colours, fluorescent pink and bright blue, visible halftone grain, slight misregistration of the two ink layers, off-white textured paper background, flat print with no shading beyond halftone, not a photograph, bold simplified design, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single butterfly with wings in overlapping pink and blue halftone.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  }
+ ],
+ "iridescent-glass": [
+  {
+   "name": "00_orb",
+   "noun": "orb",
+   "prompt": "Studio macro photograph, a sculpture of hand-blown iridescent glass with a thin-film rainbow sheen, bright caustics and refractions, backlit by a softbox, soft pearl-grey gradient seamless backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single perfect sphere of hand-blown iridescent glass, rainbow sheen and caustics.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "01_nautilus",
+   "noun": "nautilus",
+   "prompt": "Studio macro photograph, a sculpture of hand-blown iridescent glass with a thin-film rainbow sheen, bright caustics and refractions, backlit by a softbox, soft pearl-grey gradient seamless backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single nautilus shell of hand-blown iridescent glass, light refracting through its spiral chambers.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "02_lotus",
+   "noun": "lotus",
+   "prompt": "Studio macro photograph, a sculpture of hand-blown iridescent glass with a thin-film rainbow sheen, bright caustics and refractions, backlit by a softbox, soft pearl-grey gradient seamless backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single lotus flower of hand-blown iridescent glass, thin rainbow-sheened petals.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "03_torus_knot",
+   "noun": "torus knot",
+   "prompt": "Studio macro photograph, a sculpture of hand-blown iridescent glass with a thin-film rainbow sheen, bright caustics and refractions, backlit by a softbox, soft pearl-grey gradient seamless backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single torus knot of hand-blown iridescent glass, caustics inside its loops.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "04_jellyfish",
+   "noun": "jellyfish",
+   "prompt": "Studio macro photograph, a sculpture of hand-blown iridescent glass with a thin-film rainbow sheen, bright caustics and refractions, backlit by a softbox, soft pearl-grey gradient seamless backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single jellyfish of hand-blown iridescent glass, a thin bell and trailing glass tentacles.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "05_crystal",
+   "noun": "crystal",
+   "prompt": "Studio macro photograph, a sculpture of hand-blown iridescent glass with a thin-film rainbow sheen, bright caustics and refractions, backlit by a softbox, soft pearl-grey gradient seamless backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single crystal cluster of hand-blown iridescent glass spires, rainbow refractions.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "06_feather",
+   "noun": "feather",
+   "prompt": "Studio macro photograph, a sculpture of hand-blown iridescent glass with a thin-film rainbow sheen, bright caustics and refractions, backlit by a softbox, soft pearl-grey gradient seamless backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single large free-standing feather sculpted from hand-blown iridescent glass, a long quill with fine translucent barbs, standing upright on its own, rainbow sheen and caustics, nothing enclosing it, no sphere, no bubble, no dome, no vase.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces",
+   "seed": 5400
+  },
+  {
+   "name": "07_ribbon",
+   "noun": "ribbon",
+   "prompt": "Studio macro photograph, a sculpture of hand-blown iridescent glass with a thin-film rainbow sheen, bright caustics and refractions, backlit by a softbox, soft pearl-grey gradient seamless backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single mobius strip, a single twisted band with one half-twist, a continuous looped ribbon, not two rings, not an awareness ribbon, made of hand-blown iridescent glass.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces",
+   "seed": 4207
+  },
+  {
+   "name": "08_dna_helix",
+   "noun": "dna helix",
+   "prompt": "Studio macro photograph, a sculpture of hand-blown iridescent glass with a thin-film rainbow sheen, bright caustics and refractions, backlit by a softbox, soft pearl-grey gradient seamless backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single double helix of hand-blown iridescent glass, rainbow sheen on every rung.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "09_seed_pod",
+   "noun": "seed pod",
+   "prompt": "Studio macro photograph, a sculpture of hand-blown iridescent glass with a thin-film rainbow sheen, bright caustics and refractions, backlit by a softbox, soft pearl-grey gradient seamless backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single seed pod of hand-blown iridescent glass, split open to show glass seeds.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "10_conch",
+   "noun": "conch",
+   "prompt": "Studio macro photograph, a sculpture of hand-blown iridescent glass with a thin-film rainbow sheen, bright caustics and refractions, backlit by a softbox, soft pearl-grey gradient seamless backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single conch shell of hand-blown iridescent glass, caustics glowing in its mouth.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "11_butterfly",
+   "noun": "butterfly",
+   "prompt": "Studio macro photograph, a sculpture of hand-blown iridescent glass with a thin-film rainbow sheen, bright caustics and refractions, backlit by a softbox, soft pearl-grey gradient seamless backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single butterfly of hand-blown iridescent glass, thin rainbow-sheened wings.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  }
+ ],
+ "ink-wash": [
+  {
+   "name": "00_orb",
+   "noun": "orb",
+   "prompt": "Japanese sumi-e ink wash painting, black ink bleeding into wet rice paper, expressive loaded brush strokes with dry-brush texture, soft grey washes and deep black accents, generous empty space of pale rice paper around the subject, even daylight on paper, not a photograph, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single perfect sphere painted as a single circular ink stroke with soft ink bleed.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "01_nautilus",
+   "noun": "nautilus",
+   "prompt": "Japanese sumi-e ink wash painting, black ink bleeding into wet rice paper, expressive loaded brush strokes with dry-brush texture, soft grey washes and deep black accents, generous empty space of pale rice paper around the subject, even daylight on paper, not a photograph, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single nautilus shell painted in flowing spiral brush strokes.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "02_lotus",
+   "noun": "lotus",
+   "prompt": "Japanese sumi-e ink wash painting, black ink bleeding into wet rice paper, expressive loaded brush strokes with dry-brush texture, soft grey washes and deep black accents, generous empty space of pale rice paper around the subject, even daylight on paper, not a photograph, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single lotus flower, petals in soft grey washes with black ink veins.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "03_torus_knot",
+   "noun": "torus knot",
+   "prompt": "Japanese sumi-e ink wash painting, black ink bleeding into wet rice paper, expressive loaded brush strokes with dry-brush texture, soft grey washes and deep black accents, generous empty space of pale rice paper around the subject, even daylight on paper, not a photograph, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single torus knot in looping continuous brush strokes.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "04_jellyfish",
+   "noun": "jellyfish",
+   "prompt": "Japanese sumi-e ink wash painting, black ink bleeding into wet rice paper, expressive loaded brush strokes with dry-brush texture, soft grey washes and deep black accents, generous empty space of pale rice paper around the subject, even daylight on paper, not a photograph, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single jellyfish, a bell of pale wash with tentacles in trailing dry-brush strokes.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "05_crystal",
+   "noun": "crystal",
+   "prompt": "Japanese sumi-e ink wash painting, black ink bleeding into wet rice paper, expressive loaded brush strokes with dry-brush texture, soft grey washes and deep black accents, generous empty space of pale rice paper around the subject, even daylight on paper, not a photograph, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single crystal cluster of sharp angular ink strokes.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "06_feather",
+   "noun": "feather",
+   "prompt": "Japanese sumi-e ink wash painting, black ink bleeding into wet rice paper, expressive loaded brush strokes with dry-brush texture, soft grey washes and deep black accents, generous empty space of pale rice paper around the subject, even daylight on paper, not a photograph, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single feather painted in fine feathering brush strokes with ink bleed.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "07_ribbon",
+   "noun": "ribbon",
+   "prompt": "Japanese sumi-e ink wash painting, black ink bleeding into wet rice paper, expressive loaded brush strokes with dry-brush texture, soft grey washes and deep black accents, generous empty space of pale rice paper around the subject, even daylight on paper, not a photograph, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single mobius ribbon in one continuous twisting brush stroke.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "08_dna_helix",
+   "noun": "dna helix",
+   "prompt": "Japanese sumi-e ink wash painting, black ink bleeding into wet rice paper, expressive loaded brush strokes with dry-brush texture, soft grey washes and deep black accents, generous empty space of pale rice paper around the subject, even daylight on paper, not a photograph, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single double helix in twisting paired ink strokes.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "09_seed_pod",
+   "noun": "seed pod",
+   "prompt": "Japanese sumi-e ink wash painting, black ink bleeding into wet rice paper, expressive loaded brush strokes with dry-brush texture, soft grey washes and deep black accents, generous empty space of pale rice paper around the subject, even daylight on paper, not a photograph, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single seed pod in bold wet ink with bleeding edges.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "10_conch",
+   "noun": "conch",
+   "prompt": "Japanese sumi-e ink wash painting, black ink bleeding into wet rice paper, expressive loaded brush strokes with dry-brush texture, soft grey washes and deep black accents, generous empty space of pale rice paper around the subject, even daylight on paper, not a photograph, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single conch shell in spiralling grey washes and black ridges.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "11_butterfly",
+   "noun": "butterfly",
+   "prompt": "Japanese sumi-e ink wash painting, black ink bleeding into wet rice paper, expressive loaded brush strokes with dry-brush texture, soft grey washes and deep black accents, generous empty space of pale rice paper around the subject, even daylight on paper, not a photograph, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single butterfly, wings in soft washes with bleeding black ink markings.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  }
+ ],
+ "cyberspace-95": [
+  {
+   "name": "00_orb",
+   "noun": "orb",
+   "prompt": "1995 cyberspace computer graphics, a glowing green and cyan wireframe model with low-poly gouraud shading, phosphor glow, faint scanlines, standing on an infinite glowing grid floor receding into pure black, self-lit wireframe, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single plain round ball built from a regular triangular geodesic mesh, an icosphere of glowing green wireframe edges with cyan gouraud-shaded triangular faces, a smooth featureless polyhedral ball, abstract computer geometry test object.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed",
+   "seed": 6100
+  },
+  {
+   "name": "01_nautilus",
+   "noun": "nautilus",
+   "prompt": "1995 cyberspace computer graphics, a glowing green and cyan wireframe model with low-poly gouraud shading, phosphor glow, faint scanlines, standing on an infinite glowing grid floor receding into pure black, self-lit wireframe, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single nautilus shell as a glowing green wireframe with cyan gouraud-shaded spiral chambers.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed"
+  },
+  {
+   "name": "02_lotus",
+   "noun": "lotus",
+   "prompt": "1995 cyberspace computer graphics, a glowing green and cyan wireframe model with low-poly gouraud shading, phosphor glow, faint scanlines, standing on an infinite glowing grid floor receding into pure black, self-lit wireframe, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single lotus flower as a glowing green wireframe with cyan gouraud-shaded petals.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed"
+  },
+  {
+   "name": "03_torus_knot",
+   "noun": "torus knot",
+   "prompt": "1995 cyberspace computer graphics, a glowing green and cyan wireframe model with low-poly gouraud shading, phosphor glow, faint scanlines, standing on an infinite glowing grid floor receding into pure black, self-lit wireframe, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single trefoil torus knot, one continuous tube that loops over and under itself three times, not two rings, as a glowing green wireframe with cyan gouraud shading.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed",
+   "seed": 4203
+  },
+  {
+   "name": "04_jellyfish",
+   "noun": "jellyfish",
+   "prompt": "1995 cyberspace computer graphics, a glowing green and cyan wireframe model with low-poly gouraud shading, phosphor glow, faint scanlines, standing on an infinite glowing grid floor receding into pure black, self-lit wireframe, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single jellyfish as a glowing green wireframe bell with cyan gouraud shading and trailing tentacles.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed"
+  },
+  {
+   "name": "05_crystal",
+   "noun": "crystal",
+   "prompt": "1995 cyberspace computer graphics, a glowing green and cyan wireframe model with low-poly gouraud shading, phosphor glow, faint scanlines, standing on an infinite glowing grid floor receding into pure black, self-lit wireframe, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single crystal cluster as a glowing green wireframe with cyan gouraud-shaded facets.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed"
+  },
+  {
+   "name": "06_feather",
+   "noun": "feather",
+   "prompt": "1995 cyberspace computer graphics, a glowing green and cyan wireframe model with low-poly gouraud shading, phosphor glow, faint scanlines, standing on an infinite glowing grid floor receding into pure black, self-lit wireframe, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single feather as a glowing green wireframe with cyan gouraud-shaded barbs.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed"
+  },
+  {
+   "name": "07_ribbon",
+   "noun": "ribbon",
+   "prompt": "1995 cyberspace computer graphics, a glowing green and cyan wireframe model with low-poly gouraud shading, phosphor glow, faint scanlines, standing on an infinite glowing grid floor receding into pure black, self-lit wireframe, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single Mobius strip sculpture: a single flat band given a half twist and joined into one loop, so the surface flows from outside to inside, seen three-quarter so the twist is visible, not an awareness ribbon, not a bow, not a figure eight, as a glowing green wireframe band with cyan gouraud shading.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed",
+   "seed": 5300
+  },
+  {
+   "name": "08_dna_helix",
+   "noun": "dna helix",
+   "prompt": "1995 cyberspace computer graphics, a glowing green and cyan wireframe model with low-poly gouraud shading, phosphor glow, faint scanlines, standing on an infinite glowing grid floor receding into pure black, self-lit wireframe, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single double helix as a glowing green wireframe with cyan gouraud-shaded rungs.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed"
+  },
+  {
+   "name": "09_seed_pod",
+   "noun": "seed pod",
+   "prompt": "1995 cyberspace computer graphics, a glowing green and cyan wireframe model with low-poly gouraud shading, phosphor glow, faint scanlines, standing on an infinite glowing grid floor receding into pure black, self-lit wireframe, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single seed pod as a glowing green wireframe with cyan gouraud-shaded seeds.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed"
+  },
+  {
+   "name": "10_conch",
+   "noun": "conch",
+   "prompt": "1995 cyberspace computer graphics, a glowing green and cyan wireframe model with low-poly gouraud shading, phosphor glow, faint scanlines, standing on an infinite glowing grid floor receding into pure black, self-lit wireframe, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single conch shell as a glowing green wireframe with cyan gouraud-shaded ridges.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed"
+  },
+  {
+   "name": "11_butterfly",
+   "noun": "butterfly",
+   "prompt": "1995 cyberspace computer graphics, a glowing green and cyan wireframe model with low-poly gouraud shading, phosphor glow, faint scanlines, standing on an infinite glowing grid floor receding into pure black, self-lit wireframe, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single butterfly as a glowing green wireframe with cyan gouraud-shaded wings.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed"
+  }
+ ],
+ "wet-paint": [
+  {
+   "name": "00_orb",
+   "noun": "orb",
+   "prompt": "Studio macro photograph, a sculpture formed from thick glossy wet acrylic paint, swirling ribbons of cobalt blue, vermilion red and cream, heavy impasto ridges and glossy highlights, soft key light, cream seamless backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single perfect sphere of thick wet acrylic paint swirled in cobalt, vermilion and cream.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "01_nautilus",
+   "noun": "nautilus",
+   "prompt": "Studio macro photograph, a sculpture formed from thick glossy wet acrylic paint, swirling ribbons of cobalt blue, vermilion red and cream, heavy impasto ridges and glossy highlights, soft key light, cream seamless backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single nautilus shell of thick wet acrylic paint, its spiral chambers in cobalt, vermilion and cream ridges.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "02_lotus",
+   "noun": "lotus",
+   "prompt": "Studio macro photograph, a sculpture formed from thick glossy wet acrylic paint, swirling ribbons of cobalt blue, vermilion red and cream, heavy impasto ridges and glossy highlights, soft key light, cream seamless backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single lotus flower of thick wet acrylic paint, petals in vermilion and cream impasto.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "03_torus_knot",
+   "noun": "torus knot",
+   "prompt": "Studio macro photograph, a sculpture formed from thick glossy wet acrylic paint, swirling ribbons of cobalt blue, vermilion red and cream, heavy impasto ridges and glossy highlights, soft key light, cream seamless backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single closed knot sculpture shaped like a three-leaf clover: three equal rounded loops arranged at 120 degrees around a small central opening, one continuous tube that passes over then under at each of three crossings, a trefoil knot, pretzel-like, viewed straight on, formed from thick glossy wet acrylic paint, cobalt, vermilion and cream ribbons swirled along the tube.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces",
+   "seed": 6100
+  },
+  {
+   "name": "04_jellyfish",
+   "noun": "jellyfish",
+   "prompt": "Studio macro photograph, a sculpture formed from thick glossy wet acrylic paint, swirling ribbons of cobalt blue, vermilion red and cream, heavy impasto ridges and glossy highlights, soft key light, cream seamless backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single jellyfish of thick wet acrylic paint, a cream bell with cobalt and vermilion trailing tentacles.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "05_crystal",
+   "noun": "crystal",
+   "prompt": "Studio macro photograph, a sculpture formed from thick glossy wet acrylic paint, swirling ribbons of cobalt blue, vermilion red and cream, heavy impasto ridges and glossy highlights, soft key light, cream seamless backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single crystal cluster of thick wet acrylic paint spires in cobalt, vermilion and cream.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "06_feather",
+   "noun": "feather",
+   "prompt": "Studio macro photograph, a sculpture formed from thick glossy wet acrylic paint, swirling ribbons of cobalt blue, vermilion red and cream, heavy impasto ridges and glossy highlights, soft key light, cream seamless backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single feather of thick wet acrylic paint, barbs in cobalt, vermilion and cream impasto strokes.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "07_ribbon",
+   "noun": "ribbon",
+   "prompt": "Studio macro photograph, a sculpture formed from thick glossy wet acrylic paint, swirling ribbons of cobalt blue, vermilion red and cream, heavy impasto ridges and glossy highlights, soft key light, cream seamless backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single Mobius strip sculpture: a single flat band given a half twist and joined into one loop, so the surface flows from outside to inside, seen three-quarter so the twist is visible, not an awareness ribbon, not a bow, not a figure eight, formed from one thick glossy band of wet acrylic paint, cobalt on one face and vermilion with cream streaks on the other.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces",
+   "seed": 5300
+  },
+  {
+   "name": "08_dna_helix",
+   "noun": "dna helix",
+   "prompt": "Studio macro photograph, a sculpture formed from thick glossy wet acrylic paint, swirling ribbons of cobalt blue, vermilion red and cream, heavy impasto ridges and glossy highlights, soft key light, cream seamless backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single vertical double helix, two strands twisting around each other like a spiral staircase, joined by evenly spaced rungs, made of thick wet acrylic paint, cobalt and vermilion strands with cream rungs.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces",
+   "seed": 4208
+  },
+  {
+   "name": "09_seed_pod",
+   "noun": "seed pod",
+   "prompt": "Studio macro photograph, a sculpture formed from thick glossy wet acrylic paint, swirling ribbons of cobalt blue, vermilion red and cream, heavy impasto ridges and glossy highlights, soft key light, cream seamless backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single seed pod of thick wet acrylic paint, split open to show cobalt and vermilion seeds.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "10_conch",
+   "noun": "conch",
+   "prompt": "Studio macro photograph, a sculpture formed from thick glossy wet acrylic paint, swirling ribbons of cobalt blue, vermilion red and cream, heavy impasto ridges and glossy highlights, soft key light, cream seamless backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single conch shell of thick wet acrylic paint, spiral ridges in cobalt, vermilion and cream.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "11_butterfly",
+   "noun": "butterfly",
+   "prompt": "Studio macro photograph, a sculpture formed from thick glossy wet acrylic paint, swirling ribbons of cobalt blue, vermilion red and cream, heavy impasto ridges and glossy highlights, soft key light, cream seamless backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single butterfly of thick wet acrylic paint, wings in cobalt, vermilion and cream impasto.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  }
+ ],
+ "shadow-self": [
+  {
+   "name": "00_orb",
+   "noun": "orb",
+   "prompt": "High-contrast film noir photograph, a sculptural object seen as a strong backlit silhouette, a single hard shaft of white light from behind through curling smoke, a bright rim of light tracing its edge, deep black shadows, 35mm film grain, black void, no human figure, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single perfect sphere in backlit silhouette, a thin bright rim of light around its edge, smoke curling behind it.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed"
+  },
+  {
+   "name": "01_nautilus",
+   "noun": "nautilus",
+   "prompt": "High-contrast film noir photograph, a sculptural object seen as a strong backlit silhouette, a single hard shaft of white light from behind through curling smoke, a bright rim of light tracing its edge, deep black shadows, 35mm film grain, black void, no human figure, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single nautilus shell in backlit silhouette, hard light tracing its spiral edge, smoke curling behind it.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed"
+  },
+  {
+   "name": "02_lotus",
+   "noun": "lotus",
+   "prompt": "High-contrast film noir photograph, a sculptural object seen as a strong backlit silhouette, a single hard shaft of white light from behind through curling smoke, a bright rim of light tracing its edge, deep black shadows, 35mm film grain, black void, no human figure, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single lotus flower in backlit silhouette, light glowing through the petal edges, smoke curling behind it.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed"
+  },
+  {
+   "name": "03_torus_knot",
+   "noun": "torus knot",
+   "prompt": "High-contrast film noir photograph, a sculptural object seen as a strong backlit silhouette, a single hard shaft of white light from behind through curling smoke, a bright rim of light tracing its edge, deep black shadows, 35mm film grain, black void, no human figure, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single closed knot sculpture shaped like a three-leaf clover: three equal rounded loops arranged at 120 degrees around a small central opening, one continuous tube that passes over then under at each of three crossings, a trefoil knot, pretzel-like, viewed straight on, as a crisp solid black backlit silhouette with a bright rim of light tracing every lobe, smoke curling behind it, sharp edges.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed",
+   "seed": 6200
+  },
+  {
+   "name": "04_jellyfish",
+   "noun": "jellyfish",
+   "prompt": "High-contrast film noir photograph, a sculptural object seen as a strong backlit silhouette, a single hard shaft of white light from behind through curling smoke, a bright rim of light tracing its edge, deep black shadows, 35mm film grain, black void, no human figure, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single jellyfish in backlit silhouette, light glowing through its bell and tentacles, smoke curling behind it.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed"
+  },
+  {
+   "name": "05_crystal",
+   "noun": "crystal",
+   "prompt": "High-contrast film noir photograph, a sculptural object seen as a strong backlit silhouette, a single hard shaft of white light from behind through curling smoke, a bright rim of light tracing its edge, deep black shadows, 35mm film grain, black void, no human figure, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single crystal cluster in backlit silhouette, hard light splitting on its facets, smoke curling behind it.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed"
+  },
+  {
+   "name": "06_feather",
+   "noun": "feather",
+   "prompt": "High-contrast film noir photograph, a sculptural object seen as a strong backlit silhouette, a single hard shaft of white light from behind through curling smoke, a bright rim of light tracing its edge, deep black shadows, 35mm film grain, black void, no human figure, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single feather in backlit silhouette, light glowing through its barbs, smoke curling behind it.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed"
+  },
+  {
+   "name": "07_ribbon",
+   "noun": "ribbon",
+   "prompt": "High-contrast film noir photograph, a sculptural object seen as a strong backlit silhouette, a single hard shaft of white light from behind through curling smoke, a bright rim of light tracing its edge, deep black shadows, 35mm film grain, black void, no human figure, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single mobius strip, a single twisted band with one half-twist, a continuous looped ribbon, not two rings, not an awareness ribbon, in backlit silhouette, a bright rim along its twisting band, smoke curling behind it.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed",
+   "seed": 4207
+  },
+  {
+   "name": "08_dna_helix",
+   "noun": "dna helix",
+   "prompt": "High-contrast film noir photograph, a sculptural object seen as a strong backlit silhouette, a single hard shaft of white light from behind through curling smoke, a bright rim of light tracing its edge, deep black shadows, 35mm film grain, black void, no human figure, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single double helix in backlit silhouette, hard light tracing every rung, smoke curling behind it.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed"
+  },
+  {
+   "name": "09_seed_pod",
+   "noun": "seed pod",
+   "prompt": "High-contrast film noir photograph, a sculptural object seen as a strong backlit silhouette, a single hard shaft of white light from behind through curling smoke, a bright rim of light tracing its edge, deep black shadows, 35mm film grain, black void, no human figure, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single seed pod in backlit silhouette, split open, light glowing between its seeds, smoke curling behind it.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed"
+  },
+  {
+   "name": "10_conch",
+   "noun": "conch",
+   "prompt": "High-contrast film noir photograph, a sculptural object seen as a strong backlit silhouette, a single hard shaft of white light from behind through curling smoke, a bright rim of light tracing its edge, deep black shadows, 35mm film grain, black void, no human figure, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single conch shell in backlit silhouette, hard light tracing its spiral ridges, smoke curling behind it.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed"
+  },
+  {
+   "name": "11_butterfly",
+   "noun": "butterfly",
+   "prompt": "High-contrast film noir photograph, a sculptural object seen as a strong backlit silhouette, a single hard shaft of white light from behind through curling smoke, a bright rim of light tracing its edge, deep black shadows, 35mm film grain, black void, no human figure, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single butterfly in backlit silhouette, light glowing through its wings, smoke curling behind it.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed"
+  }
+ ],
+ "botanical": [
+  {
+   "name": "00_orb",
+   "noun": "orb",
+   "prompt": "Macro botanical photograph, a single living plant form on pure black, delicate dewy petals, rich natural colour, soft side light, shallow depth of field with crisp focus on the subject, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single perfect sphere: a round allium flower head, a globe of tiny violet star florets, dewy.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "01_nautilus",
+   "noun": "nautilus",
+   "prompt": "Macro botanical photograph, a single living plant form on pure black, delicate dewy petals, rich natural colour, soft side light, shallow depth of field with crisp focus on the subject, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single nautilus shell shape: an unfurling spiral fern fiddlehead, dewy green coils.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "02_lotus",
+   "noun": "lotus",
+   "prompt": "Macro botanical photograph, a single living plant form on pure black, delicate dewy petals, rich natural colour, soft side light, shallow depth of field with crisp focus on the subject, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single pink lotus flower in full bloom, dewy petals.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "03_torus_knot",
+   "noun": "torus knot",
+   "prompt": "Macro botanical photograph, a single living plant form on pure black, delicate dewy petals, rich natural colour, soft side light, shallow depth of field with crisp focus on the subject, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single trefoil torus knot, one continuous tube that loops over and under itself three times, not two rings, formed from a single green vine with small white blossoms, tied into a trefoil knot.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces",
+   "seed": 4203
+  },
+  {
+   "name": "04_jellyfish",
+   "noun": "jellyfish",
+   "prompt": "Macro botanical photograph, a single living plant form on pure black, delicate dewy petals, rich natural colour, soft side light, shallow depth of field with crisp focus on the subject, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single jellyfish-shaped fuchsia flower, a bell of magenta petals with long trailing stamens.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "05_crystal",
+   "noun": "crystal",
+   "prompt": "Macro botanical photograph, a single living plant form on pure black, delicate dewy petals, rich natural colour, soft side light, shallow depth of field with crisp focus on the subject, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single crystal cluster shape: a spray of upright white hyacinth florets, dewy, glowing against black.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "06_feather",
+   "noun": "feather",
+   "prompt": "Macro botanical photograph, a single living plant form on pure black, delicate dewy petals, rich natural colour, soft side light, shallow depth of field with crisp focus on the subject, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single feather shape: a soft feathery fern frond, dewy green.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "07_ribbon",
+   "noun": "ribbon",
+   "prompt": "Macro botanical photograph, a single living plant form on pure black, delicate dewy petals, rich natural colour, soft side light, shallow depth of field with crisp focus on the subject, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single mobius ribbon formed from a curling green leaf, a continuous twisting loop.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "08_dna_helix",
+   "noun": "dna helix",
+   "prompt": "Macro botanical photograph, a single living plant form on pure black, delicate dewy petals, rich natural colour, soft side light, shallow depth of field with crisp focus on the subject, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. Macro close-up filling the frame: two thick green vines coiled tightly around each other into a double helix, running diagonally across the whole frame, small leaves bridging the two strands like rungs, dewy, on pure black, no flowers.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces",
+   "seed": 6300
+  },
+  {
+   "name": "09_seed_pod",
+   "noun": "seed pod",
+   "prompt": "Macro botanical photograph, a single living plant form on pure black, delicate dewy petals, rich natural colour, soft side light, shallow depth of field with crisp focus on the subject, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single lotus seed pod, its honeycomb face holding seeds, dewy.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "10_conch",
+   "noun": "conch",
+   "prompt": "Macro botanical photograph, a single living plant form on pure black, delicate dewy petals, rich natural colour, soft side light, shallow depth of field with crisp focus on the subject, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single conch shell shape: a white calla lily, its curled spathe spiralling inward, dewy.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  },
+  {
+   "name": "11_butterfly",
+   "noun": "butterfly",
+   "prompt": "Macro botanical photograph, a single living plant form on pure black, delicate dewy petals, rich natural colour, soft side light, shallow depth of field with crisp focus on the subject, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces. One single butterfly-shaped moth orchid flower, wings of white and magenta petals, dewy.",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces"
+  }
+ ]
+}

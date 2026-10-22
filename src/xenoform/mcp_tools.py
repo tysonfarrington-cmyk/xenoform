@@ -55,7 +55,13 @@ DEFAULTS: dict[str, Any] = {
     "shot_edits": [],
     "cloud": False,
     "morph_count": "auto",
+    # the house look (set_look): profile name, dance_fx "auto" | "off" | a preset, stem_orbit None = the house default
+    "look_profile": "demo_house",
+    "dance_fx": "auto",
+    "stem_orbit": None,
+    "macros": {},
 }
+LOOK_PROFILES = ("demo_house",)
 
 
 try:  # the SDK turns ToolError into an isError result carrying this message
@@ -436,6 +442,11 @@ class App:
             "morph_count": p.get("morph_count", "auto"),
             "morph_targets": [i["path"] for i in p.get("images") or [] if i.get("path")],
             "paid_cloud": False, "cloud_quality": False, "cloud_confirm": "", "video_model": "ltx-23",
+            # the house look (dense.options reads these): dance_fx preset / "auto" / "off", stem_orbit bool, macros knobs
+            "look_profile": p.get("look_profile") or "demo_house",
+            "dance_fx": p.get("dance_fx") or "auto",
+            **({"stem_orbit": bool(p["stem_orbit"])} if p.get("stem_orbit") is not None else {}),
+            "macros": dict(p.get("macros") or {}),
         }
 
     def board(self, audio_id: str) -> dict:
@@ -675,12 +686,17 @@ class App:
                 self.jobs[job_id]["status"] = data.get("status")
                 self._save()
         out = {k: data.get(k) for k in ("id", "status", "stage", "progress", "detail", "error", "tier", "seconds")}
+        for k in ("qa", "post_qa", "report"):  # the desk's post-render QA, when it ran
+            if data.get(k) is not None:
+                out[k] = data[k]
         if data.get("video"):
             out["preview_url"] = self.desk.base + str(data["video"])
         return scrub(out)
 
-    def wait(self, job_id: str, timeout_s: float = 300.0, poll_s: float = 3.0) -> dict:
-        timeout_s = max(1.0, min(float(timeout_s), 780.0))
+    WAIT_MAX_S = 120.0  # one wait_for_render call never blocks longer than this; the agent calls again
+
+    def wait(self, job_id: str, timeout_s: float = 60.0, poll_s: float = 3.0) -> dict:
+        timeout_s = max(1.0, min(float(timeout_s), self.WAIT_MAX_S))
         end = time.monotonic() + timeout_s
         while True:
             try:
@@ -697,8 +713,10 @@ class App:
             if state.get("status") in {"done", "error", "failed", "cancelled"}:
                 if state.get("status") == "done":
                     state["output"] = self.output(job_id)
+                state["done"] = True
                 return state
             if time.monotonic() >= end:
+                state["done"] = False
                 state["detail"] = f"Still {state.get('stage')} after {timeout_s:.0f}s. Call wait_for_render again."
                 return state
             time.sleep(max(0.2, poll_s))
@@ -769,6 +787,127 @@ class App:
             if file.is_file():
                 return file
         return None
+
+    # ---- the house look ------------------------------------------------
+    def set_look(self, project_id: str = "", profile: str | None = "demo_house", dance_fx: str | None = "auto",
+                 stem_orbit: bool | None = None, macros: dict | None = None) -> dict:
+        """Write the look keys the next start_render sends (``look_profile``, ``dance_fx``, ``stem_orbit``,
+        ``macros``). ``project_id`` names the current project (one per MCP server); "" means it."""
+        from xenoform import dance_fx as D
+
+        project_id = str(project_id or "").strip()
+        if project_id and project_id not in ("current", "default", self.project.get("song", ""), "demo"):
+            raise XenoformError("This MCP server keeps one project; pass project_id '' (or 'current').")
+        clean: dict[str, Any] = {}
+        if profile is not None:
+            prof = str(profile).strip().lower() or "demo_house"
+            if prof not in LOOK_PROFILES:
+                raise XenoformError(f"Unknown look profile '{prof}'. Use one of: {', '.join(LOOK_PROFILES)}.")
+            clean["look_profile"] = prof
+        if dance_fx is not None:
+            text = str(dance_fx).strip().lower() or "auto"
+            if text not in ("auto", "off") and text not in D.PRESETS:
+                raise XenoformError(f"dance_fx is 'auto', 'off' or one of: {', '.join(D.PRESETS)}.")
+            clean["dance_fx"] = text
+        if stem_orbit is not None:
+            clean["stem_orbit"] = bool(stem_orbit)
+        if macros is not None:
+            if not isinstance(macros, dict):
+                raise XenoformError("macros must be an object like {intensity, speed, chaos, glow, stems: {name: gain}}.")
+            m: dict[str, Any] = {}
+            for key in ("intensity", "speed", "chaos", "glow"):
+                if key in macros:
+                    try:
+                        m[key] = max(0.0, min(1.0, float(macros[key])))
+                    except (TypeError, ValueError):
+                        raise XenoformError(f"macros.{key} must be a number 0..1.") from None
+            stems = macros.get("stems")
+            if stems is not None:
+                if not isinstance(stems, dict):
+                    raise XenoformError("macros.stems must be an object {stem name: gain 0..1}.")
+                from xenoform.stem_react import MAX_STEMS
+
+                if len(stems) > MAX_STEMS:
+                    raise XenoformError(f"At most {MAX_STEMS} stems.")
+                g = {}
+                for name, v in stems.items():
+                    try:
+                        g[str(name)[:64]] = max(0.0, min(1.0, float(v)))
+                    except (TypeError, ValueError):
+                        raise XenoformError(f"macros.stems['{name}'] must be a number 0..1.") from None
+                m["stems"] = g
+            clean["macros"] = m
+        with self.lock:
+            self.project.update(clean)
+            self._save()
+            out = dict(self.project)
+        return {"look": {k: out.get(k) for k in ("look_profile", "dance_fx", "stem_orbit", "macros")},
+                "payload_keys": {k: v for k, v in self.body().items() if k in ("look_profile", "dance_fx", "stem_orbit", "macros")},
+                "note": "Used by start_render on draft/final (the Simple finishing pass). stem_orbit needs OpenCV on the desk; "
+                        "without it the render notes say it was skipped."}
+
+    def looks(self) -> dict:
+        """dance_fx presets with one-line notes, the house profile summary and the stem_orbit parameters."""
+        from xenoform import dance_fx as D
+        from xenoform import stem_orbit as O
+        from xenoform.config import house
+
+        h = house()
+        presets = [{"id": k, "note": D.PRESET_NOTES.get(k, ""), "passes": sorted(p for p in D.PASSES if D.PRESETS[k].get(p, 0))}
+                   for k in D.PRESETS]
+        return {
+            "dance_fx": {"presets": presets, "auto": "the vibe's fx_defaults.dance_fx when set, else the house role presets",
+                         "roles": h.get("dance_fx") or {}, "off": "no dance pass"},
+            "house": {"name": h.get("name"), "format": h.get("format"), "look": h.get("look"),
+                      "transitions": h.get("transitions"), "duration_cap_s": h.get("duration_cap_s"),
+                      "audio": {k: h.get("audio", {}).get(k) for k in ("target_lufs", "true_peak_dbtp")}},
+            "stem_orbit": {"params": dict(O.DEFAULTS), "needs": "OpenCV (cv2); a no-op with a note without it",
+                           "note": O.POST_EFFECTS.get("stem-orbit", "")},
+            "stems": {"max": 32, "note": "up to 32 named stems; macros.stems {name: gain 0..1} weights each before it feeds its role"},
+            "payload": {"dance_fx": "auto | off | <preset>", "stem_orbit": "true | false", "macros": "{intensity, speed, chaos, glow, stems}"},
+            "current": {k: self.project.get(k) for k in ("look_profile", "dance_fx", "stem_orbit", "macros")},
+        }
+
+    def review_render(self, job_id: str) -> dict:
+        """Run media_qa.run_file on a finished render (loudness, clicks, black/freeze, static shots, opening
+        cuts, duration, house transition rules) and keep the report under the job."""
+        job_id = _job_id(job_id)
+        out = self.output(job_id)
+        path = out.get("path")
+        if not path or not Path(path).is_file():
+            raise XenoformError(f"No local file for render {job_id}; call get_output(save_to=...) first.")
+        try:
+            import importlib
+
+            media_qa = importlib.import_module("xenoform.media_qa")  # lazy: soundfile / ffmpeg only when asked
+        except Exception as exc:  # pragma: no cover - optional deps
+            raise XenoformError(f"media_qa is not available: {exc}") from None
+        try:
+            report = media_qa.run_file(str(path))
+        except Exception as exc:
+            raise XenoformError(f"QA could not run on {path}: {exc}") from None
+        report = scrub(report) if isinstance(report, dict) else {"result": report}
+        report["job_id"] = job_id
+        with self.lock:
+            self.jobs.setdefault(job_id, {"status": "done"})["qa"] = report
+            self._save()
+        return report
+
+    def get_qa(self, job_id: str) -> dict:
+        """The QA for a render: the desk's own post-render report (lag / artifact / beat checks) plus the
+        review_render report when it ran."""
+        job_id = _job_id(job_id)
+        with self.lock:
+            mine = dict((self.jobs.get(job_id) or {}).get("qa") or {})
+        desk: dict[str, Any] = {}
+        try:
+            data = self.desk.json("GET", f"/api/jobs/{job_id}")
+            desk = {k: data.get(k) for k in ("qa", "post_qa", "report", "guardrails") if data.get(k) is not None}
+            desk["status"] = data.get("status")
+        except XenoformError as exc:
+            desk = {"detail": str(exc)}
+        return scrub({"job_id": job_id, "review": mine or None, "desk": desk,
+                      "note": "" if mine else "No review_render report yet; call review_render(job_id) on a finished render."})
 
 
 INSTRUCTIONS = """You are connected to Xenoform, a local music-video app: a song drives a liquid, audio-reactive object that morphs on the beat, restyled by open-weights LTX on the user's own GPU (ComfyUI).
@@ -869,8 +1008,9 @@ def register(server, app: App) -> None:
         return app.progress(job_id)
 
     @server.tool()
-    def wait_for_render(job_id: str, timeout_s: float = 300) -> dict:
-        """Block until the render finishes or timeout_s passes (max 780). Returns the output path when done."""
+    def wait_for_render(job_id: str, timeout_s: float = 60) -> dict:
+        """Block until the render finishes or timeout_s passes (default 60, max 120). Returns done=true with the
+        output path when finished; done=false with the current progress when it timed out, so call it again."""
         return app.wait(job_id, timeout_s)
 
     @server.tool()
@@ -958,3 +1098,25 @@ def register(server, app: App) -> None:
     @server.resource("xenoform://settings", mime_type="application/json", description="Current project settings.")
     def settings_resource() -> str:
         return json.dumps(app.settings())
+
+    # ---- the house look -----------------------------------------------
+    @server.tool()
+    def set_look(project_id: str = "", profile: str = "demo_house", dance_fx: str = "auto",
+                 stem_orbit: bool | None = None, macros: dict | None = None) -> dict:
+        """Set the house look the next start_render uses. profile: demo_house. dance_fx: 'auto' (the vibe's default, else the house presets per shot), 'off', or a preset: warm-leak, cool-echo, noir-glow, bloom-rush, negative-rush, cyan-flash. stem_orbit: true/false (a rigid stem-driven camera orbit; needs OpenCV on the desk). macros: {intensity, speed, chaos, glow: 0..1, stems: {stem name: gain 0..1}} (speed biases cut density and echo decay, glow the bloom). project_id '' = the current project."""
+        return app.set_look(project_id, profile, dance_fx, stem_orbit, macros)
+
+    @server.tool()
+    def list_looks() -> dict:
+        """The dance_fx presets with one-line descriptions, the house profile (format, look, transition rules), the stem_orbit parameters, the 32-stem cap and the payload keys."""
+        return app.looks()
+
+    @server.tool()
+    def review_render(job_id: str) -> dict:
+        """Run the media QA on a finished render's file (loudness vs the house target, clicks, black/freeze, static shots, opening cut count, duration cap, transition rules). Returns the findings and pass/fail; kept for get_qa."""
+        return app.review_render(job_id)
+
+    @server.tool()
+    def get_qa(job_id: str) -> dict:
+        """The QA for a render: the desk's post-render report (lag fix, artifacts, beat alignment, guardrails) and the review_render findings when they ran."""
+        return app.get_qa(job_id)

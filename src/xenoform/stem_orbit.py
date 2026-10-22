@@ -23,8 +23,13 @@ except ImportError:  # pragma: no cover
 
 POST_EFFECTS = {"stem-orbit": "camera orbits the subject: yaw/turntable driven by bass and drums, spring-eased, rigid (no warp)"}
 
-DEFAULTS = {"max_yaw": 24.0, "max_pitch": 4.0, "max_roll": 1.5, "bass": 1.0, "drums": 0.7, "other": 0.4,
-            "spin": 0.0, "stiffness": 6.0, "focal": 1.6}
+try:
+    from xenoform.demo_house import DEMO_HOUSE as _DEMO_HOUSE
+except ImportError:  # loose checkout
+    from demo_house import DEMO_HOUSE as _DEMO_HOUSE
+
+# The house profile is the single source of these numbers (demo_house.DEMO_HOUSE["stem_orbit"]).
+DEFAULTS = dict(_DEMO_HOUSE["stem_orbit"])
 
 
 def _spring(target: np.ndarray, fps: int, stiffness: float) -> np.ndarray:
@@ -36,9 +41,31 @@ def _spring(target: np.ndarray, fps: int, stiffness: float) -> np.ndarray:
     return out
 
 
-def plan(env: dict, t0: float, n: int, *, fps: int = 24, **kw) -> dict:
-    """Per-frame yaw/pitch/roll in degrees for frames t0 .. t0 + (n-1)/fps."""
-    p = dict(DEFAULTS, **kw)
+def house_fps(fps: int | None = None) -> int:
+    """``fps`` when given, else the house format fps (demo_house: 24)."""
+    if fps is not None:
+        return int(fps)
+    try:
+        from xenoform.config import house
+    except ImportError:  # pragma: no cover - loose checkout
+        return 24
+    return int((house("format") or {}).get("fps") or 24)
+
+
+def params(**kw) -> dict:
+    """DEFAULTS (the house stem_orbit block) with the given overrides; a None value falls back to the house."""
+    return dict(DEFAULTS, **{k: v for k, v in kw.items() if v is not None})
+
+
+def plan(env: dict, t0: float, n: int, *, fps: int | None = None, **kw) -> dict:
+    """Per-frame yaw/pitch/roll in degrees for frames t0 .. t0 + (n-1)/fps.
+    ``fps`` None and any None keyword fall back to the house profile (config.house)."""
+    fps = house_fps(fps)
+    p = params(**kw)
+    n = int(max(0, n))
+    if n == 0:
+        z = np.zeros(0, dtype=np.float64)
+        return {"yaw": z, "pitch": z.copy(), "roll": z.copy()}
     try:
         from xenoform.stem_react import at
     except ImportError:  # loose checkout
@@ -59,7 +86,7 @@ def plan(env: dict, t0: float, n: int, *, fps: int = 24, **kw) -> dict:
     tgt_yaw = p["max_yaw"] * np.clip(p["bass"] * 0.65 * turn + p["drums"] * 0.35 * kick * (0.4 + 0.6 * dr), -1, 1) + p["spin"] * np.arange(n) / fps
     tgt_pitch = p["max_pitch"] * np.clip(p["other"] * (ot - ot.mean()) * 4, -1, 1)
     yaw = _spring(tgt_yaw, fps, p["stiffness"]); pitch = _spring(tgt_pitch, fps, p["stiffness"] * 0.7)
-    roll = np.clip(-0.06 * np.gradient(yaw) * fps, -p["max_roll"], p["max_roll"])
+    roll = np.clip(-0.06 * np.gradient(yaw) * fps, -p["max_roll"], p["max_roll"]) if n > 1 else np.zeros(n)
     return {"yaw": yaw, "pitch": pitch, "roll": roll}
 
 
@@ -80,18 +107,57 @@ def homography(w: int, h: int, yaw: float, pitch: float = 0.0, roll: float = 0.0
     return T @ S @ K @ P @ np.linalg.inv(K)
 
 
+def canvas_overshoot(w: int, h: int, H: np.ndarray) -> float:
+    """How far the canvas corners land outside the source once pulled back through ``H`` (warpPerspective
+    samples src at H^-1 * canvas). 0 means every canvas pixel maps inside the source; >0 is the largest
+    overshoot in pixels (black would show there)."""
+    Hi = np.linalg.inv(H)
+    worst = 0.0
+    for px, py in ((0.0, 0.0), (w, 0.0), (0.0, h), (w, h)):
+        q = Hi @ np.array([px, py, 1.0])
+        if abs(q[2]) < 1e-9 or q[2] < 0:
+            return float("inf")
+        x, y = q[0] / q[2], q[1] / q[2]
+        worst = max(worst, -x, x - w, -y, y - h)
+    return float(worst)
+
+
+def auto_zoom(w: int, h: int, yaw: float, pitch: float = 0.0, roll: float = 0.0, *, cx: float | None = None,
+              focal: float = 1.6, margin: float = 1.01, zoom_max: float = 3.0) -> float:
+    """Smallest push-in (times ``margin``) at which the rotated frame still covers the whole canvas, so no
+    black wedge appears at any yaw/pitch/roll. Found by bisection on the inverse-mapped canvas corners."""
+    if canvas_overshoot(w, h, homography(w, h, yaw, pitch, roll, cx=cx, focal=focal, zoom=1.0)) <= 0.0:
+        return 1.0
+    lo, hi = 1.0, float(zoom_max)
+    if canvas_overshoot(w, h, homography(w, h, yaw, pitch, roll, cx=cx, focal=focal, zoom=hi)) > 0.0:
+        return hi
+    for _ in range(40):
+        mid = 0.5 * (lo + hi)
+        if canvas_overshoot(w, h, homography(w, h, yaw, pitch, roll, cx=cx, focal=focal, zoom=mid)) <= 0.0:
+            hi = mid
+        else:
+            lo = mid
+    return min(float(zoom_max), hi * margin)
+
+
 def apply(frame: np.ndarray, yaw: float, pitch: float = 0.0, roll: float = 0.0, *, cx: float | None = None,
-          focal: float = 1.6, zoom: float | None = None) -> np.ndarray:
+          focal: float | None = None, zoom: float | None = None) -> np.ndarray:
+    """One frame at the given angles. ``focal`` None falls back to the house focal (DEFAULTS["focal"])."""
+    if focal is None:
+        focal = float(DEFAULTS["focal"])
     h, w = frame.shape[:2]
     if zoom is None:  # push in just enough that the rotated frame still covers the canvas (no black corners)
-        zoom = 1.0 + 0.02 * abs(pitch) + 0.01 * abs(roll)
+        zoom = auto_zoom(w, h, yaw, pitch, roll, cx=cx, focal=focal)
     H = homography(w, h, yaw, pitch, roll, cx=cx, focal=focal, zoom=zoom)
     if cv2 is None:  # pragma: no cover
         raise RuntimeError("stem_orbit.apply needs OpenCV")
     return cv2.warpPerspective(frame, H, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_CONSTANT, borderValue=0)  # black: never mirror a second subject in
 
 
-def render_shot(frames, env: dict, t0: float, *, fps: int = 24, cx: float | None = None, **kw):
+def render_shot(frames, env: dict, t0: float, *, fps: int | None = None, cx: float | None = None, **kw):
+    """Plan and render one shot. ``fps`` / ``focal`` / any None keyword fall back to the house profile."""
+    fps = house_fps(fps)
     frames = list(frames); pl = plan(env, t0, len(frames), fps=fps, **kw)
+    focal = params(**kw)["focal"]
     for i, f in enumerate(frames):
-        yield apply(f, pl["yaw"][i], pl["pitch"][i], pl["roll"][i], cx=cx, focal=kw.get("focal", DEFAULTS["focal"]))
+        yield apply(f, pl["yaw"][i], pl["pitch"][i], pl["roll"][i], cx=cx, focal=focal)

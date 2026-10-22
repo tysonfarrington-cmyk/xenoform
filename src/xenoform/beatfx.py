@@ -20,13 +20,17 @@ crop follows the object as it transforms.
 from __future__ import annotations
 
 import json
+import logging
 import math
 import os
 import subprocess
+import time
 from pathlib import Path
 from typing import Callable, Iterable
 
 import numpy as np
+
+log = logging.getLogger("xenoform.beatfx")
 
 FPS = 24
 ASPECTS = ("16:9", "9:16", "1:1")
@@ -34,12 +38,48 @@ TEAL = np.array([90, 225, 215], np.float32)
 VIOLET = np.array([190, 110, 255], np.float32)
 
 
+def _strip_scheme(url: str) -> str:
+    url = url.strip()
+    for scheme in ("https://", "http://"):
+        if url.lower().startswith(scheme):
+            url = url[len(scheme):]
+    return url.rstrip("/")
+
+
+def _pyproject_repo_url() -> str:
+    """[project.urls] Repository from the checkout's pyproject.toml, else the installed package metadata."""
+    try:
+        import tomllib
+
+        pp = Path(__file__).resolve().parents[2] / "pyproject.toml"
+        if pp.is_file():
+            with pp.open("rb") as fh:
+                urls = tomllib.load(fh).get("project", {}).get("urls", {})
+            return str(urls.get("Repository") or "")
+    except Exception:
+        pass
+    try:
+        from importlib.metadata import metadata
+
+        for line in metadata("xenoform").get_all("Project-URL") or []:
+            label, _, url = line.partition(",")
+            if label.strip().lower() == "repository":
+                return url.strip()
+    except Exception:
+        pass
+    return ""
+
+
 def repo_url() -> str:
-    """The end card's repo line: ``XENO_REPO_URL`` once the public repo exists, else the pyproject URL."""
+    """The end card's repo line, without the scheme: ``XENO_REPO_URL`` when set, else the pyproject
+    ``[project.urls] Repository`` unless it is still the PLACEHOLDER, else "" (the card omits the line)."""
     env = os.environ.get("XENO_REPO_URL", "").strip()
     if env:
-        return env.replace("https://", "")
-    return "github.com/PLACEHOLDER/xenoform"
+        return _strip_scheme(env)
+    url = _pyproject_repo_url()
+    if not url or "PLACEHOLDER" in url.upper():
+        return ""
+    return _strip_scheme(url)
 
 
 
@@ -75,22 +115,23 @@ def load_audio(path: Path, sr: int = 22050, offset: float = 0.0, duration: float
     return np.frombuffer(raw, np.float32).copy()
 
 
-def envelopes(audio_path: Path | None, frames: int, start: float = 0.0) -> dict[str, np.ndarray]:
-    """kick, transient and loudness, one value per output frame, 0..1."""
+def envelopes(audio_path: Path | None, frames: int, start: float = 0.0, fps: int | None = None) -> dict[str, np.ndarray]:
+    """kick, transient and loudness, one value per output frame, 0..1. ``fps`` None: the module FPS (house: 24)."""
+    fps = int(fps or FPS)
     zero = np.zeros(frames, np.float32)
     if audio_path is None or not Path(audio_path).is_file() or frames <= 0:
         return {"kick": zero, "trans": zero, "loud": zero + 0.6}
     import librosa
 
     sr = 22050
-    y = load_audio(Path(audio_path), sr, float(start), frames / FPS + 0.5)
+    y = load_audio(Path(audio_path), sr, float(start), frames / fps + 0.5)
     if len(y) < 4096:
         return {"kick": zero, "trans": zero, "loud": zero + 0.6}
     hop = 512
     spec = np.abs(librosa.stft(y, n_fft=2048, hop_length=hop))
     freqs = librosa.fft_frequencies(sr=sr, n_fft=2048)
     t_spec = librosa.frames_to_time(np.arange(spec.shape[1]), sr=sr, hop_length=hop)
-    tf = np.arange(frames) / FPS
+    tf = np.arange(frames) / fps
 
     def flux(band) -> np.ndarray:
         d = np.maximum(0, np.diff(np.log1p(spec[band] * 50), axis=1)).sum(0)
@@ -100,7 +141,7 @@ def envelopes(audio_path: Path | None, frames: int, start: float = 0.0) -> dict[
     def env(x: np.ndarray, decay_s: float) -> np.ndarray:
         x = np.clip(np.interp(tf, t_spec, x), 0, 1.5)
         out = np.zeros_like(x)
-        k = math.exp(-1 / (decay_s * FPS))
+        k = math.exp(-1 / (decay_s * fps))
         for i, v in enumerate(x):
             out[i] = max(v, (out[i - 1] if i else 0.0) * k)
         return out
@@ -159,6 +200,21 @@ def resize(frame: np.ndarray, w: int, h: int) -> np.ndarray:
     sh, sw = frame.shape[:2]
     if (sw, sh) == (w, h):
         return frame
+    return np.clip(_resize_f(frame, w, h), 0, 255).astype(np.uint8)
+
+
+def _resize_f(frame: np.ndarray, w: int, h: int) -> np.ndarray:
+    """Bilinear resize to float32 (no clipping: also used for signed deltas)."""
+    sh, sw = frame.shape[:2]
+    if (sw, sh) == (w, h):
+        return frame.astype(np.float32)
+    if frame.ndim == 3 and sh * sw > 300_000:  # big frames: the C implementation when scipy is around
+        try:
+            from scipy.ndimage import zoom
+
+            return zoom(frame.astype(np.float32), (h / sh, w / sw, 1), order=1).astype(np.float32)
+        except ImportError:  # pragma: no cover
+            pass
     ys = (np.arange(h) + 0.5) * sh / h - 0.5
     xs = (np.arange(w) + 0.5) * sw / w - 0.5
     y0 = np.clip(np.floor(ys).astype(int), 0, sh - 1)
@@ -170,7 +226,7 @@ def resize(frame: np.ndarray, w: int, h: int) -> np.ndarray:
     f = frame.astype(np.float32)
     top = f[y0][:, x0] * (1 - fx) + f[y0][:, x1] * fx
     bot = f[y1][:, x0] * (1 - fx) + f[y1][:, x1] * fx
-    return np.clip(top * (1 - fy) + bot * fy, 0, 255).astype(np.uint8)
+    return (top * (1 - fy) + bot * fy).astype(np.float32)
 
 
 def reframe(frame: np.ndarray, aspect: str, centre: tuple[float, float], w: int, h: int) -> np.ndarray:
@@ -207,11 +263,13 @@ def _zoom(img: np.ndarray, scale: float) -> np.ndarray:
 
 
 def beat_fx(frame: np.ndarray, *, kick: float, trans: float, punch: float, loud: float, beat_index: int,
-            zoom_scale: float = 1.0, intensity: float = 1.0, wobble: float = 0.0, t: float = 0.0) -> np.ndarray:
+            zoom_scale: float = 1.0, intensity: float = 1.0, wobble: float = 0.0, t: float = 0.0,
+            bloom: float = 1.0) -> np.ndarray:
     """The demo1 look on one frame. ``zoom_scale`` < 1 softens the zoom (vertical uses 0.5).
 
     ``intensity`` (0..1, the shot's fx_intensity) scales every beat effect; ``wobble`` (0..1)
-    adds a subtle sideways sway of up to 2 % of the width, driven by the kick.
+    adds a subtle sideways sway of up to 2 % of the width, driven by the kick; ``bloom`` scales
+    the punch glow (the Simple ``glow`` macro: 0.6 + glow, 1.0 at the neutral 0.4).
     """
     intensity = max(0.0, min(1.0, float(intensity)))
     kick, trans, punch = kick * intensity, trans * intensity, punch * intensity
@@ -227,9 +285,182 @@ def beat_fx(frame: np.ndarray, *, kick: float, trans: float, punch: float, loud:
         col = TEAL if beat_index % 2 else VIOLET
         img = img + _edges(img) * col * e
     if punch > 0.05:
-        img = img + _blur(img) * (0.55 * punch)
+        img = img + _blur(img) * (0.55 * punch * max(0.0, float(bloom)))
     img = img * (0.92 + 0.12 * loud)
     return np.clip(img, 0, 255).astype(np.uint8)
+
+
+# ------------------------------------------------------------------ house look (dance_fx + stem_orbit)
+
+
+def house_profile(house: dict | None = None) -> dict:
+    """``house`` when given, else config.house() (demo_house merged into the config defaults)."""
+    if isinstance(house, dict) and house:
+        return house
+    from xenoform.config import house as _house
+
+    return _house()
+
+
+def mix_stem_env(env: dict | None, beats: Iterable[float] = (), fps: int | None = None) -> dict:
+    """A 4-role stem envelope (``stem_react`` format) from the mix when no stems were split: the kick
+    flux drives bass, the transient flux drives drums, loudness drives other, vocals stay 0 and the beat
+    grid is the drum-hit list."""
+    fps = int(fps or FPS)
+    env = env or {}
+    kick = np.asarray(env.get("kick", []), np.float32); trans = np.asarray(env.get("trans", []), np.float32)
+    loud = np.asarray(env.get("loud", []), np.float32)
+    n = len(kick)
+    return {"fps": fps, "frames": n, "engine": "mix", "stems": [], "roles": {},
+            "bass": kick.tolist(), "drums": trans.tolist(), "other": (loud * 0.8).tolist(), "vocals": [0.0] * n,
+            "drum_strong": [round(float(b), 3) for b in beats]}
+
+
+def resolve_dance_preset(choice, vibe: str | None = None, house: dict | None = None) -> str:
+    """The Simple ``dance_fx`` key -> "off", "house" (per-role house presets) or a preset name.
+    "auto": the vibe's configs/vibes.json ``fx_defaults.dance_fx`` when present, else the house vj preset."""
+    from xenoform import dance_fx as D
+
+    text = str(choice if choice is not None else "auto").strip().lower()
+    if text in ("", "off", "none", "false", "0", "no"):
+        return "off"
+    if text in ("auto", "house", "default", "true", "on", "1", "yes"):
+        if text == "auto" and vibe:
+            try:
+                from xenoform import vibes as _vibes
+
+                row = next((r for r in _vibes.extended() if r.get("id") == vibe), None)
+                pick = str(((row or {}).get("fx_defaults") or {}).get("dance_fx") or "").strip().lower()
+                if pick in D.PRESETS:
+                    return pick
+            except Exception:
+                pass
+        return "house"
+    if text not in D.PRESETS:
+        raise ValueError(f"unknown dance_fx preset {text!r}; one of auto, off, {', '.join(D.PRESETS)}")
+    return text
+
+
+LOOK_SHORT_SIDE = 432        # dance_fx working size (short side) with OpenCV: Final 1080x1920 runs at 540x960
+LOOK_SHORT_SIDE_NUMPY = 240  # without OpenCV the scipy path is slower: 432x768 works at 216x384, 1080x1920 at 270x480
+
+
+def _apply_at_working_size(fx, frame: np.ndarray, d: dict, cap: int) -> np.ndarray:
+    """Run a colour-and-light pass at an integer fraction of the frame size and add the delta back at full
+    size. The passes are low-frequency (glows, washes, grades, trails), so the look is the same while the
+    structure (luma edges) stays at full resolution; Final 1080x1920 then costs about what the draft size does."""
+    h, w = frame.shape[:2]
+    short = min(h, w)
+    k = int(round(short / cap)) if short > cap * 1.25 else 1
+    if k <= 1:
+        return fx.apply(frame, d)
+    hh, ww = h // k * k, w // k * k
+    lo = frame[:hh, :ww].reshape(hh // k, k, ww // k, k, 3).mean(axis=(1, 3)).astype(np.float32)
+    delta = fx.apply(np.clip(lo, 0, 255).astype(np.uint8), d).astype(np.float32) - lo
+    up = np.repeat(np.repeat(delta, k, axis=0), k, axis=1)
+    try:  # smooth the k x k blocks (a separable box = bilinear-ish), C speed when scipy is around
+        from scipy.ndimage import uniform_filter1d
+
+        up = uniform_filter1d(uniform_filter1d(up, k, axis=0, mode="nearest"), k, axis=1, mode="nearest")
+    except ImportError:  # pragma: no cover
+        pass
+    if (hh, ww) != (h, w):
+        up = np.pad(up, ((0, h - hh), (0, w - ww), (0, 0)), mode="edge")
+    return np.clip(frame.astype(np.float32) + up, 0, 255).astype(np.uint8)
+
+
+class LookPass:
+    """The house look on top of the beat FX, per shot: stem_orbit (a rigid camera orbit; needs OpenCV, a
+    logged no-op without it) and then dance_fx (colour and light only). ``dance_fx`` is "off", "house"
+    (intro / vj / into_card presets from the house profile per shot) or a preset name. ``macros`` (the
+    Simple knobs) feed echo_decay (speed), halation / depth bloom (glow) and per-stem gains (stems)."""
+
+    def __init__(self, *, dance_fx: str | None = None, stem_orbit: bool | None = None, stem_env: dict | None = None,
+                 macros: dict | None = None, house: dict | None = None, beats: Iterable[float] = (), fps: int | None = None,
+                 shots: int = 1, end_card: bool = False, seed: int = 0):
+        self.house = house_profile(house)
+        self.fps = int(fps or (self.house.get("format") or {}).get("fps") or FPS)
+        self.beats = [float(b) for b in beats]
+        self.env = stem_env or {}
+        self.macros = macros or {}
+        self.mode = str(dance_fx or "off")
+        self.orbit = bool(stem_orbit)
+        self.shots = max(1, int(shots)); self.end_card = bool(end_card); self.seed = int(seed)
+        self.notes: list[str] = []
+        self.seconds = 0.0; self.frames = 0
+        self.fx = None; self.plan = None; self.roles: list[str] = []
+        self._orbit_ok = self.orbit
+        if self.orbit:
+            try:
+                from xenoform import stem_orbit as O
+
+                self._orbit_ok = O.cv2 is not None
+            except Exception:
+                self._orbit_ok = False
+            if not self._orbit_ok:
+                self.notes.append("stem_orbit skipped: OpenCV (cv2) is not installed; frames pass through unchanged")
+                log.warning("stem_orbit skipped: OpenCV (cv2) is not installed")
+
+    @property
+    def active(self) -> bool:
+        return self.mode != "off" or self._orbit_ok
+
+    def gains(self) -> dict | None:
+        g = self.macros.get("stems")
+        return g if isinstance(g, dict) and g else None
+
+    def role_for(self, si: int) -> str:
+        if self.end_card and si == self.shots - 1:
+            return "into_card"
+        return "intro" if si == 0 else "vj"
+
+    def start_shot(self, si: int, n_frames: int, t0: float) -> None:
+        """New dance_fx state (the echo is per shot) and the orbit plan for this shot."""
+        self.fx = None; self.plan = None; self.n = int(n_frames); self.t0 = float(t0)
+        if self.mode != "off":
+            from xenoform import dance_fx as D
+
+            role = self.role_for(si)
+            preset = None if self.mode == "house" else self.mode
+            fx = D.DanceFX(preset, seed=self.seed + si, role=role, house=self.house.get("dance_fx"))
+            speed = float(self.macros.get("speed", 0.5)); glow = float(self.macros.get("glow", 0.4))
+            if fx.p.get("echo", 0) > 0:  # speed: faster cuts, shorter trails
+                fx.p["echo_decay"] = float(np.clip(fx.p.get("echo_decay", 0.70) - 0.24 * (speed - 0.5), 0.5, 0.95))
+            gain = 0.6 + glow  # glow: 1.0 at the neutral 0.4
+            for key in ("halation", "depth_bloom"):
+                if fx.p.get(key, 0) > 0:
+                    fx.p[key] = float(min(1.5, fx.p[key] * gain))
+            self.fx = fx; self.roles.append(f"{si}:{role}:{fx.preset}")
+        if self._orbit_ok and self.n > 0:
+            from xenoform import stem_orbit as O
+
+            self.plan = O.plan(self.env, self.t0, self.n, fps=self.fps)
+
+    def frame(self, frame: np.ndarray, k: int, t: float) -> np.ndarray:
+        """Output frame ``k`` of the current shot at song time ``t``."""
+        if self.fx is None and self.plan is None:
+            return frame
+        from xenoform import dance_fx as D
+
+        t_start = time.perf_counter()
+        if self.plan is not None and k < self.n:
+            from xenoform import stem_orbit as O
+
+            frame = O.apply(frame, float(self.plan["yaw"][k]), float(self.plan["pitch"][k]), float(self.plan["roll"][k]))
+        if self.fx is not None:
+            ramp = self.fx.invert_floor_ramp_frames
+            if ramp > 0 and k >= self.n - ramp:
+                self.fx.p["invert_floor"] = float(np.clip((k - (self.n - ramp) + 1) / ramp, 0.0, 1.0))
+            d = D.drive_from_env(self.env, t, self.beats, self.gains())
+            frame = _apply_at_working_size(self.fx, frame, d, LOOK_SHORT_SIDE if D.cv2 is not None else LOOK_SHORT_SIDE_NUMPY)
+        self.seconds += time.perf_counter() - t_start; self.frames += 1
+        return frame
+
+    def info(self) -> dict:
+        return {"dance_fx": self.mode, "stem_orbit": bool(self._orbit_ok), "stem_orbit_requested": self.orbit,
+                "stems": str(self.env.get("engine") or ("none" if not self.env else "?")), "roles": self.roles,
+                "frames": self.frames, "seconds": round(self.seconds, 2), "notes": list(self.notes),
+                "macros": {k: self.macros.get(k) for k in ("speed", "glow", "stems") if k in self.macros}}
 
 
 # ------------------------------------------------------------------ compositor
@@ -272,28 +503,42 @@ def read_frames(path: Path) -> np.ndarray:
 def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Path, *, aspect: str = "16:9",
             quality: str = "draft", fx: bool = True, overlay: bool = False, beats: Iterable[float] = (),
             label: str | None = None, report: Callable[[str, float, str], None] | None = None,
-            size: tuple[int, int] | None = None) -> dict:
+            size: tuple[int, int] | None = None, fps: int | None = None, dance_fx: str | None = None,
+            stem_orbit: bool | None = None, stem_env: dict | None = None, macros: dict | None = None,
+            house: dict | None = None, end_card: bool = False, seed: int = 0) -> dict:
     """Retime every clip to its shot (speed, ease, hold, stutter, skip, reverse), reframe, add beat FX, mux.
 
     ``size`` overrides the output frame size (native vertical Final: 1080x1920). Clips that
     already have the target aspect pass through whole; any other clip is cropped around its object.
+
+    House look (see ``LookPass``): ``dance_fx`` "off" / "house" / a preset name, ``stem_orbit`` on/off,
+    ``stem_env`` a ``stem_react`` envelope (else one is derived from the mix), ``macros`` the Simple knobs
+    (speed -> echo decay, glow -> halation + beat-FX bloom, stems -> per-stem gains). ``fps`` None is the
+    house format fps (24). ``end_card`` marks the last shot as the into_card role (inverted ramp).
     """
     from xenoform.cloud_morph import BeatOverlay, audio_envelope, punch_curve, shot_indices
     from xenoform.guardrails import shot_fx
 
     aspect = norm_aspect(aspect)
+    house = house_profile(house)
+    fps = int(fps or (house.get("format") or {}).get("fps") or FPS)
     w, h = size or out_size(aspect, quality)
     total = sum(int(s["frames"]) for s in shots)
     beats = [float(b) for b in beats]
-    env = envelopes(audio_path, total) if fx else None
+    look = LookPass(dance_fx=dance_fx, stem_orbit=stem_orbit, stem_env=stem_env, macros=macros, house=house,
+                    beats=beats, fps=fps, shots=len(shots), end_card=end_card, seed=seed)
+    env = envelopes(audio_path, total, fps=fps) if (fx or look.active) else None
+    if look.active and not look.env:
+        look.env = mix_stem_env(env, beats, fps)
+    glow_gain = 0.6 + float((macros or {}).get("glow", 0.4))
     punch = punch_curve(shots)
     over = None
     if overlay:
         marks = [s["start"] for s in shots[1:]]
-        over = BeatOverlay(w, h, total / FPS, audio_envelope(audio_path, 0.0, total / FPS, 512), beats, marks)
+        over = BeatOverlay(w, h, total / fps, audio_envelope(audio_path, 0.0, total / fps, 512), beats, marks)
     out_path = Path(out_path)
     tmp = out_path.with_name(out_path.stem + ".compose.mp4")
-    cmd = [_ffmpeg(), "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{w}x{h}", "-r", str(FPS),
+    cmd = [_ffmpeg(), "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{w}x{h}", "-r", str(fps),
            "-i", "-", "-i", str(audio_path), "-map", "0:v", "-map", "1:a", "-c:v", "libx264", "-preset", "medium",
            "-crf", "18", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart"]
     if label:
@@ -312,21 +557,24 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
             centres.append([a, b])
             idx = shot_indices(shot, len(frames))
             count = max(len(idx) - 1, 1)
+            look.start_shot(si, len(idx), n / fps)
             for k, j in enumerate(idx):
                 u = k / count
                 u = u * u * (3 - 2 * u)
                 c = (a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u)
                 frame = reframe(frames[j], aspect, c, w, h)
                 if fx and env is not None:
-                    bi = int(np.searchsorted(beats, n / FPS)) if beats else 0
+                    bi = int(np.searchsorted(beats, n / fps)) if beats else 0
                     s_int, s_wob = shot_fx(shot)
-                    frame = beat_fx(frame, intensity=s_int, wobble=s_wob, t=n / FPS,
+                    frame = beat_fx(frame, intensity=s_int, wobble=s_wob, t=n / fps,
                                     kick=float(env["kick"][min(n, total - 1)]),
                                     trans=float(env["trans"][min(n, total - 1)]),
                                     punch=float(punch[n]) if n < len(punch) else 0.0,
-                                    loud=float(env["loud"][min(n, total - 1)]), beat_index=bi, zoom_scale=zoom_scale)
+                                    loud=float(env["loud"][min(n, total - 1)]), beat_index=bi, zoom_scale=zoom_scale,
+                                    bloom=glow_gain)
+                frame = look.frame(frame, k, n / fps)
                 if over is not None:
-                    frame = over.draw(frame, n / FPS)
+                    frame = over.draw(frame, n / fps)
                 enc.stdin.write(np.ascontiguousarray(frame).tobytes())
                 n += 1
             if report:
@@ -337,8 +585,11 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
     if code:
         raise RuntimeError(f"ffmpeg could not write the cut (exit {code}).")
     tmp.replace(out_path)
-    return {"frames": n, "seconds": round(n / FPS, 3), "size": f"{w}x{h}", "aspect": aspect, "fx": bool(fx),
-            "overlay": over is not None, "centres": centres}
+    if look.active:
+        log.info("house look: dance_fx=%s stem_orbit=%s stems=%s %d frames in %.1fs", look.mode, look._orbit_ok,
+                 look.env.get("engine"), look.frames, look.seconds)
+    return {"frames": n, "seconds": round(n / fps, 3), "size": f"{w}x{h}", "aspect": aspect, "fx": bool(fx),
+            "overlay": over is not None, "centres": centres, "fps": fps, "look": look.info()}
 
 
 def reframe_file(src: Path, dest: Path, aspect: str, *, quality: str = "draft", shots: list[dict] | None = None) -> dict:
@@ -398,10 +649,12 @@ def end_card(path: Path, recipe: str, repo: str | None = None, seconds: float = 
     safe = lambda s: str(s).replace("\\", "").replace(":", "\\:").replace("'", "").replace("%", "")[:96]
     ff = _drawtext_font(font)
     common = f"fontfile='{ff}':fontcolor=white:enable='gte(t,{start:.2f})':x=(w-text_w)/2"
+    url = safe(repo if repo is not None else repo_url())
+    brand = f"Xenoform · {url}" if url else "Xenoform"  # no repo line while the URL is unset / a placeholder
     vf = (f"drawbox=x=0:y=ih*0.62:w=iw:h=ih*0.26:color=black@0.55:t=fill:enable='gte(t,{start:.2f})',"
           f"drawtext={common}:text='Every drop is a transformation':fontsize='min(h/26,w/22)':y=h*0.645,"
           f"drawtext={common}:text='recipe {safe(recipe)}':fontsize='min(h/30,w/26)':y=h*0.72,"
-          f"drawtext={common}:text='Xenoform · {safe(repo or repo_url())}':fontsize='min(h/30,w/26)':y=h*0.79")
+          f"drawtext={common}:text='{brand}':fontsize='min(h/30,w/26)':y=h*0.79")
     tmp = path.with_name(path.stem + ".card.mp4")
     done = subprocess.run([_ffmpeg(), "-v", "error", "-y", "-i", str(path), "-vf", vf, "-c:v", "libx264", "-preset",
                            "medium", "-crf", "18", "-pix_fmt", "yuv420p", "-c:a", "copy", "-movflags", "+faststart",

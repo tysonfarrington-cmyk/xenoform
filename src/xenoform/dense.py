@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import shutil
 import time
 from pathlib import Path
@@ -121,6 +122,44 @@ def count_cuts(duration: float, beats: list, count: int, drop: float | None = No
     return cuts + [round(duration, 4)]
 
 
+# the house look in the Simple payload: ``dance_fx`` ("auto" | "off" | a dance_fx.PRESETS name) and ``stem_orbit`` (bool)
+DANCE_FX_DEFAULT = "auto"
+STEM_ORBIT_DEFAULT = True
+
+
+def house(state: dict | None = None, cfg: dict | None = None) -> dict:
+    """The house profile for a render (cfg["house"] when the loaded config carries one, else demo_house)."""
+    from xenoform.config import house as _house
+
+    return _house(cfg=cfg)
+
+
+def dance_fx_choice(state: dict | None) -> str:
+    """The raw ``dance_fx`` payload key, normalised: "auto" (default), "off" or a known preset name."""
+    from xenoform import dance_fx as D
+
+    raw = (state or {}).get("dance_fx", DANCE_FX_DEFAULT)
+    if raw is None or raw is True:
+        return DANCE_FX_DEFAULT
+    if raw is False:
+        return "off"
+    text = str(raw).strip().lower()
+    if text in ("", "auto", "house", "default", "on"):
+        return "auto"
+    if text in ("off", "none", "false", "0", "no"):
+        return "off"
+    return text if text in D.PRESETS else DANCE_FX_DEFAULT
+
+
+def stem_orbit_choice(state: dict | None) -> bool:
+    raw = (state or {}).get("stem_orbit", None)
+    if raw is None or raw == "":
+        return STEM_ORBIT_DEFAULT
+    if isinstance(raw, str):
+        return raw.strip().lower() not in ("off", "false", "0", "no", "none")
+    return bool(raw)
+
+
 def options(state: dict) -> dict:
     """The Simple finishing options from a desk state, normalised."""
     energy = str(state.get("energy_preset") or "flow").lower()
@@ -135,7 +174,23 @@ def options(state: dict) -> dict:
         "end_card": bool(state.get("end_card")),
         "recipe": str(state.get("simple_recipe") or ""),
         "morph_count": morph_count(state),
+        "dance_fx": dance_fx_choice(state),
+        "stem_orbit": stem_orbit_choice(state),
     }
+
+
+def stem_env_for(state: dict | None) -> dict | None:
+    """The job's stem envelopes (``stem_react.envelopes`` JSON at ``state["stems_path"]``), or None so
+    the compositor derives a 4-role envelope from the mix."""
+    raw = (state or {}).get("stems_path")
+    if not raw:
+        return None
+    try:
+        env = json.loads(Path(str(raw)).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        log.warning("stems_path %s unreadable (%s); using the mix envelope", raw, exc)
+        return None
+    return env if isinstance(env, dict) and any(env.get(k) for k in ("drums", "bass", "other", "vocals")) else None
 
 
 def macros(state: dict) -> dict:
@@ -160,10 +215,19 @@ def macros(state: dict) -> dict:
     return out
 
 
-def apply_macros(shots: list[dict], m: dict) -> list[dict]:
-    """Intensity scales each shot's beat-FX intensity (0.5 = as planned); Chaos above 0.5 adds wobble."""
+def speed_count(duration: float, beats: list, energy: str, speed: float) -> int:
+    """The auto morph count biased by the Simple ``speed`` macro: x0.6 at 0, as planned at 0.5, x1.4 at 1."""
+    base = auto_morph_count(duration, beats, energy)
+    return max(1, min(MORPH_MAX, int(round(base * (0.6 + 0.8 * max(0.0, min(1.0, float(speed))))))))
+
+
+def apply_macros(shots: list[dict], m: dict, house: dict | None = None) -> list[dict]:
+    """Intensity scales each shot's beat-FX intensity (0.5 = as planned); Chaos above 0.5 adds wobble
+    (never when the ``house`` look says character_wobble is off)."""
     gain = 0.4 + 1.2 * m.get("intensity", 0.5)
     wob = max(0.0, (m.get("chaos", 0.3) - 0.5) * 0.6)
+    if house and ((house.get("look") or {}).get("character_wobble") is False):
+        wob = 0.0
     for s in shots:
         s["fx_intensity"] = round(min(1.0, float(s.get("fx_intensity", 1.0)) * gain), 3)
         if wob:
@@ -283,6 +347,9 @@ def shots_for(state: dict, directed: dict, audio_path: Path | None) -> tuple[lis
     beats = list(directed.get("beats") or [])
     opt = options(state)
     n = morph_count(state)
+    speed = macros(state)["speed"]
+    if n == "auto" and abs(speed - 0.5) > 0.05 and not state.get("cut_plan"):
+        n = speed_count(duration, beats, opt["energy"], speed)  # the speed macro biases the cut density
     if state.get("cut_plan"):
         plan = state["cut_plan"]
     elif opt["energy"] == "dense":
@@ -344,7 +411,12 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
         report("restyle", 0.05, repeat_note)
     from xenoform import guardrails as _guard
 
-    if state.get("still_background") == "black":
+    hp = house(state, cfg)
+    vertical_house = opt["aspect"] == "9:16" and str((hp.get("format") or {}).get("aspect") or "") == "9:16"
+    background = state.get("still_background")
+    if background is None and vertical_house:  # the house look: black morph stills on the 9:16 cut
+        background = (hp.get("look") or {}).get("morph_background")
+    if background == "black":
         from xenoform.portrait import black_stills
 
         stills = black_stills(stills, work)
@@ -356,6 +428,10 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     from xenoform import final_tier
 
     size = final_tier.sizes(True)["out"] if native else None
+    fmt = hp.get("format") or {}
+    if native and vertical_house and fmt.get("native_vertical") and not os.environ.get("XENO_FINAL_916_OUT", "").strip():
+        size = (int(fmt.get("width") or size[0]), int(fmt.get("height") or size[1]))  # the house output size (1080x1920)
+    fps = int(fmt.get("fps") or beatfx.FPS) if vertical_house else beatfx.FPS
     notes: list[dict] = []
     report("restyle", 0.1, f"{len(shots)} {'Final (LTX-2.3)' if engine == 'ltx23' else 'Draft (LTX 0.9.5)'} morphs Â· "
                            f"{opt['energy']} Â· {opt['aspect']}")
@@ -391,10 +467,19 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
         clips = _draft_clips(shots, stills, work, cfg, seed, vibe, client, cancel, state)
     report("assemble", 0.6, "Cutting to the beat" + (" with beat FX" if opt["fx"] else ""))
     tmp = Path(out_path).with_name(Path(out_path).stem + ".simple.mp4")
-    apply_macros(shots, macros(state))
+    m = macros(state)
+    apply_macros(shots, m, hp if vertical_house else None)
+    look_preset = beatfx.resolve_dance_preset(opt["dance_fx"], vibe, hp)
+    stem_env = stem_env_for(state)
+    report("assemble", 0.6, f"House look: dance_fx {look_preset}, stem_orbit {'on' if opt['stem_orbit'] else 'off'}, "
+                            f"stems {'split' if stem_env else 'from the mix'}")
     made = beatfx.compose(clips, shots, Path(audio_path), tmp, aspect=opt["aspect"],
                           quality="final" if engine == "ltx23" else "draft", fx=opt["fx"], overlay=opt["overlay"],
-                          beats=directed.get("beats") or [], report=report, size=size)
+                          beats=directed.get("beats") or [], report=report, size=size, fps=fps,
+                          dance_fx=look_preset, stem_orbit=opt["stem_orbit"], stem_env=stem_env, macros=m,
+                          house=hp, end_card=opt["end_card"], seed=seed)
+    if made.get("look", {}).get("seconds"):
+        log.info("house look took %.1fs for %d frames", made["look"]["seconds"], made["look"]["frames"])
     card = False
     if opt["end_card"]:
         card = beatfx.end_card(tmp, opt["recipe"] or "(none)")
@@ -407,6 +492,8 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
             "stills": [s["file"] for s in stills], "shots": shots, "plan_name": plan.get("name", ""),
             "handoffs_s": [s["start"] for s in shots] + [shots[-1]["end"]], "fallbacks": notes,
             "render": made["size"], "frames": made["frames"], "seconds": round(time.perf_counter() - started, 2),
-            "steps": 8 if engine == "ltx23" else None}
+            "steps": 8 if engine == "ltx23" else None,
+            "fps": made.get("fps", beatfx.FPS), "look": made.get("look") or {}, "macros": m,
+            "house": str(hp.get("name") or ""), "stems_path": str(state.get("stems_path") or "")}
     (work / "simple.json").write_text(json.dumps(info, indent=1, default=str), encoding="utf-8")
     return info

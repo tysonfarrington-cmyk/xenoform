@@ -11,7 +11,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
       - name: ffmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Fresh virtualenv
@@ -20,7 +20,7 @@ jobs:
         run: |
           .venv/bin/pip install --upgrade pip
           .venv/bin/pip install -r requirements.txt
-          .venv/bin/pip install -e ".[dev]"
+          .venv/bin/pip install -e ".[dev,agent]"
       - name: Import, node registration, /xenoform, tiny dry-run
         run: .venv/bin/pytest tests/test_install.py
       - name: Open-weights default workflows

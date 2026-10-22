@@ -105,3 +105,16 @@ def test_cyan_flash_is_beat_synced_blue_and_in_place():
     dlt = (hit - calm)[20:44, 10:26].mean(axis=(0, 1))
     assert dlt[2] > dlt[0] + 5  # the hit adds blue, not white
     assert hit[0:8].mean() < 60  # background stays dark
+
+
+def test_house_fallbacks_and_preset_copy():
+    """DanceFX(None) is the house vj look; the preset dict is a copy; None drive values are 0; six presets with notes."""
+    fx = D.DanceFX()
+    assert fx.preset == "cool-echo" and fx.k == 1.4 and fx.p is not D.PRESETS["cool-echo"]
+    assert D.DanceFX(role="intro").preset == "cyan-flash" and D.DanceFX(role="into_card").invert_floor_ramp_frames == 14
+    f = _frame()
+    assert np.array_equal(D.DanceFX("noir-glow").apply(f, {"bass": None, "beat": None}), D.DanceFX("noir-glow").apply(f, {}))
+    assert set(D.PRESET_NOTES) == set(D.PRESETS) and len(D.PRESETS) == 6
+    env = {"fps": 24, "drums": [1.0] * 8, "bass": [1.0] * 8, "other": [0.0] * 8, "vocals": [0.0] * 8, "drum_strong": [0.0]}
+    out = list(D.render_shot([f] * 8, env, 0.0, role="into_card", invert_floor_ramp_frames=4))
+    assert out[-1][60:150, 40:70].mean() < out[0][60:150, 40:70].mean()  # the ramp lands on a negative

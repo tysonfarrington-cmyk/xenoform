@@ -194,15 +194,61 @@ def _escape_drawtext(text: str) -> str:
     )
 
 
+# Candidate TTF/OTF files for ffmpeg drawtext, in order. The repo's bundled ui_static/fonts are woff2,
+# which libfreetype in ffmpeg does not load, so they are deliberately not listed.
+FONT_CANDIDATES: tuple[str, ...] = (
+    # Windows
+    "C:/Windows/Fonts/georgia.ttf", "C:/Windows/Fonts/times.ttf", "C:/Windows/Fonts/arial.ttf",
+    "C:/Windows/Fonts/segoeui.ttf",
+    # macOS
+    "/System/Library/Fonts/Supplemental/Georgia.ttf", "/System/Library/Fonts/Supplemental/Times New Roman.ttf",
+    "/System/Library/Fonts/Supplemental/Arial.ttf", "/Library/Fonts/Georgia.ttf",
+    # Linux (dejavu, liberation)
+    "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    "/usr/share/fonts/dejavu/DejaVuSerif.ttf", "/usr/share/fonts/dejavu/DejaVuSans.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+    "/usr/share/fonts/liberation/LiberationSerif-Regular.ttf",
+    "/usr/share/fonts/truetype/freefont/FreeSerif.ttf",
+)
+
+
+def find_font(prefer: tuple[str, ...] | list[str] | None = None) -> str | None:
+    """First usable TrueType/OpenType font for ffmpeg drawtext / PIL: ``XENO_FONT`` (env) first, then
+    ``prefer`` (extra candidates), then the platform list. Returns the path with forward slashes, or None."""
+    import os
+
+    cands: list[str] = []
+    env = (os.environ.get("XENO_FONT") or "").strip()
+    if env:
+        cands.append(env)
+    cands += [str(p) for p in (prefer or ())]
+    cands += list(FONT_CANDIDATES)
+    for cand in cands:
+        if not cand or cand.lower().endswith(".woff2"):
+            continue
+        p = Path(cand)
+        if p.is_file():
+            return str(p).replace("\\", "/")
+    return None
+
+
+def drawtext_fontfile(path: str | Path) -> str:
+    """Escape a font path for an ffmpeg drawtext ``fontfile=`` option: backslashes become ``/`` and the
+    colon after a Windows drive letter is escaped as ``\\:`` so the filter parser does not split on it."""
+    return str(path).replace("\\", "/").replace(":", "\\:")
+
+
 def overlay_text(path: str | Path, cues: list[dict]) -> None:
     """Burn register cards onto the finished cut. Missing cues leave the file alone."""
     lines = [cue for cue in cues if str(cue.get("text") or "").strip()]
     if not lines:
         return
-    font = Path("/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf")
-    if not font.exists():
-        log.warning("text cards skipped: no serif font")
+    font_path = find_font()
+    if not font_path:
+        log.warning("text cards skipped: no TrueType font found (set XENO_FONT to a .ttf)")
         return
+    font = drawtext_fontfile(font_path)
     filters = []
     for cue in lines:
         text = _escape_drawtext(str(cue["text"])[:90])
@@ -217,7 +263,7 @@ def overlay_text(path: str | Path, cues: list[dict]) -> None:
         )
         filters.append(
             "drawtext="
-            f"fontfile={font}:"
+            f"fontfile='{font}':"
             f"text='{text}':"
             "fontsize=28:"
             "fontcolor=0xF3EADC:"
