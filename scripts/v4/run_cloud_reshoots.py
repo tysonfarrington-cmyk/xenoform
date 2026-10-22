@@ -2,13 +2,14 @@
 Usage: python work/v4/run_cloud_reshoots.py <keyfile|-> [--dry] [--only NAME]
 Key: one-use keyfile (deleted on read) or COMFY_ORG_API_KEY. Never printed. --dry = guard/map check only, no key, no send."""
 import json, os, sys, time, copy
+import os
 from pathlib import Path
 sys.path.insert(0, "src")
 from xenoform.cloud_backend import CloudBackend
 from xenoform.config import load_config
 W = Path("work/v4"); W.mkdir(parents=True, exist_ok=True); OUT = W / "cloud"; OUT.mkdir(parents=True, exist_ok=True)
 LEDGER = OUT / "spend.jsonl"; CAP = 3.00; USD_PER_S = 0.03 / 5 * 1.5  # 50% margin over ~3c/5s
-CO = Path(r"C:\Users\tyson\AI\ComfyUI\output\xenoform")
+CO = Path(os.environ.get("XENO_COMFY_OUT", str(Path.home() / "AI" / "ComfyUI" / "output" / "xenoform")))
 NEG = "blurry, low resolution, flicker, text, watermark, two objects, cut, dissolve, crossfade, hands, people, camera shake"
 
 def morph(prompt, a, b, seed, w=576, h=1024, length=121):
