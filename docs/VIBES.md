@@ -4,6 +4,8 @@ Xenoform ships 7 original vibes plus 19 extended ones. The originals live in `mo
 
 Each registry entry carries: `look` (the morph prompt fragment), `negative`, `palette`, `lighting`, `material`, `motion` (notes for the edit), `ltx` (LTX-Video 0.9.5 morph settings: steps, cfg, img_compression, guide_end_strength), `transitions` (recommended per boundary: drop, switch, beat, silence), `still_style` (the Z-Image Turbo prompt used for its stills) and `tags` (for the source library).
 
+The desk reads one list: `GET /api/vibes` (`vibes.catalog()`), the featured registry vibes in their featured order, then the seven originals (their names and one-liners live in `vibes.ORIGINAL_META`), then the rest of the ready registry with `legacy: true`. Each row carries its still URL, its object `pool`, `has_library` (its own 4-shot strip under `ui_static/library/<id>/`) and `library` (the folder the strip resolves to, through `pool` when it has none of its own). `app.js` falls back to its hardcoded arrays only when that fetch fails. Simple mode shows the featured vibes and keeps the legacy ones behind "More vibes". The judges page lists the pool-backed vibes; `scripts/gen_judges_cards.py` rewrites its cards from the same catalogue.
+
 Autotune results in `configs/autotune.json` win over a registry `ltx` block. Backgrounds are black by default and every negative includes `shimmer`. No prompt names an artist or a franchise.
 
 | id | name | one line | recommended transitions (drop / switch / beat) |

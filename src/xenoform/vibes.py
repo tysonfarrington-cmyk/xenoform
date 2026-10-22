@@ -17,6 +17,27 @@ from pathlib import Path
 REGISTRY = Path(__file__).resolve().parents[2] / "configs" / "vibes.json"
 OBJECTS = Path(__file__).resolve().parent / "ui_static" / "objects" / "objects.json"
 ORIGINAL = ("liquid-gold", "paper-summer", "bloom", "neon-night", "ocean", "cosmic", "black")
+LIBRARY = Path(__file__).resolve().parent / "ui_static" / "library"
+STILLS = Path(__file__).resolve().parent / "ui_static" / "vibes"
+
+# The seven originals' desk metadata (name, one line, palette, register, tone). The server owns this table;
+# app.js keeps a copy only as the offline fallback. The look prompts stay in morph_pass / configs/autotune.json.
+ORIGINAL_META: tuple[dict, ...] = (
+    {"id": "liquid-gold", "name": "Liquid gold", "line": "A gold pour becomes a ring in a dark forge.",
+     "palette": "gold", "register": "pynchon", "morph": True, "dark": False, "tone": "bright"},
+    {"id": "paper-summer", "name": "Paper summer", "line": "A paper boat crosses a bright kitchen.",
+     "palette": "neutral", "register": "rome", "morph": False, "dark": False, "tone": "bright"},
+    {"id": "bloom", "name": "Bloom", "line": "A flower opens on a green hill.",
+     "palette": "bronze", "register": "tolkien", "morph": False, "dark": False, "tone": "soft"},
+    {"id": "neon-night", "name": "Neon night", "line": "A neon sign holds one quiet street.",
+     "palette": "violet", "register": "lecarre", "morph": False, "dark": True, "tone": "dark"},
+    {"id": "ocean", "name": "Ocean", "line": "A swimmer crosses a calm harbour.",
+     "palette": "grey-green", "register": "tolkien", "morph": False, "dark": False, "tone": "bright"},
+    {"id": "cosmic", "name": "Cosmic", "line": "A star field turns over a dark shore.",
+     "palette": "violet", "register": "pynchon", "morph": True, "dark": True, "tone": "dark"},
+    {"id": "black", "name": "Black", "line": "Black glass grows from one living form into the next.",
+     "palette": "violet", "register": "pynchon", "morph": True, "dark": True, "tone": "dark"},
+)
 
 
 @lru_cache(maxsize=4)
@@ -91,3 +112,58 @@ def transitions(vibe: str) -> dict:
 
 def tags(vibe: str) -> tuple[str, ...]:
     return tuple(get(vibe).get("tags") or ())
+
+
+def has_library(vibe: str) -> bool:
+    """True when the vibe ships its own 4-shot library strip (``ui_static/library/<id>/wide.mp4``)."""
+    return (LIBRARY / vibe / "wide.mp4").is_file()
+
+
+def library_for(vibe: str) -> str:
+    """The library folder a vibe's strip and preview clips come from: its own, else its ``pool``'s, else ``""``."""
+    if has_library(vibe):
+        return vibe
+    borrowed = pool(vibe)
+    return borrowed if borrowed and has_library(borrowed) else ""
+
+
+def _row(meta: dict, *, featured: int, legacy: bool) -> dict:
+    vid = str(meta["id"])
+    return {
+        "id": vid,
+        "name": str(meta.get("name") or vid),
+        "line": str(meta.get("line") or ""),
+        "palette": str(meta.get("palette") or "neutral"),
+        "register": str(meta.get("register") or "pynchon"),
+        "morph": bool(meta.get("morph", True)),
+        "dark": bool(meta.get("dark", False)),
+        "tone": str(meta.get("tone") or ("dark" if meta.get("dark") else "bright")),
+        "still": f"/static/vibes/{vid}.jpg",
+        "has_still": (STILLS / f"{vid}.jpg").is_file(),
+        "featured": int(featured or 0),
+        "pool": pool(vid),
+        "has_library": has_library(vid),
+        "library": library_for(vid),
+        "legacy": bool(legacy),
+        "tags": list(meta.get("tags") or ()),
+    }
+
+
+def catalog() -> list[dict]:
+    """Every vibe the desk can pick, one source of truth for ``GET /api/vibes``: the featured registry vibes
+    in their featured order, then the originals that are not featured, then the rest of the ready registry.
+    Non-featured rows carry ``legacy: true`` (Simple shows them behind "More vibes")."""
+    rows: list[dict] = []
+    seen: set[str] = set()
+    for v in featured():
+        rows.append(_row(v, featured=int(v.get("featured") or 0), legacy=False))
+        seen.add(v["id"])
+    for meta in ORIGINAL_META:
+        if meta["id"] not in seen:
+            rows.append(_row(meta, featured=0, legacy=True))
+            seen.add(meta["id"])
+    for v in extended():
+        if v["id"] not in seen:
+            rows.append(_row(v, featured=0, legacy=True))
+            seen.add(v["id"])
+    return rows

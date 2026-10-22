@@ -209,14 +209,19 @@ function payload() {
     cloud_confirm: (state.easy && state.easy.cloud && state.easy.cloudToken) || "",
     beat_overlay: !!(state.easy && state.easy.overlay),
     // Simple finishing (open weights): energy preset, aspect, quality tier, beat FX, end card.
-    energy_preset: (state.easy && state.easy.energyPreset) || "flow",
-    aspect: (state.easy && state.easy.aspect) || "16:9",
+    energy_preset: (state.easy && state.easy.energyPreset) || "dense",
+    aspect: (state.easy && state.easy.aspect) || "9:16",
     quality_tier: (state.easy && state.easy.tier) || "draft",
     vertical_mode: (state.easy && state.easy.vertical) || "auto",
     morph_count: (state.easy && state.easy.morphs) || "auto",
     beat_fx: !(state.easy && state.easy.fx === false),
     end_card: !!(state.easy && state.easy.endCard),
+    // The house look (demo_house): dance_fx "auto" | "off" | a preset; stem_orbit on unless switched off.
+    dance_fx: (state.easy && state.easy.danceFx) || "auto",
+    stem_orbit: !(state.easy && state.easy.stemOrbit === false),
     macros: (window.XENO_MACROS ? window.XENO_MACROS() : null),
+    // Advanced desk: one scene transition per boundary (guardrails keep each type to 2; overflow becomes a cut).
+    scene_transitions: sceneTransitionPlan().map((row) => ({ kind: row.kind, boundary: row.boundary, index: row.index, auto: row.auto })),
     idea: (state.easy && state.easy.idea) || "",
     song: (state.easy && state.easy.songLabel) || "",
     cut_plan: (state.easy && (state.easy.cloud || state.easy.remixPlan) && (state.easy.cutPlan || state.easy.remixPlan)) || null,
@@ -258,6 +263,9 @@ function payload() {
       lock_words: scene.lock_words || [],
       element_ids: scene.element_ids || [],
       because: scene.because || "",
+      // Per-shot Look override (a dance_fx preset, "" = the video's Look) and the transition into the next shot.
+      dance_fx: scene.dance_fx || "",
+      transition: (sceneTransitionPlan()[scene.index] || {}).kind || "",
       still_name: scene.still_name || "",
       reference_url: scene.reference_url || "",
     })),
@@ -600,6 +608,7 @@ function shotsStep() {
       <div class="scene-grid">${sceneCards()}</div>
     </section>
     ${state.expanded != null ? sceneEditor() : ""}
+    ${transitionRows()}
     ${shotReview()}`;
 }
 
@@ -616,6 +625,11 @@ function exportStep() {
       <div class="simple-actions">
         <button type="button" class="generate" data-act="share-cut" data-tour="share">Share cut</button>
         <button type="button" class="ghost" data-act="music-only">Music only</button>
+      </div>
+      <div class="simple-actions">
+        <button type="button" class="ghost" id="vj-link" data-act="vj-open" data-href="${esc(vjUrl())}" title="VJ mode plays this song live; stems ride the macros when they have been split">Open in VJ with this song's stems</button>
+        <button type="button" class="ghost" data-act="mcp-copy" title="The mcpServers block for Claude Desktop or Cursor">Copy MCP connect line</button>
+        <button type="button" class="ghost" data-act="easy-midi" title="MIDI controller mapping (Simple mode's Fine-tune drawer)">MIDI drawer</button>
       </div>
       <div class="recipe-code" id="recipe-out">${esc(state.recipe || "")}</div>
       <div class="recipe-actions">
@@ -924,6 +938,9 @@ function sceneCards() {
           <span>${esc(scene.shot)} · ${esc(scene.move)}</span>
           <span>${esc(scene.edit)} · ${esc(scene.mood)}</span>
         </footer>
+        <label class="scene-look">Look
+          <select data-act="scene-look" data-index="${index}" aria-label="Look for shot ${index + 1}" title="${esc(lookNote(scene.dance_fx || "auto"))}">${lookOptions(scene.dance_fx || "")}</select>
+        </label>
         <div class="scene-actions">
           <button type="button" data-act="expand" data-index="${index}">Open</button>
           <button type="button" data-act="motif" data-index="${index}" class="${state.motif === scene.form ? "on" : ""}">Motif</button>
@@ -931,6 +948,156 @@ function sceneCards() {
       </article>`;
     })
     .join("");
+}
+
+function lookOptions(current) {
+  return [["", "Video's Look"], ["off", "Off"]].concat(LOOK_PRESETS.map((id) => [id, lookLabel(id)]))
+    .map(([id, text]) => `<option value="${esc(id)}"${id === current ? " selected" : ""} title="${esc(lookNote(id || "auto"))}">${esc(text)}</option>`)
+    .join("");
+}
+
+// ---------------------------------------------------------------- per-boundary scene transitions (Advanced)
+
+const TRANSITION_EXEMPT = ["cut", "scene-morph", "black-hold"]; // never counted against the max-2 rule
+const TRANSITION_MAX = 2;
+const RECOMMENDED_FALLBACK = { drop: "scene-morph", switch: "match-cut", beat: "cut", silence: "black-hold" };
+
+// GET /api/v1/transitions: the scene transition catalogue (id, label, note, tier) and the per-vibe picks.
+async function loadTransitions() {
+  try {
+    const res = await api("/api/v1/transitions");
+    if (!res.ok) return false;
+    const body = await res.json();
+    state.transitionCatalog = (body.scene_transitions || []).filter((row) => row && row.id);
+    state.transitionRecommended = body.scene_recommended || {};
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
+// The kind of boundary between shot i and shot i+1: drop (the climax / a signature morph), switch (a section
+// change in the storyboard's sections), silence (a quiet section), else a plain on-beat cut.
+function boundaryKind(index) {
+  const scenes = state.scenes || [];
+  const next = scenes[index + 1];
+  if (!next) return "beat";
+  if (next.beat === "climax" || next.signature) return "drop";
+  const at = Number(next.start || 0);
+  const section = (state.sections || []).find((row) => Math.abs(Number(row.start || 0) - at) < 0.3);
+  if (section) {
+    const label = String(section.label || "").toLowerCase();
+    if (/silence|quiet|breakdown|break\b/.test(label)) return "silence";
+    if (/drop|chorus/.test(label) && Number(section.level || 0) >= 0.8) return "drop";
+    return "switch";
+  }
+  return "beat";
+}
+
+function recommendedTransition(kind) {
+  const vibe = (state.easy && state.easy.vibe) || "";
+  const table = (state.transitionRecommended && state.transitionRecommended[vibe]) || RECOMMENDED_FALLBACK;
+  return table[kind] || RECOMMENDED_FALLBACK[kind] || "cut";
+}
+
+// One row per boundary: the user's pick, else the vibe's recommendation for that boundary kind.
+function sceneTransitionPlan() {
+  if (!state) return [];
+  const scenes = state.scenes || [];
+  if (scenes.length < 2) return [];
+  const picks = state.sceneTransitions || [];
+  const rows = [];
+  for (let index = 0; index < scenes.length - 1; index += 1) {
+    const kind = boundaryKind(index);
+    const chosen = picks[index] || "";
+    rows.push({ index, boundary: kind, kind: chosen || recommendedTransition(kind), auto: !chosen });
+  }
+  return rows;
+}
+
+function transitionCounts(rows) {
+  const counts = {};
+  rows.forEach((row) => {
+    if (TRANSITION_EXEMPT.includes(row.kind)) return;
+    counts[row.kind] = (counts[row.kind] || 0) + 1;
+  });
+  return counts;
+}
+
+function transitionLabel(id) {
+  const row = (state.transitionCatalog || []).find((item) => item.id === id);
+  return row ? row.label : id;
+}
+
+function transitionRows() {
+  const rows = sceneTransitionPlan();
+  if (!rows.length) return "";
+  const expert = localStorage.getItem("xeno-guard-expert") === "1";
+  const catalog = (state.transitionCatalog || []).filter((row) => expert || row.tier !== "classic");
+  const order = { premium: 0, core: 1, classic: 2 };
+  catalog.sort((a, b) => (order[a.tier] == null ? 9 : order[a.tier]) - (order[b.tier] == null ? 9 : order[b.tier]));
+  const counts = transitionCounts(rows);
+  const over = Object.keys(counts).filter((kind) => counts[kind] > TRANSITION_MAX);
+  const options = (current) => {
+    const list = catalog.length ? catalog : Object.keys(RECOMMENDED_FALLBACK).map((k) => ({ id: RECOMMENDED_FALLBACK[k], label: RECOMMENDED_FALLBACK[k], tier: "core" }));
+    return list
+      .map((row) => `<option value="${esc(row.id)}"${row.id === current ? " selected" : ""} title="${esc(row.note || "")}">${esc(row.label)}${row.tier === "premium" ? " · premium" : row.tier === "classic" ? " · classic" : ""}</option>`)
+      .join("");
+  };
+  const lines = rows
+    .map((row) => {
+      const count = TRANSITION_EXEMPT.includes(row.kind) ? "" : `${counts[row.kind]}/${TRANSITION_MAX}`;
+      const bad = counts[row.kind] > TRANSITION_MAX && !TRANSITION_EXEMPT.includes(row.kind);
+      return `<div class="tr-row${bad ? " over" : ""}">
+        <span class="tr-at">${String(row.index + 1).padStart(2, "0")} → ${String(row.index + 2).padStart(2, "0")}</span>
+        <em class="tr-kind">${esc(row.boundary)}</em>
+        <select data-act="scene-transition" data-index="${row.index}" aria-label="Transition from shot ${row.index + 1} to ${row.index + 2}">
+          <option value=""${row.auto ? " selected" : ""}>Auto · ${esc(transitionLabel(recommendedTransition(row.boundary)))}</option>
+          ${options(row.auto ? "" : row.kind)}
+        </select>
+        <span class="tr-count">${esc(count)}</span>
+      </div>`;
+    })
+    .join("");
+  const warn = over.length
+    ? `<p class="note warn tr-warn">${esc(over.map((kind) => `${transitionLabel(kind)} ×${counts[kind]}`).join(", "))}: more than ${TRANSITION_MAX} of one type. The guardrail turns the extra into a clean beat cut${expert ? " (Expert: kept, warned)" : ""}.</p>`
+    : `<p class="note tr-ok">Max ${TRANSITION_MAX} of any one transition type. Cuts, scene morphs and black holds do not count.</p>`;
+  return `<section class="panel tr-panel" id="transitions">
+      <div class="board-head">
+        <div>
+          <p class="kicker">Transitions</p>
+          <h2>One per boundary</h2>
+        </div>
+        <p>Auto follows the vibe's own picks per boundary kind: drop, switch, beat, silence.${expert ? "" : " Classic wipes need Expert."}</p>
+      </div>
+      <div class="tr-rows">${lines}</div>
+      ${warn}
+      <button type="button" class="text" data-act="scene-transition-reset">Back to Auto</button>
+    </section>`;
+}
+
+function vjUrl() {
+  const audio = (state && state.audioId) || "demo";
+  const params = new URLSearchParams({ track: audio });
+  const stems = window.XENO_STEMS ? window.XENO_STEMS() : null;
+  if (stems && stems.id) {
+    params.set("stemsId", stems.id);
+    params.set("stems", media(`/api/stems/${encodeURIComponent(stems.id)}/envelopes.json`));
+  }
+  return media(`/vj?${params.toString()}`);
+}
+
+// The MIDI drawer lives in the macro strip (ui_v6.js) inside Fine-tune: open both and focus it.
+function openMidiDrawer() {
+  const tune = document.getElementById("fine-tune");
+  if (tune) tune.open = true;
+  const midi = document.querySelector(".xf-midi");
+  if (midi) {
+    midi.open = true;
+    const summary = midi.querySelector("summary");
+    if (summary) summary.focus();
+    midi.scrollIntoView({ block: "center" });
+  }
 }
 
 function treatmentPanel() {
@@ -1975,10 +2142,36 @@ const VIBES_LEGACY = [
     still: "/static/vibes/origami-noir.jpg",
   },
 ];
-const VIBES = V6_VIBES.concat(VIBES_LEGACY.filter((v) => !V6_VIBES.some((f) => f.id === v.id)).map((v) => Object.assign({}, v, {legacy: true})));
+let VIBES = V6_VIBES.concat(VIBES_LEGACY.filter((v) => !V6_VIBES.some((f) => f.id === v.id)).map((v) => Object.assign({}, v, {legacy: true})));
+// vibe id -> the library folder its 4-shot strip lives in (its own, or the pool it borrows stills from)
+const VIBE_LIBRARY = {};
+let LOOKS = null; // dance_fx presets with their one-line notes, from /api/vibes
 
 function vibeById(id) {
   return VIBES.find((item) => item.id === id) || null;
+}
+
+// GET /api/vibes is the single source of truth (vibes.catalog()). The arrays above are the offline fallback.
+async function loadVibes() {
+  try {
+    const res = await api("/api/vibes");
+    if (!res.ok) return false;
+    const body = await res.json();
+    const rows = (body.vibes || []).filter((row) => row && row.id && row.name);
+    if (!rows.length) return false;
+    VIBES = rows.map((row) => Object.assign({}, row, { still: row.still || `/static/vibes/${row.id}.jpg`, legacy: !!row.legacy }));
+    rows.forEach((row) => {
+      VIBE_LIBRARY[row.id] = row.library || (row.has_library ? row.id : row.pool || row.id);
+    });
+    if (Array.isArray(body.looks) && body.looks.length) LOOKS = body.looks;
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
+function libraryFolder(vibe) {
+  return VIBE_LIBRARY[vibe] || vibe;
 }
 
 function energyFromTrack() {
@@ -1996,11 +2189,11 @@ function plainWords(text) {
 }
 
 function libraryClip(vibe, shot) {
-  return media(`/static/library/${vibe}/${shot}.mp4`);
+  return media(`/static/library/${libraryFolder(vibe)}/${shot}.mp4`);
 }
 
 function libraryStill(vibe, shot) {
-  return media(`/static/library/${vibe}/${shot}.jpg`);
+  return media(`/static/library/${libraryFolder(vibe)}/${shot}.jpg`);
 }
 
 function songFacts() {
@@ -2052,8 +2245,13 @@ function easyMedia() {
   return `<video id="player" playsinline poster="${media("/media/poster")}" src="${esc(media(state.video || "/media/demo"))}"></video>`;
 }
 
-function vibeCards(easy, compact) {
-  return VIBES.filter((vibe) => !vibe.legacy || vibe.id === easy.vibe || document.body.dataset.advanced === "1").map((vibe) => {
+function vibeCards(easy, compact, which) {
+  const advanced = document.body.dataset.advanced === "1";
+  const rows = VIBES.filter((vibe) => {
+    if (which === "legacy") return !!vibe.legacy && vibe.id !== easy.vibe;
+    return !vibe.legacy || vibe.id === easy.vibe || (advanced && which !== "featured");
+  });
+  return rows.map((vibe) => {
     const on = vibe.id === easy.vibe;
     const tone = vibe.tone || (vibe.dark ? "dark" : "bright");
     return `<button type="button" class="vibe-card${vibe.dark ? " is-dark" : ""}${on ? " on" : ""}${compact ? " is-mini" : ""}" role="radio" aria-checked="${on ? "true" : "false"}" tabindex="${on || (!easy.vibe && vibe.id === VIBES[0].id) ? "0" : "-1"}" data-act="easy-vibe" data-vibe="${esc(vibe.id)}">
@@ -2062,6 +2260,25 @@ function vibeCards(easy, compact) {
       <span class="vibe-meta"><strong>${esc(vibe.name)}</strong>${compact ? "" : `<em>${esc(tone)}</em>`}</span>
     </button>`;
   }).join("");
+}
+
+// The originals and the non-featured registry vibes, behind one drawer in Simple (Advanced lists them in the grid).
+function moreVibes(easy) {
+  const legacy = VIBES.filter((vibe) => vibe.legacy && vibe.id !== easy.vibe);
+  if (!legacy.length || document.body.dataset.advanced === "1") return "";
+  const open = readDrawer("xeno-more-vibes");
+  return `<details class="more-vibes" id="more-vibes"${open ? " open" : ""}>
+      <summary>More vibes <small>${legacy.length} more, the originals and the rest of the registry</small></summary>
+      <div class="vibe-grid vibe-more" role="radiogroup" aria-label="More vibes">${vibeCards(easy, false, "legacy")}</div>
+    </details>`;
+}
+
+function readDrawer(key) {
+  try {
+    return localStorage.getItem(key) === "1";
+  } catch (err) {
+    return false;
+  }
 }
 
 function shotStrip(vibeId) {
@@ -2190,7 +2407,7 @@ function renderEasy() {
     <header class="easy-intro">
       <p class="eyebrow">Xenoform · Simple</p>
       <h2>Make a music video.</h2>
-      <p class="lede">One object keeps transforming into the next, every change on the beat. A song, a vibe, then Make. Free, local, open weights.</p>
+      <p class="lede">One object keeps transforming into the next, every change on the beat. A song, a vibe, Make. Free, local, open weights.</p>
       ${dropCard()}
     </header>
     <section class="easy-main">
@@ -2201,7 +2418,8 @@ function renderEasy() {
       </section>
       <section class="easy-step" data-tour="easy-vibe">
         <div class="step-head"><h3>Vibe</h3><span>Pick one. You can try another after.</span></div>
-        <div class="vibe-grid" role="radiogroup" aria-label="Vibe">${vibeCards(easy, false)}</div>
+        <div class="vibe-grid" role="radiogroup" aria-label="Vibe">${vibeCards(easy, false, "featured")}</div>
+        ${moreVibes(easy)}
         <label class="idea-field">Your idea in one line, if you have one.
           <input id="easy-idea" type="text" maxlength="170" value="${esc(easy.idea || "")}" aria-label="One line, optional" placeholder="Leave this empty and the vibe decides." autocomplete="off" />
         </label>
@@ -2217,12 +2435,12 @@ function renderEasy() {
         <dt>Energy</dt><dd>Follows the song</dd>
         <dt>Time</dt><dd>${esc(easyTimeFact())}</dd>
       </dl>
-      ${simpleOptions(easy)}
-      ${cloudToggles(easy)}
-      ${easy.cloudPlan ? cloudCard(easy.cloudPlan) : ""}
       <button type="button" class="generate easy-make" data-act="easy-make">Make my video</button>
-      ${remixBox(easy)}
+      <p class="note house-line">9:16, Dense, Draft, Beat FX and the house look. Fine-tune only if you want to.</p>
+      ${fineTune(easy)}
+      ${easy.cloudPlan ? cloudCard(easy.cloudPlan) : ""}
       <p class="note"><a href="/moves">Moves: make a character dance to a real dance clip (Wan Animate 2) &rarr;</a></p>
+      <p class="note"><a href="/vj">VJ mode: live visuals to this song's stems &rarr;</a> · <button type="button" class="text" data-act="easy-midi">MIDI controller</button></p>
       <button type="button" class="ghost easy-showcase" data-act="easy-showcase">Watch a finished one · plays now</button>
       <p class="note" id="easy-note">${esc(easy.note || "No ComfyUI? It plays in your browser.")}</p>
       <p class="side-foot"><a class="ow-badge" href="${esc(media("/licences"))}" title="LTX-2.3 has a revenue threshold. FLUX.2 Klein 9B is non-commercial. This desk uses the Apache 2.0 4B.">Open weights</a></p>
@@ -2247,10 +2465,53 @@ function finalEtaText() {
   return `Final: LTX-2.3 at ${info.render}, upscaled to ${info.output}. About ${clockText(info.eta_s)}${measured}.${ready}`;
 }
 
+// Fine-tune: everything that is not song / vibe / Make, in one drawer that remembers whether it was open.
+function fineTune(easy) {
+  const open = readDrawer("xeno-finetune");
+  const bits = [easy.aspect || "9:16", (easy.energyPreset || "dense") === "dense" ? "Dense" : "Flow", (easy.tier || "draft") === "final" ? "Final" : "Draft",
+    lookLabel(easy.danceFx || "auto")];
+  return `<details class="fine-tune" id="fine-tune"${open ? " open" : ""}>
+      <summary>Fine-tune <small>${esc(bits.join(" · "))}</small></summary>
+      ${simpleOptions(easy)}
+      ${cloudToggles(easy)}
+      ${remixBox(easy)}
+    </details>`;
+}
+
+const LOOK_PRESETS = ["warm-leak", "cool-echo", "noir-glow", "bloom-rush", "negative-rush", "cyan-flash"];
+const LOOK_NOTES = {
+  "auto": "The vibe's own look when it has one, else the house VJ look (cool-echo).",
+  "off": "No colour or light pass. The beat FX still cut on the beat.",
+  "warm-leak": "warm split-tone grade, film halation on the bass and a corner light leak on the beat; no echo",
+  "cool-echo": "cool blue grade, light ghost trail on 'other', cyan edge tint on the drums, frosted glass (the house VJ look)",
+  "noir-glow": "high-contrast noir grade, violet edges, moderate halation and leak, a touch of glass",
+  "bloom-rush": "hero / flower preset: long trails, heavy bloom, cyan-magenta gradient wash and chroma bleed (colour only)",
+  "negative-rush": "bloom-rush plus a stem-driven negative: luma flips on the bass/beat with the hue kept, eased",
+  "cyan-flash": "electric-blue beat flashes, negative pulse on big hits, slow light sweep, depth bloom and exposure breath",
+};
+function lookLabel(id) {
+  if (id === "auto" || !id) return "Auto";
+  if (id === "off") return "Off";
+  const words = String(id).replace(/-/g, " ");
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+function lookNote(id) {
+  const served = (LOOKS || []).find((row) => row.id === id);
+  return (served && served.note) || LOOK_NOTES[id] || "";
+}
+function lookRow(current, act, index) {
+  const ids = ["auto", "off"].concat(LOOK_PRESETS);
+  const chips = ids
+    .map((id) => `<button type="button" class="chip${id === current ? " on" : ""}" data-act="${act}" data-value="${esc(id)}"${index == null ? "" : ` data-index="${index}"`} aria-pressed="${id === current ? "true" : "false"}" title="${esc(lookNote(id))}">${esc(lookLabel(id))}</button>`)
+    .join("");
+  return `<div class="simple-seg look-row"><span>Look</span><div class="toggle chips" role="group" aria-label="Look">${chips}</div></div>`;
+}
+
 function simpleOptions(easy) {
-  const energy = easy.energyPreset || "flow";
-  const aspect = easy.aspect || "16:9";
+  const energy = easy.energyPreset || "dense";
+  const aspect = easy.aspect || "9:16";
   const tier = easy.tier || "draft";
+  const orbit = easy.stemOrbit !== false;
   const fx = easy.fx !== false;
   const card = !!easy.endCard;
   const vertical = tier === "final" ? (easy.vertical === "crop" ? "crop" : "native") : "crop";
@@ -2264,6 +2525,9 @@ function simpleOptions(easy) {
       ${aspect === "9:16" && tier === "final" ? simpleSeg("easy-vertical", vertical, [["native", "Native"], ["crop", "Crop"]], "Vertical") : ""}
       ${morphControl(easy, tier, aspect, vertical)}
       ${simpleSeg("easy-fx", fx ? "on" : "off", [["on", "On"], ["off", "Off"]], "Beat FX")}
+      ${lookRow(easy.danceFx || "auto", "easy-look")}
+      <p class="note look-note">${esc(lookNote(easy.danceFx || "auto"))}</p>
+      ${simpleSeg("easy-orbit", orbit ? "on" : "off", [["on", "On"], ["off", "Off"]], "Subject orbit")}
       ${simpleSeg("easy-card", card ? "on" : "off", [["off", "Off"], ["on", "On"]], "End card")}
       <p class="note">${esc(energy === "dense" ? "Dense: up to 15 morphs, a shot a bar, then a shot every half bar from the drop, with stutters, holds and punches." : "Flow: one morph per section, cut on the bar.")}
       ${esc(vertNote)}
@@ -2289,7 +2553,7 @@ function morphEstimate(count, tier, aspect, vertical) {
 }
 function morphControl(easy, tier, aspect, vertical) {
   const auto = !easy.morphs || easy.morphs === "auto";
-  const n = auto ? autoMorphs(easy.energyPreset || "flow") : Number(easy.morphs);
+  const n = auto ? autoMorphs(easy.energyPreset || "dense") : Number(easy.morphs);
   return `<div class="seg morph-count" data-tour="easy-morphs"><span class="seg-label">Forms</span>
       <button type="button" data-act="easy-morphs-auto" class="${auto ? "on" : ""}">Auto${auto ? ` (${n})` : ""}</button>
       <input type="range" min="1" max="40" step="1" value="${Math.min(40, n)}" data-act="easy-morphs" aria-label="Number of forms">
@@ -2352,12 +2616,29 @@ async function loadVideos() {
   }
 }
 
+// Called once a song is in (after /api/analyze or /api/demo) and whenever a Fine-tune choice changes the plan.
 async function loadSimpleOptions() {
   try {
+    const easy = (state && state.easy) || {};
     const duration = Math.round(easySongSeconds());
-    const energy = (state.easy && state.easy.energyPreset) || "flow";
-    const res = await api(`/api/simple/options?duration=${duration}&energy=${energy}&tier=final`);
-    if (res.ok) state.simpleOptions = await res.json();
+    if (!duration) {
+      state.simpleOptions = null;
+      return;
+    }
+    const query = new URLSearchParams({
+      duration: String(duration),
+      energy: easy.energyPreset || "dense",
+      tier: easy.tier || "draft",
+      bpm: String(Math.round(Number(state.tempo) || 120)),
+      aspect: easy.aspect || "9:16",
+      vertical: easy.vertical || "native",
+      morphs: String(easy.morphs || "auto"),
+    });
+    const res = await api(`/api/simple/options?${query.toString()}`);
+    if (res.ok) {
+      state.simpleOptions = await res.json();
+      if (state.simpleOptions && Array.isArray(state.simpleOptions.looks) && state.simpleOptions.looks.length) LOOKS = state.simpleOptions.looks;
+    }
   } catch (err) {
     state.simpleOptions = null;
   }
@@ -2373,14 +2654,16 @@ function applySimpleRecipe(recipe) {
   const easy = state.easy;
   if (recipe.vibe && vibeById(recipe.vibe)) easy.vibe = recipe.vibe;
   easy.idea = recipe.idea || easy.idea || "";
-  easy.energyPreset = recipe.energy_preset || "flow";
-  easy.aspect = recipe.aspect || "16:9";
+  easy.energyPreset = recipe.energy_preset || "dense";
+  easy.aspect = recipe.aspect || "9:16";
   easy.tier = recipe.quality_tier || "draft";
   easy.vertical = recipe.vertical_mode || "";
   easy.morphs = recipe.morph_count || "auto";
   easy.fx = recipe.beat_fx !== false;
   easy.overlay = !!recipe.beat_overlay;
   easy.endCard = !!recipe.end_card;
+  easy.danceFx = recipe.dance_fx || "auto";
+  easy.stemOrbit = recipe.stem_orbit !== false;
   easy.remixPlan = recipe.cut_plan || null;
   state.seed = recipe.seed || state.seed;
 }
@@ -3471,6 +3754,7 @@ async function useDemoSong() {
   if (!response.ok) return;
   adoptSession(await response.json());
   await settleCut({ full: true });
+  loadSimpleOptions().then(() => render());
 }
 
 async function uploadSong(file) {
@@ -3494,6 +3778,7 @@ async function uploadSong(file) {
   if (state && state.board && state.board.length) state.heldBoard = JSON.parse(JSON.stringify(state.board));
   adoptSession(data, { keepScript: state.locks.script, keepLook: state.locks.preset });
   await settleCut({ full: true });
+  loadSimpleOptions().then(() => render());
 }
 
 function adoptSession(data, options = {}) {
@@ -3552,7 +3837,9 @@ function adoptSession(data, options = {}) {
     transitionNote: previous ? previous.transitionNote || "" : "",
     easy: previous && previous.easy
       ? previous.easy
-      : { song: "", songLabel: "", vibe: "", idea: "", phase: "song", note: "", playedHere: false },
+      : { song: "", songLabel: "", vibe: "", idea: "", phase: "song", note: "", playedHere: false,
+          // the house (demo_house): 9:16 native, Dense, Draft, Beat FX, the house look, subject orbit, no end card
+          energyPreset: "dense", aspect: "9:16", tier: "draft", fx: true, endCard: false, danceFx: "auto", stemOrbit: true },
     morphCap: previous && previous.morphCap != null ? previous.morphCap : null,
     heldBoard: previous ? previous.heldBoard : null,
     board: options.keepScript && previous && previous.board ? previous.board : (data.scenes || []).map((scene) => ({ ...scene })),
@@ -3587,6 +3874,9 @@ function adoptSession(data, options = {}) {
     morphFast: previous ? !!previous.morphFast : false,
     morphHit: previous && previous.morphHit != null ? previous.morphHit !== false : readMorphHit(),
     morphReport: previous ? previous.morphReport : null,
+    sceneTransitions: options.keepScript && previous ? previous.sceneTransitions || [] : [],
+    transitionCatalog: previous ? previous.transitionCatalog || [] : [],
+    transitionRecommended: previous ? previous.transitionRecommended || {} : {},
     libraryFolder: previous && previous.libraryFolder != null ? previous.libraryFolder : readLibraryFolder(),
     excludeFaces: previous && previous.excludeFaces != null ? previous.excludeFaces : readExcludeFaces(),
     allowPdUs: previous && previous.allowPdUs != null ? !!previous.allowPdUs : readAllowPdUs(),
@@ -3949,7 +4239,9 @@ async function loadContinuity() {
 
 async function shareCut(button) {
   if (!state) return;
-  const job = state.job && state.job.id ? `?job=${encodeURIComponent(state.job.id)}` : "";
+  // A reopened cut (My videos) has no live job record: its id is the job folder, so Download shares that file.
+  const jobId = (state.job && state.job.id) || (state.easy && state.easy.reopenId) || "";
+  const job = jobId ? `?job=${encodeURIComponent(jobId)}` : "";
   if (button) button.classList.add("is-loading");
   try {
     const response = await api(`/api/share${job}`);
@@ -4117,7 +4409,26 @@ document.addEventListener("click", async (event) => {
     render();
     loadSimpleOptions().then(render);
   } else if (act === "easy-aspect") {
-    state.easy.aspect = ["16:9", "9:16", "1:1"].includes(el.dataset.value) ? el.dataset.value : "16:9";
+    state.easy.aspect = ["16:9", "9:16", "1:1"].includes(el.dataset.value) ? el.dataset.value : "9:16";
+    render();
+    loadSimpleOptions().then(render);
+  } else if (act === "easy-look") {
+    state.easy.danceFx = el.dataset.value || "auto";
+    render();
+  } else if (act === "easy-orbit") {
+    state.easy.stemOrbit = el.dataset.value !== "off";
+    render();
+  } else if (act === "easy-midi") {
+    openMidiDrawer();
+  } else if (act === "vj-open") {
+    window.open(vjUrl(), "_blank", "noopener");
+  } else if (act === "mcp-copy") {
+    const line = connectSnippets().stdio;
+    const ok = await copyText(line);
+    const hint = document.getElementById("recipe-hint");
+    if (hint) hint.textContent = ok ? "MCP connect line copied (Claude Desktop / Cursor mcpServers block)." : line;
+  } else if (act === "scene-transition-reset") {
+    state.sceneTransitions = [];
     render();
   } else if (act === "easy-morphs-auto") {
     state.easy.morphs = "auto";
@@ -4128,7 +4439,7 @@ document.addEventListener("click", async (event) => {
   } else if (act === "easy-tier") {
     state.easy.tier = el.dataset.value === "final" ? "final" : "draft";
     render();
-    if (state.easy.tier === "final") loadSimpleOptions().then(render);
+    loadSimpleOptions().then(render);
   } else if (act === "easy-fx") {
     state.easy.fx = el.dataset.value !== "off";
     render();
@@ -4160,6 +4471,8 @@ document.addEventListener("click", async (event) => {
     state.easy.reopenId = row.id;
     if (row.vibe && vibeById(row.vibe)) state.easy.vibe = row.vibe;
     state.easy.reopenUrl = row.url;
+    // Download / Share cut read the job id from here; a job record is not needed for a saved file.
+    state.job = { id: row.id, status: "done", stage: "done", progress: 1, video: row.url, reopened: true };
     state.easy.recipe = row.recipe || "";
     state.easy.hookUrl = row.hook ? `/api/videos/${row.id}/hook.mp4` : "";
     state.easy.hookInfo = "";
@@ -4536,6 +4849,18 @@ document.addEventListener("change", (event) => {
     state.lyricNote = "";
     render();
     if (state.lyricOn) queueLyrics();
+  } else if (target.dataset.act === "scene-transition") {
+    const index = Number(target.dataset.index);
+    state.sceneTransitions = state.sceneTransitions || [];
+    state.sceneTransitions[index] = target.value || "";
+    render();
+  } else if (target.dataset.act === "scene-look") {
+    const scene = (state.scenes || [])[Number(target.dataset.index)];
+    if (scene) {
+      scene.dance_fx = target.value || "";
+      scene.edited = true;
+    }
+    render();
   } else if (target.dataset.scene && target.dataset.scene !== "action") {
     const value = target.dataset.scene === "bars" ? Number(target.value) : target.value;
     touchScene(Number(target.dataset.index), target.dataset.scene, value);
@@ -5947,7 +6272,7 @@ async function boot() {
     await settleNotes();
     refreshComfy();
     setInterval(refreshComfy, 8000);
-    Promise.all([loadVideos(), loadSimpleOptions()]).then(() => render());
+    Promise.all([loadVideos(), loadVibes(), loadTransitions(), loadSimpleOptions()]).then(() => render());
     if (window.XENO_TUTORIAL) window.XENO_TUTORIAL.ready();
   } catch (error) {
     document.getElementById("app").innerHTML = `<div class="error-panel"><h2>The desk could not open the demo.</h2><p>${esc(error.message)}. The reference cut is examples/demo_base.mp4.</p></div>`;
@@ -5972,6 +6297,17 @@ document.addEventListener("change", (ev) => {
   const el = ev.target;
   if (el && el.dataset && el.dataset.act === "easy-morphs") render();
 });
+
+// Fine-tune and More vibes remember whether they were open.
+document.addEventListener("toggle", (ev) => {
+  const el = ev.target;
+  if (!el || !el.id) return;
+  const key = { "fine-tune": "xeno-finetune", "more-vibes": "xeno-more-vibes" }[el.id];
+  if (!key) return;
+  try {
+    localStorage.setItem(key, el.open ? "1" : "0");
+  } catch (err) {}
+}, true);
 
 // Guardrails Expert override toggle (persisted).
 (function guardExpert() {

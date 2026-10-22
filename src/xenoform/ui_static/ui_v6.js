@@ -14,9 +14,36 @@
   let M=load();
   // payload: the four knobs/role lanes as before, plus macros.stems = {name: 0..1} for per-stem lanes
   window.XENO_MACROS=()=>{const o={},st={};for(const k in M){if(k.startsWith("stem:"))st[k.slice(5)]=M[k];else o[k]=M[k];}
-    if(Object.keys(st).length)o.stems=st;return o;};
+    if(Object.keys(st).length)o.stems=st;if(STEMS.id)o.stems_id=STEMS.id;return o;};
+  // Stems on demand: opening "Stem reactions" asks the desk to split the current song (POST /api/stems, cached by
+  // song hash), then the lanes become one per real stem. The song id comes from app.js: window.XENO_STATE().audioId
+  // (set by /api/analyze or "demo"), or window.XENO_CURRENT_SONG(), or #easy-file[data-song]; else the bundled demo.
+  const STEMS={id:"",song:"",status:"",engine:"",names:[]};
+  const songId=()=>{try{const s=window.XENO_STATE&&window.XENO_STATE();if(s&&s.audioId)return s.audioId;}catch(e){}
+    try{const c=window.XENO_CURRENT_SONG&&window.XENO_CURRENT_SONG();if(c)return typeof c==="string"?c:c.audioId||c.id||"demo";}catch(e){}
+    const f=document.querySelector("#easy-file");return (f&&f.dataset.song)||"demo";};
+  const stemsStatus=t=>{const el=document.querySelector(".xf-stems-status");if(el)el.textContent=t;};
+  async function requestStems(){const id=songId();if(STEMS.song===id&&STEMS.status==="running")return;
+    if(STEMS.song===id&&STEMS.status==="done"){stemsStatus(`${STEMS.names.length} stems (${STEMS.engine})`);return;}
+    STEMS.song=id;STEMS.status="running";stemsStatus("splitting stems…");
+    try{const api=p=>(window.XENO_BASE||"")+p;let r=await fetch(api("/api/stems"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({audio_id:id})});
+      let j=await r.json();if(!r.ok)throw new Error(j.detail||"stems failed");
+      while(j.status==="running"){await new Promise(res=>setTimeout(res,1500));if(STEMS.song!==id)return;stemsStatus(`splitting stems… (${j.engine||"auto"})`);
+        r=await fetch(api("/api/stems/"+j.id));j=await r.json();}
+      if(j.status!=="done")throw new Error(j.error||"stems failed");
+      Object.assign(STEMS,{id:j.id,status:"done",engine:j.engine,names:j.stems||[]});
+      if(STEMS.names.length)window.XENO_SET_STEMS(STEMS.names);stemsStatus(`${STEMS.names.length} stems (${STEMS.engine})`);}
+    catch(e){STEMS.status="error";stemsStatus("stems: "+e.message);}}
+  window.XENO_STEMS=()=>Object.assign({},STEMS);window.XENO_REQUEST_STEMS=requestStems;
+  document.addEventListener("toggle",e=>{const d=e.target;if(d&&d.classList&&d.classList.contains("xf-adv")&&d.open)requestStems();},true);
   window.XENO_SET_STEMS=names=>{LANES=(names&&names.length)?lanesFor(names):LANES;
     for(const [k] of LANES)if(M[k]==null)M[k]=0.7;const s=document.querySelector(".xf-macros");s&&s.remove();mount();};
+  // XENO_MACRO_SET(k, v): drive a knob ("intensity"...), a role lane ("drums") or a stem lane ("stem:Kick") from
+  // MIDI or a script; repaints the control and persists like a hand move would.
+  window.XENO_MACRO_SET=(k,v)=>{if(typeof v!=="number"||isNaN(v))return;M[k]=Math.max(0,Math.min(1,v));
+    const kn=document.querySelector(`.xf-knob[data-k="${CSS.escape(k)}"]`);if(kn)paint(kn,k);
+    const r=document.querySelector(`.xf-lane input[data-k="${CSS.escape(k)}"]`);if(r){r.value=pct(M[k]);r.style.setProperty("--p",r.value+"%");r.nextElementSibling.textContent=r.value;}
+    clearTimeout(window.XENO_MACRO_SET.t);window.XENO_MACRO_SET.t=setTimeout(save,150);};
   const save=()=>{localStorage.setItem(KEY,JSON.stringify(M));};
   const pct=v=>Math.round(v*100);
   const ARC=(v)=>{const a0=-135,a1=a0+270*v,r=25,c=27,p=a=>[c+r*Math.sin(a*Math.PI/180),c-r*Math.cos(a*Math.PI/180)];
@@ -30,12 +57,24 @@
       <input type="range" min="0" max="100" value="${pct(M[k])}" data-k="${k}" style="--c:${c};--p:${pct(M[k])}%" aria-label="${l} reaction"><output>${pct(M[k])}</output></label>`;
   const html=()=>`<section class="xf-macros" data-tour="easy-macros"><div class="xf-macros-head"><span>Macros</span><button type="button" class="ghost" data-xf-reset>Reset</button></div>
       <div class="xf-knobs">${KNOBS.map(knob).join("")}</div>
-      <details class="xf-adv"><summary>Stem reactions</summary><div class="xf-lanes${LANES.length>8?" xf-many":""}" data-count="${LANES.length}">${LANES.map(lane).join("")}</div></details></section>`;
+      <details class="xf-adv"${STEMS.status?" open":""}><summary>Stem reactions <small class="xf-stems-status">${STEMS.status==="done"?`${STEMS.names.length} stems (${STEMS.engine})`:STEMS.status==="running"?"splitting stems…":""}</small></summary><div class="xf-lanes${LANES.length>8?" xf-many":""}" data-count="${LANES.length}">${LANES.map(lane).join("")}</div></details>
+      <details class="xf-adv xf-midi"><summary>MIDI controller</summary><div class="xf-midi-panel"></div></details></section>`;
   function paint(el,k){const v=M[k];el.setAttribute("aria-valuenow",pct(v));el.querySelector("svg").innerHTML=el.querySelector("svg defs").outerHTML+ARC(v);
     el.querySelector(".cap i").style.transform=`rotate(${-135+270*v}deg)`;el.querySelector("small").textContent=pct(v);}
   function mount(){const host=document.querySelector(".simple-opts"); if(!host||host.querySelector(".xf-macros"))return;
-    const box=document.createElement("div");box.innerHTML=html();const s=box.firstElementChild;
-    const morph=host.querySelector(".morph-count"); morph?morph.after(s):host.prepend(s);}
+    try{const box=document.createElement("div");box.innerHTML=html();const s=box.firstElementChild;
+      const morph=host.querySelector(".morph-count"); morph?morph.after(s):host.prepend(s);midiMount();}
+    catch(e){console.error("xenoform macros",e);}}
+  // MIDI on the desk: midi.js (shared with /vj) drives the knobs and lanes; MiniLab 3 knobs 1-4 = the four macros,
+  // knobs 5-8 = stem lanes 1-4, faders = drums/bass/other/vocals. "stem:N" means the Nth lane of this song.
+  function midiInit(){const X=window.XenoMidi;if(!X||X._desk)return;X._desk=true;
+    const laneName=n=>/^\d+$/.test(n)?(LANES[+n-1]||[])[0]||null:("stem:"+n);
+    X.init({page:"desk",toast:t=>{const el=document.querySelector(".xf-stems-status");if(el){el.textContent=t;clearTimeout(midiInit.t);midiInit.t=setTimeout(()=>{if(el.textContent===t)el.textContent="";},1800);}},
+      targets:{"macro:*":(k,v)=>window.XENO_MACRO_SET(k,v),drums:v=>window.XENO_MACRO_SET("drums",v),bass:v=>window.XENO_MACRO_SET("bass",v),
+        other:v=>window.XENO_MACRO_SET("other",v),vocals:v=>window.XENO_MACRO_SET("vocals",v),
+        "stem:*":(n,v)=>{const k=laneName(n);if(k&&M[k]!=null)window.XENO_MACRO_SET(k,v);}}});midiMount();}
+  function midiMount(){const X=window.XenoMidi,el=document.querySelector(".xf-midi-panel");if(X&&X._desk&&el&&!el.firstChild)X.panel(el);}
+  if(!window.XenoMidi){const sc=document.createElement("script");sc.src=(window.XENO_BASE||"")+"/static/midi.js";sc.onload=midiInit;document.head.appendChild(sc);}else midiInit();
   let drag=null;
   document.addEventListener("pointerdown",e=>{const k=e.target.closest&&e.target.closest(".xf-knob");if(!k)return;
     drag={el:k,k:k.dataset.k,y:e.clientY,v:M[k.dataset.k]};k.setPointerCapture(e.pointerId);e.preventDefault();});

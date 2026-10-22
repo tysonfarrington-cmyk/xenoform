@@ -249,6 +249,9 @@ def create_app(cfg: dict | None = None):
     static = Path(__file__).resolve().parent / "ui_static"
     app = FastAPI(title="Xenoform", docs_url=None, redoc_url=None)
     app.mount("/static", StaticFiles(directory=static), name="static")
+    from xenoform.stems_api import router as stems_router  # /api/stems, /api/midi/*, /ws/midi
+
+    app.include_router(stems_router)
 
     def _desk_html(base: str) -> str:
         html = (static / "index.html").read_text(encoding="utf-8")
@@ -431,6 +434,21 @@ def create_app(cfg: dict | None = None):
             "forms": public_forms(),
             "presets": public_presets(),
             "transitions": public_transitions(),
+        }
+
+    @app.get("/api/vibes")
+    def vibes_route() -> dict:
+        """The vibe picker, one source of truth: the featured registry vibes in order, then the originals,
+        then the rest. Each row carries its still URL, object ``pool``, ``has_library`` (its own 4-shot strip)
+        and ``library`` (the folder its strip resolves to, through ``pool`` when it has none of its own)."""
+        from xenoform import dance_fx as _dance
+        from xenoform import vibes as _vibes
+
+        return {
+            "vibes": _vibes.catalog(),
+            "featured": [v["id"] for v in _vibes.featured()],
+            "original": list(_vibes.ORIGINAL),
+            "looks": [{"id": k, "note": v} for k, v in _dance.PRESET_NOTES.items()],
         }
 
     @app.post("/api/analyze")
@@ -950,6 +968,10 @@ def create_app(cfg: dict | None = None):
             path = Path(record["path"]) if record and record.get("path") else None
             if path is not None and path.exists():
                 return path
+            # A reopened cut from My videos: the job may predate this desk process.
+            saved = work_dir() / "jobs" / storage_id(job, fallback="") / "xenoform.mp4"
+            if storage_id(job, fallback="") and saved.is_file():
+                return saved
         demo = repo_root() / "examples" / "demo_base.mp4"
         if demo.exists():
             return demo
@@ -1042,6 +1064,7 @@ def create_app(cfg: dict | None = None):
     @app.get("/api/simple/options")
     def simple_options(duration: float = 20.0, energy: str = "flow", tier: str = "draft", bpm: float = 120.0,
                        aspect: str = "16:9", vertical: str = "native", morphs: str = "auto") -> dict:
+        from xenoform import dance_fx as _dance
         from xenoform import dense as _dense
         from xenoform import final_tier
         from xenoform.cloud_morph import plan_shots
@@ -1073,6 +1096,9 @@ def create_app(cfg: dict | None = None):
             "vertical": ["native", "crop"],
             "morphs": {"slider": list(_dense.MORPH_SLIDER), "max": _dense.MORPH_MAX, "auto": auto, "count": count,
                        "estimate": _dense.estimate(count, tier, aspect, vertical), "cost": _dense.COST},
+            "looks": [{"id": k, "note": v} for k, v in _dance.PRESET_NOTES.items()],
+            "house": {"aspect": "9:16", "energy": "dense", "tier": "draft", "dance_fx": "auto", "stem_orbit": True,
+                      "beat_fx": True, "end_card": False},
         }
 
     def _video_dir(video_id: str) -> Path:
@@ -1188,6 +1214,17 @@ def create_app(cfg: dict | None = None):
             name = Path(str(scene.get("still_name") or "")).name
             if name and (stills / name).is_file():
                 scene["reference_still"] = str(stills / name)
+        # Real stems when the user split them (POST /api/stems caches stems.json by song hash): the house look
+        # (stem_orbit, dance_fx) then follows the song's own kick/bass/vocal envelopes instead of the mixdown.
+        if not body.get("stems_path"):
+            try:
+                from xenoform.stems_api import stems_path_for
+
+                cached = stems_path_for(audio_path)
+            except Exception:
+                cached = None
+            if cached is not None:
+                body.setdefault("stems_path", str(cached))
         job_id = uuid.uuid4().hex[:8]
         out = work_dir() / "jobs" / job_id / "xenoform.mp4"
         out.parent.mkdir(parents=True, exist_ok=True)
@@ -1230,6 +1267,11 @@ def create_app(cfg: dict | None = None):
             "credits_file": library_info.get("credits_file") or "",
             "library_pairs": library_info.get("pairs") or [],
             "guardrails": guard_report,
+            # Advanced desk, per-boundary scene transitions (after the max-2-per-type guard) and per-shot
+            # Look overrides. Forwarded with the body into the job state; see docs/transitions.md.
+            "scene_transitions": [t.get("kind") if isinstance(t, dict) else t for t in (body.get("scene_transitions") or [])],
+            "shot_looks": [str(s.get("dance_fx") or "") for s in (body.get("scenes") or []) if isinstance(s, dict)],
+            "stems_path": str(body.get("stems_path") or ""),
         }
         with _LOCK:
             running = sum(1 for item in _JOBS.values() if item.get("status") == "running")

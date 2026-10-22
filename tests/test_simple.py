@@ -33,8 +33,13 @@ def test_simple_copy_is_on_the_desk_and_the_judges_page():
     assert judges.status_code == 200
     assert "Drop a song" in judges.text
     assert "Make" in judges.text
-    for name in VIBES:
-        assert name in judges.text
+    # the judges cards come from the registry catalogue (scripts/gen_judges_cards.py), so a featured
+    # original carries its featured name there (liquid-gold is "Molten gold" since UI v6)
+    from xenoform import vibes
+
+    for row in vibes.catalog():
+        if row["id"] in vibes.ORIGINAL:
+            assert row["name"] in judges.text, row["id"]
     tours = json.loads((ROOT / "src/xenoform/ui_static/tutorial.json").read_text(encoding="utf-8"))
     names = [tour["name"] for tour in tours["tours"]]
     assert names[0] == "Simple mode in 30 seconds"

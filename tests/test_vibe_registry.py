@@ -74,17 +74,24 @@ def test_each_ready_vibe_ships_a_hero_still_and_a_usable_pool():
         assert pack["vibes"][vid]["clips"]
 
 
-def test_borrowed_pool_keeps_the_vibes_own_look():
+def test_borrowed_pool_keeps_the_vibes_own_look(monkeypatch):
+    """A registry vibe whose stills are missing borrows the pool its ``pool`` key names, but the
+    prompt, negative and tuning stay its own. Every featured vibe ships stills now, so the
+    borrowing is simulated by hiding one vibe's pool."""
     from xenoform import morph_pass as mp, vibes
 
-    borrowed = [v for v in REG["vibes"] if v.get("pool")]
-    assert borrowed, "UI v6 ships featured vibes that borrow stills; keep at least one covered"
-    for v in borrowed:
-        assert mp.vibe_for({"vibe": v["id"]}) == v["pool"]
-        look_vibe, stills = mp.pick_stills({"vibe": v["id"]}, 3)
-        assert look_vibe == v["id"] and len(stills) == 3
-        assert all(Path(s["path"]).parent.name == v["pool"] for s in stills)
-        assert v["look"] in mp.prompt_for(look_vibe) and v["negative"] == vibes.negative(look_vibe)
+    v = next(v for v in REG["vibes"] if v.get("pool"))
+    assert vibes.pool(v["id"]) == v["id"], "ships its own stills; the `pool` key is only a fallback"
+    real = mp.manifest()
+    hidden = {k: rows for k, rows in real.items() if k != v["id"]}
+    monkeypatch.setattr(mp, "manifest", lambda: hidden)
+    monkeypatch.setattr(vibes, "pools", lambda: set(hidden))
+    assert vibes.pool(v["id"]) == v["pool"]
+    assert mp.vibe_for({"vibe": v["id"]}) == v["pool"]
+    look_vibe, stills = mp.pick_stills({"vibe": v["id"]}, 3)
+    assert look_vibe == v["id"] and len(stills) == 3
+    assert all(Path(s["path"]).parent.name == v["pool"] for s in stills)
+    assert v["look"] in mp.prompt_for(look_vibe) and v["negative"] == vibes.negative(look_vibe)
     assert vibes.pool("no-such-vibe") == ""
 
 

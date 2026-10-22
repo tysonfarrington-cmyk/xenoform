@@ -57,7 +57,7 @@ def test_desk_hides_cloud_quality_unless_opted_in():
     assert "if (!state.paidCloud)" in app
     assert "cloud_quality: !!(state.paidCloud" in app
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    assert "default path is 100% open weights" in readme and "XENO_PAID_CLOUD" in readme
+    assert "100% open weights by default" in readme and "XENO_PAID_CLOUD" in readme
 
 
 # --- 3d. Stop cancels the morphs already queued ----------------------------------------

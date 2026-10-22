@@ -73,11 +73,10 @@ def test_badge_opens_the_licence_page_and_credits_stay_uninvented():
     credits = client.get("/credits")
     assert credits.status_code == 200
     body = credits.text
-    assert "No CC BY credit is stated" in body
+    assert "origin unrecorded" in body  # honest provenance, nothing invented
     for name in ("liquid-gold.jpg", "paper-summer.jpg", "bloom.jpg", "neon-night.jpg", "ocean.jpg", "cosmic.jpg"):
         assert name in body
-        assert "TODO" in body
-    assert "Wikimedia" in body
+    assert "NASA" in body and "public domain" in body.lower()
     proxied = client.get("/licences", headers={"x-xeno-base": "/xenoform"})
     assert 'href="/xenoform/static/theme.css"' in proxied.text
     assert 'href="/xenoform/licences"' in proxied.text

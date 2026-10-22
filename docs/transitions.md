@@ -5,7 +5,13 @@ Xenoform has two kinds of transition:
 - **Object morph styles** (`pour-harden`, `ribbon`, `snap` and so on, in `director.TRANSITIONS`). These shape how one object becomes the next *inside* a morph shot.
 - **Scene transitions** (this page, `xenoform.transitions_fx`). These join two **whole clips** at an edit point. They run as post effects driven by the track analysis. Their intensity follows the bass/onset envelope, and every cut can snap to the beat grid.
 
-The catalogue is served at `GET /api/v1/transitions` (`scene_transitions`). Defaults live in `configs/transitions.json`.
+The catalogue is served at `GET /api/v1/transitions` (`scene_transitions`, plus `scene_recommended`: the per-vibe pick for each boundary kind). Defaults live in `configs/transitions.json`.
+
+## Picking one per boundary on the desk
+
+Advanced > Shots lists one `<select>` per scene boundary. Auto follows `transitions_fx.recommend(vibe, kind)` where the kind is read off the storyboard: `drop` (the climax or a signature morph), `switch` (a section change), `silence` (a quiet section), else `beat`. Premium and core transitions are offered; classic wipes only with the Expert box. A live counter shows uses per type against the house cap (2); cuts, scene morphs and black holds are exempt.
+
+The desk sends `scene_transitions: [{kind, boundary, index, auto}]` (one per boundary) and mirrors the pick onto `scenes[i].transition`. `guardrails.apply` enforces the cap on `scene_transitions` (overflow becomes a clean `cut`, Expert keeps and warns) and the result is forwarded in the job body and on `GET /api/jobs/{id}` as `scene_transitions`. `scene_edit.build` renders exactly that shape (`spec["transitions"]`); the Simple/dense render path does not yet read it, so for a dense cut the picks are recorded, guarded and reported but the boundaries still follow the planner. Per-shot `scenes[i].dance_fx` (the Look override on each card) is forwarded the same way as `shot_looks`; `beatfx.compose` applies one `dance_fx` mode per video today.
 
 ## The set
 
