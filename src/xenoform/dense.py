@@ -499,7 +499,12 @@ def story_plan(duration: float, beats: list, sections: list[dict], drop: float |
                 t = grid[i + step] if i + step < len(grid) else duration
         if drop is not None and all(abs(c[0] - drop) > 1e-6 for c in cuts):
             cuts.append((round(drop, 4), "drop", True))
-        cuts = sorted({c[0]: c for c in cuts}.values())
+        best: dict[float, tuple] = {}
+        for c in cuts:  # one cut per time; a section start (or the drop itself) outranks a plain beat cut there
+            prev = best.get(c[0])
+            if prev is None or (c[2] and not prev[2]) or (c[1] == "drop" and prev[1] != "drop"):
+                best[c[0]] = c
+        cuts = sorted(best.values())
         if len(cuts) <= max_shots:
             break
     times = [c[0] for c in cuts] + [round(duration, 4)]
