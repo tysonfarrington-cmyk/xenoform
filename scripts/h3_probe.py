@@ -6,7 +6,7 @@ before/during/after, saves the clip, optionally copies it to the Desktop, and wr
 <out>.json record next to the clip (timings, VRAM peak, graph settings, log excerpt).
 
     .venv\\Scripts\\python scripts\\h3_probe.py --still work\\v4\\in\\polly_576.png ^
-        --audio <scratch>\\seg_196s_5p5s.wav --length 124 --out <scratch>\\h3_124.mp4 --copy-desktop
+        --audio <scratch>\\seg_196s_5p5s.wav --length 124 --out <scratch>\\h3_124.mp4 --copy-desktop [--turbo]
 
 Never restarts or reconfigures ComfyUI; it only queues one prompt.
 """
@@ -31,6 +31,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from comfy_sdk import Comfy, JobFailed  # noqa: E402
 
 GRAPH = ROOT / "workflows" / "minimax_h3_i2v_api.json"
+GRAPH_TURBO = ROOT / "workflows" / "minimax_h3_i2v_turbo_api.json"  # + LoraLoaderModelOnly (18) and MiniMaxH3SigmaShift (19)
 COMFY = "http://127.0.0.1:8188"
 COMFY_LOG = Path(r"C:\Users\tyson\AI\ComfyUI\user\comfyui_8188.log")
 DESKTOP_COPY = Path(r"C:\Users\tyson\Desktop\xeno_h3_test.mp4")
@@ -109,7 +110,9 @@ def main() -> int:
     ap.add_argument("--width", type=int, default=480)
     ap.add_argument("--height", type=int, default=832)
     ap.add_argument("--length", type=int, default=124, help="frames at 24 fps; snaps up to 17k+5 (124 = 5.17 s)")
-    ap.add_argument("--steps", type=int, default=20)
+    ap.add_argument("--steps", type=int, default=None, help="default 8 with --turbo, 20 without")
+    ap.add_argument("--turbo", action="store_true",
+                    help="use the turbo graph: lightx2v 8-step LoRA, euler, sigma shift 12/3 (xenoform.performer uses it when the LoRA is installed)")
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--out", required=True, help="where to save the mp4")
     ap.add_argument("--copy-desktop", action="store_true", help=f"also copy to {DESKTOP_COPY}")
@@ -121,7 +124,9 @@ def main() -> int:
     out = Path(a.out).resolve()
     out.parent.mkdir(parents=True, exist_ok=True)
     still, audio = Path(a.still).resolve(), Path(a.audio).resolve()
-    for p in (still, audio, GRAPH):
+    graph = GRAPH_TURBO if a.turbo else GRAPH
+    steps = a.steps or (8 if a.turbo else 20)
+    for p in (still, audio, graph):
         if not p.exists():
             print(f"missing: {p}", file=sys.stderr)
             return 2
@@ -133,7 +138,7 @@ def main() -> int:
           f"RAM free {before['ram_free_gb']} GB", flush=True)
 
     client = Comfy(client_info="xenoform-h3-probe", timeout=None)
-    wf = client.workflows.from_file(str(GRAPH))
+    wf = client.workflows.from_file(str(graph))
     wf.set_input("15", "image", client.assets.from_file(str(still)))
     if a.no_audio_guide:
         wf.json["6"]["inputs"]["conditioning"] = ["5", 0]  # guider straight off the i2v conditioning
@@ -145,7 +150,7 @@ def main() -> int:
     wf.set_input("5", "width", a.width)
     wf.set_input("5", "height", a.height)
     wf.set_input("5", "length", a.length)
-    wf.set_input("8", "steps", a.steps)
+    wf.set_input("8", "steps", steps)
     wf.set_input("9", "noise_seed", a.seed)
     wf.set_input("14", "filename_prefix", f"video/xenoform_h3_{out.stem}")
 
@@ -153,8 +158,8 @@ def main() -> int:
     poller.start()
     t0 = time.time()
     record: dict = {
-        "graph": str(GRAPH), "still": str(still), "audio": str(audio),
-        "width": a.width, "height": a.height, "length": a.length, "steps": a.steps, "seed": a.seed,
+        "graph": str(graph), "turbo": a.turbo, "still": str(still), "audio": str(audio),
+        "width": a.width, "height": a.height, "length": a.length, "steps": steps, "seed": a.seed,
         "prompt": wf.json["5"]["inputs"]["prompt"], "queue_ahead": busy, "stats_before": before,
         "audio_guide": not a.no_audio_guide,
     }

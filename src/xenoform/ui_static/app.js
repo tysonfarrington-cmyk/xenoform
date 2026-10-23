@@ -2527,7 +2527,7 @@ function performerRow(easy) {
   const n = Number(easy.performer || 0);
   const choices = [["0", "Off"], ["2", "2 shots"], ["4", "4 shots"]];
   const note = ok
-    ? `MiniMax H3 (open weights, on this GPU) has Polly sing the intro and drum the drop, cut 1:1 into the morph chain. About ${clockText(Number(info.seconds_per_shot || 180))} a shot${info.lora ? "" : " (slower without the turbo LoRA)"}. The reference still is Polly; drop your own full-body still under Cast lock in Advanced to replace her.`
+    ? `MiniMax H3 (open weights, on this GPU) has Polly sing the intro and drum the drop, cut 1:1 into the morph chain. About ${clockText(Number(info.seconds_per_shot || 420))} a shot on a 12 GB card. The reference still is Polly; drop your own full-body still under Cast lock in Advanced to replace her.`
     : `Off: ${esc(info.note || "the MiniMax H3 files are not installed")}. See Setup.`;
   return `${simpleSeg("easy-performer", String(ok ? n : 0), choices, "Performer")}
       <p class="note">${note}</p>`;

@@ -41,7 +41,7 @@
  "15": {
   "class_type": "LoadImage",
   "inputs": {
-   "image": "polly_576.png"
+   "image": "polly.png"
   },
   "_meta": {
    "title": "Performer still (first frame, stretched to canvas)"
@@ -50,7 +50,7 @@
  "16": {
   "class_type": "LoadAudio",
   "inputs": {
-   "audio": "seg_196s_5p5s.wav"
+   "audio": "performer_seg.wav"
   },
   "_meta": {
    "title": "Song segment (anchored soundtrack)"
@@ -62,7 +62,7 @@
    "clip": ["2", 0],
    "vae": ["3", 0],
    "first_frame": ["15", 0],
-   "prompt": "A chrome figure plays a drum kit in a dark studio, performance synced to the music. The scene opens on the figure from the first frame, who sits at a drum kit and plays in time with every beat of the soundtrack; every hit lands on the beat. Audio: the music track only, no dialogue.",
+   "prompt": "The woman in the first frame is already playing a drum kit as the clip begins, in motion from the very first frame.",
    "width": 480,
    "height": 832,
    "length": 124
@@ -112,7 +112,7 @@
    "denoise": 1.0
   },
   "_meta": {
-   "title": "Scheduler (20 steps base model; 8 or 4 with the turbo LoRAs, not installed)"
+   "title": "Scheduler (20 steps base model; the turbo graph minimax_h3_i2v_turbo_api.json does 8 with the LoRA)"
   }
  },
  "9": {
@@ -173,7 +173,7 @@
   "class_type": "SaveVideo",
   "inputs": {
    "video": ["13", 0],
-   "filename_prefix": "video/xenoform_h3",
+   "filename_prefix": "video/xenoform_performer",
    "format": "auto",
    "codec": "auto"
   },

@@ -176,7 +176,7 @@ def stem_orbit_choice(state: dict | None) -> bool:
 
 
 PERFORMER_CHOICES = (0, 2, 4)           # performer shots per video: off, two, four
-PERFORMER_SECONDS = 180.0               # estimate per shot with the 8-step turbo LoRA on a 12 GB card (measured 23 Oct 2026)
+PERFORMER_SECONDS = 420.0               # per 5 s shot on a 12 GB card, measured 23 Oct 2026 (the turbo LoRA does not help when the weights stream from RAM)
 PERFORMER_MIN_S = 124 / 24.0            # H3's shortest clip (17k+5 frames at 24 fps)
 PERFORMER_MAX_S = 8.0
 PERFORMER_REFERENCE = Path(__file__).resolve().parent / "ui_static" / "performer" / "polly.png"  # the bundled reference still
