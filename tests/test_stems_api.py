@@ -228,3 +228,25 @@ def test_desk_status_line_polls_the_background_split():
                    "XENO_POLL_STEMS", 'STEMS.open?" open":""', "statusText()", "XENO_REQUEST_STEMS"):
         assert needle in js, needle
     assert 'STEMS.status?" open"' not in js  # the drawer no longer springs open because a split happens to be running
+
+
+def test_slice_stems_cuts_envelopes_and_hits_to_the_window(tmp_path):
+    from xenoform import stems_api
+
+    n = 24 * 10
+    src = {"fps": 24, "engine": "demucs:htdemucs", "frames": n, "stems": ["drums", "bass", "other", "vocals"],
+           "roles": {"drums": "drums"}, "drums": [i / n for i in range(n)], "bass": [0.5] * n, "other": [0.2] * n,
+           "vocals": [1.0 if i >= 24 * 4 else 0.0 for i in range(n)], "drum_hits": [0.5, 4.5, 6.0, 9.5], "drum_strong": [4.5],
+           "song": "C:/full.wav", "files": {"drums": "d.wav"}, "seconds": 10.0}
+    src_path = tmp_path / "stems.json"
+    src_path.write_text(json.dumps(src), encoding="utf-8")
+    cut = tmp_path / "cut.wav"
+    cut.write_bytes(b"RIFF....WAVE")
+    out = stems_api.slice_stems(src_path, 4.0, 3.0, cut)
+    assert out == stems_api.stems_json_path(cut) and out.is_file()
+    d = json.loads(out.read_text(encoding="utf-8"))
+    assert d["frames"] == 72 and d["seconds"] == 3.0 and len(d["vocals"]) == 72 and all(v == 1.0 for v in d["vocals"])
+    assert d["drum_hits"] == [0.5, 2.0] and d["drum_strong"] == [0.5] and d["song"] == str(cut)
+    assert d["sliced_from"]["start"] == 4.0 and d["stems"] == src["stems"] and d["engine"] == "demucs:htdemucs"
+    assert stems_api.stems_path_for(cut) == out
+    assert stems_api.slice_stems(tmp_path / "missing.json", 0, 1, cut) is None

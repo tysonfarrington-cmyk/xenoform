@@ -1308,6 +1308,14 @@ def create_app(cfg: dict | None = None):
         features = _analyze_file(dest)
         features["trimmed_from"] = {"audio_id": audio_id, "start": round(start, 3), "length_s": float(length_s),
                                     "drop": round(drop, 3), "song_duration": round(dur, 3)}
+        try:  # the cut inherits the song's stems (sliced), or gets its own split in the background
+            from xenoform.stems_api import slice_stems, start_background_split, stems_path_for
+
+            full = stems_path_for(Path(audio_path))
+            if full is None or slice_stems(full, start, length_s, dest) is None:
+                start_background_split(dest)
+        except Exception:
+            log.exception("stems for the cut")
         with _LOCK:
             _AUDIO[new_id] = dest
             _FEATURES[new_id] = features

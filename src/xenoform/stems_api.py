@@ -88,6 +88,37 @@ def stems_json_path(song: str | Path) -> Path:
     return stems_root() / song_hash(song) / "stems.json"
 
 
+def slice_stems(src_json: str | Path, start: float, length: float, dest_song: str | Path) -> Path | None:
+    """A cut of a song inherits its stems: slice the per-frame envelopes and the drum hits of ``src_json``
+    to [start, start + length] and cache them as ``dest_song``'s stems.json (same layout). Returns the
+    path, or None when the source cannot be read."""
+    try:
+        d = json.loads(Path(src_json).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    fps = int(d.get("fps") or 24)
+    frames = int(d.get("frames") or 0)
+    a = max(0, int(round(float(start) * fps)))
+    b = max(a, min(frames, a + int(round(float(length) * fps)))) if frames else a + int(round(float(length) * fps))
+    out = dict(d)
+    for key, val in d.items():
+        if isinstance(val, list) and frames and len(val) == frames and key not in ("drum_hits", "drum_strong", "stems"):
+            out[key] = val[a:b]
+    for key in ("drum_hits", "drum_strong"):
+        if isinstance(d.get(key), list):
+            out[key] = [round(float(t) - float(start), 3) for t in d[key] if float(start) <= float(t) < float(start) + float(length)]
+    out["frames"] = b - a
+    out["seconds"] = round((b - a) / fps, 3)
+    out["song"] = str(dest_song)
+    out["sliced_from"] = {"song": d.get("song"), "start": round(float(start), 3), "length": round(float(length), 3)}
+    dest = stems_json_path(dest_song)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    tmp = dest.with_suffix(".json.part")
+    tmp.write_text(json.dumps(out), encoding="utf-8")
+    tmp.replace(dest)
+    return dest
+
+
 def stems_path_for(song: str | Path | None, *, build: bool = False, engine: str = "auto", fps: int = 24) -> Path | None:
     """The cached ``stems.json`` (envelopes + stem wav paths) for ``song``, or None when it has not
     been split. With ``build=True`` the split runs now (blocking) and the path is returned."""
