@@ -877,9 +877,14 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
                 break
             report("restyle", 0.5 + 0.08 * k / max(1, len(slots)),
                    f"Performer shot {k + 1} of {len(slots)}: {sl['instrument']} ({sl['seconds']:.1f} s)")
+            lo, hi = 0.5 + 0.1 * k / max(1, len(slots)), 0.5 + 0.1 * (k + 1) / max(1, len(slots))
+
+            def slot_report(stage: str, frac: float, detail: str, _lo=lo, _hi=hi) -> None:
+                report("restyle", _lo + (_hi - _lo) * float(max(0.0, min(1.0, frac))), detail)  # the job bar keeps moving forward
+
             try:
                 got = _render_performer(Path(audio_path), sl, vibe, still, work / "performer", cfg, seed=seed + 100 + k,
-                                        report=report, beats=list(directed.get("beats") or []))
+                                        report=slot_report, beats=list(directed.get("beats") or []))
                 rendered[sl["first"]] = got
                 performer_info["slots"].append({**sl, "clip": str(got.get("clip")), "sync": got.get("sync"),
                                                 "tries": got.get("tries"), "render_s": got.get("render_s")})
