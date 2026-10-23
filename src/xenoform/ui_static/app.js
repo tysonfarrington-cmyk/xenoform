@@ -222,6 +222,7 @@ function payload() {
     macros: (window.XENO_MACROS ? window.XENO_MACROS() : null),
     length_s: Number((state.easy && state.easy.lengthS) || 0),
     hardware_tier: (state.easy && state.easy.gpuTier) || "auto",
+    performer: Number((state.easy && state.easy.performer) || 0),
     // Advanced desk: one scene transition per boundary (guardrails keep each type to 2; overflow becomes a cut).
     scene_transitions: sceneTransitionPlan().map((row) => ({ kind: row.kind, boundary: row.boundary, index: row.index, auto: row.auto })),
     idea: (state.easy && state.easy.idea) || "",
@@ -2519,6 +2520,19 @@ function lookRow(current, act, index) {
 }
 
 // Where and on what it renders. Default: this machine, open weights. The GPU preset is detected; pick one to override.
+// Performer shots: MiniMax H3 (open weights, local) has Polly sing and drum to the song in a few slots of the cut.
+function performerRow(easy) {
+  const info = (state.simpleOptions && state.simpleOptions.performer) || {};
+  const ok = info.ok !== false;
+  const n = Number(easy.performer || 0);
+  const choices = [["0", "Off"], ["2", "2 shots"], ["4", "4 shots"]];
+  const note = ok
+    ? `MiniMax H3 (open weights, on this GPU) has Polly sing the intro and drum the drop, cut 1:1 into the morph chain. About ${clockText(Number(info.seconds_per_shot || 180))} a shot${info.lora ? "" : " (slower without the turbo LoRA)"}. The reference still is Polly; drop your own full-body still under Cast lock in Advanced to replace her.`
+    : `Off: ${esc(info.note || "the MiniMax H3 files are not installed")}. See Setup.`;
+  return `${simpleSeg("easy-performer", String(ok ? n : 0), choices, "Performer")}
+      <p class="note">${note}</p>`;
+}
+
 function machineRows(easy) {
   const hw = (state.simpleOptions && state.simpleOptions.hardware) || {};
   const detected = hw.detected || {};
@@ -2556,6 +2570,7 @@ function simpleOptions(easy) {
       ${simpleSeg("easy-length", String(easy.lengthS || 0), [["0", "Full song"], ["60", "60 s"], ["30", "30 s"], ["15", "15 s"]], "Length")}
       <p class="note">${esc(lengthNote(easy))}</p>
       ${simpleSeg("easy-tier", tier, [["draft", "Draft · LTX-Video 0.9.5"], ["final", "Final · LTX-2.3 22B"]], "Model")}
+      ${performerRow(easy)}
       ${machineRows(easy)}
       ${aspect === "9:16" && tier === "final" ? simpleSeg("easy-vertical", vertical, [["native", "Native"], ["crop", "Crop"]], "Vertical") : ""}
       ${morphControl(easy, tier, aspect, vertical)}
@@ -2667,6 +2682,7 @@ async function loadSimpleOptions() {
       vertical: easy.vertical || "native",
       morphs: String(easy.morphs || "auto"),
       length: String(easy.lengthS || 0),
+      performer: String(easy.performer || 0),
     });
     const res = await api(`/api/simple/options?${query.toString()}`);
     if (res.ok) {
@@ -2698,6 +2714,7 @@ function applySimpleRecipe(recipe) {
   easy.endCard = !!recipe.end_card;
   easy.danceFx = recipe.dance_fx || "auto";
   easy.lengthS = Number(recipe.length_s || 0);
+  easy.performer = Number(recipe.performer || 0);
   easy.stemOrbit = recipe.stem_orbit !== false;
   easy.remixPlan = recipe.cut_plan || null;
   state.seed = recipe.seed || state.seed;
@@ -2837,6 +2854,7 @@ function easyPlanFacts(easy) {
     rows.push(["Shots", dense ? "A shot a bar, a half bar after the drop" : "One per section"]);
   }
   rows.push(["Cut", dense ? "Every bar, every half bar on the drop" : "On the bar"]);
+  if (plan && plan.performer) rows.push(["Performer", `${plan.performer} shots of Polly (MiniMax H3)`]);
   rows.push(["Time", easyTimeFact()]);
   return rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("");
 }
@@ -4507,6 +4525,10 @@ document.addEventListener("click", async (event) => {
     loadSimpleOptions().then(render);
   } else if (act === "easy-aspect") {
     state.easy.aspect = ["16:9", "9:16", "1:1"].includes(el.dataset.value) ? el.dataset.value : "9:16";
+    render();
+    loadSimpleOptions().then(render);
+  } else if (act === "easy-performer") {
+    state.easy.performer = [0, 2, 4].includes(Number(el.dataset.value)) ? Number(el.dataset.value) : 0;
     render();
     loadSimpleOptions().then(render);
   } else if (act === "easy-gpu") {

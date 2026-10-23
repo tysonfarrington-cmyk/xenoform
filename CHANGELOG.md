@@ -2,6 +2,7 @@
 
 ## 0.3.1 (23 October 2026)
 
+- Performer shots (optional, off by default): MiniMax H3 (open weights, runs locally through the Comfy SDK) has Polly sing the intro and drum the drop to the song itself, in two or four slots cut 1:1 into the morph chain (`performer.py`, `dense.performer_slots`, Fine-tune → Performer). The 8-step turbo LoRA brings a 5 s shot to about three minutes on a 12 GB card; the beat-lock check retries a seed that does not land. LTX-Video stays the core morph model.
 - Story plan (`dense.story_plan`): a full song is cut by its sections. Intro and verses breathe (two bars a shot, real-time morphs), builds and choruses drive (a bar a shot, downbeat punches), the drop punches and runs half bars for eight bars, the outro eases out; the analyser's slivers are merged into passages first.
 - Premium transitions at section switches: the vibe's recommendation per boundary (drop / switch / silence), capped at two of a kind, rendered inside compose over a window centred on the cut so the beat sync never moves.
 - Re-cut from the cached morphs: `POST /api/jobs/{id}/recut` and the Re-cut button on the result screen re-compose with new knobs, look, orbit or beat FX without the GPU.

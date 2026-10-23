@@ -175,6 +175,95 @@ def stem_orbit_choice(state: dict | None) -> bool:
     return bool(raw)
 
 
+PERFORMER_CHOICES = (0, 2, 4)           # performer shots per video: off, two, four
+PERFORMER_SECONDS = 180.0               # estimate per shot with the 8-step turbo LoRA on a 12 GB card (measured 23 Oct 2026)
+PERFORMER_MIN_S = 124 / 24.0            # H3's shortest clip (17k+5 frames at 24 fps)
+PERFORMER_MAX_S = 8.0
+PERFORMER_REFERENCE = Path(__file__).resolve().parent / "ui_static" / "performer" / "polly.png"  # the bundled reference still
+
+
+def performer_choice(state: dict | None) -> int:
+    """How many performer shots the cut gets (0, 2 or 4); anything else snaps to the nearest choice."""
+    try:
+        n = int(float((state or {}).get("performer") or 0))
+    except (TypeError, ValueError):
+        n = 0
+    return min(PERFORMER_CHOICES, key=lambda c: abs(c - n))
+
+
+def performer_slots(shots: list[dict], count: int) -> list[dict]:
+    """Where the performer appears: runs of consecutive shots, each at least ``PERFORMER_MIN_S`` long,
+    starting a passage. Priority: the intro first (she sings the song in), then the first drop (drums),
+    then each further passage in order; never two slots back to back, at most ``count``."""
+    count = int(count)
+    if count <= 0 or not shots:
+        return []
+    starts = [i for i, s in enumerate(shots) if i == 0 or s.get("boundary") or (s.get("section") != shots[i - 1].get("section"))]
+    cands = []
+    for i in starts:
+        section = str(shots[i].get("section") or "")
+        j, total = i, 0.0
+        while j < len(shots) and shots[j].get("section", section) == section and total < PERFORMER_MIN_S:
+            total += float(shots[j].get("seconds") or (shots[j]["end"] - shots[j]["start"]))
+            j += 1
+        if total < PERFORMER_MIN_S:
+            continue
+        while j < len(shots) and shots[j].get("section", section) == section and total + float(shots[j].get("seconds") or 0) <= PERFORMER_MAX_S:
+            total += float(shots[j].get("seconds") or 0)  # take whole shots up to the longest clip H3 makes
+            j += 1
+        sing = section in ("intro", "calm", "sustain", "release", "outro")
+        cands.append({"first": i, "last": j - 1, "seconds": round(total, 4), "section": section,
+                      "instrument": "voice" if sing else "drums", "start": float(shots[i]["start"])})
+    if not cands:
+        return []
+    order = sorted(cands, key=lambda c: (0 if c["section"] == "intro" else 1 if c["section"] == "drop" else 2, c["start"]))
+    picked: list[dict] = []
+    for c in order:
+        if len(picked) >= count:
+            break
+        if any(not (c["last"] < q["first"] - 1 or c["first"] > q["last"] + 1) for q in picked):
+            continue  # never adjacent to another performer slot
+        picked.append(c)
+    return sorted(picked, key=lambda c: c["first"])
+
+
+def _render_performer(audio_path: Path, slot: dict, vibe: str, still: Path, work: Path, cfg: dict, *, seed: int,
+                      report=None, beats: list[float] | None = None) -> dict:
+    """One H3 performer shot for ``slot`` (the module is optional: ImportError means the feature is off)."""
+    from xenoform import performer as P
+    from xenoform.morph_pass import VIBE_LOOK
+
+    prompt = P.prompt_for(str(slot.get("section") or "calm"), VIBE_LOOK.get(vibe, ""), slot.get("instrument"))
+    return P.render_slot(Path(audio_path), float(slot["start"]), float(slot["seconds"]), Path(still), prompt, Path(work), cfg,
+                         seed=int(seed), report=report, beats=beats)
+
+
+def apply_performer_slots(shots: list[dict], clips: list, slots: list[dict], rendered: dict) -> tuple[list[dict], list]:
+    """Merge each rendered slot's shots into one performer shot playing its clip 1:1; the rest unchanged."""
+    out_shots, out_clips = [], []
+    i = 0
+    by_first = {sl["first"]: sl for sl in slots if sl["first"] in rendered}
+    while i < len(shots):
+        sl = by_first.get(i)
+        if sl is None:
+            out_shots.append(shots[i])
+            out_clips.append(clips[i])
+            i += 1
+            continue
+        run = shots[sl["first"]:sl["last"] + 1]
+        frames = int(sum(int(s.get("frames") or 0) for s in run))
+        effects = [e for s in run for e in (s.get("effects") or []) if e.get("type") == "punch"]
+        merged = {**run[0], "start": run[0]["start"], "end": run[-1]["end"], "seconds": round(float(run[-1]["end"]) - float(run[0]["start"]), 4),
+                  "frames": frames, "render_s": None, "speed": 1.0, "effects": effects, "performer": True,
+                  "instrument": sl.get("instrument"), "index": len(out_shots)}
+        merged.pop("ease", None)
+        merged.pop("clip", None)
+        out_shots.append(merged)
+        out_clips.append(Path(rendered[sl["first"]]["clip"]))
+        i = sl["last"] + 1
+    return out_shots, out_clips
+
+
 def options(state: dict) -> dict:
     """The Simple finishing options from a desk state, normalised."""
     energy = str(state.get("energy_preset") or "flow").lower()
@@ -191,6 +280,7 @@ def options(state: dict) -> dict:
         "morph_count": morph_count(state),
         "dance_fx": dance_fx_choice(state),
         "stem_orbit": stem_orbit_choice(state),
+        "performer": performer_choice(state),
     }
 
 
@@ -304,7 +394,7 @@ def clip_plan(shots: list[dict], duration: float, beats: list) -> dict:
 
 
 def plan_summary(duration: float, beats: list, energy: str = "dense", tier: str = "draft", aspect: str = "9:16",
-                 vertical: str = "native", drop: float | None = None) -> dict:
+                 vertical: str = "native", drop: float | None = None, performer: int = 0) -> dict:
     """What a Make will do for this song: shots, unique morphs, clip length and a time estimate (GPU + look)."""
     duration = float(duration)
     if energy == "dense":
@@ -316,8 +406,20 @@ def plan_summary(duration: float, beats: list, energy: str = "dense", tier: str 
     fps = 24
     compose_s = duration * fps * COMPOSE_S_PER_FRAME["final" if tier == "final" else "draft"]
     est = estimate(cp["morphs"], tier, aspect, vertical, clip_s=cp["clip_s"], compose_s=compose_s)
+    n_perf = performer_choice({"performer": performer}) if long_song else 0
+    if n_perf:
+        secs = PERFORMER_SECONDS
+        try:
+            from xenoform import performer as P
+
+            secs = float(P.estimate_seconds(PERFORMER_MIN_S, None) or secs)
+        except Exception:
+            pass
+        est["performer_seconds"] = int(round(secs * n_perf))
+        est["seconds"] = int(est["seconds"] + est["performer_seconds"])
+        est["minutes"] = round(est["seconds"] / 60, 1)
     return {"duration": round(duration, 2), "shots": len(shots), "morphs": cp["morphs"], "clip_s": cp["clip_s"],
-            "reuse": cp["reuse"], "long_song": long_song, "estimate": est}
+            "reuse": cp["reuse"], "long_song": long_song, "estimate": est, "performer": n_perf}
 
 
 def dense_plan(duration: float, beats: list, drop: float | None = None, max_shots: int | None = None,
@@ -760,6 +862,34 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
                              size=DRAFT_916 if native_draft else None)
     if long_song:
         clips = [clips[ci] for ci in chain["assign"]]  # one entry per shot, walking the loop
+    performer_info: dict = {"shots": 0, "slots": [], "notes": []}
+    n_perf = opt.get("performer") or 0
+    if n_perf and long_song:
+        # Performer shots: MiniMax H3 (open weights, local) has the reference character sing or drum to the
+        # song segment; each slot replaces a run of morph shots with one clip played 1:1 (a hard cut in and out).
+        slots = performer_slots(shots, n_perf)
+        still = Path(str(state.get("performer_ref") or state.get("hero_path") or "")) if (state.get("performer_ref") or state.get("hero_path")) else None
+        if still is None or not still.is_file():
+            still = PERFORMER_REFERENCE if PERFORMER_REFERENCE.is_file() else None  # Polly, bundled
+        rendered: dict = {}
+        for k, sl in enumerate(slots):
+            if still is None:
+                break
+            report("restyle", 0.5 + 0.08 * k / max(1, len(slots)),
+                   f"Performer shot {k + 1} of {len(slots)}: {sl['instrument']} ({sl['seconds']:.1f} s)")
+            try:
+                got = _render_performer(Path(audio_path), sl, vibe, still, work / "performer", cfg, seed=seed + 100 + k,
+                                        report=report, beats=list(directed.get("beats") or []))
+                rendered[sl["first"]] = got
+                performer_info["slots"].append({**sl, "clip": str(got.get("clip")), "sync": got.get("sync"),
+                                                "tries": got.get("tries"), "render_s": got.get("render_s")})
+            except Exception as exc:  # a missing model or a failed shot must never break the cut
+                log.warning("performer slot %s skipped: %s", sl, exc)
+                performer_info["notes"].append(f"performer shot at {sl['start']:.1f}s skipped: {exc}")
+        if rendered:
+            shots, clips = apply_performer_slots(shots, clips, slots, rendered)
+            performer_info["shots"] = len(rendered)
+            notes.append({"performer": performer_info})
     if opt["tier"] != "final" and size is None and opt["aspect"] == "9:16":
         size = (540, 960)  # Draft: the morphs are 512x288 upscales anyway; the look pass runs 4x faster here
     report("assemble", 0.6, "Cutting to the beat" + (" with beat FX" if opt["fx"] else ""))
@@ -801,7 +931,7 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
             "palette_image": str(stills[0]["path"]) if stills else None, "vertical_house": vertical_house,
             "recut_state": {k: state.get(k) for k in ("vibe", "aspect", "quality_tier", "energy_preset", "dance_fx", "stem_orbit",
                                                       "beat_fx", "beat_overlay", "end_card", "stems_path", "macros", "still_background")},
-            "roles": plan.get("roles"),
+            "roles": plan.get("roles"), "performer": performer_info,
             "handoffs_s": [s["start"] for s in shots] + [shots[-1]["end"]], "fallbacks": notes,
             "render": made["size"], "frames": made["frames"], "seconds": round(time.perf_counter() - started, 2),
             "steps": 8 if engine == "ltx23" else None,

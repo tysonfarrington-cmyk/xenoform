@@ -1121,7 +1121,8 @@ def create_app(cfg: dict | None = None):
 
     @app.get("/api/simple/options")
     def simple_options(duration: float = 20.0, energy: str = "flow", tier: str = "draft", bpm: float = 120.0,
-                       aspect: str = "16:9", vertical: str = "native", morphs: str = "auto", length: float = 0.0) -> dict:
+                       aspect: str = "16:9", vertical: str = "native", morphs: str = "auto", length: float = 0.0,
+                       performer: int = 0) -> dict:
         from xenoform import dance_fx as _dance
         from xenoform import dense as _dense
         from xenoform import final_tier
@@ -1140,7 +1141,13 @@ def create_app(cfg: dict | None = None):
             shots = plan_shots(duration, beats)
         files = final_tier.present()
         video_s = min(duration, float(length)) if length and float(length) > 0 else duration
-        plan = _dense.plan_summary(video_s, [b for b in beats if b < video_s], energy, tier, aspect, vertical)
+        plan = _dense.plan_summary(video_s, [b for b in beats if b < video_s], energy, tier, aspect, vertical, performer=int(performer or 0))
+        try:
+            from xenoform import performer as _perf
+
+            performer_status = _perf.available(cfg)
+        except Exception as exc:
+            performer_status = {"ok": False, "note": f"performer module unavailable: {exc}"}
         from xenoform.hardware import TIERS as _tiers, detect_tier as _detect
 
         try:
@@ -1150,6 +1157,7 @@ def create_app(cfg: dict | None = None):
         return {
             "plan": plan,
             "lengths": [0, 60, 30, 15],
+            "performer": {"choices": list(_dense.PERFORMER_CHOICES), **(performer_status or {})},
             "hardware": {"detected": {"id": detected.get("id"), "label": detected.get("label")},
                          "tiers": [{"id": t["id"], "label": t["label"]} for t in _tiers.values()]},
             "energies": ["flow", "dense"],
