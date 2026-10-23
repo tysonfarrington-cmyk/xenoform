@@ -113,14 +113,24 @@ def performance_for(role: str, instrument: str | None = None) -> str:
         key = str(instrument).strip().lower()
         if key in {"drums", "drum", "drum kit", "kit", "percussion"}:
             return "drums"
-        if key in {"mic", "microphone", "vocals", "vocal", "sing", "singing", "voice", "singer"}:
+        if key in {"mic", "microphone", "vocals", "vocal", "sing", "singing", "voice", "singer", "lipsync", "lip-sync"}:
             return "vocals"
+        if key in {"keys", "key", "keyboard", "synth", "synthesizer", "piano"}:
+            return "keys"
+        if key in {"guitar", "electric guitar", "bass guitar", "bass"}:
+            return "guitar"
+        if key in {"dance", "dancing", "dancer"}:
+            return "dance"
         return key
-    return "drums" if str(role) in DRUM_ROLES else "vocals"
+    # no instrument given: drums on the drop, keys elsewhere. Singing is chosen by the planner only where
+    # the song's vocal stem actually sings (dense.performer_slots), so she never mouths words that are not there.
+    return "drums" if str(role) in DRUM_ROLES else "keys"
 
 
+# The bundled reference (Polly): the outfit is named so the model does not re-dress her for the venue.
+OUTFIT = "silver-grey bob, white cropped bomber jacket with a teal zip over a white tee, light-blue straight jeans, white trainers"
 _IDENTITY = ("One continuous unbroken take with no cuts and no scene change: the woman from the first frame, "
-             "with exactly the same face, hair and outfit from the first frame to the last, ")
+             f"with exactly the same face, hair and outfit ({OUTFIT}) from the first frame to the last, ")
 _ACTION = {
     "drums": ("is already playing a drum kit when the clip starts and never pauses: both sticks hitting the "
               "snare, toms and cymbals on every beat of the music, the kick on every downbeat, head and "
@@ -128,6 +138,12 @@ _ACTION = {
     "vocals": ("is already singing into a studio microphone when the clip starts and keeps singing: lips "
                "shaping every word of the vocal line, eyes closing on the long notes, one hand on the mic "
                "stand, body swaying with the music. "),
+    "keys": ("is already playing a synthesizer keyboard when the clip starts and never pauses: both hands on "
+             "the keys, fingers landing on every chord of the music, her mouth closed, head nodding with the groove. "),
+    "guitar": ("is already playing an electric guitar when the clip starts and never pauses: strumming and picking "
+               "in time with the music, her mouth closed, eyes on the fretboard, body moving with the groove. "),
+    "dance": ("is already dancing when the clip starts and never pauses: full-body moves locked to the beat, "
+              "arms and hips on the downbeats, her mouth closed, feet planted in frame. "),
 }
 _CAMERA = ("The first frame flows straight into the performance and the camera never cuts away: medium shot, "
            "steady camera, she stays centred and fully in frame for the whole clip. "

@@ -223,6 +223,7 @@ function payload() {
     length_s: Number((state.easy && state.easy.lengthS) || 0),
     hardware_tier: (state.easy && state.easy.gpuTier) || "auto",
     performer: Number((state.easy && state.easy.performer) || 0),
+    performer_style: (state.easy && state.easy.performerStyle) || "auto",
     // Advanced desk: one scene transition per boundary (guardrails keep each type to 2; overflow becomes a cut).
     scene_transitions: sceneTransitionPlan().map((row) => ({ kind: row.kind, boundary: row.boundary, index: row.index, auto: row.auto })),
     idea: (state.easy && state.easy.idea) || "",
@@ -2529,8 +2530,11 @@ function performerRow(easy) {
   const note = ok
     ? `MiniMax H3 (open weights, on this GPU) has Polly sing the intro and drum the drop, cut 1:1 into the morph chain. About ${clockText(Number(info.seconds_per_shot || 420))} a shot on a 12 GB card. The reference still is Polly; drop your own full-body still under Cast lock in Advanced to replace her.`
     : `Off: ${esc(info.note || "the MiniMax H3 files are not installed")}. See Setup.`;
+  const styles = [["auto", "Auto"], ["sing", "Sing"], ["drums", "Drums"], ["keys", "Keys"], ["guitar", "Guitar"], ["dance", "Dance"]];
+  const styleRow = n ? simpleSeg("easy-performer-style", easy.performerStyle || "auto", styles, "Performance") : "";
+  const styleNote = n ? `<p class="note">Auto: she sings where the song's vocal stem sings (lip-synced to the vocal), drums on the drop, keys elsewhere; she never mouths words that are not there.</p>` : "";
   return `${simpleSeg("easy-performer", String(ok ? n : 0), choices, "Performer")}
-      <p class="note">${note}</p>`;
+      <p class="note">${note}</p>${styleRow}${styleNote}`;
 }
 
 function machineRows(easy) {
@@ -2715,6 +2719,7 @@ function applySimpleRecipe(recipe) {
   easy.danceFx = recipe.dance_fx || "auto";
   easy.lengthS = Number(recipe.length_s || 0);
   easy.performer = Number(recipe.performer || 0);
+  easy.performerStyle = recipe.performer_style || "auto";
   easy.stemOrbit = recipe.stem_orbit !== false;
   easy.remixPlan = recipe.cut_plan || null;
   state.seed = recipe.seed || state.seed;
@@ -4527,6 +4532,9 @@ document.addEventListener("click", async (event) => {
     state.easy.aspect = ["16:9", "9:16", "1:1"].includes(el.dataset.value) ? el.dataset.value : "9:16";
     render();
     loadSimpleOptions().then(render);
+  } else if (act === "easy-performer-style") {
+    state.easy.performerStyle = ["auto", "sing", "drums", "keys", "guitar", "dance"].includes(el.dataset.value) ? el.dataset.value : "auto";
+    render();
   } else if (act === "easy-performer") {
     state.easy.performer = [0, 2, 4].includes(Number(el.dataset.value)) ? Number(el.dataset.value) : 0;
     render();

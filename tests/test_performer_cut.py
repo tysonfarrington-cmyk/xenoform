@@ -46,8 +46,16 @@ def test_performer_slots_take_the_intro_then_the_drop_and_never_touch():
     shots = _story_shots()
     two = dense.performer_slots(shots, 2)
     assert len(two) == 2
-    assert two[0]["section"] == "intro" and two[0]["instrument"] == "voice" and two[0]["first"] == 0
+    assert two[0]["section"] == "intro" and two[0]["instrument"] == "keys" and two[0]["first"] == 0  # no stems: no fake lip-sync
     assert two[1]["section"] == "drop" and two[1]["instrument"] == "drums"
+    # with a vocal stem that sings in the intro she sings (lip-synced to the real vocal); silent elsewhere stays keys/drums
+    n = int(120 * 24)
+    vocals = [1.0 if t < 16 * 24 else 0.02 for t in range(n)]
+    env = {"fps": 24, "frames": n, "engine": "demucs:htdemucs", "vocals": vocals, "drums": [0.5] * n, "bass": [0.5] * n, "other": [0.3] * n}
+    sung = dense.performer_slots(shots, 2, env)
+    assert sung[0]["instrument"] == "voice" and sung[0]["vocal"] > 0.9 and sung[1]["instrument"] == "drums"
+    assert all(sl["instrument"] == "guitar" for sl in dense.performer_slots(shots, 2, env, style="guitar"))
+    assert dense.performer_slots(shots, 2, env, style="sing")[1]["instrument"] == "voice"
     for sl in two:
         assert dense.PERFORMER_MIN_S <= sl["seconds"] <= dense.PERFORMER_MAX_S + 1e-6
         assert all(shots[i].get("section") == sl["section"] for i in range(sl["first"], sl["last"] + 1))
@@ -114,7 +122,7 @@ def test_run_simple_renders_performer_slots_and_hands_merged_shots_to_compose(tm
     directed = {"duration": 120.0, "beats": _beats(120.0), "analysis_sections": _sections(), "sections": [{"label": "sphere", "start": 0.0, "end": 120.0}]}
     state = {"vibe": "ocean", "aspect": "9:16", "quality_tier": "draft", "energy_preset": "dense", "mode": "simple", "performer": 2}
     info = dense.run_simple(directed, DEMO, tmp_path / "x.mp4", tmp_path, {}, state, lambda *a: None, engine="mock")
-    assert len(calls) == 2 and calls[0][0] == "intro" and calls[0][1] == "voice" and calls[1][1] == "drums"
+    assert len(calls) == 2 and calls[0][0] == "intro" and calls[0][1] == "keys" and calls[1][1] == "drums"
     assert calls[0][4] == "polly.png"  # the bundled reference
     perf = [s for s in seen["shots"] if s.get("performer")]
     assert len(perf) == 2 and sum(1 for c in seen["clips"] if c.startswith("perf_")) == 2

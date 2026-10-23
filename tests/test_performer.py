@@ -48,9 +48,9 @@ def test_prompt_for_roles_and_look():
         assert "first frame" in s and "already playing" in s and look in s
     for role in ("intro", "calm", "sustain", "release", "outro"):
         s = p.prompt_for(role, look)
-        assert "microphone" in s and "drum" not in s and look in s
+        assert "synthesizer keyboard" in s and "drum" not in s and look in s  # quiet roles play keys unless the vocal stem sings
     assert "drum kit" in p.prompt_for("calm", look, instrument="drums")
-    assert "playing the guitar" in p.prompt_for("drop", look, instrument="guitar")
+    assert "electric guitar" in p.prompt_for("drop", look, instrument="guitar")
     assert p.prompt_for("drop", "").endswith("no speech.")
     assert "Look:" not in p.prompt_for("drop", "")
 
@@ -301,3 +301,10 @@ def test_render_slot_without_the_lora_uses_the_base_graph(tmp_path, song, monkey
     assert "18" not in g and "19" not in g and g["6"]["inputs"]["model"] == ["1", 0]
     assert g["8"]["inputs"]["steps"] == 20 and res["steps"] == 20 and res["lora"] is None
     assert res["frames"] == 124
+
+
+def test_prompt_sings_only_when_asked_and_pins_the_outfit():
+    assert "microphone" in p.prompt_for("intro", "chrome", "voice") and "keys" not in p.prompt_for("intro", "chrome", "voice")
+    assert "synthesizer keyboard" in p.prompt_for("intro", "chrome") and "mouth closed" in p.prompt_for("intro", "chrome")
+    assert "drum kit" in p.prompt_for("drop", "chrome") and "electric guitar" in p.prompt_for("calm", "", "guitar")
+    assert "dancing" in p.prompt_for("calm", "", "dance") and p.OUTFIT in p.prompt_for("drop", "chrome")

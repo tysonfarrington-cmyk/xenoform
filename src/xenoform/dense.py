@@ -48,9 +48,9 @@ MAX_SHOTS = 15  # the short-clip plan (demo1): 16 stills, the black pool holds 1
 # over 24 morphs; every handoff is still one continuous morph because the chain loops back to its first still.
 SHOT_SECONDS_TARGET = 1.6     # shot budget: about one shot per 1.6 s on average
 SHOT_BUDGET_MAX = 240
-CLIP_BUDGET = (12, 30)        # unique morph renders in a music-video cut (min, max)
+CLIP_BUDGET = (6, 30)         # unique morph renders in a music-video cut (min, max): a 20 s test cut needs six, not twelve
 CLIP_SECONDS_PER = 10.0       # one unique morph per ten seconds of song
-LONG_SONG_S = 45.0            # above this the chain reuse kicks in (the no-repeat guardrail is for short clips)
+LONG_SONG_S = 20.0            # above this the story plan, the chain reuse and performer slots apply (the demo clip stays on the demo1 plan)
 COMPOSE_S_PER_FRAME = {"draft": 0.2, "final": 0.3}  # measured: 1440 frames at 540x960 composed in 285 s (look pass 155 s)
 
 # ---- morph count: "auto" (from clip length + BPM) or a fixed number of forms
@@ -191,13 +191,39 @@ def performer_choice(state: dict | None) -> int:
     return min(PERFORMER_CHOICES, key=lambda c: abs(c - n))
 
 
-def performer_slots(shots: list[dict], count: int) -> list[dict]:
+PERFORMER_STYLES = ("auto", "sing", "drums", "keys", "guitar", "dance")
+VOCAL_PRESENT = 0.2  # a slot sings when its vocal-stem level is above this fraction of the song's loudest vocal moment
+
+
+def performer_style(state: dict | None) -> str:
+    key = str((state or {}).get("performer_style") or "auto").strip().lower()
+    return key if key in PERFORMER_STYLES else "auto"
+
+
+def _vocals_in(stem_env: dict | None, t0: float, t1: float) -> float | None:
+    """The vocal stem's mean level over [t0, t1] as a fraction of the song's peak vocal level, or None without stems."""
+    if not stem_env or not stem_env.get("vocals") or str(stem_env.get("engine") or "").startswith("mix"):
+        return None
+    v = [float(x) for x in stem_env["vocals"]]
+    fps = float(stem_env.get("fps") or 24)
+    peak = max(v) if v else 0.0
+    if peak <= 1e-6:
+        return 0.0
+    a, b = int(max(0, t0 * fps)), int(min(len(v), t1 * fps))
+    if b <= a:
+        return 0.0
+    return float(sum(v[a:b]) / (b - a)) / peak
+
+
+def performer_slots(shots: list[dict], count: int, stem_env: dict | None = None, style: str = "auto") -> list[dict]:
     """Where the performer appears: runs of consecutive shots, each at least ``PERFORMER_MIN_S`` long,
-    starting a passage. Priority: the intro first (she sings the song in), then the first drop (drums),
-    then each further passage in order; never two slots back to back, at most ``count``."""
+    starting a passage. Priority: the intro first, then the first drop (drums), then each further passage
+    in order; never two slots back to back, at most ``count``. What she does: ``style`` when set; else she
+    sings where the song's vocal stem sings (real lip-sync to the vocal), drums on the drop, keys elsewhere."""
     count = int(count)
     if count <= 0 or not shots:
         return []
+    style = str(style or "auto").lower()
     starts = [i for i, s in enumerate(shots) if i == 0 or s.get("boundary") or (s.get("section") != shots[i - 1].get("section"))]
     cands = []
     for i in starts:
@@ -211,9 +237,18 @@ def performer_slots(shots: list[dict], count: int) -> list[dict]:
         while j < len(shots) and shots[j].get("section", section) == section and total + float(shots[j].get("seconds") or 0) <= PERFORMER_MAX_S:
             total += float(shots[j].get("seconds") or 0)  # take whole shots up to the longest clip H3 makes
             j += 1
-        sing = section in ("intro", "calm", "sustain", "release", "outro")
+        t0, t1 = float(shots[i]["start"]), float(shots[j - 1]["end"])
+        vocal = _vocals_in(stem_env, t0, t1)
+        if style != "auto":
+            instrument = {"sing": "voice"}.get(style, style)
+        elif vocal is not None and vocal >= VOCAL_PRESENT:
+            instrument = "voice"
+        elif section in ("drop", "drop_late", "build"):
+            instrument = "drums"
+        else:
+            instrument = "keys"
         cands.append({"first": i, "last": j - 1, "seconds": round(total, 4), "section": section,
-                      "instrument": "voice" if sing else "drums", "start": float(shots[i]["start"])})
+                      "instrument": instrument, "vocal": None if vocal is None else round(vocal, 3), "start": t0})
     if not cands:
         return []
     order = sorted(cands, key=lambda c: (0 if c["section"] == "intro" else 1 if c["section"] == "drop" else 2, c["start"]))
@@ -281,6 +316,7 @@ def options(state: dict) -> dict:
         "dance_fx": dance_fx_choice(state),
         "stem_orbit": stem_orbit_choice(state),
         "performer": performer_choice(state),
+        "performer_style": performer_style(state),
     }
 
 
@@ -867,7 +903,7 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     if n_perf and long_song:
         # Performer shots: MiniMax H3 (open weights, local) has the reference character sing or drum to the
         # song segment; each slot replaces a run of morph shots with one clip played 1:1 (a hard cut in and out).
-        slots = performer_slots(shots, n_perf)
+        slots = performer_slots(shots, n_perf, stem_env_for(state), performer_style(state))
         still = Path(str(state.get("performer_ref") or state.get("hero_path") or "")) if (state.get("performer_ref") or state.get("hero_path")) else None
         if still is None or not still.is_file():
             still = PERFORMER_REFERENCE if PERFORMER_REFERENCE.is_file() else None  # Polly, bundled
@@ -935,7 +971,8 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
             "transitions": transitions, "size": list(size) if size else None, "fps": fps, "seed": seed,
             "palette_image": str(stills[0]["path"]) if stills else None, "vertical_house": vertical_house,
             "recut_state": {k: state.get(k) for k in ("vibe", "aspect", "quality_tier", "energy_preset", "dance_fx", "stem_orbit",
-                                                      "beat_fx", "beat_overlay", "end_card", "stems_path", "macros", "still_background")},
+                                                      "beat_fx", "beat_overlay", "end_card", "stems_path", "macros", "still_background",
+                                                      "performer", "performer_style")},
             "roles": plan.get("roles"), "performer": performer_info,
             "handoffs_s": [s["start"] for s in shots] + [shots[-1]["end"]], "fallbacks": notes,
             "render": made["size"], "frames": made["frames"], "seconds": round(time.perf_counter() - started, 2),
