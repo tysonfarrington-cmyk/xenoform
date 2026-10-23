@@ -17,6 +17,7 @@ Scene (non-character) presets such as ``bloom-rush`` add two more colour-only pa
 from __future__ import annotations
 
 import numpy as np
+from pathlib import Path
 
 try:
     import cv2  # optional; numpy fallbacks below keep the module importable
@@ -61,6 +62,42 @@ PRESET_NOTES = {  # one line each, for list_looks / the desk
     "cyan-flash": "electric-blue beat flashes, negative pulse on big hits, slow light sweep, depth bloom and exposure breath",
 }
 ROLES = ("intro", "vj", "flower", "into_card")  # DEMO_HOUSE["dance_fx"] roles; "vj" is the default
+
+
+def palette_tints(image_path, *, strength: float = 1.0) -> dict:
+    """Colour keys for a preset taken from a still of the vibe: its shadow hue tints the shadows, its highlight
+    hue the highlights, edges, washes and flashes. The auto look then rides the vibe's own palette instead of
+    laying a fixed blue (or any other cast) over it. Returns {} when the still is grey or unreadable."""
+    try:
+        from xenoform.portrait import load_rgb
+
+        img = np.asarray(load_rgb(Path(image_path)), np.float32)
+    except Exception:
+        return {}
+    if img.ndim != 3 or img.shape[2] < 3 or img.size < 3 * 64:
+        return {}
+    f = img[..., :3].reshape(-1, 3)
+    lum = f.mean(axis=1)
+    lit = f[lum > 12.0]  # the black ground of a re-laid still is not a colour
+    if len(lit) < 64:
+        return {}
+    ll = lit.mean(axis=1)
+    dark = lit[ll <= np.percentile(ll, 40)]
+    bright = lit[ll >= np.percentile(ll, 85)]
+    if len(dark) < 16 or len(bright) < 16:
+        return {}
+    sh, hi = dark.mean(axis=0), bright.mean(axis=0)
+    chroma = max(float(hi.max() - hi.min()), float(sh.max() - sh.min()))
+    if chroma < 14.0:
+        return {}  # a grey vibe: leave the preset's colours alone
+    k = float(np.clip(strength, 0.0, 2.0))
+    shadow = np.clip(1.0 + 0.14 * k * (sh / max(float(sh.mean()), 1e-6) - 1.0), 0.82, 1.18)
+    high = np.clip(1.0 + 0.08 * k * (hi / max(float(hi.mean()), 1e-6) - 1.0), 0.90, 1.10)
+    accent = np.clip(hi / max(float(hi.max()), 1e-6) * 255.0, 0, 255)
+    deep = np.clip(sh / max(float(sh.max()), 1e-6) * 235.0, 0, 255)
+    return {"shadow": tuple(float(round(v, 4)) for v in shadow), "high": tuple(float(round(v, 4)) for v in high),
+            "edge": tuple(int(v) for v in accent), "wash_a": tuple(int(v) for v in accent),
+            "wash_b": tuple(int(v) for v in deep), "flash_rgb": tuple(int(v) for v in accent)}
 DEFAULT_ROLE = "vj"
 
 POST_EFFECTS = {

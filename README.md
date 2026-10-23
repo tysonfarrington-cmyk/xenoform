@@ -20,7 +20,7 @@ It is a music video director, not a visualiser: visualisers pulse to the beat an
 
 ### Simple mode: three decisions
 
-Simple mode is a song, a vibe and **Make**. Everything else sits in a **Fine-tune** drawer and has a sensible default from the house profile (`configs/defaults_demo.json`, the look used in the demo video).
+Simple mode is a song, a vibe and **Make**. Under the vibes sit four knobs (**Intensity** for the beat pulse and flash, **Speed** for the cut density and trail length, **Chaos** for the punches, stutters and how far the subject swings, **Glow** for the bloom) and the **Look** chips. Everything else sits in a **Fine-tune** drawer and has a sensible default from the house profile (`configs/defaults_demo.json`, the look used in the demo video). The app times the cut to the song, morphs one object into the next on the beat, reacts to the stems and applies the look; the knobs set how hard.
 
 | Decision | Default | Notes |
 | --- | --- | --- |
@@ -28,7 +28,7 @@ Simple mode is a song, a vibe and **Make**. Everything else sits in a **Fine-tun
 | Vibe | 12 featured vibes, 29 in the registry | Each vibe has its own stills, look, LTX settings and transitions ([docs/VIBES.md](docs/VIBES.md)). |
 | Make | Draft, the whole song | Draft is LTX-Video 0.9.5. A 20 s clip is about a minute on a 12 GB card; a four-minute song is a shot every bar over a loop of up to 30 morphs and takes about 20 minutes. The panel beside Make says the video length, the shot and morph count and the time before you press it. Final is LTX-2.3 22B distilled fp8 plus a 4x upscale, with its own estimate. |
 
-In the Fine-tune drawer: aspect (**9:16** default, 16:9 and 1:1 stay), **Length** (the whole song, or 60, 30 or 15 seconds centred on the drop), energy (Flow or Dense), quality (Draft or Final), Forms (morph count, Auto or 1 to 40), macro knobs (**Intensity, Speed, Chaos, Glow**), one reaction lane per stem, the Look (`dance_fx` preset or auto), stem orbit on or off, beat FX, the end card, and a MIDI controller panel. The end card burns the recipe code and `github.com/tysonfarrington-cmyk/xenoform` into the last two seconds.
+In the Fine-tune drawer: aspect (**9:16** default, 16:9 and 1:1 stay), **Length** (the whole song, or 60, 30 or 15 seconds centred on the drop), energy (Flow or Dense), **Model** (Draft is LTX-Video 0.9.5, Final is LTX-2.3 22B), **GPU** (auto-detected preset, or CPU, 8, 12 or 24 GB), **Renders on** (the ComfyUI address; paid cloud renders stay off unless you switch them on, and they are not open weights), Forms (morph count, Auto or 1 to 40), macro knobs (**Intensity, Speed, Chaos, Glow**), one reaction lane per stem, the Look (`dance_fx` preset or auto), stem orbit on or off, beat FX, the end card, and a MIDI controller panel. The end card burns the recipe code and `github.com/tysonfarrington-cmyk/xenoform` into the last two seconds.
 
 After a render: **15 s hook**, **Copy recipe code**, **My videos**. Paste a recipe code under *Make my video* to remix someone else's.
 
@@ -116,7 +116,7 @@ By hand, on any platform:
 
 ### How a render runs
 
-Make first cuts the vibe's own stills to the planned shots and plays that within seconds: the skeleton of the cut, on the beat, with the song. The GPU pass then renders the morphs through comfy-sdk → comfy-api-proxy → ComfyUI. For a clip under 45 s that is one morph per shot: morph *i* starts on still *i* and ends on still *i+1*, so the picture never jumps. For a full song the cut keeps a shot every bar (every half bar after the drop) and renders a closed loop of 12 to 30 four-second morphs instead, one unique morph per ten seconds of song; the shots walk the loop in order, so every handoff is still one continuous transformation and the chain simply comes round again, as a chorus does. Each shot is then retimed to its slot (speed, punches, holds, stutters), reframed, given the beat FX and the Look, orbited by the stems, and muxed with the song; Draft composes at 540x960 so the look pass stays quick. If the GPU pass fails, the stills cut stays as the result.
+Make first cuts the vibe's own stills to the planned shots and plays that within seconds: the skeleton of the cut, on the beat, with the song. The GPU pass then renders the morphs through comfy-sdk → comfy-api-proxy → ComfyUI. For a clip under 45 s that is one morph per shot: morph *i* starts on still *i* and ends on still *i+1*, so the picture never jumps. For a full song the cut keeps a shot every bar (every half bar after the drop) and renders a closed loop of 12 to 30 four-second morphs instead, one unique morph per ten seconds of song; the shots walk the loop in order, so every handoff is still one continuous transformation and the chain simply comes round again, as a chorus does. On 9:16 the stills are re-laid whole on black and the Draft morphs render in portrait (320x576), so a ribbon or a helix is never clipped by a crop. Each shot is then retimed to its slot (speed, punches, holds, stutters), given the beat FX and the Look (on Auto the look's colours are taken from the vibe's own stills, so a cobalt vibe stays cobalt and a gold one stays gold instead of wearing a fixed blue cast), orbited by the stems, and muxed with the song; Draft composes at 540x960 so the look pass stays quick. If the GPU pass fails, the stills cut stays as the result.
 
 ```mermaid
 flowchart LR

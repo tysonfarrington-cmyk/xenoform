@@ -51,8 +51,21 @@ def background(img: np.ndarray) -> np.ndarray:
 
 
 def subject_box(img: np.ndarray, bg: np.ndarray, thresh: float = 28.0) -> tuple[int, int, int, int] | None:
-    """(x0, y0, x1, y1) of what differs from the ground; specks under 0.4 % of a row/column are ignored."""
-    mask = np.abs(img.astype(np.float32) - bg).max(axis=2) > thresh
+    """(x0, y0, x1, y1) of what differs from the ground; specks under 0.4 % of a row/column are ignored.
+
+    The ground may carry a smooth glow or gradient (cosmic's indigo halo, liquid-gold's umber pool), so a pixel
+    counts as subject only when it also differs from its own neighbourhood (a wide box blur): the object's
+    edges and texture do, a smooth halo does not."""
+    f = img.astype(np.float32)
+    mask = np.abs(f - bg).max(axis=2) > thresh
+    try:
+        from scipy.ndimage import uniform_filter
+
+        k = max(9, int(round(min(img.shape[:2]) / 8)) | 1)
+        local = uniform_filter(f, size=(k, k, 1), mode="nearest")
+        mask &= np.abs(f - local).max(axis=2) > 0.6 * thresh
+    except ImportError:  # pragma: no cover
+        pass
     rows = np.flatnonzero(mask.mean(axis=1) > 0.004)
     cols = np.flatnonzero(mask.mean(axis=0) > 0.004)
     if rows.size == 0 or cols.size == 0:
@@ -77,7 +90,7 @@ def frame_portrait(img: np.ndarray, w: int = STILL_W, h: int = STILL_H) -> np.nd
     nw, nh = max(2, int(round(bw * scale))), max(2, int(round(bh * scale)))
     sub = resize(img[y0:y1, x0:x1], nw, nh).astype(np.float32)
     # feather the pasted box into the ground so its edge never shows
-    f = max(2, int(round(0.08 * min(nw, nh))))
+    f = max(2, int(round(0.16 * min(nw, nh))))  # a wide feather: a glow ground brighter than the border never shows a box
     ax = np.clip(np.minimum(np.arange(nw), np.arange(nw)[::-1]) / f, 0, 1)
     ay = np.clip(np.minimum(np.arange(nh), np.arange(nh)[::-1]) / f, 0, 1)
     alpha = (ay[:, None] * ax[None, :])[..., None]

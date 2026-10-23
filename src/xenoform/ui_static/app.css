@@ -2154,3 +2154,11 @@ body[data-advanced="0"] .comfy-status[data-ok="1"]::before { background: #1f8a55
 .tr-row.over .tr-count, .tr-warn { color: #c9a227; }
 .tr-row select { min-width: 0; }
 @media (max-width: 720px) { .tr-row { grid-template-columns: 56px 1fr; } .tr-row .tr-kind, .tr-row .tr-count { display: none; } }
+
+/* Simple mode: the knobs and the Look on the first screen (UI v7.1) */
+.simple-knobs-panel .simple-knobs { margin: 0.4rem 0 0.6rem; }
+.simple-knobs-panel .xf-macros { margin-top: 0; }
+.simple-knobs-panel .look-row { margin-top: 0.4rem; }
+.machine-where .toggle { flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+.machine-where input[type="text"] { font: inherit; padding: 0.15rem 0.4rem; border-radius: 0.5rem; border: 1px solid rgba(28,28,30,.18); background: rgba(255,255,255,.7); }
+label.easy-paid { display: block; margin: 0.4rem 0 0.2rem; font-size: 0.86em; opacity: 0.85; }

@@ -633,10 +633,13 @@ def _job_result(client, job):
 
 
 def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, client=None, cancel=None,
-                 state: dict | None = None, report=None) -> list[Path]:
-    """Free: one LTX 0.9.5 A->B morph per shot through the existing morph graph."""
+                 state: dict | None = None, report=None, size: tuple[int, int] | None = None) -> list[Path]:
+    """Free: one LTX 0.9.5 A->B morph per shot through the existing morph graph.
+
+    ``size`` overrides the render size (Draft 9:16 renders portrait 320x576 from re-laid stills)."""
     from xenoform import morph_pass as mp
 
+    render_w, render_h = (int(size[0]), int(size[1])) if size else (mp.WIDTH, mp.HEIGHT)
     client = client or _client(cfg)
     graph = mp._graph_path(work, "ltx095")
     tune = mp.tuned(vibe)
@@ -656,8 +659,8 @@ def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, cli
 
         wf.set_input("3", "text", guard_prompt(mp.prompt_for(vibe), state))
         wf.set_input("4", "text", mp.NEGATIVE)
-        wf.set_input("9", "width", mp.WIDTH)
-        wf.set_input("9", "height", mp.HEIGHT)
+        wf.set_input("9", "width", render_w)
+        wf.set_input("9", "height", render_h)
         wf.set_input("9", "length", mp.gen_length(int(round(min(float(shot.get("render_s") or shot["seconds"]), 5.0) * FPS))))
         wf.set_input("11", "steps", int(tune.get("steps", mp.STEPS)))
         if "cfg" in tune:

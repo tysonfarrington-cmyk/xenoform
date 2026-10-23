@@ -377,8 +377,16 @@ class LookPass:
 
     def __init__(self, *, dance_fx: str | None = None, stem_orbit: bool | None = None, stem_env: dict | None = None,
                  macros: dict | None = None, house: dict | None = None, beats: Iterable[float] = (), fps: int | None = None,
-                 shots: int = 1, end_card: bool = False, seed: int = 0):
+                 shots: int = 1, end_card: bool = False, seed: int = 0, palette_image: str | None = None,
+                 adaptive: bool = False):
         self.house = house_profile(house)
+        # Auto: the preset's colours follow the vibe's own palette (palette_image is one of its stills).
+        self.adaptive = bool(adaptive)
+        self.tints: dict = {}
+        if self.adaptive and palette_image:
+            from xenoform import dance_fx as D
+
+            self.tints = D.palette_tints(palette_image)
         self.fps = int(fps or (self.house.get("format") or {}).get("fps") or FPS)
         self.beats = [float(b) for b in beats]
         self.env = stem_env or {}
@@ -423,6 +431,8 @@ class LookPass:
             role = self.role_for(si)
             preset = None if self.mode == "house" else self.mode
             fx = D.DanceFX(preset, seed=self.seed + si, role=role, house=self.house.get("dance_fx"))
+            if self.tints:
+                fx.p.update(self.tints)  # the vibe's palette, not the preset's fixed cast
             speed = float(self.macros.get("speed", 0.5)); glow = float(self.macros.get("glow", 0.4))
             if fx.p.get("echo", 0) > 0:  # speed: faster cuts, shorter trails
                 fx.p["echo_decay"] = float(np.clip(fx.p.get("echo_decay", 0.70) - 0.24 * (speed - 0.5), 0.5, 0.95))
@@ -434,7 +444,8 @@ class LookPass:
         if self._orbit_ok and self.n > 0:
             from xenoform import stem_orbit as O
 
-            self.plan = O.plan(self.env, self.t0, self.n, fps=self.fps)
+            swing = 0.5 + float(np.clip(float(self.macros.get("chaos", 0.3) or 0.0), 0.0, 1.0))  # Chaos: 0.5x .. 1.5x
+            self.plan = O.plan(self.env, self.t0, self.n, fps=self.fps, max_yaw=float(O.DEFAULTS.get("max_yaw", 28.0)) * swing)
 
     def frame(self, frame: np.ndarray, k: int, t: float) -> np.ndarray:
         """Output frame ``k`` of the current shot at song time ``t``."""
@@ -460,7 +471,8 @@ class LookPass:
         return {"dance_fx": self.mode, "stem_orbit": bool(self._orbit_ok), "stem_orbit_requested": self.orbit,
                 "stems": str(self.env.get("engine") or ("none" if not self.env else "?")), "roles": self.roles,
                 "frames": self.frames, "seconds": round(self.seconds, 2), "notes": list(self.notes),
-                "macros": {k: self.macros.get(k) for k in ("speed", "glow", "stems") if k in self.macros}}
+                "macros": {k: self.macros.get(k) for k in ("speed", "glow", "stems") if k in self.macros},
+                "adaptive": self.adaptive, "tints": {k: list(v) for k, v in self.tints.items()} if self.tints else {}}
 
 
 # ------------------------------------------------------------------ compositor
@@ -505,7 +517,8 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
             label: str | None = None, report: Callable[[str, float, str], None] | None = None,
             size: tuple[int, int] | None = None, fps: int | None = None, dance_fx: str | None = None,
             stem_orbit: bool | None = None, stem_env: dict | None = None, macros: dict | None = None,
-            house: dict | None = None, end_card: bool = False, seed: int = 0) -> dict:
+            house: dict | None = None, end_card: bool = False, seed: int = 0, palette_image: str | None = None,
+            adaptive: bool = False) -> dict:
     """Retime every clip to its shot (speed, ease, hold, stutter, skip, reverse), reframe, add beat FX, mux.
 
     ``size`` overrides the output frame size (native vertical Final: 1080x1920). Clips that
@@ -526,7 +539,8 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
     total = sum(int(s["frames"]) for s in shots)
     beats = [float(b) for b in beats]
     look = LookPass(dance_fx=dance_fx, stem_orbit=stem_orbit, stem_env=stem_env, macros=macros, house=house,
-                    beats=beats, fps=fps, shots=len(shots), end_card=end_card, seed=seed)
+                    beats=beats, fps=fps, shots=len(shots), end_card=end_card, seed=seed, palette_image=palette_image,
+                    adaptive=adaptive)
     env = envelopes(audio_path, total, fps=fps) if (fx or look.active) else None
     if look.active and not look.env:
         look.env = mix_stem_env(env, beats, fps)

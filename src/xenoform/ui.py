@@ -1084,9 +1084,17 @@ def create_app(cfg: dict | None = None):
         files = final_tier.present()
         video_s = min(duration, float(length)) if length and float(length) > 0 else duration
         plan = _dense.plan_summary(video_s, [b for b in beats if b < video_s], energy, tier, aspect, vertical)
+        from xenoform.hardware import TIERS as _tiers, detect_tier as _detect
+
+        try:
+            detected = _detect()
+        except Exception:
+            detected = {"id": "cpu", "label": "CPU"}
         return {
             "plan": plan,
             "lengths": [0, 60, 30, 15],
+            "hardware": {"detected": {"id": detected.get("id"), "label": detected.get("label")},
+                         "tiers": [{"id": t["id"], "label": t["label"]} for t in _tiers.values()]},
             "energies": ["flow", "dense"],
             "aspects": ["16:9", "9:16", "1:1"],
             "tiers": ["draft", "final"],
@@ -1856,7 +1864,11 @@ def _run_job(job_id: str, audio_path: Path, body: dict, cfg: dict, out: Path, ca
         )
 
     try:
-        result, tier_id, note = run_resilient(once, detect_tier())
+        from xenoform.hardware import TIERS as _tiers
+
+        chosen = str(body.get("hardware_tier") or "auto").strip().lower()
+        start = dict(_tiers[chosen]) if chosen in _tiers else detect_tier()  # Fine-tune -> GPU, else the detected card
+        result, tier_id, note = run_resilient(once, start)
         qa_report = None
         if not cancel_event.is_set() and Path(out).is_file() and not body.get("tiny"):
             on_progress("qa", 0.5, "Checking for lag, artifacts and off-beat cuts")

@@ -221,6 +221,7 @@ function payload() {
     stem_orbit: !(state.easy && state.easy.stemOrbit === false),
     macros: (window.XENO_MACROS ? window.XENO_MACROS() : null),
     length_s: Number((state.easy && state.easy.lengthS) || 0),
+    hardware_tier: (state.easy && state.easy.gpuTier) || "auto",
     // Advanced desk: one scene transition per boundary (guardrails keep each type to 2; overflow becomes a cut).
     scene_transitions: sceneTransitionPlan().map((row) => ({ kind: row.kind, boundary: row.boundary, index: row.index, auto: row.auto })),
     idea: (state.easy && state.easy.idea) || "",
@@ -2425,6 +2426,13 @@ function renderEasy() {
           <input id="easy-idea" type="text" maxlength="170" value="${esc(easy.idea || "")}" aria-label="One line, optional" placeholder="Leave this empty and the vibe decides." autocomplete="off" />
         </label>
       </section>
+      <section class="panel span simple-knobs-panel" data-tour="easy-macros">
+        <h3>Knobs</h3>
+        <p class="note">Intensity is the beat pulse and flash. Speed is the cut density and the trail length. Chaos is the punches, stutters and how far the subject swings. Glow is the bloom. The look rides the vibe's own colours unless you pick one.</p>
+        <div class="simple-knobs"></div>
+        ${lookRow(easy.danceFx || "auto", "easy-look")}
+        <p class="note look-note">${esc(lookNote(easy.danceFx || "auto"))}</p>
+      </section>
       ${galleryPanel()}
     </section>
     <aside class="panel easy-side" data-tour="easy-make">
@@ -2505,6 +2513,26 @@ function lookRow(current, act, index) {
   return `<div class="simple-seg look-row"><span>Look</span><div class="toggle chips" role="group" aria-label="Look">${chips}</div></div>`;
 }
 
+// Where and on what it renders. Default: this machine, open weights. The GPU preset is detected; pick one to override.
+function machineRows(easy) {
+  const hw = (state.simpleOptions && state.simpleOptions.hardware) || {};
+  const detected = hw.detected || {};
+  const autoLabel = detected.label ? `Auto (${detected.label})` : "Auto";
+  const tiers = [["auto", autoLabel]].concat((hw.tiers || [{id: "cpu", label: "CPU"}, {id: "8gb", label: "8 GB"}, {id: "12gb", label: "12 GB"}, {id: "24gb", label: "24 GB+"}]).map((t) => [t.id, t.label]));
+  const endpoint = (state && state.endpoint) || "http://127.0.0.1:8188";
+  const ok = state && state.comfyOk;
+  const paidBox = document.getElementById("paid-cloud");
+  const paidLocked = !!(paidBox && paidBox.disabled);
+  return `${simpleSeg("easy-gpu", easy.gpuTier || "auto", tiers, "GPU")}
+      <div class="simple-seg machine-where"><span>Renders on</span>
+        <div class="toggle" role="group" aria-label="Renders on">
+          <label class="ghost cloud-toggle">ComfyUI at <input type="text" id="easy-endpoint" value="${esc(endpoint)}" spellcheck="false" aria-label="ComfyUI address" style="width:13em"></label>
+          <span class="note">${ok ? "connected" : "not connected"} · open weights on this machine</span>
+        </div>
+      </div>
+      <label class="addon easy-paid"><input type="checkbox" data-act="easy-paid-cloud" ${state.paidCloud ? "checked" : ""}${paidLocked ? " disabled" : ""}> Paid cloud renders (LTX-2.5 partner node, Comfy Cloud account): off by default, not open weights${paidLocked ? " · locked off by XENO_PAID_CLOUD" : ""}</label>`;
+}
+
 function simpleOptions(easy) {
   const energy = easy.energyPreset || "dense";
   const aspect = easy.aspect || "9:16";
@@ -2515,18 +2543,18 @@ function simpleOptions(easy) {
   const vertical = tier === "final" ? (easy.vertical === "crop" ? "crop" : "native") : "crop";
   const vertNote = aspect !== "9:16" ? (aspect === "16:9" ? "" : " Each shot is reframed around the object as it changes.")
     : vertical === "native" ? " Native vertical: rendered in portrait (448×768), upscaled to 1080×1920, the object centred whole."
-    : " Each shot is cropped from the 16:9 render around the object as it changes.";
+    : tier === "final" ? " Each shot is cropped from the 16:9 render around the object as it changes."
+    : " Portrait Draft: every still re-laid whole on black, the morphs rendered in portrait (320×576) and composed at 540×960, so wide objects are never clipped.";
   return `<div class="simple-opts" data-tour="easy-options">
       ${simpleSeg("easy-energy", energy, [["flow", "Flow"], ["dense", "Dense"]], "Energy")}
       ${simpleSeg("easy-aspect", aspect, [["16:9", "16:9"], ["9:16", "9:16"], ["1:1", "1:1"]], "Aspect")}
       ${simpleSeg("easy-length", String(easy.lengthS || 0), [["0", "Full song"], ["60", "60 s"], ["30", "30 s"], ["15", "15 s"]], "Length")}
       <p class="note">${esc(lengthNote(easy))}</p>
-      ${simpleSeg("easy-tier", tier, [["draft", "Draft"], ["final", "Final"]], "Quality")}
+      ${simpleSeg("easy-tier", tier, [["draft", "Draft · LTX-Video 0.9.5"], ["final", "Final · LTX-2.3 22B"]], "Model")}
+      ${machineRows(easy)}
       ${aspect === "9:16" && tier === "final" ? simpleSeg("easy-vertical", vertical, [["native", "Native"], ["crop", "Crop"]], "Vertical") : ""}
       ${morphControl(easy, tier, aspect, vertical)}
       ${simpleSeg("easy-fx", fx ? "on" : "off", [["on", "On"], ["off", "Off"]], "Beat FX")}
-      ${lookRow(easy.danceFx || "auto", "easy-look")}
-      <p class="note look-note">${esc(lookNote(easy.danceFx || "auto"))}</p>
       ${simpleSeg("easy-orbit", orbit ? "on" : "off", [["on", "On"], ["off", "Off"]], "Subject orbit")}
       ${simpleSeg("easy-card", card ? "on" : "off", [["off", "Off"], ["on", "On"]], "End card")}
       <p class="note">${esc(energy === "dense" ? "Dense: a shot a bar, then a shot every half bar from the drop, with stutters, holds and punches. A long song loops a chain of up to 30 morphs, so every handoff stays one continuous transformation." : "Flow: one morph per section, cut on the bar.")}
@@ -4446,6 +4474,16 @@ document.addEventListener("click", async (event) => {
     state.easy.aspect = ["16:9", "9:16", "1:1"].includes(el.dataset.value) ? el.dataset.value : "9:16";
     render();
     loadSimpleOptions().then(render);
+  } else if (act === "easy-gpu") {
+    state.easy.gpuTier = ["auto", "cpu", "8gb", "12gb", "24gb"].includes(el.dataset.value) ? el.dataset.value : "auto";
+    render();
+  } else if (act === "easy-paid-cloud") {
+    state.paidCloud = !!el.checked;
+    writePaidCloud(state.paidCloud);
+    if (!state.paidCloud && state.easy) state.easy.cloud = false;
+    const box = document.getElementById("paid-cloud");
+    if (box && !box.disabled) box.checked = state.paidCloud;
+    render();
   } else if (act === "easy-length") {
     state.easy.lengthS = [0, 60, 30, 15].includes(Number(el.dataset.value)) ? Number(el.dataset.value) : 0;
     render();
@@ -5339,6 +5377,15 @@ async function pickModel(id, file) {
   await loadSetup();
   if (state && state.view === "setup") render();
 }
+
+document.addEventListener("change", (event) => {
+  const field = event.target && event.target.id === "easy-endpoint" ? event.target : null;
+  if (!field || !state) return;
+  state.endpoint = field.value.trim() || "http://127.0.0.1:8188";
+  const settings = document.getElementById("endpoint");
+  if (settings) settings.value = state.endpoint;
+  refreshComfy().then(() => render());
+});
 
 async function refreshComfy() {
   const endpoint = (state && state.endpoint) || "http://127.0.0.1:8188";

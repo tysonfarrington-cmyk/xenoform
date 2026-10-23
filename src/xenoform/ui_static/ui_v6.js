@@ -2,7 +2,7 @@
 // ("xeno-macros") and ride on the job payload as `macros`; the server maps them onto beat FX intensity and wobble.
 (function(){
   const KEY="xeno-macros";
-  const KNOBS=[["intensity","Intensity"],["speed","Speed"],["chaos","Chaos"],["glow","Glow"]];
+  const KNOBS=[["intensity","Intensity","beat pulse and flash"],["speed","Speed","cut density and trail length"],["chaos","Chaos","punches, stutters and orbit swing"],["glow","Glow","bloom and halation"]];
   // Per-stem reaction lanes: the default four, or one lane per stem the song actually has (up to MAX_STEMS),
   // set with window.XENO_SET_STEMS(["Kick","Snare","Sub bass",...]) once stems are split or uploaded.
   const MAX_STEMS=32;
@@ -50,18 +50,18 @@
     const [x0,y0]=p(a0),[x1,y1]=p(a1),[xe,ye]=p(135);
     return `<path d="M${x0} ${y0} A${r} ${r} 0 1 1 ${xe} ${ye}" stroke="rgba(28,28,30,.1)" stroke-width="3" fill="none" stroke-linecap="round"/>`+
       (v>0.001?`<path d="M${x0} ${y0} A${r} ${r} 0 ${270*v>180?1:0} 1 ${x1} ${y1}" stroke="url(#xfg)" stroke-width="3" fill="none" stroke-linecap="round"/>`:"");};
-  const knob=([k,l])=>`<div class="xf-knob" data-k="${k}" role="slider" tabindex="0" aria-label="${l}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct(M[k])}">
+  const knob=([k,l,hint])=>`<div class="xf-knob" data-k="${k}" role="slider" tabindex="0" aria-label="${l}" title="${hint||l}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct(M[k])}">
       <div class="dial"><svg viewBox="0 0 54 54"><defs><linearGradient id="xfg" x1="0" x2="1"><stop offset="0" stop-color="#8f74ff"/><stop offset="1" stop-color="#4b33e6"/></linearGradient></defs>${ARC(M[k])}</svg>
       <div class="cap"><i style="transform:rotate(${-135+270*M[k]}deg)"></i></div></div><b>${l}</b><small>${pct(M[k])}</small></div>`;
   const lane=([k,l,c])=>`<label class="xf-lane" title="${l}"><span><i style="background:${c}"></i>${l}</span>
       <input type="range" min="0" max="100" value="${pct(M[k])}" data-k="${k}" style="--c:${c};--p:${pct(M[k])}%" aria-label="${l} reaction"><output>${pct(M[k])}</output></label>`;
-  const html=()=>`<section class="xf-macros" data-tour="easy-macros"><div class="xf-macros-head"><span>Macros</span><button type="button" class="ghost" data-xf-reset>Reset</button></div>
+  const html=()=>`<section class="xf-macros" data-tour="easy-macros"><div class="xf-macros-head"><span>Knobs</span><button type="button" class="ghost" data-xf-reset>Reset</button></div>
       <div class="xf-knobs">${KNOBS.map(knob).join("")}</div>
       <details class="xf-adv"${STEMS.status?" open":""}><summary>Stem reactions <small class="xf-stems-status">${STEMS.status==="done"?`${STEMS.names.length} stems (${STEMS.engine})`:STEMS.status==="running"?"splitting stems…":""}</small></summary><div class="xf-lanes${LANES.length>8?" xf-many":""}" data-count="${LANES.length}">${LANES.map(lane).join("")}</div></details>
       <details class="xf-adv xf-midi"><summary>MIDI controller</summary><div class="xf-midi-panel"></div></details></section>`;
   function paint(el,k){const v=M[k];el.setAttribute("aria-valuenow",pct(v));el.querySelector("svg").innerHTML=el.querySelector("svg defs").outerHTML+ARC(v);
     el.querySelector(".cap i").style.transform=`rotate(${-135+270*v}deg)`;el.querySelector("small").textContent=pct(v);}
-  function mount(){const host=document.querySelector(".simple-opts"); if(!host||host.querySelector(".xf-macros"))return;
+  function mount(){const host=document.querySelector(".simple-knobs")||document.querySelector(".simple-opts"); if(!host||host.querySelector(".xf-macros"))return;
     try{const box=document.createElement("div");box.innerHTML=html();const s=box.firstElementChild;
       const morph=host.querySelector(".morph-count"); morph?morph.after(s):host.prepend(s);midiMount();}
     catch(e){console.error("xenoform macros",e);}}

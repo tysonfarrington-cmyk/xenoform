@@ -93,8 +93,9 @@ def test_simple_house_defaults_and_the_look_row():
     assert 'act === "easy-look"' in APP and 'act === "easy-orbit"' in APP
     # every option that used to sit on the first screen is still reachable inside the drawer
     opts = APP.split("function simpleOptions(easy)")[1].split("// Morph count")[0]
-    for act in ("easy-energy", "easy-aspect", "easy-tier", "easy-fx", "easy-card", "easy-look", "easy-orbit"):
+    for act in ("easy-energy", "easy-aspect", "easy-tier", "easy-fx", "easy-card", "easy-orbit"):
         assert act in opts, act
+    assert "easy-look" in APP.split("simple-knobs-panel")[1].split("</section>")[0]  # the Look row moved to the front (v7.1)
     assert '["16:9", "16:9"], ["9:16", "9:16"], ["1:1", "1:1"]' in opts
 
 

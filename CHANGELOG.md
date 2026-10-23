@@ -2,6 +2,10 @@
 
 ## 0.3.1 (23 October 2026)
 
+- The knobs (Intensity, Speed, Chaos, Glow) and the Look chips sit on the first screen of Simple mode. Chaos now shapes the cut: punches scale with it, stutters, holds and skips vanish when calm and double when wild, and the subject's orbit swing follows it.
+- The Auto look takes its colours from the vibe's own stills (`dance_fx.palette_tints`): shadows, highlights, edge tint, washes and flashes follow the vibe's palette instead of a fixed blue cast. A named preset keeps its colours.
+- Draft 9:16 renders the morphs natively in portrait (320x576) from stills re-laid whole on black, so wide objects are not clipped by a 9:16 crop of a 16:9 render; the stills draft does the same.
+- Fine-tune has Machine rows: Model (Draft LTX-Video 0.9.5 / Final LTX-2.3), GPU preset (auto-detected or CPU, 8, 12, 24 GB; the job honours it), the ComfyUI address, and the paid cloud switch (off by default, not open weights).
 - Full-length songs in Simple mode: the Dense cut keeps a shot every bar (every half bar after the drop) however long the song is, over a closed loop of 12 to 30 four-second morphs (`dense.clip_plan`), so a four-minute song is a music video instead of eleven morphs stretched into a slideshow. The panel beside Make shows the video length, shots, morphs and a time estimate that includes the look pass.
 - **Length** in the Fine-tune drawer: the whole song, or a 60, 30 or 15 second cut centred on the drop (starts on a beat, short fades), analysed as its own song.
 - The Simple draft is the vibe's stills cut to the plan (seconds) instead of the CPU blob animatic, which took minutes on a long song.

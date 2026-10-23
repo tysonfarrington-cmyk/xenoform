@@ -35,7 +35,8 @@ VERTICAL = ("native", "crop")
 
 
 def vertical_mode(state: dict) -> str:
-    """9:16 on Final renders natively unless the crop is asked for; Draft always crops (for now)."""
+    """9:16 on Final renders natively unless the crop is asked for. (Draft 9:16 re-lays the stills and renders
+    portrait too, see ``native_draft`` in run_simple; this flag only feeds the Final tier's sizes.)"""
     tier = str(state.get("quality_tier") or "draft").lower()
     asked = str(state.get("vertical_mode") or "auto").lower()
     if tier != "final":
@@ -239,13 +240,31 @@ def apply_macros(shots: list[dict], m: dict, house: dict | None = None) -> list[
     """Intensity scales each shot's beat-FX intensity (0.5 = as planned); Chaos above 0.5 adds wobble
     (never when the ``house`` look says character_wobble is off)."""
     gain = 0.4 + 1.2 * m.get("intensity", 0.5)
-    wob = max(0.0, (m.get("chaos", 0.3) - 0.5) * 0.6)
+    chaos = float(min(1.0, max(0.0, m.get("chaos", 0.3))))
+    wob = max(0.0, (chaos - 0.5) * 0.6)
     if house and ((house.get("look") or {}).get("character_wobble") is False):
         wob = 0.0
     for s in shots:
         s["fx_intensity"] = round(min(1.0, float(s.get("fx_intensity", 1.0)) * gain), 3)
+        s["chaos"] = round(chaos, 3)
         if wob:
             s["wobble"] = round(max(float(s.get("wobble") or 0.0), wob), 3)
+        # Chaos shapes the cut itself: punches scale with it, stutters / holds / skips vanish when calm and
+        # double up when wild; the subject's orbit swing follows it too (see beatfx.LookPass).
+        effects = []
+        for fx in s.get("effects") or []:
+            kind = fx.get("type")
+            if kind == "punch":
+                effects.append({**fx, "strength": round(min(1.0, float(fx.get("strength", 0.5)) * (0.4 + 1.2 * chaos)), 3)})
+            elif kind in ("stutter", "hold", "skip", "reverse"):
+                if chaos < 0.25:
+                    continue
+                if kind == "stutter" and chaos > 0.75:
+                    fx = {**fx, "repeat": min(6, int(fx.get("repeat", 3)) + 2)}
+                effects.append(fx)
+            else:
+                effects.append(fx)
+        s["effects"] = effects
     return shots
 
 
@@ -434,10 +453,14 @@ def _stretch(shots: list[dict], duration: float) -> list[dict]:
     return out
 
 
-def _draft_clips(shots, stills, work, cfg, seed, vibe, client, cancel, state=None, report=None):
+DRAFT_916 = (320, 576)  # Draft 9:16 morphs render natively in portrait (same pixel budget as 512x288)
+
+
+def _draft_clips(shots, stills, work, cfg, seed, vibe, client, cancel, state=None, report=None, size=None):
     from xenoform.cloud_morph import _local_clips
 
-    return _local_clips(shots, stills, work, cfg, seed, vibe, client=client, cancel=cancel, state=state, report=report)
+    return _local_clips(shots, stills, work, cfg, seed, vibe, client=client, cancel=cancel, state=state, report=report,
+                        size=size)
 
 
 def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg: dict, state: dict,
@@ -487,8 +510,11 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     hp = house(state, cfg)
     vertical_house = opt["aspect"] == "9:16" and str((hp.get("format") or {}).get("aspect") or "") == "9:16"
     background = state.get("still_background")
-    if background is None and vertical_house:  # the house look: black morph stills on the 9:16 cut
-        background = (hp.get("look") or {}).get("morph_background")
+    if background is None and vertical_house and (hp.get("look") or {}).get("morph_background") == "black":
+        # The house look wants morphs on black, but crushing a gradient ground (cosmic's indigo glow, liquid-gold's
+        # umber) to black cuts the glow into a dome on a flat floor. Only stills whose ground already is black get
+        # the crush; the others keep their own ground, which the portrait canvas extends.
+        background = "black" if ground_is_black(stills) else None
     if background == "black":
         from xenoform.portrait import black_stills
 
@@ -498,6 +524,10 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     engine = engine or ("ltx23" if opt["tier"] == "final" else "ltx095")
     native = opt["aspect"] == "9:16" and opt["vertical"] == "native" and engine in {"ltx23", "mock"} \
         and opt["tier"] == "final"
+    # Draft 9:16: re-lay every still whole on a portrait canvas and render the morphs in portrait, so a wide object
+    # (a ribbon, a helix) is never cropped; the old path cut a 9:16 window out of a 16:9 render.
+    native_draft = (opt["aspect"] == "9:16" and opt["tier"] != "final" and engine in {"ltx095", "mock"}
+                    and str(state.get("vertical_mode") or "").strip().lower() != "crop")  # an explicit Crop keeps the old window
     from xenoform import final_tier
 
     size = final_tier.sizes(True)["out"] if native else None
@@ -508,6 +538,11 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     notes: list[dict] = []
     report("restyle", 0.1, f"{len(render_shots)} {'Final (LTX-2.3)' if engine == 'ltx23' else 'Draft (LTX 0.9.5)'} morphs Â· "
                            f"{len(shots)} shots Â· {opt['energy']} Â· {opt['aspect']}")
+    if native_draft:
+        from xenoform.portrait import portrait_stills
+
+        stills = portrait_stills(stills, work, DRAFT_916[0], DRAFT_916[1], background=background)
+        notes.append({"native_draft": f"{DRAFT_916[0]}x{DRAFT_916[1]} portrait morphs from re-laid stills"})
     if engine == "mock":
         from xenoform.cloud_morph import _mock_clips
 
@@ -516,6 +551,8 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
 
             clips = _mock_clips(render_shots, portrait_stills(stills, work, background=state.get("still_background")), work,
                                 *final_tier.RENDER_916)
+        elif native_draft:
+            clips = _mock_clips(render_shots, stills, work, *DRAFT_916)
         else:
             clips = _mock_clips(render_shots, stills, work, 768, 432)
     elif engine == "ltx23":
@@ -533,7 +570,8 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
         clips, notes = final_clips(render_shots, stills, work, cfg, seed, vibe, client=client, cancel=cancel, report=report,
                                    draft=draft, vertical=native, state=state)
     else:
-        clips = _draft_clips(render_shots, stills, work, cfg, seed, vibe, client, cancel, state, report=report)
+        clips = _draft_clips(render_shots, stills, work, cfg, seed, vibe, client, cancel, state, report=report,
+                             size=DRAFT_916 if native_draft else None)
     if long_song:
         clips = [clips[ci] for ci in chain["assign"]]  # one entry per shot, walking the loop
     if opt["tier"] != "final" and size is None and opt["aspect"] == "9:16":
@@ -552,7 +590,9 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
                           quality="final" if engine == "ltx23" else "draft", fx=opt["fx"], overlay=opt["overlay"],
                           beats=directed.get("beats") or [], report=report, size=size, fps=fps,
                           dance_fx=look_preset, stem_orbit=opt["stem_orbit"], stem_env=stem_env, macros=m,
-                          house=hp, end_card=opt["end_card"], seed=seed)
+                          house=hp, end_card=opt["end_card"], seed=seed,
+                          palette_image=str(stills[0]["path"]) if stills else None,
+                          adaptive=str(opt.get("dance_fx") or "auto").strip().lower() == "auto")
     if made.get("look", {}).get("seconds"):
         log.info("house look took %.1fs for %d frames", made["look"]["seconds"], made["look"]["frames"])
     card = False
@@ -574,6 +614,20 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     return info
 
 
+def ground_is_black(stills: list[dict], *, luma: float = 16.0) -> bool:
+    """True when the first still's border (the ground the morph sits on) is already near black."""
+    try:
+        from xenoform.portrait import load_rgb
+
+        img = load_rgb(Path(stills[0]["path"]))
+    except Exception:
+        return False
+    h, w = img.shape[:2]
+    b = max(2, int(round(0.04 * min(h, w))))
+    border = [img[:b], img[-b:], img[:, :b], img[:, -b:]]
+    return float(sum(float(part.mean()) * part.size for part in border) / sum(part.size for part in border)) < luma
+
+
 def stills_animatic(directed: dict, state: dict, audio_path: Path, out_path: Path, work: Path, *,
                     size: tuple[int, int] = (216, 384), fps: int = 12) -> dict:
     """The Simple-mode draft: the vibe's stills hard-cut on the planned shots with the song, in a few
@@ -590,6 +644,19 @@ def stills_animatic(directed: dict, state: dict, audio_path: Path, out_path: Pat
     else:
         vibe, pool = stills_for({**state, "cut_plan": plan if plan.get("stills") else None}, len(shots) + 1)
         picks = pool[:len(shots)]
+    w, h = int(size[0]), int(size[1])
+    if h > w:  # portrait: the whole object re-laid on the house ground, as the render will be
+        from xenoform.portrait import portrait_stills
+
+        hp = house(state)
+        background = state.get("still_background")
+        if background is None and (hp.get("look") or {}).get("morph_background") == "black"                 and str((hp.get("format") or {}).get("aspect") or "") == "9:16":
+            background = "black" if ground_is_black(picks) else None  # same rule as run_simple
+        uniq = {}
+        for still in picks:
+            uniq.setdefault(str(still["path"]), still)
+        laid = {k: v for k, v in zip(uniq, portrait_stills(list(uniq.values()), work / "portrait_draft", w, h, background=background))}
+        picks = [laid[str(still["path"])] for still in picks]
     lines = []
     for shot, still in zip(shots, picks):
         path = str(still["path"]).replace("\\", "/").replace("'", "'\\''")
@@ -597,7 +664,6 @@ def stills_animatic(directed: dict, state: dict, audio_path: Path, out_path: Pat
     lines.append(f"file '{str(picks[-1]['path']).replace(chr(92), '/')}'")  # the concat demuxer needs the last file twice
     listing = work / "animatic_stills.txt"
     listing.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    w, h = int(size[0]), int(size[1])
     out_path = Path(out_path)
     tmp = out_path.with_name(out_path.stem + ".part.mp4")
     vf = (f"scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},format=yuv420p,fps={fps}")

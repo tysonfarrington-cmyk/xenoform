@@ -89,6 +89,7 @@ def test_run_simple_reuses_a_morph_loop_for_a_long_song(tmp_path, monkeypatch):
     monkeypatch.setattr(cm, "_mock_clips", fake_mock_clips)
     monkeypatch.setattr(beatfx, "compose", fake_compose)
     monkeypatch.setattr("xenoform.portrait.black_stills", lambda stills, work: stills)
+    monkeypatch.setattr("xenoform.portrait.portrait_stills", lambda stills, work, w=720, h=1280, background=None: stills)
     duration = 120.0
     directed = {"duration": duration, "beats": _beats(duration, 100)}
     state = {"vibe": "ocean", "aspect": "9:16", "quality_tier": "draft", "energy_preset": "dense", "mode": "simple"}
