@@ -54,22 +54,29 @@ def stats_sample() -> dict:
 
 
 class VramPoller(threading.Thread):
+    """Samples /system_stats; each sample is tagged ``mine`` when our prompt is the one
+    ComfyUI is executing, so other people's queued jobs don't pollute the peak."""
+
     def __init__(self, period: float = 2.0) -> None:
         super().__init__(daemon=True)
         self.period = period
         self.samples: list[dict] = []
-        self._stop = threading.Event()
+        self.job_id: str | None = None
+        self._halt = threading.Event()  # not ``_stop``: Thread.join() calls self._stop()
 
     def run(self) -> None:
-        while not self._stop.is_set():
+        while not self._halt.is_set():
             try:
-                self.samples.append(stats_sample())
+                s = stats_sample()
+                running = _get(f"{COMFY}/queue").get("queue_running", [])
+                s["mine"] = bool(self.job_id) and any(len(it) > 1 and it[1] == self.job_id for it in running)
+                self.samples.append(s)
             except Exception as e:  # ComfyUI busy or momentarily unreachable
                 self.samples.append({"t": time.time(), "error": str(e)[:80]})
-            self._stop.wait(self.period)
+            self._halt.wait(self.period)
 
     def stop(self) -> None:
-        self._stop.set()
+        self._halt.set()
 
 
 def log_excerpt(n: int = 200) -> list[str]:
@@ -107,6 +114,8 @@ def main() -> int:
     ap.add_argument("--out", required=True, help="where to save the mp4")
     ap.add_argument("--copy-desktop", action="store_true", help=f"also copy to {DESKTOP_COPY}")
     ap.add_argument("--poll", type=float, default=2.0, help="seconds between /system_stats samples")
+    ap.add_argument("--no-audio-guide", action="store_true",
+                    help="control run: drop the AddGuide/LoadAudio nodes so H3 invents its own soundtrack")
     a = ap.parse_args()
 
     out = Path(a.out).resolve()
@@ -126,7 +135,11 @@ def main() -> int:
     client = Comfy(client_info="xenoform-h3-probe", timeout=None)
     wf = client.workflows.from_file(str(GRAPH))
     wf.set_input("15", "image", client.assets.from_file(str(still)))
-    wf.set_input("16", "audio", client.assets.from_file(str(audio)))
+    if a.no_audio_guide:
+        wf.json["6"]["inputs"]["conditioning"] = ["5", 0]  # guider straight off the i2v conditioning
+        wf.json.pop("17"), wf.json.pop("16")
+    else:
+        wf.set_input("16", "audio", client.assets.from_file(str(audio)))
     if a.prompt:
         wf.set_input("5", "prompt", a.prompt)
     wf.set_input("5", "width", a.width)
@@ -143,10 +156,12 @@ def main() -> int:
         "graph": str(GRAPH), "still": str(still), "audio": str(audio),
         "width": a.width, "height": a.height, "length": a.length, "steps": a.steps, "seed": a.seed,
         "prompt": wf.json["5"]["inputs"]["prompt"], "queue_ahead": busy, "stats_before": before,
+        "audio_guide": not a.no_audio_guide,
     }
     try:
         job = client.submit(wf)
         record["job_id"] = getattr(job, "id", None) or getattr(job, "job_id", None)
+        poller.job_id = record["job_id"]
         print(f"submitted job {record['job_id']}", flush=True)
         r = job.result()
         wall = time.time() - t0
@@ -166,14 +181,19 @@ def main() -> int:
     time.sleep(2)
     after = stats_sample()
     good = [s for s in poller.samples if "vram_used_gb" in s]
-    peak = max(good, key=lambda s: s["vram_used_gb"]) if good else None
+    mine = [s for s in good if s.get("mine")] or good  # fall back to all samples if never tagged
+    peak = max(mine, key=lambda s: s["vram_used_gb"]) if mine else None
+    first_mine = next((s["t"] for s in good if s.get("mine")), None)
     record.update({
         "wall_s": round(wall, 1),
+        "queue_wait_s": round(first_mine - t0, 1) if first_mine else None,
+        "run_s": round(t0 + wall - first_mine, 1) if first_mine else None,
         "stats_after": after,
         "vram_peak_used_gb": peak["vram_used_gb"] if peak else None,
-        "torch_vram_peak_gb": max((s["torch_vram_gb"] for s in good), default=None),
-        "ram_free_min_gb": min((s["ram_free_gb"] for s in good), default=None),
+        "torch_vram_peak_gb": max((s["torch_vram_gb"] for s in mine), default=None),
+        "ram_free_min_gb": min((s["ram_free_gb"] for s in mine), default=None),
         "samples": len(poller.samples),
+        "samples_mine": len([s for s in good if s.get("mine")]),
         "log_excerpt": log_excerpt(),
     })
     if record["status"] == "ok":
@@ -184,8 +204,8 @@ def main() -> int:
             record["desktop_copy"] = str(DESKTOP_COPY)
     rec_path = out.with_suffix(".json")
     rec_path.write_text(json.dumps(record, indent=1), encoding="utf-8")
-    print(json.dumps({k: record[k] for k in ("status", "wall_s", "vram_peak_used_gb", "torch_vram_peak_gb",
-                                              "ram_free_min_gb", "output") if k in record}, indent=1))
+    print(json.dumps({k: record[k] for k in ("status", "wall_s", "queue_wait_s", "run_s", "vram_peak_used_gb",
+                                              "torch_vram_peak_gb", "ram_free_min_gb", "output") if k in record}, indent=1))
     print(f"record: {rec_path}")
     return 0 if record["status"] == "ok" else 1
 
