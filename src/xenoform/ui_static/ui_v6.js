@@ -15,27 +15,49 @@
   // payload: the four knobs/role lanes as before, plus macros.stems = {name: 0..1} for per-stem lanes
   window.XENO_MACROS=()=>{const o={},st={};for(const k in M){if(k.startsWith("stem:"))st[k.slice(5)]=M[k];else o[k]=M[k];}
     if(Object.keys(st).length)o.stems=st;if(STEMS.id)o.stems_id=STEMS.id;return o;};
-  // Stems on demand: opening "Stem reactions" asks the desk to split the current song (POST /api/stems, cached by
-  // song hash), then the lanes become one per real stem. The song id comes from app.js: window.XENO_STATE().audioId
-  // (set by /api/analyze or "demo"), or window.XENO_CURRENT_SONG(), or #easy-file[data-song]; else the bundled demo.
-  const STEMS={id:"",song:"",status:"",engine:"",names:[]};
+  // Stems by default: the desk splits every loaded song in the background (Demucs on the CPU when installed, the
+  // librosa band split otherwise) as soon as /api/analyze or /api/demo hands out its id. This status line polls
+  // GET /api/stems/for/<audio id> every 2 s and shows "splitting stems (demucs)… 40 s", then "4 stems (demucs)",
+  // and the lanes become one per real stem (XENO_SET_STEMS) without anyone opening the drawer. The song id comes
+  // from app.js: window.XENO_STATE().audioId (set by /api/analyze or "demo"), or window.XENO_CURRENT_SONG(), or
+  // #easy-file[data-song]; else the bundled demo. Opening "Stem reactions" still POSTs /api/stems (cached by song
+  // hash) for a desk without the background hook.
+  const STEMS={id:"",song:"",status:"",engine:"",names:[],seconds:0,error:"",open:false};
   const songId=()=>{try{const s=window.XENO_STATE&&window.XENO_STATE();if(s&&s.audioId)return s.audioId;}catch(e){}
     try{const c=window.XENO_CURRENT_SONG&&window.XENO_CURRENT_SONG();if(c)return typeof c==="string"?c:c.audioId||c.id||"demo";}catch(e){}
     const f=document.querySelector("#easy-file");return (f&&f.dataset.song)||"demo";};
+  const api=p=>(window.XENO_BASE||"")+p;
+  const engineLabel=e=>{e=String(e||"");return e==="bands"?"librosa":(e.split(":")[0]||"auto");};
+  const statusText=()=>STEMS.status==="done"?`${STEMS.names.length} stems (${engineLabel(STEMS.engine)})`:
+    (STEMS.status==="running"||STEMS.status==="queued")?`splitting stems (${engineLabel(STEMS.engine)})… ${Math.round(STEMS.seconds||0)} s`:
+    STEMS.status==="error"?"stems: "+(STEMS.error||"failed"):"";
   const stemsStatus=t=>{const el=document.querySelector(".xf-stems-status");if(el)el.textContent=t;};
-  async function requestStems(){const id=songId();if(STEMS.song===id&&STEMS.status==="running")return;
-    if(STEMS.song===id&&STEMS.status==="done"){stemsStatus(`${STEMS.names.length} stems (${STEMS.engine})`);return;}
-    STEMS.song=id;STEMS.status="running";stemsStatus("splitting stems…");
-    try{const api=p=>(window.XENO_BASE||"")+p;let r=await fetch(api("/api/stems"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({audio_id:id})});
-      let j=await r.json();if(!r.ok)throw new Error(j.detail||"stems failed");
-      while(j.status==="running"){await new Promise(res=>setTimeout(res,1500));if(STEMS.song!==id)return;stemsStatus(`splitting stems… (${j.engine||"auto"})`);
-        r=await fetch(api("/api/stems/"+j.id));j=await r.json();}
-      if(j.status!=="done")throw new Error(j.error||"stems failed");
-      Object.assign(STEMS,{id:j.id,status:"done",engine:j.engine,names:j.stems||[]});
-      if(STEMS.names.length)window.XENO_SET_STEMS(STEMS.names);stemsStatus(`${STEMS.names.length} stems (${STEMS.engine})`);}
-    catch(e){STEMS.status="error";stemsStatus("stems: "+e.message);}}
-  window.XENO_STEMS=()=>Object.assign({},STEMS);window.XENO_REQUEST_STEMS=requestStems;
-  document.addEventListener("toggle",e=>{const d=e.target;if(d&&d.classList&&d.classList.contains("xf-adv")&&d.open)requestStems();},true);
+  // One status answer (from the poll or the POST) for the song `id`: remember it, repaint the line, and when the
+  // split is done hand the stem names to the lanes once.
+  const applyStatus=(id,j)=>{if(STEMS.song!==id||!j)return;const s=j.status||"";
+    Object.assign(STEMS,{status:s,engine:j.engine||STEMS.engine,seconds:j.seconds||0,error:j.error||""});
+    if(s==="done"){const fresh=STEMS.id!==(j.id||"");Object.assign(STEMS,{id:j.id||"",names:j.stems||[]});
+      if(STEMS.names.length&&fresh)window.XENO_SET_STEMS(STEMS.names);}
+    stemsStatus(statusText());};
+  let idle=0;
+  async function pollStems(){const id=songId();
+    if(id!==STEMS.song){Object.assign(STEMS,{id:"",song:id,status:"",engine:"",names:[],seconds:0,error:""});idle=0;stemsStatus("");}
+    if(STEMS.status==="done"||STEMS.status==="error"||STEMS.status==="idle")return;
+    try{const r=await fetch(api("/api/stems/for/"+encodeURIComponent(id)));if(STEMS.song!==id)return;
+      const j=r.ok?await r.json():null;
+      if(!j||j.status==="none"){if(++idle>=5)STEMS.status="idle";return;}  // nothing asked for yet (a desk without the hook): the drawer's POST starts it
+      idle=0;applyStatus(id,j);}
+    catch(e){}}
+  async function requestStems(){const id=songId();
+    if(STEMS.song===id&&(STEMS.status==="running"||STEMS.status==="queued"||STEMS.status==="done")){stemsStatus(statusText());return;}
+    Object.assign(STEMS,{song:id,status:"running",engine:"",names:[],seconds:0,error:""});idle=0;stemsStatus("splitting stems…");
+    try{const r=await fetch(api("/api/stems"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({audio_id:id})});
+      const j=await r.json();if(!r.ok)throw new Error(j.detail||"stems failed");applyStatus(id,j);}  // pollStems carries on from here
+    catch(e){if(STEMS.song===id){STEMS.status="error";STEMS.error=e.message;stemsStatus("stems: "+e.message);}}}
+  window.XENO_STEMS=()=>Object.assign({},STEMS);window.XENO_REQUEST_STEMS=requestStems;window.XENO_POLL_STEMS=pollStems;
+  document.addEventListener("toggle",e=>{const d=e.target;if(!(d&&d.classList&&d.classList.contains("xf-adv")))return;
+    if(d.querySelector(".xf-lanes"))STEMS.open=d.open;if(d.open)requestStems();},true);
+  setInterval(pollStems,2000);pollStems();
   window.XENO_SET_STEMS=names=>{LANES=(names&&names.length)?lanesFor(names):LANES;
     for(const [k] of LANES)if(M[k]==null)M[k]=0.7;const s=document.querySelector(".xf-macros");s&&s.remove();mount();};
   // XENO_MACRO_SET(k, v): drive a knob ("intensity"...), a role lane ("drums") or a stem lane ("stem:Kick") from
@@ -57,7 +79,7 @@
       <input type="range" min="0" max="100" value="${pct(M[k])}" data-k="${k}" style="--c:${c};--p:${pct(M[k])}%" aria-label="${l} reaction"><output>${pct(M[k])}</output></label>`;
   const html=()=>`<section class="xf-macros" data-tour="easy-macros"><div class="xf-macros-head"><span>Knobs</span><button type="button" class="ghost" data-xf-reset>Reset</button></div>
       <div class="xf-knobs">${KNOBS.map(knob).join("")}</div>
-      <details class="xf-adv"${STEMS.status?" open":""}><summary>Stem reactions <small class="xf-stems-status">${STEMS.status==="done"?`${STEMS.names.length} stems (${STEMS.engine})`:STEMS.status==="running"?"splitting stems…":""}</small></summary><div class="xf-lanes${LANES.length>8?" xf-many":""}" data-count="${LANES.length}">${LANES.map(lane).join("")}</div></details>
+      <details class="xf-adv"${STEMS.open?" open":""}><summary>Stem reactions <small class="xf-stems-status">${statusText()}</small></summary><div class="xf-lanes${LANES.length>8?" xf-many":""}" data-count="${LANES.length}">${LANES.map(lane).join("")}</div></details>
       <details class="xf-adv xf-midi"><summary>MIDI controller</summary><div class="xf-midi-panel"></div></details></section>`;
   function paint(el,k){const v=M[k];el.setAttribute("aria-valuenow",pct(v));el.querySelector("svg").innerHTML=el.querySelector("svg defs").outerHTML+ARC(v);
     el.querySelector(".cap i").style.transform=`rotate(${-135+270*v}deg)`;el.querySelector("small").textContent=pct(v);}
@@ -69,7 +91,7 @@
   // knobs 5-8 = stem lanes 1-4, faders = drums/bass/other/vocals. "stem:N" means the Nth lane of this song.
   function midiInit(){const X=window.XenoMidi;if(!X||X._desk)return;X._desk=true;
     const laneName=n=>/^\d+$/.test(n)?(LANES[+n-1]||[])[0]||null:("stem:"+n);
-    X.init({page:"desk",toast:t=>{const el=document.querySelector(".xf-stems-status");if(el){el.textContent=t;clearTimeout(midiInit.t);midiInit.t=setTimeout(()=>{if(el.textContent===t)el.textContent="";},1800);}},
+    X.init({page:"desk",toast:t=>{const el=document.querySelector(".xf-stems-status");if(el){el.textContent=t;clearTimeout(midiInit.t);midiInit.t=setTimeout(()=>{if(el.textContent===t)el.textContent=statusText();},1800);}},
       targets:{"macro:*":(k,v)=>window.XENO_MACRO_SET(k,v),drums:v=>window.XENO_MACRO_SET("drums",v),bass:v=>window.XENO_MACRO_SET("bass",v),
         other:v=>window.XENO_MACRO_SET("other",v),vocals:v=>window.XENO_MACRO_SET("vocals",v),
         "stem:*":(n,v)=>{const k=laneName(n);if(k&&M[k]!=null)window.XENO_MACRO_SET(k,v);}}});midiMount();}

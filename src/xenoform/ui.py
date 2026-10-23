@@ -415,6 +415,12 @@ def create_app(cfg: dict | None = None):
     @app.get("/api/demo")
     def demo() -> dict:
         features = _demo_features()
+        try:  # stems by default, the demo song too
+            from xenoform.stems_api import start_background_split
+
+            start_background_split(repo_root() / "examples" / "demo.wav")
+        except Exception:
+            log.exception("background stem split (demo)")
         payload = session_payload(
             features,
             audio_id="demo",

@@ -50,7 +50,7 @@ echo "Installing Python packages into $PACK/.venv"
 # from the PyTorch index first; Demucs runs on the CPU here anyway, leaving the GPU to ComfyUI.
 if [[ "$STEMS" == "1" ]]; then
   echo "Installing Demucs for stem separation (CPU torch; skip it with --no-stems)"
-  if ! { "$PACK/.venv/bin/pip" install torch --index-url https://download.pytorch.org/whl/cpu          && "$PACK/.venv/bin/pip" install -e "$PACK[stems]"; }; then
+  if ! { "$PACK/.venv/bin/pip" install torch --index-url https://download.pytorch.org/whl/cpu && "$PACK/.venv/bin/pip" install -e "$PACK[stems]"; }; then
     echo "Demucs did not install. The desk still works: stems come from the librosa band split."
     echo "Try again later with: $PACK/.venv/bin/pip install demucs"
   fi

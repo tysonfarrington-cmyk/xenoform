@@ -2,6 +2,10 @@
 
 ## 0.3.1 (23 October 2026)
 
+- Story plan (`dense.story_plan`): a full song is cut by its sections. Intro and verses breathe (two bars a shot, real-time morphs), builds and choruses drive (a bar a shot, downbeat punches), the drop punches and runs half bars for eight bars, the outro eases out; the analyser's slivers are merged into passages first.
+- Premium transitions at section switches: the vibe's recommendation per boundary (drop / switch / silence), capped at two of a kind, rendered inside compose over a window centred on the cut so the beat sync never moves.
+- Re-cut from the cached morphs: `POST /api/jobs/{id}/recut` and the Re-cut button on the result screen re-compose with new knobs, look, orbit or beat FX without the GPU.
+- Stems by default: the split starts in the background when a song is analysed, so the first Make is already stem-reactive (Demucs when installed, the band split otherwise).
 - The knobs (Intensity, Speed, Chaos, Glow) and the Look chips sit on the first screen of Simple mode. Chaos now shapes the cut: punches scale with it, stutters, holds and skips vanish when calm and double when wild, and the subject's orbit swing follows it.
 - The Auto look takes its colours from the vibe's own stills (`dance_fx.palette_tints`): shadows, highlights, edge tint, washes and flashes follow the vibe's palette instead of a fixed blue cast. A named preset keeps its colours.
 - Draft 9:16 renders the morphs natively in portrait (320x576) from stills re-laid whole on black, so wide objects are not clipped by a 9:16 crop of a 16:9 render; the stills draft does the same.

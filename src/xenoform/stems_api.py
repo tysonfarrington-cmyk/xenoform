@@ -1,9 +1,14 @@
 """Stems and MIDI routes for the desk (``xenoform.ui`` includes ``router``).
 
-Stems are split only when asked for (the desk's "Stem reactions" drawer or the VJ page), never on
-every Make. Results are cached under ``work/ui/stems/<song_hash>/`` so a second request is instant:
+Stems split by default: ``xenoform.ui`` calls ``start_background_split(path)`` from /api/analyze and
+/api/demo, so a song's stems are on their way (Demucs on the CPU when installed, the librosa band split
+otherwise) the moment it loads and the first Make is stem-reactive. One thread per song hash, results
+cached under ``work/ui/stems/<song_hash>/`` so a second request, or a second desk session, is instant:
 
-    POST /api/stems            {"audio_id": "demo"} | {"path": "song.wav"}  -> {"id", "status", ...}
+    start_background_split(song)   -> {"id", "status": queued|running|done|error, "engine", "seconds", "path", "error"}
+    split_status(song)             -> the same, or {"status": "none"} when nothing asked for this song yet
+    GET  /api/stems/for/<audio_id> that status for a desk song id (the "Stem reactions" line polls it)
+    POST /api/stems            {"audio_id": "demo"} | {"path": "song.wav"}  -> {"id", "status", ...} (starts it too)
     GET  /api/stems/<id>       status, stem names, engine, envelope URL
     GET  /api/stems/<id>/envelopes.json   stem_react.save_envelopes output (vj.html ``?stems=``)
 
@@ -20,6 +25,7 @@ import asyncio
 import hashlib
 import json
 import logging
+import os
 import re
 import threading
 import time
@@ -36,9 +42,19 @@ log = logging.getLogger("xenoform")
 router = APIRouter()
 
 _ID_RE = re.compile(r"[0-9a-f]{16}")
+_SONG_ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}")  # a desk audio id: "demo" or what /api/analyze hands out
 _AUDIO_SUFFIXES = {".wav", ".mp3", ".flac", ".ogg", ".aiff", ".aif", ".m4a"}
-_JOBS: dict[str, dict] = {}  # song hash -> {"status", "engine", "stems", "error", "dir", "song"}
+STATUSES = ("none", "queued", "running", "done", "error")
+# The split registry, one entry per song hash whichever asked first (the desk's hook, POST /api/stems, the VJ page):
+# {"id", "status": queued|running|done|error, "engine", "seconds", "path", "error", "song", "stems", "frames", "fps",
+#  "roles", "started", "running_since"}. ``seconds`` is the elapsed time while it waits or runs, the wall time when done.
+_JOBS: dict[str, dict] = {}
+_THREADS: dict[str, threading.Thread] = {}
 _LOCK = threading.Lock()
+# One split at a time: Demucs on the CPU already uses every core, so two at once only thrash; the second waits "queued".
+_SLOT = threading.Semaphore(1)
+_HASHES: dict[str, tuple[int, int, str]] = {}  # path -> (size, mtime_ns, hash): status polls do not re-read the song
+_PRIVATE = ("dir", "path", "song_path", "started", "running_since")  # registry keys the routes do not send
 
 
 # ---------------------------------------------------------------- stems
@@ -51,12 +67,21 @@ def stems_root() -> Path:
 
 
 def song_hash(song: str | Path) -> str:
-    """16 hex chars from the audio bytes, so the same file (any name) shares one cache folder."""
+    """16 hex chars from the audio bytes, so the same file (any name) shares one cache folder. Remembered per
+    path (size and mtime), so the desk's status polls do not read the song again."""
+    p = Path(song)
+    st = p.stat()
+    key = str(p.resolve())
+    hit = _HASHES.get(key)
+    if hit and hit[0] == st.st_size and hit[1] == st.st_mtime_ns:
+        return hit[2]
     h = hashlib.blake2b(digest_size=8)
-    with open(song, "rb") as f:
+    with open(p, "rb") as f:
         for chunk in iter(lambda: f.read(1 << 20), b""):
             h.update(chunk)
-    return h.hexdigest()
+    digest = h.hexdigest()
+    _HASHES[key] = (st.st_size, st.st_mtime_ns, digest)
+    return digest
 
 
 def stems_json_path(song: str | Path) -> Path:
@@ -80,7 +105,8 @@ def stems_path_for(song: str | Path | None, *, build: bool = False, engine: str 
 
 
 def run_split(song: Path, *, engine: str = "auto", fps: int = 24) -> dict:
-    """Split ``song`` and write ``work/ui/stems/<hash>/{stems.json, *.wav}``. Cached by song hash."""
+    """Split ``song`` and write ``work/ui/stems/<hash>/{stems.json, *.wav}``. Cached by song hash. Blocking;
+    the desk uses ``start_background_split`` instead."""
     song = Path(song)
     sid = song_hash(song)
     folder = stems_root() / sid
@@ -88,16 +114,145 @@ def run_split(song: Path, *, engine: str = "auto", fps: int = 24) -> dict:
     if out.is_file():
         rec = json.loads(out.read_text(encoding="utf-8"))
         return {"id": sid, "status": "done", "cached": True, "path": str(out), "engine": rec.get("engine"),
-                "stems": rec.get("stems") or [], "frames": rec.get("frames", 0), "fps": rec.get("fps", fps)}
+                "stems": rec.get("stems") or [], "frames": rec.get("frames", 0), "fps": rec.get("fps", fps),
+                "seconds": rec.get("seconds")}
     t0 = time.monotonic()
     stems = stem_react.split(song, folder, engine=engine)
     env = stem_react.envelopes(stems, fps=fps)
     env["song"] = str(song)
     env["files"] = {k: str(v) for k, v in stems.items() if k != "engine"}
     env["seconds"] = round(time.monotonic() - t0, 2)
-    stem_react.save_envelopes(env, out)
+    tmp = out.with_suffix(".json.part")  # written whole, then moved into place, so a status poll never reads half a file
+    stem_react.save_envelopes(env, tmp)
+    os.replace(tmp, out)
     return {"id": sid, "status": "done", "cached": False, "path": str(out), "engine": env.get("engine"),
             "stems": env.get("stems") or [], "frames": env.get("frames", 0), "fps": fps, "seconds": env["seconds"]}
+
+
+def _engine(value) -> str:
+    engine = str(value or "auto")
+    if engine == "librosa":
+        engine = "bands"
+    if engine not in stem_react.ENGINES:
+        raise ValueError(f"engine must be one of {', '.join(stem_react.ENGINES)}")
+    return engine
+
+
+def _fps(value) -> int:
+    try:
+        return max(1, min(120, int(value or 24)))
+    except (TypeError, ValueError):
+        return 24
+
+
+def _snapshot(job: dict) -> dict:
+    """A copy of a registry entry, with the elapsed seconds filled in while it waits or runs."""
+    j = dict(job)
+    if j.get("status") in ("queued", "running"):
+        j["seconds"] = round(time.time() - (j.get("running_since") or j.get("started") or time.time()), 1)
+    return j
+
+
+def _done_from_file(sid: str, out: Path) -> dict:
+    rec = json.loads(out.read_text(encoding="utf-8"))
+    return {"id": sid, "status": "done", "engine": rec.get("engine"), "stems": rec.get("stems") or [],
+            "frames": rec.get("frames", 0), "fps": rec.get("fps", 24), "roles": rec.get("roles") or {},
+            "seconds": rec.get("seconds"), "path": str(out), "error": None,
+            "song": Path(str(rec.get("song") or "")).name}
+
+
+def status_for_id(sid: str) -> dict:
+    """The registry entry for a song hash (elapsed seconds filled in); ``done`` from the cache when an earlier
+    session split it; ``{"status": "none"}`` when nothing has asked for this song yet."""
+    out = stems_root() / sid / "stems.json"
+    with _LOCK:
+        job = _JOBS.get(sid)
+        if job is not None:
+            st = job.get("status")
+            if st in ("queued", "running") or (st == "done") == out.is_file():
+                return _snapshot(job)
+    if out.is_file():
+        try:
+            done = _done_from_file(sid, out)
+        except Exception as exc:  # a stale or half-written file from an older desk
+            return {"id": sid, "status": "error", "engine": None, "seconds": None, "path": str(out),
+                    "error": f"stems.json could not be read: {exc}"}
+        with _LOCK:
+            _JOBS[sid] = done
+        return dict(done)
+    return {"id": sid, "status": "none", "engine": None, "seconds": None, "path": None, "error": None}
+
+
+def split_status(song: str | Path | None) -> dict:
+    """The background split's status for an audio file (see ``start_background_split``): ``status`` is ``none``
+    (nothing asked for yet), ``queued``, ``running`` (``seconds`` = elapsed so far), ``done`` (``path`` = its
+    stems.json, ``stems``, ``engine``, ``seconds`` = the split's wall time) or ``error`` (``error`` = why)."""
+    p = Path(song) if song else None
+    if p is None or not p.is_file():
+        return {"id": None, "status": "error", "engine": None, "seconds": None, "path": None,
+                "error": "no such audio file", "song": p.name if p else ""}
+    return status_for_id(song_hash(p))
+
+
+def _update(sid: str, **fields) -> bool:
+    """Merge ``fields`` into the registry entry for ``sid``; False when the entry is gone (a cleared registry)."""
+    with _LOCK:
+        job = _JOBS.get(sid)
+        if job is None:
+            return False
+        job.update(fields)
+        return True
+
+
+def _run_job(sid: str, song: Path, engine: str, fps: int) -> None:
+    with _SLOT:  # "queued" until the slot is free
+        resolved = engine if engine != "auto" else ("demucs" if stem_react.demucs_available() else "bands")
+        if not _update(sid, status="running", engine=resolved, running_since=time.time()):
+            return
+        t0 = time.monotonic()
+        try:
+            rec = run_split(song, engine=engine, fps=fps)
+            env = json.loads(Path(rec["path"]).read_text(encoding="utf-8"))
+            seconds = rec.get("seconds") or round(time.monotonic() - t0, 2)
+            _update(sid, status="done", engine=rec["engine"], stems=rec["stems"], frames=rec["frames"], fps=rec["fps"],
+                    roles=env.get("roles") or {}, seconds=seconds, path=rec["path"], error=None)
+            log.info("stems %s: %d stems (%s) for %s in %.1f s", sid, len(rec["stems"]), rec["engine"], song.name, seconds)
+        except Exception as exc:
+            log.exception("stems %s failed", sid)
+            _update(sid, status="error", error=str(exc) or exc.__class__.__name__, seconds=round(time.monotonic() - t0, 2))
+        finally:
+            _THREADS.pop(sid, None)
+
+
+def start_background_split(song: str | Path, *, engine: str = "auto", fps: int = 24) -> dict:
+    """Split ``song`` on a background thread and return the status at once (non-blocking). The desk's
+    /api/analyze and /api/demo call ``stems_api.start_background_split(path)`` so the stems are ready, or on
+    their way, by the first Make. Idempotent: one thread per song hash; while that is queued or running a second
+    call returns the same status, and a song whose ``stems.json`` is cached is ``done`` without a thread. Never
+    raises: a missing or unreadable file gives ``{"status": "error", ...}``, so the hook cannot fail an upload."""
+    try:
+        p = Path(song)
+        engine = _engine(engine)
+        fps = _fps(fps)
+        if not p.is_file():
+            raise FileNotFoundError(f"no audio file at {p}")
+        sid = song_hash(p)
+    except Exception as exc:
+        log.warning("stems: cannot split %s: %s", song, exc)
+        return {"id": None, "status": "error", "engine": engine, "seconds": None, "path": None,
+                "error": str(exc) or exc.__class__.__name__, "song": Path(str(song)).name}
+    st = status_for_id(sid)
+    if st["status"] in ("queued", "running", "done"):
+        return st
+    with _LOCK:
+        job = _JOBS.get(sid)
+        if job and job.get("status") in ("queued", "running"):  # a race with another caller: theirs runs
+            return _snapshot(job)
+        _JOBS[sid] = job = {"id": sid, "status": "queued", "engine": engine, "seconds": 0.0, "path": None, "error": None,
+                            "song": p.name, "song_path": str(p), "fps": fps, "stems": [], "started": time.time()}
+        _THREADS[sid] = t = threading.Thread(target=_run_job, args=(sid, p, engine, fps), daemon=True, name=f"stems-{sid}")
+    t.start()
+    return _snapshot(job)
 
 
 def resolve_song(body: dict) -> Path:
@@ -122,64 +277,54 @@ def resolve_song(body: dict) -> Path:
     return Path(p)
 
 
+def _public(st: dict, *, legacy: bool = False) -> dict:
+    """What the routes send: the status without local paths, plus ``envelopes`` and ``count`` when done.
+    ``legacy`` reports ``queued`` as ``running`` (with ``"queued": true``) for POST /api/stems and
+    GET /api/stems/<id>, whose older clients (vj.html) only keep polling while the status is ``running``."""
+    j = {k: v for k, v in st.items() if k not in _PRIVATE}
+    if j.get("status") == "done" and j.get("id"):
+        j["envelopes"] = f"/api/stems/{j['id']}/envelopes.json"
+        j["count"] = len(j.get("stems") or [])
+    if legacy and j.get("status") == "queued":
+        j["status"], j["queued"] = "running", True
+    return j
+
+
 def _job_public(sid: str) -> dict:
-    with _LOCK:
-        job = dict(_JOBS.get(sid) or {})
-    if not job:
-        out = stems_root() / sid / "stems.json"
-        if out.is_file():
-            rec = json.loads(out.read_text(encoding="utf-8"))
-            job = {"status": "done", "engine": rec.get("engine"), "stems": rec.get("stems") or [],
-                   "frames": rec.get("frames", 0), "fps": rec.get("fps", 24), "roles": rec.get("roles") or {}}
-        else:
-            raise HTTPException(404, "No stems with that id.")
-    job["id"] = sid
-    if job.get("status") == "done":
-        job["envelopes"] = f"/api/stems/{sid}/envelopes.json"
-        job["count"] = len(job.get("stems") or [])
-    job.pop("dir", None)
-    return job
-
-
-def _run_job(sid: str, song: Path, engine: str, fps: int) -> None:
-    try:
-        rec = run_split(song, engine=engine, fps=fps)
-        env = json.loads(Path(rec["path"]).read_text(encoding="utf-8"))
-        with _LOCK:
-            _JOBS[sid].update({"status": "done", "engine": rec["engine"], "stems": rec["stems"], "frames": rec["frames"],
-                               "fps": rec["fps"], "roles": env.get("roles") or {}, "seconds": rec.get("seconds")})
-    except Exception as exc:
-        log.exception("stems %s failed", sid)
-        with _LOCK:
-            _JOBS[sid].update({"status": "error", "error": str(exc) or exc.__class__.__name__})
+    st = status_for_id(sid)
+    if st["status"] == "none":
+        raise HTTPException(404, "No stems with that id.")
+    return _public(st, legacy=True)
 
 
 @router.post("/api/stems")
 def stems_start(body: dict | None = None) -> dict:
+    """Start (or find) the split for a song; the "Stem reactions" drawer and the VJ page call this. A song
+    already split answers ``done`` at once with ``cached: true``."""
     body = body or {}
     song = resolve_song(body)
-    engine = str(body.get("engine") or "auto")
-    if engine == "librosa":
-        engine = "bands"
-    if engine not in stem_react.ENGINES:
-        raise HTTPException(400, f"engine must be one of {', '.join(stem_react.ENGINES)}")
     try:
-        fps = max(1, min(120, int(body.get("fps") or 24)))
-    except (TypeError, ValueError):
-        fps = 24
-    sid = song_hash(song)
-    if (stems_root() / sid / "stems.json").is_file():
-        with _LOCK:
-            _JOBS.pop(sid, None)
-        return {**_job_public(sid), "cached": True}
-    with _LOCK:
-        job = _JOBS.get(sid)
-        if job and job.get("status") == "running":
-            return {**job, "id": sid}
-        _JOBS[sid] = {"status": "running", "engine": engine, "stems": [], "song": song.name, "started": time.time()}
-    threading.Thread(target=_run_job, args=(sid, song, engine, fps), daemon=True, name=f"stems-{sid}").start()
-    return {"id": sid, "status": "running", "engine": engine, "song": song.name,
-            "engines": stem_react.engines_available()}
+        engine = _engine(body.get("engine"))
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    fps = _fps(body.get("fps"))
+    cached = (stems_root() / song_hash(song) / "stems.json").is_file()
+    st = start_background_split(song, engine=engine, fps=fps)
+    out = _public(st, legacy=True)
+    out["cached"] = bool(cached and st.get("status") == "done")
+    out["engines"] = stem_react.engines_available()
+    return out
+
+
+@router.get("/api/stems/for/{audio_id}")
+def stems_for_song(audio_id: str) -> dict:
+    """The background split's status for a desk song id ("demo" or the id /api/analyze handed out) without
+    starting one: {"status": none|queued|running|done|error, "id", "engine", "seconds", "error", ...} and, when
+    done, "stems", "count", "envelopes". The desk's "Stem reactions" line polls this every couple of seconds."""
+    if not _SONG_ID_RE.fullmatch(audio_id):
+        raise HTTPException(400, "bad song id")
+    song = resolve_song({"audio_id": audio_id})
+    return {**_public(split_status(song)), "audio_id": audio_id}
 
 
 @router.get("/api/stems/{sid}")

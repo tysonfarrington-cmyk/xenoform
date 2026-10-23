@@ -193,3 +193,23 @@ def test_defaults_demo_json_lives_in_configs_and_mirrors_the_house_profile():
     assert not (root / "config").exists(), "config/ was folded into configs/"
     data = json.loads((root / "configs" / "defaults_demo.json").read_text(encoding="utf-8"))
     assert data["house"] == DEMO_HOUSE == load_config()["house"]
+
+
+def test_installers_ship_demucs_by_default_with_an_opt_out():
+    """Stems by default: install.ps1 / install.sh add the `stems` extra (Demucs, a CPU torch wheel) after the package
+    unless told not to; install.bat passes the switch through; CI stays light."""
+    import tomllib
+
+    root = Path(__file__).resolve().parents[1]
+    ps1 = (root / "install.ps1").read_text(encoding="utf-8")
+    sh = (root / "install.sh").read_text(encoding="utf-8")
+    bat = (root / "install.bat").read_text(encoding="utf-8")
+    assert "[switch]$NoStems" in ps1 and "[stems]" in ps1 and "--no-deps -e $Pack" in ps1
+    assert ps1.index("--no-deps -e $Pack") < ps1.index("[stems]")
+    assert "--no-stems" in sh and "[stems]" in sh and "download.pytorch.org/whl/cpu" in sh and "--link-nodes" in sh
+    assert sh.index("--no-deps -e") < sh.index("[stems]")
+    assert "%*" in bat
+    extras = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))["project"]["optional-dependencies"]
+    assert extras["stems"] == ["demucs>=4.0"]
+    ci = (root / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    assert "stems" not in ci and "demucs" not in ci
