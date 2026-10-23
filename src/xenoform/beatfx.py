@@ -30,6 +30,11 @@ from typing import Callable, Iterable
 
 import numpy as np
 
+try:  # OpenCV is a dependency since 0.3.0; the numpy paths below stay as the fallback
+    import cv2
+except Exception:  # pragma: no cover
+    cv2 = None
+
 log = logging.getLogger("xenoform.beatfx")
 
 FPS = 24
@@ -208,6 +213,10 @@ def _resize_f(frame: np.ndarray, w: int, h: int) -> np.ndarray:
     sh, sw = frame.shape[:2]
     if (sw, sh) == (w, h):
         return frame.astype(np.float32)
+    if cv2 is not None:  # 20-40x the numpy path; area when shrinking, bilinear when growing
+        inter = cv2.INTER_AREA if w * h < sw * sh else cv2.INTER_LINEAR
+        out = cv2.resize(np.ascontiguousarray(frame, dtype=np.float32), (int(w), int(h)), interpolation=inter)
+        return out.reshape(h, w, *frame.shape[2:]) if frame.ndim == 3 and out.ndim == 2 else out
     if frame.ndim == 3 and sh * sw > 300_000:  # big frames: the C implementation when scipy is around
         try:
             from scipy.ndimage import zoom
@@ -240,12 +249,22 @@ def reframe(frame: np.ndarray, aspect: str, centre: tuple[float, float], w: int,
 def _blur(img: np.ndarray, factor: int = 8) -> np.ndarray:
     h, w = img.shape[:2]
     sh, sw = max(1, h // factor), max(1, w // factor)
+    if cv2 is not None:
+        f = np.ascontiguousarray(img, dtype=np.float32)
+        small = cv2.resize(f, (sw, sh), interpolation=cv2.INTER_AREA)
+        out = cv2.resize(small, (w, h), interpolation=cv2.INTER_LINEAR)
+        return out.reshape(h, w, *img.shape[2:]) if img.ndim == 3 and out.ndim == 2 else out
     small = img[: sh * factor, : sw * factor].reshape(sh, factor, sw, factor, -1).mean(axis=(1, 3))
     return resize(np.clip(small, 0, 255).astype(np.uint8), w, h).astype(np.float32)
 
 
 def _edges(img: np.ndarray) -> np.ndarray:
     g = img.mean(axis=2)
+    if cv2 is not None:  # Sobel 3x3 is 4x the central difference the numpy path takes
+        g32 = np.ascontiguousarray(g, dtype=np.float32)
+        gx = cv2.Sobel(g32, cv2.CV_32F, 1, 0, ksize=3) * 0.25
+        gy = cv2.Sobel(g32, cv2.CV_32F, 0, 1, ksize=3) * 0.25
+        return np.clip(np.hypot(gx, gy) / 90.0, 0, 1)[..., None]
     gx = np.zeros_like(g)
     gy = np.zeros_like(g)
     gx[:, 1:-1] = g[:, 2:] - g[:, :-2]
@@ -343,6 +362,9 @@ def resolve_dance_preset(choice, vibe: str | None = None, house: dict | None = N
 
 LOOK_SHORT_SIDE = 432        # dance_fx working size (short side) with OpenCV: Final 1080x1920 runs at 540x960
 LOOK_SHORT_SIDE_NUMPY = 240  # without OpenCV the scipy path is slower: 432x768 works at 216x384, 1080x1920 at 270x480
+# The look is low-frequency (glows, grades, trails), so Draft runs it at a quarter of the frame (540x960 -> 270x480)
+# and Final at a ninth (1080x1920 -> 360x640); the structure stays at full resolution (see _apply_at_working_size).
+LOOK_CAP = {"draft": 270, "final": 360}
 
 
 def _apply_at_working_size(fx, frame: np.ndarray, d: dict, cap: int) -> np.ndarray:
@@ -378,8 +400,9 @@ class LookPass:
     def __init__(self, *, dance_fx: str | None = None, stem_orbit: bool | None = None, stem_env: dict | None = None,
                  macros: dict | None = None, house: dict | None = None, beats: Iterable[float] = (), fps: int | None = None,
                  shots: int = 1, end_card: bool = False, seed: int = 0, palette_image: str | None = None,
-                 adaptive: bool = False):
+                 adaptive: bool = False, quality: str = "draft"):
         self.house = house_profile(house)
+        self.cap = LOOK_CAP.get(str(quality or "draft"), LOOK_CAP["draft"])
         # Auto: the preset's colours follow the vibe's own palette (palette_image is one of its stills).
         self.adaptive = bool(adaptive)
         self.tints: dict = {}
@@ -463,7 +486,7 @@ class LookPass:
             if ramp > 0 and k >= self.n - ramp:
                 self.fx.p["invert_floor"] = float(np.clip((k - (self.n - ramp) + 1) / ramp, 0.0, 1.0))
             d = D.drive_from_env(self.env, t, self.beats, self.gains())
-            frame = _apply_at_working_size(self.fx, frame, d, LOOK_SHORT_SIDE if D.cv2 is not None else LOOK_SHORT_SIDE_NUMPY)
+            frame = _apply_at_working_size(self.fx, frame, d, self.cap if D.cv2 is not None else LOOK_SHORT_SIDE_NUMPY)
         self.seconds += time.perf_counter() - t_start; self.frames += 1
         return frame
 
@@ -540,7 +563,7 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
     beats = [float(b) for b in beats]
     look = LookPass(dance_fx=dance_fx, stem_orbit=stem_orbit, stem_env=stem_env, macros=macros, house=house,
                     beats=beats, fps=fps, shots=len(shots), end_card=end_card, seed=seed, palette_image=palette_image,
-                    adaptive=adaptive)
+                    adaptive=adaptive, quality=quality)
     env = envelopes(audio_path, total, fps=fps) if (fx or look.active) else None
     if look.active and not look.env:
         look.env = mix_stem_env(env, beats, fps)
