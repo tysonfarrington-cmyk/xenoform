@@ -50,14 +50,15 @@ SHOT_BUDGET_MAX = 240
 CLIP_BUDGET = (12, 30)        # unique morph renders in a music-video cut (min, max)
 CLIP_SECONDS_PER = 10.0       # one unique morph per ten seconds of song
 LONG_SONG_S = 45.0            # above this the chain reuse kicks in (the no-repeat guardrail is for short clips)
-COMPOSE_S_PER_FRAME = {"draft": 0.12, "final": 0.22}  # the house look on the CPU, per output frame (3080 Ti box)
+COMPOSE_S_PER_FRAME = {"draft": 0.2, "final": 0.3}  # measured: 1440 frames at 540x960 composed in 285 s (look pass 155 s)
 
 # ---- morph count: "auto" (from clip length + BPM) or a fixed number of forms
 MORPH_SLIDER = (1, 40)      # the desk slider; the number box allows up to MORPH_MAX
 MORPH_MAX = 120
 MIN_SLOT_S = 0.3            # a morph never gets less screen time than this
 # measured on an RTX 3080 Ti 12 GB (ComfyUI shared, 2 s renders): seconds per morph and peak VRAM
-COST = {"draft": {"s": 35.0, "vram_gb": 7.5}, "final": {"s": 110.0, "vram_gb": 11.2},
+# draft: measured 23 Oct 2026, 12 four-second morphs in 122 s warm on a 3080 Ti (about 10 s each); 12 s per 2 s morph keeps a margin
+COST = {"draft": {"s": 12.0, "vram_gb": 7.5}, "final": {"s": 110.0, "vram_gb": 11.2},
         "final_916": {"s": 140.0, "vram_gb": 11.4}, "preview": {"s": 0.5, "vram_gb": 0.0}}
 
 
