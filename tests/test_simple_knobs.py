@@ -21,7 +21,7 @@ DEMO = ROOT / "examples" / "demo.wav"
 
 def test_knobs_and_look_sit_on_the_first_screen():
     assert 'class="panel span simple-knobs-panel"' in APP and '<div class="simple-knobs"></div>' in APP
-    assert APP.count('lookRow(easy.danceFx || "auto", "easy-look")') == 1  # once, on the front, not in the drawer
+    assert APP.count('lookRow(easy.danceFx || "auto", "easy-look")') == 2  # the front screen and the result screen, not the drawer
     assert 'document.querySelector(".simple-knobs")' in V6 and "<span>Knobs</span>" in V6
     assert 'title="${hint||l}"' in V6 and "punches, stutters and orbit swing" in V6
 

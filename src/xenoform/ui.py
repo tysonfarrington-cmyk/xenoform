@@ -483,6 +483,14 @@ def create_app(cfg: dict | None = None):
         with _LOCK:
             _AUDIO[audio_id] = dest
             _FEATURES[audio_id] = features
+        try:  # stems by default: split in the background now, so the first Make is already stem-reactive
+            from xenoform import stems_api as _stems
+
+            starter = getattr(_stems, "start_background_split", None)
+            if starter:
+                starter(dest)
+        except Exception:
+            log.exception("background stem split")
         title = Path(file.filename or "Song").stem
         payload = session_payload(
             features,
@@ -593,6 +601,49 @@ def create_app(cfg: dict | None = None):
             etas=eta_table(),
             morph_cap=cap,
         )
+
+    @app.post("/api/jobs/{job_id}/recut")
+    def recut_job(job_id: str, body: dict | None = None) -> dict:
+        """Re-compose a finished Simple video from its cached morphs with new knobs / look / orbit (no GPU)."""
+        from xenoform.dense import recut_from_cache
+
+        body = body or {}
+        with _LOCK:
+            job = _JOBS.get(job_id)
+        if job is None:
+            raise HTTPException(404, "No such video.")
+        if job.get("status") == "running":
+            raise HTTPException(409, "That video is still rendering.")
+        folder = work_dir() / "jobs" / job_id
+        if not (folder / "simple" / "simple.json").is_file():
+            raise HTTPException(400, "This video has no cached morphs to re-cut.")
+        overrides = {k: body.get(k) for k in ("macros", "dance_fx", "stem_orbit", "beat_fx", "end_card", "beat_overlay") if k in body}
+        with _LOCK:
+            job.update({"status": "running", "stage": "assemble", "progress": 0.05, "detail": "Re-cutting from the cached morphs",
+                        "error": None})
+
+        def on_progress(stage: str, frac: float, detail: str) -> None:
+            with _LOCK:
+                job.update({"stage": stage, "progress": float(frac), "detail": detail})
+
+        def run() -> None:
+            try:
+                rec = recut_from_cache(folder, overrides, report=on_progress, cfg=cfg)
+                with _LOCK:
+                    version = int(job.get("video_version") or 0) + 1
+                    job.update({"status": "done", "stage": "done", "progress": 1.0, "video_version": version,
+                                "video": f"/api/jobs/{job_id}/video?v={version}", "detail": "Re-cut ready",
+                                "look": rec.get("look"), "recuts": rec.get("recuts")})
+            except Exception as exc:
+                log.exception("recut %s", job_id)
+                from xenoform.errors import plain_error
+
+                with _LOCK:
+                    job.update({"status": "done", "stage": "done", "progress": 1.0, "detail": f"Re-cut did not run. {plain_error(exc)}",
+                                "error": None})
+
+        threading.Thread(target=run, name=f"recut-{job_id}", daemon=True).start()
+        return {"id": job_id, "status": "running"}
 
     @app.post("/api/morph/board")
     def morph_board(body: dict) -> dict:

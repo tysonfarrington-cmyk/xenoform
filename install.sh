@@ -1,13 +1,18 @@
 #!/usr/bin/env bash
 # Install Xenoform into its own .venv. It does not pip-install into ComfyUI.
 # Pass --link-nodes to symlink the pack into ComfyUI/custom_nodes. Off unless you ask.
+# Demucs (stem separation, with a CPU torch wheel) is installed by default; pass --no-stems to skip it.
 set -euo pipefail
 
 PACK="$(cd "$(dirname "$0")" && pwd)"
 LINK=0
-if [[ "${1:-}" == "--link-nodes" ]]; then
-  LINK=1
-fi
+STEMS=1
+for arg in "$@"; do
+  case "$arg" in
+    --link-nodes) LINK=1 ;;
+    --no-stems) STEMS=0 ;;
+  esac
+done
 
 find_python312() {
   if command -v python3.12 >/dev/null 2>&1; then
@@ -40,6 +45,18 @@ echo "Installing Python packages into $PACK/.venv"
 "$PACK/.venv/bin/python" -m pip install -r "$PACK/requirements.txt"
 # The package itself (so `python -m xenoform` and the comfy-api-proxy entry point resolve), mirroring install.ps1.
 "$PACK/.venv/bin/pip" install --no-deps -e "$PACK"
+# Stems split by default (every loaded song, in the background), so the first Make is stem-reactive. Demucs is the
+# `stems` extra in pyproject.toml. On Linux the PyPI torch wheel carries CUDA (several GB), so the CPU wheel comes
+# from the PyTorch index first; Demucs runs on the CPU here anyway, leaving the GPU to ComfyUI.
+if [[ "$STEMS" == "1" ]]; then
+  echo "Installing Demucs for stem separation (CPU torch; skip it with --no-stems)"
+  if ! { "$PACK/.venv/bin/pip" install torch --index-url https://download.pytorch.org/whl/cpu          && "$PACK/.venv/bin/pip" install -e "$PACK[stems]"; }; then
+    echo "Demucs did not install. The desk still works: stems come from the librosa band split."
+    echo "Try again later with: $PACK/.venv/bin/pip install demucs"
+  fi
+else
+  echo "Skipping Demucs (--no-stems). Stems come from the librosa band split."
+fi
 
 if [[ "$LINK" == "1" ]]; then
   COMFY="${COMFYUI_DIR:-}"

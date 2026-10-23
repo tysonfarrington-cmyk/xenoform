@@ -32,7 +32,8 @@ dev = ["pytest>=8", "httpx>=0.27"]
 agent = ["mcp>=2.3,<3"]
 # MIDI controller input for the live/VJ page.
 midi = ["mido>=1.3", "python-rtmidi>=1.5", "websockets>=12"]
-# Demucs stem separation (htdemucs, MIT); without it stem_react falls back to a librosa split.
+# Demucs stem separation (htdemucs, MIT). install.ps1 / install.sh install it by default (-NoStems / --no-stems
+# skip it); without it stem_react falls back to a librosa band split. Demucs 4.1 pulls torch (a CPU wheel is enough).
 stems = ["demucs>=4.0"]
 
 [project.scripts]

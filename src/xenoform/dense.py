@@ -393,6 +393,170 @@ def dense_plan(duration: float, beats: list, drop: float | None = None, max_shot
     return {"name": f"dense ({count} forms)" if count else "dense (auto)", "drop": round(drop, 4), "shots": shots}
 
 
+# ---- the story plan: a full song has verses that breathe, choruses that drive and one drop that punches
+STORY_BEATS = {  # beats per shot by section label; the drop's first bars run at half bars
+    "intro": 8, "calm": 8, "sustain": 8, "build": 4, "release": 4, "drop": 2, "drop_late": 4, "outro": 8,
+}
+STORY_SPEED = {"intro": 1.0, "calm": 1.0, "sustain": 1.1, "build": 1.25, "release": 1.25, "drop": 2.5, "drop_late": 1.6, "outro": 1.0}
+DROP_HALF_BARS = 8  # bars after the drop that cut on the half bar
+
+
+def _story_roles(sections: list[dict], duration: float, min_len: float = 6.0) -> list[dict]:
+    """Sections with a story role: intro / calm / sustain / build / drop / release / outro, from the
+    analysis labels and each section's level against the song's loudest."""
+    rows = [dict(sec) for sec in sections if float(sec.get("end", 0)) > float(sec.get("start", 0))]
+    if not rows:
+        return [{"start": 0.0, "end": float(duration), "label": "calm", "level": 0.5, "role": "calm"}]
+    # The analyser slices finely (a run of 2 s "drop" spans): merge same-label neighbours, then fold anything
+    # shorter than ``min_len`` into the neighbour whose level is closer, so a section is a passage, not a bar.
+    top0 = max(float(r.get("level") or 0.0) for r in rows) or 1.0
+    merged: list[dict] = []
+    for r in rows:
+        same = merged and merged[-1]["label"] == r.get("label")             and abs(float(merged[-1]["level"]) - float(r.get("level") or 0.0)) < 0.3 * top0  # a quiet and a loud verse differ
+        if same:
+            prev = merged[-1]
+            wa, wb = prev["end"] - prev["start"], float(r["end"]) - float(r["start"])
+            prev["level"] = (float(prev.get("level") or 0) * wa + float(r.get("level") or 0) * wb) / max(wa + wb, 1e-6)
+            prev["end"] = float(r["end"])
+        else:
+            merged.append({"label": str(r.get("label") or "calm"), "start": float(r["start"]), "end": float(r["end"]),
+                           "level": float(r.get("level") or 0.0)})
+    changed = True
+    while changed and len(merged) > 1:
+        changed = False
+        for i, r in enumerate(merged):
+            if r["end"] - r["start"] >= min_len:
+                continue
+            nb = [j for j in (i - 1, i + 1) if 0 <= j < len(merged)]
+            j = min(nb, key=lambda j: abs(merged[j]["level"] - r["level"]))
+            a, b = (merged[j], r) if j < i else (r, merged[j])
+            wa, wb = a["end"] - a["start"], b["end"] - b["start"]
+            keep = merged[j]
+            keep["level"] = (a["level"] * wa + b["level"] * wb) / max(wa + wb, 1e-6)
+            keep["start"], keep["end"] = min(a["start"], b["start"]), max(a["end"], b["end"])
+            del merged[i]
+            changed = True
+            break
+    rows = merged
+    top = max(float(r.get("level") or 0.0) for r in rows) or 1.0
+    for i, r in enumerate(rows):
+        label = str(r.get("label") or "calm")
+        level = float(r.get("level") or 0.0) / top
+        role = label if label in STORY_BEATS else "calm"
+        if role in ("calm", "sustain") and level > 0.72:
+            role = "build"  # a loud "calm" section is a chorus that drives
+        if i == 0 and role in ("calm", "sustain", "build"):
+            role = "intro"
+        if i == len(rows) - 1 and role in ("calm", "sustain", "release") and len(rows) > 1:
+            role = "outro"
+        r["role"] = role
+    return rows
+
+
+def story_plan(duration: float, beats: list, sections: list[dict], drop: float | None = None,
+               max_shots: int | None = None) -> dict:
+    """The music-video cut for a whole song. Verses breathe (two bars a shot, real-time morphs, no tricks),
+    builds and choruses drive (a bar a shot, light punches on the downbeats), the drop punches and cuts on
+    the half bar for its first bars, the outro eases out. Every section switch starts a shot and is marked
+    as a boundary for a transition. When the shot budget is exceeded, every section's shots get longer."""
+    duration = float(duration)
+    max_shots = shot_budget(duration) if max_shots is None else int(max_shots)
+    grid = sorted(float(b) for b in beats if 0.0 <= float(b) < duration)
+    if len(grid) < 4:
+        return dense_plan(duration, beats, drop, max_shots)
+    period = _period(grid)
+    roles = _story_roles(sections, duration, min_len=max(6.0, 8 * period))  # a passage is at least two bars
+    if drop is None:
+        drops = [r for r in roles if r["role"] == "drop"]
+        drop = float(drops[0]["start"]) if drops else None
+    if drop is not None:
+        drop = min(grid, key=lambda b: abs(b - drop))
+        for r in roles:  # the drop section starts on the drop itself when the analysis put it within a bar
+            if r["role"] == "drop" and abs(float(r["start"]) - drop) <= 4 * period + 1e-6 and float(r["start"]) != drop:
+                r["start"] = drop
+
+    def nearest(t: float) -> float:
+        return min(grid, key=lambda b: abs(b - t))
+
+    for stretch in (1, 2, 4, 8):
+        cuts: list[tuple[float, str, bool]] = []  # (time, role, section_start)
+        for r in roles:
+            a, b = (0.0 if not cuts else nearest(float(r["start"]))), float(r["end"])
+            if cuts and a <= cuts[-1][0] + 0.25:
+                a = cuts[-1][0]
+            role = r["role"]
+            t = a
+            first = True
+            while t < b - 0.3 and t < duration - 0.3:
+                here = role
+                if role == "drop" and drop is not None and t >= drop + DROP_HALF_BARS * 4 * period - 1e-6:
+                    here = "drop_late"
+                if not cuts or t > cuts[-1][0] + 0.25:
+                    cuts.append((round(t, 4), here, first))
+                first = False
+                step = STORY_BEATS[here] * stretch
+                i = grid.index(nearest(t))
+                t = grid[i + step] if i + step < len(grid) else duration
+        if drop is not None and all(abs(c[0] - drop) > 1e-6 for c in cuts):
+            cuts.append((round(drop, 4), "drop", True))
+        cuts = sorted({c[0]: c for c in cuts}.values())
+        if len(cuts) <= max_shots:
+            break
+    times = [c[0] for c in cuts] + [round(duration, 4)]
+    shots = []
+    for k, ((a, role, starts), b) in enumerate(zip(cuts, times[1:])):
+        seconds = b - a
+        if seconds < 0.3:
+            continue
+        speed = STORY_SPEED.get(role, 1.25)
+        render_s = _render_s(seconds, speed)
+        effects = []
+        downbeat = nearest(a)
+        if drop is not None and abs(a - drop) < 1e-3:
+            effects += [{"type": "punch", "t": a, "strength": 1.0}, {"type": "stutter", "t": a, "frames": 2, "repeat": 4}]
+        elif role in ("drop", "drop_late", "build") and abs(downbeat - a) < 1e-3:
+            effects.append({"type": "punch", "t": a, "strength": 0.6 if role != "build" else 0.4})
+        shot = {"start": round(a, 4), "end": round(b, 4), "render_s": render_s, "speed": round(render_s / seconds, 3),
+                "effects": effects, "section": role}
+        if starts:
+            if drop is not None and abs(a - drop) < 1e-3:
+                kind = "drop"
+            elif k > 0 and STORY_BEATS.get(role, 4) > STORY_BEATS.get(cuts[k - 1][1], 4):
+                kind = "silence"  # dropping into a quieter section
+            else:
+                kind = "switch"
+            if k > 0:
+                shot["boundary"] = kind
+        if role == "intro" and k == 0:
+            shot["ease"] = "in"
+        if role == "outro" and k == len(cuts) - 1:
+            shot["ease"] = "out"
+        shots.append(shot)
+    if shots:
+        shots[-1]["end"] = round(duration, 4)
+    return {"name": "story", "drop": round(drop, 4) if drop is not None else None, "shots": shots,
+            "roles": [(r["role"], round(float(r["start"]), 2), round(float(r["end"]), 2)) for r in roles]}
+
+
+def boundary_transitions(shots: list[dict], vibe: str, *, seed: int = 0) -> list[dict | None]:
+    """One premium transition per section boundary (the vibe's recommendation for drop / switch / silence),
+    capped at two uses per type by the guardrail; everything else is a clean handoff. One entry per shot."""
+    from xenoform import transitions_fx as T
+
+    idx = [i for i, s in enumerate(shots) if i > 0 and s.get("boundary")]
+    if not idx:
+        return [None] * len(shots)
+    kinds = [T.recommend(vibe, str(shots[i]["boundary"])) for i in idx]
+    kinds, _msgs = T.guard(kinds, seed=seed)
+    out: list[dict | None] = [None] * len(shots)
+    for i, kind in zip(idx, kinds):
+        if kind in T.EXEMPT_FROM_CAP:
+            continue
+        frames = int(min(12, max(4, int(shots[i].get("frames") or 24) // 3, 4), (int(shots[i - 1].get("frames") or 24) // 2)))
+        out[i] = {"kind": kind, "frames": frames, "boundary": shots[i]["boundary"]}
+    return out
+
+
 def flow_plan(duration: float, beats: list, count: int) -> dict:
     """Flow energy with a fixed count: even, beat-snapped shots, no effects."""
     cuts = count_cuts(duration, beats, count, None)
@@ -424,6 +588,9 @@ def shots_for(state: dict, directed: dict, audio_path: Path | None) -> tuple[lis
         n = speed_count(duration, beats, opt["energy"], speed)  # the speed macro biases the cut density
     if state.get("cut_plan"):
         plan = state["cut_plan"]
+    elif opt["energy"] == "dense" and n == "auto" and duration > LONG_SONG_S and len(directed.get("sections") or []) >= 2:
+        drop = find_drop(audio_path, beats, duration)
+        plan = story_plan(duration, beats, list(directed.get("sections") or []), drop)
     elif opt["energy"] == "dense":
         drop = find_drop(audio_path, beats, duration)
         plan = dense_plan(duration, beats, drop, count=None if n == "auto" else n)
@@ -431,7 +598,12 @@ def shots_for(state: dict, directed: dict, audio_path: Path | None) -> tuple[lis
         plan = flow_plan(duration, beats, n)
     else:
         return plan_shots(duration, beats), {"name": "flow", "shots": []}
-    return custom_shots(plan, duration), plan
+    shots = custom_shots(plan, duration)
+    for shot, raw in zip(shots, plan.get("shots") or []):  # custom_shots keeps the timing; carry the story keys
+        for key in ("section", "boundary"):
+            if raw.get(key):
+                shot[key] = raw[key]
+    return shots, plan
 
 
 def _stretch(shots: list[dict], duration: float) -> list[dict]:
@@ -579,7 +751,11 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     report("assemble", 0.6, "Cutting to the beat" + (" with beat FX" if opt["fx"] else ""))
     tmp = Path(out_path).with_name(Path(out_path).stem + ".simple.mp4")
     m = macros(state)
+    import copy as _copy
+
+    plan_shots = _copy.deepcopy(shots)  # before the macros: a re-cut starts from here
     apply_macros(shots, m, hp if vertical_house else None)
+    transitions = boundary_transitions(shots, vibe, seed=seed) if plan.get("name") == "story" else None
     look_preset = beatfx.resolve_dance_preset(opt["dance_fx"], vibe, hp)
     stem_env = stem_env_for(state)
     report("assemble", 0.6, f"House look: dance_fx {look_preset}, stem_orbit {'on' if opt['stem_orbit'] else 'off'}, "
@@ -592,7 +768,8 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
                           dance_fx=look_preset, stem_orbit=opt["stem_orbit"], stem_env=stem_env, macros=m,
                           house=hp, end_card=opt["end_card"], seed=seed,
                           palette_image=str(stills[0]["path"]) if stills else None,
-                          adaptive=str(opt.get("dance_fx") or "auto").strip().lower() == "auto")
+                          adaptive=str(opt.get("dance_fx") or "auto").strip().lower() == "auto",
+                          transitions=transitions)
     if made.get("look", {}).get("seconds"):
         log.info("house look took %.1fs for %d frames", made["look"]["seconds"], made["look"]["frames"])
     card = False
@@ -605,6 +782,12 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
             "vertical": ("native" if native else "crop") if opt["aspect"] == "9:16" else None,
             "fx": opt["fx"], "overlay": made["overlay"], "end_card": card, "vibe": vibe,
             "stills": [s["file"] for s in stills], "shots": shots, "plan_name": plan.get("name", ""), "chain": chain or None,
+            "plan_shots": plan_shots, "clips": [str(c) for c in clips], "audio_path": str(audio_path),
+            "transitions": transitions, "size": list(size) if size else None, "fps": fps, "seed": seed,
+            "palette_image": str(stills[0]["path"]) if stills else None, "vertical_house": vertical_house,
+            "recut_state": {k: state.get(k) for k in ("vibe", "aspect", "quality_tier", "energy_preset", "dance_fx", "stem_orbit",
+                                                      "beat_fx", "beat_overlay", "end_card", "stems_path", "macros", "still_background")},
+            "roles": plan.get("roles"),
             "handoffs_s": [s["start"] for s in shots] + [shots[-1]["end"]], "fallbacks": notes,
             "render": made["size"], "frames": made["frames"], "seconds": round(time.perf_counter() - started, 2),
             "steps": 8 if engine == "ltx23" else None,
@@ -678,3 +861,56 @@ def stills_animatic(directed: dict, state: dict, audio_path: Path, out_path: Pat
     publish_file(tmp, out_path)
     return {"shots": len(shots), "vibe": vibe, "seconds": round(duration, 3), "long_song": long_song,
             "size": f"{w}x{h}", "fps": fps}
+
+
+def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Callable[[str, float, str], None] | None = None,
+                     cfg: dict | None = None) -> dict:
+    """Re-compose a finished Simple job from its cached morphs with new knobs, look, orbit or beat FX.
+
+    No GPU: the morph clips, the plan and the song are read from ``<job>/simple/simple.json``. The job's
+    ``xenoform.mp4`` is replaced (``publish_file``) and the updated record returned."""
+    job_dir = Path(job_dir)
+    work = job_dir / "simple"
+    rec_path = work / "simple.json"
+    if not rec_path.is_file():
+        raise FileNotFoundError("This video has no cached morphs to re-cut (it was not made by Simple mode).")
+    rec = json.loads(rec_path.read_text(encoding="utf-8"))
+    clips = [Path(c) for c in rec.get("clips") or []]
+    shots = rec.get("plan_shots") or rec.get("shots") or []
+    if not clips or not shots or len(clips) != len(shots) or not all(c.is_file() for c in clips):
+        raise FileNotFoundError("The cached morphs for this video are gone; render it again.")
+    audio = Path(rec.get("audio_path") or "")
+    if not audio.is_file():
+        raise FileNotFoundError("The song file for this video is gone; load it again and render.")
+    state = dict(rec.get("recut_state") or {})
+    state.update({k: v for k, v in (overrides or {}).items() if v is not None})
+    opt = options(state)
+    hp = house(state, cfg)
+    import copy as _copy
+
+    shots = _copy.deepcopy(shots)
+    m = macros(state)
+    apply_macros(shots, m, hp if rec.get("vertical_house") else None)
+    vibe = str(rec.get("vibe") or state.get("vibe") or "")
+    transitions = boundary_transitions(shots, vibe, seed=int(rec.get("seed") or 0)) if rec.get("plan_name") == "story" else None
+    look_preset = beatfx.resolve_dance_preset(opt["dance_fx"], vibe, hp)
+    stem_env = stem_env_for(state)
+    size = tuple(rec["size"]) if rec.get("size") else None
+    engine = str(rec.get("tier") or "draft")
+    tmp = job_dir / "xenoform.recut.mp4"
+    if report:
+        report("assemble", 0.1, "Re-cutting from the cached morphs (no GPU)")
+    made = beatfx.compose(clips, shots, audio, tmp, aspect=opt["aspect"], quality="final" if engine == "final" else "draft",
+                          fx=opt["fx"], overlay=opt["overlay"], beats=[], report=report, size=size, fps=int(rec.get("fps") or 24),
+                          dance_fx=look_preset, stem_orbit=opt["stem_orbit"], stem_env=stem_env, macros=m, house=hp,
+                          end_card=opt["end_card"], seed=int(rec.get("seed") or 0), palette_image=rec.get("palette_image"),
+                          adaptive=str(opt.get("dance_fx") or "auto").strip().lower() == "auto", transitions=transitions)
+    if opt["end_card"]:
+        beatfx.end_card(tmp, str(opt.get("recipe") or "(none)"))
+    from xenoform.turbo import publish_file
+
+    publish_file(tmp, job_dir / "xenoform.mp4")
+    rec.update({"shots": shots, "look": made.get("look"), "macros": m, "recut_state": state, "transitions": transitions,
+                "recuts": int(rec.get("recuts") or 0) + 1})
+    rec_path.write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
+    return rec

@@ -2384,6 +2384,11 @@ function renderEasy() {
         <p class="note">Re-cuts the same shots instantly. No new pictures.</p>
         <input id="energy" type="range" min="0" max="1" step="0.01" value="${Number(state.energy || 0)}" aria-label="Energy from Calm to Hype" />
         <div class="energy-ends"><span>Calm</span><span>Hype</span></div>
+        <div class="energy-head"><h3>Knobs</h3><span>Turn, then re-cut. No GPU.</span></div>
+        <div class="simple-knobs"></div>
+        ${lookRow(easy.danceFx || "auto", "easy-look")}
+        <button type="button" class="generate easy-row" data-act="easy-recut-knobs"${easy.showcase || !easyVideoId() ? " disabled" : ""}>Re-cut with these knobs</button>
+        <p class="note">Re-composes the same morphs with the knobs, the look and the orbit as they are now. No GPU, no new pictures: a fraction of the render time.</p>
         <div class="energy-head"><h3>Try another vibe</h3><span>Same song, same story</span></div>
         <div class="vibe-grid vibe-mini" role="radiogroup" aria-label="Try another vibe">${vibeCards(easy, true)}</div>
         ${easy.cloudPlan ? cloudCard(easy.cloudPlan) : ""}
@@ -2931,6 +2936,36 @@ async function easyCloudEstimate() {
     state.easy.note = "Could not price the cloud shots, so Cloud quality is off.";
   }
   render();
+}
+
+// Re-cut the finished video from its cached morphs with the knobs / look / orbit as they are now (no GPU).
+async function recutWithKnobs() {
+  const id = easyVideoId();
+  if (!id || !state.easy) return;
+  const body = {
+    macros: window.XENO_MACROS ? window.XENO_MACROS() : null,
+    dance_fx: state.easy.danceFx || "auto",
+    stem_orbit: state.easy.stemOrbit !== false,
+    beat_fx: state.easy.fx !== false,
+    end_card: !!state.easy.endCard,
+  };
+  try {
+    const res = await api(`/api/jobs/${encodeURIComponent(id)}/recut`, body);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      state.easy.note = err.detail || "The re-cut did not start.";
+      render();
+      return;
+    }
+    state.job = Object.assign({}, state.job || {}, {id, status: "running", stage: "assemble", progress: 0.05, detail: "Re-cutting from the cached morphs"});
+    state.easy.phase = "making";
+    state.easy.recutting = true;
+    render();
+    poll(id);
+  } catch (err) {
+    state.easy.note = "The re-cut did not start.";
+    render();
+  }
 }
 
 async function easyMake() {
@@ -4683,6 +4718,8 @@ document.addEventListener("click", async (event) => {
     state.easy.phase = "choose";
     state.easy.note = "";
     render();
+  } else if (act === "easy-recut-knobs") {
+    recutWithKnobs();
   } else if (act === "easy-better") {
     el.classList.add("is-loading");
     easyBetter();

@@ -541,8 +541,12 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
             size: tuple[int, int] | None = None, fps: int | None = None, dance_fx: str | None = None,
             stem_orbit: bool | None = None, stem_env: dict | None = None, macros: dict | None = None,
             house: dict | None = None, end_card: bool = False, seed: int = 0, palette_image: str | None = None,
-            adaptive: bool = False) -> dict:
+            adaptive: bool = False, transitions: list | None = None) -> dict:
     """Retime every clip to its shot (speed, ease, hold, stutter, skip, reverse), reframe, add beat FX, mux.
+
+    ``transitions``: one entry per shot, ``{"kind", "frames"}`` or None; a premium transition (transitions_fx)
+    replaces the window centred on that shot's first frame (half from the previous shot's tail, half from
+    this shot's head), so the frame count and the beat sync do not move.
 
     ``size`` overrides the output frame size (native vertical Final: 1080x1920). Clips that
     already have the target aspect pass through whole; any other clip is cropped around its object.
@@ -585,6 +589,14 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
     n = 0
     zoom_scale = 0.5 if aspect == "9:16" else 1.0
     centres = []
+    trans = list(transitions or [])
+    held: list[np.ndarray] = []  # the previous shot's last frames, withheld for the transition into the next shot
+    used_transitions: list[str] = []
+    t_intensity = float((house.get("transitions") or {}).get("intensity") or 0.5)
+
+    def write(frame: np.ndarray) -> None:
+        enc.stdin.write(np.ascontiguousarray(frame).tobytes())
+
     try:
         for si, (clip, shot) in enumerate(zip(clips, shots)):
             frames = read_frames(_conformed(Path(clip), out_path))
@@ -595,6 +607,7 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
             idx = shot_indices(shot, len(frames))
             count = max(len(idx) - 1, 1)
             look.start_shot(si, len(idx), n / fps)
+            out: list[np.ndarray] = []
             for k, j in enumerate(idx):
                 u = k / count
                 u = u * u * (3 - 2 * u)
@@ -612,10 +625,45 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
                 frame = look.frame(frame, k, n / fps)
                 if over is not None:
                     frame = over.draw(frame, n / fps)
-                enc.stdin.write(np.ascontiguousarray(frame).tobytes())
+                out.append(frame)
                 n += 1
+            tr = trans[si] if si < len(trans) else None
+            if tr and held and tr.get("kind") and int(tr.get("frames") or 0) >= 2:
+                from xenoform import transitions_fx as T
+
+                win = int(min(int(tr["frames"]), len(held), len(out)))
+                h = max(1, win // 2)
+                a_tail = list(held[-h:]) + [held[-1]] * (win - h)
+                b_head = [out[0]] * (win - h) + list(out[:h])
+                try:
+                    blended = T.apply(str(tr["kind"]), a_tail, b_head, t_intensity)
+                    for frame in held[:-h]:
+                        write(frame)
+                    for frame in blended:
+                        write(frame)
+                    out = out[h:]
+                    used_transitions.append(str(tr["kind"]))
+                except Exception as exc:  # a transition must never break a render: plain handoff instead
+                    log.warning("transition %s skipped: %s", tr.get("kind"), exc)
+                    for frame in held:
+                        write(frame)
+            else:
+                for frame in held:
+                    write(frame)
+            held = []
+            nxt = trans[si + 1] if si + 1 < len(trans) else None
+            keep = int(nxt.get("frames") or 0) if nxt and nxt.get("kind") else 0
+            keep = max(0, min(keep, len(out) - 1))
+            if keep:
+                held = out[-keep:]
+                out = out[:-keep]
+            for frame in out:
+                write(frame)
             if report:
                 report("assemble", 0.6 + 0.35 * (si + 1) / len(shots), f"Cutting shot {si + 1} of {len(shots)} to the beat")
+        for frame in held:
+            write(frame)
+        held = []
     finally:
         enc.stdin.close()
         code = enc.wait()
@@ -626,7 +674,8 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
         log.info("house look: dance_fx=%s stem_orbit=%s stems=%s %d frames in %.1fs", look.mode, look._orbit_ok,
                  look.env.get("engine"), look.frames, look.seconds)
     return {"frames": n, "seconds": round(n / fps, 3), "size": f"{w}x{h}", "aspect": aspect, "fx": bool(fx),
-            "overlay": over is not None, "centres": centres, "fps": fps, "look": look.info()}
+            "overlay": over is not None, "centres": centres, "fps": fps, "look": look.info(),
+            "transitions": used_transitions}
 
 
 def reframe_file(src: Path, dest: Path, aspect: str, *, quality: str = "draft", shots: list[dict] | None = None) -> dict:

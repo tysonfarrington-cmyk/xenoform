@@ -1,8 +1,10 @@
 # Install Xenoform on Windows.
 # Creates this folder's own .venv with Python 3.12. It does not pip-install into ComfyUI.
 # Pass -LinkNodes to junction the pack into ComfyUI\custom_nodes. That step is off unless you ask.
+# Demucs (stem separation, a CPU torch wheel of about 200 MB) is installed by default; pass -NoStems to skip it.
 param(
-  [switch]$LinkNodes
+  [switch]$LinkNodes,
+  [switch]$NoStems
 )
 $ErrorActionPreference = "Stop"
 $Pack = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -68,6 +70,18 @@ if ($LASTEXITCODE -ne 0) { Write-Host "pip could not install requirements.txt.";
 # The desk runs as `python -m xenoform`, so the package itself has to be in the venv.
 & $VenvPy -m pip install --no-deps -e $Pack
 if ($LASTEXITCODE -ne 0) { Write-Host "pip could not install the xenoform package."; exit 1 }
+# Stems split by default (every loaded song, in the background), so the first Make is stem-reactive. Demucs is the
+# `stems` extra in pyproject.toml; on Windows PyPI's torch wheel is the CPU build, which is all Demucs needs here.
+if ($NoStems) {
+  Write-Host "Skipping Demucs (-NoStems). Stems come from the librosa band split."
+} else {
+  Write-Host "Installing Demucs for stem separation (a CPU torch wheel; skip it with -NoStems)"
+  & $VenvPy -m pip install -e "${Pack}[stems]"
+  if ($LASTEXITCODE -ne 0) {
+    Write-Host "Demucs did not install. The desk still works: stems come from the librosa band split."
+    Write-Host "Try again later with: .venv\Scripts\python -m pip install demucs"
+  }
+}
 
 if ($LinkNodes) {
   $Comfy = $env:COMFYUI_DIR

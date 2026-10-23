@@ -1,9 +1,10 @@
 """Stem-reactive engine: drums drive cuts and stutters, bass drives warp, scale and displacement,
 the rest (``other`` + vocals) drives texture and colour.
 
-Stems come from Demucs (htdemucs, MIT) when it is installed (``pip install demucs``; it runs
-on the CPU by default so it never competes with ComfyUI for VRAM). Without Demucs a librosa
-split is used: HPSS percussive -> drums, <150 Hz -> bass, harmonic -> other.
+Stems come from Demucs (htdemucs, MIT) when it is installed (the installers put it in the venv by
+default, ``pip install demucs`` otherwise; it runs on the CPU by default so it never competes with
+ComfyUI for VRAM). Without Demucs a librosa split is used: HPSS percussive -> drums, <150 Hz -> bass,
+harmonic -> other. The desk splits every loaded song in the background (``stems_api``).
 
     stems = split("song.wav", "work/stems")          # {"drums": path, "bass": path, ...}
     env = envelopes(stems, fps=24)                     # per-frame 0..1 curves + drum hits
@@ -12,12 +13,16 @@ split is used: HPSS percussive -> drums, <150 Hz -> bass, harmonic -> other.
 from __future__ import annotations
 
 import json
+import logging
+import os
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 import numpy as np
+
+log = logging.getLogger("xenoform")
 
 STEMS = ("drums", "bass", "other", "vocals")  # the four routing roles (and Demucs' default stems)
 MAX_STEMS = 32  # any number of named stems up to this, each with its own reaction gain
@@ -56,15 +61,30 @@ def from_files(paths, *, engine: str = "user") -> dict[str, str]:
     return {**{str(k): str(v) for k, v in paths.items()}, "engine": engine}
 
 
-def demucs_available(python: str | None = None) -> bool:
+_DEMUCS_OK: dict[str, bool] = {}  # python executable -> "import demucs" works there (a timeout is not remembered)
+
+
+def demucs_available(python: str | None = None, *, refresh: bool = False) -> bool:
+    """True when ``import demucs`` works in ``python`` (this interpreter by default). Remembered per interpreter,
+    so the desk's status polls and every ``split()`` do not each spawn a process; ``refresh=True`` asks again
+    (after a ``pip install demucs`` into a running desk)."""
     py = python or sys.executable
+    if not refresh and py in _DEMUCS_OK:
+        return _DEMUCS_OK[py]
     try:
-        return subprocess.run([py, "-c", "import demucs"], capture_output=True, timeout=60).returncode == 0
+        ok = subprocess.run([py, "-c", "import demucs"], capture_output=True, timeout=60).returncode == 0
     except Exception:
-        return False
+        return False  # no such interpreter, or a slow first import: not remembered, so the next call tries again
+    _DEMUCS_OK[py] = ok
+    return ok
 
 
 ENGINES = ("auto", "demucs", "bands")  # "bands" is the librosa HPSS/band fallback ("librosa" is accepted as an alias)
+# Demucs on the CPU: ``-j`` runs that many segments in parallel (each already uses every core through torch's own
+# threads) and ``--segment`` shortens the window it looks at (lower memory, not faster). docs/stems.md has the
+# measured times; XENO_DEMUCS_JOBS / XENO_DEMUCS_SEGMENT override them for a machine.
+DEMUCS_JOBS = 2
+DEMUCS_SEGMENT: float | None = None
 
 
 def engines_available(python: str | None = None) -> dict[str, bool]:
@@ -73,11 +93,15 @@ def engines_available(python: str | None = None) -> dict[str, bool]:
 
 
 def split(track: str | Path, out_dir: str | Path, *, model: str = "htdemucs", device: str = "cpu",
-          python: str | None = None, engine: str = "auto") -> dict[str, str]:
+          python: str | None = None, engine: str = "auto", jobs: int | None = None,
+          segment: float | None = None) -> dict[str, str]:
     """Separate ``track`` into stems. Returns {stem: wav path, "engine": ...}.
 
-    ``engine``: "auto" (Demucs when installed, else the band split), "demucs" (error if missing),
-    or "bands"/"librosa" (the dependency-free fallback; reported as ``engine="librosa"``)."""
+    ``engine``: "auto" (Demucs when installed, else the band split; a Demucs that fails to run, say with no
+    network for its first model download, also falls back to the band split), "demucs" (error if missing or
+    failing), or "bands"/"librosa" (the dependency-free fallback; reported as ``engine="librosa"``).
+    ``jobs`` is Demucs' ``-j`` (default XENO_DEMUCS_JOBS or DEMUCS_JOBS), ``segment`` its ``--segment``
+    (default XENO_DEMUCS_SEGMENT or the model's own window)."""
     if engine == "librosa":
         engine = "bands"
     if engine not in ENGINES:
@@ -86,13 +110,24 @@ def split(track: str | Path, out_dir: str | Path, *, model: str = "htdemucs", de
     out.mkdir(parents=True, exist_ok=True)
     py = python or sys.executable
     if engine in ("auto", "demucs") and demucs_available(py):
-        cmd = [py, "-m", "demucs", "-n", model, "-d", device, "-j", "2", "-o", str(out), str(track)]
-        subprocess.run(cmd, check=True)
+        jobs = int(jobs if jobs is not None else os.environ.get("XENO_DEMUCS_JOBS") or DEMUCS_JOBS)
+        segment = segment if segment is not None else os.environ.get("XENO_DEMUCS_SEGMENT") or DEMUCS_SEGMENT
+        cmd = [py, "-m", "demucs", "-n", model, "-d", device, "-j", str(max(0, jobs)), "-o", str(out), str(track)]
+        if segment:
+            cmd += ["--segment", str(segment)]
+        proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
         folder = out / model / Path(track).stem
-        paths = {w.stem: str(w) for w in sorted(folder.glob("*.wav"))[:MAX_STEMS]}  # 4 for htdemucs, 6 for htdemucs_6s, ...
-        if paths:
+        paths = {w.stem: str(w) for w in sorted(folder.glob("*.wav"))[:MAX_STEMS]} if proc.returncode == 0 else {}
+        if paths:  # 4 for htdemucs, 6 for htdemucs_6s, ...
             return {**paths, "engine": f"demucs:{model}"}
-    if engine == "demucs":
+        tail = " | ".join(line for line in (proc.stderr or proc.stdout or "").strip().splitlines()[-4:] if line.strip())
+        why = f"demucs exited with {proc.returncode}" if proc.returncode else f"demucs wrote no stems under {folder}"
+        if tail:
+            why += f": {tail}"
+        if engine == "demucs":
+            raise RuntimeError(why)
+        log.warning("%s; using the band split for %s", why, Path(track).name)
+    elif engine == "demucs":
         raise RuntimeError("Demucs is not installed (pip install demucs)")
     return _librosa_split(track, out)
 
