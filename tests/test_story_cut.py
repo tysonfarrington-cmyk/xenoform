@@ -193,3 +193,16 @@ def test_desk_offers_the_re_cut_on_the_result_screen():
     assert 'data-act="easy-recut-knobs"' in APP and "async function recutWithKnobs" in APP
     assert APP.count('<div class="simple-knobs"></div>') == 2  # the first screen and the result screen
     assert "/recut`" in APP and "poll(id);" in APP.split("async function recutWithKnobs")[1].split("async function easyMake")[0]
+
+
+def test_director_keeps_the_analysis_sections_for_the_story_plan():
+    from xenoform.director import apply_director, empty_state
+
+    features = json.loads((ROOT / "examples" / "demo_features.json").read_text(encoding="utf-8"))
+    directed = apply_director(features, empty_state())
+    assert directed["analysis_sections"] == features["sections"]
+    assert len(directed["sections"]) == len(empty_state()["blocks"])  # the director's blocks replace ``sections``
+    long = {"duration": 120.0, "beats": _beats(120.0), "sections": [{"label": "calm", "start": 0.0, "end": 120.0}],
+            "analysis_sections": _sections()}
+    _, plan = dense.shots_for({"energy_preset": "dense"}, long, None)
+    assert plan["name"] == "story"

@@ -577,6 +577,15 @@ def find_drop(audio_path: Path | None, beats: list, duration: float) -> float | 
         return None
 
 
+def _analysis_sections(directed: dict) -> list[dict]:
+    """The analyser's sections (apply_director keeps them as ``analysis_sections`` when its blocks replace
+    ``sections``); a raw analysis dict carries them as ``sections``."""
+    rows = directed.get("analysis_sections")
+    if rows is None:
+        rows = directed.get("sections")
+    return [r for r in (rows or []) if r.get("label")]
+
+
 def shots_for(state: dict, directed: dict, audio_path: Path | None) -> tuple[list[dict], dict]:
     """Validated shots plus the plan they came from."""
     duration = float(directed.get("duration") or 0.0)
@@ -588,9 +597,9 @@ def shots_for(state: dict, directed: dict, audio_path: Path | None) -> tuple[lis
         n = speed_count(duration, beats, opt["energy"], speed)  # the speed macro biases the cut density
     if state.get("cut_plan"):
         plan = state["cut_plan"]
-    elif opt["energy"] == "dense" and n == "auto" and duration > LONG_SONG_S and len(directed.get("sections") or []) >= 2:
+    elif opt["energy"] == "dense" and n == "auto" and duration > LONG_SONG_S and len(_analysis_sections(directed)) >= 2:
         drop = find_drop(audio_path, beats, duration)
-        plan = story_plan(duration, beats, list(directed.get("sections") or []), drop)
+        plan = story_plan(duration, beats, _analysis_sections(directed), drop)
     elif opt["energy"] == "dense":
         drop = find_drop(audio_path, beats, duration)
         plan = dense_plan(duration, beats, drop, count=None if n == "auto" else n)

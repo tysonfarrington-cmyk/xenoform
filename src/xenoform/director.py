@@ -1425,6 +1425,10 @@ def apply_director(features: dict, state: dict) -> dict:
     if scenes:
         state["blocks"] = blocks_from_scenes(scenes)
     out = copy.deepcopy(features)
+    if features.get("sections") and "analysis_sections" not in out:
+        # the director's blocks replace ``sections`` below; the analyser's own sections (calm / build /
+        # drop / release, with levels) stay available for the story cut (dense.story_plan)
+        out["analysis_sections"] = copy.deepcopy(features["sections"])
     duration = float(out.get("duration") or 0.0)
     if duration <= 0 and out.get("frames"):
         duration = float(out["frames"][-1]["t"])
