@@ -1429,7 +1429,10 @@ def apply_director(features: dict, state: dict) -> dict:
     if duration <= 0 and out.get("frames"):
         duration = float(out["frames"][-1]["t"])
     fps = float(out["fps"])
-    laid = layout_blocks(list(state.get("blocks") or []), duration)
+    blocks = list(state.get("blocks") or [])
+    if not blocks:  # a payload without a story (the API, MCP, a bare Simple job): one hold across the song
+        blocks = [{"form": "sphere", "hold": 1.0, "transition": "ribbon"}]
+    laid = layout_blocks(blocks, duration)
     customs = list(state.get("customs") or [])
     sliders = state.get("sliders") or default_sliders()
     kick = _drive(sliders.get("kick", 0.5))

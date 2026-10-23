@@ -17,14 +17,15 @@ No picture or clip in this repo is a CC BY work that needs a credit line, so non
 | Files | Credit |
 | --- | --- |
 | The 20 extended vibes and `black.jpg` | Written by the same local Z-Image Turbo and LTX-Video 0.9.5 runs as the stills and clip packs above (commits `9c50818`, `43c626b` and later). Author's own output. |
-| `liquid-gold.jpg`, `paper-summer.jpg`, `bloom.jpg`, `neon-night.jpg`, `ocean.jpg`, `cosmic.jpg` | JPEG comment `Lavc60.31.102` (ffmpeg) only. They arrived in the first snapshot commit (`68790ba`) with no generation script or seed in the repo. Origin unrecorded. |
+| `paper-summer.jpg`, `bloom.jpg`, `ocean.jpg`, `cosmic.jpg` | Replaced on 23 October 2026 by the first still of each vibe's pool (see the stills table above: author's own regrades; source stills origin unrecorded). |
+| `liquid-gold.jpg`, `neon-night.jpg` | JPEG comment `Lavc60.31.102` (ffmpeg) only. They arrived in the first snapshot commit (`68790ba`) with no generation script or seed in the repo. Origin unrecorded. |
 
 ## Default clip packs (`src/xenoform/ui_static/library/<vibe>/{wide,medium,close,reveal}.{mp4,jpg}`)
 
 | Files | Credit |
 | --- | --- |
 | The 20 extended vibes | Cut by `scripts/vibe_objects/make_library.py` from one hand-checked orb to nautilus morph rendered locally with LTX-Video 0.9.5 (Lightricks Open RAIL-M) from the vibe's own Z-Image Turbo stills. `configs/clip_pack.json` records each clip's autotune score and QA note: "All files are generated locally with open weights (Z-Image Turbo stills, LTX-Video 0.9.5 morphs)". Author's own output. |
-| liquid-gold, paper-summer, bloom, neon-night, ocean, cosmic, and the four root files `library/{wide,medium,close,reveal}.mp4` (byte-identical to the neon-night clips) | x264 encoder string only, no title or artist. They arrived in the first snapshot commit (`68790ba`) with no generation script or seed in the repo. `bloom/wide.mp4` is byte-identical to `ocean/close.mp4`. Origin unrecorded. |
+| liquid-gold, paper-summer, bloom, neon-night, ocean, cosmic, and the four root files `library/{wide,medium,close,reveal}.mp4` (copies of the neon-night clips) | Regenerated on 23 October 2026: one LTX-Video 0.9.5 morph per vibe from the first two stills of its pool (`scripts/vibe_objects/make_library.py` recipe, seed 2727), cut into wide, medium, close and reveal. Author's own output. |
 
 ## Showcase reel and poster
 

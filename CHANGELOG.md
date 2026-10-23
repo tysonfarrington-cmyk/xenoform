@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.1 (23 October 2026)
+
+- Full-length songs in Simple mode: the Dense cut keeps a shot every bar (every half bar after the drop) however long the song is, over a closed loop of 12 to 30 four-second morphs (`dense.clip_plan`), so a four-minute song is a music video instead of eleven morphs stretched into a slideshow. The panel beside Make shows the video length, shots, morphs and a time estimate that includes the look pass.
+- **Length** in the Fine-tune drawer: the whole song, or a 60, 30 or 15 second cut centred on the drop (starts on a beat, short fades), analysed as its own song.
+- The Simple draft is the vibe's stills cut to the plan (seconds) instead of the CPU blob animatic, which took minutes on a long song.
+- A render could fail with `Access is denied` when the browser was still playing the draft while the next version was swapped in; publishing now retries and falls back to copying the bytes into place.
+- `dance_fx` blurs run on a reduced copy and the pixel grid is cached: the look pass is 3 to 4 times faster. Draft composes at 540x960.
+- A job without a story (API, MCP) no longer crashes in the director; one hold spans the song.
+- The original vibes' library strips (liquid-gold, paper-summer, bloom, neon-night, ocean, cosmic) are regenerated from each vibe's own stills with LTX 0.9.5; four stock-looking picker thumbnails replaced by pool stills.
+- `media_qa` loudness is BS.1770-4 K-weighted and agrees with ffmpeg ebur128; the click scan is calibrated on the demo mix.
+
 ## 0.3.0 (22 October 2026)
 
 The contest round. Everything below runs on open weights on a local GPU through the Comfy SDK and `comfy-api-proxy`.

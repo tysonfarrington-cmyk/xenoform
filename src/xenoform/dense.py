@@ -17,6 +17,7 @@ import json
 import logging
 import os
 import shutil
+import subprocess
 import time
 from pathlib import Path
 from typing import Callable
@@ -40,7 +41,16 @@ def vertical_mode(state: dict) -> str:
     if tier != "final":
         return "crop"
     return asked if asked in VERTICAL else "native"
-MAX_SHOTS = 15  # 16 stills: the black pool holds 17, the other vibes 12 (the chain wraps)
+MAX_SHOTS = 15  # the short-clip plan (demo1): 16 stills, the black pool holds 17, the other vibes 12
+# Full-length songs: the cut keeps a shot a bar (a half bar after the drop) however long the song is, and
+# plays a closed chain of reusable morphs instead of one morph per shot. A 4-minute song is about 100 shots
+# over 24 morphs; every handoff is still one continuous morph because the chain loops back to its first still.
+SHOT_SECONDS_TARGET = 1.6     # shot budget: about one shot per 1.6 s on average
+SHOT_BUDGET_MAX = 240
+CLIP_BUDGET = (12, 30)        # unique morph renders in a music-video cut (min, max)
+CLIP_SECONDS_PER = 10.0       # one unique morph per ten seconds of song
+LONG_SONG_S = 45.0            # above this the chain reuse kicks in (the no-repeat guardrail is for short clips)
+COMPOSE_S_PER_FRAME = {"draft": 0.12, "final": 0.22}  # the house look on the CPU, per output frame (3080 Ti box)
 
 # ---- morph count: "auto" (from clip length + BPM) or a fixed number of forms
 MORPH_SLIDER = (1, 40)      # the desk slider; the number box allows up to MORPH_MAX
@@ -81,12 +91,15 @@ def resolve_morph_count(state: dict, duration: float, beats: list) -> int:
     return auto_morph_count(duration, beats, options(state)["energy"]) if n == "auto" else int(n)
 
 
-def estimate(count: int, tier: str = "draft", aspect: str = "16:9", vertical: str = "native") -> dict:
-    """Rough render time and VRAM for ``count`` morphs on this tier."""
+def estimate(count: int, tier: str = "draft", aspect: str = "16:9", vertical: str = "native", *,
+             clip_s: float = 2.0, compose_s: float = 0.0) -> dict:
+    """Rough render time and VRAM for ``count`` morphs of ``clip_s`` seconds on this tier, plus the look pass."""
     key = "final_916" if tier == "final" and aspect == "9:16" and vertical == "native" else tier
     c = COST.get(key, COST["draft"])
-    secs = round(c["s"] * int(count) + (20 if tier != "preview" else 0))
+    gpu = c["s"] * int(count) * max(0.5, float(clip_s) / 2.0)
+    secs = int(round(gpu + float(compose_s) + (20 if tier != "preview" else 0)))
     return {"morphs": int(count), "seconds": secs, "minutes": round(secs / 60, 1), "peak_vram_gb": c["vram_gb"],
+            "gpu_seconds": int(round(gpu)), "look_seconds": int(round(float(compose_s))), "clip_s": float(clip_s),
             "basis": "RTX 3080 Ti 12 GB, ComfyUI shared"}
 
 
@@ -250,7 +263,44 @@ def _render_s(seconds: float, speed: float) -> int:
     return snap_up(max(2.0, seconds * speed - 0.15))
 
 
-def dense_plan(duration: float, beats: list, drop: float | None = None, max_shots: int = MAX_SHOTS,
+def shot_budget(duration: float) -> int:
+    """How many shots a Dense cut may have: 15 for a demo clip, a shot per 1.6 s for a full song (cap 240)."""
+    return max(MAX_SHOTS, min(SHOT_BUDGET_MAX, int(round(float(duration) / SHOT_SECONDS_TARGET))))
+
+
+def clip_plan(shots: list[dict], duration: float, beats: list) -> dict:
+    """The morph chain for a long song: ``morphs`` unique renders of ``clip_s`` seconds each, closed into a
+    loop (the last morph lands on the first still), and ``assign[i]`` the chain link shot ``i`` plays.
+
+    Walking the loop in order keeps every handoff continuous (shot i ends on the still shot i+1 starts
+    on); the chain simply comes round again after ``morphs`` shots, as a chorus does."""
+    duration = float(duration)
+    bar = 4.0 * _period(beats) if beats else 2.0
+    clip_s = snap_up(min(5.0, max(2.0, bar * 1.15)))
+    morphs = max(CLIP_BUDGET[0], min(CLIP_BUDGET[1], int(round(duration / CLIP_SECONDS_PER))))
+    morphs = max(1, min(morphs, len(shots)))
+    assign = [i % morphs for i in range(len(shots))]
+    return {"clip_s": int(clip_s), "morphs": morphs, "assign": assign, "reuse": len(shots) > morphs}
+
+
+def plan_summary(duration: float, beats: list, energy: str = "dense", tier: str = "draft", aspect: str = "9:16",
+                 vertical: str = "native", drop: float | None = None) -> dict:
+    """What a Make will do for this song: shots, unique morphs, clip length and a time estimate (GPU + look)."""
+    duration = float(duration)
+    if energy == "dense":
+        shots = dense_plan(duration, beats, drop if drop is not None else duration * 0.6)["shots"]
+    else:
+        shots = plan_shots(duration, beats)
+    long_song = duration > LONG_SONG_S
+    cp = clip_plan(shots, duration, beats) if long_song else {"clip_s": 2, "morphs": len(shots), "assign": list(range(len(shots))), "reuse": False}
+    fps = 24
+    compose_s = duration * fps * COMPOSE_S_PER_FRAME["final" if tier == "final" else "draft"]
+    est = estimate(cp["morphs"], tier, aspect, vertical, clip_s=cp["clip_s"], compose_s=compose_s)
+    return {"duration": round(duration, 2), "shots": len(shots), "morphs": cp["morphs"], "clip_s": cp["clip_s"],
+            "reuse": cp["reuse"], "long_song": long_song, "estimate": est}
+
+
+def dense_plan(duration: float, beats: list, drop: float | None = None, max_shots: int | None = None,
                count: int | None = None) -> dict:
     """A demo1-style cut plan for any song.
 
@@ -261,6 +311,8 @@ def dense_plan(duration: float, beats: list, drop: float | None = None, max_shot
     is more than ``max_shots`` shots, the bars get longer until it fits.
     """
     duration = float(duration)
+    if max_shots is None:
+        max_shots = shot_budget(duration)
     beats = sorted(float(b) for b in beats if 0.0 <= float(b) < duration)
     if len(beats) < 4:
         step = 0.5
@@ -381,10 +433,10 @@ def _stretch(shots: list[dict], duration: float) -> list[dict]:
     return out
 
 
-def _draft_clips(shots, stills, work, cfg, seed, vibe, client, cancel, state=None):
+def _draft_clips(shots, stills, work, cfg, seed, vibe, client, cancel, state=None, report=None):
     from xenoform.cloud_morph import _local_clips
 
-    return _local_clips(shots, stills, work, cfg, seed, vibe, client=client, cancel=cancel, state=state)
+    return _local_clips(shots, stills, work, cfg, seed, vibe, client=client, cancel=cancel, state=state, report=report)
 
 
 def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg: dict, state: dict,
@@ -396,16 +448,36 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     work = Path(work) / "simple"
     work.mkdir(parents=True, exist_ok=True)
     shots, plan = shots_for(state, directed, Path(audio_path))
-    vibe, stills = stills_for({**state, "cut_plan": plan if plan.get("stills") else None}, len(shots) + 1)
+    duration = float(directed.get("duration") or 0.0)
+    long_song = duration > LONG_SONG_S and not plan.get("stills") and not state.get("cut_plan")
+    chain: dict = {}
+    if long_song:
+        # Music-video mode: a closed chain of reusable morphs; shots walk the loop in order (see clip_plan).
+        chain = clip_plan(shots, duration, list(directed.get("beats") or []))
+        vibe, stills = stills_for({**state, "cut_plan": None}, chain["morphs"])
+        stills = stills + [stills[0]]  # the loop closes on the first still
+        for shot, ci in zip(shots, chain["assign"]):
+            shot["clip"] = int(ci)
+            shot["render_s"] = int(chain["clip_s"])
+            shot["speed"] = round(chain["clip_s"] / max(float(shot.get("seconds") or 0.1), 0.1), 3)
+        render_shots = [{"index": i, "start": round(i * chain["clip_s"], 4), "end": round((i + 1) * chain["clip_s"], 4),
+                         "seconds": float(chain["clip_s"]), "render_s": int(chain["clip_s"]),
+                         "frames": int(chain["clip_s"] * FPS), "effects": []} for i in range(chain["morphs"])]
+        report("restyle", 0.05, f"{len(shots)} shots on the beat over a loop of {chain['morphs']} morphs "
+                                f"({chain['clip_s']} s each)")
+    else:
+        render_shots = shots
+    vibe, stills = (vibe, stills) if long_song else stills_for({**state, "cut_plan": plan if plan.get("stills") else None}, len(shots) + 1)
     repeat_note = ""
     unique = len({str(s.get("path")) for s in stills})
-    if unique < len(stills) and not plan.get("stills"):
+    if unique < len(stills) and not plan.get("stills") and not long_song:
         # guardrail no_repeat: the still pool wrapped. Use fewer, longer morphs so no still repeats.
         n = max(1, unique - 1)
         shots, plan = shots_for({**state, "morph_count": n}, directed, Path(audio_path))
         if len(shots) > n:  # a planner that ignores the count: keep the first n shots, stretched to fill
             shots = _stretch(shots[:n], float(directed.get("duration") or 0.0))
         vibe, stills = stills_for({**state, "cut_plan": None}, len(shots) + 1)
+        render_shots = shots
         repeat_note = (f"Only {unique} distinct stills in the {vibe} pool: {len(shots)} longer morphs instead of "
                        f"repeating stills. Add stills (or pick a bigger vibe) for faster morphing.")
         report("restyle", 0.05, repeat_note)
@@ -433,38 +505,38 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
         size = (int(fmt.get("width") or size[0]), int(fmt.get("height") or size[1]))  # the house output size (1080x1920)
     fps = int(fmt.get("fps") or beatfx.FPS) if vertical_house else beatfx.FPS
     notes: list[dict] = []
-    report("restyle", 0.1, f"{len(shots)} {'Final (LTX-2.3)' if engine == 'ltx23' else 'Draft (LTX 0.9.5)'} morphs Â· "
-                           f"{opt['energy']} Â· {opt['aspect']}")
+    report("restyle", 0.1, f"{len(render_shots)} {'Final (LTX-2.3)' if engine == 'ltx23' else 'Draft (LTX 0.9.5)'} morphs Â· "
+                           f"{len(shots)} shots Â· {opt['energy']} Â· {opt['aspect']}")
     if engine == "mock":
         from xenoform.cloud_morph import _mock_clips
 
         if native:
             from xenoform.portrait import portrait_stills
 
-            clips = _mock_clips(shots, portrait_stills(stills, work, background=state.get("still_background")), work,
+            clips = _mock_clips(render_shots, portrait_stills(stills, work, background=state.get("still_background")), work,
                                 *final_tier.RENDER_916)
         else:
-            clips = _mock_clips(shots, stills, work, 768, 432)
+            clips = _mock_clips(render_shots, stills, work, 768, 432)
     elif engine == "ltx23":
         from xenoform.final_tier import final_clips
 
         def draft(indices: list[int]) -> dict[int, Path]:
-            sub = [shots[i] for i in indices]
-            sub_stills = []
-            for i in indices:
-                sub_stills += [stills[i], stills[i + 1]]
             got = {}
             for k, i in enumerate(indices):
-                got[i] = _draft_clips([shots[i]], [stills[i], stills[i + 1]], work, cfg, seed + i, vibe, client, cancel, state)[0]
+                got[i] = _draft_clips([render_shots[i]], [stills[i], stills[i + 1]], work, cfg, seed + i, vibe, client, cancel, state)[0]
                 renamed = work / f"draft_fallback{i:02d}.mp4"
                 shutil.move(str(got[i]), renamed)
                 got[i] = renamed
             return got
 
-        clips, notes = final_clips(shots, stills, work, cfg, seed, vibe, client=client, cancel=cancel, report=report, draft=draft,
-                                   vertical=native, state=state)
+        clips, notes = final_clips(render_shots, stills, work, cfg, seed, vibe, client=client, cancel=cancel, report=report,
+                                   draft=draft, vertical=native, state=state)
     else:
-        clips = _draft_clips(shots, stills, work, cfg, seed, vibe, client, cancel, state)
+        clips = _draft_clips(render_shots, stills, work, cfg, seed, vibe, client, cancel, state, report=report)
+    if long_song:
+        clips = [clips[ci] for ci in chain["assign"]]  # one entry per shot, walking the loop
+    if opt["tier"] != "final" and size is None and opt["aspect"] == "9:16":
+        size = (540, 960)  # Draft: the morphs are 512x288 upscales anyway; the look pass runs 4x faster here
     report("assemble", 0.6, "Cutting to the beat" + (" with beat FX" if opt["fx"] else ""))
     tmp = Path(out_path).with_name(Path(out_path).stem + ".simple.mp4")
     m = macros(state)
@@ -473,6 +545,8 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     stem_env = stem_env_for(state)
     report("assemble", 0.6, f"House look: dance_fx {look_preset}, stem_orbit {'on' if opt['stem_orbit'] else 'off'}, "
                             f"stems {'split' if stem_env else 'from the mix'}")
+    if chain:
+        notes.append({"chain": {"morphs": chain["morphs"], "clip_s": chain["clip_s"], "shots": len(shots)}})
     made = beatfx.compose(clips, shots, Path(audio_path), tmp, aspect=opt["aspect"],
                           quality="final" if engine == "ltx23" else "draft", fx=opt["fx"], overlay=opt["overlay"],
                           beats=directed.get("beats") or [], report=report, size=size, fps=fps,
@@ -489,7 +563,7 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
             "open_weights": True, "energy": opt["energy"], "aspect": opt["aspect"], "tier": opt["tier"],
             "vertical": ("native" if native else "crop") if opt["aspect"] == "9:16" else None,
             "fx": opt["fx"], "overlay": made["overlay"], "end_card": card, "vibe": vibe,
-            "stills": [s["file"] for s in stills], "shots": shots, "plan_name": plan.get("name", ""),
+            "stills": [s["file"] for s in stills], "shots": shots, "plan_name": plan.get("name", ""), "chain": chain or None,
             "handoffs_s": [s["start"] for s in shots] + [shots[-1]["end"]], "fallbacks": notes,
             "render": made["size"], "frames": made["frames"], "seconds": round(time.perf_counter() - started, 2),
             "steps": 8 if engine == "ltx23" else None,
@@ -497,3 +571,43 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
             "house": str(hp.get("name") or ""), "stems_path": str(state.get("stems_path") or "")}
     (work / "simple.json").write_text(json.dumps(info, indent=1, default=str), encoding="utf-8")
     return info
+
+
+def stills_animatic(directed: dict, state: dict, audio_path: Path, out_path: Path, work: Path, *,
+                    size: tuple[int, int] = (216, 384), fps: int = 12) -> dict:
+    """The Simple-mode draft: the vibe's stills hard-cut on the planned shots with the song, in a few
+    seconds, so the first thing on screen is the real cut's skeleton (not the CPU blob animatic)."""
+    work = Path(work)
+    work.mkdir(parents=True, exist_ok=True)
+    shots, plan = shots_for(state, directed, Path(audio_path))
+    duration = float(directed.get("duration") or shots[-1]["end"])
+    long_song = duration > LONG_SONG_S and not plan.get("stills")
+    if long_song:
+        chain = clip_plan(shots, duration, list(directed.get("beats") or []))
+        vibe, pool = stills_for({**state, "cut_plan": None}, chain["morphs"])
+        picks = [pool[ci] for ci in chain["assign"]]
+    else:
+        vibe, pool = stills_for({**state, "cut_plan": plan if plan.get("stills") else None}, len(shots) + 1)
+        picks = pool[:len(shots)]
+    lines = []
+    for shot, still in zip(shots, picks):
+        path = str(still["path"]).replace("\\", "/").replace("'", "'\\''")
+        lines.append(f"file '{path}'\nduration {max(0.05, float(shot['end']) - float(shot['start'])):.4f}")
+    lines.append(f"file '{str(picks[-1]['path']).replace(chr(92), '/')}'")  # the concat demuxer needs the last file twice
+    listing = work / "animatic_stills.txt"
+    listing.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    w, h = int(size[0]), int(size[1])
+    out_path = Path(out_path)
+    tmp = out_path.with_name(out_path.stem + ".part.mp4")
+    vf = (f"scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},format=yuv420p,fps={fps}")
+    from xenoform.video import ffmpeg_bin
+
+    cmd = [ffmpeg_bin(), "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(listing), "-i", str(audio_path),
+           "-map", "0:v", "-map", "1:a", "-vf", vf, "-r", str(fps), "-c:v", "libx264", "-preset", "veryfast", "-crf", "24",
+           "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "128k", "-shortest", "-movflags", "+faststart", str(tmp)]
+    subprocess.run(cmd, check=True)
+    from xenoform.turbo import publish_file
+
+    publish_file(tmp, out_path)
+    return {"shots": len(shots), "vibe": vibe, "seconds": round(duration, 3), "long_song": long_song,
+            "size": f"{w}x{h}", "fps": fps}

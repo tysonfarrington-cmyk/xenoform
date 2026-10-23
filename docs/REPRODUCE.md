@@ -39,7 +39,7 @@ Simple mode is three decisions. Leave everything in the **Fine-tune** drawer at 
 
 1. Song: **Bundled demo** (or drop your own file).
 2. Vibe: **chrome-mercury** (the first featured vibe) gives the chrome-pour chain; any of the 12 featured vibes works the same way.
-3. **Make**. The animatic plays, then the GPU pass replaces each scene with an LTX 0.9.5 morph from still to still. On an RTX 3080 Ti a 20 s clip with 7 morphs takes about a minute warm, about two minutes if ComfyUI has just had another model loaded.
+3. **Make**. The stills cut plays within seconds, then the GPU pass replaces it with LTX 0.9.5 morphs from still to still. On an RTX 3080 Ti a 20 s clip with 7 morphs takes about a minute warm, about two minutes if ComfyUI has just had another model loaded. A full song keeps a shot every bar over a loop of 12 to 30 four-second morphs: a four-minute song is about 20 minutes, and the panel beside Make shows the shot count, morph count and estimate before you press it. For a quick result set **Length** to 60 s in the Fine-tune drawer: a one-minute cut centred on the drop, about six minutes.
 
 What the defaults give you, and where each one lives:
 

@@ -633,7 +633,7 @@ def _job_result(client, job):
 
 
 def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, client=None, cancel=None,
-                 state: dict | None = None) -> list[Path]:
+                 state: dict | None = None, report=None) -> list[Path]:
     """Free: one LTX 0.9.5 A->B morph per shot through the existing morph graph."""
     from xenoform import morph_pass as mp
 
@@ -672,6 +672,7 @@ def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, cli
         mp.stop_queued(jobs, cancel)
         jobs.append(client.submit(wf))
     clips = []
+    started = time.perf_counter()
     for i, job in enumerate(jobs):
         mp.wait_or_cancel(job, jobs, cancel)
         result = _job_result(client, job)
@@ -679,6 +680,10 @@ def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, cli
         dest = work / f"local{i:02d}.mp4"
         next((o for o in outs if getattr(o, "type", None) == "video"), outs[0]).to_file(str(dest))
         clips.append(dest)
+        if report:  # the desk re-estimates from the real pace of "Morph k of N"
+            pace = (time.perf_counter() - started) / (i + 1)
+            left = int(round(pace * (len(jobs) - i - 1)))
+            report("restyle", 0.1 + 0.45 * (i + 1) / len(jobs), f"Morph {i + 1} of {len(jobs)}" + (f" Â· about {left} s left" if left else ""))
     return clips
 
 

@@ -227,6 +227,7 @@ def test_demo_animatic_is_the_fast_path(tmp_path: Path):
     state["quality"] = "turbo"
     state["live"] = False
     state["scenes"] = []
+    state["mode"] = "director"  # the painted animatic; Simple mode (the default state) cuts the vibe's stills instead
     first_work = tmp_path / "jobs" / "one"
     first = run_turbo(load_config(), audio, state, first_work / "xenoform.mp4", first_work)
     assert first["mode"] == "animatic"

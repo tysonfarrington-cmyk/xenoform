@@ -106,6 +106,14 @@ def resolve(preset: str | None = None, intensity: float | None = None, role: str
 
 def _blur(img: np.ndarray, sigma: float) -> np.ndarray:
     if cv2 is not None:
+        f = int(sigma / 2.5)
+        if f >= 2 and img.ndim in (2, 3) and min(img.shape[:2]) >= 8 * f:
+            # wide glows: blur a 1/f copy and resize back; indistinguishable for sigma >= 5 and 10-30x faster
+            h, w = img.shape[:2]
+            small = cv2.resize(np.ascontiguousarray(img), (max(2, w // f), max(2, h // f)), interpolation=cv2.INTER_AREA)
+            small = cv2.GaussianBlur(small, (0, 0), sigma / f)
+            out = cv2.resize(small, (w, h), interpolation=cv2.INTER_LINEAR)
+            return out.reshape(img.shape) if out.ndim != img.ndim else out
         return cv2.GaussianBlur(img, (0, 0), sigma)
     from scipy.ndimage import gaussian_filter, zoom  # pragma: no cover
     k = int(sigma / 3)
@@ -139,11 +147,20 @@ class DanceFX:
             rng = np.random.default_rng(self.seed)
             g = rng.standard_normal((max(2, -(-h // 24)), max(2, -(-w // 24)))).astype(np.float32)
             g = cv2.resize(g, (w, h), interpolation=cv2.INTER_CUBIC) if cv2 is not None else _blur(np.kron(g, np.ones((24, 24), np.float32))[:h, :w], 8)
-            yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+            yy, xx = self._grid(h, w)
             fall = 1 - 0.18 * (((xx - w / 2) / (w / 2)) ** 2 + ((yy - h / 2) / (h / 2)) ** 2)
             self._glass = (1 + 0.035 * g) * fall
             self._leak = np.clip(1 - np.hypot((xx - w * 0.95) / w, (yy - h * 0.08) / h) * 1.5, 0, 1) ** 2
         return self._glass, self._leak
+
+    def _grid(self, h: int, w: int):
+        """The (yy, xx) pixel grid for this frame size, built once (the sweep and washes use it every frame)."""
+        g = getattr(self, "_grid_cache", None)
+        if g is None or g[0] != (h, w):
+            yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+            g = ((h, w), yy, xx)
+            self._grid_cache = g
+        return g[1], g[2]
 
     def apply(self, frame: np.ndarray, d: dict, *, fade: float = 1.0) -> np.ndarray:
         """frame: HxWx3 uint8 RGB. d: {"drums","bass","other","vocals","beat"} in 0..1 (None or missing = 0)."""
@@ -187,7 +204,7 @@ class DanceFX:
             f = L + C * (1 - a) + Cb * a
         if p.get("wash", 0) > 0:  # gradient wash, screen-blended; direction drifts slowly with the vocals/other
             ang = 0.9 * self._phase + 1.2 * vo; self._phase += 0.01 + 0.03 * ot
-            yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+            yy, xx = self._grid(h, w)
             g = np.clip(0.5 + ((xx / w - 0.5) * np.cos(ang) + (yy / h - 0.5) * np.sin(ang)), 0, 1)[..., None]
             col = np.array(p.get("wash_a", (40, 210, 255)), np.float32) * (1 - g) + np.array(p.get("wash_b", (255, 70, 170)), np.float32) * g
             amt = float(np.clip((0.06 + 0.28 * max(ba, beat) + 0.08 * vo) * p["wash"] * k, 0, 0.6))
@@ -215,7 +232,7 @@ class DanceFX:
                 L = f.mean(axis=2, keepdims=True); f = f + (255.0 - 2.0 * L) * min(self._ih, 1.0)
         if p.get("sweep", 0) > 0:  # slow diagonal light band, screen-blended
             self._sw += 0.012 + 0.02 * ot
-            yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+            yy, xx = self._grid(h, w)
             u = (xx / w * 0.6 + yy / h) - ((self._sw % 2.2) - 0.4)
             band = np.exp(-(u / 0.09) ** 2)[..., None] * (0.35 + 0.65 * max(vo, ot))
             f = 255 - (255 - f) * (1 - band * 0.45 * p["sweep"] * k)

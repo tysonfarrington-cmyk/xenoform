@@ -241,6 +241,72 @@
    "autotune_score": 69.8,
    "qa": true,
    "checked": "generated 2026-10-22, pending Tys review"
+  },
+  "cosmic": {
+   "clips": [
+    "library/cosmic/wide.mp4",
+    "library/cosmic/medium.mp4",
+    "library/cosmic/close.mp4",
+    "library/cosmic/reveal.mp4"
+   ],
+   "source_morph": "00_orb_iridescent -> 01_crescent_moon_oil_slick",
+   "qa": true,
+   "checked": "regenerated 2026-10-23 from the vibe's own stills, pending Tys review"
+  },
+  "liquid-gold": {
+   "clips": [
+    "library/liquid-gold/wide.mp4",
+    "library/liquid-gold/medium.mp4",
+    "library/liquid-gold/close.mp4",
+    "library/liquid-gold/reveal.mp4"
+   ],
+   "source_morph": "00_droplet_mercury -> 01_crown_splash_mercury",
+   "qa": true,
+   "checked": "regenerated 2026-10-23 from the vibe's own stills, pending Tys review"
+  },
+  "paper-summer": {
+   "clips": [
+    "library/paper-summer/wide.mp4",
+    "library/paper-summer/medium.mp4",
+    "library/paper-summer/close.mp4",
+    "library/paper-summer/reveal.mp4"
+   ],
+   "source_morph": "00_paper_boat -> 01_paper_crane",
+   "qa": true,
+   "checked": "regenerated 2026-10-23 from the vibe's own stills, pending Tys review"
+  },
+  "bloom": {
+   "clips": [
+    "library/bloom/wide.mp4",
+    "library/bloom/medium.mp4",
+    "library/bloom/close.mp4",
+    "library/bloom/reveal.mp4"
+   ],
+   "source_morph": "00_dandelion_iridescent -> 01_lotus_iridescent",
+   "qa": true,
+   "checked": "regenerated 2026-10-23 from the vibe's own stills, pending Tys review"
+  },
+  "neon-night": {
+   "clips": [
+    "library/neon-night/wide.mp4",
+    "library/neon-night/medium.mp4",
+    "library/neon-night/close.mp4",
+    "library/neon-night/reveal.mp4"
+   ],
+   "source_morph": "00_droplet_black_glass -> 01_jellyfish_black_glass",
+   "qa": true,
+   "checked": "regenerated 2026-10-23 from the vibe's own stills, pending Tys review"
+  },
+  "ocean": {
+   "clips": [
+    "library/ocean/wide.mp4",
+    "library/ocean/medium.mp4",
+    "library/ocean/close.mp4",
+    "library/ocean/reveal.mp4"
+   ],
+   "source_morph": "00_jellyfish_iridescent -> 01_spiral_seashell_iridescent",
+   "qa": true,
+   "checked": "regenerated 2026-10-23 from the vibe's own stills, pending Tys review"
   }
  }
 }

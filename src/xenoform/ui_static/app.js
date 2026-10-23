@@ -220,6 +220,7 @@ function payload() {
     dance_fx: (state.easy && state.easy.danceFx) || "auto",
     stem_orbit: !(state.easy && state.easy.stemOrbit === false),
     macros: (window.XENO_MACROS ? window.XENO_MACROS() : null),
+    length_s: Number((state.easy && state.easy.lengthS) || 0),
     // Advanced desk: one scene transition per boundary (guardrails keep each type to 2; overflow becomes a cut).
     scene_transitions: sceneTransitionPlan().map((row) => ({ kind: row.kind, boundary: row.boundary, index: row.index, auto: row.auto })),
     idea: (state.easy && state.easy.idea) || "",
@@ -2430,10 +2431,7 @@ function renderEasy() {
       <div class="monitor" style="background-image:url(${esc(media(preview.still))})"><span class="monitor-pill">${esc(preview.name)} · sample</span></div>
       <div class="filmstrip">${shotStrip(preview.id)}</div>
       <dl class="facts">
-        <dt>Shots</dt><dd>${esc(easy.energyPreset === "dense" ? "Up to 15, faster after the drop" : "7, one per section")}</dd>
-        <dt>Cut</dt><dd>${esc(easy.energyPreset === "dense" ? "Every bar, every half bar on the drop" : "On the bar")}</dd>
-        <dt>Energy</dt><dd>Follows the song</dd>
-        <dt>Time</dt><dd>${esc(easyTimeFact())}</dd>
+        ${easyPlanFacts(easy)}
       </dl>
       <button type="button" class="generate easy-make" data-act="easy-make">Make my video</button>
       <p class="note house-line">9:16, Dense, Draft, Beat FX and the house look. Fine-tune only if you want to.</p>
@@ -2521,6 +2519,8 @@ function simpleOptions(easy) {
   return `<div class="simple-opts" data-tour="easy-options">
       ${simpleSeg("easy-energy", energy, [["flow", "Flow"], ["dense", "Dense"]], "Energy")}
       ${simpleSeg("easy-aspect", aspect, [["16:9", "16:9"], ["9:16", "9:16"], ["1:1", "1:1"]], "Aspect")}
+      ${simpleSeg("easy-length", String(easy.lengthS || 0), [["0", "Full song"], ["60", "60 s"], ["30", "30 s"], ["15", "15 s"]], "Length")}
+      <p class="note">${esc(lengthNote(easy))}</p>
       ${simpleSeg("easy-tier", tier, [["draft", "Draft"], ["final", "Final"]], "Quality")}
       ${aspect === "9:16" && tier === "final" ? simpleSeg("easy-vertical", vertical, [["native", "Native"], ["crop", "Crop"]], "Vertical") : ""}
       ${morphControl(easy, tier, aspect, vertical)}
@@ -2529,7 +2529,7 @@ function simpleOptions(easy) {
       <p class="note look-note">${esc(lookNote(easy.danceFx || "auto"))}</p>
       ${simpleSeg("easy-orbit", orbit ? "on" : "off", [["on", "On"], ["off", "Off"]], "Subject orbit")}
       ${simpleSeg("easy-card", card ? "on" : "off", [["off", "Off"], ["on", "On"]], "End card")}
-      <p class="note">${esc(energy === "dense" ? "Dense: up to 15 morphs, a shot a bar, then a shot every half bar from the drop, with stutters, holds and punches." : "Flow: one morph per section, cut on the bar.")}
+      <p class="note">${esc(energy === "dense" ? "Dense: a shot a bar, then a shot every half bar from the drop, with stutters, holds and punches. A long song loops a chain of up to 30 morphs, so every handoff stays one continuous transformation." : "Flow: one morph per section, cut on the bar.")}
       ${esc(vertNote)}
       ${esc(tier === "final" ? " " + finalEtaText() : " Draft: LTX 0.9.5, the quick pass.")}
       ${esc(easy.overlay ? "" : " Clean export: no waveform or text on the picture.")}</p>
@@ -2633,6 +2633,7 @@ async function loadSimpleOptions() {
       aspect: easy.aspect || "9:16",
       vertical: easy.vertical || "native",
       morphs: String(easy.morphs || "auto"),
+      length: String(easy.lengthS || 0),
     });
     const res = await api(`/api/simple/options?${query.toString()}`);
     if (res.ok) {
@@ -2663,6 +2664,7 @@ function applySimpleRecipe(recipe) {
   easy.overlay = !!recipe.beat_overlay;
   easy.endCard = !!recipe.end_card;
   easy.danceFx = recipe.dance_fx || "auto";
+  easy.lengthS = Number(recipe.length_s || 0);
   easy.stemOrbit = recipe.stem_orbit !== false;
   easy.remixPlan = recipe.cut_plan || null;
   state.seed = recipe.seed || state.seed;
@@ -2778,8 +2780,40 @@ function easyProgressText(job) {
 }
 
 // Same basis as easyEtaGuess: about 1:00 on a first run with the GPU idle, about 0:50 warm.
+// What this Make will do, from /api/simple/options (plan: shots, morphs, estimate) once a song is in.
+function easyVideoSeconds(easy) {
+  const secs = easySongSeconds();
+  const len = Number((easy || state.easy || {}).lengthS || 0);
+  return len && secs > len ? len : secs;
+}
+function lengthNote(easy) {
+  const secs = easySongSeconds();
+  const len = Number(easy.lengthS || 0);
+  if (!len) return `The whole song (${clockText(secs)}). Shorter cuts are centred on the drop.`;
+  return secs > len ? `${len} s around the drop, starting on a beat with short fades.` : `The song is already under ${len} s, so the whole song.`;
+}
+function easyPlanFacts(easy) {
+  const plan = state.simpleOptions && state.simpleOptions.plan;
+  const secs = easySongSeconds();
+  const len = Number(easy.lengthS || 0);
+  const dense = (easy.energyPreset || "dense") === "dense";
+  const rows = [["Video", `${clockText(easyVideoSeconds(easy))}${len && secs > len ? " around the drop" : " (the whole song)"}`]];
+  if (plan && plan.shots) {
+    rows.push(["Shots", plan.reuse ? `${plan.shots} on the beat, over a loop of ${plan.morphs} morphs` : `${plan.shots} morphs on the beat`]);
+  } else {
+    rows.push(["Shots", dense ? "A shot a bar, a half bar after the drop" : "One per section"]);
+  }
+  rows.push(["Cut", dense ? "Every bar, every half bar on the drop" : "On the bar"]);
+  rows.push(["Time", easyTimeFact()]);
+  return rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("");
+}
 function easyTimeFact() {
   if (state.comfyOk === false) return "Seconds, in the browser";
+  const plan = state.simpleOptions && state.simpleOptions.plan;
+  if (plan && plan.estimate && plan.estimate.seconds) {
+    const e = plan.estimate;
+    return `About ${clockText(e.seconds)} on this GPU (${clockText(e.gpu_seconds || 0)} morphs, ${clockText(e.look_seconds || 0)} look)`;
+  }
   const guess = easyEtaGuess();
   return `About ${clockText(guess)}${state.easy && state.easy.warm ? "" : " (first run)"}`;
 }
@@ -4410,6 +4444,10 @@ document.addEventListener("click", async (event) => {
     loadSimpleOptions().then(render);
   } else if (act === "easy-aspect") {
     state.easy.aspect = ["16:9", "9:16", "1:1"].includes(el.dataset.value) ? el.dataset.value : "9:16";
+    render();
+    loadSimpleOptions().then(render);
+  } else if (act === "easy-length") {
+    state.easy.lengthS = [0, 60, 30, 15].includes(Number(el.dataset.value)) ? Number(el.dataset.value) : 0;
     render();
     loadSimpleOptions().then(render);
   } else if (act === "easy-look") {

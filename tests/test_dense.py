@@ -57,7 +57,7 @@ def test_dense_plan_matches_the_demo1_shape():
 def test_dense_plan_fits_any_length(duration):
     beats = [i * 0.5 for i in range(int(duration / 0.5))]
     shots = custom_shots(dense.dense_plan(duration, beats, drop=duration * 0.5), duration)
-    assert 2 <= len(shots) <= dense.MAX_SHOTS
+    assert 2 <= len(shots) <= dense.shot_budget(duration)  # 15 for a clip, a shot a bar for a song
     assert shots[-1]["end"] == pytest.approx(duration, abs=0.01)
     assert sum(s["frames"] for s in shots) == round(duration * 24)
 
@@ -133,13 +133,13 @@ def test_dense_mock_run_writes_a_vertical_fx_cut_with_an_end_card(tmp_path):
     info = dense.run_simple(directed, DEMO, out, tmp_path, {}, {"vibe": "black", "energy_preset": "dense", "aspect": "9:16",
                             "end_card": True, "simple_recipe": "xf1.test", "dance_fx": "off", "stem_orbit": False},
                             lambda *a: stages.append(a), engine="mock")
-    assert out.is_file() and info["render"] == "432x768" and info["open_weights"]
+    assert out.is_file() and info["render"] == "540x960" and info["open_weights"]
     assert info["look"]["dance_fx"] == "off" and info["fps"] == 24 and info["house"] == "demo_house"
     assert info["energy"] == "dense" and len(info["shots"]) >= 6
     assert info["frames"] == round(FEATURES["duration"] * 24)
     probe = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v", "-show_entries", "stream=width,height",
                             "-of", "csv=p=0", str(out)], capture_output=True, text=True).stdout.strip()
-    assert probe == "432,768"
+    assert probe == "540,960"
     assert json.loads((tmp_path / "simple" / "simple.json").read_text())["aspect"] == "9:16"
     hook = beatfx.export_hook(out, tmp_path / "hook.mp4", 2.0, 4.0)
     assert hook["seconds"] == pytest.approx(4.0, abs=0.1)
@@ -159,7 +159,7 @@ def test_final_9x16_mock_run_is_native_portrait(tmp_path):
     crop = dense.run_simple(directed, DEMO, tmp_path / "crop.mp4", tmp_path / "c", {}, {"vibe": "black", "aspect": "9:16",
                             "quality_tier": "final", "vertical_mode": "crop", "dance_fx": "off", "stem_orbit": False},
                             lambda *a: None, engine="mock")
-    assert crop["vertical"] == "crop" and crop["render"] == "432x768"  # the mock composes at Draft size
+    assert crop["vertical"] == "crop" and crop["render"] == "432x768"  # the Final crop mock composes at 432x768
 
 
 def test_run_simple_hands_the_house_look_to_compose(tmp_path, monkeypatch):

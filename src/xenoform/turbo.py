@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
+import logging
 import time
 from pathlib import Path
 from typing import Any, Callable
@@ -53,6 +55,7 @@ def _ah() -> int:
     return _SIZE.get()[1]
 KEY_STEPS = 4
 VIDEO_STEPS = 4
+log = logging.getLogger("xenoform.turbo")
 FPS = 12
 TURBO_MODEL = "ltx-095"
 ANIMATIC_MODEL = "animatic"
@@ -354,11 +357,32 @@ def _compose(
     return frames
 
 
+def publish_file(tmp: Path, dest: Path, *, tries: int = 8, pause: float = 0.25) -> None:
+    """Move ``tmp`` over ``dest`` even while the desk is streaming ``dest`` to a browser.
+
+    On Windows a file that is open for reading cannot be renamed over, so the swap is retried for a
+    couple of seconds and then falls back to copying the bytes into place (a write handle is allowed)."""
+    tmp, dest = Path(tmp), Path(dest)
+    for attempt in range(tries):
+        try:
+            tmp.replace(dest)
+            return
+        except PermissionError:
+            if attempt == tries - 1:
+                break
+            time.sleep(pause)
+    shutil.copyfile(tmp, dest)
+    try:
+        tmp.unlink()
+    except OSError:
+        pass
+
+
 def _publish(frames: list[np.ndarray], dest: Path, fps: float, audio: Path | None) -> None:
     dest.parent.mkdir(parents=True, exist_ok=True)
     tmp = dest.with_name(dest.stem + ".part.mp4")
     write_mp4(tmp, frames, fps, audio_path=audio, crf=23)
-    tmp.replace(dest)
+    publish_file(tmp, dest)
 
 
 def _gather_keyframes(
@@ -507,6 +531,64 @@ def keyframe_backend() -> str:
     return "cpu-keyframe"
 
 
+
+def _painted_animatic(directed: dict, scenes: list[dict], audio_path: Path, out_path: Path, cache, seed: int,
+                      palette: str, flash: float, on_scene, cancel, report) -> dict[str, Any]:
+    """The classic animatic (Advanced / Director mode): a 4 s painted proof, then the keyframe cut."""
+    work = out_path.parent
+    report("animatic", 0.04, "4 second proof")
+    proof_src = [scene for scene in scenes if float(scene.get("start") or 0) < 4.0] or scenes[:1]
+    proof_keys, _proof_hits, proof_misses, proof_paint, _proof_segments = _gather_keyframes(
+        directed, proof_src, cache, seed=seed, palette=palette, cancel=cancel
+    )
+    proof_board = [dict(scene) for scene in proof_src]
+    proof_board[-1]["end"] = min(float(proof_board[-1].get("end") or 0), 4.0)
+    proof_frames = _compose(proof_board, proof_keys, directed, len(proof_board) - 1, float(FPS), float(flash))
+    proof_path = work / "proof.mp4"
+    _publish(proof_frames, proof_path, float(FPS), Path(audio_path))
+    proof_verdict = "one more pass"
+    try:
+        from xenoform.critic import delivery_spec, measure, read_loudness
+
+        step = max(1, int(round(0.2 * FPS)))
+        sample = np.stack(proof_frames[::step])
+        sample_times = np.arange(len(sample), dtype=np.float64) * (step / float(FPS))
+        eyes = measure(
+            sample,
+            sample_times,
+            spec=delivery_spec("turbo", duration=4.0),
+            actual={
+                "width": _aw(),
+                "height": _ah(),
+                "fps": float(FPS),
+                "duration": len(proof_frames) / float(FPS),
+            },
+            beats=list(directed.get("beats") or []),
+            loudness=read_loudness(proof_path),
+        )
+        proof_verdict = str(eyes.get("verdict") or proof_verdict)
+    except Exception:
+        proof_verdict = "one more pass"
+
+    painted = render_animatic(
+        directed,
+        scenes,
+        Path(audio_path),
+        out_path,
+        cache,
+        seed=seed,
+        palette=palette,
+        flash=float(flash),
+        on_scene=on_scene,
+        cancel=cancel,
+    )
+    painted["misses"] = int(proof_misses) + int(painted["misses"])
+    painted["paint_s"] = round(float(proof_paint) + float(painted["paint_s"]), 3)
+    painted["proof_frames"] = proof_frames
+    painted["proof_verdict"] = proof_verdict
+    return painted
+
+
 def _run_turbo(
     cfg: dict,
     audio_path: Path,
@@ -576,54 +658,27 @@ def _run_turbo(
     def on_scene(index: int, total: int) -> None:
         report("animatic", (index + 1) / max(total, 1), f"Scene {index + 1} of {total}")
 
-    report("animatic", 0.04, "4 second proof")
-    proof_src = [scene for scene in scenes if float(scene.get("start") or 0) < 4.0] or scenes[:1]
-    proof_keys, _proof_hits, proof_misses, proof_paint, _proof_segments = _gather_keyframes(
-        directed, proof_src, cache, seed=seed, palette=palette, cancel=cancel
-    )
-    proof_board = [dict(scene) for scene in proof_src]
-    proof_board[-1]["end"] = min(float(proof_board[-1].get("end") or 0), 4.0)
-    proof_frames = _compose(proof_board, proof_keys, directed, len(proof_board) - 1, float(FPS), float(flash))
-    proof_path = work / "proof.mp4"
-    _publish(proof_frames, proof_path, float(FPS), Path(audio_path))
-    proof_verdict = "one more pass"
-    try:
-        from xenoform.critic import delivery_spec, measure, read_loudness
+    simple_mode = str(state.get("mode") or "") == "simple"  # the Simple desk sends mode: "simple"
+    painted: dict = {}
+    if simple_mode:
+        # Simple mode: the draft is the vibe's stills hard-cut on the planned shots (seconds, and it looks like the
+        # real cut's skeleton), not the CPU blob animatic, which for a full song took minutes and looked like nothing.
+        from xenoform.dense import stills_animatic
 
-        step = max(1, int(round(0.2 * FPS)))
-        sample = np.stack(proof_frames[::step])
-        sample_times = np.arange(len(sample), dtype=np.float64) * (step / float(FPS))
-        eyes = measure(
-            sample,
-            sample_times,
-            spec=delivery_spec("turbo", duration=4.0),
-            actual={
-                "width": _aw(),
-                "height": _ah(),
-                "fps": float(FPS),
-                "duration": len(proof_frames) / float(FPS),
-            },
-            beats=list(directed.get("beats") or []),
-            loudness=read_loudness(proof_path),
-        )
-        proof_verdict = str(eyes.get("verdict") or proof_verdict)
-    except Exception:
-        proof_verdict = "one more pass"
-
-    painted = render_animatic(
-        directed,
-        scenes,
-        Path(audio_path),
-        out_path,
-        cache,
-        seed=seed,
-        palette=palette,
-        flash=float(flash),
-        on_scene=on_scene,
-        cancel=cancel,
-    )
-    painted["misses"] = int(proof_misses) + int(painted["misses"])
-    painted["paint_s"] = round(float(proof_paint) + float(painted["paint_s"]), 3)
+        report("animatic", 0.1, "Cutting the stills to the beat")
+        try:
+            # the stills draft follows the cut's aspect (the live-keyframe landscape rule is for the painted path)
+            info = stills_animatic(directed, state, Path(audio_path), out_path, work, size=animatic_size({**state, "live": False}))
+            painted = {"hits": 0, "misses": 0, "paint_s": 0.0, "segments": [], "batches": 0, "fps": float(FPS),
+                       "stills": info, "proof_frames": [], "proof_verdict": "stills"}
+        except Exception as exc:
+            log.warning("stills animatic failed, falling back to the painted animatic: %s", exc)
+            painted = {}
+    if not painted:
+        painted = _painted_animatic(directed, scenes, Path(audio_path), out_path, cache, seed, palette, float(flash),
+                                    on_scene, cancel, report)
+    proof_frames = painted.pop("proof_frames", [])
+    proof_verdict = painted.pop("proof_verdict", "stills")
     filled_with = ""
     fill_warning = ""
     if state.get("interpolate"):

@@ -6,6 +6,7 @@ import json
 import logging
 import math
 import re
+import subprocess
 import threading
 import time
 import uuid
@@ -1063,7 +1064,7 @@ def create_app(cfg: dict | None = None):
 
     @app.get("/api/simple/options")
     def simple_options(duration: float = 20.0, energy: str = "flow", tier: str = "draft", bpm: float = 120.0,
-                       aspect: str = "16:9", vertical: str = "native", morphs: str = "auto") -> dict:
+                       aspect: str = "16:9", vertical: str = "native", morphs: str = "auto", length: float = 0.0) -> dict:
         from xenoform import dance_fx as _dance
         from xenoform import dense as _dense
         from xenoform import final_tier
@@ -1081,7 +1082,11 @@ def create_app(cfg: dict | None = None):
         else:
             shots = plan_shots(duration, beats)
         files = final_tier.present()
+        video_s = min(duration, float(length)) if length and float(length) > 0 else duration
+        plan = _dense.plan_summary(video_s, [b for b in beats if b < video_s], energy, tier, aspect, vertical)
         return {
+            "plan": plan,
+            "lengths": [0, 60, 30, 15],
             "energies": ["flow", "dense"],
             "aspects": ["16:9", "9:16", "1:1"],
             "tiers": ["draft", "final"],
@@ -1186,6 +1191,55 @@ def create_app(cfg: dict | None = None):
         state["forms"] = public_forms(state.get("customs"))
         return state
 
+    def _analyze_file(path: Path) -> dict:
+        """The same analysis /api/analyze runs on an upload."""
+        import librosa
+
+        from xenoform.analyze import analyze_audio
+
+        audio, sr = librosa.load(path, sr=None, mono=True)
+        return analyze_audio(audio, int(sr), fps=float(cfg["fps"]), onset_tau=float(cfg["analyze"]["onset_tau"]),
+                             beat_tau=float(cfg["analyze"]["beat_tau"]),
+                             section_min_seconds=float(cfg["analyze"]["section_min_seconds"]))
+
+    def _trim_audio(audio_id: str, audio_path: Path, length_s: float) -> tuple[str, Path] | None:
+        """A ``length_s`` cut of the song centred a little before its drop, snapped back to a beat, with short
+        fades, registered as its own audio id (analysed like an upload). None when the song is already short."""
+        try:
+            features = _features_for(audio_id)
+        except HTTPException:
+            features = {}
+        dur = float(features.get("duration") or 0.0)
+        if length_s <= 0 or dur <= 0 or dur <= length_s + 1.0:
+            return None
+        beats = [float(b) for b in (features.get("beats") or [])]
+        try:
+            from xenoform.beatfx import drop_time
+
+            drop = float(drop_time(Path(audio_path), beats))
+        except Exception:
+            drop = dur * 0.6
+        start = max(0.0, min(drop - length_s * 0.45, dur - length_s))
+        earlier = [b for b in beats if b <= start + 1e-6]
+        if earlier:
+            start = max(earlier)  # start on a beat
+        new_id = uuid.uuid4().hex[:10]
+        dest = work_dir() / "uploads" / f"{new_id}.wav"
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        from xenoform.video import ffmpeg_bin
+
+        fade_out = max(0.0, length_s - 0.4)
+        subprocess.run([ffmpeg_bin(), "-v", "error", "-y", "-ss", f"{start:.3f}", "-t", f"{length_s:.3f}", "-i", str(audio_path),
+                        "-af", f"afade=t=in:d=0.3,afade=t=out:st={fade_out:.3f}:d=0.4", "-ar", "48000", "-ac", "2", str(dest)],
+                       check=True)
+        features = _analyze_file(dest)
+        features["trimmed_from"] = {"audio_id": audio_id, "start": round(start, 3), "length_s": float(length_s),
+                                    "drop": round(drop, 3), "song_duration": round(dur, 3)}
+        with _LOCK:
+            _AUDIO[new_id] = dest
+            _FEATURES[new_id] = features
+        return new_id, dest
+
     def _start_job(body: dict) -> dict:
         audio_id = str(body.get("audio_id") or "demo")
         if audio_id == "demo":
@@ -1195,6 +1249,16 @@ def create_app(cfg: dict | None = None):
                 audio_path = _AUDIO.get(audio_id)
         if audio_path is None or not Path(audio_path).exists():
             raise HTTPException(400, "Load a song before generating.")
+        try:
+            length_s = float(body.get("length_s") or 0)
+        except (TypeError, ValueError):
+            length_s = 0.0
+        if length_s > 0:
+            trimmed = _trim_audio(audio_id, Path(audio_path), length_s)
+            if trimmed is not None:
+                audio_id, audio_path = trimmed
+                body["audio_id"] = audio_id
+                body["song"] = (str(body.get("song") or "").strip() + f" ({int(length_s)} s cut)").strip()
         guide_id = str(body.get("guide_id") or "")
         if guide_id:
             with _LOCK:
