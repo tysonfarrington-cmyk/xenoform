@@ -471,7 +471,8 @@ def plan_summary(duration: float, beats: list, energy: str = "dense", tier: str 
     long_song = duration > LONG_SONG_S
     cp = clip_plan(shots, duration, beats) if long_song else {"clip_s": 2, "morphs": len(shots), "assign": list(range(len(shots))), "reuse": False}
     fps = 24
-    compose_s = duration * fps * COMPOSE_S_PER_FRAME["final" if tier == "final" else "draft"]
+    frames_total = int(round(duration * fps))
+    compose_s = frames_total * COMPOSE_S_PER_FRAME["final" if tier == "final" else "draft"] / beatfx.look_speedup(frames_total)
     est = estimate(cp["morphs"], tier, aspect, vertical, clip_s=cp["clip_s"], compose_s=compose_s)
     n_perf = performer_choice({"performer": performer}) if long_song else 0
     if n_perf:

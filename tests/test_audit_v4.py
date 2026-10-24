@@ -230,7 +230,7 @@ def test_desk_job_runs_post_qa():
 def test_compose_conforms_fps():
     import inspect
     from xenoform import beatfx
-    assert "_conformed(" in inspect.getsource(beatfx.compose)
+    assert "_conformed(" in inspect.getsource(beatfx._shot_results)  # the clips are conformed in the parent before any worker sees them
 
 
 # ---------------- stem-reactive

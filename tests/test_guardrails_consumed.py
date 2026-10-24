@@ -102,7 +102,7 @@ def test_block_fx_carried_to_shots():
 def test_compose_reads_shot_fx():
     import inspect
     from xenoform import beatfx, dense
-    assert "shot_fx(shot)" in inspect.getsource(beatfx.compose)
+    assert "shot_fx(shot)" in inspect.getsource(beatfx._shot_frames)  # the per-shot work, run here or in a worker process
     src = inspect.getsource(dense.run_simple)
     assert "carry_block_fx" in src and "black_stills" in src
 

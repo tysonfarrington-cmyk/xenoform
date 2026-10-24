@@ -535,6 +535,109 @@ def read_frames(path: Path) -> np.ndarray:
     return np.frombuffer(raw, np.uint8).reshape(-1, h, w, 3)
 
 
+LOOK_WORKERS_ENV = "XENO_LOOK_WORKERS"
+PARALLEL_MIN_FRAMES = 480  # under 20 s of picture the pool's start-up costs more than it saves
+
+
+def look_workers(total: int, heavy: bool = True) -> int:
+    """How many processes ``compose`` spreads the shots over: ``XENO_LOOK_WORKERS`` when set, else up to six of the
+    spare cores; one (the serial path) for short cuts or when neither the beat FX nor the look is on."""
+    raw = os.environ.get(LOOK_WORKERS_ENV, "").strip()
+    if raw:
+        try:
+            return max(1, int(raw))
+        except ValueError:
+            pass
+    if not heavy or int(total) < PARALLEL_MIN_FRAMES:
+        return 1
+    return max(1, min(6, (os.cpu_count() or 2) - 2))
+
+
+def look_speedup(total: int) -> float:
+    """How much faster the look pass runs with the workers ``look_workers`` would give a cut of ``total`` frames
+    (measured 24 Oct 2026: six workers took a 720-frame 540x960 cut from 85 s to 30 s while a render ran alongside),
+    for the plan estimate."""
+    return max(1.0, min(3.0, 0.5 * look_workers(int(total), heavy=True)))
+
+
+def _shot_frames(clip: Path, shot: dict, si: int, n0: int, total: int, *, aspect: str, w: int, h: int, fx: bool,
+                 env: dict | None, beats: list, punch, zoom_scale: float, glow_gain: float, fps: int, look_kwargs: dict) -> dict:
+    """One shot's finished frames: reframed around the subject, the beat FX, then the house look. This is the
+    work the compose loop used to do inline, as plain data in and out so it can run in a worker process: the
+    look state is rebuilt here from ``look_kwargs`` and seeded per shot (``LookPass.start_shot``), so the
+    frames are the same whichever process makes them. ``n0`` is the first output frame's index (song time)."""
+    from xenoform.cloud_morph import shot_indices
+    from xenoform.guardrails import shot_fx
+
+    frames = read_frames(Path(clip))
+    if len(frames) == 0:
+        raise RuntimeError(f"Shot {si + 1} came back with no frames.")
+    a, b = shot_centres(frames) if aspect != "16:9" else ((0.5, 0.5), (0.5, 0.5))
+    idx = shot_indices(shot, len(frames))
+    count = max(len(idx) - 1, 1)
+    look = LookPass(**look_kwargs)
+    look.start_shot(si, len(idx), n0 / fps)
+    out = np.empty((len(idx), h, w, 3), dtype=np.uint8)
+    n = int(n0)
+    for k, j in enumerate(idx):
+        u = k / count
+        u = u * u * (3 - 2 * u)
+        c = (a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u)
+        frame = reframe(frames[j], aspect, c, w, h)
+        if fx and env is not None:
+            bi = int(np.searchsorted(beats, n / fps)) if beats else 0
+            s_int, s_wob = shot_fx(shot)
+            frame = beat_fx(frame, intensity=s_int, wobble=s_wob, t=n / fps,
+                            kick=float(env["kick"][min(n, total - 1)]),
+                            trans=float(env["trans"][min(n, total - 1)]),
+                            punch=float(punch[n]) if n < len(punch) else 0.0,
+                            loud=float(env["loud"][min(n, total - 1)]), beat_index=bi, zoom_scale=zoom_scale,
+                            bloom=glow_gain)
+        frame = look.frame(frame, k, n / fps)
+        if frame.shape[0] != h or frame.shape[1] != w:
+            frame = resize(frame, w, h)
+        out[k] = frame if frame.dtype == np.uint8 else np.clip(frame, 0, 255).astype(np.uint8)
+        n += 1
+    return {"frames": out, "centres": [a, b],
+            "look": {"frames": look.frames, "seconds": look.seconds, "roles": list(look.roles), "notes": list(look.notes)}}
+
+
+def _shot_results(clips: list, shots: list[dict], out_path: Path, workers: int, total: int, common: dict):
+    """Yields ``(si, result)`` in shot order: inline when ``workers`` is 1, else from a bounded window of worker
+    processes (``workers + 2`` shots in flight, so a four-minute song never holds all its frames at once).
+    Clips are conformed to the project fps here, in the parent, before any worker sees them."""
+    starts, n0 = [], 0
+    for shot in shots:
+        starts.append(n0)
+        n0 += int(shot["frames"])
+    if workers <= 1:
+        for si, (clip, shot) in enumerate(zip(clips, shots)):
+            yield si, _shot_frames(_conformed(Path(clip), out_path), shot, si, starts[si], total, **common)
+        return
+    from collections import deque
+    from concurrent.futures import ProcessPoolExecutor
+
+    with ProcessPoolExecutor(max_workers=int(workers)) as pool:
+        pending: deque = deque()
+        nxt = 0
+
+        def submit() -> None:
+            nonlocal nxt
+            clip = _conformed(Path(clips[nxt]), out_path)
+            pending.append(pool.submit(_shot_frames, clip, shots[nxt], nxt, starts[nxt], total, **common))
+            nxt += 1
+
+        while nxt < len(shots) and len(pending) < int(workers) + 2:
+            submit()
+        si = 0
+        while pending:
+            result = pending.popleft().result()
+            if nxt < len(shots):
+                submit()
+            yield si, result
+            si += 1
+
+
 def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Path, *, aspect: str = "16:9",
             quality: str = "draft", fx: bool = True, overlay: bool = False, beats: Iterable[float] = (),
             label: str | None = None, report: Callable[[str, float, str], None] | None = None,
@@ -602,36 +705,28 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
             frame = resize(frame, w, h)
         enc.stdin.write(np.ascontiguousarray(frame).tobytes())
 
+    # The per-shot work runs in _shot_frames, here or in worker processes (look_workers): a full song's look pass
+    # used to take 0.2 s a frame on one core, about nineteen minutes for four minutes of picture.
+    common = dict(aspect=aspect, w=w, h=h, fx=fx, env=env, beats=beats, punch=punch, zoom_scale=zoom_scale,
+                  glow_gain=glow_gain, fps=fps,
+                  look_kwargs=dict(dance_fx=dance_fx, stem_orbit=stem_orbit, stem_env=look.env, macros=macros, house=house,
+                                   beats=beats, fps=fps, shots=len(shots), end_card=end_card, seed=seed,
+                                   palette_image=palette_image, adaptive=adaptive, quality=quality))
+    workers = look_workers(total, heavy=bool(fx or look.active))
+    if workers > 1:
+        log.info("compose: %d shots over %d worker processes", len(shots), workers)
     try:
-        for si, (clip, shot) in enumerate(zip(clips, shots)):
-            frames = read_frames(_conformed(Path(clip), out_path))
-            if len(frames) == 0:
-                raise RuntimeError(f"Shot {si + 1} came back with no frames.")
-            a, b = shot_centres(frames) if aspect != "16:9" else ((0.5, 0.5), (0.5, 0.5))
+        for si, res in _shot_results(clips, shots, out_path, workers, total, common):
+            shot = shots[si]
+            a, b = res["centres"]
             centres.append([a, b])
-            idx = shot_indices(shot, len(frames))
-            count = max(len(idx) - 1, 1)
-            look.start_shot(si, len(idx), n / fps)
-            out: list[np.ndarray] = []
-            for k, j in enumerate(idx):
-                u = k / count
-                u = u * u * (3 - 2 * u)
-                c = (a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u)
-                frame = reframe(frames[j], aspect, c, w, h)
-                if fx and env is not None:
-                    bi = int(np.searchsorted(beats, n / fps)) if beats else 0
-                    s_int, s_wob = shot_fx(shot)
-                    frame = beat_fx(frame, intensity=s_int, wobble=s_wob, t=n / fps,
-                                    kick=float(env["kick"][min(n, total - 1)]),
-                                    trans=float(env["trans"][min(n, total - 1)]),
-                                    punch=float(punch[n]) if n < len(punch) else 0.0,
-                                    loud=float(env["loud"][min(n, total - 1)]), beat_index=bi, zoom_scale=zoom_scale,
-                                    bloom=glow_gain)
-                frame = look.frame(frame, k, n / fps)
-                if over is not None:
-                    frame = over.draw(frame, n / fps)
-                out.append(frame)
-                n += 1
+            stats = res["look"]
+            look.frames += int(stats["frames"]); look.seconds += float(stats["seconds"])
+            look.roles.extend(stats["roles"]); look.notes.extend(stats["notes"])
+            out: list[np.ndarray] = [res["frames"][k] for k in range(len(res["frames"]))]
+            if over is not None:
+                out = [over.draw(frame, (n + k) / fps) for k, frame in enumerate(out)]
+            n += len(out)
             tr = trans[si] if si < len(trans) else None
             if tr and held and tr.get("kind") and int(tr.get("frames") or 0) >= 2:
                 from xenoform import transitions_fx as T
@@ -680,7 +775,7 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
                  look.env.get("engine"), look.frames, look.seconds)
     return {"frames": n, "seconds": round(n / fps, 3), "size": f"{w}x{h}", "aspect": aspect, "fx": bool(fx),
             "overlay": over is not None, "centres": centres, "fps": fps, "look": look.info(),
-            "transitions": used_transitions}
+            "transitions": used_transitions, "workers": int(workers)}
 
 
 def reframe_file(src: Path, dest: Path, aspect: str, *, quality: str = "draft", shots: list[dict] | None = None) -> dict:
