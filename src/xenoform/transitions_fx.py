@@ -80,10 +80,12 @@ def _registry_recommendations() -> None:
         from xenoform import vibes as _vibes
     except Exception:  # pragma: no cover
         return
-    for row in _vibes.extended():
+    # every registry vibe, ready or not, and the registry wins over the table above: configs/vibes.json is where a
+    # vibe's picks are edited, and a stale table entry (liquid-gold's scene-morph drop) silently overrode it
+    for row in _vibes.every():
         picks = {k: v for k, v in (row.get("transitions") or {}).items() if v in TRANSITIONS}
         if picks:
-            RECOMMENDED.setdefault(row["id"], picks)
+            RECOMMENDED[row["id"]] = {**RECOMMENDED.get(row["id"], {}), **picks}
 
 
 _registry_recommendations()

@@ -1,4 +1,4 @@
-﻿"""Simple mode's open-weights finishing pass: energy presets, aspect, Final tier, clean export.
+"""Simple mode's open-weights finishing pass: energy presets, aspect, Final tier, clean export.
 
 ``flow``  (default) one morph per ~5 s on the beat grid, the Simple cut people know.
 ``dense`` the demo1 cut, ported from the agent script into the app: a shot per bar
@@ -567,6 +567,10 @@ def dense_plan(duration: float, beats: list, drop: float | None = None, max_shot
 STORY_BEATS = {  # beats per shot by section label; the drop's first bars run at half bars
     "intro": 8, "calm": 8, "sustain": 8, "build": 4, "release": 4, "drop": 2, "drop_late": 4, "outro": 8,
 }
+# "viscous": the demo's pour. Shots run two bars in the loud passages too and a bar on the drop, so a 3 s morph plays
+# at or under real time instead of being compressed into half-bar cuts (the long-song chain plays clip_s / shot).
+STORY_BEATS_VISCOUS = {"intro": 8, "calm": 8, "sustain": 8, "build": 8, "release": 8, "drop": 4, "drop_late": 8, "outro": 8}
+STORY_PACES = ("tight", "viscous")
 STORY_SPEED = {"intro": 1.0, "calm": 1.0, "sustain": 1.1, "build": 1.25, "release": 1.25, "drop": 2.5, "drop_late": 1.6, "outro": 1.0}
 DROP_HALF_BARS = 8  # bars after the drop that cut on the half bar
 
@@ -623,12 +627,19 @@ def _story_roles(sections: list[dict], duration: float, min_len: float = 6.0) ->
     return rows
 
 
+def story_pace(state: dict | None) -> str:
+    """The cut's pace: "tight" (today's story plan) or "viscous" (the demo's pour), from ``state["pace"]``."""
+    pace = str((state or {}).get("pace") or "tight").strip().lower()
+    return pace if pace in STORY_PACES else "tight"
+
+
 def story_plan(duration: float, beats: list, sections: list[dict], drop: float | None = None,
-               max_shots: int | None = None) -> dict:
+               max_shots: int | None = None, pace: str = "tight") -> dict:
     """The music-video cut for a whole song. Verses breathe (two bars a shot, real-time morphs, no tricks),
     builds and choruses drive (a bar a shot, light punches on the downbeats), the drop punches and cuts on
     the half bar for its first bars, the outro eases out. Every section switch starts a shot and is marked
     as a boundary for a transition. When the shot budget is exceeded, every section's shots get longer."""
+    table = STORY_BEATS_VISCOUS if pace == "viscous" else STORY_BEATS
     duration = float(duration)
     max_shots = shot_budget(duration) if max_shots is None else int(max_shots)
     grid = sorted(float(b) for b in beats if 0.0 <= float(b) < duration)
@@ -664,7 +675,7 @@ def story_plan(duration: float, beats: list, sections: list[dict], drop: float |
                 if not cuts or t > cuts[-1][0] + 0.25:
                     cuts.append((round(t, 4), here, first))
                 first = False
-                step = STORY_BEATS[here] * stretch
+                step = table[here] * stretch
                 i = grid.index(nearest(t))
                 t = grid[i + step] if i + step < len(grid) else duration
         if drop is not None and all(abs(c[0] - drop) > 1e-6 for c in cuts):
@@ -696,7 +707,7 @@ def story_plan(duration: float, beats: list, sections: list[dict], drop: float |
         if starts:
             if drop is not None and abs(a - drop) < 1e-3:
                 kind = "drop"
-            elif k > 0 and STORY_BEATS.get(role, 4) > STORY_BEATS.get(cuts[k - 1][1], 4):
+            elif k > 0 and table.get(role, 4) > table.get(cuts[k - 1][1], 4):
                 kind = "silence"  # dropping into a quieter section
             else:
                 kind = "switch"
@@ -722,6 +733,8 @@ def boundary_transitions(shots: list[dict], vibe: str, *, seed: int = 0) -> list
     if not idx:
         return [None] * len(shots)
     kinds = [T.recommend(vibe, str(shots[i]["boundary"])) for i in idx]
+    # the Simple cut renders no GPU scene morph, so a vibe's scene-morph drop was a plain handoff: match-cut instead
+    kinds = ["match-cut" if k == "scene-morph" else k for k in kinds]
     kinds, _msgs = T.guard(kinds, seed=seed)
     out: list[dict | None] = [None] * len(shots)
     for i, kind in zip(idx, kinds):
@@ -774,7 +787,7 @@ def shots_for(state: dict, directed: dict, audio_path: Path | None) -> tuple[lis
         plan = state["cut_plan"]
     elif opt["energy"] == "dense" and n == "auto" and duration > LONG_SONG_S and len(_analysis_sections(directed)) >= 2:
         drop = find_drop(audio_path, beats, duration)
-        plan = story_plan(duration, beats, _analysis_sections(directed), drop)
+        plan = story_plan(duration, beats, _analysis_sections(directed), drop, pace=story_pace(state))
     elif opt["energy"] == "dense":
         drop = find_drop(audio_path, beats, duration)
         plan = dense_plan(duration, beats, drop, count=None if n == "auto" else n)
@@ -1031,7 +1044,7 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
             "plan_shots": plan_shots, "clips": [str(c) for c in clips], "audio_path": str(audio_path),
             "transitions": transitions, "size": list(size) if size else None, "fps": fps, "seed": seed,
             "palette_image": str(stills[0]["path"]) if stills else None, "vertical_house": vertical_house,
-            "recut_state": {k: state.get(k) for k in ("vibe", "aspect", "quality_tier", "energy_preset", "dance_fx", "stem_orbit",
+            "recut_state": {k: state.get(k) for k in ("vibe", "aspect", "quality_tier", "energy_preset", "dance_fx", "stem_orbit", "pace",
                                                       "beat_fx", "beat_overlay", "end_card", "stems_path", "macros", "still_background",
                                                       "performer", "performer_style")},
             "roles": plan.get("roles"), "performer": performer_info, "own": own_info,

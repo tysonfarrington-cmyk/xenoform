@@ -72,8 +72,8 @@
     "guide_end_strength": 1.0
    },
    "transitions": {
-    "drop": "scene-morph",
-    "switch": "liquid-melt",
+    "drop": "match-cut",
+    "switch": "chrome-refract",
     "beat": "cut",
     "silence": "black-hold"
    },
@@ -121,8 +121,8 @@
     "guide_end_strength": 1.0
    },
    "transitions": {
-    "drop": "scene-morph",
-    "switch": "liquid-melt",
+    "drop": "flow-carry",
+    "switch": "echo-trail",
     "beat": "cut",
     "silence": "black-hold"
    },
@@ -172,8 +172,8 @@
     "guide_end_strength": 1.0
    },
    "transitions": {
-    "drop": "scene-morph",
-    "switch": "liquid-melt",
+    "drop": "match-cut",
+    "switch": "lens-breath",
     "beat": "cut",
     "silence": "black-hold"
    },
@@ -221,7 +221,7 @@
     "guide_end_strength": 0.85
    },
    "transitions": {
-    "drop": "scene-morph",
+    "drop": "flow-carry",
     "switch": "depth-parallax",
     "beat": "cut",
     "silence": "black-hold"
@@ -271,8 +271,8 @@
     "guide_end_strength": 1.0
    },
    "transitions": {
-    "drop": "scene-morph",
-    "switch": "liquid-melt",
+    "drop": "match-cut",
+    "switch": "depth-parallax",
     "beat": "cut",
     "silence": "black-hold"
    },
@@ -320,8 +320,8 @@
     "guide_end_strength": 1.0
    },
    "transitions": {
-    "drop": "scene-morph",
-    "switch": "liquid-melt",
+    "drop": "match-cut",
+    "switch": "chrome-refract",
     "beat": "cut",
     "silence": "black-hold"
    },
@@ -370,8 +370,8 @@
     "guide_end_strength": 1.0
    },
    "transitions": {
-    "drop": "scene-morph",
-    "switch": "liquid-melt",
+    "drop": "match-cut",
+    "switch": "chrome-refract",
     "beat": "cut",
     "silence": "black-hold"
    },
@@ -418,8 +418,8 @@
     "guide_end_strength": 1.0
    },
    "transitions": {
-    "drop": "scene-morph",
-    "switch": "liquid-melt",
+    "drop": "match-cut",
+    "switch": "depth-parallax",
     "beat": "cut",
     "silence": "black-hold"
    },
@@ -467,8 +467,8 @@
     "guide_end_strength": 1.0
    },
    "transitions": {
-    "drop": "scene-morph",
-    "switch": "liquid-melt",
+    "drop": "match-cut",
+    "switch": "flow-carry",
     "beat": "cut",
     "silence": "black-hold"
    },
@@ -518,8 +518,8 @@
     "guide_end_strength": 1.0
    },
    "transitions": {
-    "drop": "scene-morph",
-    "switch": "liquid-melt",
+    "drop": "match-cut",
+    "switch": "flow-carry",
     "beat": "cut",
     "silence": "black-hold"
    },
@@ -567,8 +567,8 @@
     "guide_end_strength": 1.0
    },
    "transitions": {
-    "drop": "scene-morph",
-    "switch": "liquid-melt",
+    "drop": "match-cut",
+    "switch": "echo-trail",
     "beat": "cut",
     "silence": "black-hold"
    },
@@ -617,8 +617,8 @@
     "guide_end_strength": 1.0
    },
    "transitions": {
-    "drop": "scene-morph",
-    "switch": "liquid-melt",
+    "drop": "match-cut",
+    "switch": "lens-breath",
     "beat": "cut",
     "silence": "black-hold"
    },

@@ -63,12 +63,13 @@ def test_beat_snap():
     assert [s["dur"] for s in segs] == [1.0, 1.0, 1.0]
 
 
-def test_recommendations_are_valid_and_scene_morph_is_a_default():
+def test_recommendations_are_valid_and_the_registry_wins():
     kinds = set(T.TRANSITIONS)
     for vibe, table in T.RECOMMENDED.items():
         assert set(table.values()) <= kinds, vibe
         assert table["silence"] == "black-hold"
-    assert T.recommend("liquid-gold", "drop") == "scene-morph"
+    assert T.recommend("liquid-gold", "drop") == "match-cut"  # the registry's pick (configs/vibes.json) wins over the table
+    assert T.recommend("ocean", "drop") == "scene-morph"  # a pool without a registry row keeps the table's signature
     assert T.recommend("unknown-vibe", "nope") in kinds
 
 

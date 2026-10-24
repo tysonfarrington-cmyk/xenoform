@@ -126,6 +126,35 @@ def _drop_bad_pairs(pool: list[dict], bad: set) -> list[dict]:
     return out
 
 
+def chain_walk(pool: list[dict], count: int) -> list[dict]:
+    """``count`` stills from ``pool`` as a chain whose consecutive pairs, the closing pair back to the first
+    included, repeat as late as possible. The first lap is the pool in order (as before); after that each step
+    takes the least-used object whose pairing with the current one has not been seen, so a long song's 24
+    morphs over 12 objects are 24 different pairings instead of the same 12 twice."""
+    n = len(pool)
+    if count <= 0:
+        return []
+    if count <= n or n < 3:
+        return [pool[i % n] for i in range(count)]
+    used: set[tuple[int, int]] = set()
+    seen = [0] * n
+    order = [0]
+    seen[0] = 1
+    for step in range(count - 1):
+        cur = order[-1]
+        last = step == count - 2
+        cands = [j for j in range(n) if j != cur]
+        fresh = [j for j in cands if (min(cur, j), max(cur, j)) not in used]
+        if last:  # the chain closes on the first still: prefer an end whose pairing with it is fresh too
+            closing = [j for j in fresh if (0, j) not in used and j != 0]
+            fresh = closing or fresh
+        choice = min(fresh or cands, key=lambda j: (seen[j], (j - cur) % n))
+        used.add((min(cur, choice), max(cur, choice)))
+        seen[choice] += 1
+        order.append(choice)
+    return [pool[i] for i in order]
+
+
 def pick_stills(state: dict, count: int) -> tuple[str, list[dict]]:
     """``count`` stills for the vibe. A story noun that names a pool object leads.
 
@@ -145,7 +174,7 @@ def pick_stills(state: dict, count: int) -> tuple[str, list[dict]]:
     # Twelve objects a vibe: a 20 s clip (up to 11 handoffs) never repeats one. Longer
     # songs cycle forward, so a repeat is always a new pairing, never a ping-pong back.
     pool = user_targets(state) + pool
-    picked = [pool[i % len(pool)] for i in range(count)]
+    picked = chain_walk(pool, count)
     return look_vibe, [{**item, "path": item.get("path") or str(OBJECTS / item["file"])} for item in picked]
 
 
