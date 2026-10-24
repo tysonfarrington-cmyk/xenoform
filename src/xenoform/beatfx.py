@@ -595,6 +595,11 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
     t_intensity = float((house.get("transitions") or {}).get("intensity") or 0.5)
 
     def write(frame: np.ndarray) -> None:
+        # ffmpeg reads fixed-size raw frames and silently drops everything after a short one, so a frame of
+        # the wrong size (a slipped resize, a transition that returned a small picture) is corrected here
+        if frame.shape[0] != h or frame.shape[1] != w:
+            log.warning("compose: a %dx%d frame where %dx%d was expected; resized", frame.shape[1], frame.shape[0], w, h)
+            frame = resize(frame, w, h)
         enc.stdin.write(np.ascontiguousarray(frame).tobytes())
 
     try:
@@ -632,16 +637,16 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
                 from xenoform import transitions_fx as T
 
                 win = int(min(int(tr["frames"]), len(held), len(out)))
-                h = max(1, win // 2)
-                a_tail = list(held[-h:]) + [held[-1]] * (win - h)
-                b_head = [out[0]] * (win - h) + list(out[:h])
+                half = max(1, win // 2)  # not ``h``: that is the output height, and every frame after the window is reframed to it
+                a_tail = list(held[-half:]) + [held[-1]] * (win - half)
+                b_head = [out[0]] * (win - half) + list(out[:half])
                 try:
                     blended = T.apply(str(tr["kind"]), a_tail, b_head, t_intensity)
-                    for frame in held[:-h]:
+                    for frame in held[:-half]:
                         write(frame)
                     for frame in blended:
                         write(frame)
-                    out = out[h:]
+                    out = out[half:]
                     used_transitions.append(str(tr["kind"]))
                 except Exception as exc:  # a transition must never break a render: plain handoff instead
                     log.warning("transition %s skipped: %s", tr.get("kind"), exc)

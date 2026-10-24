@@ -114,6 +114,19 @@ def test_compose_keeps_the_frame_count_through_a_transition(tmp_path):
     plain = beatfx.compose([a, b], shots, audio, tmp_path / "plain.mp4", aspect="9:16", fx=False, dance_fx="off",
                            stem_orbit=False, size=(64, 112))
     assert plain["frames"] == 48 and plain["transitions"] == []
+    # a transition in the middle of the cut: the shots after it must keep their size and reach the file (the window
+    # half once overwrote the output height, so every later frame was six pixels tall and ffmpeg dropped them all)
+    c = _tiny_clip(tmp_path / "c.mp4", 1.0, "green")
+    audio3 = _wav(tmp_path / "s3.wav", 3.0)
+    shots3 = custom_shots({"shots": [{"start": 0.0, "end": 1.0, "render_s": 2}, {"start": 1.0, "end": 2.0, "render_s": 2},
+                                     {"start": 2.0, "end": 3.0, "render_s": 2}]}, 3.0)
+    out3 = tmp_path / "mid.mp4"
+    mid = beatfx.compose([a, b, c], shots3, audio3, out3, aspect="9:16", fx=False, dance_fx="off", stem_orbit=False,
+                         transitions=[None, {"kind": "match-cut", "frames": 8}, None], size=(64, 112))
+    assert mid["frames"] == 72 and mid["transitions"] == ["match-cut"]
+    probe = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-count_frames", "-show_entries",
+                            "stream=nb_read_frames,width,height", "-of", "csv=p=0", str(out3)], capture_output=True, text=True, check=True)
+    assert probe.stdout.strip().split(",")[:3] == ["64", "112", "72"]
 
 
 def test_recut_from_cache_recomposes_without_the_gpu(tmp_path, monkeypatch):
