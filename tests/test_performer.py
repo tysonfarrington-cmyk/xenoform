@@ -58,12 +58,23 @@ def test_prompt_for_roles_and_look():
 def test_estimate_seconds_grows_with_steps_and_length():
     assert p.estimate_seconds(5.17, 8) < p.estimate_seconds(5.17, 20)
     assert p.estimate_seconds(5.17, 8) < p.estimate_seconds(8.0, 8)
-    assert 60 < p.estimate_seconds(5.17, 8) < 400
+    assert 60 < p.estimate_seconds(5.17, 8) < 600
+    assert p.estimate_seconds(5.17, None) == p.estimate_seconds(5.17, p.STEPS_TURBO)  # the desk's estimate asks without the step count
+    assert p.estimate_seconds(5.17, 8) == pytest.approx(192 + 0.193 * 8 * 175, abs=1)  # 124 frames plus the two-second pre-roll
 
 
-def test_default_reference_is_the_polly_still():
+def test_default_reference_is_the_polly_still(tmp_path, monkeypatch):
     ref = p.default_reference()
     assert ref.name in {"polly.png", "polly_576.png"}
+    # posed stills beside polly.png are picked by the performance (voice -> vocals); a missing pose falls back
+    for name in ("polly.png", "polly_drums.png", "polly_vocals.png", "polly_dance.png", "polly_dance_2.png", "polly_dancer_x.png"):
+        (tmp_path / name).write_bytes(b"png")
+    monkeypatch.setattr(p, "STILL", tmp_path / "polly.png")
+    assert p.default_reference("drums").name == "polly_drums.png"
+    assert p.default_reference("voice").name == "polly_vocals.png"
+    assert p.default_reference("keys").name == "polly.png" and p.default_reference(None).name == "polly.png"
+    # numbered variants rotate with the slot index; an unrelated name that shares the prefix is not a variant
+    assert [p.default_reference("dance", k).name for k in range(3)] == ["polly_dance.png", "polly_dance_2.png", "polly_dance.png"]
 
 
 # --------------------------------------------------------------------------- availability
@@ -237,9 +248,9 @@ def _turbo(monkeypatch):
 def test_render_slot_trims_and_muxes_the_song(tmp_path, song, monkeypatch):
     _turbo(monkeypatch)
     beats = [2.0 + 0.3 + k * (60 / 90) for k in range(8)]  # song time; the slot starts at t0 = 2.0
-    # the song is fed from t0 - 1.0 (the pre-roll), so song time b lands on frame (b - 1.0) * 24 of the render
+    # the song is fed from t0 - 2.0 = 0.0 (the pre-roll), so song time b lands on frame b * 24 of the render
     # a flash at frame 10 stands in for the performance starting inside the pre-roll (a static opening is a held still)
-    flashing = _clip(tmp_path / "h3.mp4", 158, [10] + [int(round((b - 1.0) * 24)) for b in beats])  # longer than the slot
+    flashing = _clip(tmp_path / "h3.mp4", 175, [10] + [int(round(b * 24)) for b in beats])  # longer than the slot
     client = FakeClient([flashing])
     events = []
     res = p.render_slot(song, 2.0, 5.17, p.default_reference(), p.prompt_for("drop", "chrome"), tmp_path / "w", CLOSED,
@@ -251,18 +262,19 @@ def test_render_slot_trims_and_muxes_the_song(tmp_path, song, monkeypatch):
     assert _audio_rms(res["clip"]) > 0.05  # the song's tone, not the stub's silence
     assert res["tries"] == 1 and res["steps"] == 8 and res["lora"] == p.LORA and res["seed"] == 11
     assert res["sync"] >= 0.8 and res["cuts"] == [] and res["freeze_s"] < 0.5
-    assert res["render_s"] >= 0 and res["grid_frames"] == 158 and res["skip_frames"] == 24 and res["pre_roll_s"] == 1.0
+    assert res["render_s"] >= 0 and res["grid_frames"] == 175 and res["skip_frames"] == 48 and res["pre_roll_s"] == 2.0
+    assert res["leak_frames"] == 0 and res["drift_frames"] == 0 and res["room_frames"] == 51 and res["gone_frame"] is None
     g = client.submits[0]
     assert g["18"]["class_type"] == "LoraLoaderModelOnly" and g["18"]["inputs"]["lora_name"] == p.LORA
     assert g["19"]["class_type"] == "MiniMaxH3SigmaShift" and g["19"]["inputs"]["shift_video"] == 12.0
     assert g["6"]["inputs"]["model"] == ["19", 0] and g["8"]["inputs"]["model"] == ["19", 0]
     assert g["8"]["inputs"]["steps"] == 8 and g["9"]["inputs"]["noise_seed"] == 11
-    assert g["5"]["inputs"]["length"] == 158 and (g["5"]["inputs"]["width"], g["5"]["inputs"]["height"]) == (480, 832)
+    assert g["5"]["inputs"]["length"] == 175 and (g["5"]["inputs"]["width"], g["5"]["inputs"]["height"]) == (480, 832)
     assert "drum kit" in g["5"]["inputs"]["prompt"]
     assert g["15"]["inputs"]["image"].startswith("asset:performer_2.00_still") and g["16"]["inputs"]["audio"].startswith("asset:performer_2.00_seg")
     assert events and events[-1][0] == "restyle" and events[-1][1] == 1.0 and "Performer shot" in events[-1][2]
     seg = tmp_path / "w" / "performer_2.00_seg.wav"
-    assert _duration(seg) == pytest.approx(158 / 24 + 0.5, abs=0.02)  # the anchored segment runs 0.5 s past the video
+    assert _duration(seg) == pytest.approx(175 / 24 + 0.5, abs=0.02)  # the anchored segment runs 0.5 s past the video
 
 
 def test_render_slot_retries_a_poor_drum_shot_once(tmp_path, song, monkeypatch):
@@ -279,25 +291,96 @@ def test_render_slot_retries_a_poor_drum_shot_once(tmp_path, song, monkeypatch):
     assert p.count_frames(res["clip"]) == 124
 
 
-def test_render_slot_does_not_retry_singing_or_without_beats(tmp_path, song, monkeypatch):
+def _frames_clip(path: Path, pix: np.ndarray, fps: int = 24) -> Path:
+    """Encode a (frames, h, w) grey array as an mp4 with silent stereo audio."""
+    n, h, w = pix.shape
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "gray", "-s", f"{w}x{h}", "-r", str(fps), "-i", "-",
+                    "-f", "lavfi", "-t", f"{n / fps + 0.1:.3f}", "-i", "anullsrc=r=32000:cl=stereo",
+                    "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", str(path)],
+                   input=np.ascontiguousarray(pix).tobytes(), check=True)
+    return path
+
+
+def _dissolve(path: Path, still_png: Path, frames: int = 175, hold: int = 30, fade: int = 15, size=(64, 112)) -> Path:
+    """An image-to-video stand-in: the still (a bright patch at the top) held ``hold`` frames, dissolved over
+    ``fade`` frames into a different scene (the patch at the bottom) that then flashes every 8 frames. No
+    frame is a hard cut and the dissolve is not a freeze, so only the resemblance to the still sees it."""
+    w, h = size
+    top = np.full((h, w), 60, dtype=np.float32)
+    top[10:34, 20:44] = 230
+    bottom = np.full((h, w), 60, dtype=np.float32)
+    bottom[70:94, 20:44] = 230
+    pix = np.zeros((frames, h, w), dtype=np.float32)
+    for i in range(frames):
+        a = min(1.0, max(0.0, (i - hold) / float(fade)))
+        pix[i] = top * (1 - a) + bottom * a
+        if i >= hold + fade and (i - hold - fade) % 8 == 0:
+            pix[i, 70:94, 20:44] = 120
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "gray", "-s", f"{w}x{h}", "-i", "-",
+                    "-frames:v", "1", str(still_png)], input=top.astype(np.uint8).tobytes(), check=True)
+    return _frames_clip(path, pix.astype(np.uint8))
+
+
+def test_still_gone_reads_the_resemblance_curve():
+    r = np.array([1.0] * 20 + [0.9, 0.8, 0.7, 0.6, 0.45, 0.3, 0.2] + [0.0] * 60, dtype=np.float32)
+    assert p.still_gone(r) == 27  # the settled scene sits at 0: gone at the first of three frames under 0.1 (90 % of the way)
+    assert p.still_gone(r, share=0.5) == 24
+    assert p.still_gone(np.array([1.0] * 10 + [0.7] * 30, dtype=np.float32)) is None  # the scene keeps resembling the still: in place
+    assert p.still_gone(np.full(80, 0.98, dtype=np.float32)) is None  # the picture never leaves the still: a hold, or play in place
+    assert p.still_gone(np.array([0.1] * 80, dtype=np.float32)) is None  # the opening frame is not the still
+    assert p.still_gone(np.array([1.0] * 3 + [0.0] * 3, dtype=np.float32)) == 3
+    assert p.still_gone(np.array([1.0] * 4 + [0.3] * 4 + [0.0] * 4, dtype=np.float32)) == 8  # 0.3 is not far enough along
+
+
+def test_resemblance_sees_a_dissolve_that_no_cut_or_freeze_would(tmp_path):
+    raw = _dissolve(tmp_path / "raw.mp4", tmp_path / "still.png")
+    r = p.resemblance(raw, tmp_path / "still.png")
+    assert len(r) == 175 and r[0] > 0.95 and r[:30].min() > 0.9 and float(np.median(r[90:])) < 0.3
+    gone = p.still_gone(r)
+    assert gone is not None and 40 <= gone <= 47  # at the end of the dissolve (frames 30-45), where the ghost of the still has faded
+    d = p.diagnose(p.motion_energy(raw))
+    assert d["cuts"] == [] and 26 <= round(d["freeze_s"] * 24) <= 32  # the freeze ends when the dissolve starts; no hard cut
+
+
+def test_render_slot_skips_a_dissolve_by_resemblance(tmp_path, song, monkeypatch):
     _turbo(monkeypatch)
-    still = _clip(tmp_path / "still.mp4", 124, [])
-    client = FakeClient([still, still])
-    res = p.render_slot(song, 0.0, 124 / 24, p.default_reference(), p.prompt_for("intro", "chrome"), tmp_path / "w", CLOSED,
+    raw = _dissolve(tmp_path / "raw.mp4", tmp_path / "still.png")
+    client = FakeClient([raw])
+    res = p.render_slot(song, 0.0, 124 / 24, tmp_path / "still.png", p.prompt_for("calm", "chrome", "keys"), tmp_path / "w", CLOSED,
                         client=client, beats=[0.5, 1.2, 1.9])
-    assert res["tries"] == 1 and res["sync"] == 0.0
-    client = FakeClient([still, still])
-    res = p.render_slot(song, 0.0, 124 / 24, p.default_reference(), p.prompt_for("drop", "chrome"), tmp_path / "w2", CLOSED,
+    assert res["tries"] == 1 and res["grid_frames"] == 175 and res["pre_roll_s"] == 0.0  # the top of the song: no earlier music
+    assert res["gone_frame"] is not None and 40 <= res["gone_frame"] <= 47
+    assert res["skip_frames"] == res["gone_frame"] and res["leak_frames"] == 0 and res["drift_frames"] == res["skip_frames"]
+    assert p.count_frames(res["clip"]) == 124
+
+
+def test_render_slot_rerolls_a_shot_whose_still_leaks_whatever_she_plays(tmp_path, song, monkeypatch):
+    _turbo(monkeypatch)
+    held = _clip(tmp_path / "still.mp4", 124, [])  # never performs: the still would fill the whole slot
+    playing = _clip(tmp_path / "playing.mp4", 124, list(range(10, 124, 8)))
+    client = FakeClient([held, playing])
+    res = p.render_slot(song, 0.0, 124 / 24, p.default_reference(), p.prompt_for("intro", "chrome", "voice"), tmp_path / "w", CLOSED,
+                        client=client, beats=[0.5, 1.2, 1.9])
+    assert res["tries"] == 2 and res["seed"] == 1 and res["leak_frames"] == 9 and res["clip"].exists()  # the whole shot wins
+    assert [g["9"]["inputs"]["noise_seed"] for g in client.submits] == [0, 1]
+    # a shot that performs is kept on the first try: singing or not, beats or not
+    client = FakeClient([playing, playing])
+    res = p.render_slot(song, 0.0, 124 / 24, p.default_reference(), p.prompt_for("intro", "chrome", "voice"), tmp_path / "w2", CLOSED,
+                        client=client, beats=[0.5, 1.2, 1.9])
+    assert res["tries"] == 1 and res["sync"] is not None
+    client = FakeClient([playing, playing])
+    res = p.render_slot(song, 0.0, 124 / 24, p.default_reference(), p.prompt_for("drop", "chrome"), tmp_path / "w3", CLOSED,
                         client=client)
     assert res["tries"] == 1 and res["sync"] is None
 
 
 def test_render_slot_without_the_lora_uses_the_base_graph(tmp_path, song, monkeypatch):
     monkeypatch.setattr(p, "available", lambda cfg=None, **kw: dict(p._parse_available(dict(FULL, loras=[]))))
-    client = FakeClient([_clip(tmp_path / "c.mp4", 124, [])])
+    client = FakeClient([_clip(tmp_path / "c.mp4", 175, list(range(10, 175, 8)))])  # performs from frame 10: no re-roll
     res = p.render_slot(song, 1.0, 5.17, p.default_reference(), p.prompt_for("calm", "gold"), tmp_path / "w", CLOSED,
                         client=client)
     g = client.submits[0]
+    assert len(client.submits) == 1 and res["pre_roll_s"] == 1.0 and res["skip_frames"] == 24  # the song starts 1 s before the slot
     assert "18" not in g and "19" not in g and g["6"]["inputs"]["model"] == ["1", 0]
     assert g["8"]["inputs"]["steps"] == 20 and res["steps"] == 20 and res["lora"] is None
     assert res["frames"] == 124

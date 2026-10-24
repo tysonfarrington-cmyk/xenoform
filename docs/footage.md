@@ -2,6 +2,9 @@
 
 Xenoform's strengths are editing, beat sync, audio reactivity, transitions and morphs. Real footage is the starting point.
 
+## Your footage in Simple mode (`xenoform.own_media`)
+Fine-tune -> Your footage: a folder on this machine, or clips and images dropped or picked on the row (`POST /api/own`). The images lead the vibe's morph chain as morph targets, in name order (`state["morph_targets"]`); each clip is cut in on the beat as one run of shots at the start of a passage (2 to 8 s, the first unused clip that fits, never beside a performer shot), trimmed around its middle, cover-cropped to the aspect and played 1:1 with the beat FX, the look and the transitions like any shot. The job records them under `own` in `simple.json`. The full edit below (scene detection, per-clip modes) is the Advanced path.
+
 ## Your footage (`xenoform.footage`)
 1. Drop in clips and images. `scan_folder(folder)` lists them.
 2. `detect_scenes(clip)` finds shot boundaries (ffmpeg scene score), so a long clip becomes several shots.

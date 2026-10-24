@@ -176,7 +176,7 @@ def stem_orbit_choice(state: dict | None) -> bool:
 
 
 PERFORMER_CHOICES = (0, 2, 4)           # performer shots per video: off, two, four
-PERFORMER_SECONDS = 420.0               # per 5 s shot on a 12 GB card, measured 23 Oct 2026 (the turbo LoRA does not help when the weights stream from RAM)
+PERFORMER_SECONDS = 470.0               # per 5 s shot (175 frames with the two-second pre-roll) on a 12 GB card, measured 23-24 Oct 2026 (the turbo LoRA does not help when the weights stream from RAM)
 PERFORMER_MIN_S = 124 / 24.0            # H3's shortest clip (17k+5 frames at 24 fps)
 PERFORMER_MAX_S = 8.0
 PERFORMER_REFERENCE = Path(__file__).resolve().parent / "ui_static" / "performer" / "polly.png"  # the bundled reference still
@@ -191,7 +191,21 @@ def performer_choice(state: dict | None) -> int:
     return min(PERFORMER_CHOICES, key=lambda c: abs(c - n))
 
 
+def performer_reference(instrument: str | None = None, pick: int = 0) -> Path | None:
+    """The bundled Polly still for ``instrument`` (``performer.default_reference``: at the kit, the mic, the keys,
+    with a guitar or dancing when that still ships, standing otherwise; ``pick`` rotates a pose's numbered
+    variants), or None when nothing is bundled."""
+    try:
+        from xenoform import performer as P
+
+        ref = Path(P.default_reference(instrument, pick))
+    except Exception:
+        ref = PERFORMER_REFERENCE
+    return ref if ref.is_file() else None
+
+
 PERFORMER_STYLES = ("auto", "sing", "drums", "keys", "guitar", "dance")
+PERFORMER_QUIET_CYCLE = ("keys", "dance", "guitar", "dance")  # auto: quiet passages without a vocal, in slot order (more dance than instruments after the opening)
 VOCAL_PRESENT = 0.2  # a slot sings when its vocal-stem level is above this fraction of the song's loudest vocal moment
 
 
@@ -219,7 +233,8 @@ def performer_slots(shots: list[dict], count: int, stem_env: dict | None = None,
     """Where the performer appears: runs of consecutive shots, each at least ``PERFORMER_MIN_S`` long,
     starting a passage. Priority: the intro first, then the first drop (drums), then each further passage
     in order; never two slots back to back, at most ``count``. What she does: ``style`` when set; else she
-    sings where the song's vocal stem sings (real lip-sync to the vocal), drums on the drop, keys elsewhere."""
+    sings where the song's vocal stem sings (real lip-sync to the vocal), drums on the first drop, dances on
+    the other loud passages, and on the quiet ones plays keys, then dances, then guitar (``PERFORMER_QUIET_CYCLE``)."""
     count = int(count)
     if count <= 0 or not shots:
         return []
@@ -239,16 +254,8 @@ def performer_slots(shots: list[dict], count: int, stem_env: dict | None = None,
             j += 1
         t0, t1 = float(shots[i]["start"]), float(shots[j - 1]["end"])
         vocal = _vocals_in(stem_env, t0, t1)
-        if style != "auto":
-            instrument = {"sing": "voice"}.get(style, style)
-        elif vocal is not None and vocal >= VOCAL_PRESENT:
-            instrument = "voice"
-        elif section in ("drop", "drop_late", "build"):
-            instrument = "drums"
-        else:
-            instrument = "keys"
         cands.append({"first": i, "last": j - 1, "seconds": round(total, 4), "section": section,
-                      "instrument": instrument, "vocal": None if vocal is None else round(vocal, 3), "start": t0})
+                      "vocal": None if vocal is None else round(vocal, 3), "start": t0})
     if not cands:
         return []
     order = sorted(cands, key=lambda c: (0 if c["section"] == "intro" else 1 if c["section"] == "drop" else 2, c["start"]))
@@ -259,7 +266,25 @@ def performer_slots(shots: list[dict], count: int, stem_env: dict | None = None,
         if any(not (c["last"] < q["first"] - 1 or c["first"] > q["last"] + 1) for q in picked):
             continue  # never adjacent to another performer slot
         picked.append(c)
-    return sorted(picked, key=lambda c: c["first"])
+    picked.sort(key=lambda c: c["first"])
+    # what she does, in the order the slots come: a set style everywhere; else she sings where the vocal stem
+    # sings (real lip-sync), drums on the first drop (or the first loud passage when there is no drop), dances
+    # on the other loud passages, and the quiet ones open on keys then alternate dance and guitar
+    loud = {"drop", "drop_late", "build"}
+    drums_at = next((c["first"] for c in picked if c["section"] == "drop"),
+                    next((c["first"] for c in picked if c["section"] in loud), None))
+    quiet = 0
+    for c in picked:
+        if style != "auto":
+            c["instrument"] = {"sing": "voice"}.get(style, style)
+        elif c["vocal"] is not None and c["vocal"] >= VOCAL_PRESENT:
+            c["instrument"] = "voice"
+        elif c["section"] in loud:
+            c["instrument"] = "drums" if c["first"] == drums_at else "dance"
+        else:
+            c["instrument"] = PERFORMER_QUIET_CYCLE[quiet % len(PERFORMER_QUIET_CYCLE)]
+            quiet += 1
+    return picked
 
 
 def _render_performer(audio_path: Path, slot: dict, vibe: str, still: Path, work: Path, cfg: dict, *, seed: int,
@@ -273,8 +298,9 @@ def _render_performer(audio_path: Path, slot: dict, vibe: str, still: Path, work
                          seed=int(seed), report=report, beats=beats)
 
 
-def apply_performer_slots(shots: list[dict], clips: list, slots: list[dict], rendered: dict) -> tuple[list[dict], list]:
-    """Merge each rendered slot's shots into one performer shot playing its clip 1:1; the rest unchanged."""
+def apply_performer_slots(shots: list[dict], clips: list, slots: list[dict], rendered: dict, mark: str = "performer") -> tuple[list[dict], list]:
+    """Merge each rendered slot's shots into one shot playing its clip 1:1 (marked ``mark``: a performer shot, or
+    ``own`` for one of the user's own clips, which also carries its ``source`` file name); the rest unchanged."""
     out_shots, out_clips = [], []
     i = 0
     by_first = {sl["first"]: sl for sl in slots if sl["first"] in rendered}
@@ -289,8 +315,10 @@ def apply_performer_slots(shots: list[dict], clips: list, slots: list[dict], ren
         frames = int(sum(int(s.get("frames") or 0) for s in run))
         effects = [e for s in run for e in (s.get("effects") or []) if e.get("type") == "punch"]
         merged = {**run[0], "start": run[0]["start"], "end": run[-1]["end"], "seconds": round(float(run[-1]["end"]) - float(run[0]["start"]), 4),
-                  "frames": frames, "render_s": None, "speed": 1.0, "effects": effects, "performer": True,
+                  "frames": frames, "render_s": None, "speed": 1.0, "effects": effects, mark: True,
                   "instrument": sl.get("instrument"), "index": len(out_shots)}
+        if sl.get("clip"):
+            merged["source"] = Path(str(sl["clip"])).name
         merged.pop("ease", None)
         merged.pop("clip", None)
         out_shots.append(merged)
@@ -904,11 +932,12 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
         # Performer shots: MiniMax H3 (open weights, local) has the reference character sing or drum to the
         # song segment; each slot replaces a run of morph shots with one clip played 1:1 (a hard cut in and out).
         slots = performer_slots(shots, n_perf, stem_env_for(state), performer_style(state))
-        still = Path(str(state.get("performer_ref") or state.get("hero_path") or "")) if (state.get("performer_ref") or state.get("hero_path")) else None
-        if still is None or not still.is_file():
-            still = PERFORMER_REFERENCE if PERFORMER_REFERENCE.is_file() else None  # Polly, bundled
+        custom = Path(str(state.get("performer_ref") or state.get("hero_path") or "")) if (state.get("performer_ref") or state.get("hero_path")) else None
+        if custom is not None and not custom.is_file():
+            custom = None
         rendered: dict = {}
         for k, sl in enumerate(slots):
+            still = custom or performer_reference(sl.get("instrument"), k)  # Polly, bundled: posed for the instrument when that still ships
             if still is None:
                 break
             report("restyle", 0.5 + 0.08 * k / max(1, len(slots)),
@@ -931,6 +960,32 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
             shots, clips = apply_performer_slots(shots, clips, slots, rendered)
             performer_info["shots"] = len(rendered)
             notes.append({"performer": performer_info})
+    # Your own clips (own_media): each takes a run of shots at the start of a passage, trimmed to the run's frames
+    # and played 1:1 like a performer shot. The own images already lead the morph chain (state["morph_targets"]).
+    own_info: dict = {"clips": 0, "images": len([p for p in (state.get("morph_targets") or []) if p]), "slots": [], "notes": []}
+    own_clips = [c for c in (state.get("own_clips") or []) if isinstance(c, dict) and c.get("path")]
+    if own_clips:
+        from xenoform import own_media
+
+        oslots = own_media.clip_slots(shots, own_clips, avoid=[(i, i) for i, s in enumerate(shots) if s.get("performer")])
+        rendered_own: dict = {}
+        for k, sl in enumerate(oslots):
+            run = shots[sl["first"]:sl["last"] + 1]
+            frames_needed = int(sum(int(s.get("frames") or 0) for s in run)) or int(round(float(sl["seconds"]) * fps))
+            report("restyle", 0.58 + 0.02 * k / max(1, len(oslots)),
+                   f"Your clip {k + 1} of {len(oslots)}: {Path(sl['clip']).name} ({sl['seconds']:.1f} s)")
+            try:
+                made_clip = own_media.render_clip(sl["clip"], own_media.window_start(sl["clip_seconds"], sl["seconds"]), frames_needed,
+                                                  own_media.size_for(opt["aspect"]), work / "own" / f"own_{sl['start']:.2f}.mp4", fps=fps)
+                rendered_own[sl["first"]] = {"clip": made_clip}
+                own_info["slots"].append({**sl, "frames": frames_needed, "file": str(made_clip)})
+            except Exception as exc:  # an unreadable clip must never break the cut
+                log.warning("own clip %s skipped: %s", sl.get("clip"), exc)
+                own_info["notes"].append(f"your clip {Path(str(sl.get('clip'))).name} at {sl['start']:.1f}s skipped: {exc}")
+        if rendered_own:
+            shots, clips = apply_performer_slots(shots, clips, oslots, rendered_own, mark="own")
+            own_info["clips"] = len(rendered_own)
+        notes.append({"own": own_info})
     if opt["tier"] != "final" and size is None and opt["aspect"] == "9:16":
         size = (540, 960)  # Draft: the morphs are 512x288 upscales anyway; the look pass runs 4x faster here
     report("assemble", 0.6, "Cutting to the beat" + (" with beat FX" if opt["fx"] else ""))
@@ -973,7 +1028,7 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
             "recut_state": {k: state.get(k) for k in ("vibe", "aspect", "quality_tier", "energy_preset", "dance_fx", "stem_orbit",
                                                       "beat_fx", "beat_overlay", "end_card", "stems_path", "macros", "still_background",
                                                       "performer", "performer_style")},
-            "roles": plan.get("roles"), "performer": performer_info,
+            "roles": plan.get("roles"), "performer": performer_info, "own": own_info,
             "handoffs_s": [s["start"] for s in shots] + [shots[-1]["end"]], "fallbacks": notes,
             "render": made["size"], "frames": made["frames"], "seconds": round(time.perf_counter() - started, 2),
             "steps": 8 if engine == "ltx23" else None,

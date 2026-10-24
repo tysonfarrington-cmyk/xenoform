@@ -10,10 +10,12 @@ Contract used by the desk (dense.py / beatfx.py code against it):
 - ``GRID``, ``FPS``, ``SIZE``, ``MIN_SECONDS``: the frame counts H3 accepts (17k+5 at 24 fps).
 - ``grid_frames(seconds)``: smallest grid length covering ``seconds``.
 - ``available(cfg)``: are the model files and the LoRA installed (ComfyUI ``/models`` lists, cached 60 s).
-- ``default_reference()``: the bundled Polly still.
-- ``prompt_for(role, vibe_look, instrument=None)``: drums on the drop, singing elsewhere.
-- ``render_slot(...)``: cut the song, render, trim to ``round(seconds*fps)`` frames, mux the song
-  segment back, score stroke-to-beat sync, retry once with seed+1 when a drum shot is poor.
+- ``default_reference(instrument=None, pick=0)``: the bundled Polly still, posed for the instrument when that still ships.
+- ``prompt_for(role, vibe_look, instrument=None)``: drums on the drop, keys elsewhere, singing only when asked.
+- ``render_slot(...)``: cut the song, render with a two-second pre-roll, start the clip where the
+  performance has begun (past a held, dissolving or hard-cut reference still), trim to
+  ``round(seconds*fps)`` frames, mux the song segment back, score stroke-to-beat sync, retry once
+  with seed+1 when the still leaks into the slot or a drum shot froze and is off the beat.
 - ``sync_score(clip, beats)``: 0..1, 1 = every beat has a motion stroke on it.
 - ``estimate_seconds(seconds, steps)``: wall-time estimate from the measured runs.
 
@@ -74,16 +76,23 @@ SING_ROLES = frozenset({"intro", "calm", "sustain", "release", "outro"})
 POOR_SYNC = 0.05
 POOR_FREEZE_S = 1.0
 POOR_CUT_FRAMES = 12
-PRE_ROLL_S = 1.0  # the song is fed one second early: H3 holds the reference still for 8-31 frames before the performance
+# The song is fed two seconds early, and every spare frame of the grid length is pre-roll too: H3 holds the
+# reference still, dissolves out of it or hard-cuts away 7 to 44 frames in (measured on the real shots) before
+# the performance, and the clip starts where the performance has begun. The one-second pre-roll it replaced
+# left only 7-30 spare frames, so the skip was clamped and up to half a second of the standing still leaked.
+PRE_ROLL_S = 2.0
+STILL_GONE = 0.9  # the still has left the picture once its correlation with the frame has fallen this share of the way from the opening frame to the settled scene (at 0.5 a ghost of it showed for four frames, at 0.8 for one)
+STILL_STAYS = 0.6  # a settled scene still this correlated with the still is the performance in place (the posed stills): nothing to detect
 SYNC_TOL_FRAMES = 2  # a stroke within +-2 frames (83 ms) of the beat counts
 SYNC_LAGS = range(-1, 4)  # strokes may land a frame early or up to three late (picture lags the hit)
 
-# wall-time model from the measured 124-frame shots on a 12 GB card that streams the model from RAM
-# (docs/performer.md has the table): loads and decodes ~49 s; a sampling step costs 15 s on the base
-# model and 42 s with the LoRA, whose 208 patches are re-applied to the streamed weights every step
-_LOAD_S = 49.0
-_PER_FRAME_STEP_S_BASE = 0.14  # 393 s measured at 20 steps
-_PER_FRAME_STEP_S_LORA = 0.34  # 383 s measured at 8 steps (441 s when the weights come from disk)
+# wall-time model from the measured shots on a 12 GB card that streams the model from RAM (docs/performer.md
+# has the table). With the turbo LoRA the real runs took 383 s for 124 frames, 442 s for 158 and 488 s for
+# 192: linear in the frame count, about 1.5 s a frame over a 192 s floor (loads, decodes, and the LoRA's
+# patches re-applied to the streamed weights). The base model measured 393 s for 124 frames at 20 steps.
+_LOAD_S = 192.0
+_PER_FRAME_STEP_S_BASE = 0.081  # (393 - 192) / (20 * 124)
+_PER_FRAME_STEP_S_LORA = 0.193  # (383 - 192) / (8 * 124)
 
 GB = 1024 ** 3
 _CACHE: dict = {}
@@ -100,8 +109,17 @@ def grid_frames(seconds: float) -> int:
     return GRID[-1]
 
 
-def default_reference() -> Path:
-    """The bundled Polly still (falls back to the work/v4 original when the package copy is missing)."""
+def default_reference(instrument: str | None = None, pick: int = 0) -> Path:
+    """The bundled Polly still: posed for ``instrument`` (``polly_<performance>.png`` beside ``polly.png``: at
+    the kit, the microphone, the keys, with a guitar, dancing) when that still ships, else standing (falling
+    back to the work/v4 original when the package copy is missing). Numbered variants of a pose
+    (``polly_dance_2.png``) rotate with ``pick`` (the slot's index), so two dance slots get two poses."""
+    if instrument:
+        what = performance_for("", instrument)
+        posed = sorted(p for p in STILL.parent.glob(f"polly_{what}*.png")
+                       if p.stem == f"polly_{what}" or p.stem[len(what) + 7:].isdigit()) if STILL.parent.is_dir() else []
+        if posed:
+            return posed[int(pick) % len(posed)]
     if STILL.exists() or not STILL_FALLBACK.exists():
         return STILL
     return STILL_FALLBACK
@@ -244,15 +262,16 @@ def available(cfg: dict | None = None, *, fetch: Callable | None = None, max_age
 
 # --------------------------------------------------------------------------- timing
 
-def estimate_seconds(seconds: float, steps: int) -> float:
+def estimate_seconds(seconds: float, steps: int | None) -> float:
     """Wall time of one shot of ``seconds`` at ``steps`` (model loads included, queue wait not).
 
-    Fitted on the measured runs: attention cost grows with the frame count, so the per-frame-step
-    term scales with frames/124.
+    The render covers the slot plus the pre-roll (``render_slot`` picks the grid length the same way)
+    and the measured runs are linear in that frame count. ``steps`` None means the turbo LoRA's 8.
     """
-    frames = grid_frames(seconds)
-    per = _PER_FRAME_STEP_S_LORA if int(steps) <= STEPS_TURBO else _PER_FRAME_STEP_S_BASE
-    return _LOAD_S + per * int(steps) * frames * (frames / GRID[0])
+    frames = grid_frames(float(seconds) + PRE_ROLL_S)
+    steps = int(steps or STEPS_TURBO)
+    per = _PER_FRAME_STEP_S_LORA if steps <= STEPS_TURBO else _PER_FRAME_STEP_S_BASE
+    return _LOAD_S + per * steps * frames
 
 
 # --------------------------------------------------------------------------- ffmpeg helpers
@@ -308,19 +327,67 @@ def count_frames(clip: Path) -> int:
     return int(out.splitlines()[0]) if out else 0
 
 
-def motion_energy(clip: Path, width: int = 96) -> np.ndarray:
-    """Mean absolute frame-to-frame difference of a small grey copy; entry i is frame i -> i+1."""
+def grey_frames(clip: Path, width: int = 96, height: int | None = None) -> np.ndarray:
+    """Every frame of ``clip`` (a video, or a still) as a small grey array: shape (frames, h, w), float32 0..255."""
     probe = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries",
                             "stream=width,height", "-of", "csv=p=0", str(clip)],
                            capture_output=True, text=True, check=True).stdout.strip().split(",")
     w0, h0 = int(probe[0]), int(probe[1])
-    h = max(2, int(round(h0 * width / w0 / 2)) * 2)
+    h = int(height) if height else max(2, int(round(h0 * width / w0 / 2)) * 2)
     raw = subprocess.run(["ffmpeg", "-v", "error", "-i", str(clip), "-vf", f"scale={width}:{h}", "-pix_fmt", "gray",
                           "-f", "rawvideo", "-"], capture_output=True, check=True).stdout
-    frames = np.frombuffer(raw, dtype=np.uint8).reshape(-1, h, width).astype(np.float32)
+    return np.frombuffer(raw, dtype=np.uint8).reshape(-1, h, width).astype(np.float32)
+
+
+def motion_energy(clip: Path, width: int = 96) -> np.ndarray:
+    """Mean absolute frame-to-frame difference of a small grey copy; entry i is frame i -> i+1."""
+    frames = grey_frames(clip, width)
     if frames.shape[0] < 2:
         return np.zeros(0, dtype=np.float32)
     return np.abs(np.diff(frames, axis=0)).mean(axis=(1, 2))
+
+
+def resemblance(clip: Path, still: Path, width: int = 96) -> np.ndarray:
+    """How much each frame of ``clip`` still looks like ``still``: the normalised correlation of the two small
+    grey pictures, 1 for the still itself and about 0 for an unrelated scene (a brightness or colour change
+    does not count, a different composition does). The still is scaled to the clip's small frame."""
+    frames = grey_frames(clip, width)
+    if frames.shape[0] == 0:
+        return np.zeros(0, dtype=np.float32)
+    ref = grey_frames(still, width, frames.shape[1])[0]
+    ref = ref - ref.mean()
+    norm_ref = float(np.sqrt((ref * ref).sum()))
+    out = np.zeros(frames.shape[0], dtype=np.float32)
+    for i, f in enumerate(frames):
+        f = f - f.mean()
+        d = float(np.sqrt((f * f).sum())) * norm_ref
+        out[i] = float((f * ref).sum() / d) if d > 0 else 0.0
+    return out
+
+
+def still_gone(r: np.ndarray, *, share: float = STILL_GONE, hold: int = 3) -> int | None:
+    """The first frame from which the picture no longer resembles the reference still, or None.
+
+    ``r`` is ``resemblance``. The opening frame of an image-to-video shot is the still (r near 1) and the
+    settled performance sits some way off it (the median of the clip's second half); the still has gone
+    once the correlation has fallen ``share`` of the way between the two and stays there ``hold`` frames.
+    This is the signal for a dissolve, which ``diagnose`` cannot see: no frame is a freeze or a hard cut.
+    None when the opening frame is not the still (nothing to detect) or the settled scene still resembles
+    it (above ``STILL_STAYS``: a hold, which ``diagnose`` reports, or the performance in place, which is
+    what a posed still is for; the frames then wander around that level and would trip the test by noise).
+    """
+    r = np.asarray(r, dtype=np.float32)
+    n = len(r)
+    if n < hold + 1 or float(r[0]) < 0.5:
+        return None
+    far = float(np.median(r[n // 2:]))
+    if far > STILL_STAYS:
+        return None
+    thr = far + (1.0 - float(share)) * (float(r[0]) - far)
+    for i in range(n - hold + 1):
+        if bool((r[i:i + hold] < thr).all()):
+            return int(i)
+    return None
 
 
 # --------------------------------------------------------------------------- sync
@@ -444,6 +511,10 @@ def _is_drums(prompt: str) -> bool:
     return "drum" in str(prompt).lower()
 
 
+def _is_singing(prompt: str) -> bool:
+    return "singing" in str(prompt).lower()
+
+
 def _client_for(cfg: dict):
     from xenoform.cloud_morph import _client
 
@@ -509,12 +580,15 @@ def render_slot(audio_path, t0: float, seconds: float, still: Path, prompt: str,
                 beats: list[float] | None = None, max_tries: int = 2) -> dict:
     """Render one performer shot of ``seconds`` seconds starting at song time ``t0``.
 
-    The song is fed from ``t0 - PRE_ROLL_S`` (a bar early) and anchored at frame 0; H3 holds the reference
-    still for the first 8-31 frames before the performance, so the clip starts ``skip`` frames in (the
-    pre-roll, or the first hard cut when it came later), is trimmed to exactly ``round(seconds * fps)``
-    frames and gets the original song segment [t0, t0 + seconds] muxed over it (not the VAE round trip).
-    With ``beats`` (song time), a drum shot that held the still past the pre-roll and whose ``sync_score``
-    is below ``POOR_SYNC`` is re-rolled with seed+1, up to ``max_tries`` renders.
+    The song is fed early (``PRE_ROLL_S`` plus whatever the grid length spares, as far as the song's own
+    start allows) and anchored at frame 0; H3 holds the reference still, dissolves out of it or hard-cuts
+    away 7 to 44 frames in before the performance, so the clip starts ``skip`` frames in (the pre-roll, or
+    where the still has gone when that came later), is trimmed to exactly ``round(seconds * fps)`` frames
+    and gets the original song segment [t0, t0 + seconds] muxed over it (not the VAE round trip). A shot
+    is re-rolled with seed+1 (up to ``max_tries`` renders) when the still would still leak more than half
+    a second into the slot, when a singing shot would run that far ahead of the music (its lips off the
+    words), or, with ``beats`` (song time), when a drum shot froze past the pre-roll and its ``sync_score``
+    is below ``POOR_SYNC``. The whole shot wins over a leaking one, then the better beat.
     """
     if cfg is None:
         from xenoform.config import load_config
@@ -526,13 +600,14 @@ def render_slot(audio_path, t0: float, seconds: float, still: Path, prompt: str,
     w = max(32, int(round(int(size[0]) / 32)) * 32)
     h = max(32, int(round(int(size[1]) / 32)) * 32)
     want = max(1, int(round(float(seconds) * fps)))
-    t_in = max(0.0, float(t0) - PRE_ROLL_S)
-    pre_frames = int(round((float(t0) - t_in) * fps))
-    frames = next((g for g in GRID if g >= want + pre_frames), GRID[-1])  # the grid length that covers the pre-roll too
-    if want + pre_frames > frames:  # the longest clip H3 makes: give up some pre-roll rather than picture
-        pre_frames = max(0, frames - want)
-        t_in = float(t0) - pre_frames / float(fps)
-    want = min(want, frames)
+    pre_min = int(round(PRE_ROLL_S * fps))
+    frames = next((g for g in GRID if g >= want + pre_min), GRID[-1])  # the grid length that covers the pre-roll too
+    want = min(want, frames)  # the longest clip H3 makes: give up pre-roll rather than picture
+    room = frames - want  # the most frames the clip can skip and still be whole
+    # every spare frame is pre-roll (the song is fed that much earlier), as far as the song's own start allows;
+    # at the top of a song there is no earlier music, so the spare frames stay as room past a held still
+    pre_frames = min(room, int(round(float(t0) * fps)))
+    t_in = max(0.0, float(t0) - pre_frames / float(fps))
     avail = available(cfg)
     lora = avail.get("lora")
     graph = GRAPH_TURBO if lora else GRAPH
@@ -545,6 +620,7 @@ def render_slot(audio_path, t0: float, seconds: float, still: Path, prompt: str,
     local = [float(b) - float(t0) for b in (beats or [])]
     est = estimate_seconds(seconds, steps)
     drums = _is_drums(prompt)
+    singing = _is_singing(prompt)
     poller = _VramPoller(_comfy_urls(cfg)[0])
     poller.start()
     tries, best, scores = 0, None, []
@@ -561,31 +637,45 @@ def render_slot(audio_path, t0: float, seconds: float, still: Path, prompt: str,
             candidate = work / f"performer_{tag}_try{attempt}.mp4"
             motion_raw = motion_energy(raw)
             diag = diagnose(motion_raw, fps=fps)
-            # start where the performance has begun: at the pre-roll, or at the first hard cut when the
-            # still was held longer (then the picture runs late by that much, never more than a few frames)
-            first_cut = next((c for c in diag["cuts"] if c <= pre_frames + POOR_CUT_FRAMES * 4), None)
+            gone = still_gone(resemblance(raw, fitted))
+            # start where the performance has begun: at the pre-roll, or later when the still was held past it,
+            # dissolved out (the frame stopped resembling the fitted still) or hard-cut away in the opening
+            opening = pre_frames + POOR_CUT_FRAMES * 4
+            first_cut = next((c for c in diag["cuts"] if c <= opening), None)
+            while first_cut is not None and first_cut + 1 in diag["cuts"]:
+                first_cut += 1  # a cut through a flash frame counts twice: start after the second
             held = int(round(float(diag["freeze_s"]) * fps))
-            skip = max(pre_frames, held, first_cut or 0)
-            skip = min(skip, max(0, len(motion_raw) + 1 - want))
-            diag["skip"] = int(skip)
+            start = max(pre_frames, held, first_cut or 0, gone or 0)
+            skip = min(start, max(0, min(len(motion_raw) + 1, frames) - want))
+            leak = start - skip  # frames of the still (or its dissolve) the clip has to show: no room left to skip
+            drift = max(0, skip - pre_frames)  # the picture runs this far ahead of the music (the hold ate the pre-roll)
+            diag.update({"skip": int(skip), "gone": gone, "leak_frames": int(leak), "drift_frames": int(drift)})
             finish_clip(raw, audio_path, float(t0), want, candidate, fps=fps, skip=skip)
             motion = motion_raw[skip:skip + want] if len(motion_raw) > skip else motion_energy(candidate)
             score = sync_from_motion(motion, local, fps=fps) if local else None
             scores.append(score)
             got = count_frames(candidate)
-            log.info("performer %s: try %d seed %d, %d frames, sync %s, held %.2f s, cuts %s, %.0f s", tag, attempt + 1,
-                     s, got, "n/a" if score is None else f"{score:.2f}", diag["freeze_s"], diag["cuts"], render_s)
-            if best is None or (score is not None and score > (best["sync"] if best["sync"] is not None else -1.0)):
-                best = {"path": candidate, "raw": raw, "sync": score, "seed": s, "render_s": render_s, "frames": got,
-                        **diag}
+            log.info("performer %s: try %d seed %d, %d frames, sync %s, held %.2f s, cuts %s, still gone %s, skip %d "
+                     "(leak %d, drift %d), %.0f s", tag, attempt + 1, s, got, "n/a" if score is None else f"{score:.2f}",
+                     diag["freeze_s"], diag["cuts"], gone, skip, leak, drift, render_s)
+            # poor: the still leaks into the slot (no room left to skip it), a singing shot runs so far ahead of
+            # the music that the lips would be off, or a drum shot froze past the pre-roll and is off the beat
             held_after = max(0, held - pre_frames)  # frames of the held still that the pre-roll could not hide
-            broken = held_after >= POOR_FREEZE_S * fps or skip > pre_frames + POOR_CUT_FRAMES
-            poor = drums and score is not None and score < POOR_SYNC and broken
+            leaking = leak > POOR_CUT_FRAMES
+            late = singing and drift > POOR_CUT_FRAMES
+            frozen = drums and held_after >= POOR_FREEZE_S * fps and score is not None and score < POOR_SYNC
+            poor = leaking or late or frozen
+            quality = (0 if poor else 1, -1.0 if score is None else float(score))  # a whole shot first, then the beat
+            if best is None or quality > best["quality"]:
+                best = {"path": candidate, "raw": raw, "sync": score, "seed": s, "render_s": render_s, "frames": got,
+                        "quality": quality, **diag}
             if not poor:
                 break
             if report:
-                why = f"held the still {diag['freeze_s']:.1f} s" if diag["freeze_s"] >= POOR_FREEZE_S else "cut away"
-                report("restyle", 0.95, f"{label}: {why}, strokes off the beat (sync {score:.2f}); re-rolling with seed {s + 1}")
+                why = (f"the still leaks {leak / fps:.1f} s into the slot" if leaking
+                       else f"the performance starts {drift / fps:.1f} s late" if late
+                       else f"held the still {diag['freeze_s']:.1f} s, strokes off the beat (sync {score:.2f})")
+                report("restyle", 0.95, f"{label}: {why}; re-rolling with seed {s + 1}")
     finally:
         poller.stop()
         poller.join(timeout=3)
@@ -599,6 +689,8 @@ def render_slot(audio_path, t0: float, seconds: float, still: Path, prompt: str,
         "sync": best["sync"], "tries": tries, "steps": steps, "lora": lora,
         "render_s": round(best["render_s"], 1), "vram_gb": poller.peak_gb,
         "freeze_s": best["freeze_s"], "cuts": best["cuts"], "skip_frames": int(best.get("skip") or 0),
+        "gone_frame": best.get("gone"), "leak_frames": int(best.get("leak_frames") or 0),
+        "drift_frames": int(best.get("drift_frames") or 0), "room_frames": int(room),
         "pre_roll_s": round(pre_frames / float(fps), 3),
         "seed": best["seed"], "raw": best["raw"], "grid_frames": frames, "scores": scores, "prompt": prompt,
     }
@@ -606,4 +698,4 @@ def render_slot(audio_path, t0: float, seconds: float, still: Path, prompt: str,
 
 __all__ = ["GRID", "FPS", "SIZE", "MIN_SECONDS", "POOR_SYNC", "LORA", "grid_frames", "available", "default_reference",
            "prompt_for", "performance_for", "render_slot", "sync_score", "estimate_seconds", "cut_audio", "fit_still",
-           "finish_clip", "count_frames", "motion_energy", "submit_shot"]
+           "finish_clip", "count_frames", "motion_energy", "grey_frames", "resemblance", "still_gone", "submit_shot"]

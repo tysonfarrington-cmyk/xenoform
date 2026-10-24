@@ -67,6 +67,17 @@ def test_performer_slots_take_the_intro_then_the_drop_and_never_touch():
     assert dense.performer_slots([{"start": 0.0, "end": 2.0, "seconds": 2.0, "frames": 48, "section": "calm"}], 2) == []
 
 
+def test_performer_slots_auto_mix_drums_on_the_drop_and_dance_elsewhere():
+    shots = _story_shots()
+    four = dense.performer_slots(shots, 4)
+    assert len(four) == 4
+    by = {sl["section"]: sl["instrument"] for sl in four}
+    kinds = [sl["instrument"] for sl in four]
+    assert by["intro"] == "keys" and by["drop"] == "drums"  # the opening on keys, the drop on the kit, whatever comes first in time
+    assert by.get("build") == "dance" and kinds.count("dance") >= 2  # the other loud passage dances; the next quiet one too
+    assert all(sl["instrument"] == "dance" for sl in dense.performer_slots(shots, 4, style="dance"))
+
+
 def test_apply_performer_slots_merges_the_run_into_one_shot_playing_the_clip():
     shots = _story_shots()
     clips = [Path(f"m{i:02d}.mp4") for i in range(len(shots))]
@@ -123,7 +134,7 @@ def test_run_simple_renders_performer_slots_and_hands_merged_shots_to_compose(tm
     state = {"vibe": "ocean", "aspect": "9:16", "quality_tier": "draft", "energy_preset": "dense", "mode": "simple", "performer": 2}
     info = dense.run_simple(directed, DEMO, tmp_path / "x.mp4", tmp_path, {}, state, lambda *a: None, engine="mock")
     assert len(calls) == 2 and calls[0][0] == "intro" and calls[0][1] == "keys" and calls[1][1] == "drums"
-    assert calls[0][4] == "polly.png"  # the bundled reference
+    assert calls[0][4].startswith("polly") and calls[0][4].endswith(".png")  # the bundled reference, posed for the instrument when that still ships
     perf = [s for s in seen["shots"] if s.get("performer")]
     assert len(perf) == 2 and sum(1 for c in seen["clips"] if c.startswith("perf_")) == 2
     assert info["performer"]["shots"] == 2 and len(info["performer"]["slots"]) == 2 and info["performer"]["slots"][0]["sync"] == 0.8

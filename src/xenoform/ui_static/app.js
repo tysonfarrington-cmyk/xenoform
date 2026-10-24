@@ -224,6 +224,9 @@ function payload() {
     hardware_tier: (state.easy && state.easy.gpuTier) || "auto",
     performer: Number((state.easy && state.easy.performer) || 0),
     performer_style: (state.easy && state.easy.performerStyle) || "auto",
+    // Your own clips and images (Simple): a folder on this machine, or the files dropped on the desk (own_id)
+    own_folder: (state.easy && state.easy.ownFolder) || "",
+    own_id: (state.easy && state.easy.ownId) || "",
     // Advanced desk: one scene transition per boundary (guardrails keep each type to 2; overflow becomes a cut).
     scene_transitions: sceneTransitionPlan().map((row) => ({ kind: row.kind, boundary: row.boundary, index: row.index, auto: row.auto })),
     idea: (state.easy && state.easy.idea) || "",
@@ -2486,6 +2489,7 @@ function fineTune(easy) {
   return `<details class="fine-tune" id="fine-tune"${open ? " open" : ""}>
       <summary>Fine-tune <small>${esc(bits.join(" · "))}</small></summary>
       ${simpleOptions(easy)}
+      ${ownRow(easy)}
       ${cloudToggles(easy)}
       ${remixBox(easy)}
     </details>`;
@@ -2535,6 +2539,19 @@ function performerRow(easy) {
   const styleNote = n ? `<p class="note">Auto: she sings where the song's vocal stem sings (lip-synced to the vocal), drums on the drop, keys elsewhere; she never mouths words that are not there.</p>` : "";
   return `${simpleSeg("easy-performer", String(ok ? n : 0), choices, "Performer")}
       <p class="note">${note}</p>${styleRow}${styleNote}`;
+}
+
+// Your own clips and images: a folder on this machine, or files dropped or picked here. The images lead the
+// vibe's morph chain (morph targets, in name order); each clip is cut in on the beat, one run of shots at the
+// start of a passage (2 to 8 s), trimmed around its middle and played 1:1 like a performer shot.
+function ownRow(easy) {
+  const note = easy.ownNote || "Images lead the morphs, clips are cut in on the beat (one passage each, 2 to 8 s). Leave empty and the vibe's own objects carry the cut.";
+  return `<div class="simple-seg own-row" data-own-drop><span>Your footage</span>
+      <label class="ghost cloud-toggle">Folder <input type="text" id="easy-own-folder" value="${esc(easy.ownFolder || "")}" spellcheck="false" aria-label="Folder of your clips and images" placeholder="a folder of clips and images" style="width:16em"></label>
+      <label class="ghost cloud-toggle">Drop or pick files <input type="file" multiple accept="video/*,image/*" data-act="easy-own-files" hidden></label>
+      ${easy.ownId ? `<button type="button" class="ghost" data-act="easy-own-clear">Clear files</button>` : ""}
+    </div>
+    <p class="note">${esc(note)}</p>`;
 }
 
 function machineRows(easy) {
@@ -2720,6 +2737,7 @@ function applySimpleRecipe(recipe) {
   easy.lengthS = Number(recipe.length_s || 0);
   easy.performer = Number(recipe.performer || 0);
   easy.performerStyle = recipe.performer_style || "auto";
+  easy.ownFolder = recipe.own_folder || "";
   easy.stemOrbit = recipe.stem_orbit !== false;
   easy.remixPlan = recipe.cut_plan || null;
   state.seed = recipe.seed || state.seed;
@@ -3957,7 +3975,7 @@ function adoptSession(data, options = {}) {
     transitionNote: previous ? previous.transitionNote || "" : "",
     easy: previous && previous.easy
       ? previous.easy
-      : { song: "", songLabel: "", vibe: "", idea: "", phase: "song", note: "", playedHere: false,
+      : { song: "", songLabel: "", vibe: "", idea: "", ownFolder: "", ownId: "", ownNote: "", phase: "song", note: "", playedHere: false,
           // the house (demo_house): 9:16 native, Dense, Draft, Beat FX, the house look, subject orbit, no end card
           energyPreset: "dense", aspect: "9:16", tier: "draft", fx: true, endCard: false, danceFx: "auto", stemOrbit: true },
     morphCap: previous && previous.morphCap != null ? previous.morphCap : null,
@@ -4521,6 +4539,10 @@ document.addEventListener("click", async (event) => {
     state.easy.cloudPlan = null;
     state.easy.cloudToken = "";
     render();
+  } else if (act === "easy-own-clear") {
+    state.easy.ownId = "";
+    state.easy.ownNote = "";
+    render();
   } else if (act === "easy-overlay") {
     state.easy.overlay = !state.easy.overlay;
     render();
@@ -4926,6 +4948,10 @@ document.addEventListener("input", (event) => {
     state.titleText = target.value;
   } else if (target.id === "easy-idea") {
     state.easy.idea = target.value;
+  } else if (target.id === "easy-own-folder") {
+    state.easy.ownFolder = target.value;
+    state.easy.ownId = "";  // one source at a time: a typed folder replaces dropped files
+    state.easy.ownNote = "";
   } else if (target.id === "style-note") {
     state.styleNote = target.value;
   } else if (target.id === "transition-note") {
@@ -4984,6 +5010,8 @@ document.addEventListener("change", (event) => {
       state.easy.cloudToken = "";
       state.easy.note = `Cut plan loaded: ${plan.shots.length} shots. Press Make to see its price.`;
     }).catch(() => { state.easy.note = "That file is not a cut plan (needs a shots list)."; }).finally(render);
+  } else if (target.dataset.act === "easy-own-files") {
+    uploadOwn(Array.from(target.files || []));
   } else if (target.dataset.act === "test-clip") {
     toggleTestClip(Number(target.dataset.index), target.checked);
   } else if (target.id === "lyric-align") {
@@ -5057,6 +5085,21 @@ document.addEventListener("drop", (event) => {
   event.preventDefault();
   const file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
   if (file) uploadSong(file);
+});
+
+// Your footage (Simple, Fine-tune): drop clips and images on the row.
+document.addEventListener("dragover", (event) => {
+  const zone = event.target && event.target.closest ? event.target.closest("[data-own-drop]") : null;
+  if (!zone) return;
+  event.preventDefault();
+});
+
+document.addEventListener("drop", (event) => {
+  const zone = event.target && event.target.closest ? event.target.closest("[data-own-drop]") : null;
+  if (!zone || !state || !state.easy) return;
+  event.preventDefault();
+  const files = Array.from((event.dataTransfer && event.dataTransfer.files) || []);
+  if (files.length) uploadOwn(files);
 });
 
 document.getElementById("review-fix").addEventListener("click", () => {
@@ -5909,6 +5952,27 @@ async function conformStory() {
   state.board = data.scenes;
   state.storyApproved = false;
   await settleCut({ full: true });
+}
+
+// Your own clips and images for the Simple cut: the dropped or picked files go to work/ui/own/<id>/ (POST /api/own);
+// the Make body sends own_id and the server scans that folder (images lead the morphs, clips are cut in on the beat).
+async function uploadOwn(files) {
+  if (!files.length || !state.easy) return;
+  const body = new FormData();
+  files.forEach((file) => body.append("files", file));
+  state.easy.ownNote = `Attaching ${files.length} file${files.length === 1 ? "" : "s"}...`;
+  render();
+  const response = await api("/api/own", { method: "POST", body });
+  const data = await response.json();
+  if (!response.ok) {
+    state.easy.ownNote = data.detail || "Those files did not attach.";
+    render();
+    return;
+  }
+  state.easy.ownId = data.id;
+  state.easy.ownFolder = "";
+  state.easy.ownNote = data.detail || `${data.images} images, ${data.clips} clips.`;
+  render();
 }
 
 async function uploadHero(file) {

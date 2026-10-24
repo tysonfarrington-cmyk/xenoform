@@ -47,6 +47,7 @@ _FORMS: dict[str, Path] = {}
 _NOTES: dict[str, dict[str, Any]] = {}
 _GUIDES: dict[str, Path] = {}
 _HEROES: dict[str, Path] = {}
+_OWN: dict[str, Path] = {}  # own_id -> folder of the user's own clips and images (POST /api/own)
 _JUDGE_HITS: dict[str, list[float]] = {}
 _JUDGE_LIMIT = 6
 _JUDGE_WINDOW = 60.0
@@ -910,6 +911,29 @@ def create_app(cfg: dict | None = None):
             raise HTTPException(404, "That move render is gone.")
         return FileResponse(job["path"], media_type="video/mp4")
 
+    @app.post("/api/own")
+    async def add_own(files: list[UploadFile] = File(...)) -> dict:
+        """Your own clips and images for the Simple cut, dropped on the desk: saved under work/ui/own/<id>/ and
+        scanned (``own_media.scan``). The Make body then carries ``own_id``."""
+        from xenoform import own_media
+
+        own_id = uuid.uuid4().hex[:10]
+        dest = work_dir() / "own" / own_id
+        dest.mkdir(parents=True, exist_ok=True)
+        kept = 0
+        for f in files:
+            name = re.sub(r"[^\w.\- ]", "_", Path(f.filename or "").name)
+            ext = Path(name).suffix.lower()
+            if ext not in own_media.footage.VIDEO_EXT | own_media.footage.IMAGE_EXT:
+                continue
+            (dest / (name or f"file{kept}{ext}")).write_bytes(await read_upload(f))
+            kept += 1
+        found = own_media.scan(dest)
+        with _LOCK:
+            _OWN[own_id] = dest
+        return {"id": own_id, "folder": str(dest), "images": len(found["images"]), "clips": len(found["clips"]),
+                "detail": f"{len(found['images'])} images lead the morphs, {len(found['clips'])} clips are cut in on the beat."}
+
     @app.post("/api/hero")
     async def add_hero(file: UploadFile = File(...)) -> dict:
         suffix = Path(file.filename or "hero.png").suffix.lower() or ".png"
@@ -1275,9 +1299,10 @@ def create_app(cfg: dict | None = None):
                              beat_tau=float(cfg["analyze"]["beat_tau"]),
                              section_min_seconds=float(cfg["analyze"]["section_min_seconds"]))
 
-    def _trim_audio(audio_id: str, audio_path: Path, length_s: float) -> tuple[str, Path] | None:
-        """A ``length_s`` cut of the song centred a little before its drop, snapped back to a beat, with short
-        fades, registered as its own audio id (analysed like an upload). None when the song is already short."""
+    def _trim_audio(audio_id: str, audio_path: Path, length_s: float, start_s: float | None = None) -> tuple[str, Path] | None:
+        """A ``length_s`` cut of the song centred a little before its drop (or from ``start_s`` when the Make body
+        names a window), snapped back to a beat, with short fades, registered as its own audio id (analysed like
+        an upload). None when the song is already short."""
         try:
             features = _features_for(audio_id)
         except HTTPException:
@@ -1293,6 +1318,8 @@ def create_app(cfg: dict | None = None):
         except Exception:
             drop = dur * 0.6
         start = max(0.0, min(drop - length_s * 0.45, dur - length_s))
+        if start_s is not None:
+            start = max(0.0, min(float(start_s), dur - length_s))
         earlier = [b for b in beats if b <= start + 1e-6]
         if earlier:
             start = max(earlier)  # start on a beat
@@ -1335,7 +1362,11 @@ def create_app(cfg: dict | None = None):
         except (TypeError, ValueError):
             length_s = 0.0
         if length_s > 0:
-            trimmed = _trim_audio(audio_id, Path(audio_path), length_s)
+            try:  # ``length_start``: where the cut begins (seconds into the song); by default a little before the drop
+                start_s = float(body["length_start"]) if body.get("length_start") not in (None, "") else None
+            except (TypeError, ValueError):
+                start_s = None
+            trimmed = _trim_audio(audio_id, Path(audio_path), length_s, start_s)
             if trimmed is not None:
                 audio_id, audio_path = trimmed
                 body["audio_id"] = audio_id
@@ -1352,6 +1383,27 @@ def create_app(cfg: dict | None = None):
                 hero = _HEROES.get(hero_id)
             if hero is not None and Path(hero).exists():
                 body["hero_path"] = str(hero)
+        # Your own clips and images (Simple): a folder path typed in, or the files dropped on the desk (POST /api/own).
+        # The images lead the morph chain (morph_targets), the clips are cut in on the beat (own_clips, dense.run_simple).
+        own_folder = str(body.get("own_folder") or "").strip()
+        own_id = str(body.get("own_id") or "")
+        if own_id:
+            with _LOCK:
+                dropped = _OWN.get(own_id)
+            if dropped is not None and Path(dropped).is_dir():
+                own_folder = str(dropped)
+        if own_folder:
+            try:
+                from xenoform import own_media
+
+                found = own_media.scan(own_folder)
+                extra = [str(p) for p in (body.get("morph_targets") or []) if str(p) not in found["images"]]
+                body["morph_targets"] = list(found["images"]) + extra
+                body["own_clips"] = found["clips"]
+                body["own_folder"] = found["folder"]
+            except Exception as exc:
+                log.warning("own folder %s skipped: %s", own_folder, exc)
+                body["own_folder"] = ""
         stills = work_dir() / "continuity"
         for scene in body.get("scenes") or []:
             if not isinstance(scene, dict):
