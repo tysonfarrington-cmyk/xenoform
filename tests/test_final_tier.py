@@ -36,7 +36,11 @@ def test_lengths_are_8k_plus_1_and_capped():
 def test_eta_matches_the_measured_demo1_final_test():
     # 2 s shot warm with upscale: 93 s measured; 3 s shot cold: 238 s measured
     assert ft.eta_seconds([{"render_s": 2}], warm=True) == 93
-    assert abs(ft.eta_seconds([{"render_s": 3}]) - 238) <= 5
+    assert abs(ft.eta_seconds([{"render_s": 3}]) - 238) <= 30  # the 19 Oct 3 s shot was cold and on a shared card
+    # 24 Oct: eleven 4-5 s morphs at native 9:16 took 3380 s with the compose; the estimate lands within 5 %
+    run = [{"seconds": 2.67, "render_s": r} for r in (4, 4, 5, 2, 5, 4, 4, 4, 4, 4, 4)]
+    assert 3100 <= ft.eta_seconds(run) <= 3400
+    assert ft.eta_seconds([{"seconds": 2.67}]) == ft.eta_seconds([{"render_s": 3}])  # a planned slot counts at its snapped render length
     assert ft.eta_seconds([{"render_s": 2}] * 15, upscale=False, warm=True) == 15 * 70
     assert ft.ETA["measured"] is True
 

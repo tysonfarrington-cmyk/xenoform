@@ -63,8 +63,14 @@ OOM_WORDS = ("out of memory", "outofmemory", "cuda error", "allocation", "oom")
 # Checked against the full 15-shot demo1 Final (same night, still shared): 1481 s of clips
 # against 1540 s predicted (first 3 s shot 271 s cold, then 86 s per 2 s shot), plus about
 # 50-95 s per aspect to compose. Peak card memory 11.9 GB.
+# Re-measured 24 Oct 2026 (20 s cosmic cut, Simple, native 9:16 at 448x768 upscaled to 1080x1920, GPU to
+# itself): 11 morphs rendered at 4-5 s each took 3380 s in all, about 290 s a shot, against 93 s for a 2 s
+# shot. Longer shots cost more than linearly (97-121 frames against 49, the attention runs over every frame),
+# so a quadratic term in the seconds beyond 2 joins the linear one (93 + 45 x 2 + 25 x 4 = 283 s for a 4 s
+# shot, 453 s for 5 s; 3263 s for that run's eleven), and the estimate counts each shot at the length the
+# Final tier really renders (``render_s``, else the snapped duration), not the planned slot.
 ETA = {"load_s": 100.0, "per_shot_s": 70.0, "upscale_per_shot_s": 23.0, "per_second_extra_s": 45.0,
-       "measured": True}
+       "per_second_sq_s": 25.0, "measured": True}
 
 
 def present(root: Path | None = None) -> dict:
@@ -81,10 +87,13 @@ def present(root: Path | None = None) -> dict:
 
 
 def eta_seconds(shots: list[dict], upscale: bool = True, warm: bool = False) -> int:
+    from xenoform.cloud_morph import snap_duration
+
     total = 0.0 if warm else ETA["load_s"]
     for shot in shots:
-        render = float(shot.get("render_s") or shot.get("seconds") or 2.0)
-        total += ETA["per_shot_s"] + ETA["per_second_extra_s"] * max(0.0, render - 2.0)
+        render = float(shot.get("render_s") or snap_duration(float(shot.get("seconds") or 2.0)))
+        extra = max(0.0, render - 2.0)
+        total += ETA["per_shot_s"] + ETA["per_second_extra_s"] * extra + ETA.get("per_second_sq_s", 0.0) * extra * extra
         if upscale:
             total += ETA["upscale_per_shot_s"]
     return int(round(total))
