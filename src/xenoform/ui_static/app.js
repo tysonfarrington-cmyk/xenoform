@@ -55,6 +55,88 @@ function viewFromHash() {
   return "simple";
 }
 
+// One place sets the Simple phase and keeps the URL with it (#simple, #simple/making, #simple/result,
+// #simple/showcase), so the browser's Back button, the breadcrumb and the logo agree on where you are.
+// "result" and "showcase" push a history entry; "making" and "choose" replace the current one, so Back
+// from a finished video lands on the song screen, never on a dead making screen.
+function setEasyPhase(phase) {
+  if (!state || !state.easy) return;
+  state.easy.phase = phase;
+  if (phase === "showcase") state.easy.showcase = true;
+  else if (phase !== "result") state.easy.showcase = false;
+  if (document.body.dataset.advanced === "1") return;
+  const want = phase === "making" || phase === "result" || phase === "showcase" ? `#simple/${phase}` : "#simple";
+  if (location.hash === want) return;
+  try {
+    if (phase === "result" || phase === "showcase") history.pushState(null, "", want);
+    else history.replaceState(null, "", want);
+  } catch (err) {
+    location.hash = want.slice(1);
+  }
+}
+
+// The phase from the URL after Back, Forward or a reload. A running job keeps the making screen whatever
+// the URL says, and "making" is never re-entered from the URL alone (the job that was running is gone).
+function easyPhaseFromHash() {
+  if (!state || !state.easy) return;
+  const sub = (location.hash || "#simple").replace("#", "").split("/")[1] || "";
+  const running = !!(state.job && state.job.status === "running");
+  if (running) {
+    state.easy.phase = "making";
+    return;
+  }
+  if (sub === "showcase") {
+    state.easy.showcase = true;
+    state.easy.phase = "showcase";
+    return;
+  }
+  state.easy.showcase = false;
+  const haveVideo = !!((state.job && state.job.video) || state.easy.playedHere || state.easy.reopenUrl);
+  if (sub === "result" && haveVideo) {
+    state.easy.phase = "result";
+    return;
+  }
+  if (["making", "result", "showcase"].includes(state.easy.phase)) state.easy.phase = "choose";
+  if (location.hash && location.hash !== "#simple") {
+    try { history.replaceState(null, "", "#simple"); } catch (err) {}
+  }
+}
+
+// Song › Vibe › Make › Video: where you are in Simple mode. Earlier steps are buttons back to them.
+function easyCrumbs(easy) {
+  const phase = easy.phase || "choose";
+  const video = phase === "result" || phase === "showcase";
+  const making = phase === "making";
+  const order = ["song", "vibe", "make", "video"];
+  const labels = { song: "Song", vibe: "Vibe", make: "Make", video: phase === "showcase" ? "Showcase" : "Video" };
+  const cur = video ? "video" : making ? "make" : !easy.song ? "song" : !easy.vibe ? "vibe" : "make";
+  const ci = order.indexOf(cur);
+  const items = order.map((key, i) => {
+    if (i < ci && !making) return `<button type="button" class="crumb done" data-act="easy-crumb" data-step="${key}">${labels[key]}</button>`;
+    return `<span class="crumb${i === ci ? " now" : ""}${i < ci ? " done" : ""}"${i === ci ? ' aria-current="step"' : ""}>${labels[key]}</span>`;
+  });
+  return `<nav class="easy-crumbs" aria-label="Where you are">${items.join('<span class="crumb-sep" aria-hidden="true">›</span>')}</nav>`;
+}
+
+// The last session's vibe and Fine-tune choices survive a reload or a desk restart (the song cannot: uploads live on the server).
+const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs"];
+function saveEasy() {
+  if (!state || !state.easy) return;
+  try {
+    const out = {};
+    EASY_SAVED_KEYS.forEach((key) => { if (state.easy[key] !== undefined) out[key] = state.easy[key]; });
+    localStorage.setItem("xeno-easy", JSON.stringify(out));
+  } catch (err) {}
+}
+function loadEasy() {
+  try {
+    const saved = JSON.parse(localStorage.getItem("xeno-easy") || "{}");
+    return saved && typeof saved === "object" ? saved : {};
+  } catch (err) {
+    return {};
+  }
+}
+
 function allForms() {
   return state.forms.concat(state.customs);
 }
@@ -2314,6 +2396,16 @@ function dropCard() {
   </section>`;
 }
 
+// The showcase's side column: it is not his render, so no knobs, no re-cut, no share. One way on.
+function showcaseAside() {
+  return `<aside class="panel easy-side">
+        <h3>Make your own</h3>
+        <p class="note">This reel was made earlier with the same engine. Back to the song, pick a vibe, then Make: a 30 s cut takes a few minutes on a 12 GB GPU, a full song about twenty.</p>
+        <button type="button" class="generate easy-row" data-act="easy-again">Back to the song</button>
+        <button type="button" class="text easy-row" data-act="easy-advanced">Open in Advanced</button>
+      </aside>`;
+}
+
 function renderEasy() {
   const easy = state.easy || { phase: "choose", song: "", vibe: "", idea: "", note: "" };
   const chosen = vibeById(easy.vibe) || VIBES[3];
@@ -2325,6 +2417,7 @@ function renderEasy() {
     const wrote = scenes.length ? "done" : "now";
     const painting = scenes.length ? "now" : "wait";
     return `<div class="easy easy-making">
+      ${easyCrumbs(easy)}
       <div class="easy-make-head">
         <div>
           <p class="eyebrow">${esc(chosen.name)} · ${esc(easy.songLabel || "Song")}</p>
@@ -2359,20 +2452,27 @@ function renderEasy() {
       </div>
     </div>`;
   }
-  if (easy.phase === "result") {
-    const title = easy.showcase ? "A finished one" : chosen && easy.vibe ? chosen.name : "Your cut";
+  if (easy.phase === "result" || easy.phase === "showcase") {
+    const showcase = easy.phase === "showcase" || !!easy.showcase;
+    const title = showcase ? "A finished one" : chosen && easy.vibe ? chosen.name : "Your cut";
+    const actions = showcase
+      ? `<button type="button" class="generate" data-act="easy-again">Make your own</button>
+            <button type="button" class="ghost" data-act="easy-download">Download the showcase</button>`
+      : `<button type="button" class="ghost" data-act="easy-share">Share cut</button>
+            ${easyVideoId() ? '<button type="button" class="ghost" data-act="easy-hook" title="Cuts the strongest drop into a 15 second clip, same aspect and FX">15 s hook</button>' : ""}
+            ${easyVideoId() ? '<button type="button" class="ghost" data-act="easy-copy-recipe">Copy recipe code</button>' : ""}
+            <button type="button" class="generate" data-act="easy-download">Download</button>`;
     return `<div class="easy easy-done">
       <section class="easy-result">
+        ${easyCrumbs(easy)}
         <div class="easy-result-head">
           <div>
-            <p class="eyebrow">Your video</p>
+            <p class="eyebrow">${showcase ? "Showcase · made earlier" : "Your video"}</p>
             <h2>${esc(title)}</h2>
           </div>
           <div class="easy-result-actions">
-            <button type="button" class="ghost" data-act="easy-share">Share cut</button>
-            ${easyVideoId() ? '<button type="button" class="ghost" data-act="easy-hook" title="Cuts the strongest drop into a 15 second clip, same aspect and FX">15 s hook</button>' : ""}
-            ${easyVideoId() ? '<button type="button" class="ghost" data-act="easy-copy-recipe">Copy recipe code</button>' : ""}
-            <button type="button" class="generate" data-act="easy-download">Download</button>
+            <button type="button" class="ghost easy-back" data-act="easy-again">&larr; Back to the song</button>
+            ${actions}
           </div>
         </div>
         <div class="player">
@@ -2384,7 +2484,7 @@ function renderEasy() {
         ${easy.hookUrl ? `<p class="note">15 s hook ready: <a href="${esc(media(easy.hookUrl))}" download>download the hook</a>${easy.hookInfo ? ` · ${esc(easy.hookInfo)}` : ""}</p>` : ""}
         ${easy.recipe ? `<p class="note recipe-line">Recipe <code>${esc(easy.recipe)}</code></p>` : ""}
       </section>
-      <aside class="panel easy-side">
+      ${showcase ? showcaseAside() : `<aside class="panel easy-side">
         <div class="energy-head"><h3>Energy</h3><b id="energy-readout">${esc(energyWord(state.energy || 0))}</b></div>
         <p class="note">Re-cuts the same shots instantly. No new pictures.</p>
         <input id="energy" type="range" min="0" max="1" step="0.01" value="${Number(state.energy || 0)}" aria-label="Energy from Calm to Hype" />
@@ -2400,7 +2500,7 @@ function renderEasy() {
         <button type="button" class="ghost easy-row" data-act="easy-better">Make it better</button>
         <button type="button" class="text easy-row" data-act="easy-advanced">Open in Advanced</button>
         <button type="button" class="text easy-row" data-act="easy-again">Back to the song</button>
-      </aside>
+      </aside>`}
     </div>`;
   }
   const preview = easy.vibe ? chosen : VIBES[3];
@@ -2417,6 +2517,7 @@ function renderEasy() {
       </div>`;
   return `<div class="easy easy-desk">
     <header class="easy-intro">
+      ${easyCrumbs(easy)}
       <p class="eyebrow">Xenoform · Simple</p>
       <h2>Make a music video.</h2>
       <p class="lede">One object keeps transforming into the next, every change on the beat. A song, a vibe, Make. Free, local, open weights.</p>
@@ -2443,6 +2544,7 @@ function renderEasy() {
         ${lookRow(easy.danceFx || "auto", "easy-look")}
         <p class="note look-note">${esc(lookNote(easy.danceFx || "auto"))}</p>
       </section>
+      ${fineTune(easy)}
       ${galleryPanel()}
     </section>
     <aside class="panel easy-side" data-tour="easy-make">
@@ -2452,11 +2554,10 @@ function renderEasy() {
         ${easyPlanFacts(easy)}
       </dl>
       <button type="button" class="generate easy-make" data-act="easy-make">Make my video</button>
-      <p class="note house-line">9:16, Dense, Draft, Beat FX and the house look. Fine-tune only if you want to.</p>
-      ${fineTune(easy)}
+      <p class="note house-line">9:16, Dense, Draft, Beat FX and the house look. Fine-tune below the vibes if you want to.</p>
       ${easy.cloudPlan ? cloudCard(easy.cloudPlan) : ""}
       <p class="note"><a href="/moves">Moves: make a character dance to a real dance clip (Wan Animate 2) &rarr;</a></p>
-      <p class="note"><a href="/vj">VJ mode: live visuals to this song's stems &rarr;</a> · <button type="button" class="text" data-act="easy-midi">MIDI controller</button></p>
+      <p class="note"><a href="${esc(vjUrl())}" target="_blank" rel="noopener">VJ mode: live visuals to this song's stems &rarr;</a> · <button type="button" class="text" data-act="easy-midi">MIDI controller</button></p>
       <button type="button" class="ghost easy-showcase" data-act="easy-showcase">Watch a finished one · plays now</button>
       <p class="note" id="easy-note">${esc(easy.note || "No ComfyUI? It plays in your browser.")}</p>
       <p class="side-foot"><a class="ow-badge" href="${esc(media("/licences"))}" title="LTX-2.3 has a revenue threshold. FLUX.2 Klein 9B is non-commercial. This desk uses the Apache 2.0 4B.">Open weights</a></p>
@@ -2547,7 +2648,7 @@ function performerRow(easy) {
 function ownRow(easy) {
   const note = easy.ownNote || "Images lead the morphs, clips are cut in on the beat (one passage each, 2 to 8 s). Leave empty and the vibe's own objects carry the cut.";
   return `<div class="simple-seg own-row" data-own-drop><span>Your footage</span>
-      <label class="ghost cloud-toggle">Folder <input type="text" id="easy-own-folder" value="${esc(easy.ownFolder || "")}" spellcheck="false" aria-label="Folder of your clips and images" placeholder="a folder of clips and images" style="width:16em"></label>
+      <label class="ghost cloud-toggle">Folder <input type="text" id="easy-own-folder" value="${esc(easy.ownFolder || "")}" spellcheck="false" aria-label="Folder of your clips and images" placeholder="a folder of clips and images"></label>
       <label class="ghost cloud-toggle">Drop or pick files <input type="file" multiple accept="video/*,image/*" data-act="easy-own-files" hidden></label>
       ${easy.ownId ? `<button type="button" class="ghost" data-act="easy-own-clear">Clear files</button>` : ""}
     </div>
@@ -2557,7 +2658,7 @@ function ownRow(easy) {
 function machineRows(easy) {
   const hw = (state.simpleOptions && state.simpleOptions.hardware) || {};
   const detected = hw.detected || {};
-  const autoLabel = detected.label ? `Auto (${detected.label})` : "Auto";
+  const autoLabel = "Auto";
   const tiers = [["auto", autoLabel]].concat((hw.tiers || [{id: "cpu", label: "CPU"}, {id: "8gb", label: "8 GB"}, {id: "12gb", label: "12 GB"}, {id: "24gb", label: "24 GB+"}]).map((t) => [t.id, t.label]));
   const endpoint = (state && state.endpoint) || "http://127.0.0.1:8188";
   const ok = state && state.comfyOk;
@@ -2566,8 +2667,8 @@ function machineRows(easy) {
   return `${simpleSeg("easy-gpu", easy.gpuTier || "auto", tiers, "GPU")}
       <div class="simple-seg machine-where"><span>Renders on</span>
         <div class="toggle" role="group" aria-label="Renders on">
-          <label class="ghost cloud-toggle">ComfyUI at <input type="text" id="easy-endpoint" value="${esc(endpoint)}" spellcheck="false" aria-label="ComfyUI address" style="width:13em"></label>
-          <span class="note">${ok ? "connected" : "not connected"} · open weights on this machine</span>
+          <label class="ghost cloud-toggle">ComfyUI at <input type="text" id="easy-endpoint" value="${esc(endpoint)}" spellcheck="false" aria-label="ComfyUI address"></label>
+          <span class="note">${detected.label ? esc(detected.label) + " · " : ""}${ok ? "connected" : "not connected"} · open weights on this machine</span>
         </div>
       </div>
       <label class="addon easy-paid"><input type="checkbox" data-act="easy-paid-cloud" ${state.paidCloud ? "checked" : ""}${paidLocked ? " disabled" : ""}> Paid cloud renders (LTX-2.5 partner node, Comfy Cloud account): off by default, not open weights${paidLocked ? " · locked off by XENO_PAID_CLOUD" : ""}</label>`;
@@ -2590,7 +2691,7 @@ function simpleOptions(easy) {
       ${simpleSeg("easy-aspect", aspect, [["16:9", "16:9"], ["9:16", "9:16"], ["1:1", "1:1"]], "Aspect")}
       ${simpleSeg("easy-length", String(easy.lengthS || 0), [["0", "Full song"], ["60", "60 s"], ["30", "30 s"], ["15", "15 s"]], "Length")}
       <p class="note">${esc(lengthNote(easy))}</p>
-      ${simpleSeg("easy-tier", tier, [["draft", "Draft · LTX-Video 0.9.5"], ["final", "Final · LTX-2.3 22B"]], "Model")}
+      ${simpleSeg("easy-tier", tier, [["draft", "Draft"], ["final", "Final"]], "Model")}
       ${performerRow(easy)}
       ${machineRows(easy)}
       ${aspect === "9:16" && tier === "final" ? simpleSeg("easy-vertical", vertical, [["native", "Native"], ["crop", "Crop"]], "Vertical") : ""}
@@ -2813,6 +2914,14 @@ function easySongSeconds() {
   return ends.length ? Math.max.apply(null, ends) : Number(state.duration || 20) || 20;
 }
 
+// The plan's own estimate (/api/simple/options, shown as "About N min" before Make) seeds the clock;
+// the constant below it was tuned for a 20 s clip and pinned every long run at 95 %.
+function easyPlanEta() {
+  const plan = state && state.simpleOptions && state.simpleOptions.plan;
+  const seconds = plan && plan.estimate && Number(plan.estimate.seconds);
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : 0;
+}
+
 function easyEtaGuess() {
   const cold = state.easy && state.easy.warm ? 0 : EASY_ETA_COLD_S;
   const extra = Math.max(0, Math.min(easySongSeconds(), 60) - EASY_ETA_SONG_BASE_S);
@@ -2823,25 +2932,55 @@ function easyEtaGuess() {
 function easyEtaLive() {
   const easy = state.easy;
   const job = state.job || {};
-  const hit = /Morph (\d+) of (\d+)/.exec(String(job.detail || ""));
+  const hit = /morph (\d+) of (\d+)/i.exec(String(job.detail || ""));
   if (!hit) return Number(easy.eta || EASY_ETA_GPU_S);
   const done = Number(hit[1]);
   const total = Number(hit[2]);
   const now = (Date.now() - easy.startedAt) / 1000;
   if (!easy.firstMorph || done < easy.firstMorph.done) easy.firstMorph = { done, at: now };
   const span = done - easy.firstMorph.done;
-  const pace = span > 0 ? (now - easy.firstMorph.at) / span : 4.5;
-  return now + (total - done) * pace + 2;
+  // until two morphs have reported, the pace is the plan's own GPU seconds per morph (a Final morph is minutes, not 4.5 s)
+  const plan = state.simpleOptions && state.simpleOptions.plan && state.simpleOptions.plan.estimate;
+  const planned = plan && Number(plan.gpu_seconds) > 0 ? Number(plan.gpu_seconds) / Math.max(1, total) : 4.5;
+  const pace = span > 0 ? (now - easy.firstMorph.at) / span : planned;
+  const tail = plan && Number(plan.look_seconds) > 0 ? Number(plan.look_seconds) : 2;
+  return now + (total - done) * pace + tail;
 }
 
+// What the server is doing, in a word, from the job's stage and detail.
+function easyStageWord(job) {
+  const stage = String((job && job.stage) || "");
+  const detail = String((job && job.detail) || "").toLowerCase();
+  if (detail.startsWith("saving") || detail.startsWith("burning")) return "finishing";
+  if (stage === "qa") return "checking";
+  if (stage === "assemble" && /cutting shot|house look|cutting to the beat/.test(detail)) return "cutting to the beat";
+  if (stage === "restyle") return /performer/.test(detail) ? "Polly" : /your clip/.test(detail) ? "your clips" : "morphs";
+  if (stage === "analyze" || stage === "animatic") return "reading the song";
+  return stage || "starting";
+}
+
+// "1:24 elapsed · morphs · about 3:10 left". The first number is always elapsed; the remaining time is the
+// server's when it sends one (job.eta_s), else the plan estimate re-paced on the morphs; never "almost there"
+// outside the last stages.
 function easyEtaText() {
   const easy = state && state.easy;
   if (!easy || !easy.startedAt) return "About half a minute";
+  const job = state.job || {};
   const elapsed = (Date.now() - easy.startedAt) / 1000;
-  const eta = easyEtaLive();
-  const left = eta - elapsed;
-  const draft = state.job && state.job.video ? "Draft playing · " : "";
-  return left > 2 ? `${draft}${clockText(elapsed)} · about ${clockText(left)} left` : `${draft}${clockText(elapsed)} · almost there`;
+  const draft = job.video ? "Draft playing · " : "";
+  const word = easyStageWord(job);
+  const served = job.eta_s === null || job.eta_s === undefined ? NaN : Number(job.eta_s);
+  const left = Number.isFinite(served) ? served : easyEtaLive() - elapsed;
+  if (word === "checking" || word === "finishing" || !(left > 0)) return `${draft}${clockText(elapsed)} elapsed · ${word}`;
+  return `${draft}${clockText(elapsed)} elapsed · ${word} · about ${clockText(Math.max(10, left))} left`;
+}
+
+// "· morphs 2:10 · Polly 17:48 · cut 0:52 · check 0:14" from the job's per-phase seconds, when the server sent them.
+function tookBreakdown(breakdown) {
+  if (!breakdown || typeof breakdown !== "object") return "";
+  const names = [["morphs", "morphs"], ["performer", "Polly"], ["cut", "cut"], ["qa", "check"]];
+  const parts = names.filter(([key]) => Number(breakdown[key]) >= 1).map(([key, label]) => `${label} ${clockText(breakdown[key])}`);
+  return parts.length ? ` · ${parts.join(" · ")}` : "";
 }
 
 // The stage the server is really on ("7 morphs queued on the GPU", "Morph 3 of 7 · ...").
@@ -2909,10 +3048,12 @@ function tickEasy() {
   if (label) label.textContent = easyEtaText();
   const bar = document.querySelector(".easy-making .track span");
   if (bar) {
+    const job = state.job || {};
     const elapsed = (Date.now() - state.easy.startedAt) / 1000;
-    const guess = Math.min(0.95, elapsed / easyEtaLive());
-    const real = Number((state.job && state.job.status === "running" && state.job.stage !== "restyle" && state.job.progress) || 0) * 0.15;
-    bar.style.width = `${Math.round(Math.max(guess, real) * 100)}%`;
+    // the server's weighted progress when it sends one (job.overall); else elapsed against the plan's estimate, never pinned at 95 %
+    const overall = Number(job.overall);
+    const frac = Number.isFinite(overall) && overall > 0 ? overall : Math.min(0.9, elapsed / Math.max(1, easyEtaLive()));
+    bar.style.width = `${Math.round(Math.max(0.02, Math.min(1, frac)) * 100)}%`;
   }
 }
 
@@ -2999,7 +3140,7 @@ async function recutWithKnobs() {
       return;
     }
     state.job = Object.assign({}, state.job || {}, {id, status: "running", stage: "assemble", progress: 0.05, detail: "Re-cutting from the cached morphs"});
-    state.easy.phase = "making";
+    setEasyPhase("making");
     state.easy.recutting = true;
     render();
     poll(id);
@@ -3025,10 +3166,10 @@ async function easyMake() {
   state.easy.recipe = "";
   state.easy.startedAt = Date.now();
   state.easy.firstMorph = null;
-  state.easy.eta = state.comfyOk === false ? EASY_ETA_BROWSER_S : easyEtaGuess();
+  state.easy.eta = state.comfyOk === false ? EASY_ETA_BROWSER_S : easyPlanEta() || easyEtaGuess();
   if (easyTimer) clearInterval(easyTimer);
   easyTimer = setInterval(tickEasy, 1000);
-  state.easy.phase = "making";
+  setEasyPhase("making");
   state.easy.note = "Reading the song. A few seconds.";
   state.brief = (state.easy.idea || "").trim() || vibe.line;
   state.palette = vibe.palette;
@@ -3045,7 +3186,7 @@ async function easyMake() {
   const blocked = state.logic && state.logic.ok === false;
   if (!state.comfyOk || blocked) {
     state.quality = "live";
-    state.easy.phase = "result";
+    setEasyPhase("result");
     state.easy.playedHere = true;
     state.easy.note = "Playing the pictures for this vibe.";
     render();
@@ -3067,7 +3208,7 @@ async function easyMake() {
   });
   if (state.easy && state.easy.phase === "making" && state.job && state.job.status === "error") {
     state.quality = "live";
-    state.easy.phase = "result";
+    setEasyPhase("result");
     state.easy.playedHere = true;
     state.easy.note = "Playing the pictures for this vibe.";
     render();
@@ -3163,6 +3304,7 @@ function render() {
   generate.disabled = Boolean(state.job && state.job.status === "running");
   const view = advanced ? renderAdvanced() : renderEasy();
   app.innerHTML = view;
+  if (!advanced) saveEasy();
   paintRegisters();
   paintJob();
   paintReview();
@@ -3975,9 +4117,10 @@ function adoptSession(data, options = {}) {
     transitionNote: previous ? previous.transitionNote || "" : "",
     easy: previous && previous.easy
       ? previous.easy
-      : { song: "", songLabel: "", vibe: "", idea: "", ownFolder: "", ownId: "", ownNote: "", phase: "song", note: "", playedHere: false,
+      : Object.assign({ song: "", songLabel: "", vibe: "", idea: "", ownFolder: "", ownId: "", ownNote: "", phase: "song", note: "", playedHere: false,
           // the house (demo_house): 9:16 native, Dense, Draft, Beat FX, the house look, subject orbit, no end card
           energyPreset: "dense", aspect: "9:16", tier: "draft", fx: true, endCard: false, danceFx: "auto", stemOrbit: true },
+        loadEasy()),
     morphCap: previous && previous.morphCap != null ? previous.morphCap : null,
     heldBoard: previous ? previous.heldBoard : null,
     board: options.keepScript && previous && previous.board ? previous.board : (data.scenes || []).map((scene) => ({ ...scene })),
@@ -4462,18 +4605,20 @@ async function poll(id) {
   if (document.body.dataset.advanced !== "1" && state.easy && state.easy.phase === "making") {
     if (job.video) showEasyPreview(job.video);
     if (job.status === "done") {
-      state.easy.phase = "result";
+      setEasyPhase("result");
       state.easy.playedHere = false;
       state.easy.warm = true;
+      const took = Number(job.took_s || job.seconds || 0);
+      state.easy.took = took;
       state.easy.note = String(job.detail || "").startsWith("The animatic is ready")
         ? job.detail
-        : "Your cut is ready.";
+        : took ? `Took ${clockText(took)}${tookBreakdown(job.breakdown)}.` : "Your cut is ready.";
       render();
       return;
     }
     if (job.status === "error" || job.status === "cancelled") {
       state.quality = "live";
-      state.easy.phase = "result";
+      setEasyPhase("result");
       state.easy.playedHere = true;
       state.easy.note = "Playing the pictures for this vibe.";
       render();
@@ -4509,8 +4654,12 @@ document.addEventListener("click", async (event) => {
   } else if (act === "easy-vibe") {
     state.easy.vibe = el.dataset.vibe || "";
     state.easy.note = "";
-    if (state.easy.phase === "result") {
-      if (state.easy.playedHere) render();
+    if (state.easy.phase === "result" || state.easy.phase === "showcase") {
+      if (!state.easy.song) {
+        state.easy.note = "Choose a song, then Make.";
+        setEasyPhase("choose");
+        render();
+      } else if (state.easy.playedHere) render();
       else easyMake();
       return;
     }
@@ -4641,7 +4790,7 @@ document.addEventListener("click", async (event) => {
     state.easy.hookInfo = "";
     state.easy.showcase = false;
     state.easy.playedHere = false;
-    state.easy.phase = "result";
+    setEasyPhase("result");
     render();
   } else if (act === "video-copy") {
     const code = await easyRecipeFor(el.dataset.id);
@@ -4747,29 +4896,37 @@ document.addEventListener("click", async (event) => {
       state.easy.song = "";
       state.easy.songLabel = "";
     }
-    state.easy.phase = "choose";
+    setEasyPhase("choose");
     render();
   } else if (act === "easy-stop") {
     if (state.job && state.job.status === "running" && state.job.id) {
       ignoreJob = state.job.id;
       api(`/api/jobs/${state.job.id}/cancel`, { method: "POST" }).catch(() => {});
     }
-    state.easy.phase = "choose";
+    setEasyPhase("choose");
     state.easy.note = "Stopped. Anything still queued on the GPU was cancelled.";
     render();
   } else if (act === "easy-showcase") {
-    state.easy.showcase = true;
     state.easy.playedHere = false;
-    state.easy.phase = "result";
-    state.easy.note = "Made earlier on one RTX 3080 Ti with open weights: five LTX morphs, cut to the bar of our own track. Back to the song, then Make, cuts your own in about 1 minute on a 12 GB GPU (45-65 seconds once warm), with a live countdown.";
+    setEasyPhase("showcase");
+    state.easy.note = "Made earlier with the same engine on one RTX 3080 Ti, open weights, cut to the bar of our own track. Back to the song, pick a vibe, then Make: a 30 s cut takes a few minutes on a 12 GB GPU, a full song about twenty, each Polly shot about eight.";
     render();
     const player = document.getElementById("player");
     if (player && player.play) player.play().catch(() => {});
   } else if (act === "easy-again") {
-    state.easy.showcase = false;
-    state.easy.phase = "choose";
     state.easy.note = "";
+    setEasyPhase("choose");
     render();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  } else if (act === "easy-crumb") {
+    const step = el.dataset.step || "song";
+    if (state.easy.phase === "result" || state.easy.phase === "showcase") {
+      state.easy.note = "";
+      setEasyPhase("choose");
+      render();
+    }
+    const target = document.querySelector(step === "song" ? "[data-tour=easy-song]" : step === "vibe" ? "[data-tour=easy-vibe]" : "[data-tour=easy-make]");
+    if (target && target.scrollIntoView) target.scrollIntoView({ behavior: "smooth", block: "start" });
   } else if (act === "easy-recut-knobs") {
     recutWithKnobs();
   } else if (act === "easy-better") {
@@ -5518,6 +5675,21 @@ async function refreshComfy() {
   if (state) state.comfyOk = ok;
 }
 
+// The logo is a home button in Simple mode: back to the song screen (a running job keeps its making screen).
+const brandLink = document.querySelector(".brand");
+if (brandLink) {
+  brandLink.addEventListener("click", (event) => {
+    if (!state || !state.easy || document.body.dataset.advanced === "1") return;
+    event.preventDefault();
+    if (state.easy.phase !== "making") {
+      state.easy.note = "";
+      setEasyPhase("choose");
+    }
+    render();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+}
+
 const viewNav = document.querySelector(".views");
 if (viewNav) {
   viewNav.addEventListener("click", (event) => {
@@ -5535,6 +5707,7 @@ if (viewNav) {
 
 window.addEventListener("hashchange", () => {
   if (!state) return;
+  if (viewFromHash() === "simple" && state.easy && document.body.dataset.advanced !== "1") easyPhaseFromHash();
   if (viewFromHash() === "notes" && !state.pending) {
     if (!state.note) state.note = SAMPLE_NOTE;
     state.notesOpen = true;
@@ -6478,6 +6651,7 @@ async function boot() {
     const response = await api("/api/demo");
     if (!response.ok) throw new Error("demo unavailable");
     adoptSession(await response.json());
+    if (state && state.easy && document.body.dataset.advanced !== "1") easyPhaseFromHash();
     setInterval(pollAgent, 3000);
     await loadSetup();
     if (viewFromHash() === "notes") {

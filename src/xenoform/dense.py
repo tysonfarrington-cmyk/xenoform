@@ -1017,7 +1017,9 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
         log.info("house look took %.1fs for %d frames", made["look"]["seconds"], made["look"]["frames"])
     card = False
     if opt["end_card"]:
+        report("assemble", 0.96, "Burning the end card")  # the desk's bar used to sit at 95 % through these two
         card = beatfx.end_card(tmp, opt["recipe"] or "(none)")
+    report("assemble", 0.98, "Saving the video")
     shutil.copyfile(tmp, out_path)
     info = {"engine": {"ltx23": "LTX-2.3 22B distilled fp8 + 4x upscale (Final)", "ltx095": "LTX 0.9.5 (Draft)",
                        "mock": "mock cross-fades (test)"}[engine],

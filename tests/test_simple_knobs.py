@@ -28,7 +28,7 @@ def test_knobs_and_look_sit_on_the_first_screen():
 
 def test_machine_rows_in_fine_tune_and_the_payload():
     assert "function machineRows" in APP and 'simpleSeg("easy-gpu"' in APP and 'id="easy-endpoint"' in APP
-    assert 'data-act="easy-paid-cloud"' in APP and "Draft · LTX-Video 0.9.5" in APP and "Final · LTX-2.3 22B" in APP
+    assert 'data-act="easy-paid-cloud"' in APP and '[["draft", "Draft"], ["final", "Final"]]' in APP and "Draft: LTX 0.9.5" in APP  # short chips; the model names sit in the note under the row
     assert 'hardware_tier: (state.easy && state.easy.gpuTier) || "auto"' in APP
     assert 'act === "easy-gpu"' in APP and 'act === "easy-paid-cloud"' in APP
 

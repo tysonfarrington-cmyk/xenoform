@@ -15,6 +15,7 @@ from typing import Any
 
 from fastapi import File, HTTPException, Request, UploadFile
 
+from xenoform import job_timing
 from xenoform.analyze import read_features
 from xenoform.config import load_config
 from xenoform.director import (
@@ -1257,9 +1258,13 @@ def create_app(cfg: dict | None = None):
                     simple = json.loads(simple_file.read_text(encoding="utf-8"))
                 except ValueError:
                     simple = {}
+            with _LOCK:
+                live = _JOBS.get(folder.name)
             rows.append({
                 "id": folder.name,
                 "created": meta.get("created") or "",
+                # How long the cut took: the live job, took.json, the older manifests, else the file's age (job_timing)
+                "seconds": job_timing.seconds_for(folder, live),
                 "vibe": meta.get("vibe") or "",
                 "song": meta.get("song") or "",
                 "recipe": meta.get("recipe") or "",
@@ -1476,6 +1481,9 @@ def create_app(cfg: dict | None = None):
             "scene_transitions": [t.get("kind") if isinstance(t, dict) else t for t in (body.get("scene_transitions") or [])],
             "shot_looks": [str(s.get("dance_fx") or "") for s in (body.get("scenes") or []) if isinstance(s, dict)],
             "stems_path": str(body.get("stems_path") or ""),
+            # Honest timing (job_timing): t0 / started, the planned seconds per phase for this song and Make, and the
+            # overall fraction, ETA and phase boundaries _run_job's on_progress keeps up to date.
+            **job_timing.start_fields(job_timing.plan_for(features, body), body),
         }
         with _LOCK:
             running = sum(1 for item in _JOBS.values() if item.get("status") == "running")
@@ -1967,16 +1975,23 @@ def _run_job(job_id: str, audio_path: Path, body: dict, cfg: dict, out: Path, ca
     def on_progress(stage: str, frac: float, detail: str) -> None:
         if cancel_event.is_set():
             raise JobCancelled("Cancelled. The card changed.")
+        try:
+            mtime = out.stat().st_mtime_ns  # outside the lock: a stat while ffmpeg may be writing
+        except OSError:
+            mtime = None
         with _LOCK:
             job = _JOBS[job_id]
             job["stage"] = stage
             job["progress"] = round(float(frac), 4)
             job["detail"] = detail
-            watchable = stage in {"animatic", "assemble", "done"} and out.exists()
-            if watchable:
+            job_timing.tick(job, stage, frac, detail, job_timing.elapsed(job))
+            # The draft stays up while the morphs render and the cut composes: the player is only re-pointed when the
+            # file itself changed (every "Cutting shot k of N" used to bump the version and restart the preview).
+            if mtime is not None and (stage in {"animatic", "done"} or mtime != job.get("video_mtime_ns")):
                 version = int(job.get("video_version") or 0) + 1
                 job["video_version"] = version
                 job["video"] = f"/api/jobs/{job_id}/video?v={version}"
+                job["video_mtime_ns"] = mtime
             if stage == "done":
                 job["status"] = "done"
 
@@ -2003,7 +2018,7 @@ def _run_job(job_id: str, audio_path: Path, body: dict, cfg: dict, out: Path, ca
         result, tier_id, note = run_resilient(once, start)
         qa_report = None
         if not cancel_event.is_set() and Path(out).is_file() and not body.get("tiny"):
-            on_progress("qa", 0.5, "Checking for lag, artifacts and off-beat cuts")
+            on_progress("qa", 0.05, "Checking for lag, artifacts and off-beat cuts")  # post_qa reports each pass from 0.2
             try:
                 from xenoform import post_qa
 
@@ -2012,7 +2027,7 @@ def _run_job(job_id: str, audio_path: Path, body: dict, cfg: dict, out: Path, ca
                 if fpath.is_file():
                     beats = list((json.loads(fpath.read_text(encoding="utf-8")) or {}).get("beats") or [])
                 fix = bool((post_qa._rule("lag_qa") or {}).get("auto_fix", True))
-                qa_report = post_qa.run(out, fps=24.0, beats=beats, vj=bool(body.get("vj")), fix=fix)
+                qa_report = post_qa.run(out, fps=24.0, beats=beats, vj=bool(body.get("vj")), fix=fix, report=on_progress)
             except Exception:
                 log.exception("post QA")
         with _LOCK:
@@ -2047,6 +2062,8 @@ def _run_job(job_id: str, audio_path: Path, body: dict, cfg: dict, out: Path, ca
             if note:
                 job["detail"] = f"{note} {job.get('detail') or ''}".strip()
                 job["tier_note"] = note
+            took = job_timing.finish(job, job_timing.elapsed(job))  # took_s (QA included), breakdown, the done stage
+        job_timing.write_took(work, took)  # beside the cut, so My videos keeps the numbers after a desk restart
     except JobCancelled as exc:
         with _LOCK:
             job = _JOBS[job_id]

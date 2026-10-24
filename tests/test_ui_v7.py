@@ -110,7 +110,7 @@ def test_more_vibes_drawer_lists_the_legacy_vibes_in_simple():
 def test_comfy_pill_shows_in_simple_and_links_to_vj_and_midi():
     assert 'body[data-advanced="0"] .comfy-status,\n' not in CSS
     assert 'body[data-advanced="0"] .comfy-status {' in CSS
-    assert '<a href="/vj">VJ mode' in APP and 'data-act="easy-midi"' in APP
+    assert 'VJ mode: live visuals' in APP and 'href="${esc(vjUrl())}" target="_blank"' in APP and 'data-act="easy-midi"' in APP  # the link carries the song and stems, in a new tab
     assert "function openMidiDrawer()" in APP
     export = APP.split("function exportStep()")[1].split("function inspectorFor")[0]
     assert "Open in VJ with this song's stems" in export and 'data-act="mcp-copy"' in export and 'data-act="easy-midi"' in export

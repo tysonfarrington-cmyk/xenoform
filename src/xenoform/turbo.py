@@ -773,7 +773,7 @@ def _run_turbo(
         import logging
 
         logging.getLogger("xenoform").exception("director notes")
-    detail = f"Animatic ready in {elapsed:.1f}s"
+    detail = f"{'Cut' if mode == 'turbo' else 'Animatic'} ready in {elapsed:.1f}s"  # the morphs ran: it is a cut now
     if painted["hits"]:
         detail += f" Â· {painted['hits']} cached"
     if warning:

@@ -13,14 +13,17 @@ Everything here is ffmpeg + numpy on the CPU (no GPU, no ComfyUI). Thresholds li
 from __future__ import annotations
 
 import json
+import logging
 import re
 import shutil
 import subprocess
 from fractions import Fraction
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import numpy as np
+
+log = logging.getLogger("xenoform")
 
 
 def _rules() -> dict:
@@ -273,18 +276,31 @@ def snap_cuts(cuts: list[float], beats: list[float], tol: float | None = None, m
 
 # ------------------------------------------------------------------ all
 def run(path: str | Path, *, fps: float = 24.0, beats: list[float] | None = None, vj: bool = False,
-        fix: bool = True) -> dict:
-    """The post-render QA pass for the job report. Never raises; a failed check says so."""
+        fix: bool = True, report: Callable[[str, float, str], None] | None = None) -> dict:
+    """The post-render QA pass for the job report. Never raises; a failed check says so. ``report(stage, frac,
+    detail)``, the pipeline's progress shape, hears each pass start (the desk's bar used to sit still through QA)."""
     rep: dict[str, Any] = {"ok": True, "issues": []}
+
+    def say(frac: float, detail: str) -> None:
+        if report is None:
+            return
+        try:
+            report("qa", frac, detail)
+        except Exception:  # progress is a courtesy: a listener's error (a cancel, say) must not fail the QA
+            log.debug("qa progress listener failed", exc_info=True)
+
+    say(0.2, "Checking for lag")
     try:
         lag = lag_report(path, fps)
         rep["lag"] = lag
         if lag["lag"]:
             rep["issues"] += lag["issues"]
             if fix:
+                say(0.35, "Fixing the lag")  # right after the measurement, so the scans below see the fixed file
                 rep["lag_fix"] = fix_lag(path, lag, fps)
     except Exception as exc:
         rep["lag"] = {"error": str(exc)[:200]}
+    say(0.5, "Scanning for artifacts")
     try:
         art = artifact_scan(path, vj=vj)
         rep["artifacts"] = art
@@ -292,6 +308,7 @@ def run(path: str | Path, *, fps: float = 24.0, beats: list[float] | None = None
     except Exception as exc:
         rep["artifacts"] = {"error": str(exc)[:200]}
     if beats:
+        say(0.7, "Checking the cuts against the beat")
         try:
             br = beat_report(cut_times(path), beats)
             rep["beats"] = br

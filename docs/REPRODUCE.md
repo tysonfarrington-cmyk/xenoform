@@ -13,7 +13,7 @@ You need Python 3.12 and `ffmpeg` on `PATH`.
 
 ## 2. The no-GPU path (60 seconds)
 
-Press **Watch a finished one** for a pre-rendered reel of LTX morphs cut to the bar. Then pick **Bundled demo**, a vibe, and **Make**. A draft animatic plays after about 3 seconds. Without ComfyUI that animatic is the result; everything after this step replaces it with real LTX renders.
+Press **Watch a finished one** for a pre-rendered reel of LTX morphs cut to the bar, then **Back to the song**. Pick **Bundled demo**, a vibe, and **Make**. A draft animatic plays after about 3 seconds. Without ComfyUI that animatic is the result; everything after this step replaces it with real LTX renders.
 
 ## 3. Run the tests (1 minute)
 
