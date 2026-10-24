@@ -2699,7 +2699,7 @@ function simpleOptions(easy) {
       ${simpleSeg("easy-fx", fx ? "on" : "off", [["on", "On"], ["off", "Off"]], "Beat FX")}
       ${simpleSeg("easy-orbit", orbit ? "on" : "off", [["on", "On"], ["off", "Off"]], "Subject orbit")}
       ${simpleSeg("easy-card", card ? "on" : "off", [["off", "Off"], ["on", "On"]], "End card")}
-      <p class="note">${esc(energy === "dense" ? "Dense: a shot a bar, then a shot every half bar from the drop, with stutters, holds and punches. A long song loops a chain of up to 30 morphs, so every handoff stays one continuous transformation." : "Flow: one morph per section, cut on the bar.")}
+      <p class="note">${esc(energy === "dense" ? "Dense: a song cuts two bars a shot and a bar on the drop, light punches on the downbeats, and loops a chain of up to 30 morphs so every handoff stays one continuous transformation; a clip under 20 s cuts a shot a bar, then every half bar from the drop, with stutters, holds and punches." : "Flow: one morph per section, cut on the bar.")}
       ${esc(vertNote)}
       ${esc(tier === "final" ? " " + finalEtaText() : " Draft: LTX 0.9.5, the quick pass.")}
       ${esc(easy.overlay ? "" : " Clean export: no waveform or text on the picture.")}</p>
@@ -3009,13 +3009,14 @@ function easyPlanFacts(easy) {
   const secs = easySongSeconds();
   const len = Number(easy.lengthS || 0);
   const dense = (easy.energyPreset || "dense") === "dense";
+  const song = easyVideoSeconds(easy) > 20;  // dense.LONG_SONG_S: the story plan (viscous pace) from 20 s, the clip plan under it
   const rows = [["Video", `${clockText(easyVideoSeconds(easy))}${len && secs > len ? " around the drop" : " (the whole song)"}`]];
   if (plan && plan.shots) {
     rows.push(["Shots", plan.reuse ? `${plan.shots} on the beat, over a loop of ${plan.morphs} morphs` : `${plan.shots} morphs on the beat`]);
   } else {
-    rows.push(["Shots", dense ? "A shot a bar, a half bar after the drop" : "One per section"]);
+    rows.push(["Shots", dense ? (song ? "Two bars a shot, a bar on the drop" : "A shot a bar, a half bar after the drop") : "One per section"]);
   }
-  rows.push(["Cut", dense ? "Every bar, every half bar on the drop" : "On the bar"]);
+  rows.push(["Cut", dense ? (song ? "Every two bars, every bar on the drop" : "Every bar, every half bar on the drop") : "On the bar"]);
   if (plan && plan.performer) rows.push(["Performer", `${plan.performer} shots of Polly (MiniMax H3)`]);
   rows.push(["Time", easyTimeFact()]);
   return rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("");

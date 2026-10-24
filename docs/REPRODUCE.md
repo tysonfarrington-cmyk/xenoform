@@ -46,7 +46,7 @@ What the defaults give you, and where each one lives:
 | Setting | Demo value | Where |
 | --- | --- | --- |
 | Aspect | 9:16 native, 1080x1920 at 24 fps | `defaults_demo.json` → `format` |
-| Energy | Dense (a shot every bar to the drop, every half bar after) | Fine-tune → Energy |
+| Energy | Dense (a song: two bars a shot, a bar on the drop; a clip under 20 s: a shot every bar, every half bar after the drop) | Fine-tune → Energy |
 | Forms | 15 morphs per 20 s (auto) | `look.morph_forms` |
 | Look (`dance_fx`) | `auto`: **cyan-flash** on the intro shot (1.25), **cool-echo** on the body (1.4), **bloom-rush** on a flower shot (1.5), **negative-rush** into the end card (1.2, the last 14 frames ramp to a full negative) | `defaults_demo.json` → `dance_fx` |
 | Stem orbit | on: yaw up to 28 degrees from the bass, kicks from strong drum hits | `stem_orbit` |

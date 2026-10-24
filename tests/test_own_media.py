@@ -49,7 +49,7 @@ def _sections():
 
 def _story_shots():
     directed = {"duration": 120.0, "beats": _beats(120.0), "sections": _sections()}
-    shots, plan = dense.shots_for({"energy_preset": "dense", "aspect": "9:16"}, directed, None)
+    shots, plan = dense.shots_for({"energy_preset": "dense", "aspect": "9:16", "pace": "tight"}, directed, None)  # the denser plan: a 3 s clip has a passage to fit
     assert plan["name"] == "story"
     return shots
 

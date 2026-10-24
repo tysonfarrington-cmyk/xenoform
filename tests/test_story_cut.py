@@ -36,7 +36,7 @@ def _sections():
 
 def test_story_plan_breathes_drives_and_punches():
     beats = _beats(120.0)  # 120 bpm: a bar is 2 s
-    plan = dense.story_plan(120.0, beats, _sections(), drop=32.0)
+    plan = dense.story_plan(120.0, beats, _sections(), drop=32.0, pace="tight")  # the denser plan; the viscous default is pinned in test_taste
     shots = custom_shots(plan, 120.0)
     assert plan["name"] == "story" and plan["drop"] == 32.0
     by = {}

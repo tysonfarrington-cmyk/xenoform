@@ -1,5 +1,5 @@
 """Taste on long songs (24 Oct 2026): a long song's morphs are distinct pairs, the drop gets a real transition in the
-Simple cut, every featured vibe's registry picks are premium, and the story plan has a viscous pace."""
+Simple cut, every featured vibe's registry picks are premium, and the story plan's default pace is viscous."""
 from xenoform import dense, morph_pass, transitions_fx as T, vibes as V
 
 
@@ -57,13 +57,17 @@ def test_featured_vibes_pick_premium_transitions_from_the_registry():
 
 def test_viscous_pace_cuts_the_drop_on_the_bar():
     beats = _beats(120.0)
-    tight = dense.story_plan(120.0, beats, _sections(), 32.0)["shots"]
+    tight = dense.story_plan(120.0, beats, _sections(), 32.0, pace="tight")["shots"]
     viscous = dense.story_plan(120.0, beats, _sections(), 32.0, pace="viscous")["shots"]
+    assert dense.story_plan(120.0, beats, _sections(), 32.0)["shots"] == viscous  # viscous is the default (A/B, 24 Oct)
     drop_t = [round(s["end"] - s["start"], 2) for s in tight if s.get("section") == "drop"]
     drop_v = [round(s["end"] - s["start"], 2) for s in viscous if s.get("section") == "drop"]
     assert drop_t[0] == 1.0 and drop_v[0] == 2.0  # half a bar against a bar at 120 bpm
     assert len(viscous) < len(tight)
-    assert dense.story_pace({"pace": "viscous"}) == "viscous" and dense.story_pace({"pace": "weird"}) == "tight" and dense.story_pace(None) == "tight"
+    assert dense.story_pace({"pace": "tight"}) == "tight"
+    assert dense.story_pace({"pace": "weird"}) == "viscous" and dense.story_pace(None) == "viscous" and dense.story_pace({}) == "viscous"
     directed = {"duration": 120.0, "beats": beats, "sections": _sections()}
-    shots, plan = dense.shots_for({"energy_preset": "dense", "aspect": "9:16", "pace": "viscous"}, directed, None)
+    shots, plan = dense.shots_for({"energy_preset": "dense", "aspect": "9:16"}, directed, None)  # Simple sends no pace
     assert plan["name"] == "story" and len(shots) == len(viscous)
+    shots_t, _ = dense.shots_for({"energy_preset": "dense", "aspect": "9:16", "pace": "tight"}, directed, None)
+    assert len(shots_t) == len(tight)

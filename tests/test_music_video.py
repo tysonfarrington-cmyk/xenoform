@@ -1,4 +1,4 @@
-"""Full-length songs in Simple mode: a shot a bar for the whole song over a closed loop of reusable morphs,
+"""Full-length songs in Simple mode: a story plan for the whole song over a closed loop of reusable morphs,
 a stills animatic instead of the CPU blob, a lock-safe publish, and the Length control."""
 import io
 import json

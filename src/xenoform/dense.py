@@ -564,13 +564,14 @@ def dense_plan(duration: float, beats: list, drop: float | None = None, max_shot
 
 
 # ---- the story plan: a full song has verses that breathe, choruses that drive and one drop that punches
-STORY_BEATS = {  # beats per shot by section label; the drop's first bars run at half bars
-    "intro": 8, "calm": 8, "sustain": 8, "build": 4, "release": 4, "drop": 2, "drop_late": 4, "outro": 8,
-}
-# "viscous": the demo's pour. Shots run two bars in the loud passages too and a bar on the drop, so a 3 s morph plays
-# at or under real time instead of being compressed into half-bar cuts (the long-song chain plays clip_s / shot).
+# "viscous" (the Simple default since the 24 Oct A/B, judged on pour tempo, the drop transition and colour): the
+# demo's pour. Shots run two bars in the loud passages too and a bar on the drop, so a 3 s morph plays at or under
+# real time instead of being compressed into half-bar cuts (the long-song chain plays clip_s / shot).
 STORY_BEATS_VISCOUS = {"intro": 8, "calm": 8, "sustain": 8, "build": 8, "release": 8, "drop": 4, "drop_late": 8, "outro": 8}
-STORY_PACES = ("tight", "viscous")
+# "tight" (``pace: "tight"``): the denser story plan; builds and choruses cut on the bar, the drop's first bars on the half bar.
+STORY_BEATS = {"intro": 8, "calm": 8, "sustain": 8, "build": 4, "release": 4, "drop": 2, "drop_late": 4, "outro": 8}
+STORY_PACES = ("viscous", "tight")
+STORY_PACE_DEFAULT = "viscous"
 STORY_SPEED = {"intro": 1.0, "calm": 1.0, "sustain": 1.1, "build": 1.25, "release": 1.25, "drop": 2.5, "drop_late": 1.6, "outro": 1.0}
 DROP_HALF_BARS = 8  # bars after the drop that cut on the half bar
 
@@ -628,18 +629,20 @@ def _story_roles(sections: list[dict], duration: float, min_len: float = 6.0) ->
 
 
 def story_pace(state: dict | None) -> str:
-    """The cut's pace: "tight" (today's story plan) or "viscous" (the demo's pour), from ``state["pace"]``."""
-    pace = str((state or {}).get("pace") or "tight").strip().lower()
-    return pace if pace in STORY_PACES else "tight"
+    """The cut's pace from ``state["pace"]``: "viscous" (the demo's pour, the default) or "tight" (the denser
+    story plan). Anything else is the default."""
+    pace = str((state or {}).get("pace") or STORY_PACE_DEFAULT).strip().lower()
+    return pace if pace in STORY_PACES else STORY_PACE_DEFAULT
 
 
 def story_plan(duration: float, beats: list, sections: list[dict], drop: float | None = None,
-               max_shots: int | None = None, pace: str = "tight") -> dict:
-    """The music-video cut for a whole song. Verses breathe (two bars a shot, real-time morphs, no tricks),
-    builds and choruses drive (a bar a shot, light punches on the downbeats), the drop punches and cuts on
-    the half bar for its first bars, the outro eases out. Every section switch starts a shot and is marked
-    as a boundary for a transition. When the shot budget is exceeded, every section's shots get longer."""
-    table = STORY_BEATS_VISCOUS if pace == "viscous" else STORY_BEATS
+               max_shots: int | None = None, pace: str = STORY_PACE_DEFAULT) -> dict:
+    """The music-video cut for a whole song. Every passage breathes (two bars a shot, so a morph plays at or
+    under real time; light punches on the downbeats of builds and choruses), the drop punches and cuts on the
+    bar for its first bars, the outro eases out. ``pace="tight"`` is the denser plan: a bar a shot on builds
+    and choruses, half bars on the drop. Every section switch starts a shot and is marked as a boundary for a
+    transition. When the shot budget is exceeded, every section's shots get longer."""
+    table = STORY_BEATS if pace == "tight" else STORY_BEATS_VISCOUS
     duration = float(duration)
     max_shots = shot_budget(duration) if max_shots is None else int(max_shots)
     grid = sorted(float(b) for b in beats if 0.0 <= float(b) < duration)
