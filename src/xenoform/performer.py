@@ -577,8 +577,12 @@ def submit_shot(client, graph: Path, still: Path, segment: Path, prompt: str, fr
 
 def render_slot(audio_path, t0: float, seconds: float, still: Path, prompt: str, work: Path, cfg: dict, *,
                 seed: int = 0, steps: int | None = None, size=SIZE, fps: float = FPS, client=None, report=None,
-                beats: list[float] | None = None, max_tries: int = 2) -> dict:
+                beats: list[float] | None = None, max_tries: int = 2, source_path=None, source_offset: float = 0.0) -> dict:
     """Render one performer shot of ``seconds`` seconds starting at song time ``t0``.
+
+    ``source_path`` with ``source_offset``: the full song a Length cut was trimmed from and where the cut
+    starts in it; the anchor segment (and so the pre-roll) is then cut from the full song, so a slot at the
+    top of the cut still has real music before it. The clip's own audio stays the cut's.
 
     The song is fed early (``PRE_ROLL_S`` plus whatever the grid length spares, as far as the song's own
     start allows) and anchored at frame 0; H3 holds the reference still, dissolves out of it or hard-cuts
@@ -606,15 +610,17 @@ def render_slot(audio_path, t0: float, seconds: float, still: Path, prompt: str,
     room = frames - want  # the most frames the clip can skip and still be whole
     # every spare frame is pre-roll (the song is fed that much earlier), as far as the song's own start allows;
     # at the top of a song there is no earlier music, so the spare frames stay as room past a held still
-    pre_frames = min(room, int(round(float(t0) * fps)))
-    t_in = max(0.0, float(t0) - pre_frames / float(fps))
+    src = Path(source_path) if source_path else audio_path
+    off = float(source_offset or 0.0) if source_path else 0.0
+    pre_frames = min(room, int(round((float(t0) + off) * fps)))
+    t_in = max(0.0, float(t0) + off - pre_frames / float(fps))  # in the source song's time
     avail = available(cfg)
     lora = avail.get("lora")
     graph = GRAPH_TURBO if lora else GRAPH
     steps = int(steps or avail.get("steps") or STEPS_BASE)
     tag = f"{float(t0):.2f}"
     clip = work / f"performer_{tag}.mp4"
-    segment = cut_audio(audio_path, t_in, frames / float(fps) + PAD_SECONDS, work / f"performer_{tag}_seg.wav")
+    segment = cut_audio(src, t_in, frames / float(fps) + PAD_SECONDS, work / f"performer_{tag}_seg.wav")
     fitted = fit_still(still, (w, h), work / f"performer_{tag}_still.png")
     client = client or _client_for(cfg)
     local = [float(b) - float(t0) for b in (beats or [])]

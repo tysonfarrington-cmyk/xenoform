@@ -354,6 +354,23 @@ def test_render_slot_skips_a_dissolve_by_resemblance(tmp_path, song, monkeypatch
     assert p.count_frames(res["clip"]) == 124
 
 
+def test_render_slot_pre_rolls_from_the_source_song_at_the_top_of_a_cut(tmp_path, song, monkeypatch):
+    _turbo(monkeypatch)
+    playing = _clip(tmp_path / "p.mp4", 175, list(range(10, 175, 8)))
+    # a Length cut that starts 4 s into the song: the slot at its top gets every spare frame as pre-roll from the full song
+    client = FakeClient([playing])
+    res = p.render_slot(song, 0.0, 124 / 24, p.default_reference(), p.prompt_for("calm", "chrome", "keys"), tmp_path / "w", CLOSED,
+                        client=client, source_path=song, source_offset=4.0)
+    assert res["pre_roll_s"] == pytest.approx(51 / 24, abs=1e-3) and res["skip_frames"] == 51 and res["drift_frames"] == 0
+    seg = tmp_path / "w" / "performer_0.00_seg.wav"
+    assert _duration(seg) == pytest.approx(175 / 24 + 0.5, abs=0.02) and _audio_rms(seg) > 0.05  # real music, from 1.875 s of the song
+    # without a source the top of the cut has no earlier music: the clip starts where the performance begins
+    client = FakeClient([playing])
+    res = p.render_slot(song, 0.0, 124 / 24, p.default_reference(), p.prompt_for("calm", "chrome", "keys"), tmp_path / "w2", CLOSED,
+                        client=client)
+    assert res["pre_roll_s"] == 0.0 and res["skip_frames"] == 9 and res["drift_frames"] == 9
+
+
 def test_render_slot_rerolls_a_shot_whose_still_leaks_whatever_she_plays(tmp_path, song, monkeypatch):
     _turbo(monkeypatch)
     held = _clip(tmp_path / "still.mp4", 124, [])  # never performs: the still would fill the whole slot

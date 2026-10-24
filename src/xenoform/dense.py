@@ -288,14 +288,17 @@ def performer_slots(shots: list[dict], count: int, stem_env: dict | None = None,
 
 
 def _render_performer(audio_path: Path, slot: dict, vibe: str, still: Path, work: Path, cfg: dict, *, seed: int,
-                      report=None, beats: list[float] | None = None) -> dict:
-    """One H3 performer shot for ``slot`` (the module is optional: ImportError means the feature is off)."""
+                      report=None, beats: list[float] | None = None, source: dict | None = None) -> dict:
+    """One H3 performer shot for ``slot`` (the module is optional: ImportError means the feature is off). ``source``
+    is the Length cut's ``song_source`` (the full song and the cut's offset in it), for the pre-roll."""
     from xenoform import performer as P
     from xenoform.morph_pass import VIBE_LOOK
 
     prompt = P.prompt_for(str(slot.get("section") or "calm"), VIBE_LOOK.get(vibe, ""), slot.get("instrument"))
+    source = source if isinstance(source, dict) and source.get("path") else None
     return P.render_slot(Path(audio_path), float(slot["start"]), float(slot["seconds"]), Path(still), prompt, Path(work), cfg,
-                         seed=int(seed), report=report, beats=beats)
+                         seed=int(seed), report=report, beats=beats,
+                         source_path=source.get("path") if source else None, source_offset=float(source.get("offset") or 0.0) if source else 0.0)
 
 
 def apply_performer_slots(shots: list[dict], clips: list, slots: list[dict], rendered: dict, mark: str = "performer") -> tuple[list[dict], list]:
@@ -949,7 +952,7 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
 
             try:
                 got = _render_performer(Path(audio_path), sl, vibe, still, work / "performer", cfg, seed=seed + 100 + k,
-                                        report=slot_report, beats=list(directed.get("beats") or []))
+                                        report=slot_report, beats=list(directed.get("beats") or []), source=state.get("song_source"))
                 rendered[sl["first"]] = got
                 performer_info["slots"].append({**sl, "clip": str(got.get("clip")), "sync": got.get("sync"),
                                                 "tries": got.get("tries"), "render_s": got.get("render_s")})

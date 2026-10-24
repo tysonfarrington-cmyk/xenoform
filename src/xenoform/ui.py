@@ -931,8 +931,10 @@ def create_app(cfg: dict | None = None):
         found = own_media.scan(dest)
         with _LOCK:
             _OWN[own_id] = dest
-        return {"id": own_id, "folder": str(dest), "images": len(found["images"]), "clips": len(found["clips"]),
-                "detail": f"{len(found['images'])} images lead the morphs, {len(found['clips'])} clips are cut in on the beat."}
+        n_img, n_clip = len(found["images"]), len(found["clips"])
+        return {"id": own_id, "folder": str(dest), "images": n_img, "clips": n_clip,
+                "detail": (f"{n_img} image{'s' if n_img != 1 else ''} lead{'' if n_img != 1 else 's'} the morphs, "
+                           f"{n_clip} clip{'s' if n_clip != 1 else ''} {'are' if n_clip != 1 else 'is'} cut in on the beat.")}
 
     @app.post("/api/hero")
     async def add_hero(file: UploadFile = File(...)) -> dict:
@@ -1368,8 +1370,13 @@ def create_app(cfg: dict | None = None):
                 start_s = None
             trimmed = _trim_audio(audio_id, Path(audio_path), length_s, start_s)
             if trimmed is not None:
+                source_path = Path(audio_path)
                 audio_id, audio_path = trimmed
                 body["audio_id"] = audio_id
+                with _LOCK:
+                    cut_from = (_FEATURES.get(audio_id) or {}).get("trimmed_from") or {}
+                # the full song and where the cut starts in it: the performer's pre-roll reaches before the cut
+                body["song_source"] = {"path": str(source_path), "offset": float(cut_from.get("start") or 0.0)}
                 body["song"] = (str(body.get("song") or "").strip() + f" ({int(length_s)} s cut)").strip()
         guide_id = str(body.get("guide_id") or "")
         if guide_id:

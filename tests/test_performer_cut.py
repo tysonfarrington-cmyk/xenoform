@@ -114,7 +114,7 @@ def test_run_simple_renders_performer_slots_and_hands_merged_shots_to_compose(tm
     import xenoform.cloud_morph as cm
     monkeypatch.setattr(cm, "_mock_clips", lambda shots, stills, work, w, h: [tmp_path / f"m{i:02d}.mp4" for i in range(len(shots))])
 
-    def fake_render(audio_path, slot, vibe, still, work, cfg, *, seed, report=None, beats=None):
+    def fake_render(audio_path, slot, vibe, still, work, cfg, *, seed, report=None, beats=None, source=None):
         calls.append((slot["section"], slot["instrument"], round(slot["seconds"], 2), seed, Path(still).name))
         clip = _tiny_clip(Path(work) / f"perf_{slot['first']}.mp4", slot["seconds"])
         return {"clip": clip, "frames": int(round(slot["seconds"] * 24)), "seconds": slot["seconds"], "sync": 0.8, "tries": 1}
