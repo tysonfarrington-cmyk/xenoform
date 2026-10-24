@@ -63,7 +63,24 @@ def slug(noun: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", noun.lower()).strip("_")
 
 
-def plan(vibes: list[str], count: int) -> dict[str, list[str]]:
+def original_prefix(vibe: str) -> str | None:
+    """The style text the vibe's existing twelve stills were made with (featured_prompts.json, else
+    extended_prompts.json): everything before the subject sentence. Using it keeps the new stills on the same
+    backdrop and light as the pool they join, so a morph between an old and a new still does not have to morph
+    the room as well (vibes.json's still_style says "long strip softboxes", and Z-Image paints the softboxes)."""
+    for name in ("featured_prompts.json", "extended_prompts.json"):
+        path = HERE / name
+        if not path.is_file():
+            continue
+        rows = json.loads(path.read_text(encoding="utf-8")).get(vibe) or []
+        if rows:
+            prompt = str(rows[0]["prompt"]).strip()
+            head, sep, _subject = prompt.rstrip(".").rpartition(". ")
+            return (head + ".") if sep else None
+    return None
+
+
+def plan(vibes: list[str], count: int, from_prompts: bool = False) -> dict[str, list[str]]:
     reg = json.loads(VIBES.read_text(encoding="utf-8"))
     entries = reg.get("vibes", reg)
     items = entries if isinstance(entries, list) else [dict(id=k, **v) for k, v in entries.items()]
@@ -74,7 +91,8 @@ def plan(vibes: list[str], count: int) -> dict[str, list[str]]:
         have = {o["noun"].lower() for o in own.get(vibe, [])}
         pool = FLOWERS if vibe == "botanical" else NOUNS
         nouns = [n for n in pool if n.lower() not in have and n.lower().replace(" shell", "") not in have][:count]
-        out[vibe] = {"style": styles[vibe], "nouns": nouns}
+        style = (original_prefix(vibe) if from_prompts else None) or styles[vibe]
+        out[vibe] = {"style": style, "nouns": nouns}
     return out
 
 
@@ -99,11 +117,14 @@ def main() -> None:
     ap.add_argument("--vibes", default="")
     ap.add_argument("--count", type=int, default=36)
     ap.add_argument("--seed0", type=int, default=5000)
+    ap.add_argument("--from-prompts", action="store_true", help="style text from the vibe's original prompt file, not vibes.json still_style")
     a = ap.parse_args()
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     vibes = [v for v in a.vibes.split(",") if v] or list(SUBJECT)
-    todo = plan(vibes, a.count)
+    todo = plan(vibes, a.count, a.from_prompts)
+    for vibe, spec in todo.items():
+        print(vibe, "style:", spec["style"][:120], flush=True)
     c = Comfy(client_info="xenoform-vibes-v2", timeout=None)
     t0 = time.time()
     jobs = []
