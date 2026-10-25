@@ -98,6 +98,31 @@ Hard flashes are frame-to-frame mean-luma jumps over 40 of 255; every cut but V3
 | Performer | 2 shots when the song has a vocal window | 20 minutes a shot on this card |
 | Final tier | once, for the showcase | about 3 minutes a morph |
 
+## Round two, the evening: short, long, intense, the Final tier, with the foreshadow layer
+
+Three runs Tys asked for after his own 86-minute Final cut, each with the new foreshadow layer on.
+
+| Run | Settings | Took | Shots / morphs / objects | QA | What the sheet shows |
+|---|---|---|---|---|---|
+| T1 | neon-noir, 15 s, Draft, every knob high, trace | 2:37 | 14 / 14 / 15 | clean, 1 flash | one object a second, each traced in over the last half second of the one before; the rain-and-neon look holds |
+| T2 | chrome-mercury, 30 s, **Final**, knobs high, silhouette | 45:35 | 26 / 6 / 6 | 7 row flags at joins, 7 cuts off the beat | crisp chrome at 1080x1920; the next object's blue silhouette clearly arrives over the one before; six objects loop four times because the intense knobs cut 26 shots over a six-morph chain |
+| T3 | bioluminescent, 60 s from 30 s, Draft, Polly 2 shots, negative | 23:35 | 18 / 12 / 12 | 55 hard flashes, 5 cuts off the beat | Polly drums eight seconds and dances six over glowing creatures; the negative ghosts strobed with the stem |
+
+Time, measured: Draft is about 11 s a morph plus the look pass; Final is about 7 minutes a four-second morph at native
+9:16 with the upscale, so a Final cut costs roughly 1.5 minutes per second of video; a performer shot is about 9
+minutes of GPU for five to eight seconds of Polly.
+
+What changed because of T3: the layer's amount followed the stem frame by frame, so a spiky lane strobed a bright
+ghost on a dark vibe. The stem is now eased through a follower, the negative runs at 0.6 of the amount, and a morph
+landing fades the layer out over the head of the next shot instead of dropping it on the handoff frame. Isolated on
+15 s checks: the bioluminescent look alone at Glow 0.9 flashes 8 times (the bloom-rush look's own beat leaks, which the
+QA now reports), the eased negative on top of it adds none, the silhouette on chrome none.
+
+Still open from this round: on Final cuts the artifact scan flags row discontinuities at the joins (also on chrome Draft
+cuts without the layer), worth a look at the join frames; the intense knobs add shots faster than the morph budget adds
+morphs, so a 30 s cut at Chaos 0.6 loops six objects four times (the budget could follow the shot count); and the
+bloom-rush look at high Glow is a strobe on its own.
+
 ## Phase C
 
 Every vibe but cosmic (grown earlier) grown by 36 through the CLI, 16:02 to 17:21, about three minutes a vibe: 824
