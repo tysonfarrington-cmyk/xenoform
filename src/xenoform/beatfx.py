@@ -580,6 +580,7 @@ def _shot_frames(clip: Path, shot: dict, si: int, n0: int, total: int, *, aspect
     look.start_shot(si, len(idx), n0 / fps)
     out = np.empty((len(idx), h, w, 3), dtype=np.uint8)
     n = int(n0)
+    fs_level = 0.0  # the foreshadow layer's eased stem level, carried frame to frame within the shot
     for k, j in enumerate(idx):
         u = k / count
         u = u * u * (3 - 2 * u)
@@ -607,9 +608,11 @@ def _shot_frames(clip: Path, shot: dict, si: int, n0: int, total: int, *, aspect
             if base > 0 or echo > 0:
                 if look.env:
                     d = _D.drive_from_env(look.env, n / fps, look.beats, look.gains())
-                    stem = float(d.get("other", 0.0)) if float(d.get("other", 0.0)) > 0.02 else float(d.get("beat", 0.0))
+                    raw_stem = float(d.get("other", 0.0)) if float(d.get("other", 0.0)) > 0.02 else float(d.get("beat", 0.0))
                 else:
-                    stem = 0.6
+                    raw_stem = 0.6
+                fs_level += (raw_stem - fs_level) * _F.FOLLOW  # eased: a spiky lane breathes the layer, it does not strobe it
+                stem = fs_level
                 if base > 0:
                     tgt = reframe(fs["target"], aspect, c, w, h)
                     frame = _F.treat(frame, tgt, str(fs["mode"]), _F.amount(base, stem, fcap), tint=fs.get("tint") or (255, 255, 255),

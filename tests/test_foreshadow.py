@@ -84,15 +84,15 @@ def test_plan_targets_the_next_landing_and_echoes_only_across_hard_cuts():
     beats = [i * 0.5 for i in range(40)]  # 120 bpm
     out = F.plan(shots, clips, beats, 24, "trace", F.params({"speed": 0.5}), read_edge=fake_read)
     assert len(out) == 5
-    assert out[0]["which"] == "last" and out[0]["lead"] == 24 and out[0]["prev"] is None  # a bar at 120 bpm, no echo
-    assert out[1]["which"] == "first" and out[1]["prev"] is None  # into Polly: her first frame, no echo yet
+    assert out[0]["which"] == "last" and out[0]["lead"] == 24 and out[0]["prev"] is None  # a bar at 120 bpm, nothing before it
+    assert out[1]["which"] == "first" and out[1]["prev"] is not None and out[1]["echo"] == 7  # a morph landing: the layer fades over 0.3 s
     assert out[2]["which"] == "last" and out[2]["prev"] is not None and out[2]["echo"] == 12  # over Polly: the object that left echoes a beat
-    assert out[3]["prev"] is not None and out[3]["which"] == "last"  # out of Polly: she echoes over the morph
-    assert out[4] is None  # the last shot has nothing to foreshadow and no hard cut behind it
+    assert out[3]["prev"] is not None and out[3]["echo"] == 12 and out[3]["which"] == "last"  # out of Polly: she echoes over the morph
+    assert out[4]["target"] is None and out[4]["echo"] == 7  # the last shot foreshadows nothing, only fades its landing in
     assert ("c1.mp4", "last") in reads and ("polly.mp4", "first") in reads and ("polly.mp4", "last") in reads
     assert sum(1 for r in reads if r == ("c1.mp4", "last")) == 1  # each edge frame read once
     assert F.plan(shots, clips, beats, 24, "", F.params(None)) == [None] * 5
-    assert F.info(out, "trace", F.params(None), 24)["shots"] == 4 and F.info(out, "trace", F.params(None), 24)["echoes"] == 2
+    assert F.info(out, "trace", F.params(None), 24)["shots"] == 4 and F.info(out, "trace", F.params(None), 24)["echoes"] == 4
 
 
 @pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="ffmpeg is needed for the clip stubs")

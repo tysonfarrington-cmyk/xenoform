@@ -25,7 +25,10 @@ MODES = ("trace", "negative", "slices", "silhouette")
 CHOICES = ("auto", "off") + MODES
 DEFAULT = "auto"
 ECHO_BEATS = 1.0
+FADE_S = 0.3        # a morph landing fades the layer out over the head of the next shot instead of dropping it
 MIN_LEAD_FRAMES = 6
+FOLLOW = 0.3        # the stem is eased through a one-pole follower per frame, so a spiky lane cannot strobe the layer
+MODE_GAIN = {"trace": 1.0, "negative": 0.6, "slices": 1.0, "silhouette": 0.85}  # a bright ghost on a dark vibe needs less
 
 try:
     import cv2  # type: ignore
@@ -134,10 +137,17 @@ def plan(shots: list[dict], clips: list, beats, fps: int, mode: str, p: dict, *,
                 entry["lead"] = int(min(lead, max(MIN_LEAD_FRAMES, n // 2)))
                 entry["which"] = which
         if si > 0 and si - 1 < len(clips) and n > 0 and (hard(si) or hard(si - 1)):
-            prev = frame(si - 1, "last")
+            prev = frame(si - 1, "last")  # across a hard cut: the object that just left echoes out for a beat
             if prev is not None:
                 entry["prev"] = prev
                 entry["echo"] = int(min(echo, max(2, n // 3)))
+        elif si > 0 and si < len(clips) and n > 0:
+            # a morph landing: the layer was showing where this shot will land, and it must not vanish on the frame
+            # of the handoff, so it fades out over the head of the shot (a third of a second)
+            prev = frame(si, "last")
+            if prev is not None:
+                entry["prev"] = prev
+                entry["echo"] = int(min(max(2, int(round(FADE_S * fps))), max(2, n // 3)))
         out.append(entry if (entry["target"] is not None or entry["prev"] is not None) else None)
     return out
 
@@ -251,6 +261,7 @@ def treat(frame: np.ndarray, target: np.ndarray, mode: str, a: float, *, tint=(2
     frame instead of flickering."""
     if a <= 1e-3 or frame.shape != target.shape:
         return frame
+    a = min(1.0, a * MODE_GAIN.get(mode, 1.0))
     p = p or {}
     f = frame.astype(np.float32)
     t = target.astype(np.float32)
