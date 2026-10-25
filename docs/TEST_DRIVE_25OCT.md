@@ -100,4 +100,10 @@ Hard flashes are frame-to-frame mean-luma jumps over 40 of 255; every cut but V3
 
 ## Phase C
 
-Pending at the time of writing: every vibe grown by 36 (see `xenoform stills status`).
+Every vibe but cosmic (grown earlier) grown by 36 through the CLI, 16:02 to 17:21, about three minutes a vibe: 824
+stills kept of 936. Four vibes kept all 36 (neon-noir, origami-noir, porcelain-kintsugi, wet-paint); the ones that
+lost the most were black (19 kept, mostly soft), neon-night (22, size and soft) and liquid-gold (25, size and soft),
+whose shipped pools are the darkest and tightest, so the checks hold new stills to a narrow look. Rejects sit in each
+vibe's `rejected/` folder for a look. The local library is now 1,205 grown stills over 27 vibes, on top of the 329
+shipped, about 120 MB under `work/ui/objects`. With one morph per five seconds of song, a four-minute song draws 30
+morphs from a pool of 45 to 60 a vibe without repeating an object, and the next cut opens on the ones it left alone.
