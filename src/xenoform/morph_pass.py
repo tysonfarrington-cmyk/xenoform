@@ -201,9 +201,16 @@ def pick_stills(state: dict, count: int, record: bool = True) -> tuple[str, list
         # cut still opens on what the first left alone; the stable sort keeps order_fresh's order inside each group.
         # The shipped stills are a curated chain (black: rose -> jellyfish -> butterfly -> swallow -> drops), so
         # only a family the idea line names reorders them; the vibe's own family groups the grown library behind.
-        used = stills.usage().get(vibe) or {}
-        pool.sort(key=lambda r: (int(used.get(str(r.get("file")), 0)),
-                                 0 if (named or not r.get("shipped")) and r.get("family") == family else 1))
+        used = stills.usage().get(vibe) or {}  # a tick a cut, so a bigger number is a more recent cut
+
+        def key(r):
+            tick = int(used.get(str(r.get("file")), 0))
+            in_family = 0 if (named or not r.get("shipped")) and r.get("family") == family else 1
+            # the idea's family leads over freshness (a second cut of the chess idea still opens on the machines,
+            # longest-unused first); the vibe's own family only groups the fresh rows
+            return (in_family, tick) if named else (0 if tick == 0 else 1, in_family, tick)
+
+        pool.sort(key=key)
     lead = next((i for i, item in enumerate(pool) if set(item["noun"].split()) & words), None)
     if lead:
         # the object the idea names opens the cut; the rest keep their order (a rotation here once pushed the family

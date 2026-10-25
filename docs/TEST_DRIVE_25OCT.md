@@ -148,7 +148,14 @@ maxed is the showcase. What changed, then three 30 s Draft cuts and one with Pol
 | H1 | chrome, 30 s, defaults (Intensity 0.5, Speed 0.5, Chaos 0.3, Glow 0.4), idea "a chess game played by machines" | 6:47 | 9 / 9 / 10 | trace | clean, 0 flashes | nine objects, each held still and sharp on the chrome ground, one morph a shot, a traced outline arriving before each; six families, since chrome had one retro-tech object (what the grow-for-idea now fixes) |
 | H2 | chrome, 30 s, everything at 1 | 10:30 | 31 / 31 / 32 | slices (16 strips, jitter 1) | 3 glitch flags, 1 cut off the beat, 1 flash | one object a second across 17 families, strips interleaving the next object over every shot, punches and stutters on every hit: the schizophrenic cut |
 | H3 | cosmic, 30 s, everything calm (Intensity 0.3, Speed 0.4, Chaos 0, Glow 0.2) | 14:51 | 20 / 20 / 21 | slices (4 strips, no jitter) | clean, 2 flashes | twenty objects, no camera move, no trail: the cleanest morphs of the week; the cosmic objects still read as a mixed bag (twelve families) |
+| H4 | chrome, 30 s, defaults, the chess idea again, after the grow-for-idea was built | 5:26 (grow 1:30) | 9 / 9 / 10 | trace | clean, 0 flashes | the cut grew nine retro-tech objects first and kept five, then used none of them: the lead rotation put the chess knight first and the grown family at the back (fixed; see below) |
+| H5 | chrome, 30 s, defaults, the chess idea, after the fix | 5:16 (grow 0:44) | 9 / 9 / 10 | trace | clean, 0 flashes | game controller, boombox, speaker cone, reel-to-reel, joystick, transistor radio, then a crown splash, a paper star, the orb and a nautilus: six machines in a row, each traced in over the one before, held still on the chrome ground |
 | P1 | cosmic, 30 s from 40 s, Polly 2 dance shots, Intensity 0.8 | 22:42 (Polly 15:15) | 21 / 24 / 25 | slices | 1 glitch flag, 8 flashes | Polly in the cyberpunk outfit dancing for seven seconds over the objects, arms up on the downbeats; the eight flashes are the bloom-rush look at Intensity 0.8 on a dark vibe |
+
+What H4 and H5 changed: the object the idea names opens the cut and the rest keep their order (the old rotation put
+everything before the lead at the back), the idea's family outranks freshness (a second cut of the chess idea still opens
+on the machines, longest-unused first), and with no idea line the shipped chain keeps its curated order while the vibe's
+own family groups only the grown stills, which is what the black demo chain and three older tests expect.
 
 Time, measured again: a Draft morph is 11 to 20 s on the 3080 Ti (H2's 31 morphs took 9:50, H3's 20 took 14:17 while
 Polly's dance shot for P1 shared the card), the look pass 69 to 93 s for 30 s with the foreshadow layer, a Polly dance shot about 15 minutes.

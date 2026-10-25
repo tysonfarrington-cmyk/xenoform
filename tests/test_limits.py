@@ -141,3 +141,12 @@ def test_the_family_grown_for_an_idea_follows_its_lead(monkeypatch):
     _, picked = mp.pick_stills({"vibe": "chrome-mercury", "idea": "a chess game played by machines"}, 6, record=False)
     nouns = [r["noun"] for r in picked]
     assert nouns[0] == "chess knight" and nouns[1:5] == retro and all(r["family"] == "retro-tech" for r in picked[1:5])
+    # the second cut of the idea: the family was just used (the latest tick), the others never; the idea's family
+    # still leads, longest-unused first, since belonging together outranks freshness when the idea names a family
+    ticks = {rows[0]["file"]: 32, **{g["file"]: 33 + i for i, g in enumerate(grown)}}
+    monkeypatch.setattr(S, "usage", lambda: {"chrome-mercury": ticks})
+    _, again = mp.pick_stills({"vibe": "chrome-mercury", "idea": "a chess game played by machines"}, 6, record=False)
+    assert [r["noun"] for r in again] == ["chess knight"] + retro + ["violin"]
+    # with no idea line freshness leads and the vibe's family only groups the never-used grown rows
+    _, plain = mp.pick_stills({"vibe": "chrome-mercury"}, 3, record=False)
+    assert [r["noun"] for r in plain] == ["violin", "anchor", "chess knight"]
