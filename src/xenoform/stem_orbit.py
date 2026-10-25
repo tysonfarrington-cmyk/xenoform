@@ -123,7 +123,7 @@ def canvas_overshoot(w: int, h: int, H: np.ndarray) -> float:
 
 
 def auto_zoom(w: int, h: int, yaw: float, pitch: float = 0.0, roll: float = 0.0, *, cx: float | None = None,
-              focal: float = 1.6, margin: float = 1.01, zoom_max: float = 3.0) -> float:
+              focal: float = 1.6, margin: float = 1.01, zoom_max: float = 1.6) -> float:  # 3.0 zoomed like a handycam
     """Smallest push-in (times ``margin``) at which the rotated frame still covers the whole canvas, so no
     black wedge appears at any yaw/pitch/roll. Found by bisection on the inverse-mapped canvas corners."""
     if canvas_overshoot(w, h, homography(w, h, yaw, pitch, roll, cx=cx, focal=focal, zoom=1.0)) <= 0.0:

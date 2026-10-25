@@ -254,23 +254,36 @@ def _screen(base: np.ndarray, layer: np.ndarray, a: float) -> np.ndarray:
     return 255.0 - (255.0 - base) * (255.0 - layer * a) / 255.0
 
 
+def _dilate(e: np.ndarray) -> np.ndarray:
+    """A 3x3 max: the trace drawn a pixel thicker each side, so it reads as an outline, not a hairline."""
+    out = e.copy()
+    out[1:, :] = np.maximum(out[1:, :], e[:-1, :])
+    out[:-1, :] = np.maximum(out[:-1, :], e[1:, :])
+    out[:, 1:] = np.maximum(out[:, 1:], out[:, :-1])
+    out[:, :-1] = np.maximum(out[:, :-1], out[:, 1:])
+    return out
+
+
 def treat(frame: np.ndarray, target: np.ndarray, mode: str, a: float, *, tint=(255, 255, 255), p: dict | None = None,
-          si: int = 0, k: int = 0, seed: int = 0) -> np.ndarray:
+          si: int = 0, k: int = 0, seed: int = 0, pop: float = 0.0) -> np.ndarray:
     """``target`` brought into ``frame`` at opacity ``a`` (0..1) in ``mode``. Both HxWx3 uint8, same size. ``a`` 0
     returns the frame untouched. ``si`` and ``k`` seed the slices' order and jitter so they accumulate frame to
-    frame instead of flickering."""
+    frame instead of flickering. ``pop`` (the beat pulse, 0..1) flashes the outline modes brighter on a hit: an
+    edge-only flash, so the frame's mean luma barely moves and the flash cap is safe."""
     if a <= 1e-3 or frame.shape != target.shape:
         return frame
     a = min(1.0, a * MODE_GAIN.get(mode, 1.0))
+    if mode in ("trace", "silhouette") and pop > 0:
+        a = min(1.0, a * (1.0 + 0.8 * float(np.clip(pop, 0.0, 1.0))))
     p = p or {}
     f = frame.astype(np.float32)
     t = target.astype(np.float32)
     col = np.asarray(tint, dtype=np.float32).reshape(1, 1, 3) / 255.0
     h, w = f.shape[:2]
     if mode == "trace":
-        e = _edges(target)
+        e = _dilate(_edges(target))
         halo = _blur(e, max(1, int(round(2 + 6 * float(p.get("glow", 0.6))))))
-        layer = (np.clip(e * 1.3, 0, 1) + halo * float(p.get("glow", 0.6)))[..., None] * col * 255.0
+        layer = (np.clip(e * 1.4, 0, 1) + halo * float(p.get("glow", 0.6)))[..., None] * col * 255.0
         out = _screen(f, layer, a)
     elif mode == "negative":
         L = t.mean(axis=2, keepdims=True)
@@ -300,7 +313,7 @@ def treat(frame: np.ndarray, target: np.ndarray, mode: str, a: float, *, tint=(2
     elif mode == "silhouette":
         mask = _subject(target)[..., None]
         fill = mask * col * 255.0
-        e = _edges(target)[..., None] * col * 255.0
+        e = _dilate(_edges(target))[..., None] * col * 255.0
         out = _screen(f, fill * 0.75 + e, a)
     else:
         return frame

@@ -146,7 +146,8 @@ def performance_for(role: str, instrument: str | None = None) -> str:
 
 
 # The bundled reference (Polly): the outfit is named so the model does not re-dress her for the venue.
-OUTFIT = "silver-grey bob, white cropped bomber jacket with a teal zip over a white tee, light-blue straight jeans, white trainers"
+OUTFIT = ("silver-grey bob with one neon-magenta streak, a black cropped tech jacket with glowing cyan piping over a "
+          "chrome-grey ribbed top, black cargo trousers with reflective silver straps, chunky white-and-chrome trainers")
 _IDENTITY = ("One continuous unbroken take with no cuts and no scene change: the woman from the first frame, "
              f"with exactly the same face, hair and outfit ({OUTFIT}) from the first frame to the last, ")
 _ACTION = {
@@ -160,8 +161,9 @@ _ACTION = {
              "the keys, fingers landing on every chord of the music, her mouth closed, head nodding with the groove. "),
     "guitar": ("is already playing an electric guitar when the clip starts and never pauses: strumming and picking "
                "in time with the music, her mouth closed, eyes on the fretboard, body moving with the groove. "),
-    "dance": ("is already dancing when the clip starts and never pauses: full-body moves locked to the beat, "
-              "arms and hips on the downbeats, her mouth closed, feet planted in frame. "),
+    "dance": ("is already dancing hard when the clip starts and never pauses: rave moves locked to the beat, arms "
+              "pumping overhead on the downbeats, shoulders and hips driving, a bounce on every kick and a jump on "
+              "the biggest hit, her mouth closed, feet in frame. "),
 }
 _CAMERA = ("The first frame flows straight into the performance and the camera never cuts away: medium shot, "
            "steady camera, she stays centred and fully in frame for the whole clip. "

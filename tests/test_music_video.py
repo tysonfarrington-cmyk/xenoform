@@ -41,22 +41,34 @@ def test_dense_plan_keeps_a_shot_a_bar_for_a_four_minute_song():
     assert len(dense.dense_plan(20.0, _beats(20.0, 120), drop=12.0)["shots"]) <= dense.MAX_SHOTS
 
 
-def test_clip_plan_is_a_closed_loop_within_budget():
+def test_clip_plan_never_repeats_an_object():
     beats = _beats(238.8)
     shots = dense.dense_plan(238.8, beats, drop=120.0)["shots"]
     cp = dense.clip_plan(shots, 238.8, beats)
     assert dense.CLIP_BUDGET[0] <= cp["morphs"] <= dense.CLIP_BUDGET[1] < len(shots)
     assert cp["clip_s"] in ALLOWED_S and 2 <= cp["clip_s"] <= 5
-    assert cp["reuse"] and len(cp["assign"]) == len(shots)
-    for a, b in zip(cp["assign"], cp["assign"][1:]):
-        assert b == (a + 1) % cp["morphs"]  # walking the loop keeps every handoff continuous
+    assert not cp["reuse"] and not cp["fits"] and cp["wanted"] == len(shots)
+    import math
+
+    assert cp["morphs"] == max(dense.MORPH_CAP["draft"], math.ceil(238.8 / dense.MAX_SHOT_S)) == 60  # never a shot over 4 s of slow motion
+    assert cp["assign"] == list(range(cp["morphs"]))
+    final = dense.clip_plan(shots, 238.8, beats, tier="final")
+    assert final["morphs"] == 60 and not final["fits"]  # Final on a four-minute song is sixty morphs; the estimate says so
+    assert dense.clip_plan(shots[:16], 60.0, beats, tier="final")["morphs"] == 15  # a 60 s Final cut: fifteen 4 s shots
+    small_pool = dense.clip_plan(shots, 238.8, beats, pool=12)
+    assert small_pool["morphs"] == 11  # a pool of twelve stills makes eleven morphs
     small = dense.clip_plan(shots[:5], 20.0, beats)
-    assert small["morphs"] == 5 and not small["reuse"]
+    assert small["morphs"] == 5 and not small["reuse"] and small["fits"]
+    # the planner itself makes the longer shots when the cut is capped: on the bars, sections kept, no folding
+    directed = {"duration": 238.8, "beats": beats, "sections": [{"index": 0, "label": "calm", "start": 0.0, "end": 100.0, "level": 0.3},
+                                                                 {"index": 1, "label": "drop", "start": 100.0, "end": 238.8, "level": 1.0}]}
+    capped, plan = dense.shots_for({"energy_preset": "dense", "aspect": "9:16", "max_shots": 12}, directed, None)
+    assert 6 <= len(capped) <= 12 and capped[-1]["end"] == pytest.approx(238.8) and plan["name"] == "story"
 
 
 def test_plan_summary_and_estimate_include_the_look_pass():
     summary = dense.plan_summary(238.8, _beats(238.8), "dense", "draft", "9:16")
-    assert summary["long_song"] and summary["reuse"] and summary["shots"] > summary["morphs"] >= 12
+    assert summary["long_song"] and not summary["reuse"] and summary["shots"] >= summary["morphs"] >= 12
     est = summary["estimate"]
     assert est["look_seconds"] > 0 and est["gpu_seconds"] > 0 and est["seconds"] >= est["gpu_seconds"] + est["look_seconds"]
     assert est["clip_s"] == summary["clip_s"]
@@ -96,8 +108,8 @@ def test_run_simple_reuses_a_morph_loop_for_a_long_song(tmp_path, monkeypatch):
     info = dense.run_simple(directed, DEMO, tmp_path / "x.mp4", tmp_path, {}, state, lambda *a: None, engine="mock")
     shots = seen["shots"]
     morphs = len(rendered["shots"])
-    assert len(shots) > morphs >= dense.CLIP_BUDGET[0]
-    assert len(rendered["stills"]) == morphs + 1 and rendered["stills"][-1] is rendered["stills"][0]  # closed loop
+    assert len(shots) == morphs >= dense.CLIP_BUDGET[0]  # no object repeats: one morph a shot
+    assert len(rendered["stills"]) == morphs + 1 and len({s["file"] for s in rendered["stills"]}) == morphs + 1  # n morphs, n + 1 distinct stills, no loop
     assert len(seen["clips"]) == len(shots)
     assert all(int(s["render_s"]) == int(rendered["shots"][0]["render_s"]) and "clip" in s for s in shots)
     assert [int(s["clip"]) for s in shots] == [i % morphs for i in range(len(shots))]
@@ -215,7 +227,7 @@ def test_length_trims_the_song_around_the_drop(client, tmp_path, monkeypatch):
 def test_simple_options_describe_the_plan(client):
     r = client.get("/api/simple/options?duration=239&energy=dense&tier=draft&bpm=90&aspect=9:16&vertical=native&length=0")
     plan = r.json()["plan"]
-    assert plan["long_song"] and plan["shots"] > plan["morphs"] and plan["estimate"]["minutes"] > 5
+    assert plan["long_song"] and plan["shots"] == plan["morphs"] >= 40 and plan["estimate"]["minutes"] > 5  # one morph a shot, no repeats
     r = client.get("/api/simple/options?duration=239&energy=dense&tier=draft&bpm=90&aspect=9:16&vertical=native&length=60")
     assert r.json()["plan"]["duration"] == 60 and r.json()["lengths"] == [0, 60, 30, 15]
 

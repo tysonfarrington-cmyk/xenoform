@@ -212,7 +212,7 @@ def test_look_pass_roles_macros_and_no_cv2_fallback():
     assert [lp.role_for(i) for i in range(3)] == ["intro", "vj", "into_card"]
     lp.start_shot(1, 6, 0.0)
     assert lp.fx.preset == "cool-echo" and lp.fx.p["echo_decay"] == pytest.approx(0.70 - 0.12)
-    assert lp.fx.p["halation"] == pytest.approx(min(1.5, D.PRESETS["cool-echo"]["halation"] * 1.6))
+    assert lp.fx.p["halation"] == pytest.approx(min(1.5, D.PRESETS["cool-echo"]["halation"] * 2.5))  # glow 1.0 is 2.5x the preset
     f = _frame()
     outs = [lp.frame(f, k, k / 24) for k in range(6)]
     assert all(o.shape == f.shape and o.dtype == np.uint8 for o in outs) and not np.array_equal(outs[3], f)
@@ -272,7 +272,7 @@ def test_speed_macro_biases_the_auto_morph_count():
 
 def test_house_look_blocks_wobble_but_plain_macros_keep_it():
     shots = [{"fx_intensity": 1.0}]
-    assert dense.apply_macros([dict(s) for s in shots], {"chaos": 1.0})[0]["wobble"] == 0.3
+    assert dense.apply_macros([dict(s) for s in shots], {"chaos": 1.0})[0]["wobble"] == 0.6  # Chaos 1 is wild; it starts past 0.4
     assert "wobble" not in dense.apply_macros([dict(s) for s in shots], {"chaos": 1.0}, DEMO_HOUSE)[0]
 
 

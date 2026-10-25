@@ -391,6 +391,9 @@ def _apply_at_working_size(fx, frame: np.ndarray, d: dict, cap: int) -> np.ndarr
     return np.clip(frame.astype(np.float32) + up, 0, 255).astype(np.uint8)
 
 
+ORBIT_YAW = 14.0  # degrees of yaw at Chaos 0.5; the house profile's 28 is reached at Chaos 1
+
+
 class LookPass:
     """The house look on top of the beat FX, per shot: stem_orbit (a rigid camera orbit; needs OpenCV, a
     logged no-op without it) and then dance_fx (colour and light only). ``dance_fx`` is "off", "house"
@@ -459,16 +462,21 @@ class LookPass:
             speed = float(self.macros.get("speed", 0.5)); glow = float(self.macros.get("glow", 0.4))
             if fx.p.get("echo", 0) > 0:  # speed: faster cuts, shorter trails
                 fx.p["echo_decay"] = float(np.clip(fx.p.get("echo_decay", 0.70) - 0.24 * (speed - 0.5), 0.5, 0.95))
-            gain = 0.6 + glow  # glow: 1.0 at the neutral 0.4
-            for key in ("halation", "depth_bloom"):
+            gain = glow / 0.4  # glow: 0 is no halation or bloom at all, 0.4 the preset as written, 1 two and a half times
+            for key in ("halation", "depth_bloom", "light_leak"):
                 if fx.p.get(key, 0) > 0:
                     fx.p[key] = float(min(1.5, fx.p[key] * gain))
             self.fx = fx; self.roles.append(f"{si}:{role}:{fx.preset}")
         if self._orbit_ok and self.n > 0:
             from xenoform import stem_orbit as O
 
-            swing = 0.5 + float(np.clip(float(self.macros.get("chaos", 0.3) or 0.0), 0.0, 1.0))  # Chaos: 0.5x .. 1.5x
-            self.plan = O.plan(self.env, self.t0, self.n, fps=self.fps, max_yaw=float(O.DEFAULTS.get("max_yaw", 28.0)) * swing)
+            # Chaos: 0 is a camera that does not move, 0.3 (the default) a gentle drift, 1 a swing twice the old default.
+            # The old 28 degrees at every setting read as a handycam (Tys, 25 Oct), with the zoom that hides the edges.
+            swing = 2.0 * float(np.clip(float(self.macros.get("chaos", 0.3) or 0.0), 0.0, 1.0))
+            if swing < 0.05:
+                self.plan = None
+            else:
+                self.plan = O.plan(self.env, self.t0, self.n, fps=self.fps, max_yaw=ORBIT_YAW * swing)
 
     def frame(self, frame: np.ndarray, k: int, t: float) -> np.ndarray:
         """Output frame ``k`` of the current shot at song time ``t``."""
@@ -613,10 +621,11 @@ def _shot_frames(clip: Path, shot: dict, si: int, n0: int, total: int, *, aspect
                     raw_stem = 0.6
                 fs_level += (raw_stem - fs_level) * _F.FOLLOW  # eased: a spiky lane breathes the layer, it does not strobe it
                 stem = fs_level
+                pop = float(d.get("beat", 0.0)) if look.env else 0.0
                 if base > 0:
                     tgt = reframe(fs["target"], aspect, c, w, h)
                     frame = _F.treat(frame, tgt, str(fs["mode"]), _F.amount(base, stem, fcap), tint=fs.get("tint") or (255, 255, 255),
-                                     p=fs.get("params"), si=si, k=k, seed=int(fs.get("seed") or 0))
+                                     p=fs.get("params"), si=si, k=k, seed=int(fs.get("seed") or 0), pop=pop)
                 if echo > 0:
                     prv = reframe(fs["prev"], aspect, c, w, h)
                     frame = _F.treat(frame, prv, str(fs["mode"]), fcap * echo, tint=fs.get("tint") or (255, 255, 255),
@@ -702,7 +711,7 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
     env = envelopes(audio_path, total, fps=fps) if (fx or look.active) else None
     if look.active and not look.env:
         look.env = mix_stem_env(env, beats, fps)
-    glow_gain = 0.6 + float((macros or {}).get("glow", 0.4))
+    glow_gain = 0.2 + 1.4 * float((macros or {}).get("glow", 0.4))  # the beat FX bloom: near none at 0, 1.6 at 1
     punch = punch_curve(shots)
     over = None
     if overlay:

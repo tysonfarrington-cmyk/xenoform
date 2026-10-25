@@ -79,7 +79,7 @@ def test_chaos_shapes_the_cut():
     wild = dense.apply_macros(json.loads(json.dumps(shots)), {"chaos": 0.95})
     assert {e["type"] for e in wild[0]["effects"]} == {"punch", "stutter", "hold"}
     assert wild[0]["effects"][0]["strength"] == 0.5 * min(2.0, 0.4 + 1.2 * 0.95) or wild[0]["effects"][0]["strength"] <= 1.0
-    assert next(e for e in wild[0]["effects"] if e["type"] == "stutter")["repeat"] == 5
+    assert next(e for e in wild[0]["effects"] if e["type"] == "stutter")["repeat"] == 7  # past 0.85 the stutter doubles and more
     assert wild[0]["chaos"] == 0.95 and calm[0]["chaos"] == 0.1
 
 
@@ -93,8 +93,8 @@ def test_orbit_swing_follows_chaos():
     for chaos in (0.0, 1.0):
         look = beatfx.LookPass(dance_fx="off", stem_orbit=True, stem_env=env, macros={"chaos": chaos}, beats=beats, fps=fps, shots=1)
         look.start_shot(0, n, 0.0)
-        yaw[chaos] = float(np.abs(look.plan["yaw"]).max())
-    assert yaw[1.0] > yaw[0.0] * 1.5
+        yaw[chaos] = float(np.abs(look.plan["yaw"]).max()) if look.plan is not None else 0.0
+    assert yaw[0.0] == 0.0 and yaw[1.0] > 0.0  # Chaos 0 is a camera that does not move; 1 swings
 
 
 def test_palette_tints_follow_the_still(tmp_path):

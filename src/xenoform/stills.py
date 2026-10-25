@@ -207,6 +207,76 @@ def nouns_for(vibe: str, count: int, have: set[str] | None = None, seed: int | N
     return out
 
 
+_FAMILY_INDEX: dict | None = None
+
+
+def family_index() -> dict[str, str]:
+    """noun -> family id, from the catalogue (cached)."""
+    global _FAMILY_INDEX
+    if _FAMILY_INDEX is None:
+        idx = {}
+        for fam, row in (subjects().get("families") or {}).items():
+            for noun in row.get("nouns") or []:
+                idx[str(noun).strip().lower()] = fam
+        _FAMILY_INDEX = idx
+    return _FAMILY_INDEX
+
+
+def family_of(noun: str) -> str:
+    """The family a noun belongs to ("" when the catalogue does not know it); a grown still's noun is in the
+    catalogue, a shipped one too, an own shape usually not."""
+    low = str(noun or "").strip().lower()
+    idx = family_index()
+    if low in idx:
+        return idx[low]
+    words = set(low.split())
+    for n, fam in idx.items():  # "orb iridescent" -> "orb"; "crescent moon oil slick" -> "crescent moon"
+        if n in low or (set(n.split()) <= words):
+            return fam
+    return ""
+
+
+def family_for_cut(vibe: str, words: set[str] | None = None, seed: int | None = None) -> str:
+    """The family a cut draws on, so its objects belong together instead of being thrown together: a word of the
+    idea line that names a family's noun or its label picks that family ("a chrome moth circles a neon sign" ->
+    insects); else the vibe's heaviest family, the tie broken by ``seed`` so two cuts of one song differ."""
+    data = subjects()
+    fams = data.get("families") or {}
+    words = {w.lower() for w in (words or set())}
+    if words:
+        for fam, row in fams.items():
+            label_words = set(re.findall(r"[a-z]+", str(row.get("label") or "").lower())) | set(fam.replace("-", " ").split())
+            if words & label_words:
+                return fam
+            for noun in row.get("nouns") or []:
+                if set(str(noun).lower().split()) & words:
+                    return fam
+    entry = (data.get("vibes") or {}).get(vibe) or {}
+    weights = dict(entry.get("weights") or data.get("default_weights") or {})
+    if not weights:
+        return ""
+    top = max(weights.values())
+    best = [f for f, w in weights.items() if w == top and f in fams]
+    if not best:
+        return ""
+    return best[(int(seed) if seed is not None else 0) % len(best)]
+
+
+def family_nouns(vibe: str, family: str, count: int, have: set[str] | None = None) -> list[str]:
+    """``count`` nouns of ``family`` the vibe does not have yet, in catalogue order (the idea line's family grown
+    for the cut, so its objects belong together)."""
+    row = (subjects().get("families") or {}).get(family) or {}
+    have = {h.lower() for h in (have or set())}
+    out = []
+    for noun in row.get("nouns") or []:
+        noun = str(noun).strip().lower()
+        if noun not in have and _ok_noun(noun):
+            out.append(noun)
+        if len(out) >= count:
+            break
+    return out
+
+
 def clean_noun(text: str) -> str:
     """A typed shape as a noun: lowercase, one space, no article, letters and digits only, 40 characters."""
     low = re.sub(r"[^a-z0-9 \-']+", " ", str(text).lower())

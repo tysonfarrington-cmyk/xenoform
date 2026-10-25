@@ -27,26 +27,27 @@ except ImportError:  # pragma: no cover
 PASSES = ("grade", "halation", "echo", "edge_tint", "light_leak", "glass", "wash", "bleed", "invert", "flash", "sweep", "depth_bloom", "breath", "blue_morph", "fade")
 
 PRESETS: dict[str, dict] = {
-    # name: per-pass amount (0 = off). Kept low on purpose: tasteful, never distorting.
-    "warm-leak": {"grade": 0.8, "halation": 0.9, "echo": 0.0, "edge_tint": 0.25, "light_leak": 0.8, "glass": 0.0,
+    # name: per-pass amount (0 = off). Kept low on purpose: tasteful, never distorting. Echo (the trail that reads as
+    # blur) and halation (the glow) came down a third on 25 Oct: the morphs are the picture, the look sits on them.
+    "warm-leak": {"grade": 0.8, "halation": 0.6, "echo": 0.0, "edge_tint": 0.25, "light_leak": 0.6, "glass": 0.0,
                   "shadow": (0.95, 0.98, 1.06), "high": (1.06, 1.0, 0.92), "edge": (255, 170, 90)},
-    "cool-echo": {"grade": 0.7, "halation": 0.5, "echo": 0.8, "edge_tint": 0.7, "light_leak": 0.0, "glass": 0.15,
+    "cool-echo": {"grade": 0.7, "halation": 0.4, "echo": 0.5, "edge_tint": 0.7, "light_leak": 0.0, "glass": 0.15,
                   "shadow": (0.92, 0.98, 1.10), "high": (0.98, 1.02, 1.06), "edge": (90, 210, 255)},
     "noir-glow": {"grade": 0.9, "halation": 0.7, "echo": 0.35, "edge_tint": 0.35, "light_leak": 0.5, "glass": 0.2,
                   "shadow": (0.96, 0.94, 1.08), "high": (1.04, 1.0, 1.02), "edge": (200, 140, 255)},
     # aggressive scene preset for hero / morph shots (flowers, objects): long trails, heavy bloom, leaks, washes, bleed
-    "bloom-rush": {"grade": 0.8, "halation": 1.0, "echo": 1.0, "edge_tint": 0.45, "light_leak": 1.0, "glass": 0.1,
+    "bloom-rush": {"grade": 0.8, "halation": 0.7, "echo": 0.6, "edge_tint": 0.45, "light_leak": 0.7, "glass": 0.1,
                    "wash": 0.9, "bleed": 0.85, "echo_decay": 0.86,
                    "shadow": (0.90, 0.97, 1.12), "high": (1.08, 1.0, 0.94), "edge": (120, 220, 255),
                    "wash_a": (40, 210, 255), "wash_b": (255, 70, 170)},
     # bloom-rush plus a stem-driven negative: luma flips on the bass/beat (hue kept), eased in and out
-    "negative-rush": {"grade": 0.7, "halation": 0.9, "echo": 0.9, "edge_tint": 0.4, "light_leak": 0.8, "glass": 0.0,
+    "negative-rush": {"grade": 0.7, "halation": 0.7, "echo": 0.6, "edge_tint": 0.4, "light_leak": 0.6, "glass": 0.0,
                       "wash": 0.5, "bleed": 0.6, "invert": 0.9, "echo_decay": 0.84,
                       "shadow": (0.92, 0.97, 1.10), "high": (1.06, 1.0, 0.96), "edge": (140, 200, 255),
                       "wash_a": (40, 210, 255), "wash_b": (190, 90, 255)},
     # electric-blue flashes on the beat over bloom-rush, negative pulse only on big hits, slow diagonal light sweep,
     # depth bloom on the bass, a rhythmic exposure breath, and an in-shape blue morph (same subject, crystal-blue variant)
-    "cyan-flash": {"grade": 1.0, "halation": 0.55, "echo": 0.9, "edge_tint": 0.45, "light_leak": 0.35, "glass": 0.0,
+    "cyan-flash": {"grade": 1.0, "halation": 0.5, "echo": 0.6, "edge_tint": 0.45, "light_leak": 0.35, "glass": 0.0,
                    "wash": 0.18, "bleed": 0.5, "echo_decay": 0.80, "flash": 0.55, "sweep": 0.35, "depth_bloom": 0.22,
                    "breath": 0.3, "invert_hits": 0.7, "blue_morph": 0.0,
                    "shadow": (0.55, 0.68, 0.90), "high": (1.0, 1.02, 1.06), "edge": (90, 200, 255),

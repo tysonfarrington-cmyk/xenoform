@@ -116,6 +116,8 @@ def test_render_clip_is_exact_and_reframed(tmp_path):
 def test_run_simple_cuts_own_clips_in_and_leads_with_own_images(tmp_path, monkeypatch):
     seen = {}
     monkeypatch.setattr(dense, "stills_for", lambda state, n: ("ocean", [{"path": f"s{i}.png", "file": f"s{i}.png"} for i in range(n)]))
+    # a grown pool of sixty: with the shipped twelve alone the no-repeat rule would plan eleven long shots that no 4 s clip fits
+    monkeypatch.setattr("xenoform.morph_pass.catalogue", lambda: {"ocean": [{"file": f"ocean/{i:02d}_o.jpg", "noun": f"o{i}"} for i in range(60)]})
     monkeypatch.setattr("xenoform.portrait.black_stills", lambda stills, work: stills)
     monkeypatch.setattr("xenoform.portrait.portrait_stills", lambda stills, work, w=720, h=1280, background=None: stills)
     import xenoform.cloud_morph as cm

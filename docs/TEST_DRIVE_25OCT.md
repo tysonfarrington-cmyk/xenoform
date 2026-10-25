@@ -93,7 +93,7 @@ Hard flashes are frame-to-frame mean-luma jumps over 40 of 255; every cut but V3
 | Orbit | on | kept on whenever the look is off |
 | Aspect | 9:16 | fills the frame; 16:9 leaves wings |
 | Energy | dense | Flow is fine with Beat FX on (V4), but dense gives the drop its shape |
-| Length | 30 s to test, 60 s to show | a 60 s cut now shows twelve objects |
+| Length | 30 s to test, 60 s to show | no object repeats inside a cut: one morph a shot (Draft affords 48, Final 12) |
 | Negative-rush, cyan-flash | dark vibes only | softened automatically on bright ones |
 | Performer | 2 shots when the song has a vocal window | 20 minutes a shot on this card |
 | Final tier | once, for the showcase | about 3 minutes a morph |
@@ -122,6 +122,41 @@ Still open from this round: on Final cuts the artifact scan flags row discontinu
 cuts without the layer), worth a look at the join frames; the intense knobs add shots faster than the morph budget adds
 morphs, so a 30 s cut at Chaos 0.6 loops six objects four times (the budget could follow the shot count); and the
 bloom-rush look at high Glow is a strobe on its own.
+
+## Round three, 26 October: after Tys's look at T2 and the demos
+
+Tys's notes on T2 chrome and the demos: images repeated; too much blur and glow (a 60s-70s feel); handheld wobble and
+needless zooming where fixed objects would make the morphs read; objects uninteresting and thrown together with no
+relationship; the silhouette layer a flat layer on a boring background where he wanted flashes and outlines; the white
+costume boring (he wants La Roux plus Edgerunners); and maxing the knobs should give a schizophrenic cut, since Simple
+maxed is the showcase. What changed, then three 30 s Draft cuts and one with Polly, all on Glitch Out.
+
+- No object repeats inside a cut: one morph a shot up to what the tier affords (Draft 48, Final 12), past that fewer,
+  longer shots on the bars, never a loop. T2's six objects four times over is gone.
+- The knobs reach the limits at 1 and sit calm at 0 (Intensity 0 is no beat FX, Chaos 0 a camera that does not move,
+  Glow 0 no bloom at all; at 1 the stutters double, the orbit swings twice the old default, the bloom is 2.5x).
+- Calmer defaults: the orbit's yaw halved, its zoom capped at 1.6 (it reached 3), every look's echo and halation down
+  a third, so the objects hold still and sharp.
+- Objects that belong together: the cut draws on one family of the catalogue first (the idea line's word picks it) and
+  grows that family on the GPU first when the pool is short of it.
+- The outline modes flash on a hit and draw thicker, so the foreshadow reads as an outline, not a layer.
+- Polly in sci-fi rave streetwear (black tech jacket with cyan piping, chrome-grey top, cargo trousers with reflective
+  straps, a magenta streak in the bob); her dance prompt is rave: arms overhead, a bounce on every kick, a jump on the hit.
+
+| Cut | Settings | Took | Shots / morphs / objects | Foreshadow | QA | What the sheet shows |
+|---|---|---|---|---|---|---|
+| H1 | chrome, 30 s, defaults (Intensity 0.5, Speed 0.5, Chaos 0.3, Glow 0.4), idea "a chess game played by machines" | 6:47 | 9 / 9 / 10 | trace | clean, 0 flashes | nine objects, each held still and sharp on the chrome ground, one morph a shot, a traced outline arriving before each; six families, since chrome had one retro-tech object (what the grow-for-idea now fixes) |
+| H2 | chrome, 30 s, everything at 1 | 10:30 | 31 / 31 / 32 | slices (16 strips, jitter 1) | 3 glitch flags, 1 cut off the beat, 1 flash | one object a second across 17 families, strips interleaving the next object over every shot, punches and stutters on every hit: the schizophrenic cut |
+| H3 | cosmic, 30 s, everything calm (Intensity 0.3, Speed 0.4, Chaos 0, Glow 0.2) | 14:51 | 20 / 20 / 21 | slices (4 strips, no jitter) | clean, 2 flashes | twenty objects, no camera move, no trail: the cleanest morphs of the week; the cosmic objects still read as a mixed bag (twelve families) |
+| P1 | cosmic, 30 s from 40 s, Polly 2 dance shots, Intensity 0.8 | 22:42 (Polly 15:15) | 21 / 24 / 25 | slices | 1 glitch flag, 8 flashes | Polly in the cyberpunk outfit dancing for seven seconds over the objects, arms up on the downbeats; the eight flashes are the bloom-rush look at Intensity 0.8 on a dark vibe |
+
+Time, measured again: a Draft morph is 11 to 20 s on the 3080 Ti (H2's 31 morphs took 9:50, H3's 20 took 14:17 while
+Polly's dance shot for P1 shared the card), the look pass 69 to 93 s for 30 s with the foreshadow layer, a Polly dance shot about 15 minutes.
+
+Still open after this round: the morph engine itself (Draft morphs are 320x576 LTX 0.9.5 upscaled to 540x960; the
+Final tier is the crisp one at 1.5 minutes a second of video); scenes morphing rather than objects (the stills are single
+objects on a ground by design, a scene pool would be a new family of stills); and more transition kinds beyond the
+foreshadow modes and the vibe's premium picks. The cloud-sub comparison waits for Tys's key in his own environment.
 
 ## Phase C
 

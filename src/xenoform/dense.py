@@ -14,6 +14,7 @@ clips come from LTX 0.9.5 (Draft) or LTX-2.3 fp8 (Final) on this machine.
 from __future__ import annotations
 
 import json
+import math
 import logging
 import os
 import shutil
@@ -48,10 +49,12 @@ MAX_SHOTS = 15  # the short-clip plan (demo1): 16 stills, the black pool holds 1
 # over 24 morphs; every handoff is still one continuous morph because the chain loops back to its first still.
 SHOT_SECONDS_TARGET = 1.6     # shot budget: about one shot per 1.6 s on average
 SHOT_BUDGET_MAX = 240
-CLIP_BUDGET = (6, 30)         # unique morph renders in a music-video cut (min, max): a 20 s test cut needs six, not twelve
-CLIP_SECONDS_PER = 5.0        # one unique morph per five seconds of song: at ten, a 60 s cut walked six objects three
-                              # times in the same order and every judge of the 25 Oct test drive called the loop; five
-                              # doubles the objects a long cut shows for about 12 to 20 s of GPU a morph on a 3080 Ti
+CLIP_BUDGET = (1, 64)         # unique morph renders in a music-video cut (min, max)
+MAX_SHOT_S = 4.0              # a morph is rendered at 2 to 5 s; a shot much longer than that would play it in slow motion
+# No object repeats inside a cut (Tys, 25 Oct: "a rule we have to build in"): every shot gets its own morph, up to what
+# the tier can afford on a 3080 Ti (Draft about 11 s a morph, Final about 7 min); past the cap the cut gets fewer,
+# longer shots rather than a loop. The pool caps it too: a vibe with twelve stills gives eleven morphs.
+MORPH_CAP = {"draft": 48, "final": 12}
 LONG_SONG_S = 20.0            # above this the story plan, the chain reuse and performer slots apply (the demo clip stays on the demo1 plan)
 COMPOSE_S_PER_FRAME = {"draft": 0.2, "final": 0.3}  # measured: 1440 frames at 540x960 composed in 285 s (look pass 155 s)
 
@@ -405,9 +408,9 @@ def speed_count(duration: float, beats: list, energy: str, speed: float) -> int:
 def apply_macros(shots: list[dict], m: dict, house: dict | None = None) -> list[dict]:
     """Intensity scales each shot's beat-FX intensity (0.5 = as planned); Chaos above 0.5 adds wobble
     (never when the ``house`` look says character_wobble is off)."""
-    gain = 0.4 + 1.2 * m.get("intensity", 0.5)
+    gain = 1.6 * float(m.get("intensity", 0.5))  # 0 = no beat FX at all, 0.5 = four fifths, 1 = everything
     chaos = float(min(1.0, max(0.0, m.get("chaos", 0.3))))
-    wob = max(0.0, (chaos - 0.5) * 0.6)
+    wob = max(0.0, (chaos - 0.4) * 1.0)
     if house and ((house.get("look") or {}).get("character_wobble") is False):
         wob = 0.0
     for s in shots:
@@ -421,17 +424,55 @@ def apply_macros(shots: list[dict], m: dict, house: dict | None = None) -> list[
         for fx in s.get("effects") or []:
             kind = fx.get("type")
             if kind == "punch":
-                effects.append({**fx, "strength": round(min(1.0, float(fx.get("strength", 0.5)) * (0.4 + 1.2 * chaos)), 3)})
+                effects.append({**fx, "strength": round(min(1.0, float(fx.get("strength", 0.5)) * (0.2 + 1.4 * chaos)), 3)})
             elif kind in ("stutter", "hold", "skip", "reverse"):
-                if chaos < 0.25:
+                if chaos < 0.2:
                     continue
-                if kind == "stutter" and chaos > 0.75:
-                    fx = {**fx, "repeat": min(6, int(fx.get("repeat", 3)) + 2)}
+                if kind == "stutter" and chaos > 0.6:
+                    fx = {**fx, "repeat": min(8, int(fx.get("repeat", 3)) + (4 if chaos > 0.85 else 2))}
                 effects.append(fx)
             else:
                 effects.append(fx)
         s["effects"] = effects
     return shots
+
+
+GROW_FOR_IDEA_MAX = 16  # stills grown for an idea's family before a cut, about 6 s each on a 3080 Ti
+
+
+def grow_family_for_cut(state: dict, vibe: str, need: int, cfg: dict | None, report: Callable | None = None, *,
+                        engine: str | None = None) -> dict | None:
+    """The idea line's family grown before the cut when the vibe's pool lacks it, so the cut's objects belong
+    together: "a chess game played by machines" on chrome found one toy in the pool and fell through to six
+    families (26 Oct). Up to ``GROW_FOR_IDEA_MAX`` stills, only when ComfyUI has Z-Image, never for a mock render;
+    ``state["auto_grow"]`` False turns it off. Returns the tally, or None when nothing was grown."""
+    from xenoform import morph_pass as _mp
+    from xenoform import stills as _stills
+
+    if engine == "mock" or state.get("auto_grow") is False:
+        return None
+    words = set(_mp._story_words(state))
+    family = _stills.family_for_cut(vibe, words, seed=int(state.get("seed") or 0))
+    if not family:
+        return None
+    pool = _mp.catalogue().get(vibe) or []
+    in_family = [r for r in pool if _stills.family_of(str(r.get("noun") or "")) == family]
+    want = min(int(need), GROW_FOR_IDEA_MAX)
+    if len(in_family) >= want:
+        return None
+    nouns = _stills.family_nouns(vibe, family, want - len(in_family), have=_stills.nouns_in(vibe))
+    if not nouns:
+        return None
+    try:
+        if not _stills.available(cfg).get("ok"):
+            return None
+        if report:
+            report("restyle", 0.03, f"Growing {len(nouns)} {family.replace('-', ' ')} objects for this idea (about {int(_stills.estimate_seconds(len(nouns)))} s)")
+        result = _stills.grow(vibe, len(nouns), nouns=nouns, cfg=cfg, sheet=False)
+        return {"family": family, "asked": len(nouns), "kept": result.get("kept", 0)}
+    except Exception as exc:  # the cut goes on with the pool it has
+        log.warning("grow for idea skipped: %s", exc)
+        return None
 
 
 def wants_finishing(state: dict) -> bool:
@@ -456,19 +497,25 @@ def shot_budget(duration: float) -> int:
     return max(MAX_SHOTS, min(SHOT_BUDGET_MAX, int(round(float(duration) / SHOT_SECONDS_TARGET))))
 
 
-def clip_plan(shots: list[dict], duration: float, beats: list) -> dict:
-    """The morph chain for a long song: ``morphs`` unique renders of ``clip_s`` seconds each, closed into a
-    loop (the last morph lands on the first still), and ``assign[i]`` the chain link shot ``i`` plays.
-
-    Walking the loop in order keeps every handoff continuous (shot i ends on the still shot i+1 starts
-    on); the chain simply comes round again after ``morphs`` shots, as a chorus does."""
+def clip_plan(shots: list[dict], duration: float, beats: list, *, pool: int | None = None, tier: str = "draft") -> dict:
+    """The morphs for a long song: one unique render of ``clip_s`` seconds per shot, ``assign[i]`` the render shot
+    ``i`` plays. No object ever repeats: when the shots outnumber what the tier (``MORPH_CAP``) or the pool can
+    afford, the shots are merged into that many longer ones (``merge_shots``) and the plan carries them as
+    ``shots`` with ``merged`` True. Every handoff stays continuous: shot i ends on the still shot i+1 starts on."""
     duration = float(duration)
     bar = 4.0 * _period(beats) if beats else 2.0
     clip_s = snap_up(min(5.0, max(2.0, bar * 1.15)))
-    morphs = max(CLIP_BUDGET[0], min(CLIP_BUDGET[1], int(round(duration / CLIP_SECONDS_PER))))
-    morphs = max(1, min(morphs, len(shots)))
-    assign = [i % morphs for i in range(len(shots))]
-    return {"clip_s": int(clip_s), "morphs": morphs, "assign": assign, "reuse": len(shots) > morphs}
+    # the tier's cap, but never shots longer than MAX_SHOT_S: a 2 to 5 s morph played over a 15 s shot is slow motion
+    # and held frames, so a long song on Final asks for more morphs (the estimate says how long) rather than that
+    cap = max(int(MORPH_CAP.get(str(tier or "draft"), MORPH_CAP["draft"])), int(math.ceil(duration / MAX_SHOT_S)))
+    morphs = min(len(shots), cap, CLIP_BUDGET[1])
+    if pool:
+        morphs = min(morphs, max(1, int(pool) - 1))  # a chain of n morphs needs n + 1 distinct stills
+    morphs = max(CLIP_BUDGET[0], morphs)
+    # ``fits`` False: the cut wants more morphs than the tier or the pool affords; the caller re-plans the song with
+    # ``max_shots`` = morphs, so the planner itself makes fewer, longer shots on the bars, and no object repeats
+    return {"clip_s": int(clip_s), "morphs": morphs, "assign": list(range(morphs)), "reuse": False, "cap": cap,
+            "fits": morphs >= len(shots), "wanted": len(shots)}
 
 
 def plan_summary(duration: float, beats: list, energy: str = "dense", tier: str = "draft", aspect: str = "9:16",
@@ -480,7 +527,7 @@ def plan_summary(duration: float, beats: list, energy: str = "dense", tier: str 
     else:
         shots = plan_shots(duration, beats)
     long_song = duration > LONG_SONG_S
-    cp = clip_plan(shots, duration, beats) if long_song else {"clip_s": 2, "morphs": len(shots), "assign": list(range(len(shots))), "reuse": False}
+    cp = clip_plan(shots, duration, beats, tier=tier) if long_song else {"clip_s": 2, "morphs": len(shots), "assign": list(range(len(shots))), "reuse": False}
     fps = 24
     frames_total = int(round(duration * fps))
     compose_s = frames_total * COMPOSE_S_PER_FRAME["final" if tier == "final" else "draft"] / beatfx.look_speedup(frames_total)
@@ -497,8 +544,8 @@ def plan_summary(duration: float, beats: list, energy: str = "dense", tier: str 
         est["performer_seconds"] = int(round(secs * n_perf))
         est["seconds"] = int(est["seconds"] + est["performer_seconds"])
         est["minutes"] = round(est["seconds"] / 60, 1)
-    return {"duration": round(duration, 2), "shots": len(shots), "morphs": cp["morphs"], "clip_s": cp["clip_s"],
-            "reuse": cp["reuse"], "long_song": long_song, "estimate": est, "performer": n_perf}
+    return {"duration": round(duration, 2), "shots": min(len(shots), cp["morphs"]) if long_song else len(shots), "morphs": cp["morphs"],
+            "clip_s": cp["clip_s"], "reuse": cp["reuse"], "long_song": long_song, "estimate": est, "performer": n_perf}
 
 
 def dense_plan(duration: float, beats: list, drop: float | None = None, max_shots: int | None = None,
@@ -797,16 +844,25 @@ def shots_for(state: dict, directed: dict, audio_path: Path | None) -> tuple[lis
     speed = macros(state)["speed"]
     if n == "auto" and abs(speed - 0.5) > 0.05 and not state.get("cut_plan"):
         n = speed_count(duration, beats, opt["energy"], speed)  # the speed macro biases the cut density
+    # ``max_shots``: the cap a long cut re-plans to when the tier or the pool affords fewer morphs than shots (no
+    # object repeats): the planners make fewer, longer shots on the bars rather than the cut folding them afterwards
+    try:
+        max_shots = int(state.get("max_shots") or 0) or None
+    except (TypeError, ValueError):
+        max_shots = None
     if state.get("cut_plan"):
         plan = state["cut_plan"]
     elif opt["energy"] == "dense" and n == "auto" and duration > LONG_SONG_S and len(_analysis_sections(directed)) >= 2:
         drop = find_drop(audio_path, beats, duration)
-        plan = story_plan(duration, beats, _analysis_sections(directed), drop, pace=story_pace(state))
+        plan = story_plan(duration, beats, _analysis_sections(directed), drop, max_shots=max_shots, pace=story_pace(state))
     elif opt["energy"] == "dense":
         drop = find_drop(audio_path, beats, duration)
-        plan = dense_plan(duration, beats, drop, count=None if n == "auto" else n)
-    elif n != "auto":
-        plan = flow_plan(duration, beats, n)
+        count = None if n == "auto" else n
+        if max_shots and (count is None or count > max_shots):
+            count = max_shots
+        plan = dense_plan(duration, beats, drop, max_shots=max_shots, count=count)
+    elif n != "auto" or max_shots:
+        plan = flow_plan(duration, beats, min(n, max_shots) if (n != "auto" and max_shots) else (max_shots if n == "auto" else n))
     else:
         return plan_shots(duration, beats), {"name": "flow", "shots": []}
     shots = custom_shots(plan, duration)
@@ -857,12 +913,30 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     shots, plan = shots_for(state, directed, Path(audio_path))
     duration = float(directed.get("duration") or 0.0)
     long_song = duration > LONG_SONG_S and not plan.get("stills") and not state.get("cut_plan")
+    pre_notes: list[dict] = []  # what the plan decided before the render; folded into the record's notes below
     chain: dict = {}
     if long_song:
-        # Music-video mode: a closed chain of reusable morphs; shots walk the loop in order (see clip_plan).
-        chain = clip_plan(shots, duration, list(directed.get("beats") or []))
-        vibe, stills = stills_for({**state, "cut_plan": None}, chain["morphs"])
-        stills = stills + [stills[0]]  # the loop closes on the first still
+        # Music-video mode: one morph a shot, no object twice (see clip_plan); the pool and the tier cap it, and
+        # a cut past the cap gets fewer, longer shots instead of a loop
+        from xenoform.morph_pass import catalogue as _catalogue, vibe_for as _vibe_for
+
+        pool_vibe = _vibe_for(state)
+        pool_n = len(_catalogue().get(pool_vibe) or [])
+        beats_list = list(directed.get("beats") or [])
+        chain = clip_plan(shots, duration, beats_list, pool=pool_n or None, tier=opt["tier"])
+        grown = grow_family_for_cut(state, pool_vibe, chain["morphs"] + 1, cfg, report, engine=engine)
+        if grown:  # the idea line's family now in the pool: count again, the chain may afford more
+            pre_notes.append({"grown": grown})
+            pool_n = len(_catalogue().get(pool_vibe) or [])
+            chain = clip_plan(shots, duration, beats_list, pool=pool_n or None, tier=opt["tier"])
+        if not chain["fits"]:
+            wanted = chain["wanted"]
+            shots, plan = shots_for({**state, "max_shots": chain["morphs"]}, directed, Path(audio_path))
+            chain = clip_plan(shots, duration, beats_list, pool=pool_n or None, tier=opt["tier"])
+            pre_notes.append({"capped": {"wanted": wanted, "shots": len(shots), "cap": chain.get("cap"), "pool": pool_n}})
+            report("restyle", 0.04, f"{wanted} shots re-planned as {len(shots)} longer ones: no object repeats, and {opt['tier']} "
+                                    f"affords {chain.get('cap')} morphs")
+        vibe, stills = stills_for({**state, "cut_plan": None}, chain["morphs"] + 1)  # n morphs need n + 1 distinct stills
         for shot, ci in zip(shots, chain["assign"]):
             shot["clip"] = int(ci)
             shot["render_s"] = int(chain["clip_s"])
@@ -870,8 +944,8 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
         render_shots = [{"index": i, "start": round(i * chain["clip_s"], 4), "end": round((i + 1) * chain["clip_s"], 4),
                          "seconds": float(chain["clip_s"]), "render_s": int(chain["clip_s"]),
                          "frames": int(chain["clip_s"] * FPS), "effects": []} for i in range(chain["morphs"])]
-        report("restyle", 0.05, f"{len(shots)} shots on the beat over a loop of {chain['morphs']} morphs "
-                                f"({chain['clip_s']} s each)")
+        report("restyle", 0.05, f"{len(shots)} shots on the beat, {chain['morphs']} morphs ({chain['clip_s']} s each), "
+                                f"no object twice")
     else:
         render_shots = shots
     vibe, stills = (vibe, stills) if long_song else stills_for({**state, "cut_plan": plan if plan.get("stills") else None}, len(shots) + 1)
@@ -918,7 +992,7 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     if native and vertical_house and fmt.get("native_vertical") and not os.environ.get("XENO_FINAL_916_OUT", "").strip():
         size = (int(fmt.get("width") or size[0]), int(fmt.get("height") or size[1]))  # the house output size (1080x1920)
     fps = int(fmt.get("fps") or beatfx.FPS) if vertical_house else beatfx.FPS
-    notes: list[dict] = []
+    notes: list[dict] = list(pre_notes)
     report("restyle", 0.1, f"{len(render_shots)} {'Final (LTX-2.3)' if engine == 'ltx23' else 'Draft (LTX 0.9.5)'} morphs Â· "
                            f"{len(shots)} shots Â· {opt['energy']} Â· {opt['aspect']}")
     if native_draft:
@@ -1064,6 +1138,7 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
             "vertical": ("native" if native else "crop") if opt["aspect"] == "9:16" else None,
             "fx": opt["fx"], "overlay": made["overlay"], "end_card": card, "vibe": vibe,
             "stills": [s["file"] for s in stills], "shots": shots, "plan_name": plan.get("name", ""), "chain": chain or None,
+            "families": sorted({_fam for _fam in (s.get("family") or "" for s in stills) if _fam}),
             "plan_shots": plan_shots, "clips": [str(c) for c in clips], "audio_path": str(audio_path),
             "transitions": transitions, "size": list(size) if size else None, "fps": fps, "seed": seed,
             "palette_image": str(stills[0]["path"]) if stills else None, "vertical_house": vertical_house,
@@ -1106,8 +1181,11 @@ def stills_animatic(directed: dict, state: dict, audio_path: Path, out_path: Pat
     long_song = duration > LONG_SONG_S and not plan.get("stills")
     # record=False: the animatic previews the picks the render will make; only the render marks them used
     if long_song:
-        chain = clip_plan(shots, duration, list(directed.get("beats") or []))
-        vibe, pool = stills_for({**state, "cut_plan": None}, chain["morphs"], record=False)
+        chain = clip_plan(shots, duration, list(directed.get("beats") or []), tier=options(state)["tier"])
+        if not chain["fits"]:  # the render will re-plan to this many shots; the animatic previews the same cut
+            shots, plan = shots_for({**state, "max_shots": chain["morphs"]}, directed, audio_path)
+            chain = clip_plan(shots, duration, list(directed.get("beats") or []), tier=options(state)["tier"])
+        vibe, pool = stills_for({**state, "cut_plan": None}, chain["morphs"] + 1, record=False)
         picks = [pool[ci] for ci in chain["assign"]]
     else:
         vibe, pool = stills_for({**state, "cut_plan": plan if plan.get("stills") else None}, len(shots) + 1, record=False)

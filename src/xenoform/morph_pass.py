@@ -96,7 +96,7 @@ def vibe_for(state: dict) -> str:
 
 
 def _story_words(state: dict) -> list[str]:
-    bits = [str(state.get("brief") or ""), str(state.get("story") or "")]
+    bits = [str(state.get("brief") or ""), str(state.get("story") or ""), str(state.get("idea") or "")]
     for scene in state.get("scenes") or []:
         bits += [str(scene.get(key) or "") for key in ("form", "action", "guide", "text")]
     for custom in state.get("customs") or []:
@@ -190,6 +190,16 @@ def pick_stills(state: dict, count: int, record: bool = True) -> tuple[str, list
         own = [{**r, "_vibe": asked} for r in stills.order_fresh(asked, list(cat[asked]))] + own
     look_vibe = asked if asked in VIBE_LOOK else vibe
     words = set(_story_words(state))
+    # objects that belong together: the cut draws on one family first (the idea line's word, else the vibe's
+    # heaviest family, the tie turned by the seed), freshest first within it, the rest of the pool after
+    family = stills.family_for_cut(asked or vibe, words, seed=int(state.get("seed") or 0))
+    for r in pool:
+        r["family"] = stills.family_of(str(r.get("noun") or ""))
+    if family:
+        # never-used objects of the family, then never-used others, then the used ones (family first), so a second
+        # cut still opens on what the first left alone; the stable sort keeps order_fresh's order inside each group
+        used = stills.usage().get(vibe) or {}
+        pool.sort(key=lambda r: (int(used.get(str(r.get("file")), 0)), 0 if r.get("family") == family else 1))
     lead = next((i for i, item in enumerate(pool) if set(item["noun"].split()) & words), None)
     if lead:
         pool = pool[lead:] + pool[:lead]
