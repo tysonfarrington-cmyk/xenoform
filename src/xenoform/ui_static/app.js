@@ -3068,7 +3068,10 @@ function easyEtaText() {
   const draft = job.video ? "Draft playing · " : "";
   const word = easyStageWord(job);
   const served = job.eta_s === null || job.eta_s === undefined ? NaN : Number(job.eta_s);
-  const left = Number.isFinite(served) ? served : easyEtaLive() - elapsed;
+  // the server re-estimates on each stage tick; between ticks the page counts the seconds since that tick down
+  // itself, so "about 2:40 left" does not sit still for half a minute while the first morph renders
+  const sinceTick = easy.jobAt ? (Date.now() - easy.jobAt) / 1000 : 0;
+  const left = Number.isFinite(served) ? served - sinceTick : easyEtaLive() - elapsed;
   if (word === "checking" || word === "finishing" || !(left > 0)) return `${draft}${clockText(elapsed)} elapsed · ${word}`;
   return `${draft}${clockText(elapsed)} elapsed · ${word} · about ${clockText(Math.max(10, left))} left`;
 }
@@ -4703,6 +4706,7 @@ async function poll(id) {
   if (ignoreJob === id) return;
   state.job = job;
   watchJob(job);
+  if (state.easy && job.eta_s !== state.easy.lastEta) { state.easy.lastEta = job.eta_s; state.easy.jobAt = Date.now(); }
   if (document.body.dataset.advanced !== "1" && state.easy && state.easy.phase === "making") {
     if (job.video) showEasyPreview(job.video);
     if (job.status === "done") {
