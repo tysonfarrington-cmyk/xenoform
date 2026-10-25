@@ -579,7 +579,7 @@ def look_speedup(total: int) -> float:
 
 def _shot_frames(clip: Path, shot: dict, si: int, n0: int, total: int, *, aspect: str, w: int, h: int, fx: bool,
                  env: dict | None, beats: list, punch, zoom_scale: float, glow_gain: float, fps: int, look_kwargs: dict,
-                 foreshadow: dict | None = None) -> dict:
+                 foreshadow: dict | None = None, boundary: dict | None = None) -> dict:
     """One shot's finished frames: reframed around the subject, the beat FX, then the house look. This is the
     work the compose loop used to do inline, as plain data in and out so it can run in a worker process: the
     look state is rebuilt here from ``look_kwargs`` and seeded per shot (``LookPass.start_shot``), so the
@@ -640,6 +640,29 @@ def _shot_frames(clip: Path, shot: dict, si: int, n0: int, total: int, *, aspect
                     frame = _F.treat(frame, prv, str(fs["mode"]), _F.amount(1.0, stem, fcap) * echo,
                                      tint=fs.get("tint") or (255, 255, 255), p=fs.get("params"), si=si, k=k,
                                      seed=int(fs.get("seed") or 0))
+        if boundary:
+            # a boundary kind (boundary_fx: smear, strobe cut, wipe, chromatic rip): the window of the handoff, half in this
+            # shot's head and half in the previous shot's tail, rides its stem and brings the second picture in here,
+            # before the look, so the look grades the handoff as part of the picture
+            from xenoform import boundary_fx as _B
+            from xenoform import dance_fx as _D
+
+            hit = _B.at(boundary, k, len(idx))
+            if hit:
+                half, u, j = hit
+                bp = boundary.get("params") or {}
+                lane = str(half.get("stem") or "drums")
+                if look.env:
+                    d = _D.drive_from_env(look.env, n / fps, look.beats, look.gains())
+                    stem = float(d.get(lane, 0.0))
+                    if stem < 0.02 and lane != "drums":
+                        stem = float(d.get("drums", 0.0))  # a flat lane (no vocals, say) rides the drums instead
+                else:
+                    stem = 0.6
+                oth = reframe(half["other"], aspect, c, w, h)
+                frame = _B.treat(frame, oth, str(half["kind"]), u, amount=float(bp.get("amount", 0.7)), stem=stem, p=bp, j=j,
+                                 seed=int(boundary.get("seed") or 0) * 7919 + int(half.get("index") or 0),
+                                 variant=str(half.get("variant") or ""))
         frame = look.frame(frame, k, n / fps)
         if frame.shape[0] != h or frame.shape[1] != w:
             frame = resize(frame, w, h)
@@ -649,7 +672,8 @@ def _shot_frames(clip: Path, shot: dict, si: int, n0: int, total: int, *, aspect
             "look": {"frames": look.frames, "seconds": look.seconds, "roles": list(look.roles), "notes": list(look.notes)}}
 
 
-def _shot_results(clips: list, shots: list[dict], out_path: Path, workers: int, total: int, common: dict, fs: list | None = None):
+def _shot_results(clips: list, shots: list[dict], out_path: Path, workers: int, total: int, common: dict, fs: list | None = None,
+                  bx: list | None = None):
     """Yields ``(si, result)`` in shot order: inline when ``workers`` is 1, else from a bounded window of worker
     processes (``workers + 2`` shots in flight, so a four-minute song never holds all its frames at once).
     Clips are conformed to the project fps here, in the parent, before any worker sees them."""
@@ -659,7 +683,8 @@ def _shot_results(clips: list, shots: list[dict], out_path: Path, workers: int, 
         n0 += int(shot["frames"])
     if workers <= 1:
         for si, (clip, shot) in enumerate(zip(clips, shots)):
-            yield si, _shot_frames(_conformed(Path(clip), out_path), shot, si, starts[si], total, foreshadow=(fs[si] if fs else None), **common)
+            yield si, _shot_frames(_conformed(Path(clip), out_path), shot, si, starts[si], total, foreshadow=(fs[si] if fs else None),
+                                   boundary=(bx[si] if bx else None), **common)
         return
     from collections import deque
     from concurrent.futures import ProcessPoolExecutor
@@ -671,7 +696,8 @@ def _shot_results(clips: list, shots: list[dict], out_path: Path, workers: int, 
         def submit() -> None:
             nonlocal nxt
             clip = _conformed(Path(clips[nxt]), out_path)
-            pending.append(pool.submit(_shot_frames, clip, shots[nxt], nxt, starts[nxt], total, foreshadow=(fs[nxt] if fs else None), **common))
+            pending.append(pool.submit(_shot_frames, clip, shots[nxt], nxt, starts[nxt], total, foreshadow=(fs[nxt] if fs else None),
+                                       boundary=(bx[nxt] if bx else None), **common))
             nxt += 1
 
         while nxt < len(shots) and len(pending) < int(workers) + 2:
@@ -691,12 +717,17 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
             size: tuple[int, int] | None = None, fps: int | None = None, dance_fx: str | None = None,
             stem_orbit: bool | None = None, stem_env: dict | None = None, macros: dict | None = None,
             house: dict | None = None, end_card: bool = False, seed: int = 0, palette_image: str | None = None,
-            adaptive: bool = False, transitions: list | None = None, foreshadow: str | None = None) -> dict:
+            adaptive: bool = False, transitions: list | None = None, foreshadow: str | None = None,
+            boundary_fx: list | None = None) -> dict:
     """Retime every clip to its shot (speed, ease, hold, stutter, skip, reverse), reframe, add beat FX, mux.
 
     ``transitions``: one entry per shot, ``{"kind", "frames"}`` or None; a premium transition (transitions_fx)
     replaces the window centred on that shot's first frame (half from the previous shot's tail, half from
     this shot's head), so the frame count and the beat sync do not move.
+
+    ``boundary_fx``: one entry per shot from ``boundary_fx.pick`` (a smear, strobe cut, wipe or chromatic rip at
+    the boundary into that shot, with its window) or None. These run inside the look pass, before the house look,
+    riding a stem; a boundary they take gets no premium window. ``foreshadow`` is the layer's mode ("" for off).
 
     ``size`` overrides the output frame size (native vertical Final: 1080x1920). Clips that
     already have the target aspect pass through whole; any other clip is cropped around its object.
@@ -771,18 +802,42 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
     fs_mode = fs_mode if fs_mode in _F.MODES else ""
     fs_params = _F.params(macros)
     fs_entries: list = [None] * len(shots)
+    edge_cache: dict = {}
+
+    def read_edge(clip: Path, which: str) -> np.ndarray:  # one decode per edge frame, shared by the foreshadow layer and the boundary kinds
+        key = (str(clip), which)
+        if key not in edge_cache:
+            edge_cache[key] = _F.edge_frame(Path(clip), which)
+        return edge_cache[key]
+
     if fs_mode:
         house_vj = str((((look.house.get("dance_fx") or {}).get("vj")) or {}).get("preset") or "") if isinstance(look.house, dict) else ""
         tint = (look.tints.get("edge") or (_D.PRESETS.get(look.mode) or {}).get("edge")
                 or (_D.PRESETS.get(house_vj) or {}).get("edge") or (255, 255, 255))
-        fs_entries = _F.plan(shots, list(clips), list(beats), fps, fs_mode, fs_params)
+        fs_entries = _F.plan(shots, list(clips), list(beats), fps, fs_mode, fs_params, read_edge=read_edge)
         for entry in fs_entries:
             if entry:
                 entry.update({"cap": fs_params["cap"], "params": fs_params, "tint": [int(x) for x in tint], "seed": int(seed)})
         log.info("foreshadow %s: %d shots, %d echoes, lead %s beats", fs_mode, sum(1 for e in fs_entries if e and e.get("target") is not None),
                  sum(1 for e in fs_entries if e and e.get("prev") is not None), fs_params["lead_beats"])
+    # the boundary kinds (boundary_fx.pick, one entry per shot): the halves of their windows and the second pictures,
+    # read here once and sent to the workers as arrays; a handoff a kind took gets no premium window drawn over it
+    from xenoform import boundary_fx as _B
+
+    bx_picks = list(boundary_fx or [])[: len(shots)]
+    bx_picks += [None] * (len(shots) - len(bx_picks))
+    bx_params = _B.params(macros)
+    bx_entries: list = [None] * len(shots)
+    if any(bx_picks):
+        bx_entries = _B.plan(bx_picks, shots, list(clips), read_edge=read_edge)
+        for entry in bx_entries:
+            if entry:
+                entry.update({"params": bx_params, "seed": int(seed)})
+        trans = [None if (i < len(bx_picks) and bx_picks[i]) else t for i, t in enumerate(trans)]
+        log.info("boundary kinds: %s", _B.info(bx_picks)["kinds"])
     try:
-        for si, res in _shot_results(clips, shots, out_path, workers, total, common, fs_entries if fs_mode else None):
+        for si, res in _shot_results(clips, shots, out_path, workers, total, common, fs_entries if fs_mode else None,
+                                     bx_entries if any(bx_picks) else None):
             shot = shots[si]
             a, b = res["centres"]
             centres.append([a, b])
@@ -841,7 +896,8 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
                  look.env.get("engine"), look.frames, look.seconds)
     return {"frames": n, "seconds": round(n / fps, 3), "size": f"{w}x{h}", "aspect": aspect, "fx": bool(fx),
             "overlay": over is not None, "centres": centres, "fps": fps, "look": look.info(),
-            "transitions": used_transitions, "workers": int(workers), "foreshadow": _F.info(fs_entries, fs_mode, fs_params, fps)}
+            "transitions": used_transitions, "workers": int(workers), "foreshadow": _F.info(fs_entries, fs_mode, fs_params, fps),
+            "boundary_fx": _B.info(bx_picks, bx_params)}
 
 
 def reframe_file(src: Path, dest: Path, aspect: str, *, quality: str = "draft", shots: list[dict] | None = None) -> dict:

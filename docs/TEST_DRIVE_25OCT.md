@@ -172,7 +172,33 @@ Polly's dance shot for P1 shared the card), the look pass 69 to 93 s for 30 s wi
 Still open after this round: the morph engine itself (Draft morphs are 320x576 LTX 0.9.5 upscaled to 540x960; the
 Final tier is the crisp one at 1.5 minutes a second of video); scenes morphing rather than objects (the stills are single
 objects on a ground by design, a scene pool would be a new family of stills); and more transition kinds beyond the
-foreshadow modes and the vibe's premium picks. The cloud-sub comparison waits for Tys's key in his own environment.
+foreshadow modes and the vibe's premium picks (round four, below, adds four). The cloud-sub comparison waits for Tys's key in his own environment.
+
+## Round four, 26 October: boundary kinds for the maxed cut
+
+Tys on H2: not many interesting transition types; maxing everything should give "a max kind of schizophrenic" cut. H2
+was slices plus punches because at a morph landing the outgoing and incoming frames show the same object, so the vibe's
+premium transitions had nothing to cut between. Built: four boundary kinds (`xenoform.boundary_fx`), each riding a stem,
+whose second picture is the object that is new at the handoff (where the next morph lands, or the clip arriving across
+a hard cut): a smear (datamosh-style block displacement on the drums for half a bar), a strobe cut (the two objects
+alternate frame by frame for a beat, luma-matched so the flash check never counts it; only past Chaos 0.7, never two in
+two seconds), a wipe on the bar (strips or a radial iris on the bass, the strip count from Chaos) and a chromatic rip
+(RGB channels of the two pictures offset and crossed, the offset from Intensity). Chaos picks how many handoffs take one
+(none at 0, every boundary from 0.85), the drop gets the loudest, never the same kind twice in a row, and they run inside
+the look pass so the house look grades them. Two 30 s Draft cuts on Glitch Out, chrome, no idea line, while the scene-stills
+session's cosmic cut shared the card.
+
+| Cut | Settings | Took | Shots / morphs / objects | Handoffs | QA | What the sheet shows |
+|---|---|---|---|---|---|---|
+| H6 | chrome, 30 s, everything at 1 | 12:03 (morphs 11:08, cut 0:41; re-cut 0:40 on the CPU) | 31 / 31 / 32 | 30 of 30: 8 smears, 8 rips, 7 strobes, 7 wipes (strips before the drop, irises from it), the drop a strobe cut | 0 hard flashes (max luma jump 32 of 255), 7 artifact flags: the smears and rips, which are glitches by design | a tornado and a squid breaking into sliding blocks, a bowl and a coral with their red and blue torn apart, a white iris ring eating the frame at the drop, the lightning bolt swapping with the next object on the beat: one object a second across thirteen families and a different handoff at every cut |
+| H7 | chrome, 30 s, everything calm (Intensity 0.3, Speed 0.4, Chaos 0, Glow 0.2) | 12:21 (morphs 11:28, cut 0:31) | 20 / 20 / 21 | none: the plain handoff everywhere | 0 hard flashes, 3 short freezes, 5 artifact flags on the morphs themselves | twenty chrome objects held still and sharp on the black ground, a trace of the next one arriving before each, nothing else: the same desk, the same song, the calm end of the knob |
+
+What the pair settles: the maxed cut and the calm cut now read as two different cuts of the same song, which is what
+Simple maxed is for. The artifact scan flags the smears and rips as glitches (it cannot tell a datamosh from a bad
+morph); the flash check is the one that matters for the strobe and it stays at zero. The record lists the kind at
+every boundary (`boundary_fx`, with the plan's drop), the lane names them under the player, and a re-cut with new
+knobs re-picks them without the GPU (H6's drop strobe came from such a re-cut, 40 s). Both videos and sheets are in
+`C:\Users\tyson\Desktop\xeno_tests_25oct\` as H6 and H7.
 
 ## Phase C
 

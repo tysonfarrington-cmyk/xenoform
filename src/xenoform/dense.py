@@ -1186,6 +1186,14 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     plan_shots = _copy.deepcopy(shots)  # before the macros: a re-cut starts from here
     apply_macros(shots, m, hp if vertical_house else None)
     transitions = boundary_transitions(shots, vibe, seed=seed) if plan.get("name") == "story" else None
+    # the boundary kinds (boundary_fx): Chaos decides how many handoffs smear, strobe, wipe or rip their colours apart;
+    # the vibe's premium picks keep their boundaries, except the drop past Chaos 0.7, which the strobe takes
+    from xenoform import boundary_fx as _B
+
+    boundary_fx = _B.pick(shots, m, directed.get("beats") or [], fps, seed=seed, premium=transitions, drop=plan.get("drop"))
+    transitions = _B.clear_premium(transitions, boundary_fx)
+    if any(boundary_fx):
+        notes.append({"boundary_fx": _B.info(boundary_fx)})
     look_preset = beatfx.resolve_dance_preset(opt["dance_fx"], vibe, hp)
     if look_preset == "off" and not opt["stem_orbit"]:
         # with no look and no orbit a held still is four identical frames (dead air, 25 Oct judge panel): the orbit stays
@@ -1208,7 +1216,7 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
                           house=hp, end_card=opt["end_card"], seed=seed,
                           palette_image=str(stills[0]["path"]) if stills else None,
                           adaptive=str(opt.get("dance_fx") or "auto").strip().lower() == "auto",
-                          transitions=transitions, foreshadow=fs_mode)
+                          transitions=transitions, foreshadow=fs_mode, boundary_fx=boundary_fx)
     if made.get("look", {}).get("seconds"):
         log.info("house look took %.1fs for %d frames", made["look"]["seconds"], made["look"]["frames"])
     card = False
@@ -1226,7 +1234,8 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
             "scene_mode": scene_choice, "scene_files": scene_files,  # the scenes choice and which stills were scenes
             "families": sorted({_fam for _fam in (s.get("family") or "" for s in stills) if _fam}),
             "plan_shots": plan_shots, "clips": [str(c) for c in clips], "audio_path": str(audio_path),
-            "transitions": transitions, "size": list(size) if size else None, "fps": fps, "seed": seed,
+            "transitions": transitions, "boundary_fx": boundary_fx, "drop": plan.get("drop"), "size": list(size) if size else None,
+            "fps": fps, "seed": seed,
             "palette_image": str(stills[0]["path"]) if stills else None, "vertical_house": vertical_house,
             "recut_state": {k: state.get(k) for k in ("vibe", "aspect", "quality_tier", "energy_preset", "dance_fx", "stem_orbit", "pace",
                                                       "beat_fx", "beat_overlay", "end_card", "stems_path", "macros", "still_background",
@@ -1237,6 +1246,7 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
             "render": made["size"], "frames": made["frames"], "seconds": round(time.perf_counter() - started, 2),
             "steps": 8 if engine == "ltx23" else None,
             "fps": made.get("fps", beatfx.FPS), "look": made.get("look") or {}, "foreshadow": made.get("foreshadow"), "macros": m,
+            "handoffs": made.get("boundary_fx"),
             "house": str(hp.get("name") or ""), "stems_path": str(state.get("stems_path") or "")}
     (work / "simple.json").write_text(json.dumps(info, indent=1, default=str), encoding="utf-8")
     return info
@@ -1343,6 +1353,17 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
     apply_macros(shots, m, hp if rec.get("vertical_house") else None)
     vibe = str(rec.get("vibe") or state.get("vibe") or "")
     transitions = boundary_transitions(shots, vibe, seed=int(rec.get("seed") or 0)) if rec.get("plan_name") == "story" else None
+    from xenoform import boundary_fx as _B
+
+    drop = rec.get("drop")
+    if drop is None and shots:  # a record from before the drop was written down: the song's own drop, as the dense plan finds it
+        try:
+            drop = find_drop(audio, list(rec.get("beats") or []), float(shots[-1].get("end") or 0.0))
+        except Exception:
+            drop = None
+    boundary_fx = _B.pick(shots, m, list(rec.get("beats") or []), int(rec.get("fps") or 24), seed=int(rec.get("seed") or 0),
+                          premium=transitions, drop=drop)  # re-picked from the knobs as they are now: the same knobs give the same kinds
+    transitions = _B.clear_premium(transitions, boundary_fx)
     look_preset = beatfx.resolve_dance_preset(opt["dance_fx"], vibe, hp)
     if look_preset == "off" and not opt["stem_orbit"]:
         opt["stem_orbit"] = True  # as in run_simple: no look and no orbit would leave held stills dead
@@ -1360,13 +1381,14 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
                           dance_fx=look_preset, stem_orbit=opt["stem_orbit"], stem_env=stem_env, macros=m, house=hp,
                           end_card=opt["end_card"], seed=int(rec.get("seed") or 0), palette_image=rec.get("palette_image"),
                           adaptive=str(opt.get("dance_fx") or "auto").strip().lower() == "auto", transitions=transitions,
-                          foreshadow=fs_mode)
+                          foreshadow=fs_mode, boundary_fx=boundary_fx)
     if opt["end_card"]:
         beatfx.end_card(tmp, str(opt.get("recipe") or "(none)"))
     from xenoform.turbo import publish_file
 
     publish_file(tmp, job_dir / "xenoform.mp4")
     rec.update({"shots": shots, "look": made.get("look"), "macros": m, "recut_state": state, "transitions": transitions,
+                "boundary_fx": boundary_fx, "handoffs": made.get("boundary_fx"), "drop": drop,
                 "recuts": int(rec.get("recuts") or 0) + 1})
     rec_path.write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
     return rec

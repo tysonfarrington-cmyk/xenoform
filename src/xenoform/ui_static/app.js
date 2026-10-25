@@ -2545,7 +2545,7 @@ function renderEasy() {
       </section>
       <section class="panel span simple-knobs-panel" data-tour="easy-macros">
         <h3>Knobs</h3>
-        <p class="note">Intensity is the beat pulse and flash. Speed is the cut density and the trail length. Chaos is the punches, stutters and how far the subject swings. Glow is the bloom. The look rides the vibe's own colours unless you pick one.</p>
+        <p class="note">Intensity is the beat pulse and flash. Speed is the cut density and the trail length. Chaos is the punches, stutters and how far the subject swings, and it wilds the cuts: smears, wipes and chromatic rips at the handoffs as it climbs, strobe cuts past 0.7 (never two in two seconds), plain cuts at 0. Glow is the bloom. The look rides the vibe's own colours unless you pick one.</p>
         <div class="simple-knobs"></div>
         ${lookRow(easy.danceFx || "auto", "easy-look")}
         ${foreshadowRow(easy)}
