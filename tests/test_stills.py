@@ -36,9 +36,9 @@ def _pool(folder: Path, n: int = 6) -> list[Path]:
     return [_still(folder / f"p{i}.png", cx=0.35 + 0.06 * i, cy=0.45 + 0.02 * i, r=0.2 + 0.012 * i) for i in range(n)]
 
 
-def _grown(vibe: str, name: str, noun: str, **row) -> Path:
+def _grown(vibe: str, name: str, noun: str, r: float = 0.18, **row) -> Path:
     """A grown still on disk and in stills.json (the conftest points XENO_STILLS at a temp dir)."""
-    path = _still(L.root() / vibe / name)
+    path = _still(L.root() / vibe / name, r=r)
     idx = L._read_json(L.index_path(), {})
     idx.setdefault(vibe, []).append({"file": f"{vibe}/{name}", "noun": noun, **row})
     L._write_json(L.index_path(), idx)
@@ -167,6 +167,20 @@ def test_a_graded_gradient_backdrop_is_backdrop_not_subject(tmp_path):
     assert "cropped" not in L.check(huge, scene)["why"] and "cropped" in L.check(huge, prof)["why"]
 
 
+def test_a_small_subject_is_zoomed_to_the_pool_scale(tmp_path):
+    small = _still(tmp_path / "small.png", cx=0.3, cy=0.6, r=0.08)  # a disc 16 % of the frame height, off centre
+    out = L.normalise_scale(Image.open(small))
+    assert out.size == (W, H)
+    out.save(tmp_path / "zoomed.png")
+    f = L.features(tmp_path / "zoomed.png")
+    box_h = (f["box"][3] - f["box"][1] + 1) / L.SMALL[1]
+    assert 0.3 < box_h < 0.5 and f["edges"] == 0  # capped at ZOOM_MAX, so a tiny disc comes up to about a third
+    big = _still(tmp_path / "big.png", cx=0.5, cy=0.5, r=0.3)
+    assert L.normalise_scale(Image.open(big)).tobytes() == Image.open(big).convert("RGB").tobytes()  # already large: untouched
+    kept = L.ingest("synthetic", small, "small thing", keep_rejects=False)  # ingest zooms before the checks
+    assert kept["kept"] and kept["area"] > 0.04  # the disc was 1.6 % of the frame; zoomed 2.2 times it is over 4 %
+
+
 def test_grade_touches_only_the_original_five():
     im = Image.fromarray(np.full((72, 128, 3), (20, 120, 110), dtype=np.uint8))
     assert np.asarray(L.grade(im, "chrome-mercury")).tolist() == np.asarray(im).tolist()
@@ -213,7 +227,7 @@ class _FakeClient:
             self.k = k
 
         def to_file(self, path):
-            _still(Path(path), cx=0.3 + 0.07 * self.k, cy=0.5, r=0.15 + 0.01 * self.k)
+            _still(Path(path), cx=0.3 + 0.07 * self.k, cy=0.5, r=0.26 + 0.02 * self.k)  # large enough not to be zoomed to one scale
 
     class _Job:
         def __init__(self, k):
@@ -373,10 +387,10 @@ def test_own_shapes_lead_even_when_the_story_names_an_object():
 
 def test_a_rejected_candidate_does_not_block_a_later_keeper(tmp_path):
     for i in range(3):
-        _grown("synthetic2", f"00{i}_p{i}.jpg", f"p{i}")
+        _grown("synthetic2", f"00{i}_p{i}.jpg", f"p{i}", r=0.28 + 0.02 * i)
     folder = tmp_path / "batch"
-    _still(folder / "00_astrolabe.png", cx=0.5, cy=0.5, r=0.2, back=(120, 120, 124))  # the pool's object on a drifted backdrop
-    _still(folder / "01_astrolabe_again.png", cx=0.5, cy=0.5, r=0.2)
+    _still(folder / "00_astrolabe.png", cx=0.62, cy=0.45, r=0.27, back=(120, 120, 124))  # the object on a drifted backdrop
+    _still(folder / "01_astrolabe_again.png", cx=0.62, cy=0.45, r=0.27)  # the same object on the pool's backdrop: not a twin of any pool member
     res = L.import_folder("synthetic2", folder)
     assert res["kept"] == 1 and "duplicate" not in res["rejected"] and res["rejected_n"] == 1
 

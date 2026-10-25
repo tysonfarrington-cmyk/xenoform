@@ -49,7 +49,9 @@ MAX_SHOTS = 15  # the short-clip plan (demo1): 16 stills, the black pool holds 1
 SHOT_SECONDS_TARGET = 1.6     # shot budget: about one shot per 1.6 s on average
 SHOT_BUDGET_MAX = 240
 CLIP_BUDGET = (6, 30)         # unique morph renders in a music-video cut (min, max): a 20 s test cut needs six, not twelve
-CLIP_SECONDS_PER = 10.0       # one unique morph per ten seconds of song
+CLIP_SECONDS_PER = 5.0        # one unique morph per five seconds of song: at ten, a 60 s cut walked six objects three
+                              # times in the same order and every judge of the 25 Oct test drive called the loop; five
+                              # doubles the objects a long cut shows for about 12 to 20 s of GPU a morph on a 3080 Ti
 LONG_SONG_S = 20.0            # above this the story plan, the chain reuse and performer slots apply (the demo clip stays on the demo1 plan)
 COMPOSE_S_PER_FRAME = {"draft": 0.2, "final": 0.3}  # measured: 1440 frames at 540x960 composed in 285 s (look pass 155 s)
 
@@ -1019,6 +1021,10 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     apply_macros(shots, m, hp if vertical_house else None)
     transitions = boundary_transitions(shots, vibe, seed=seed) if plan.get("name") == "story" else None
     look_preset = beatfx.resolve_dance_preset(opt["dance_fx"], vibe, hp)
+    if look_preset == "off" and not opt["stem_orbit"]:
+        # with no look and no orbit a held still is four identical frames (dead air, 25 Oct judge panel): the orbit stays
+        opt["stem_orbit"] = True
+        notes.append({"orbit": "kept on: with the look off, the orbit is what keeps a held still moving"})
     stem_env = stem_env_for(state)
     report("assemble", 0.6, f"House look: dance_fx {look_preset}, stem_orbit {'on' if opt['stem_orbit'] else 'off'}, "
                             f"stems {'split' if stem_env else 'from the mix'}")
@@ -1160,6 +1166,8 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
     vibe = str(rec.get("vibe") or state.get("vibe") or "")
     transitions = boundary_transitions(shots, vibe, seed=int(rec.get("seed") or 0)) if rec.get("plan_name") == "story" else None
     look_preset = beatfx.resolve_dance_preset(opt["dance_fx"], vibe, hp)
+    if look_preset == "off" and not opt["stem_orbit"]:
+        opt["stem_orbit"] = True  # as in run_simple: no look and no orbit would leave held stills dead
     stem_env = stem_env_for(state)
     size = tuple(rec["size"]) if rec.get("size") else None
     engine = str(rec.get("tier") or "draft")

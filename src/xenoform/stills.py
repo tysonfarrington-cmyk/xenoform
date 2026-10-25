@@ -268,8 +268,8 @@ SMALL = (256, 144)  # every measure runs on a small copy: a pool of fifty is pro
 EDGE_SHARE = 0.12   # of an outer band that must be object for the edge to count as touched
 
 
-def _small(path: Path | str, size=SMALL) -> np.ndarray:
-    im = Image.open(path).convert("RGB")
+def _small(path: Path | str | Image.Image, size=SMALL) -> np.ndarray:
+    im = path.convert("RGB") if isinstance(path, Image.Image) else Image.open(path).convert("RGB")
     if im.size != size:
         im = im.resize(size, Image.LANCZOS)
     return np.asarray(im).astype(np.float32)
@@ -439,6 +439,39 @@ def grade(im: Image.Image, vibe: str) -> Image.Image:
     return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8))
 
 
+# ------------------------------------------------------------------------------------------------ scale
+
+SUBJECT_MIN = 0.45   # of the frame height: a subject smaller than this is zoomed in on
+SUBJECT_TARGET = 0.62
+ZOOM_MAX = 2.2
+
+
+def normalise_scale(im: Image.Image) -> Image.Image:
+    """A small subject is zoomed in on so every still in a pool sits at a similar scale: a typed octopus a quarter
+    the size of the typed key beside it made the morph between them a zoom (the 25 Oct judge panel). The zoom is a
+    centred crop on the subject's box, never a zoom out (padding a gradient backdrop would show a seam), capped at
+    ``ZOOM_MAX``, and only when the box is under ``SUBJECT_MIN`` of the frame height."""
+    w, h = im.size
+    a = _small(im) if isinstance(im, Image.Image) else _small(Path(str(im)))
+    sh, sw = a.shape[:2]
+    fit, _ = _backdrop_fit(a)
+    fg = np.abs(a - fit.reshape(sh, sw, 3)).mean(axis=2) > 28.0
+    rows = np.where(fg.sum(axis=1) > 0.01 * sw)[0]
+    cols = np.where(fg.sum(axis=0) > 0.01 * sh)[0]
+    if not len(rows) or not len(cols):
+        return im
+    box_h = (rows[-1] - rows[0] + 1) / sh
+    if box_h >= SUBJECT_MIN or box_h <= 0:
+        return im
+    zoom = min(ZOOM_MAX, SUBJECT_TARGET / box_h)
+    cw, ch = w / zoom, h / zoom
+    cx = (cols[0] + cols[-1] + 1) / 2 / sw * w
+    cy = (rows[0] + rows[-1] + 1) / 2 / sh * h
+    left = min(max(0.0, cx - cw / 2), w - cw)
+    top = min(max(0.0, cy - ch / 2), h - ch)
+    return im.crop((int(round(left)), int(round(top)), int(round(left + cw)), int(round(top + ch)))).resize((w, h), Image.LANCZOS)
+
+
 # ------------------------------------------------------------------------------------------------ ingest
 
 
@@ -468,7 +501,7 @@ def ingest(vibe: str, source: Path | str, noun: str, *, prof: dict | None = None
     folder = root() / vibe
     folder.mkdir(parents=True, exist_ok=True)
     prof = prof if prof is not None else pool_profile(vibe)
-    im = grade(Image.open(source).convert("RGB"), vibe)
+    im = normalise_scale(grade(Image.open(source).convert("RGB"), vibe))
     if im.size != (W, H):
         im = im.resize((W, H), Image.LANCZOS)
     tmp = folder / f"_candidate_{slug(noun)}.jpg"
