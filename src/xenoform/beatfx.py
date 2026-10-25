@@ -350,7 +350,7 @@ def resolve_dance_preset(choice, vibe: str | None = None, house: dict | None = N
 
                 row = next((r for r in _vibes.extended() if r.get("id") == vibe), None)
                 pick = str(((row or {}).get("fx_defaults") or {}).get("dance_fx") or "").strip().lower()
-                if pick in D.PRESETS:
+                if pick in D.PRESETS or pick == "off":  # a print vibe may name "off": a page is a page, no grade
                     return pick
             except Exception:
                 pass
@@ -561,7 +561,8 @@ def look_speedup(total: int) -> float:
 
 
 def _shot_frames(clip: Path, shot: dict, si: int, n0: int, total: int, *, aspect: str, w: int, h: int, fx: bool,
-                 env: dict | None, beats: list, punch, zoom_scale: float, glow_gain: float, fps: int, look_kwargs: dict) -> dict:
+                 env: dict | None, beats: list, punch, zoom_scale: float, glow_gain: float, fps: int, look_kwargs: dict,
+                 foreshadow: dict | None = None) -> dict:
     """One shot's finished frames: reframed around the subject, the beat FX, then the house look. This is the
     work the compose loop used to do inline, as plain data in and out so it can run in a worker process: the
     look state is rebuilt here from ``look_kwargs`` and seeded per shot (``LookPass.start_shot``), so the
@@ -593,6 +594,30 @@ def _shot_frames(clip: Path, shot: dict, si: int, n0: int, total: int, *, aspect
                             punch=float(punch[n]) if n < len(punch) else 0.0,
                             loud=float(env["loud"][min(n, total - 1)]), beat_index=bi, zoom_scale=zoom_scale,
                             bloom=glow_gain)
+        if foreshadow:
+            # the next object arrives before its shot (foreshadow.treat), the amount riding the "other" stem (else the
+            # beat) under the Intensity cap; across a hard cut the object that just left echoes out for a beat
+            from xenoform import dance_fx as _D
+            from xenoform import foreshadow as _F
+
+            fs = foreshadow
+            fcap = float(fs.get("cap") or 0.5)
+            base = _F.ramp(k, len(idx), int(fs.get("lead") or 0)) if fs.get("target") is not None else 0.0
+            echo = _F.echo_ramp(k, int(fs.get("echo") or 0)) if fs.get("prev") is not None else 0.0
+            if base > 0 or echo > 0:
+                if look.env:
+                    d = _D.drive_from_env(look.env, n / fps, look.beats, look.gains())
+                    stem = float(d.get("other", 0.0)) if float(d.get("other", 0.0)) > 0.02 else float(d.get("beat", 0.0))
+                else:
+                    stem = 0.6
+                if base > 0:
+                    tgt = reframe(fs["target"], aspect, c, w, h)
+                    frame = _F.treat(frame, tgt, str(fs["mode"]), _F.amount(base, stem, fcap), tint=fs.get("tint") or (255, 255, 255),
+                                     p=fs.get("params"), si=si, k=k, seed=int(fs.get("seed") or 0))
+                if echo > 0:
+                    prv = reframe(fs["prev"], aspect, c, w, h)
+                    frame = _F.treat(frame, prv, str(fs["mode"]), fcap * echo, tint=fs.get("tint") or (255, 255, 255),
+                                     p=fs.get("params"), si=si, k=k, seed=int(fs.get("seed") or 0))
         frame = look.frame(frame, k, n / fps)
         if frame.shape[0] != h or frame.shape[1] != w:
             frame = resize(frame, w, h)
@@ -602,7 +627,7 @@ def _shot_frames(clip: Path, shot: dict, si: int, n0: int, total: int, *, aspect
             "look": {"frames": look.frames, "seconds": look.seconds, "roles": list(look.roles), "notes": list(look.notes)}}
 
 
-def _shot_results(clips: list, shots: list[dict], out_path: Path, workers: int, total: int, common: dict):
+def _shot_results(clips: list, shots: list[dict], out_path: Path, workers: int, total: int, common: dict, fs: list | None = None):
     """Yields ``(si, result)`` in shot order: inline when ``workers`` is 1, else from a bounded window of worker
     processes (``workers + 2`` shots in flight, so a four-minute song never holds all its frames at once).
     Clips are conformed to the project fps here, in the parent, before any worker sees them."""
@@ -612,7 +637,7 @@ def _shot_results(clips: list, shots: list[dict], out_path: Path, workers: int, 
         n0 += int(shot["frames"])
     if workers <= 1:
         for si, (clip, shot) in enumerate(zip(clips, shots)):
-            yield si, _shot_frames(_conformed(Path(clip), out_path), shot, si, starts[si], total, **common)
+            yield si, _shot_frames(_conformed(Path(clip), out_path), shot, si, starts[si], total, foreshadow=(fs[si] if fs else None), **common)
         return
     from collections import deque
     from concurrent.futures import ProcessPoolExecutor
@@ -624,7 +649,7 @@ def _shot_results(clips: list, shots: list[dict], out_path: Path, workers: int, 
         def submit() -> None:
             nonlocal nxt
             clip = _conformed(Path(clips[nxt]), out_path)
-            pending.append(pool.submit(_shot_frames, clip, shots[nxt], nxt, starts[nxt], total, **common))
+            pending.append(pool.submit(_shot_frames, clip, shots[nxt], nxt, starts[nxt], total, foreshadow=(fs[nxt] if fs else None), **common))
             nxt += 1
 
         while nxt < len(shots) and len(pending) < int(workers) + 2:
@@ -644,7 +669,7 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
             size: tuple[int, int] | None = None, fps: int | None = None, dance_fx: str | None = None,
             stem_orbit: bool | None = None, stem_env: dict | None = None, macros: dict | None = None,
             house: dict | None = None, end_card: bool = False, seed: int = 0, palette_image: str | None = None,
-            adaptive: bool = False, transitions: list | None = None) -> dict:
+            adaptive: bool = False, transitions: list | None = None, foreshadow: str | None = None) -> dict:
     """Retime every clip to its shot (speed, ease, hold, stutter, skip, reverse), reframe, add beat FX, mux.
 
     ``transitions``: one entry per shot, ``{"kind", "frames"}`` or None; a premium transition (transitions_fx)
@@ -715,8 +740,27 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
     workers = look_workers(total, heavy=bool(fx or look.active))
     if workers > 1:
         log.info("compose: %d shots over %d worker processes", len(shots), workers)
+    # the foreshadow layer: the next object brought into each shot's tail (foreshadow.plan reads the edge frames here,
+    # once each, and the entries travel to the workers as arrays); "" or None leaves it off
+    from xenoform import dance_fx as _D
+    from xenoform import foreshadow as _F
+
+    fs_mode = str(foreshadow or "").strip().lower()
+    fs_mode = fs_mode if fs_mode in _F.MODES else ""
+    fs_params = _F.params(macros)
+    fs_entries: list = [None] * len(shots)
+    if fs_mode:
+        house_vj = str((((look.house.get("dance_fx") or {}).get("vj")) or {}).get("preset") or "") if isinstance(look.house, dict) else ""
+        tint = (look.tints.get("edge") or (_D.PRESETS.get(look.mode) or {}).get("edge")
+                or (_D.PRESETS.get(house_vj) or {}).get("edge") or (255, 255, 255))
+        fs_entries = _F.plan(shots, list(clips), list(beats), fps, fs_mode, fs_params)
+        for entry in fs_entries:
+            if entry:
+                entry.update({"cap": fs_params["cap"], "params": fs_params, "tint": [int(x) for x in tint], "seed": int(seed)})
+        log.info("foreshadow %s: %d shots, %d echoes, lead %s beats", fs_mode, sum(1 for e in fs_entries if e and e.get("target") is not None),
+                 sum(1 for e in fs_entries if e and e.get("prev") is not None), fs_params["lead_beats"])
     try:
-        for si, res in _shot_results(clips, shots, out_path, workers, total, common):
+        for si, res in _shot_results(clips, shots, out_path, workers, total, common, fs_entries if fs_mode else None):
             shot = shots[si]
             a, b = res["centres"]
             centres.append([a, b])
@@ -775,7 +819,7 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
                  look.env.get("engine"), look.frames, look.seconds)
     return {"frames": n, "seconds": round(n / fps, 3), "size": f"{w}x{h}", "aspect": aspect, "fx": bool(fx),
             "overlay": over is not None, "centres": centres, "fps": fps, "look": look.info(),
-            "transitions": used_transitions, "workers": int(workers)}
+            "transitions": used_transitions, "workers": int(workers), "foreshadow": _F.info(fs_entries, fs_mode, fs_params, fps)}
 
 
 def reframe_file(src: Path, dest: Path, aspect: str, *, quality: str = "draft", shots: list[dict] | None = None) -> dict:

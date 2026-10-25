@@ -290,7 +290,7 @@
    "fx_defaults": {
     "rgb": 0.5,
     "chaos": 0.35,
-    "dance_fx": "negative-rush"
+    "dance_fx": "off"
    },
    "featured": 5,
    "v6_gate": {

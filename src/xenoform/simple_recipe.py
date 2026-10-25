@@ -16,6 +16,7 @@ PREFIX = "xf1."
 ENERGY = ("flow", "dense")
 ASPECTS = ("16:9", "9:16", "1:1")
 TIERS = ("draft", "final")
+FORESHADOW = ("auto", "off", "trace", "negative", "slices", "silhouette")
 MAX_LEN = 6000
 
 
@@ -44,6 +45,7 @@ def _clean(state: dict) -> dict:
         "card": bool(state.get("end_card")),
         "vertical": state.get("vertical_mode") if state.get("vertical_mode") in ("native", "crop") else "auto",
         "morphs": _morphs(state.get("morph_count")),
+        "foreshadow": str(state.get("foreshadow") or "auto").lower() if str(state.get("foreshadow") or "auto").lower() in FORESHADOW else "auto",
     }
     song = str(state.get("song") or "")[:80]
     if song:
@@ -55,9 +57,9 @@ def _clean(state: dict) -> dict:
 
 
 _SHORT = {"vibe": "v", "idea": "i", "seed": "s", "energy": "e", "aspect": "a", "tier": "t", "fx": "f",
-          "overlay": "o", "card": "c", "song": "g", "plan": "p", "vertical": "vm", "morphs": "n"}
+          "overlay": "o", "card": "c", "song": "g", "plan": "p", "vertical": "vm", "morphs": "n", "foreshadow": "fs"}
 _DEFAULTS = {"idea": "", "seed": 2727, "energy": "flow", "aspect": "16:9", "tier": "draft", "fx": True,
-             "overlay": False, "card": False, "vertical": "auto", "morphs": "auto"}
+             "overlay": False, "card": False, "vertical": "auto", "morphs": "auto", "foreshadow": "auto"}
 
 
 def encode(state: dict) -> str:
@@ -86,7 +88,7 @@ def decode(code: str) -> dict:
                     "quality_tier": data.get("tier"), "beat_fx": data.get("fx", True),
                     "beat_overlay": data.get("overlay"), "end_card": data.get("card"), "song": data.get("song"),
                     "vertical_mode": data.get("vertical"), "cut_plan": data.get("plan"),
-                    "morph_count": data.get("morphs")})
+                    "morph_count": data.get("morphs"), "foreshadow": data.get("foreshadow")})
     state = {"vibe": clean["vibe"], "idea": clean["idea"], "seed": clean["seed"], "energy_preset": clean["energy"],
              "aspect": clean["aspect"], "quality_tier": clean["tier"], "beat_fx": clean["fx"],
              "beat_overlay": clean["overlay"], "end_card": clean["card"], "song": clean.get("song", "")}
@@ -94,6 +96,8 @@ def decode(code: str) -> dict:
         state["morph_count"] = clean["morphs"]
     if clean["vertical"] != "auto":
         state["vertical_mode"] = clean["vertical"]
+    if clean["foreshadow"] != "auto":
+        state["foreshadow"] = clean["foreshadow"]
     if "plan" in clean:
         from xenoform.cloud_morph import CutPlanError, custom_shots
 

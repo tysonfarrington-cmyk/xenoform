@@ -119,7 +119,7 @@ function easyCrumbs(easy) {
 }
 
 // The last session's vibe and Fine-tune choices survive a reload or a desk restart (the song cannot: uploads live on the server).
-const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes"];
+const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow"];
 function saveEasy() {
   if (!state || !state.easy) return;
   try {
@@ -300,6 +300,7 @@ function payload() {
     end_card: !!(state.easy && state.easy.endCard),
     // The house look (demo_house): dance_fx "auto" | "off" | a preset; stem_orbit on unless switched off.
     dance_fx: (state.easy && state.easy.danceFx) || "auto",
+    foreshadow: (state.easy && state.easy.foreshadow) || "auto",
     stem_orbit: !(state.easy && state.easy.stemOrbit === false),
     macros: (window.XENO_MACROS ? window.XENO_MACROS() : null),
     length_s: Number((state.easy && state.easy.lengthS) || 0),
@@ -2493,6 +2494,7 @@ function renderEasy() {
         <div class="energy-head"><h3>Knobs</h3><span>Turn, then re-cut. No GPU.</span></div>
         <div class="simple-knobs"></div>
         ${lookRow(easy.danceFx || "auto", "easy-look")}
+        ${foreshadowRow(easy)}
         <button type="button" class="generate easy-row" data-act="easy-recut-knobs"${easy.showcase || !easyVideoId() ? " disabled" : ""}>Re-cut with these knobs</button>
         <p class="note">Re-composes the same morphs with the knobs, the look and the orbit as they are now. No GPU, no new pictures: a fraction of the render time.</p>
         <div class="energy-head"><h3>Try another vibe</h3><span>Same song, same story</span></div>
@@ -2543,6 +2545,7 @@ function renderEasy() {
         <p class="note">Intensity is the beat pulse and flash. Speed is the cut density and the trail length. Chaos is the punches, stutters and how far the subject swings. Glow is the bloom. The look rides the vibe's own colours unless you pick one.</p>
         <div class="simple-knobs"></div>
         ${lookRow(easy.danceFx || "auto", "easy-look")}
+        ${foreshadowRow(easy)}
         <p class="note look-note">${esc(lookNote(easy.danceFx || "auto"))}</p>
       </section>
       ${fineTune(easy)}
@@ -2701,6 +2704,26 @@ function stillsRow(easy) {
       ${running ? '<button type="button" class="ghost" data-act="easy-grow-stop">Stop</button>' : ""}
     </div>
     <p class="note">${esc(note)}</p>`;
+}
+
+// The foreshadow layer: the next object arrives before its shot, the way a new sound is introduced before it takes
+// the song. Trace (its edges glowing in the vibe's tint), Negative (its luma-flipped ghost), Slices (strips of it
+// interleaving and multiplying) or Silhouette (its shape filled with the tint); the amount rides the "other" stem
+// under the Intensity knob, starts a bar or so early (Speed), and across a hard cut the object that just left
+// echoes out for a beat. Auto picks by the vibe: trace on a dark vibe, slices on a bright one.
+const FORESHADOW_NOTES = {
+  auto: "The vibe's own mode: a trace on a dark vibe, slices on a bright one.",
+  off: "No foreshadowing: each morph lands on its own.",
+  trace: "The next object's edges glow in before it arrives, in the vibe's tint.",
+  negative: "The next object's negative ghosts in over the picture.",
+  slices: "Strips of the next object interleave and multiply toward the cut; Chaos sets how many and how jittery.",
+  silhouette: "The next object's shape fills in with the vibe's tint, edges traced.",
+};
+function foreshadowRow(easy) {
+  const current = easy.foreshadow || "auto";
+  const choices = [["auto", "Auto"], ["off", "Off"], ["trace", "Trace"], ["negative", "Negative"], ["slices", "Slices"], ["silhouette", "Silhouette"]];
+  return `${simpleSeg("easy-foreshadow", current, choices, "Foreshadow")}
+      <p class="note">${esc(FORESHADOW_NOTES[current] || FORESHADOW_NOTES.auto)} It rides the song's other stem under Intensity, starts earlier with Speed, and echoes a beat after a cut into Polly or your own clip.</p>`;
 }
 
 function machineRows(easy) {
@@ -2933,6 +2956,7 @@ function applySimpleRecipe(recipe) {
   easy.overlay = !!recipe.beat_overlay;
   easy.endCard = !!recipe.end_card;
   easy.danceFx = recipe.dance_fx || "auto";
+  easy.foreshadow = recipe.foreshadow || "auto";
   easy.lengthS = Number(recipe.length_s || 0);
   easy.performer = Number(recipe.performer || 0);
   easy.performerStyle = recipe.performer_style || "auto";
@@ -3229,6 +3253,7 @@ async function recutWithKnobs() {
   const body = {
     macros: window.XENO_MACROS ? window.XENO_MACROS() : null,
     dance_fx: state.easy.danceFx || "auto",
+    foreshadow: state.easy.foreshadow || "auto",
     stem_orbit: state.easy.stemOrbit !== false,
     beat_fx: state.easy.fx !== false,
     end_card: !!state.easy.endCard,
@@ -4221,7 +4246,7 @@ function adoptSession(data, options = {}) {
     transitionNote: previous ? previous.transitionNote || "" : "",
     easy: previous && previous.easy
       ? previous.easy
-      : Object.assign({ song: "", songLabel: "", vibe: "", idea: "", ownFolder: "", ownId: "", ownNote: "", ownShapes: "", stillsNote: "", phase: "song", note: "", playedHere: false,
+      : Object.assign({ song: "", songLabel: "", vibe: "", idea: "", ownFolder: "", ownId: "", ownNote: "", ownShapes: "", stillsNote: "", foreshadow: "auto", phase: "song", note: "", playedHere: false,
           // the house (demo_house): 9:16 native, Dense, Draft, Beat FX, the house look, subject orbit, no end card
           energyPreset: "dense", aspect: "9:16", tier: "draft", fx: true, endCard: false, danceFx: "auto", stemOrbit: true },
         loadEasy()),
@@ -4843,6 +4868,9 @@ document.addEventListener("click", async (event) => {
     loadSimpleOptions().then(render);
   } else if (act === "easy-look") {
     state.easy.danceFx = el.dataset.value || "auto";
+    render();
+  } else if (act === "easy-foreshadow") {
+    state.easy.foreshadow = el.dataset.value || "auto";
     render();
   } else if (act === "easy-orbit") {
     state.easy.stemOrbit = el.dataset.value !== "off";

@@ -626,7 +626,7 @@ def create_app(cfg: dict | None = None):
         folder = work_dir() / "jobs" / job_id
         if not (folder / "simple" / "simple.json").is_file():
             raise HTTPException(400, "This video has no cached morphs to re-cut.")
-        overrides = {k: body.get(k) for k in ("macros", "dance_fx", "stem_orbit", "beat_fx", "end_card", "beat_overlay") if k in body}
+        overrides = {k: body.get(k) for k in ("macros", "dance_fx", "stem_orbit", "beat_fx", "end_card", "beat_overlay", "foreshadow") if k in body}
         with _LOCK:
             job.update({"status": "running", "stage": "assemble", "progress": 0.05, "detail": "Re-cutting from the cached morphs",
                         "error": None})

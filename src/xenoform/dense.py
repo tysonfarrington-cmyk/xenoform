@@ -350,7 +350,14 @@ def options(state: dict) -> dict:
         "stem_orbit": stem_orbit_choice(state),
         "performer": performer_choice(state),
         "performer_style": performer_style(state),
+        "foreshadow": _foreshadow_choice(state),
     }
+
+
+def _foreshadow_choice(state: dict) -> str:
+    from xenoform import foreshadow as _fs
+
+    return _fs.choice(state)
 
 
 def stem_env_for(state: dict | None) -> dict | None:
@@ -1030,6 +1037,11 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
                             f"stems {'split' if stem_env else 'from the mix'}")
     if chain:
         notes.append({"chain": {"morphs": chain["morphs"], "clip_s": chain["clip_s"], "shots": len(shots)}})
+    from xenoform import foreshadow as _fs
+
+    fs_mode = _fs.mode_for(opt["foreshadow"], vibe)  # the next object traced, negative, sliced or silhouetted in before its shot
+    if fs_mode:
+        notes.append({"foreshadow": fs_mode})
     made = beatfx.compose(clips, shots, Path(audio_path), tmp, aspect=opt["aspect"],
                           quality="final" if engine == "ltx23" else "draft", fx=opt["fx"], overlay=opt["overlay"],
                           beats=directed.get("beats") or [], report=report, size=size, fps=fps,
@@ -1037,7 +1049,7 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
                           house=hp, end_card=opt["end_card"], seed=seed,
                           palette_image=str(stills[0]["path"]) if stills else None,
                           adaptive=str(opt.get("dance_fx") or "auto").strip().lower() == "auto",
-                          transitions=transitions)
+                          transitions=transitions, foreshadow=fs_mode)
     if made.get("look", {}).get("seconds"):
         log.info("house look took %.1fs for %d frames", made["look"]["seconds"], made["look"]["frames"])
     card = False
@@ -1057,12 +1069,13 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
             "palette_image": str(stills[0]["path"]) if stills else None, "vertical_house": vertical_house,
             "recut_state": {k: state.get(k) for k in ("vibe", "aspect", "quality_tier", "energy_preset", "dance_fx", "stem_orbit", "pace",
                                                       "beat_fx", "beat_overlay", "end_card", "stems_path", "macros", "still_background",
-                                                      "performer", "performer_style")},
+                                                      "performer", "performer_style", "foreshadow")},
             "roles": plan.get("roles"), "performer": performer_info, "own": own_info,
             "handoffs_s": [s["start"] for s in shots] + [shots[-1]["end"]], "fallbacks": notes,
+            "beats": [round(float(b), 4) for b in (directed.get("beats") or [])],
             "render": made["size"], "frames": made["frames"], "seconds": round(time.perf_counter() - started, 2),
             "steps": 8 if engine == "ltx23" else None,
-            "fps": made.get("fps", beatfx.FPS), "look": made.get("look") or {}, "macros": m,
+            "fps": made.get("fps", beatfx.FPS), "look": made.get("look") or {}, "foreshadow": made.get("foreshadow"), "macros": m,
             "house": str(hp.get("name") or ""), "stems_path": str(state.get("stems_path") or "")}
     (work / "simple.json").write_text(json.dumps(info, indent=1, default=str), encoding="utf-8")
     return info
@@ -1174,11 +1187,15 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
     tmp = job_dir / "xenoform.recut.mp4"
     if report:
         report("assemble", 0.1, "Re-cutting from the cached morphs (no GPU)")
+    from xenoform import foreshadow as _fs
+
+    fs_mode = _fs.mode_for(opt["foreshadow"], vibe)
     made = beatfx.compose(clips, shots, audio, tmp, aspect=opt["aspect"], quality="final" if engine == "final" else "draft",
-                          fx=opt["fx"], overlay=opt["overlay"], beats=[], report=report, size=size, fps=int(rec.get("fps") or 24),
+                          fx=opt["fx"], overlay=opt["overlay"], beats=list(rec.get("beats") or []), report=report, size=size, fps=int(rec.get("fps") or 24),
                           dance_fx=look_preset, stem_orbit=opt["stem_orbit"], stem_env=stem_env, macros=m, house=hp,
                           end_card=opt["end_card"], seed=int(rec.get("seed") or 0), palette_image=rec.get("palette_image"),
-                          adaptive=str(opt.get("dance_fx") or "auto").strip().lower() == "auto", transitions=transitions)
+                          adaptive=str(opt.get("dance_fx") or "auto").strip().lower() == "auto", transitions=transitions,
+                          foreshadow=fs_mode)
     if opt["end_card"]:
         beatfx.end_card(tmp, str(opt.get("recipe") or "(none)"))
     from xenoform.turbo import publish_file
