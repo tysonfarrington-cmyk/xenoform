@@ -203,6 +203,7 @@ class DanceFX:
         """frame: HxWx3 uint8 RGB. d: {"drums","bass","other","vocals","beat"} in 0..1 (None or missing = 0)."""
         p, k = self.p, self.k
         f = frame.astype(np.float32)
+        src_luma = float(f.mean())  # the picture as it came in: the passes below brighten it before the negative reads it
         h, w = f.shape[:2]
         d = d or {}
         dr, ba, ot, vo = (float(np.clip(d.get(s) or 0.0, 0, 1)) for s in ("drums", "bass", "other", "vocals"))
@@ -249,8 +250,9 @@ class DanceFX:
         if p.get("invert", 0) > 0 or p.get("invert_floor", 0) > 0:  # negative: flip luma only (hue/chroma kept); amount eased through a follower
             L = f.mean(axis=2, keepdims=True)
             # a full flip of a bright frame is a hard flash (a risograph page went 38 flashes in 15 s, 25 Oct test drive):
-            # the pulse scales with how dark the frame is, so a dark vibe keeps the whole negative and a bright one a quarter
-            dark = float(np.clip((170.0 - float(L.mean())) / 120.0, 0.25, 1.0))
+            # the pulse eases off as the incoming frame's mean climbs past the mid-tones, so a dark or mid-tone frame
+            # keeps the whole negative (mean 130 still flips) and a cream page (mean 200) gets a quarter
+            dark = float(np.clip((200.0 - src_luma) / 70.0, 0.25, 1.0))
             tgt = float(np.clip(max(p.get("invert_floor", 0.0), p.get("invert", 0) * k * (0.15 + 0.85 * max(ba, beat))), 0, 1)) * dark
             self._inv += (tgt - self._inv) * 0.25
             if self._inv > 1e-3:
