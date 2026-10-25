@@ -1,0 +1,676 @@
+"""The stills library (``xenoform.stills``; ``xenoform.library`` is the judges shot-library baker): the objects a
+vibe's morphs travel between, and how it grows on the user's own GPU.
+
+A cut is a chain of morphs between stills of single objects rendered in the vibe's material. The repo ships a
+seed set (``ui_static/objects/<vibe>/``, listed in ``objects.json``); this module adds a second, local set under
+the work folder (``work/ui/objects/<vibe>/``, listed in ``stills.json``) that the app generates with Z-Image
+Turbo through the same comfy-sdk -> comfy-api-proxy path the morphs use. The chain sees both as one pool
+(``catalogue``), puts the user's own shapes first, and prefers the objects a vibe has used least (``usage``), so
+a long library never laps inside a cut and two cuts of the same song do not open on the same object.
+
+Subjects come from ``configs/subjects.json``: families of nouns with a weight per vibe, so chrome draws on solids
+and instruments while a print vibe draws on creatures and plants, instead of every vibe sharing one dozen.
+Prompts come from ``configs/still_prompts.json``: the style prefix each shipped pool was made with, so a new
+still sits on the same backdrop and light as the pool it joins (a vibe without an entry falls back to its
+``still_style`` in vibes.json).
+
+Every candidate is checked against the pool it joins before it is kept (``check``): backdrop (the border
+colour stays with the pool), size (the subject neither fills the frame nor vanishes), cropped (it does not run
+off the edge), soft (it is as sharp as the pool), duplicate (a near copy of an object already there). Rejects
+are kept under ``<vibe>/rejected/`` for the eye, never listed. The five original vibes (liquid-gold, bloom,
+neon-night, ocean, cosmic) were graded after rendering; ``grade`` repeats that pass here.
+
+Nothing here touches ComfyUI's process. ``XENO_STILLS`` moves the local set (tests point it at a temp dir).
+"""
+from __future__ import annotations
+
+import json
+import logging
+import os
+import random
+import re
+import time
+from collections.abc import Callable
+from pathlib import Path
+
+import numpy as np
+from PIL import Image
+
+log = logging.getLogger("xenoform.stills")
+
+ROOT = Path(__file__).resolve().parents[2]
+SHIPPED = Path(__file__).resolve().parent / "ui_static" / "objects"
+GRAPH = ROOT / "workflows" / "zimage_t2i_api.json"
+SUBJECTS = ROOT / "configs" / "subjects.json"
+PROMPTS = ROOT / "configs" / "still_prompts.json"
+VIBES_JSON = ROOT / "configs" / "vibes.json"
+W, H = 1024, 576
+JPG_QUALITY = 92
+# the Z-Image Turbo files the graph loads (ComfyUI's /models lists say whether they are installed)
+UNET = "z_image_turbo_int8_convrot.safetensors"
+TEXT_ENCODER = "qwen_3_4b.safetensors"
+VAE = "ae.safetensors"
+N_TEXT, N_SEED, N_SIZE, N_SAVE = "5", "10", "7", "12"
+SECONDS_PER_STILL = 6.0  # measured 5.7 s a still on a 3080 Ti (432 stills in 2475 s, 24 Oct 2026)
+MAX_OWN = 12             # own shapes a request renders
+MAX_GROW = 120           # stills one grow request renders
+MIN_POOL = 3             # grown stills a vibe with no shipped ones needs before it stops borrowing a pool
+DEFAULT_GROW = 36
+# the shipped pools' taste rule (tests/test_morph_pass.py): no retro or sci-fi props, whatever the catalogue says
+BANNED = ("rocket", "sputnik", "satellite", "film reel", "rotary", "vintage", "vinyl", "ringed planet", "gear", "clock", "phone")
+REASONS = ("backdrop", "size", "cropped", "soft", "duplicate")
+
+# ------------------------------------------------------------------------------------------------ where
+
+
+def root() -> Path:
+    """The local stills folder: ``XENO_STILLS``, else ``work/ui/objects`` beside the desk's other work."""
+    env = os.environ.get("XENO_STILLS", "").strip()
+    path = Path(env) if env else ROOT / "work" / "ui" / "objects"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def index_path() -> Path:
+    return root() / "stills.json"
+
+
+def usage_path() -> Path:
+    return root() / "usage.json"
+
+
+def _read_json(path: Path, default):
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return default
+
+
+def _write_json(path: Path, data) -> None:
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    os.replace(tmp, path)
+
+
+# ------------------------------------------------------------------------------------------------ catalogue
+
+
+def shipped() -> dict[str, list[dict]]:
+    """The seed set the repo ships (``objects.json``): rows of file / noun / finish / source."""
+    return _read_json(SHIPPED / "objects.json", {})
+
+
+def grown() -> dict[str, list[dict]]:
+    """The local set (``stills.json``), rows whose file has been deleted dropped: deleting a jpg is the cull."""
+    idx = _read_json(index_path(), {})
+    base = root()
+    out: dict[str, list[dict]] = {}
+    for vibe, rows in idx.items():
+        kept = [r for r in rows if (base / str(r.get("file") or "")).is_file()]
+        if kept:
+            out[vibe] = kept
+    return out
+
+
+def catalogue(shipped_rows: dict[str, list[dict]] | None = None) -> dict[str, list[dict]]:
+    """Every vibe's pool as the chain sees it: the shipped rows first, then the grown ones, each with ``path``.
+    ``shipped_rows`` replaces ``objects.json`` (morph_pass passes its own ``manifest()``, which tests patch)."""
+    out: dict[str, list[dict]] = {}
+    for vibe, rows in (shipped() if shipped_rows is None else shipped_rows).items():
+        out[vibe] = [{**r, "path": str(SHIPPED / r["file"]), "shipped": True} for r in rows]
+    base = root()
+    for vibe, rows in grown().items():
+        out.setdefault(vibe, []).extend({**r, "path": str(base / r["file"]), "shipped": False} for r in rows)
+    return out
+
+
+def counts(vibe: str | None = None) -> dict:
+    """``shipped`` / ``grown`` / ``own`` / ``total`` for one vibe, or ``{vibe: counts}`` for all."""
+    cat = catalogue()
+    if vibe is not None:
+        rows = cat.get(vibe) or []
+        n_ship = sum(1 for r in rows if r.get("shipped"))
+        n_own = sum(1 for r in rows if r.get("own"))
+        return {"shipped": n_ship, "grown": len(rows) - n_ship - n_own, "own": n_own, "total": len(rows)}
+    return {v: counts(v) for v in cat}
+
+
+def nouns_in(vibe: str) -> set[str]:
+    return {str(r.get("noun") or "").lower() for r in catalogue().get(vibe) or []}
+
+
+# ------------------------------------------------------------------------------------------------ usage
+
+
+def usage() -> dict[str, dict[str, int]]:
+    return _read_json(usage_path(), {})
+
+
+def mark_used(vibe: str, files: list[str]) -> None:
+    """Record that a cut used these objects (one tick per call, so the next cut prefers the others)."""
+    if not files:
+        return
+    data = usage()
+    tick = int(data.get("_tick") or 0) + 1
+    data["_tick"] = tick
+    row = data.setdefault(vibe, {})
+    for f in files:
+        row[str(f)] = tick
+    _write_json(usage_path(), data)
+
+
+def order_fresh(vibe: str, rows: list[dict]) -> list[dict]:
+    """The user's own shapes first, then the objects used longest ago (never used first), pool order within."""
+    used = usage().get(vibe) or {}
+    return sorted(rows, key=lambda r: (0 if r.get("own") else 1, int(used.get(str(r.get("file")), 0))))
+
+
+# ------------------------------------------------------------------------------------------------ subjects
+
+
+def subjects() -> dict:
+    return _read_json(SUBJECTS, {})
+
+
+def _ok_noun(noun: str) -> bool:
+    low = noun.lower()
+    return bool(low) and not any(b in low for b in BANNED)
+
+
+def nouns_for(vibe: str, count: int, have: set[str] | None = None, seed: int | None = None) -> list[str]:
+    """``count`` subjects for ``vibe`` from the catalogue's families, weighted by the vibe's entry (else the
+    defaults), skipping ``have`` and the banned props. Weighted sampling without replacement, so a core family
+    leads but never crowds the others out."""
+    data = subjects()
+    fams = data.get("families") or {}
+    entry = (data.get("vibes") or {}).get(vibe) or {}
+    weights = dict(entry.get("weights") or data.get("default_weights") or {})
+    for fam in entry.get("avoid") or []:
+        weights.pop(fam, None)
+    have = {h.lower() for h in (have or set())}
+    rng = random.Random(seed)
+    pool = []
+    for fam, w in weights.items():
+        for noun in (fams.get(fam) or {}).get("nouns") or []:
+            noun = str(noun).strip().lower()
+            if noun in have or not _ok_noun(noun):
+                continue
+            pool.append((rng.random() ** (1.0 / max(float(w), 0.01)), noun))
+    pool.sort(reverse=True)
+    out, seen = [], set()
+    for _, noun in pool:
+        if noun not in seen:
+            out.append(noun)
+            seen.add(noun)
+        if len(out) >= count:
+            break
+    return out
+
+
+def clean_noun(text: str) -> str:
+    """A typed shape as a noun: lowercase, one space, no article, letters and digits only, 40 characters."""
+    low = re.sub(r"[^a-z0-9 \-']+", " ", str(text).lower())
+    low = re.sub(r"\s+", " ", low).strip()
+    while True:  # "one single lantern", "the astrolabe": the articles and counters go, however many lead
+        stripped = re.sub(r"^(a|an|the|one|single|my) ", "", low)
+        if stripped == low:
+            break
+        low = stripped
+    return low[:40].strip()
+
+
+def own_nouns(text: str | list) -> list[str]:
+    """The shapes typed into the desk ("a brass astrolabe, wolf skull"): distinct, cleaned, at most MAX_OWN."""
+    parts = text if isinstance(text, list) else re.split(r"[,\n;]+", str(text))
+    out = []
+    for p in parts:
+        noun = clean_noun(p)
+        if noun and noun not in out:
+            out.append(noun)
+    return out[:MAX_OWN]
+
+
+# ------------------------------------------------------------------------------------------------ prompts
+
+
+def prompts() -> dict:
+    return _read_json(PROMPTS, {})
+
+
+def _vibe_meta(vibe: str) -> dict:
+    data = _read_json(VIBES_JSON, {})
+    entries = data.get("vibes", data)
+    items = entries if isinstance(entries, list) else [dict(id=k, **v) for k, v in entries.items()]
+    return next((x for x in items if x.get("id") == vibe), {})
+
+
+def prompt_for(vibe: str, noun: str) -> str:
+    """The still's prompt: the pool's own style prefix and subject sentence when the vibe has one, else the
+    vibe's ``still_style`` with a plain subject sentence in its material."""
+    row = prompts().get(vibe) or {}
+    prefix = str(row.get("prefix") or "").strip()
+    subject = str(row.get("subject") or "").strip()
+    if not prefix:
+        meta = _vibe_meta(vibe)
+        prefix = str(meta.get("still_style") or meta.get("look") or "Studio macro photograph, one single object centred, seamless dark backdrop, crisp focus, no text, no people.").strip()
+        material = str(meta.get("material") or "").strip()
+        subject = f"One single {{noun}} made of {material}." if material else "One single {noun}."
+    return f"{prefix} {subject.format(noun=noun)}".strip()
+
+
+def slug(noun: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "_", noun.lower()).strip("_") or "object"
+
+
+# ------------------------------------------------------------------------------------------------ the checks
+
+SMALL = (256, 144)  # every measure runs on a small copy: a pool of fifty is profiled in well under a second
+EDGE_SHARE = 0.12   # of an outer band that must be object for the edge to count as touched
+
+
+def _small(path: Path | str, size=SMALL) -> np.ndarray:
+    im = Image.open(path).convert("RGB")
+    if im.size != size:
+        im = im.resize(size, Image.LANCZOS)
+    return np.asarray(im).astype(np.float32)
+
+
+def _border(a: np.ndarray, band: float = 0.06) -> np.ndarray:
+    h, w = a.shape[:2]
+    bh, bw = max(1, int(h * band)), max(1, int(w * band))
+    ring = np.concatenate([a[:bh].reshape(-1, 3), a[-bh:].reshape(-1, 3), a[:, :bw].reshape(-1, 3), a[:, -bw:].reshape(-1, 3)])
+    return ring.mean(axis=0)
+
+
+def _backdrop_fit(a: np.ndarray, band: float = 0.06) -> np.ndarray:
+    """The backdrop as a smooth surface fitted to the border ring (a quadratic in x and y per channel), so a
+    graded gradient or a floor glow reads as backdrop and only the object stands out from it. A subject that
+    runs into the ring biases the fit a little, and then reads as cropped anyway."""
+    h, w = a.shape[:2]
+    bh, bw = max(1, int(h * band)), max(1, int(w * band))
+    yy, xx = np.mgrid[0:h, 0:w]
+    ring = np.zeros((h, w), dtype=bool)
+    ring[:bh], ring[-bh:], ring[:, :bw], ring[:, -bw:] = True, True, True, True
+    xn, yn = (xx / max(w - 1, 1)) * 2 - 1, (yy / max(h - 1, 1)) * 2 - 1
+    basis = np.stack([np.ones_like(xn), xn, yn, xn * xn, yn * yn, xn * yn], axis=-1).astype(np.float32)
+    coef, *_ = np.linalg.lstsq(basis[ring], a[ring], rcond=None)
+    fit = basis.reshape(-1, 6) @ coef
+    residual = float(np.median(np.abs(a[ring] - fit.reshape(h, w, 3)[ring]).mean(axis=1)))
+    return fit, residual
+
+
+def _grey(a: np.ndarray) -> np.ndarray:
+    return a[..., 0] * 0.299 + a[..., 1] * 0.587 + a[..., 2] * 0.114
+
+
+def _sharpness(g: np.ndarray) -> float:
+    lap = -4 * g[1:-1, 1:-1] + g[:-2, 1:-1] + g[2:, 1:-1] + g[1:-1, :-2] + g[1:-1, 2:]
+    return float(lap.var())
+
+
+def features(path: Path | str) -> dict:
+    """One still's measures: border colour, subject area and bounding box, edges the subject touches,
+    sharpness, and the small grey copy the duplicate check correlates."""
+    a = _small(path)
+    h, w = a.shape[:2]
+    border = _border(a)
+    fit, residual = _backdrop_fit(a)
+    dist = np.abs(a - fit.reshape(h, w, 3)).mean(axis=2)
+    fg = dist > 28.0
+    area = float(fg.mean())
+    rows = np.where(fg.sum(axis=1) > 0.01 * w)[0]
+    cols = np.where(fg.sum(axis=0) > 0.01 * h)[0]
+    box = (int(cols[0]), int(rows[0]), int(cols[-1]), int(rows[-1])) if len(rows) and len(cols) else (0, 0, 0, 0)
+    # an edge is touched when a real share of its outer band is object, not when a speckle of residual reaches it
+    my, mx = max(1, int(0.02 * h)), max(1, int(0.02 * w))
+    edges = int(sum(float(band.mean()) > EDGE_SHARE for band in (fg[:my], fg[-my:], fg[:, :mx], fg[:, -mx:])))
+    g = _grey(a)
+    return {"border": border, "residual": residual, "area": area, "edges": edges, "box": box, "sharp": _sharpness(g), "grey": g}
+
+
+def profile(paths: list[Path | str]) -> dict:
+    """What a pool looks like, for the checks to calibrate against: the median border colour and the pool's
+    spread around it, the subject-area range, the most edges any member touches, the median sharpness, and
+    every member's hash. An empty pool profiles as ``None`` fields and the checks fall back to fixed bounds."""
+    feats = [features(p) for p in paths]
+    if not feats:
+        return {"n": 0, "border": None, "spread": 0.0, "residual": None, "area": (None, None), "edges": 0, "sharp": None, "greys": []}
+    borders = np.stack([f["border"] for f in feats])
+    median = np.median(borders, axis=0)
+    spread = float(np.median(np.abs(borders - median[None, :]).mean(axis=1)))
+    areas = [f["area"] for f in feats]
+    return {"n": len(feats), "border": median, "spread": spread, "residual": float(np.median([f["residual"] for f in feats])),
+            "area": (min(areas), max(areas)), "edges": max(f["edges"] for f in feats),
+            "sharp": float(np.median([f["sharp"] for f in feats])), "greys": [f["grey"] for f in feats]}
+
+
+def _ncc(a: np.ndarray, b: np.ndarray) -> float:
+    a = a - a.mean()
+    b = b - b.mean()
+    d = np.sqrt((a * a).sum() * (b * b).sum())
+    return float((a * b).sum() / d) if d > 0 else 0.0
+
+
+# Calibrated on the shipped pools and the 24 Oct batch: the eye accepted a uniform warm or bright shift that
+# measured 26 to 45, the grey studio and cluttered rooms it rejected measured 60 and up; distinct objects in one
+# pool correlate at most 0.86, the same still re-encoded, shifted three pixels or rescaled three per cent at 0.97 and up.
+BACKDROP_FLOOR = 40.0
+RESIDUAL_FLOOR = 18.0
+DUPLICATE_NCC = 0.93
+
+
+def check(path: Path | str, prof: dict, *, extra_greys: list | None = None) -> dict:
+    """The verdict on one candidate against ``prof``: ``ok`` and the reasons it failed (``why``), with the
+    measures behind them. Thresholds scale with the pool: a backdrop may drift three times as far as the pool's
+    own members do (never under ``BACKDROP_FLOOR`` of 255) and the border ring must be as smooth as the pool's
+    (a quadratic surface fits it within ``RESIDUAL_FLOOR``, else bars or clutter), the area may be 0.4 times the
+    smallest or twice the largest, the subject may touch one edge (none, when the pool is a clean void; any, when
+    the pool's own stills are scene-like), sharpness must reach a third of the pool's median, and a still that
+    correlates with a member above ``DUPLICATE_NCC`` is the same object again."""
+    f = features(path)
+    why: list[str] = []
+    if prof.get("border") is not None:
+        drift = float(np.abs(f["border"] - prof["border"]).mean())
+        if drift > max(BACKDROP_FLOOR, 3.0 * float(prof.get("spread") or 0.0)):
+            why.append("backdrop")
+    else:
+        drift = 0.0
+    # a backdrop the smooth fit cannot describe (side bars, a cluttered room, a table edge) is structure, not a gradient
+    if f["residual"] > max(RESIDUAL_FLOOR, 3.0 * float(prof.get("residual") or 0.0)) and "backdrop" not in why:
+        why.append("backdrop")
+    # size holds the pool's scale loosely: a pool's own twelve already span three to four times in area, and a morph
+    # between a small and a large object is a zoom, not a fault; what it catches is the frame-filler and the speck
+    amin, amax = prof.get("area") or (None, None)
+    lo = max(0.03, 0.4 * amin) if amin is not None else 0.03
+    hi = min(0.85, 2.0 * amax) if amax is not None else 0.85
+    if not lo <= f["area"] <= hi:
+        why.append("size")
+    # a pool whose own stills reach two or more edges (smoke, rain, wet reflections: neon-noir) is scene-like, and
+    # the mask cannot tell object from backdrop at the frame edge there, so the cropped check steps aside for it
+    pool_edges = int(prof.get("edges") or 0)
+    if f["edges"] > (4 if pool_edges >= 2 else 1):
+        why.append("cropped")
+    if prof.get("sharp") is not None and f["sharp"] < 0.3 * float(prof["sharp"]):
+        why.append("soft")
+    greys = list(prof.get("greys") or []) + list(extra_greys or [])
+    dup = max((_ncc(g, f["grey"]) for g in greys), default=0.0)
+    if dup >= DUPLICATE_NCC:
+        why.append("duplicate")
+    return {"ok": not why, "why": why, "backdrop": round(drift, 1), "residual": round(f["residual"], 1), "area": round(f["area"], 3),
+            "edges": f["edges"], "sharp": round(f["sharp"], 1), "dup": round(dup, 3), "grey": f["grey"]}
+
+
+# ------------------------------------------------------------------------------------------------ grade
+
+# The five original pools were rendered as glass and mercury on black and graded afterwards (scripts/vibe_objects/
+# grade.py): a hue nudge of the iridescent teal, a tinted additive backdrop where the still is dark, a gentle lift.
+GRADE = {
+    "liquid-gold": dict(hue=38, top=(70, 40, 8), bot=(150, 92, 24), k=0.85, tint=(1.18, 1.0, 0.70), sat=1.0),
+    "bloom": dict(hue=335, top=(70, 110, 50), bot=(150, 185, 90), k=0.90, tint=(1.05, 1.0, 0.95), sat=1.15),
+    "neon-night": dict(hue=338, top=(45, 4, 30), bot=(175, 22, 95), k=0.95, tint=(1.12, 0.95, 1.08), sat=1.2, lift=1.6),
+    "ocean": dict(hue=185, top=(4, 40, 60), bot=(20, 110, 120), k=0.85, tint=(0.9, 1.02, 1.08), sat=1.1),
+    "cosmic": dict(hue=228, top=(2, 8, 40), bot=(30, 45, 135), k=0.80, tint=(0.95, 0.95, 1.12), sat=1.2),
+}
+
+
+def grade(im: Image.Image, vibe: str) -> Image.Image:
+    """The original five's post-render grade; any other vibe comes back untouched."""
+    v = GRADE.get(vibe)
+    if not v:
+        return im
+    size = im.size
+    hsv = np.asarray(im.convert("RGB").convert("HSV")).astype(np.float32)
+    h, s = hsv[..., 0] * 360 / 255, hsv[..., 1]
+    teal = (np.abs(((h - 180) + 180) % 360 - 180) < 35) & (s > 40)
+    hsv[..., 0] = np.where(teal, v["hue"], h) * 255 / 360
+    hsv[..., 1] = np.clip(s * v["sat"], 0, 255)
+    rgb = np.asarray(Image.fromarray(hsv.astype(np.uint8), "HSV").convert("RGB")).astype(np.float32)
+    rgb *= np.array(v["tint"])[None, None, :]
+    width, height = size
+    yy, xx = np.mgrid[0:height, 0:width]
+    t = (yy / height)[..., None]
+    back = np.array(v["top"]) * (1 - t) + np.array(v["bot"]) * t
+    r = np.sqrt(((xx - width / 2) / (width * 0.6)) ** 2 + ((yy - height * 0.55) / (height * 0.7)) ** 2)[..., None]
+    back = back * np.clip(1.25 - r, 0.25, 1.0)
+    lum = rgb.mean(-1, keepdims=True) / 255
+    w = v["k"] * np.clip(1 - lum * 3.0, 0, 1)
+    out = rgb + back * w
+    out = 255 * (1 - (1 - np.clip(out, 0, 255) / 255) ** v.get("lift", 1.15))
+    return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8))
+
+
+# ------------------------------------------------------------------------------------------------ ingest
+
+
+def _next_index(folder: Path) -> int:
+    nums = [int(m.group(1)) for p in folder.glob("*.jpg") if (m := re.match(r"^(\d+)_", p.name))]
+    return (max(nums) + 1) if nums else 0
+
+
+def pool_profile(vibe: str) -> dict:
+    """The profile a candidate for ``vibe`` is checked against: the look (backdrop, size, edges, sharpness) comes
+    from the shipped stills alone, so a batch cannot drag the vibe's look toward itself import by import; the
+    duplicate check sees every still, shipped or grown. A vibe with no shipped stills profiles on what it has."""
+    rows = catalogue().get(vibe) or []
+    anchor = [r["path"] for r in rows if r.get("shipped")] or [r["path"] for r in rows]
+    prof = profile(anchor)
+    extra = [features(r["path"])["grey"] for r in rows if not r.get("shipped")] if prof["n"] else []
+    prof["greys"] = list(prof.get("greys") or []) + extra
+    return prof
+
+
+def ingest(vibe: str, source: Path | str, noun: str, *, prof: dict | None = None, own: bool = False,
+           origin: str = "Z-Image Turbo (Apache 2.0), grown on this machine", extra_greys: list | None = None,
+           seed: int | None = None, keep_rejects: bool = True) -> dict:
+    """One candidate into the vibe's local set: graded if the vibe grades, checked against the pool, then
+    either written as the next numbered jpg and listed in ``stills.json`` (``kept`` True) or set aside under
+    ``rejected/`` with its reasons in the name. Returns the verdict with ``file`` when kept."""
+    folder = root() / vibe
+    folder.mkdir(parents=True, exist_ok=True)
+    prof = prof if prof is not None else pool_profile(vibe)
+    im = grade(Image.open(source).convert("RGB"), vibe)
+    if im.size != (W, H):
+        im = im.resize((W, H), Image.LANCZOS)
+    tmp = folder / f"_candidate_{slug(noun)}.jpg"
+    im.save(tmp, quality=JPG_QUALITY)
+    verdict = check(tmp, prof, extra_greys=extra_greys)
+    verdict["noun"] = noun
+    if not verdict["ok"]:
+        if keep_rejects:
+            rej = folder / "rejected"
+            rej.mkdir(exist_ok=True)
+            dest = rej / f"{int(time.time()) % 100000:05d}_{slug(noun)}_{'_'.join(verdict['why'])}.jpg"
+            os.replace(tmp, dest)
+            verdict["file"] = str(dest.relative_to(root())).replace("\\", "/")
+        else:
+            tmp.unlink(missing_ok=True)
+        verdict["kept"] = False
+        return verdict
+    n = _next_index(folder)
+    dest = folder / f"{n:03d}_{slug(noun)}.jpg"
+    os.replace(tmp, dest)
+    rel = str(dest.relative_to(root())).replace("\\", "/")
+    row = {"file": rel, "noun": noun, "source": origin, "made": time.strftime("%Y-%m-%d"),
+           "qa": {k: verdict[k] for k in ("backdrop", "residual", "area", "edges", "sharp", "dup")}}
+    if own:
+        row["own"] = True
+    if seed is not None:
+        row["seed"] = int(seed)
+    idx = _read_json(index_path(), {})
+    idx.setdefault(vibe, []).append(row)
+    _write_json(index_path(), idx)
+    verdict.update({"kept": True, "file": rel, "path": str(dest)})
+    return verdict
+
+
+def import_folder(vibe: str, folder: Path | str, *, origin: str = "", own: bool = False,
+                  progress: Callable | None = None) -> dict:
+    """Every png or jpg in ``folder`` as a candidate for ``vibe`` (the noun from the file name, a leading
+    number and a reject's reason suffix dropped): the same checks and grade as a grown still, so a vibe's
+    ``rejected/`` folder can be run again after the checks change. Returns the tally."""
+    folder = Path(folder)
+    files = sorted(p for p in folder.iterdir() if p.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp"})
+    prof = pool_profile(vibe)
+    have = nouns_in(vibe)
+    greys: list = []
+    out = {"vibe": vibe, "asked": len(files), "kept": 0, "rejected": {}, "rejected_n": 0, "skipped": 0, "files": []}
+    reasons = "|".join(REASONS + ("render",))
+    for i, p in enumerate(files):
+        stem = re.sub(rf"(_(?:{reasons}))+$", "", re.sub(r"^\d+[_\- ]*", "", p.stem))  # a reject's name carries its reasons
+        noun = clean_noun(stem.replace("_", " "))
+        if not _ok_noun(noun) or (noun in have and not own):
+            out["skipped"] += 1
+            continue
+        v = ingest(vibe, p, noun, prof=prof, own=own, origin=origin or f"Z-Image Turbo (Apache 2.0), imported from {folder.name}", extra_greys=greys)
+        if v["kept"]:
+            greys.append(v["grey"])  # a reject must not block a later good one as its duplicate
+            out["kept"] += 1
+            out["files"].append(v["file"])
+            have.add(noun)
+        else:
+            out["rejected_n"] += 1
+            for why in v["why"]:
+                out["rejected"][why] = out["rejected"].get(why, 0) + 1
+        if progress:
+            progress(i + 1, len(files), out["kept"])
+    return out
+
+
+# ------------------------------------------------------------------------------------------------ generate
+
+
+def available(cfg: dict | None = None, *, fetch: Callable | None = None) -> dict:
+    """Whether ComfyUI has the Z-Image Turbo files the graph loads (its /models lists, like the performer)."""
+    from xenoform import performer as _perf
+
+    lists = (fetch or _perf._fetch_model_lists)(cfg)
+    if lists is None:
+        return {"ok": False, "missing": [UNET, TEXT_ENCODER, VAE], "note": "ComfyUI is not answering; start it to grow the library."}
+    missing = [name for folder, name in (("diffusion_models", UNET), ("text_encoders", TEXT_ENCODER), ("vae", VAE))
+               if not _perf._has(lists, folder, name)]
+    note = "Z-Image Turbo is installed." if not missing else "Z-Image Turbo files missing from ComfyUI: " + ", ".join(missing)
+    return {"ok": not missing, "missing": missing, "note": note}
+
+
+def estimate_seconds(count: int) -> float:
+    return 20.0 + SECONDS_PER_STILL * max(0, int(count))
+
+
+def plan(vibe: str, count: int = DEFAULT_GROW, *, nouns: list[str] | None = None, own: bool = False, seed: int | None = None) -> dict:
+    """What a grow would render: the nouns and prompts, before any GPU work (the desk shows it, tests use it)."""
+    count = max(1, min(int(count or DEFAULT_GROW), MAX_GROW))
+    if own:
+        picked = own_nouns(nouns or [])
+    else:
+        picked = [clean_noun(n) for n in (nouns or []) if clean_noun(n)] or nouns_for(vibe, count, have=nouns_in(vibe), seed=seed)
+        picked = picked[:MAX_GROW]
+    return {"vibe": vibe, "nouns": picked, "prompts": [prompt_for(vibe, n) for n in picked], "own": bool(own),
+            "seconds": estimate_seconds(len(picked)), "have": counts(vibe)}
+
+
+def _client(cfg: dict | None):
+    from xenoform import restyle
+
+    return restyle._make_client(cfg or {"comfy": {"proxy_url": "http://127.0.0.1:8189"}})
+
+
+def grow(vibe: str, count: int = DEFAULT_GROW, *, nouns: list[str] | None = None, own: bool = False, cfg: dict | None = None,
+         seed: int | None = None, progress: Callable | None = None, cancel: Callable[[], bool] | None = None,
+         client=None, sheet: bool = True) -> dict:
+    """Render ``count`` new stills for ``vibe`` (or the user's own ``nouns`` with ``own``), check each against the
+    pool, keep the good ones. Every prompt is queued at once and collected in order; ``progress(done, total,
+    kept)`` after each; ``cancel()`` true stops collecting (queued renders still finish on the GPU, unused).
+    Returns the tally: ``asked``, ``made``, ``kept``, ``rejected`` by reason, ``files``, ``seconds``."""
+    p = plan(vibe, count, nouns=nouns, own=own, seed=seed)
+    picked = p["nouns"]
+    out = {"vibe": vibe, "own": bool(own), "asked": len(picked), "made": 0, "kept": 0, "rejected": {}, "rejected_n": 0, "files": [], "seconds": 0.0, "nouns": picked}
+    if not picked:
+        out["note"] = "nothing to render: no subjects left for this vibe" if not own else "type a shape or two first"
+        return out
+    t0 = time.time()
+    client = client or _client(cfg)
+    base_seed = int(seed) if seed is not None else random.randrange(1, 2**31)
+    jobs = []
+    for i, noun in enumerate(picked):
+        wf = client.workflows.from_file(str(GRAPH))
+        wf.set_input(N_TEXT, "text", prompt_for(vibe, noun))
+        wf.set_input(N_SEED, "seed", base_seed + i)
+        wf.set_input(N_SIZE, "width", W)
+        wf.set_input(N_SIZE, "height", H)
+        wf.set_input(N_SAVE, "filename_prefix", f"xenoform/stills/{vibe}")
+        jobs.append((noun, base_seed + i, client.submit(wf)))
+    prof = pool_profile(vibe)
+    greys: list = []
+    incoming = root() / vibe / "_incoming"
+    incoming.mkdir(parents=True, exist_ok=True)
+    kept_paths = []
+    for k, (noun, sd, job) in enumerate(jobs):
+        if cancel and cancel():
+            out["note"] = "stopped"
+            break
+        try:
+            r = job.result()
+            o = list(r.get_outputs(N_SAVE)) or list(r.outputs)
+            src = incoming / f"{k:03d}_{slug(noun)}.png"
+            o[0].to_file(str(src))
+        except Exception as exc:  # one failed render is one fewer still, not a failed batch
+            log.warning("stills %s: %s failed: %s", vibe, noun, exc)
+            out["rejected"]["render"] = out["rejected"].get("render", 0) + 1
+            out["rejected_n"] += 1
+            if progress:
+                progress(k + 1, len(jobs), out["kept"])
+            continue
+        out["made"] += 1
+        v = ingest(vibe, src, noun, prof=prof, own=own, extra_greys=greys, seed=sd)
+        src.unlink(missing_ok=True)
+        if v["kept"]:
+            greys.append(v["grey"])
+            out["kept"] += 1
+            out["files"].append(v["file"])
+            kept_paths.append(v["path"])
+        else:
+            out["rejected_n"] += 1
+            for why in v["why"]:
+                out["rejected"][why] = out["rejected"].get(why, 0) + 1
+        if progress:
+            progress(k + 1, len(jobs), out["kept"])
+    try:
+        incoming.rmdir()
+    except OSError:
+        pass
+    if sheet and kept_paths:
+        out["sheet"] = str(contact_sheet(kept_paths, root() / vibe / "sheet.jpg"))
+    out["seconds"] = round(time.time() - t0, 1)
+    return out
+
+
+def contact_sheet(paths: list[str | Path], out: Path, cols: int = 6, thumb=(224, 126)) -> Path:
+    """A labelled board of the stills, for a look at a batch without opening fifty files."""
+    from PIL import ImageDraw
+
+    paths = [Path(p) for p in paths]
+    rows = (len(paths) + cols - 1) // cols
+    board = Image.new("RGB", (cols * thumb[0], max(1, rows) * (thumb[1] + 16)), (18, 18, 18))
+    draw = ImageDraw.Draw(board)
+    for i, p in enumerate(paths):
+        im = Image.open(p).convert("RGB")
+        im.thumbnail(thumb)
+        x, y = (i % cols) * thumb[0], (i // cols) * (thumb[1] + 16)
+        board.paste(im, (x, y))
+        draw.text((x + 4, y + thumb[1] + 2), p.stem[:30], fill=(255, 255, 80))
+    board.save(out, quality=88)
+    return out
+
+
+def summary_line(result: dict) -> str:
+    """One line for the desk and the CLI: "Kept 30 of 36 · rejected 6 (backdrop 2, cropped 3, soft 1)". A still can
+    fail for two reasons, so the reasons can add up to more than the stills rejected."""
+    rej = result.get("rejected") or {}
+    n_rej = int(result.get("rejected_n", sum(rej.values())))
+    bits = ", ".join(f"{k} {v}" for k, v in rej.items())
+    line = f"Kept {result.get('kept', 0)} of {result.get('made', result.get('asked', 0))}"
+    if n_rej:
+        line += f" · rejected {n_rej} ({bits})"
+    if result.get("note"):
+        line += f" · {result['note']}"
+    return line

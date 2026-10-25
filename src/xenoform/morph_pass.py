@@ -65,13 +65,24 @@ NEGATIVE = ("text, letters, watermark, logo, two objects, duplicated features, e
 
 
 def manifest() -> dict[str, list[dict]]:
+    """The shipped pools alone (``objects.json``); ``catalogue()`` is what the chain draws on."""
     return json.loads((OBJECTS / "objects.json").read_text(encoding="utf-8"))
 
 
+def catalogue() -> dict[str, list[dict]]:
+    """Every vibe's pool: the shipped stills and the ones grown on this machine (``stills.catalogue``), each
+    row with its ``path``. A vibe with grown stills and no shipped ones counts as having a pool."""
+    from xenoform import stills
+
+    return stills.catalogue(manifest())
+
+
 def vibe_for(state: dict) -> str:
+    from xenoform import stills
+
     vibe = str(state.get("vibe") or "")
-    pools = manifest()
-    if vibe in pools:
+    pools = catalogue()
+    if len(pools.get(vibe) or []) >= stills.MIN_POOL:  # one or two grown stills are not a pool yet: keep borrowing
         return vibe
     borrowed = _vibes.pool(vibe)
     if borrowed in pools:
@@ -155,27 +166,42 @@ def chain_walk(pool: list[dict], count: int) -> list[dict]:
     return [pool[i] for i in order]
 
 
-def pick_stills(state: dict, count: int) -> tuple[str, list[dict]]:
-    """``count`` stills for the vibe. A story noun that names a pool object leads.
+def pick_stills(state: dict, count: int, record: bool = True) -> tuple[str, list[dict]]:
+    """``count`` stills for the vibe. A story noun that names a pool object leads; ``record`` marks the picks
+    as used so the next cut prefers the others (``stills.mark_used``).
 
     Returns the *look* vibe (what the prompt, negative and tuning use) and the stills.
     A registry vibe without stills of its own borrows the pool ``vibes.pool()`` names,
     but keeps its own look, so "neon-noir" renders neon-night stills with the neon-noir prompt.
     """
+    from xenoform import stills
+
     vibe = vibe_for(state)
-    pool = list(manifest()[vibe])
     asked = str(state.get("vibe") or "")
+    cat = catalogue()
+    # the objects this vibe has used least first (a cut never laps a library bigger than itself, and the next cut
+    # opens on objects the last one left alone), shipped order within; rows remember the vibe they are used under
+    pool = [{**r, "_vibe": vibe} for r in stills.order_fresh(vibe, list(cat[vibe]))]
+    # the user's own shapes lead whatever the story names; a vibe that borrows a pool (none or too few stills of its
+    # own) still leads with every still it does have, since those are in its own material
+    own = [r for r in pool if r.get("own")]
+    pool = [r for r in pool if not r.get("own")]
+    if asked != vibe and asked in cat:
+        own = [{**r, "_vibe": asked} for r in stills.order_fresh(asked, list(cat[asked]))] + own
     look_vibe = asked if asked in VIBE_LOOK else vibe
     words = set(_story_words(state))
     lead = next((i for i, item in enumerate(pool) if set(item["noun"].split()) & words), None)
     if lead:
         pool = pool[lead:] + pool[:lead]
     pool = _drop_bad_pairs(pool, {tuple(p) for p in autotune().get("bad_pairs") or []})
-    # Twelve objects a vibe: a 20 s clip (up to 11 handoffs) never repeats one. Longer
-    # songs cycle forward, so a repeat is always a new pairing, never a ping-pong back.
-    pool = user_targets(state) + pool
+    # A chain of ``count`` takes the first ``count`` objects when the pool is bigger, so the walk below only
+    # repeats pairings when the whole pool is smaller than the cut (a 20 s clip over twelve stills never repeats one).
+    pool = user_targets(state) + own + pool
     picked = chain_walk(pool, count)
-    return look_vibe, [{**item, "path": item.get("path") or str(OBJECTS / item["file"])} for item in picked]
+    if record:
+        for under in {p["_vibe"] for p in picked if p.get("_vibe")}:
+            stills.mark_used(under, [p["file"] for p in picked if p.get("_vibe") == under])
+    return look_vibe, [{**{k: v for k, v in item.items() if k != "_vibe"}, "path": item.get("path") or str(OBJECTS / item["file"])} for item in picked]
 
 
 def user_targets(state: dict) -> list[dict]:

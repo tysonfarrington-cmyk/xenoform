@@ -278,11 +278,12 @@ def apply_punch(frame: np.ndarray, amount: float) -> np.ndarray:
     return np.clip(out, 0, 255).astype(np.uint8)
 
 
-def stills_for(state: dict, count: int) -> tuple[str, list[dict]]:
-    """The cut plan's own stills when it names them, else the vibe chain."""
+def stills_for(state: dict, count: int, record: bool = True) -> tuple[str, list[dict]]:
+    """The cut plan's own stills when it names them, else the vibe chain. ``record`` False reads the pool
+    without marking the picks as used (the stills animatic and the confirm card preview the render's picks)."""
     nouns = list(((state.get("cut_plan") or {}).get("stills")) or [])
     if not nouns:
-        return chain_stills(state, count)
+        return chain_stills(state, count, record)
     from xenoform.morph_pass import OBJECTS, manifest, vibe_for
 
     vibe = vibe_for(state)
@@ -371,14 +372,14 @@ def check_token(token: str, est: dict, now: float | None = None) -> str | None:
 # ---------------------------------------------------------------- stills and graph
 
 
-def chain_stills(state: dict, count: int) -> tuple[str, list[dict]]:
+def chain_stills(state: dict, count: int, record: bool = True) -> tuple[str, list[dict]]:
     from xenoform.morph_pass import pick_stills, vibe_for
 
     if vibe_for(state) == "black":
         # The black chain is curated (rose -> jellyfish -> butterfly -> swallow -> drops), so a
         # story word must not rotate it. Every paid shot then starts from a still Tys has seen.
-        return pick_stills({key: state.get(key) for key in ("vibe", "palette", "preset")}, count)
-    return pick_stills(state, count)
+        return pick_stills({key: state.get(key) for key in ("vibe", "palette", "preset")}, count, record=record)
+    return pick_stills(state, count, record=record)
 
 
 def build_graph(shots: list[dict], stills: list[dict], *, prompt: str, seed: int, model: str = "fast",
@@ -727,7 +728,7 @@ def comfy_url(cfg: dict | None) -> str:
 def plan_for(duration: float, beats: list, state: dict, cfg: dict | None = None, *, probe: bool = True) -> dict:
     """The whole plan the confirm card shows: shots, stills, cost, gates."""
     shots = shots_for(state, duration, beats)
-    vibe, stills = stills_for(state, len(shots) + 1)
+    vibe, stills = stills_for(state, len(shots) + 1, record=False)  # a preview of run_chain's picks, not a use
     table, info, source = prices(comfy_url(cfg) if probe else None)
     est = estimate(shots, table=table)
     return {"shots": shots, "vibe": vibe, "stills": [s["file"] for s in stills], "estimate": est,

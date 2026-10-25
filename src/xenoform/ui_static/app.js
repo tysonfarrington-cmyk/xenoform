@@ -119,7 +119,7 @@ function easyCrumbs(easy) {
 }
 
 // The last session's vibe and Fine-tune choices survive a reload or a desk restart (the song cannot: uploads live on the server).
-const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs"];
+const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes"];
 function saveEasy() {
   if (!state || !state.easy) return;
   try {
@@ -2585,12 +2585,17 @@ function finalEtaText() {
 // Fine-tune: everything that is not song / vibe / Make, in one drawer that remembers whether it was open.
 function fineTune(easy) {
   const open = readDrawer("xeno-finetune");
+  if (easy.vibe && (!state.stills || state.stills.vibe !== easy.vibe) && !state.stillsLoading) {
+    state.stillsLoading = true;
+    setTimeout(() => { loadStills(true).finally(() => { state.stillsLoading = false; }); }, 0);
+  }
   const bits = [easy.aspect || "9:16", (easy.energyPreset || "dense") === "dense" ? "Dense" : "Flow", (easy.tier || "draft") === "final" ? "Final" : "Draft",
     lookLabel(easy.danceFx || "auto")];
   return `<details class="fine-tune" id="fine-tune"${open ? " open" : ""}>
       <summary>Fine-tune <small>${esc(bits.join(" · "))}</small></summary>
       ${simpleOptions(easy)}
       ${ownRow(easy)}
+      ${stillsRow(easy)}
       ${cloudToggles(easy)}
       ${remixBox(easy)}
     </details>`;
@@ -2651,6 +2656,42 @@ function ownRow(easy) {
       <label class="ghost cloud-toggle">Folder <input type="text" id="easy-own-folder" value="${esc(easy.ownFolder || "")}" spellcheck="false" aria-label="Folder of your clips and images" placeholder="a folder of clips and images"></label>
       <label class="ghost cloud-toggle">Drop or pick files <input type="file" multiple accept="video/*,image/*" data-act="easy-own-files" hidden></label>
       ${easy.ownId ? `<button type="button" class="ghost" data-act="easy-own-clear">Clear files</button>` : ""}
+    </div>
+    <p class="note">${esc(note)}</p>`;
+}
+
+// The stills library: the objects this vibe's morphs travel between. The repo ships a seed set; Grow renders more
+// on this GPU (Z-Image Turbo through ComfyUI, about 6 s a still), each checked against the vibe's own pool and kept
+// under work/ui/objects. Your own shapes are typed subjects rendered in the vibe's material; they go first in the chain.
+function stillsRow(easy) {
+  const lib = state.stills || {};
+  const have = (lib.counts || {})[easy.vibe] || { shipped: 0, grown: 0, own: 0, total: 0 };
+  const job = lib.job || {};
+  const running = job.status === "running" || job.status === "starting";
+  const vibe = vibeById(easy.vibe);
+  const name = (vibe && vibe.name) || easy.vibe || "this vibe";
+  const parts = [`${have.shipped} shipped`, `${have.grown} grown here`, have.own ? `${have.own} of your own` : ""].filter(Boolean);
+  const left = lib.vibe === easy.vibe && lib.subjects_left != null ? ` · ${lib.subjects_left} subjects left to render` : "";
+  const grow = Number(lib.default_grow || 36);
+  let status = "";
+  if (running) {
+    const eta = Number(job.eta_s || 0) - (Date.now() / 1000 - Number(job.started || 0));
+    const left = eta > 0 ? `about ${clockText(eta)} left` : (job.done ? "finishing" : "loading the model, the first render takes longer");
+    status = `Growing ${job.vibe}: ${job.done || 0} of ${job.asked || 0} rendered · kept ${job.kept || 0} · ${left}`;
+  } else if (easy.stillsNote) {
+    status = easy.stillsNote;
+  } else if (job.status === "done" && job.note) {
+    status = `${job.vibe}: ${job.note}`;
+  } else if (job.status === "error" && job.note) {
+    status = `Library: ${job.note}`;
+  }
+  const note = status || `Every still is rendered on this GPU (Z-Image Turbo, about ${Math.round(Number(lib.seconds_per_still || 6))} s each), checked against the vibe's own pool (backdrop, size, cropped, soft, duplicate) and kept under the work folder; delete a jpg there to drop it. Your own shapes go first in the chain.`;
+  return `<div class="simple-seg own-row library-row"><span>Library</span>
+      <span class="library-count">${esc(name)}: ${esc(parts.join(" · "))}${esc(left)}</span>
+      <button type="button" class="ghost" data-act="easy-grow"${running || !easy.vibe ? " disabled" : ""} title="Render ${grow} new objects for this vibe on this GPU">Grow ${grow} more</button>
+      <label class="ghost cloud-toggle">Your own shapes <input type="text" id="easy-own-shapes" value="${esc(easy.ownShapes || "")}" spellcheck="false" aria-label="Your own shapes, comma-separated" placeholder="a brass astrolabe, a wolf skull"></label>
+      <button type="button" class="ghost" data-act="easy-make-shapes"${running || !easy.vibe ? " disabled" : ""} title="Render the shapes you typed in this vibe's material">Make them</button>
+      ${running ? '<button type="button" class="ghost" data-act="easy-grow-stop">Stop</button>' : ""}
     </div>
     <p class="note">${esc(note)}</p>`;
 }
@@ -4118,7 +4159,7 @@ function adoptSession(data, options = {}) {
     transitionNote: previous ? previous.transitionNote || "" : "",
     easy: previous && previous.easy
       ? previous.easy
-      : Object.assign({ song: "", songLabel: "", vibe: "", idea: "", ownFolder: "", ownId: "", ownNote: "", phase: "song", note: "", playedHere: false,
+      : Object.assign({ song: "", songLabel: "", vibe: "", idea: "", ownFolder: "", ownId: "", ownNote: "", ownShapes: "", stillsNote: "", phase: "song", note: "", playedHere: false,
           // the house (demo_house): 9:16 native, Dense, Draft, Beat FX, the house look, subject orbit, no end card
           energyPreset: "dense", aspect: "9:16", tier: "draft", fx: true, endCard: false, danceFx: "auto", stemOrbit: true },
         loadEasy()),
@@ -4167,7 +4208,7 @@ function adoptSession(data, options = {}) {
     libraryTag: previous ? previous.libraryTag || "" : "",
     libraryItems: previous ? previous.libraryItems : null,
     libraryPick: previous ? previous.libraryPick : null,
-    libraryNote: previous ? previous.libraryNote || "" : "",
+    stillsNote: previous ? previous.stillsNote || "" : "",
     score: previous ? previous.score || null : null,
     videoModel: previous && previous.videoModel ? previous.videoModel : readVideoModel(),
     live: previous ? previous.live : false,
@@ -4693,6 +4734,12 @@ document.addEventListener("click", async (event) => {
     state.easy.ownId = "";
     state.easy.ownNote = "";
     render();
+  } else if (act === "easy-grow") {
+    growStills(false);
+  } else if (act === "easy-make-shapes") {
+    growStills(true);
+  } else if (act === "easy-grow-stop") {
+    api("/api/stills/stop", { method: "POST" }).then(() => loadStills(true));
   } else if (act === "easy-overlay") {
     state.easy.overlay = !state.easy.overlay;
     render();
@@ -5106,6 +5153,9 @@ document.addEventListener("input", (event) => {
     state.titleText = target.value;
   } else if (target.id === "easy-idea") {
     state.easy.idea = target.value;
+  } else if (target.id === "easy-own-shapes") {
+    state.easy.ownShapes = target.value;
+    state.easy.stillsNote = "";
   } else if (target.id === "easy-own-folder") {
     state.easy.ownFolder = target.value;
     state.easy.ownId = "";  // one source at a time: a typed folder replaces dropped files
@@ -6149,6 +6199,42 @@ async function uploadOwn(files) {
   render();
 }
 
+// The library counts and the running grow (GET /api/stills); polled every few seconds while a grow runs.
+let stillsTimer = null;
+async function loadStills(force) {
+  if (!state.easy || (!force && state.stills && !(state.stills.job && (state.stills.job.status === "running" || state.stills.job.status === "starting")))) return;
+  try {
+    const query = state.easy.vibe ? `?vibe=${encodeURIComponent(state.easy.vibe)}` : "";
+    const res = await api(`/api/stills${query}`);
+    if (!res.ok) return;
+    state.stills = await res.json();
+  } catch (err) {
+    return;
+  }
+  const running = state.stills.job && (state.stills.job.status === "running" || state.stills.job.status === "starting");
+  if (running && !stillsTimer) stillsTimer = setTimeout(() => { stillsTimer = null; loadStills(true); }, 3000);
+  if (!running && state.stills.job && state.stills.job.status === "done" && state.easy) state.easy.stillsNote = "";
+  render();
+}
+
+async function growStills(own) {
+  if (!state.easy || !state.easy.vibe) return;
+  const body = { vibe: state.easy.vibe, own: !!own };
+  if (own) body.nouns = state.easy.ownShapes || "";
+  else body.count = Number((state.stills && state.stills.default_grow) || 36);
+  state.easy.stillsNote = own ? "Rendering your shapes..." : "Queueing the renders...";
+  render();
+  const response = await api("/api/stills/grow", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    state.easy.stillsNote = data.detail || "The stills did not start growing.";
+    render();
+    return;
+  }
+  state.easy.stillsNote = "";
+  loadStills(true);
+}
+
 async function uploadHero(file) {
   const body = new FormData();
   body.append("file", file);
@@ -6318,7 +6404,7 @@ function paintLibrary() {
   const pair = document.getElementById("library-pair");
   if (!note || !state) return;
   const pick = state.libraryPick;
-  if (state.libraryNote) note.textContent = state.libraryNote;
+  if (state.stillsNote) note.textContent = state.stillsNote;
   else if (!state.libraryItems) note.textContent = "Reading the library…";
   else if (!state.libraryItems.length) note.textContent = "No library.json in this folder. Run python scripts/fetch_sample_library.py for a few procedural shapes.";
   else {
@@ -6524,12 +6610,12 @@ function scheduleLibrary() {
     .then(async ([listResponse, pickResponse]) => {
       if (token !== scheduleLibrary.token || !state) return;
       if (!listResponse.ok) {
-        state.libraryNote = "The library did not answer.";
+        state.stillsNote = "The library did not answer.";
         state.libraryItems = [];
       } else {
         const data = await listResponse.json();
         state.libraryItems = data.items || [];
-        state.libraryNote = data.missing_index
+        state.stillsNote = data.missing_index
           ? "No library.json in this folder. Run python scripts/fetch_sample_library.py for a few procedural shapes."
           : "";
       }
@@ -6538,7 +6624,7 @@ function scheduleLibrary() {
     })
     .catch(() => {
       if (token !== scheduleLibrary.token || !state) return;
-      state.libraryNote = "The library did not answer.";
+      state.stillsNote = "The library did not answer.";
       state.libraryItems = [];
       paintLibrary();
     });

@@ -49,6 +49,7 @@ _NOTES: dict[str, dict[str, Any]] = {}
 _GUIDES: dict[str, Path] = {}
 _HEROES: dict[str, Path] = {}
 _OWN: dict[str, Path] = {}  # own_id -> folder of the user's own clips and images (POST /api/own)
+_STILLS_JOB: dict[str, Any] = {}  # the one stills-library grow at a time (POST /api/stills/grow): status, vibe, done, kept
 _JUDGE_HITS: dict[str, list[float]] = {}
 _JUDGE_LIMIT = 6
 _JUDGE_WINDOW = 60.0
@@ -936,6 +937,96 @@ def create_app(cfg: dict | None = None):
         return {"id": own_id, "folder": str(dest), "images": n_img, "clips": n_clip,
                 "detail": (f"{n_img} image{'s' if n_img != 1 else ''} lead{'' if n_img != 1 else 's'} the morphs, "
                            f"{n_clip} clip{'s' if n_clip != 1 else ''} {'are' if n_clip != 1 else 'is'} cut in on the beat.")}
+
+    @app.get("/api/stills")
+    def stills_route(vibe: str = "") -> dict:
+        """The stills library (xenoform.stills): per-vibe counts (shipped, grown here, your own), the running grow if any, and for
+        ``vibe`` how many catalogue subjects it has not rendered yet."""
+        from xenoform import stills
+
+        with _LOCK:
+            job = {k: v for k, v in _STILLS_JOB.items() if k != "result"}
+        out = {"counts": stills.counts(), "job": job, "seconds_per_still": stills.SECONDS_PER_STILL,
+               "default_grow": stills.DEFAULT_GROW, "max_own": stills.MAX_OWN, "folder": str(stills.root())}
+        if vibe:
+            out["vibe"] = vibe
+            out["have"] = stills.counts(vibe)
+            out["subjects_left"] = len(stills.nouns_for(vibe, 10_000, have=stills.nouns_in(vibe)))
+        return out
+
+    @app.post("/api/stills/grow")
+    def library_grow(body: dict) -> dict:
+        """Grow a vibe's stills on this GPU in the background: ``count`` catalogue subjects, or the user's own
+        ``nouns`` (comma-separated, ``own`` true) rendered in the vibe's material. One grow at a time; each still
+        is checked against the vibe's pool and kept or set aside. Poll GET /api/stills for progress."""
+        from xenoform import stills
+
+        vibe = str(body.get("vibe") or "").strip()
+        if not vibe:
+            raise HTTPException(400, "Pick a vibe first.")
+        own = bool(body.get("own"))
+        nouns = stills.own_nouns(body.get("nouns") or "") if own else None
+        if own and not nouns:
+            raise HTTPException(400, "Type a shape or two first (a brass astrolabe, a wolf skull).")
+        try:
+            count = int(body.get("count") or stills.DEFAULT_GROW)
+        except (TypeError, ValueError):
+            count = stills.DEFAULT_GROW
+        with _LOCK:  # the slot is taken here, before the ComfyUI probe, so a second click cannot start a second grow
+            if _STILLS_JOB.get("status") in ("running", "starting"):
+                raise HTTPException(409, "The library is already growing; wait for it to finish or stop it.")
+            _STILLS_JOB.clear()
+            _STILLS_JOB.update({"status": "starting", "vibe": vibe, "own": own, "asked": 0, "done": 0, "kept": 0,
+                                "started": time.time(), "eta_s": 0.0, "note": "", "cancel": False})
+        try:
+            avail = stills.available(cfg)
+            if not avail.get("ok"):
+                raise HTTPException(503, avail.get("note") or "ComfyUI is not ready to render stills.")
+            plan = stills.plan(vibe, count, nouns=nouns, own=own)
+            if not plan["nouns"]:
+                raise HTTPException(400, "Nothing left to render for this vibe: every catalogue subject is in its library.")
+        except HTTPException as exc:
+            with _LOCK:
+                _STILLS_JOB.update({"status": "error", "note": str(exc.detail)})
+            raise
+        except Exception as exc:
+            with _LOCK:
+                _STILLS_JOB.update({"status": "error", "note": str(exc)[:300]})
+            raise HTTPException(500, str(exc)[:300]) from exc
+        planned = list(plan["nouns"])  # the thread renders exactly these, so the reply lists what will be made
+        with _LOCK:
+            _STILLS_JOB.update({"status": "running", "asked": len(planned), "eta_s": plan["seconds"]})
+
+        def progress(done: int, total: int, kept: int) -> None:
+            with _LOCK:
+                _STILLS_JOB.update({"done": int(done), "asked": int(total), "kept": int(kept)})
+
+        def cancelled() -> bool:
+            with _LOCK:
+                return bool(_STILLS_JOB.get("cancel"))
+
+        def run() -> None:
+            try:
+                result = stills.grow(vibe, count, nouns=planned, own=own, cfg=cfg, progress=progress, cancel=cancelled)
+                with _LOCK:
+                    _STILLS_JOB.update({"status": "done", "result": result, "note": stills.summary_line(result),
+                                         "done": result.get("made", 0), "kept": result.get("kept", 0), "took_s": result.get("seconds")})
+            except Exception as exc:  # the desk shows the reason; the library keeps whatever was kept before it
+                log.exception("stills grow %s failed", vibe)
+                with _LOCK:
+                    _STILLS_JOB.update({"status": "error", "note": str(exc)[:300]})
+
+        threading.Thread(target=run, name=f"stills-{vibe}", daemon=True).start()
+        return {"ok": True, "vibe": vibe, "asked": len(plan["nouns"]), "nouns": plan["nouns"], "eta_s": plan["seconds"]}
+
+    @app.post("/api/stills/stop")
+    def library_stop() -> dict:
+        """Stop collecting the running grow (renders already queued finish on the GPU unused)."""
+        with _LOCK:
+            running = _STILLS_JOB.get("status") in ("running", "starting")
+            if running:
+                _STILLS_JOB["cancel"] = True
+        return {"ok": True, "stopping": running}
 
     @app.post("/api/hero")
     async def add_hero(file: UploadFile = File(...)) -> dict:

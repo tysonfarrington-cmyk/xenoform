@@ -123,6 +123,23 @@ def build_parser() -> argparse.ArgumentParser:
     stems.add_argument("--fps", type=int, default=24)
     _add_config(stems)
 
+    lib = sub.add_parser("stills", help="The stills library: grow a vibe's objects on this GPU, import a folder, or show the counts.")
+    lib_sub = lib.add_subparsers(dest="stills_cmd", required=True)
+    grow_p = lib_sub.add_parser("grow", help="Render new stills for a vibe (Z-Image Turbo through ComfyUI); keep the ones that pass the checks.")
+    grow_p.add_argument("vibe")
+    grow_p.add_argument("--count", type=int, default=36, help="Catalogue subjects to render (default 36, about 6 s each).")
+    grow_p.add_argument("--nouns", default="", help="Your own shapes instead, comma-separated: rendered in the vibe's material, first in the chain.")
+    grow_p.add_argument("--seed", type=int, default=None)
+    grow_p.add_argument("--plan", action="store_true", help="Print the subjects and prompts; render nothing.")
+    _add_config(grow_p)
+    imp_p = lib_sub.add_parser("import", help="Run a folder of pngs or jpgs through the checks and add the keepers to a vibe.")
+    imp_p.add_argument("vibe")
+    imp_p.add_argument("folder")
+    imp_p.add_argument("--own", action="store_true", help="List them as your own shapes (first in the chain).")
+    _add_config(imp_p)
+    status_p = lib_sub.add_parser("status", help="Stills per vibe: shipped, grown here, your own.")
+    _add_config(status_p)
+
     midi = sub.add_parser("midi", help="MIDI controller bridge (needs: pip install \"xenoform[midi]\").")
     midi_sub = midi.add_subparsers(dest="midi_cmd", required=True)
     midi_sub.add_parser("list", help="List MIDI input ports.")
@@ -301,6 +318,39 @@ def _dispatch(args, cfg: dict) -> None:
             rec = run_split(audio, engine=args.engine, fps=int(args.fps))
         print(f"{len(rec['stems'])} stems ({rec['engine']}{', cached' if rec.get('cached') else ''}), "
               f"{rec['frames']} frames -> {rec['path']}")
+        return
+
+    if args.cmd == "stills":
+        from xenoform import stills
+
+        def tick(done: int, total: int, kept: int) -> None:
+            print(f"\r{done}/{total} rendered, kept {kept}   ", end="", flush=True)
+
+        if args.stills_cmd == "status":
+            for vibe, c in sorted(stills.counts().items()):
+                print(f"{vibe:20s} shipped {c['shipped']:3d}   grown here {c['grown']:3d}   own {c['own']:3d}   total {c['total']:3d}")
+            print(f"local stills: {stills.root()}")
+        elif args.stills_cmd == "import":
+            if not Path(args.folder).is_dir():
+                raise SystemExit(f"{args.folder} is not a folder")
+            res = stills.import_folder(args.vibe, args.folder, own=bool(args.own), progress=tick)
+            print("\n" + stills.summary_line(res) + (f" · skipped {res['skipped']} (banned or already in the pool)" if res.get("skipped") else ""))
+        else:
+            own = bool(args.nouns.strip())
+            nouns = stills.own_nouns(args.nouns) if own else None
+            if args.plan:
+                p = stills.plan(args.vibe, args.count, nouns=nouns, own=own, seed=args.seed)
+                for noun, prompt in zip(p["nouns"], p["prompts"]):
+                    print(f"{noun}: {prompt}")
+                print(f"{len(p['nouns'])} stills, about {int(p['seconds'])} s; this vibe has {p['have']}")
+                return
+            avail = stills.available(cfg)
+            if not avail.get("ok"):
+                raise SystemExit(avail.get("note"))
+            p = stills.plan(args.vibe, args.count, nouns=nouns, own=own, seed=args.seed)
+            print(f"{len(p['nouns'])} stills for {args.vibe}: {', '.join(p['nouns'])}")
+            res = stills.grow(args.vibe, args.count, nouns=p["nouns"], own=own, cfg=cfg, seed=args.seed, progress=tick)
+            print("\n" + stills.summary_line(res) + f" in {res['seconds']} s -> {stills.root() / args.vibe}")
         return
 
     if args.cmd == "midi":

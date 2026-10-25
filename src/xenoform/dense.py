@@ -1083,12 +1083,13 @@ def stills_animatic(directed: dict, state: dict, audio_path: Path, out_path: Pat
     shots, plan = shots_for(state, directed, Path(audio_path))
     duration = float(directed.get("duration") or shots[-1]["end"])
     long_song = duration > LONG_SONG_S and not plan.get("stills")
+    # record=False: the animatic previews the picks the render will make; only the render marks them used
     if long_song:
         chain = clip_plan(shots, duration, list(directed.get("beats") or []))
-        vibe, pool = stills_for({**state, "cut_plan": None}, chain["morphs"])
+        vibe, pool = stills_for({**state, "cut_plan": None}, chain["morphs"], record=False)
         picks = [pool[ci] for ci in chain["assign"]]
     else:
-        vibe, pool = stills_for({**state, "cut_plan": plan if plan.get("stills") else None}, len(shots) + 1)
+        vibe, pool = stills_for({**state, "cut_plan": plan if plan.get("stills") else None}, len(shots) + 1, record=False)
         picks = pool[:len(shots)]
     w, h = int(size[0]), int(size[1])
     if h > w:  # portrait: the whole object re-laid on the house ground, as the render will be
