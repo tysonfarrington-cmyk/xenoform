@@ -42,6 +42,10 @@ def test_objects_of_one_family_belong_together():
     if fam in cosmic_fams:
         assert picked[0]["family"] == fam
     assert all("family" in r for r in picked)
+    # with no idea line the shipped chain keeps its curated order; the vibe's family groups only the grown stills
+    shipped = [r for r in mp.catalogue()["black"] if r.get("shipped")]
+    _, plain = mp.pick_stills({"vibe": "black"}, 5, record=False)
+    assert [r["noun"] for r in plain] == [r["noun"] for r in shipped[:5]]
 
 
 def test_the_outline_modes_pop_on_a_hit_and_draw_thicker():
@@ -120,3 +124,20 @@ def test_an_idea_grows_its_family_before_the_cut(monkeypatch):
     assert dense.grow_family_for_cut(state, "chrome-mercury", 12, None, engine="ltx095") is None
     assert len(asked) == 1
     assert dense.grow_family_for_cut({"vibe": "chrome-mercury", "seed": 1}, "chrome-mercury", 12, None, engine="ltx095") is None or True
+
+
+def test_the_family_grown_for_an_idea_follows_its_lead(monkeypatch):
+    """H4 chrome (26 Oct): five retro-tech objects were grown for "a chess game played by machines", then the lead
+    rotation put the chess knight first and the grown family at the back, and the cut used none of them."""
+    retro = [n for n in S.subjects()["families"]["retro-tech"]["nouns"]][:4]
+    rows = [{"file": "chrome-mercury/15_chess_knight.jpg", "noun": "chess knight"},
+            {"file": "chrome-mercury/16_violin.jpg", "noun": "violin"},
+            {"file": "chrome-mercury/19_anchor.jpg", "noun": "anchor"}]
+    grown = [{"file": f"chrome-mercury/g{i}.jpg", "noun": n} for i, n in enumerate(retro)]
+    monkeypatch.setattr(mp, "manifest", lambda: {"chrome-mercury": rows})
+    monkeypatch.setattr(S, "grown", lambda: {"chrome-mercury": grown})
+    monkeypatch.setattr(S, "usage", lambda: {"chrome-mercury": {rows[0]["file"]: 1, rows[1]["file"]: 1, rows[2]["file"]: 1}})
+    monkeypatch.setattr(mp, "autotune", lambda: {})
+    _, picked = mp.pick_stills({"vibe": "chrome-mercury", "idea": "a chess game played by machines"}, 6, record=False)
+    nouns = [r["noun"] for r in picked]
+    assert nouns[0] == "chess knight" and nouns[1:5] == retro and all(r["family"] == "retro-tech" for r in picked[1:5])

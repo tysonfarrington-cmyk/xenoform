@@ -192,17 +192,24 @@ def pick_stills(state: dict, count: int, record: bool = True) -> tuple[str, list
     words = set(_story_words(state))
     # objects that belong together: the cut draws on one family first (the idea line's word, else the vibe's
     # heaviest family, the tie turned by the seed), freshest first within it, the rest of the pool after
-    family = stills.family_for_cut(asked or vibe, words, seed=int(state.get("seed") or 0))
+    named = stills.family_for_cut(asked or vibe, words) if words else ""  # a family the idea line names
+    family = named or stills.family_for_cut(asked or vibe, set(), seed=int(state.get("seed") or 0))
     for r in pool:
         r["family"] = stills.family_of(str(r.get("noun") or ""))
     if family:
         # never-used objects of the family, then never-used others, then the used ones (family first), so a second
-        # cut still opens on what the first left alone; the stable sort keeps order_fresh's order inside each group
+        # cut still opens on what the first left alone; the stable sort keeps order_fresh's order inside each group.
+        # The shipped stills are a curated chain (black: rose -> jellyfish -> butterfly -> swallow -> drops), so
+        # only a family the idea line names reorders them; the vibe's own family groups the grown library behind.
         used = stills.usage().get(vibe) or {}
-        pool.sort(key=lambda r: (int(used.get(str(r.get("file")), 0)), 0 if r.get("family") == family else 1))
+        pool.sort(key=lambda r: (int(used.get(str(r.get("file")), 0)),
+                                 0 if (named or not r.get("shipped")) and r.get("family") == family else 1))
     lead = next((i for i, item in enumerate(pool) if set(item["noun"].split()) & words), None)
     if lead:
-        pool = pool[lead:] + pool[:lead]
+        # the object the idea names opens the cut; the rest keep their order (a rotation here once pushed the family
+        # just grown for the idea to the back of the pool, behind the lead, 26 Oct), unless the pool is a curated
+        # shipped chain with no family sort, where the rotation keeps the chain's own pairings
+        pool = [pool[lead]] + pool[:lead] + pool[lead + 1:] if (named or any(not r.get("shipped") for r in pool))             else pool[lead:] + pool[:lead]
     pool = _drop_bad_pairs(pool, {tuple(p) for p in autotune().get("bad_pairs") or []})
     # A chain of ``count`` takes the first ``count`` objects when the pool is bigger, so the walk below only
     # repeats pairings when the whole pool is smaller than the cut (a 20 s clip over twelve stills never repeats one).

@@ -5,7 +5,8 @@ def test_macros_neutral_and_clamped():
     assert macros({})["intensity"] == 0.5
 def test_apply_macros_scales_fx():
     s = apply_macros([{"fx_intensity": 0.5}], {"intensity": 0.0, "chaos": 1.0})
-    assert s[0]["fx_intensity"] == 0.2 and s[0]["wobble"] == 0.3
+    assert s[0]["fx_intensity"] == 0.0 and s[0]["wobble"] == 0.6  # Intensity 0 is no beat FX; Chaos 1 the full wobble
+    assert apply_macros([{"fx_intensity": 0.5}], {"intensity": 0.5, "chaos": 0.3})[0]["fx_intensity"] == 0.4
     assert apply_macros([{}], {"intensity": 1.0, "chaos": 0.3})[0]["fx_intensity"] == 1.0
 
 
