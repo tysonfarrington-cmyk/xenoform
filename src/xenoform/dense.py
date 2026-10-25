@@ -426,10 +426,12 @@ def apply_macros(shots: list[dict], m: dict, house: dict | None = None) -> list[
 
 
 def wants_finishing(state: dict) -> bool:
-    """True when the plain morph pass cannot do what was asked (anything beyond flow/draft/16:9)."""
+    """True when the plain morph pass cannot do what was asked (anything beyond flow/draft/16:9), and always for a
+    Simple-mode cut: Flow at 16:9 on a short song once went through the plain pass and came out as one morph held
+    over fifteen seconds (66 % duplicate frames, 25 Oct test drive); the Simple cut is the beat-cut compose."""
     opt = options(state)
-    return opt["energy"] == "dense" or opt["tier"] == "final" or opt["aspect"] != "16:9" or opt["end_card"] \
-        or bool(state.get("cut_plan")) or morph_count(state) != "auto"
+    return str(state.get("mode") or "") == "simple" or opt["energy"] == "dense" or opt["tier"] == "final" \
+        or opt["aspect"] != "16:9" or opt["end_card"] or bool(state.get("cut_plan")) or morph_count(state) != "auto"
 
 
 def demo1_plan() -> dict:

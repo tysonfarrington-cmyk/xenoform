@@ -107,6 +107,27 @@ def kept_frames(path: str | Path) -> int:
     return int(got[-1]) if got else 0
 
 
+def flash_counts(luma: list[float] | np.ndarray, jump: float = 40.0) -> dict:
+    """Hard flashes in a per-frame mean-luma series: frame-to-frame jumps over ``jump`` of 255 (pure; tests feed it)."""
+    ys = np.asarray(list(luma), dtype=np.float32)
+    jumps = np.abs(np.diff(ys)) if len(ys) > 1 else np.zeros(0, dtype=np.float32)
+    return {"frames": int(len(ys)), "flashes": int((jumps > jump).sum()), "max_jump": round(float(jumps.max()), 1) if len(jumps) else 0.0}
+
+
+def flash_report(path: str | Path, fps: float = 24.0, *, jump: float = 40.0, max_per_s: float = 0.5) -> dict:
+    """Hard flashes over the whole cut from a small grey decode: a frame-to-frame mean-luma jump over 40 of 255.
+    A negative-rush look on a bright risograph page measured 38 in 15 s (25 Oct test drive); the looks on dark vibes
+    measure under 0.25 a second. More than ``max_per_s`` a second is an issue."""
+    raw = subprocess.run([_ffmpeg(), "-v", "error", "-i", str(path), "-vf", "scale=64:36", "-pix_fmt", "gray", "-f", "rawvideo", "-"],
+                         capture_output=True, check=False).stdout
+    frames = np.frombuffer(raw, dtype=np.uint8).reshape(-1, 36, 64).astype(np.float32)
+    rep = flash_counts(frames.mean(axis=(1, 2)), jump)
+    seconds = max(rep["frames"] / float(fps), 1e-6)
+    rep["per_s"] = round(rep["flashes"] / seconds, 3)
+    rep["issues"] = [f"{rep['flashes']} hard flashes ({rep['per_s']:.1f} a second)"] if rep["per_s"] > max_per_s else []
+    return rep
+
+
 def lag_report(path: str | Path, fps: float = 24.0) -> dict:
     r = _rule("lag_qa")
     info = probe(path)
@@ -307,6 +328,13 @@ def run(path: str | Path, *, fps: float = 24.0, beats: list[float] | None = None
         rep["issues"] += [f"{f['kind']} at {f['t']}s" for f in art.get("flags") or []]
     except Exception as exc:
         rep["artifacts"] = {"error": str(exc)[:200]}
+    say(0.6, "Counting hard flashes")
+    try:
+        fl = flash_report(path, fps)
+        rep["flashes"] = fl
+        rep["issues"] += fl["issues"]
+    except Exception as exc:
+        rep["flashes"] = {"error": str(exc)[:200]}
     if beats:
         say(0.7, "Checking the cuts against the beat")
         try:

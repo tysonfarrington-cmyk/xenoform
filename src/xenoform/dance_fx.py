@@ -247,10 +247,13 @@ class DanceFX:
             amt = float(np.clip((0.06 + 0.28 * max(ba, beat) + 0.08 * vo) * p["wash"] * k, 0, 0.6))
             f = 255 - (255 - f) * (255 - col * amt) / 255
         if p.get("invert", 0) > 0 or p.get("invert_floor", 0) > 0:  # negative: flip luma only (hue/chroma kept); amount eased through a follower
-            tgt = float(np.clip(max(p.get("invert_floor", 0.0), p.get("invert", 0) * k * (0.15 + 0.85 * max(ba, beat))), 0, 1))
+            L = f.mean(axis=2, keepdims=True)
+            # a full flip of a bright frame is a hard flash (a risograph page went 38 flashes in 15 s, 25 Oct test drive):
+            # the pulse scales with how dark the frame is, so a dark vibe keeps the whole negative and a bright one a quarter
+            dark = float(np.clip((170.0 - float(L.mean())) / 120.0, 0.25, 1.0))
+            tgt = float(np.clip(max(p.get("invert_floor", 0.0), p.get("invert", 0) * k * (0.15 + 0.85 * max(ba, beat))), 0, 1)) * dark
             self._inv += (tgt - self._inv) * 0.25
             if self._inv > 1e-3:
-                L = f.mean(axis=2, keepdims=True)
                 f = f + (255.0 - 2.0 * L) * self._inv
         if p.get("blue_morph", 0) > 0:  # same subject, crystal-blue variant: luma kept, chroma pulled to electric blue
             L = f.mean(axis=2, keepdims=True); bm = float(np.clip(p["blue_morph"], 0, 1))

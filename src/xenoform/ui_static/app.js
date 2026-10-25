@@ -2625,8 +2625,14 @@ function lookNote(id) {
 }
 function lookRow(current, act, index) {
   const ids = ["auto", "off"].concat(LOOK_PRESETS);
+  // the negative pulse flips the frame's luma: on a bright vibe (risograph, ink, porcelain, glass) it is softened to a
+  // quarter by the look pass itself, and the chip says so; "off" on Draft shows the morphs' own held frames
+  const vibe = state.easy && vibeById(state.easy.vibe);
+  const bright = !!(vibe && (vibe.tone === "bright" || vibe.dark === false));
+  const extra = (id) => (bright && (id === "negative-rush" || id === "cyan-flash")) ? " · the negative pulse is softened on a bright vibe"
+    : (id === "off" ? " · with no look, Draft morphs show their held frames; the QA pass fills them" : "");
   const chips = ids
-    .map((id) => `<button type="button" class="chip${id === current ? " on" : ""}" data-act="${act}" data-value="${esc(id)}"${index == null ? "" : ` data-index="${index}"`} aria-pressed="${id === current ? "true" : "false"}" title="${esc(lookNote(id))}">${esc(lookLabel(id))}</button>`)
+    .map((id) => `<button type="button" class="chip${id === current ? " on" : ""}" data-act="${act}" data-value="${esc(id)}"${index == null ? "" : ` data-index="${index}"`} aria-pressed="${id === current ? "true" : "false"}" title="${esc(lookNote(id) + extra(id))}">${esc(lookLabel(id))}</button>`)
     .join("");
   return `<div class="simple-seg look-row"><span>Look</span><div class="toggle chips" role="group" aria-label="Look">${chips}</div></div>`;
 }
@@ -4893,6 +4899,8 @@ document.addEventListener("click", async (event) => {
     // Download / Share cut read the job id from here; a job record is not needed for a saved file.
     state.job = { id: row.id, status: "done", stage: "done", progress: 1, video: row.url, reopened: true };
     state.easy.recipe = row.recipe || "";
+    state.easy.took = Number(row.seconds || 0);  // the desk knows how long a saved cut took (took.json): say so on reopen too
+    state.easy.note = row.seconds ? `Took ${clockText(Number(row.seconds))}.` : "";
     state.easy.hookUrl = row.hook ? `/api/videos/${row.id}/hook.mp4` : "";
     state.easy.hookInfo = "";
     state.easy.showcase = false;
