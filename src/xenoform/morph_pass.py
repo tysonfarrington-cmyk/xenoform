@@ -189,10 +189,10 @@ def pick_stills(state: dict, count: int, record: bool = True) -> tuple[str, list
     if asked != vibe and asked in cat:
         own = [{**r, "_vibe": asked} for r in stills.order_fresh(asked, list(cat[asked]))] + own
     look_vibe = asked if asked in VIBE_LOOK else vibe
-    words = set(_story_words(state))
+    words = stills.content_words(_story_words(state))  # the stop words out: "to" must not pick the reel-to-reel
     # objects that belong together: the cut draws on one family first (the idea line's word, else the vibe's
     # heaviest family, the tie turned by the seed), freshest first within it, the rest of the pool after
-    named = stills.family_for_cut(asked or vibe, words) if words else ""  # a family the idea line names
+    named = stills.family_named(asked or vibe, words)  # a family the idea line names, else ""
     family = named or stills.family_for_cut(asked or vibe, set(), seed=int(state.get("seed") or 0))
     for r in pool:
         r["family"] = stills.family_of(str(r.get("noun") or ""))

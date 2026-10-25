@@ -157,6 +157,15 @@ everything before the lead at the back), the idea's family outranks freshness (a
 on the machines, longest-unused first), and with no idea line the shipped chain keeps its curated order while the vibe's
 own family groups only the grown stills, which is what the black demo chain and three older tests expect.
 
+A review of the batch ran after H5 (four reviewers with different lenses over the diff, two refuters trying to knock
+down each finding; 40 agents): eleven findings survived both refuters, three were refuted. The one that mattered most:
+on a fresh install (twelve shipped stills a vibe, nothing grown) a full-song cut would have crashed, since the story
+planner cannot make fewer shots than the song has passages and the chain only had eleven morphs for them. The
+chain's count is now enforced by merging the shortest shots, the animatic previews the same chain, the estimate
+counts the pool, and the rest (stop words naming families, the grow looking the family up under the wrong vibe,
+Auto foreshadow slicing on cosmic, Intensity 0 and Glow 0 not quite zero, a dead still with the look off at Chaos 0,
+the echo stepping up on the handoff, slice bands popping in) are in the changelog, each with a test.
+
 Time, measured again: a Draft morph is 11 to 20 s on the 3080 Ti (H2's 31 morphs took 9:50, H3's 20 took 14:17 while
 Polly's dance shot for P1 shared the card), the look pass 69 to 93 s for 30 s with the foreshadow layer, a Polly dance shot about 15 minutes.
 

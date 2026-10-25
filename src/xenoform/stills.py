@@ -236,21 +236,41 @@ def family_of(noun: str) -> str:
     return ""
 
 
+STOP_WORDS = frozenset("a an the and or of to in on by with for from at into over under as is are its it this that".split())
+
+
+def content_words(words) -> set[str]:
+    """The words of an idea line that can name an object or a family: the stop words out, so "lamps and lanterns"
+    is not picked by "and" nor "reel to reel" by "to" (26 Oct review)."""
+    return {str(w).lower() for w in (words or ()) if str(w).lower() not in STOP_WORDS and len(str(w)) > 1}
+
+
+def family_named(vibe: str, words: set[str] | None = None) -> str:
+    """The family a word of the idea line names (a family's noun or its label), or "" when none does."""
+    fams = (subjects().get("families") or {})
+    words = content_words(words)
+    if not words:
+        return ""
+    for fam, row in fams.items():
+        label_words = content_words(re.findall(r"[a-z]+", str(row.get("label") or "").lower())) | content_words(fam.split("-"))
+        if words & label_words:
+            return fam
+        for noun in row.get("nouns") or []:
+            if content_words(str(noun).lower().split()) & words:
+                return fam
+    return ""
+
+
 def family_for_cut(vibe: str, words: set[str] | None = None, seed: int | None = None) -> str:
     """The family a cut draws on, so its objects belong together instead of being thrown together: a word of the
     idea line that names a family's noun or its label picks that family ("a chrome moth circles a neon sign" ->
-    insects); else the vibe's heaviest family, the tie broken by ``seed`` so two cuts of one song differ."""
+    insects, ``family_named``); else the vibe's heaviest family, the tie broken by ``seed`` so two cuts of one song
+    differ."""
     data = subjects()
     fams = data.get("families") or {}
-    words = {w.lower() for w in (words or set())}
-    if words:
-        for fam, row in fams.items():
-            label_words = set(re.findall(r"[a-z]+", str(row.get("label") or "").lower())) | set(fam.replace("-", " ").split())
-            if words & label_words:
-                return fam
-            for noun in row.get("nouns") or []:
-                if set(str(noun).lower().split()) & words:
-                    return fam
+    named = family_named(vibe, words)
+    if named:
+        return named
     entry = (data.get("vibes") or {}).get(vibe) or {}
     weights = dict(entry.get("weights") or data.get("default_weights") or {})
     if not weights:

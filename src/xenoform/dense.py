@@ -451,16 +451,21 @@ def grow_family_for_cut(state: dict, vibe: str, need: int, cfg: dict | None, rep
 
     if engine == "mock" or state.get("auto_grow") is False:
         return None
-    words = set(_mp._story_words(state))
-    family = _stills.family_for_cut(vibe, words, seed=int(state.get("seed") or 0))
+    # the family exactly as pick_stills will sort on it: looked up under the asked vibe (a vibe that borrows a pool
+    # keeps its own weights), the idea's named family first, else the vibe's own with the seed turning a tie
+    asked = str(state.get("vibe") or "") or vibe
+    words = _stills.content_words(_mp._story_words(state))
+    family = _stills.family_named(asked, words) or _stills.family_for_cut(asked, set(), seed=int(state.get("seed") or 0))
     if not family:
         return None
-    pool = _mp.catalogue().get(vibe) or []
-    in_family = [r for r in pool if _stills.family_of(str(r.get("noun") or "")) == family]
+    cat = _mp.catalogue()
+    rows = list(cat.get(vibe) or []) + (list(cat.get(asked) or []) if asked != vibe else [])  # what the cut draws on
+    in_family = [r for r in rows if _stills.family_of(str(r.get("noun") or "")) == family]
     want = min(int(need), GROW_FOR_IDEA_MAX)
     if len(in_family) >= want:
         return None
-    nouns = _stills.family_nouns(vibe, family, want - len(in_family), have=_stills.nouns_in(vibe))
+    have = _stills.nouns_in(vibe) | (_stills.nouns_in(asked) if asked != vibe else set())
+    nouns = _stills.family_nouns(vibe, family, want - len(in_family), have=have)
     if not nouns:
         return None
     try:
@@ -473,6 +478,76 @@ def grow_family_for_cut(state: dict, vibe: str, need: int, cfg: dict | None, rep
     except Exception as exc:  # the cut goes on with the pool it has
         log.warning("grow for idea skipped: %s", exc)
         return None
+
+
+def _merge_to(shots: list[dict], n: int) -> list[dict]:
+    """``shots`` folded into ``n`` by merging the shortest into its shorter neighbour, the timeline untouched. The
+    story planner keeps a cut at every role start, so ``max_shots`` alone left 16 shots for 11 morphs on a shipped
+    12-still pool and the compose crashed (26 Oct review); the chain's count is enforced here."""
+    shots = [dict(s) for s in shots]
+    n = max(1, int(n))
+    while len(shots) > n:
+        i = min(range(len(shots)), key=lambda k: float(shots[k].get("seconds") or 0.0))
+        if i == 0:
+            j = 1
+        elif i == len(shots) - 1:
+            j = i - 1
+        else:
+            j = i - 1 if float(shots[i - 1].get("seconds") or 0.0) <= float(shots[i + 1].get("seconds") or 0.0) else i + 1
+        a, b = (shots[i], shots[j]) if i < j else (shots[j], shots[i])
+        merged = {**a, "seconds": round(float(a.get("seconds") or 0.0) + float(b.get("seconds") or 0.0), 4),
+                  "effects": list(a.get("effects") or []) + list(b.get("effects") or [])}
+        if "end" in a or "end" in b:
+            merged["end"] = b.get("end", a.get("end"))
+        if "frames" in a or "frames" in b:
+            merged["frames"] = int(a.get("frames") or 0) + int(b.get("frames") or 0)
+        lo = min(i, j)
+        shots[lo:lo + 2] = [merged]
+    for k, s in enumerate(shots):
+        if "index" in s:
+            s["index"] = k
+    return shots
+
+
+def long_song_chain(state: dict, directed: dict, audio_path: Path, shots: list[dict], plan: dict, opt: dict, *,
+                    cfg: dict | None = None, report: Callable | None = None, engine: str | None = None,
+                    grow: bool = True) -> tuple[list[dict], dict, dict, list[dict]]:
+    """The music-video chain for a long song, the same for the render and the stills animatic: one morph a shot and
+    no object twice (``clip_plan``), the pool (the asked vibe's own stills plus the pool it draws on) and the tier
+    capping it; the idea's family grown first when ``grow``; past the cap the song is re-planned with fewer, longer
+    shots on the bars and merged down to the count when the planner's roles still outnumber it. Returns
+    ``(shots, plan, chain, notes)``."""
+    from xenoform.morph_pass import catalogue as _catalogue, vibe_for as _vibe_for
+
+    notes: list[dict] = []
+    duration = float(directed.get("duration") or 0.0)
+    beats_list = list(directed.get("beats") or [])
+    pool_vibe = _vibe_for(state)
+    asked = str(state.get("vibe") or "")
+
+    def pool_count() -> int:
+        cat = _catalogue()
+        return len(cat.get(pool_vibe) or []) + (len(cat.get(asked) or []) if asked and asked != pool_vibe else 0)
+
+    pool_n = pool_count()
+    chain = clip_plan(shots, duration, beats_list, pool=pool_n or None, tier=opt["tier"])
+    if grow:
+        grown = grow_family_for_cut(state, pool_vibe, chain["morphs"] + 1, cfg, report, engine=engine)
+        if grown:  # the idea's family now in the pool: count again, the chain may afford more
+            notes.append({"grown": grown})
+            pool_n = pool_count()
+            chain = clip_plan(shots, duration, beats_list, pool=pool_n or None, tier=opt["tier"])
+    if not chain["fits"]:
+        wanted = chain["wanted"]
+        shots, plan = shots_for({**state, "max_shots": chain["morphs"]}, directed, Path(audio_path))
+        if len(shots) > chain["morphs"]:
+            shots = _merge_to(shots, chain["morphs"])
+        chain = clip_plan(shots, duration, beats_list, pool=pool_n or None, tier=opt["tier"])
+        notes.append({"capped": {"wanted": wanted, "shots": len(shots), "cap": chain.get("cap"), "pool": pool_n}})
+        if report:
+            report("restyle", 0.04, f"{wanted} shots re-planned as {len(shots)} longer ones: no object repeats, and {opt['tier']} "
+                                    f"affords {chain.get('cap')} morphs" + (f" over a pool of {pool_n}" if pool_n else ""))
+    return shots, plan, chain, notes
 
 
 def wants_finishing(state: dict) -> bool:
@@ -519,15 +594,16 @@ def clip_plan(shots: list[dict], duration: float, beats: list, *, pool: int | No
 
 
 def plan_summary(duration: float, beats: list, energy: str = "dense", tier: str = "draft", aspect: str = "9:16",
-                 vertical: str = "native", drop: float | None = None, performer: int = 0) -> dict:
-    """What a Make will do for this song: shots, unique morphs, clip length and a time estimate (GPU + look)."""
+                 vertical: str = "native", drop: float | None = None, performer: int = 0, pool: int | None = None) -> dict:
+    """What a Make will do for this song: shots, unique morphs, clip length and a time estimate (GPU + look).
+    ``pool`` is the vibe's still count when known: the chain never repeats an object, so it caps the morphs too."""
     duration = float(duration)
     if energy == "dense":
         shots = dense_plan(duration, beats, drop if drop is not None else duration * 0.6)["shots"]
     else:
         shots = plan_shots(duration, beats)
     long_song = duration > LONG_SONG_S
-    cp = clip_plan(shots, duration, beats, tier=tier) if long_song else {"clip_s": 2, "morphs": len(shots), "assign": list(range(len(shots))), "reuse": False}
+    cp = clip_plan(shots, duration, beats, pool=pool or None, tier=tier) if long_song else {"clip_s": 2, "morphs": len(shots), "assign": list(range(len(shots))), "reuse": False}
     fps = 24
     frames_total = int(round(duration * fps))
     compose_s = frames_total * COMPOSE_S_PER_FRAME["final" if tier == "final" else "draft"] / beatfx.look_speedup(frames_total)
@@ -917,25 +993,9 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     chain: dict = {}
     if long_song:
         # Music-video mode: one morph a shot, no object twice (see clip_plan); the pool and the tier cap it, and
-        # a cut past the cap gets fewer, longer shots instead of a loop
-        from xenoform.morph_pass import catalogue as _catalogue, vibe_for as _vibe_for
-
-        pool_vibe = _vibe_for(state)
-        pool_n = len(_catalogue().get(pool_vibe) or [])
-        beats_list = list(directed.get("beats") or [])
-        chain = clip_plan(shots, duration, beats_list, pool=pool_n or None, tier=opt["tier"])
-        grown = grow_family_for_cut(state, pool_vibe, chain["morphs"] + 1, cfg, report, engine=engine)
-        if grown:  # the idea line's family now in the pool: count again, the chain may afford more
-            pre_notes.append({"grown": grown})
-            pool_n = len(_catalogue().get(pool_vibe) or [])
-            chain = clip_plan(shots, duration, beats_list, pool=pool_n or None, tier=opt["tier"])
-        if not chain["fits"]:
-            wanted = chain["wanted"]
-            shots, plan = shots_for({**state, "max_shots": chain["morphs"]}, directed, Path(audio_path))
-            chain = clip_plan(shots, duration, beats_list, pool=pool_n or None, tier=opt["tier"])
-            pre_notes.append({"capped": {"wanted": wanted, "shots": len(shots), "cap": chain.get("cap"), "pool": pool_n}})
-            report("restyle", 0.04, f"{wanted} shots re-planned as {len(shots)} longer ones: no object repeats, and {opt['tier']} "
-                                    f"affords {chain.get('cap')} morphs")
+        # a cut past the cap gets fewer, longer shots instead of a loop (long_song_chain, shared with the animatic)
+        shots, plan, chain, pre_notes = long_song_chain(state, directed, Path(audio_path), shots, plan, opt, cfg=cfg,
+                                                        report=report, engine=engine)
         vibe, stills = stills_for({**state, "cut_plan": None}, chain["morphs"] + 1)  # n morphs need n + 1 distinct stills
         for shot, ci in zip(shots, chain["assign"]):
             shot["clip"] = int(ci)
@@ -1181,10 +1241,9 @@ def stills_animatic(directed: dict, state: dict, audio_path: Path, out_path: Pat
     long_song = duration > LONG_SONG_S and not plan.get("stills")
     # record=False: the animatic previews the picks the render will make; only the render marks them used
     if long_song:
-        chain = clip_plan(shots, duration, list(directed.get("beats") or []), tier=options(state)["tier"])
-        if not chain["fits"]:  # the render will re-plan to this many shots; the animatic previews the same cut
-            shots, plan = shots_for({**state, "max_shots": chain["morphs"]}, directed, audio_path)
-            chain = clip_plan(shots, duration, list(directed.get("beats") or []), tier=options(state)["tier"])
+        # the same chain the render will make (pool cap, re-plan, merge), so the animatic previews the same cut; it
+        # does not grow the library, so a cut that grows its family may afford a few more morphs than previewed
+        shots, plan, chain, _ = long_song_chain(state, directed, Path(audio_path), shots, plan, options(state), grow=False)
         vibe, pool = stills_for({**state, "cut_plan": None}, chain["morphs"] + 1, record=False)
         picks = [pool[ci] for ci in chain["assign"]]
     else:

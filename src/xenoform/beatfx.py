@@ -305,7 +305,7 @@ def beat_fx(frame: np.ndarray, *, kick: float, trans: float, punch: float, loud:
         img = img + _edges(img) * col * e
     if punch > 0.05:
         img = img + _blur(img) * (0.55 * punch * max(0.0, float(bloom)))
-    img = img * (0.92 + 0.12 * loud)
+    img = img * (1.0 + (0.12 * loud - 0.08) * intensity)  # the loudness ride is a beat effect too: none at Intensity 0
     return np.clip(img, 0, 255).astype(np.uint8)
 
 
@@ -391,7 +391,14 @@ def _apply_at_working_size(fx, frame: np.ndarray, d: dict, cap: int) -> np.ndarr
     return np.clip(frame.astype(np.float32) + up, 0, 255).astype(np.uint8)
 
 
-ORBIT_YAW = 14.0  # degrees of yaw at Chaos 0.5; the house profile's 28 is reached at Chaos 1
+def bloom_gain(glow) -> float:
+    """The beat-FX punch bloom for the Glow knob: 0 is none at all (the look's halation is 0 there too), 0.4 the
+    house as written, 1 is 1.6 times it."""
+    return 1.6 * float(np.clip(float(glow if glow is not None else 0.4), 0.0, 1.0))
+
+
+ORBIT_YAW = 14.0
+ORBIT_DRIFT_LOOK_OFF = 0.15  # the orbit's least swing with the look off: a held still must not be four identical frames  # degrees of yaw at Chaos 0.5; the house profile's 28 is reached at Chaos 1
 
 
 class LookPass:
@@ -473,6 +480,8 @@ class LookPass:
             # Chaos: 0 is a camera that does not move, 0.3 (the default) a gentle drift, 1 a swing twice the old default.
             # The old 28 degrees at every setting read as a handycam (Tys, 25 Oct), with the zoom that hides the edges.
             swing = 2.0 * float(np.clip(float(self.macros.get("chaos", 0.3) or 0.0), 0.0, 1.0))
+            if self.mode == "off":  # with no look the orbit is all that keeps a held still alive: a slow drift at least
+                swing = max(swing, ORBIT_DRIFT_LOOK_OFF)
             if swing < 0.05:
                 self.plan = None
             else:
@@ -626,10 +635,11 @@ def _shot_frames(clip: Path, shot: dict, si: int, n0: int, total: int, *, aspect
                     tgt = reframe(fs["target"], aspect, c, w, h)
                     frame = _F.treat(frame, tgt, str(fs["mode"]), _F.amount(base, stem, fcap), tint=fs.get("tint") or (255, 255, 255),
                                      p=fs.get("params"), si=si, k=k, seed=int(fs.get("seed") or 0), pop=pop)
-                if echo > 0:
+                if echo > 0:  # continues the tail it follows, so it rides the same eased stem instead of starting at the cap
                     prv = reframe(fs["prev"], aspect, c, w, h)
-                    frame = _F.treat(frame, prv, str(fs["mode"]), fcap * echo, tint=fs.get("tint") or (255, 255, 255),
-                                     p=fs.get("params"), si=si, k=k, seed=int(fs.get("seed") or 0))
+                    frame = _F.treat(frame, prv, str(fs["mode"]), _F.amount(1.0, stem, fcap) * echo,
+                                     tint=fs.get("tint") or (255, 255, 255), p=fs.get("params"), si=si, k=k,
+                                     seed=int(fs.get("seed") or 0))
         frame = look.frame(frame, k, n / fps)
         if frame.shape[0] != h or frame.shape[1] != w:
             frame = resize(frame, w, h)
@@ -711,7 +721,7 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
     env = envelopes(audio_path, total, fps=fps) if (fx or look.active) else None
     if look.active and not look.env:
         look.env = mix_stem_env(env, beats, fps)
-    glow_gain = 0.2 + 1.4 * float((macros or {}).get("glow", 0.4))  # the beat FX bloom: near none at 0, 1.6 at 1
+    glow_gain = bloom_gain((macros or {}).get("glow", 0.4))  # the beat FX bloom: none at Glow 0, 1.6 at 1
     punch = punch_curve(shots)
     over = None
     if overlay:

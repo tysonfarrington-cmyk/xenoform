@@ -94,7 +94,9 @@ def test_orbit_swing_follows_chaos():
         look = beatfx.LookPass(dance_fx="off", stem_orbit=True, stem_env=env, macros={"chaos": chaos}, beats=beats, fps=fps, shots=1)
         look.start_shot(0, n, 0.0)
         yaw[chaos] = float(np.abs(look.plan["yaw"]).max()) if look.plan is not None else 0.0
-    assert yaw[0.0] == 0.0 and yaw[1.0] > 0.0  # Chaos 0 is a camera that does not move; 1 swings
+    # Chaos 0 is a camera that does not move; with the look off the orbit keeps a slow drift (else a held still is
+    # four identical frames); 1 swings
+    assert 0.0 < yaw[0.0] <= beatfx.ORBIT_YAW * beatfx.ORBIT_DRIFT_LOOK_OFF + 1e-6 and yaw[1.0] > yaw[0.0]
 
 
 def test_palette_tints_follow_the_still(tmp_path):

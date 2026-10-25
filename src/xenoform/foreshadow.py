@@ -57,7 +57,8 @@ def mode_for(choice_: str, vibe: str | None = None) -> str:
         try:
             from xenoform import vibes as _vibes
 
-            row = next((r for r in _vibes.extended() if r.get("id") == vibe), None) or {}
+            row = (next((r for r in _vibes.extended() if r.get("id") == vibe), None)
+                   or next((r for r in _vibes.ORIGINAL_META if r.get("id") == vibe), None) or {})  # cosmic, black are originals
             pick = str(((row.get("fx_defaults") or {}).get("foreshadow")) or "").strip().lower()
             if pick in MODES:
                 return pick
@@ -298,7 +299,7 @@ def treat(frame: np.ndarray, target: np.ndarray, mode: str, a: float, *, tint=(2
         count = max(1, int(math.ceil(a / max(1e-6, float(p.get("cap", 0.8))) * n)))
         jitter = float(p.get("jitter", 0.3))
         out = f.copy()
-        strength = min(1.0, 0.55 + 0.6 * a)
+        strength = min(1.0, 0.25 + 0.75 * a / max(1e-6, float(p.get("cap", 0.8))))  # no band pops in at 55 %: it grows with the amount
         for idx in order[:count]:
             if horizontal:
                 y0, y1 = int(h * idx / n), int(h * (idx + 1) / n)

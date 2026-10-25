@@ -102,8 +102,17 @@ def plan_for(features: dict | None, body: dict | None) -> dict[str, float] | Non
             return None
         opt = dense.options(body)
         beats = [float(b) for b in (features.get("beats") or []) if float(b) < duration]
+        pool = None
+        try:  # the vibe's pool caps the morphs (no object twice), so the estimate counts it
+            from xenoform import morph_pass as _mp
+
+            cat = _mp.catalogue()
+            pool_vibe, asked = _mp.vibe_for(body), str(body.get("vibe") or "")
+            pool = len(cat.get(pool_vibe) or []) + (len(cat.get(asked) or []) if asked and asked != pool_vibe else 0)
+        except Exception:
+            pool = None
         summary = dense.plan_summary(duration, beats, opt["energy"], opt["tier"], opt["aspect"], opt["vertical"],
-                                     performer=int(opt.get("performer") or 0))
+                                     performer=int(opt.get("performer") or 0), pool=pool)
         est = summary.get("estimate") or {}
         plan = {"analyze": FIXED_S["analyze"], "draft": FIXED_S["draft"],
                 "morphs": float(est.get("gpu_seconds") or 0.0),
