@@ -1303,6 +1303,38 @@ def create_app(cfg: dict | None = None):
             raise HTTPException(404, "That video is not on this machine.")
         return folder
 
+    @app.get("/api/videos/{video_id}/shots")
+    def video_shots(video_id: str) -> dict:
+        """The cut's shots lane, read-only (``lane.build``): every shot with its object, section and boundary, the
+        transitions, the performer and own-footage slots, from the job's simple.json. The seed of the timeline."""
+        from xenoform import lane
+
+        folder = _video_dir(video_id)
+        path = folder / "simple" / "simple.json"
+        if not path.is_file():
+            return {"id": video_id, "duration": 0.0, "shots": [], "sections": [], "overlays": [], "note": "This cut has no shot record."}
+        try:
+            info = json.loads(path.read_text(encoding="utf-8"))
+        except ValueError:
+            return {"id": video_id, "duration": 0.0, "shots": [], "sections": [], "overlays": [], "note": "This cut's shot record did not read."}
+        return lane.build(info, video_id)
+
+    @app.get("/api/videos/{video_id}/shots")
+    def video_shots(video_id: str) -> dict:
+        """The cut's shots lane, read-only (``lane.build``): every shot with its object, section and boundary, the
+        transitions, the performer and own-footage slots, from the job's simple.json. The seed of the timeline."""
+        from xenoform import lane
+
+        folder = _video_dir(video_id)
+        path = folder / "simple" / "simple.json"
+        if not path.is_file():
+            return {"id": video_id, "duration": 0.0, "shots": [], "sections": [], "overlays": [], "note": "This cut has no shot record."}
+        try:
+            info = json.loads(path.read_text(encoding="utf-8"))
+        except ValueError:
+            return {"id": video_id, "duration": 0.0, "shots": [], "sections": [], "overlays": [], "note": "This cut's shot record did not read."}
+        return lane.build(info, video_id)
+
     @app.post("/api/videos/{video_id}/hook")
     def video_hook(video_id: str, body: dict | None = None) -> dict:
         from xenoform.beatfx import export_hook, pick_hook

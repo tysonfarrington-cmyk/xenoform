@@ -395,14 +395,14 @@ function sliderRow(key, name, hint) {
 }
 
 const FALLBACK_ETA = {
-  live: { label: "Live", short: "now", line: "The picture is in the browser. Record writes an mp4 with no model." },
+  live: { label: "Browser preview", short: "now", line: "The picture is drawn in this window, no model and no GPU. Record writes an mp4 of it." },
   turbo: { label: "Turbo", short: "~1 min", line: "Animatic in about 5 seconds, then the GPU morph pass for a 12-20 s song on a 12 GB GPU: about 1 minute on a first run with the GPU idle, about 2 minutes if ComfyUI just had another model loaded, and 45-65 s warm. A live countdown follows the real pace." },
   draft: { label: "Draft", short: "~4 min", line: "512×288. About 4 minutes the first time on a 12 GB GPU." },
   final: { label: "Final", short: "~10 min", line: "640×360 at 24 fps. About 10 minutes on a 12 GB GPU. Same seed as Turbo." },
 };
 
 function qualityLabel(value) {
-  if (value === "live") return "Live";
+  if (value === "live") return "Browser preview";
   if (value === "turbo") return "Turbo";
   if (value === "final") return "Final";
   return "Draft";
@@ -446,7 +446,7 @@ function stageMedia() {
 
 function stagesHtml() {
   if (state.quality === "live") {
-    return `<p class="note">Live draws in this window. Record writes an mp4 with no model. Turbo, Draft, and Final can use that file as a motion guide.</p>`;
+    return `<p class="note">Browser preview draws in this window, no model and no GPU. Record writes an mp4 of it; Turbo, Draft, and Final can use that file as a motion guide.</p>`;
   }
   const turbo = state.quality === "turbo";
   const order = turbo
@@ -800,7 +800,7 @@ function renderAdvanced() {
   state.step = step;
   const monitor = `<div class="desk-monitor">
       <p class="kicker">Picture · ${esc(qualityLabel(state.quality))}</p>
-      <h2>${esc(state.quality === "live" ? "Live" : state.videoLabel || "Picture")}</h2>
+      <h2>${esc(state.quality === "live" ? "Browser preview" : state.videoLabel || "Picture")}</h2>
       ${stageMedia()}
       <p class="caption"><b>${esc(registerName())}</b> · seed 2727 · ${esc(paletteLabel())} · ${state.live ? "Live endpoint armed" : "Dry run is the default"}</p>
       ${qualityToggle()}
@@ -1700,7 +1700,7 @@ function renderSimple() {
     ${timingPanel()}
     <section class="panel stage span">
       <p class="kicker">Picture · ${esc(qualityLabel(state.quality))}</p>
-      <h2>${esc(state.quality === "live" ? "Live" : state.videoLabel || "Picture")}</h2>
+      <h2>${esc(state.quality === "live" ? "Browser preview" : state.videoLabel || "Picture")}</h2>
       ${stageMedia()}
       <p class="caption"><b>${esc(registerName())}</b> · seed 2727 · ${esc(paletteLabel())}</p>
       ${qualityToggle()}
@@ -1840,7 +1840,7 @@ function renderDirector() {
       <div class="picture-split">
         <div class="stage">
           <p class="kicker">Picture</p>
-          <h2>${esc(state.quality === "live" ? "Live" : state.videoLabel || "Picture")}</h2>
+          <h2>${esc(state.quality === "live" ? "Browser preview" : state.videoLabel || "Picture")}</h2>
           ${stageMedia()}
           ${qualityToggle()}
           ${stagesHtml()}
@@ -1974,7 +1974,7 @@ function renderNotes() {
   return `<div class="notes-view">
     <section class="panel stage">
       <p class="kicker">${esc(qualityLabel(state.quality))}</p>
-      <h2>${esc(state.quality === "live" ? "Live" : state.videoLabel || "Picture")}</h2>
+      <h2>${esc(state.quality === "live" ? "Browser preview" : state.videoLabel || "Picture")}</h2>
       ${stageMedia()}
       <p class="caption"><b>${esc(registerName())}</b> · seed 2727 · ${esc(state.quality || "draft")} · ${esc(state.videoLabel || "Reference")}</p>
       ${stagesHtml()}
@@ -2481,6 +2481,7 @@ function renderEasy() {
           <p class="ready-toast">Your video is ready.</p>
         </div>
         <p class="note" id="easy-note">${esc(easy.note || "")}</p>
+        ${shotsLane(easy)}
         ${easy.hookUrl ? `<p class="note">15 s hook ready: <a href="${esc(media(easy.hookUrl))}" download>download the hook</a>${easy.hookInfo ? ` · ${esc(easy.hookInfo)}` : ""}</p>` : ""}
         ${easy.recipe ? `<p class="note recipe-line">Recipe <code>${esc(easy.recipe)}</code></p>` : ""}
       </section>
@@ -2709,7 +2710,7 @@ function machineRows(easy) {
       <div class="simple-seg machine-where"><span>Renders on</span>
         <div class="toggle" role="group" aria-label="Renders on">
           <label class="ghost cloud-toggle">ComfyUI at <input type="text" id="easy-endpoint" value="${esc(endpoint)}" spellcheck="false" aria-label="ComfyUI address"></label>
-          <span class="note">${detected.label ? esc(detected.label) + " · " : ""}${ok ? "connected" : "not connected"} · open weights on this machine</span>
+          <span class="note">${detected.label ? esc(detected.label) + " · " : ""}${ok ? "connected" : "not answering: Make will play the vibe's pictures in the browser, no render"} · open weights on this machine</span>
         </div>
       </div>
       <label class="addon easy-paid"><input type="checkbox" data-act="easy-paid-cloud" ${state.paidCloud ? "checked" : ""}${paidLocked ? " disabled" : ""}> Paid cloud renders (LTX-2.5 partner node, Comfy Cloud account): off by default, not open weights${paidLocked ? " · locked off by XENO_PAID_CLOUD" : ""}</label>`;
@@ -2855,6 +2856,56 @@ async function loadSimpleOptions() {
   } catch (err) {
     state.simpleOptions = null;
   }
+}
+
+// The shots lane: the finished cut as a strip of shots under the player (GET /api/videos/<id>/shots, lane.build).
+// Read-only: each block is a shot, its width the shot's share of the cut, its colour the section; a click seeks
+// the player to it. Performer and own-footage slots sit as bars over the shots. The seed of the timeline.
+const SECTION_HUES = { intro: 210, calm: 200, sustain: 190, build: 40, release: 60, drop: 350, drop_late: 20, outro: 230 };
+function shotsLane(easy) {
+  const id = easyVideoId();
+  if (!id || easy.showcase || easy.playedHere) return "";
+  const lane = state.lane && state.lane.id === id ? state.lane : null;
+  if (!lane) {
+    if (!state.laneLoading || state.laneLoading !== id) {
+      state.laneLoading = id;
+      setTimeout(() => loadLane(id), 0);
+    }
+    return `<div class="shots-lane" aria-label="Shots"><p class="note">Reading the cut's shots...</p></div>`;
+  }
+  if (!lane.shots || !lane.shots.length) return lane.note ? `<p class="note">${esc(lane.note)}</p>` : "";
+  const total = Math.max(Number(lane.duration) || 0, 0.001);
+  const blocks = lane.shots.map((s) => {
+    const w = (100 * (Number(s.seconds) || 0)) / total;
+    const hue = SECTION_HUES[s.section] != null ? SECTION_HUES[s.section] : 260;
+    const label = s.to ? `${s.from} → ${s.to}` : s.from;
+    const title = `${clockText(s.start)} · ${s.seconds} s${s.section ? ` · ${s.section}` : ""}${s.transition ? ` · ${s.transition}` : ""}${label ? ` · ${label}` : ""}`;
+    return `<button type="button" class="shot${s.boundary ? " boundary" : ""}${s.transition ? " has-transition" : ""}" style="width:${w.toFixed(3)}%;--hue:${hue}" data-act="easy-seek" data-at="${s.start}" title="${esc(title)}" aria-label="${esc(title)}"><i>${esc(s.to || s.from || "")}</i></button>`;
+  }).join("");
+  const overlays = (lane.overlays || []).map((o) => {
+    const left = (100 * Number(o.start)) / total;
+    const w = (100 * (Number(o.end) - Number(o.start))) / total;
+    return `<span class="overlay ${esc(o.kind)}" style="left:${left.toFixed(3)}%;width:${w.toFixed(3)}%" title="${esc(o.kind === "performer" ? `Polly: ${o.label}` : `Your clip: ${o.label}`)}">${esc(o.kind === "performer" ? `Polly · ${o.label}` : o.label)}</span>`;
+  }).join("");
+  const facts = [`${lane.shots.length} shots`, lane.morphs ? `${lane.morphs} morphs over ${lane.objects} objects` : "", lane.pace ? `${lane.pace} pace` : "",
+    (lane.sections || []).length > 1 ? `${lane.sections.length} passages` : ""].filter(Boolean).join(" · ");
+  return `<div class="shots-lane" aria-label="Shots">
+      <div class="lane-head"><span>Shots</span><span class="note">${esc(facts)} · click a shot to jump there</span></div>
+      <div class="lane-overlays">${overlays}</div>
+      <div class="lane-shots">${blocks}</div>
+    </div>`;
+}
+
+async function loadLane(id) {
+  try {
+    const res = await api(`/api/videos/${encodeURIComponent(id)}/shots`);
+    const data = res.ok ? await res.json() : { id, shots: [], note: "The cut's shots could not be read." };
+    state.lane = Object.assign({ id }, data);
+  } catch (err) {
+    state.lane = { id, shots: [], note: "The cut's shots could not be read." };
+  }
+  if (state.laneLoading === id) state.laneLoading = "";
+  render();
 }
 
 function easyVideoId() {
@@ -3063,7 +3114,7 @@ function easyPlanFacts(easy) {
   return rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("");
 }
 function easyTimeFact() {
-  if (state.comfyOk === false) return "Seconds, in the browser";
+  if (state.comfyOk === false) return "No render: ComfyUI is not answering, so Make plays the vibe's pictures in the browser";
   const plan = state.simpleOptions && state.simpleOptions.plan;
   if (plan && plan.estimate && plan.estimate.seconds) {
     const e = plan.estimate;
@@ -3230,7 +3281,9 @@ async function easyMake() {
     state.quality = "live";
     setEasyPhase("result");
     state.easy.playedHere = true;
-    state.easy.note = "Playing the pictures for this vibe.";
+    state.easy.note = blocked
+      ? "Playing the pictures for this vibe: the cut was not made."
+      : `ComfyUI is not answering at ${(state && state.endpoint) || "http://127.0.0.1:8188"}, so this is the vibe's pictures played in the browser, not a render. Start ComfyUI (Xenoform.bat starts the proxy), then press Make again.`;
     render();
     return;
   }
@@ -4734,6 +4787,12 @@ document.addEventListener("click", async (event) => {
     state.easy.ownId = "";
     state.easy.ownNote = "";
     render();
+  } else if (act === "easy-seek") {
+    const player = document.getElementById("player");
+    if (player) {
+      player.currentTime = Number(el.dataset.at) || 0;
+      if (player.paused) player.play().catch(() => {});
+    }
   } else if (act === "easy-grow") {
     growStills(false);
   } else if (act === "easy-make-shapes") {

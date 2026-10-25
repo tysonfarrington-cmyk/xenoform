@@ -27,7 +27,10 @@ def test_readme_has_no_stale_placeholders_or_local_paths():
 
 
 def test_readme_keeps_the_demo_video_line_for_the_owner():
-    assert "DEMO_VIDEO_URL" in _read("README.md")
+    """The top block carries the demo line: the placeholder until the video is up, then a real https link."""
+    line = re.search(r"\*\*Demo video \(under 2:00\):\*\* (\S+)", _read("README.md"))
+    assert line, "README top block keeps the demo video line"
+    assert line.group(1) == "DEMO_VIDEO_URL" or line.group(1).startswith("https://")
 
 
 def test_every_docs_link_in_readme_resolves():

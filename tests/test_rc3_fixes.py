@@ -226,7 +226,7 @@ def test_pyproject_metadata():
 
     pp = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     proj = pp["project"]
-    assert proj["version"] == "0.3.0" and proj["requires-python"] == ">=3.12"
+    assert proj["version"] == "0.3.3" and proj["requires-python"] == ">=3.12"
     extras = proj["optional-dependencies"]
     assert any(d.startswith("mcp>=2.3") and "<3" in d for d in extras["agent"])
     assert any(d.startswith("mido") for d in extras["midi"]) and any(d.startswith("python-rtmidi") for d in extras["midi"])

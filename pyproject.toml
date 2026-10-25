@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "xenoform"
-version = "0.3.0"
+version = "0.3.3"
 description = "A music-video director. Audio becomes a liquid alien-biotech form, restyled with ComfyUI LTX."
 readme = "README.md"
 license = { file = "LICENSE" }

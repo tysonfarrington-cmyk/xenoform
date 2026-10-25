@@ -27,7 +27,7 @@ def test_simple_fallback_cuts_the_library_instead_of_the_blob():
     app = (STATIC / "app.js").read_text(encoding="utf-8")
     assert "/static/vibes/" in app
     assert "startLibraryCut" in app
-    assert "Playing the pictures for this vibe." in app
+    assert "Playing the pictures for this vibe: the cut was not made." in app
     make = app.split("async function easyMake", 1)[1].split("async function easyBetter", 1)[0]
     assert "playLive" not in make
     css = (STATIC / "app.css").read_text(encoding="utf-8")

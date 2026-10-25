@@ -87,7 +87,8 @@
    "fx_defaults": {
     "feedback": 0.15,
     "glow": 0.2,
-    "chaos": 0.25
+    "chaos": 0.25,
+    "dance_fx": "cool-echo"
    },
    "featured": 1,
    "v6_gate": {
@@ -137,7 +138,8 @@
     "feedback": 0.1,
     "glow": 0.6,
     "rgb": 0.4,
-    "chaos": 0.3
+    "chaos": 0.3,
+    "dance_fx": "noir-glow"
    },
    "featured": 2,
    "v6_gate": {
@@ -186,7 +188,8 @@
    "ready": true,
    "fx_defaults": {
     "glow": 0.15,
-    "chaos": 0.1
+    "chaos": 0.1,
+    "dance_fx": "warm-leak"
    },
    "featured": 3,
    "v6_gate": {
@@ -236,7 +239,8 @@
    "fx_defaults": {
     "glow": 0.7,
     "feedback": 0.25,
-    "chaos": 0.2
+    "chaos": 0.2,
+    "dance_fx": "bloom-rush"
    },
    "featured": 4,
    "v6_gate": {
@@ -285,7 +289,8 @@
    "ready": true,
    "fx_defaults": {
     "rgb": 0.5,
-    "chaos": 0.35
+    "chaos": 0.35,
+    "dance_fx": "negative-rush"
    },
    "featured": 5,
    "v6_gate": {
@@ -335,7 +340,8 @@
    "fx_defaults": {
     "glow": 0.3,
     "rgb": 0.2,
-    "chaos": 0.15
+    "chaos": 0.15,
+    "dance_fx": "cyan-flash"
    },
    "featured": 6,
    "v6_gate": {
@@ -384,7 +390,8 @@
    "ready": true,
    "fx_defaults": {
     "glow": 0.45,
-    "chaos": 0.2
+    "chaos": 0.2,
+    "dance_fx": "warm-leak"
    },
    "featured": 7,
    "v6_gate": {
@@ -483,7 +490,8 @@
     "rgb": 0.3,
     "glow": 0.5,
     "chaos": 0.4,
-    "scan": 0.5
+    "scan": 0.5,
+    "dance_fx": "cyan-flash"
    },
    "featured": 9,
    "v6_gate": {
@@ -532,7 +540,8 @@
    "ready": true,
    "fx_defaults": {
     "chaos": 0.3,
-    "feedback": 0.2
+    "feedback": 0.2,
+    "dance_fx": "bloom-rush"
    },
    "featured": 10,
    "v6_gate": {
@@ -582,7 +591,8 @@
    "fx_defaults": {
     "glow": 0.2,
     "chaos": 0.2,
-    "grain": 0.4
+    "grain": 0.4,
+    "dance_fx": "noir-glow"
    },
    "featured": 11,
    "v6_gate": {
@@ -631,7 +641,8 @@
    "ready": true,
    "fx_defaults": {
     "scrub": 0.6,
-    "chaos": 0.1
+    "chaos": 0.1,
+    "dance_fx": "bloom-rush"
    },
    "featured": 12,
    "v6_gate": {
