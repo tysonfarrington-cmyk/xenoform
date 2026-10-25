@@ -49,7 +49,7 @@ def _grown(vibe: str, name: str, noun: str, r: float = 0.18, **row) -> Path:
 
 
 def test_catalogue_merges_shipped_and_grown_and_drops_deleted_files():
-    assert L.counts("cosmic") == {"shipped": 12, "grown": 0, "own": 0, "total": 12}
+    assert L.counts("cosmic") == {"shipped": 12, "grown": 0, "own": 0, "scenes": 0, "total": 12}
     _grown("cosmic", "000_astrolabe.jpg", "astrolabe")
     _grown("cosmic", "001_gone.jpg", "gone")
     (L.root() / "cosmic" / "001_gone.jpg").unlink()  # deleting the jpg is the cull
@@ -327,7 +327,8 @@ def test_desk_routes_count_grow_and_stop(monkeypatch):
     monkeypatch.setattr(L, "available", lambda cfg=None, **kw: {"ok": True, "note": ""})
     calls = {}
 
-    def fake_grow(vibe, count=36, *, nouns=None, own=False, cfg=None, seed=None, progress=None, cancel=None, client=None, sheet=True):
+    def fake_grow(vibe, count=36, *, nouns=None, own=False, cfg=None, seed=None, progress=None, cancel=None, client=None, sheet=True,
+                  kind="object"):
         calls.update({"vibe": vibe, "count": count, "nouns": nouns, "own": own})
         progress(1, 2, 1)
         progress(2, 2, 2)

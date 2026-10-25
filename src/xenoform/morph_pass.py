@@ -97,8 +97,9 @@ def vibe_for(state: dict) -> str:
 
 def _story_words(state: dict) -> list[str]:
     bits = [str(state.get("brief") or ""), str(state.get("story") or ""), str(state.get("idea") or "")]
-    for scene in state.get("scenes") or []:
-        bits += [str(scene.get(key) or "") for key in ("form", "action", "guide", "text")]
+    for scene in state.get("scenes") or []:  # the Advanced desk's scene list; a string here is the Simple scenes choice
+        if isinstance(scene, dict):
+            bits += [str(scene.get(key) or "") for key in ("form", "action", "guide", "text")]
     for custom in state.get("customs") or []:
         bits.append(str(custom.get("noun") or custom.get("name") or ""))
     return re.findall(r"[a-z]+", " ".join(bits).lower().replace("_", " ").replace("-", " "))
@@ -166,9 +167,67 @@ def chain_walk(pool: list[dict], count: int) -> list[dict]:
     return [pool[i] for i in order]
 
 
-def pick_stills(state: dict, count: int, record: bool = True) -> tuple[str, list[dict]]:
+SCENE_CHOICES = ("off", "mix", "only")
+SCENE_EVERY = 4  # "mix" on a cut with no passage changes to follow: a scene opens it and returns every fourth still
+
+
+def scenes_choice(state: dict | None) -> str:
+    """The Simple make body's ``scene_stills`` ("off" by default, "mix", "only"): whether the cut morphs scenes as
+    well as objects. ``scenes`` as a string means the same (the list form of ``scenes`` is the Advanced desk's scene
+    list and is left alone)."""
+    raw = (state or {}).get("scene_stills")
+    if raw is None and isinstance((state or {}).get("scenes"), str):
+        raw = state["scenes"]
+    text = str(raw or "off").strip().lower()
+    return text if text in SCENE_CHOICES else "off"
+
+
+def rows_of_kind(rows: list[dict], choice: str) -> list[dict]:
+    """The rows a cut may draw on under ``choice``: objects alone ("off"), scenes alone ("only"), both ("mix")."""
+    from xenoform import stills
+
+    if choice == "mix":
+        return list(rows)
+    want = "scene" if choice == "only" else "object"
+    return [r for r in rows if stills.kind_of(r) == want]
+
+
+def scene_slots(shots: list[dict] | None, count: int, choice: str = "mix", assign: list | None = None) -> list[int]:
+    """Which stills of a ``count``-still chain are scenes. Under "mix": the first still (the cut opens wide) and the
+    still every passage change lands on, a shot with a ``boundary`` or a new ``section`` (its morph is ``assign[i]``
+    when the long-song chain gives one, else ``i``, and morph ``m`` lands on still ``m``). A cut with no passage
+    changes to follow (a short clip's dense plan) gets a scene every ``SCENE_EVERY`` stills. "only" is every still,
+    "off" none."""
+    count = int(count)
+    if choice == "off" or count <= 0:
+        return []
+    if choice == "only":
+        return list(range(count))
+    slots = {0}
+    found = False
+    shots = list(shots or [])
+    for i, shot in enumerate(shots):
+        if i == 0:
+            continue
+        prev = shots[i - 1]
+        change = bool(shot.get("boundary")) or (shot.get("section") is not None and shot.get("section") != prev.get("section"))
+        if change:
+            found = True
+            k = int(assign[i]) if assign and i < len(assign) else i
+            if 0 <= k < count:
+                slots.add(k)
+    if not found:
+        slots.update(range(0, count, SCENE_EVERY))
+    return sorted(slots)
+
+
+def pick_stills(state: dict, count: int, record: bool = True, scene_at: list[int] | None = None) -> tuple[str, list[dict]]:
     """``count`` stills for the vibe. A story noun that names a pool object leads; ``record`` marks the picks
     as used so the next cut prefers the others (``stills.mark_used``).
+
+    Scenes (``scenes_choice``): "off" draws on objects alone, "only" on scene rows alone, "mix" puts a scene at
+    each index in ``scene_at`` (``scene_slots``: the passage changes, else every fourth) and objects between, no
+    still twice; past the scene rows the pool has, a slot is an object, and a pool with no scenes is objects only.
 
     Returns the *look* vibe (what the prompt, negative and tuning use) and the stills.
     A registry vibe without stills of its own borrows the pool ``vibes.pool()`` names,
@@ -178,16 +237,21 @@ def pick_stills(state: dict, count: int, record: bool = True) -> tuple[str, list
 
     vibe = vibe_for(state)
     asked = str(state.get("vibe") or "")
+    choice = scenes_choice(state)
     cat = catalogue()
     # the objects this vibe has used least first (a cut never laps a library bigger than itself, and the next cut
     # opens on objects the last one left alone), shipped order within; rows remember the vibe they are used under
-    pool = [{**r, "_vibe": vibe} for r in stills.order_fresh(vibe, list(cat[vibe]))]
+    rows = [{**r, "_vibe": vibe} for r in stills.order_fresh(vibe, list(cat[vibe]))]
+    scene_rows = [r for r in rows if stills.kind_of(r) == "scene"]
+    pool = [r for r in rows if stills.kind_of(r) == "object"]
     # the user's own shapes lead whatever the story names; a vibe that borrows a pool (none or too few stills of its
     # own) still leads with every still it does have, since those are in its own material
     own = [r for r in pool if r.get("own")]
     pool = [r for r in pool if not r.get("own")]
     if asked != vibe and asked in cat:
-        own = [{**r, "_vibe": asked} for r in stills.order_fresh(asked, list(cat[asked]))] + own
+        asked_rows = [{**r, "_vibe": asked} for r in stills.order_fresh(asked, list(cat[asked]))]
+        scene_rows = [r for r in asked_rows if stills.kind_of(r) == "scene"] + scene_rows
+        own = [r for r in asked_rows if stills.kind_of(r) == "object"] + own
     look_vibe = asked if asked in VIBE_LOOK else vibe
     words = stills.content_words(_story_words(state))  # the stop words out: "to" must not pick the reel-to-reel
     # objects that belong together: the cut draws on one family first (the idea line's word, else the vibe's
@@ -220,8 +284,24 @@ def pick_stills(state: dict, count: int, record: bool = True) -> tuple[str, list
     pool = _drop_bad_pairs(pool, {tuple(p) for p in autotune().get("bad_pairs") or []})
     # A chain of ``count`` takes the first ``count`` objects when the pool is bigger, so the walk below only
     # repeats pairings when the whole pool is smaller than the cut (a 20 s clip over twelve stills never repeats one).
-    pool = user_targets(state) + own + pool
-    picked = chain_walk(pool, count)
+    objects = user_targets(state) + own + pool
+    if choice == "only" and scene_rows:
+        picked = chain_walk(user_targets(state) + scene_rows, count)
+    elif choice == "mix" and scene_rows:
+        slots = scene_at if scene_at is not None else scene_slots(None, count, "mix")
+        slots = sorted({int(k) for k in slots if 0 <= int(k) < count})[:len(scene_rows)]  # no scene twice
+        n_obj = count - len(slots)
+        between = chain_walk(objects, n_obj) if objects else chain_walk(scene_rows[len(slots):] or scene_rows, n_obj)
+        picked, scenes_, si, oi = [], scene_rows[:len(slots)], 0, 0
+        for k in range(count):
+            if k in slots:
+                picked.append(scenes_[si])
+                si += 1
+            else:
+                picked.append(between[oi])
+                oi += 1
+    else:
+        picked = chain_walk(objects, count)
     if record:
         for under in {p["_vibe"] for p in picked if p.get("_vibe")}:
             stills.mark_used(under, [p["file"] for p in picked if p.get("_vibe") == under])
@@ -260,15 +340,39 @@ def gen_length(frames: int) -> int:
     return int(min(MAX_LEN, max(MIN_LEN, n)))
 
 
-def prompt_for(vibe: str, engine: str = "ltx095") -> str:
+# The morph prompt for a pair that touches a scene (``stills.kind`` "scene"): the object prompt's "one single
+# sculptural object ... stays centred" contradicts a wide frame at the guide, and LTX then abandons the scene at
+# frame 1 (a cut, not a morph: the dark shore into the astrolabe, 26 Oct). One variant per pair kind, so a run
+# encodes at most three extra prompts on the CPU.
+SCENE_OPENINGS = {
+    ("scene", "object"): "A wide landscape scene slowly melts and flows into one single sculptural object that forms at its centre",
+    ("object", "scene"): "One single sculptural object slowly melts and spreads out into a wide landscape scene",
+    ("scene", "scene"): "A wide landscape scene slowly melts and flows into another wide landscape scene",
+}
+
+
+def pair_kinds(a: dict | None, b: dict | None) -> tuple[str, str]:
+    """The kinds of a morph's two stills, ``("object", "object")`` for the plain chain."""
+    return tuple("scene" if str((row or {}).get("kind") or "") == "scene" else "object" for row in (a, b))
+
+
+def prompt_for(vibe: str, engine: str = "ltx095", kinds: tuple[str, str] | None = None) -> str:
     """One prompt per vibe, not per pair: the two guide stills carry the objects.
 
     The text encoder runs on the CPU (it is what pushed the card past 11.5 GB),
     so the prompt must stay identical across a run's morphs for ComfyUI to
-    encode it once and reuse it for every morph.
+    encode it once and reuse it for every morph. A pair that touches a scene
+    (``kinds``, see ``pair_kinds``) gets the scene variant, the same text for
+    every such pair in the run.
     """
     look = VIBE_LOOK.get(vibe, VIBE_LOOK["liquid-gold"])
     lead = "Use the provided start image as the first frame and the provided end image as the final frame anchor. " if engine == "ltx25" else ""
+    opening = SCENE_OPENINGS.get(tuple(kinds) if kinds else ("object", "object"))
+    if opening:
+        return lead + (
+            f"{opening}, one continuous liquid transformation, the picture never cuts, the frame stays steady, "
+            f"gentle slow camera drift, {look}, every feature appears once, cinematic, crisp, clean, high detail"
+        )
     return lead + (
         "One single sculptural object slowly melts and flows into another, one continuous liquid "
         f"transformation, the object stays centred, gentle slow camera drift, {look}, "
@@ -451,7 +555,7 @@ def _qa_reroll(client, graph, asset, a, b, vibe, engine, count, seed, dest, tune
     wf = client.workflows.from_file(str(graph))
     wf.set_input("6", "image", asset(a["path"]))
     wf.set_input("7", "image", asset(b["path"]))
-    wf.set_input("3", "text", prompt_for(vibe, engine))
+    wf.set_input("3", "text", prompt_for(vibe, engine, pair_kinds(a, b)))
     wf.set_input("4", "text", _vibes.negative(vibe) or NEGATIVE)
     wf.set_input("9", "width", WIDTH)
     wf.set_input("9", "height", HEIGHT)
@@ -554,7 +658,7 @@ def _render(
         wf = client.workflows.from_file(str(graph))
         wf.set_input("6", "image", asset(a["path"]))
         wf.set_input("7", "image", asset(b["path"]))
-        wf.set_input("3", "text", prompt_for(vibe, engine))
+        wf.set_input("3", "text", prompt_for(vibe, engine, pair_kinds(a, b)))
         wf.set_input("4", "text", _vibes.negative(vibe) or NEGATIVE)
         wf.set_input("9", "width", WIDTH)
         wf.set_input("9", "height", HEIGHT)

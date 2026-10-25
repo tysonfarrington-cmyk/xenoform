@@ -20,6 +20,12 @@ off the edge), soft (it is as sharp as the pool), duplicate (a near copy of an o
 are kept under ``<vibe>/rejected/`` for the eye, never listed. The five original vibes (liquid-gold, bloom,
 neon-night, ocean, cosmic) were graded after rendering; ``grade`` repeats that pass here.
 
+A second kind of still, **scenes** (``kind="scene"``): wide frames in the vibe's material and light with no single
+centred object, from ``configs/scenes.json`` and the ``scene`` prefix in ``still_prompts.json``, so a Simple cut can
+morph scenes and not only objects (the make body's ``scene_stills``: "mix" lands a scene on every passage change,
+"only" draws on scenes alone). A scene skips the object-shaped checks (no centred-subject size, no backdrop drift,
+no cropped edge, no zoom) and keeps the soft and duplicate checks.
+
 Nothing here touches ComfyUI's process. ``XENO_STILLS`` moves the local set (tests point it at a temp dir).
 """
 from __future__ import annotations
@@ -43,6 +49,7 @@ SHIPPED = Path(__file__).resolve().parent / "ui_static" / "objects"
 GRAPH = ROOT / "workflows" / "zimage_t2i_api.json"
 SUBJECTS = ROOT / "configs" / "subjects.json"
 PROMPTS = ROOT / "configs" / "still_prompts.json"
+SCENES = ROOT / "configs" / "scenes.json"
 VIBES_JSON = ROOT / "configs" / "vibes.json"
 W, H = 1024, 576
 JPG_QUALITY = 92
@@ -56,6 +63,11 @@ MAX_OWN = 12             # own shapes a request renders
 MAX_GROW = 120           # stills one grow request renders
 MIN_POOL = 3             # grown stills a vibe with no shipped ones needs before it stops borrowing a pool
 DEFAULT_GROW = 36
+DEFAULT_GROW_SCENES = 8  # scenes one chip grows: the vibe's list is six to eight wide frames, a second pass varies the seed
+KINDS = ("object", "scene")
+# a scene is a whole frame: the wide-frame tail every scene prompt ends on when a vibe has no ``scene`` prefix
+SCENE_TAIL = ("a wide scene filling the whole frame edge to edge, no single centred object, no people, no faces, no text, "
+              "no letters, no watermark, crisp focus, high detail.")
 # the shipped pools' taste rule (tests/test_morph_pass.py): no retro or sci-fi props, whatever the catalogue says
 BANNED = ("rocket", "sputnik", "satellite", "film reel", "rotary", "vintage", "vinyl", "ringed planet", "gear", "clock", "phone")
 REASONS = ("backdrop", "size", "cropped", "soft", "duplicate")
@@ -124,19 +136,31 @@ def catalogue(shipped_rows: dict[str, list[dict]] | None = None) -> dict[str, li
     return out
 
 
+def kind_of(row: dict) -> str:
+    """``"scene"`` for a scene row, ``"object"`` for everything else (the shipped rows carry no kind)."""
+    return "scene" if str((row or {}).get("kind") or "") == "scene" else "object"
+
+
 def counts(vibe: str | None = None) -> dict:
-    """``shipped`` / ``grown`` / ``own`` / ``total`` for one vibe, or ``{vibe: counts}`` for all."""
+    """``shipped`` / ``grown`` / ``own`` / ``scenes`` / ``total`` for one vibe, or ``{vibe: counts}`` for all
+    (``grown`` is the objects grown here; scenes are counted apart)."""
     cat = catalogue()
     if vibe is not None:
         rows = cat.get(vibe) or []
         n_ship = sum(1 for r in rows if r.get("shipped"))
         n_own = sum(1 for r in rows if r.get("own"))
-        return {"shipped": n_ship, "grown": len(rows) - n_ship - n_own, "own": n_own, "total": len(rows)}
+        n_scene = sum(1 for r in rows if kind_of(r) == "scene")
+        return {"shipped": n_ship, "grown": len(rows) - n_ship - n_own - n_scene, "own": n_own, "scenes": n_scene, "total": len(rows)}
     return {v: counts(v) for v in cat}
 
 
 def nouns_in(vibe: str) -> set[str]:
-    return {str(r.get("noun") or "").lower() for r in catalogue().get(vibe) or []}
+    """The object nouns a vibe has (scenes apart: a scene and an object may share a word)."""
+    return {str(r.get("noun") or "").lower() for r in catalogue().get(vibe) or [] if kind_of(r) == "object"}
+
+
+def scene_nouns_in(vibe: str) -> set[str]:
+    return {str(r.get("noun") or "").lower() for r in catalogue().get(vibe) or [] if kind_of(r) == "scene"}
 
 
 # ------------------------------------------------------------------------------------------------ usage
@@ -297,8 +321,9 @@ def family_nouns(vibe: str, family: str, count: int, have: set[str] | None = Non
     return out
 
 
-def clean_noun(text: str) -> str:
-    """A typed shape as a noun: lowercase, one space, no article, letters and digits only, 40 characters."""
+def clean_noun(text: str, limit: int = 40) -> str:
+    """A typed shape as a noun: lowercase, one space, no article, letters and digits only, ``limit`` characters
+    (40 for an object; a scene subject gets 80, since "corridor of mirrors in violet light" is a sentence)."""
     low = re.sub(r"[^a-z0-9 \-']+", " ", str(text).lower())
     low = re.sub(r"\s+", " ", low).strip()
     while True:  # "one single lantern", "the astrolabe": the articles and counters go, however many lead
@@ -306,7 +331,43 @@ def clean_noun(text: str) -> str:
         if stripped == low:
             break
         low = stripped
-    return low[:40].strip()
+    return low[:limit].strip()
+
+
+SCENE_NOUN_LIMIT = 80
+
+
+def scene_subjects() -> dict:
+    return _read_json(SCENES, {})
+
+
+def scene_list(vibe: str) -> list[str]:
+    """The vibe's scene subjects from ``configs/scenes.json`` (else the default list), cleaned, in order."""
+    data = scene_subjects()
+    raw = (data.get("vibes") or {}).get(vibe) or data.get("default") or []
+    out: list[str] = []
+    for item in raw:
+        noun = clean_noun(item, SCENE_NOUN_LIMIT)
+        if noun and noun not in out:
+            out.append(noun)
+    return out
+
+
+def scene_nouns_for(vibe: str, count: int, have: set[str] | None = None, seed: int | None = None) -> list[str]:
+    """``count`` scene subjects for ``vibe``: the ones it has not rendered yet first (list order, or shuffled by
+    ``seed``), then the list again, since a second render of the shore on a new seed is a different picture (the
+    duplicate check catches a near copy). Empty only when the catalogue has no list at all."""
+    rows = scene_list(vibe)
+    if not rows or count <= 0:
+        return []
+    have = {h.lower() for h in (have or set())}
+    fresh = [n for n in rows if n not in have]
+    if seed is not None:
+        random.Random(seed).shuffle(fresh)
+    out = list(fresh)
+    while len(out) < count:
+        out.extend(rows)
+    return out[:count]
 
 
 def own_nouns(text: str | list) -> list[str]:
@@ -334,10 +395,21 @@ def _vibe_meta(vibe: str) -> dict:
     return next((x for x in items if x.get("id") == vibe), {})
 
 
-def prompt_for(vibe: str, noun: str) -> str:
+def prompt_for(vibe: str, noun: str, kind: str = "object") -> str:
     """The still's prompt: the pool's own style prefix and subject sentence when the vibe has one, else the
-    vibe's ``still_style`` with a plain subject sentence in its material."""
+    vibe's ``still_style`` with a plain subject sentence in its material. A scene takes the vibe's ``scene``
+    prefix (wide frame, the vibe's material and light, no centred object, no people, no text) and the subject as a
+    sentence ("Dark shore under a star field, seen wide."); a vibe without one gets its ``look`` in front of the
+    wide-frame tail."""
     row = prompts().get(vibe) or {}
+    if kind == "scene":
+        prefix = str(row.get("scene") or "").strip()
+        if not prefix:
+            meta = _vibe_meta(vibe)
+            look = str(meta.get("look") or meta.get("still_style") or "").strip().rstrip(".")
+            prefix = f"Cinematic wide establishing shot, {look}, {SCENE_TAIL}" if look else f"Cinematic wide establishing shot, {SCENE_TAIL}"
+        noun = str(noun).strip()
+        return f"{prefix} {noun[:1].upper()}{noun[1:]}, seen wide.".strip()
     prefix = str(row.get("prefix") or "").strip()
     subject = str(row.get("subject") or "").strip()
     if not prefix:
@@ -449,36 +521,38 @@ RESIDUAL_FLOOR = 18.0
 DUPLICATE_NCC = 0.93
 
 
-def check(path: Path | str, prof: dict, *, extra_greys: list | None = None) -> dict:
+def check(path: Path | str, prof: dict, *, extra_greys: list | None = None, kind: str = "object") -> dict:
     """The verdict on one candidate against ``prof``: ``ok`` and the reasons it failed (``why``), with the
     measures behind them. Thresholds scale with the pool: a backdrop may drift three times as far as the pool's
     own members do (never under ``BACKDROP_FLOOR`` of 255) and the border ring must be as smooth as the pool's
     (a quadratic surface fits it within ``RESIDUAL_FLOOR``, else bars or clutter), the area may be 0.4 times the
     smallest or twice the largest, the subject may touch one edge (none, when the pool is a clean void; any, when
     the pool's own stills are scene-like), sharpness must reach a third of the pool's median, and a still that
-    correlates with a member above ``DUPLICATE_NCC`` is the same object again."""
+    correlates with a member above ``DUPLICATE_NCC`` is the same object again. A scene (``kind="scene"``) is a
+    whole frame with no backdrop and no centred subject, so only soft and duplicate apply to it."""
     f = features(path)
     why: list[str] = []
-    if prof.get("border") is not None:
+    drift = 0.0
+    if kind == "scene":
+        pass  # no backdrop, size or cropped check: the frame is the picture
+    elif prof.get("border") is not None:
         drift = float(np.abs(f["border"] - prof["border"]).mean())
         if drift > max(BACKDROP_FLOOR, 3.0 * float(prof.get("spread") or 0.0)):
             why.append("backdrop")
-    else:
-        drift = 0.0
     # a backdrop the smooth fit cannot describe (side bars, a cluttered room, a table edge) is structure, not a gradient
-    if f["residual"] > max(RESIDUAL_FLOOR, 3.0 * float(prof.get("residual") or 0.0)) and "backdrop" not in why:
+    if kind != "scene" and f["residual"] > max(RESIDUAL_FLOOR, 3.0 * float(prof.get("residual") or 0.0)) and "backdrop" not in why:
         why.append("backdrop")
     # size holds the pool's scale loosely: a pool's own twelve already span three to four times in area, and a morph
     # between a small and a large object is a zoom, not a fault; what it catches is the frame-filler and the speck
     amin, amax = prof.get("area") or (None, None)
     lo = max(0.03, 0.4 * amin) if amin is not None else 0.03
     hi = min(0.85, 2.0 * amax) if amax is not None else 0.85
-    if not lo <= f["area"] <= hi:
+    if kind != "scene" and not lo <= f["area"] <= hi:
         why.append("size")
     # a pool whose own stills reach two or more edges (smoke, rain, wet reflections: neon-noir) is scene-like, and
     # the mask cannot tell object from backdrop at the frame edge there, so the cropped check steps aside for it
     pool_edges = int(prof.get("edges") or 0)
-    if f["edges"] > (4 if pool_edges >= 2 else 1):
+    if kind != "scene" and f["edges"] > (4 if pool_edges >= 2 else 1):
         why.append("cropped")
     if prof.get("sharp") is not None and f["sharp"] < 0.3 * float(prof["sharp"]):
         why.append("soft")
@@ -570,33 +644,42 @@ def _next_index(folder: Path) -> int:
     return (max(nums) + 1) if nums else 0
 
 
-def pool_profile(vibe: str) -> dict:
+def pool_profile(vibe: str, kind: str = "object") -> dict:
     """The profile a candidate for ``vibe`` is checked against: the look (backdrop, size, edges, sharpness) comes
     from the shipped stills alone, so a batch cannot drag the vibe's look toward itself import by import; the
-    duplicate check sees every still, shipped or grown. A vibe with no shipped stills profiles on what it has."""
+    duplicate check sees every object still, shipped or grown. A vibe with no shipped stills profiles on what it
+    has. A scene candidate (``kind="scene"``) takes the pool's sharpness and is a duplicate only of another scene."""
     rows = catalogue().get(vibe) or []
-    anchor = [r["path"] for r in rows if r.get("shipped")] or [r["path"] for r in rows]
+    objects = [r for r in rows if kind_of(r) == "object"]
+    anchor = [r["path"] for r in objects if r.get("shipped")] or [r["path"] for r in objects]
     prof = profile(anchor)
-    extra = [features(r["path"])["grey"] for r in rows if not r.get("shipped")] if prof["n"] else []
+    if kind == "scene":
+        prof["greys"] = [features(r["path"])["grey"] for r in rows if kind_of(r) == "scene"]
+        return prof
+    extra = [features(r["path"])["grey"] for r in objects if not r.get("shipped")] if prof["n"] else []
     prof["greys"] = list(prof.get("greys") or []) + extra
     return prof
 
 
 def ingest(vibe: str, source: Path | str, noun: str, *, prof: dict | None = None, own: bool = False,
            origin: str = "Z-Image Turbo (Apache 2.0), grown on this machine", extra_greys: list | None = None,
-           seed: int | None = None, keep_rejects: bool = True) -> dict:
+           seed: int | None = None, keep_rejects: bool = True, kind: str = "object") -> dict:
     """One candidate into the vibe's local set: graded if the vibe grades, checked against the pool, then
     either written as the next numbered jpg and listed in ``stills.json`` (``kept`` True) or set aside under
-    ``rejected/`` with its reasons in the name. Returns the verdict with ``file`` when kept."""
+    ``rejected/`` with its reasons in the name. Returns the verdict with ``file`` when kept. A scene is neither
+    graded nor zoomed (the frame is the picture) and the row carries ``kind: "scene"``."""
     folder = root() / vibe
     folder.mkdir(parents=True, exist_ok=True)
-    prof = prof if prof is not None else pool_profile(vibe)
-    im = normalise_scale(grade(Image.open(source).convert("RGB"), vibe))
+    kind = "scene" if kind == "scene" else "object"
+    prof = prof if prof is not None else pool_profile(vibe, kind)
+    im = Image.open(source).convert("RGB")
+    if kind != "scene":
+        im = normalise_scale(grade(im, vibe))
     if im.size != (W, H):
         im = im.resize((W, H), Image.LANCZOS)
     tmp = folder / f"_candidate_{slug(noun)}.jpg"
     im.save(tmp, quality=JPG_QUALITY)
-    verdict = check(tmp, prof, extra_greys=extra_greys)
+    verdict = check(tmp, prof, extra_greys=extra_greys, kind=kind)
     verdict["noun"] = noun
     if not verdict["ok"]:
         if keep_rejects:
@@ -617,6 +700,8 @@ def ingest(vibe: str, source: Path | str, noun: str, *, prof: dict | None = None
            "qa": {k: verdict[k] for k in ("backdrop", "residual", "area", "edges", "sharp", "dup")}}
     if own:
         row["own"] = True
+    if kind == "scene":
+        row["kind"] = "scene"
     if seed is not None:
         row["seed"] = int(seed)
     idx = _read_json(index_path(), {})
@@ -627,24 +712,26 @@ def ingest(vibe: str, source: Path | str, noun: str, *, prof: dict | None = None
 
 
 def import_folder(vibe: str, folder: Path | str, *, origin: str = "", own: bool = False,
-                  progress: Callable | None = None) -> dict:
+                  progress: Callable | None = None, kind: str = "object") -> dict:
     """Every png or jpg in ``folder`` as a candidate for ``vibe`` (the noun from the file name, a leading
     number and a reject's reason suffix dropped): the same checks and grade as a grown still, so a vibe's
-    ``rejected/`` folder can be run again after the checks change. Returns the tally."""
+    ``rejected/`` folder can be run again after the checks change. ``kind="scene"`` imports them as scenes.
+    Returns the tally."""
     folder = Path(folder)
+    kind = "scene" if kind == "scene" else "object"
     files = sorted(p for p in folder.iterdir() if p.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp"})
-    prof = pool_profile(vibe)
-    have = nouns_in(vibe)
+    prof = pool_profile(vibe, kind)
+    have = scene_nouns_in(vibe) if kind == "scene" else nouns_in(vibe)
     greys: list = []
-    out = {"vibe": vibe, "asked": len(files), "kept": 0, "rejected": {}, "rejected_n": 0, "skipped": 0, "files": []}
+    out = {"vibe": vibe, "kind": kind, "asked": len(files), "kept": 0, "rejected": {}, "rejected_n": 0, "skipped": 0, "files": []}
     reasons = "|".join(REASONS + ("render",))
     for i, p in enumerate(files):
         stem = re.sub(rf"(_(?:{reasons}))+$", "", re.sub(r"^\d+[_\- ]*", "", p.stem))  # a reject's name carries its reasons
-        noun = clean_noun(stem.replace("_", " "))
-        if not _ok_noun(noun) or (noun in have and not own):
+        noun = clean_noun(stem.replace("_", " "), SCENE_NOUN_LIMIT if kind == "scene" else 40)
+        if not _ok_noun(noun) or (noun in have and not own and kind != "scene"):
             out["skipped"] += 1
             continue
-        v = ingest(vibe, p, noun, prof=prof, own=own, origin=origin or f"Z-Image Turbo (Apache 2.0), imported from {folder.name}", extra_greys=greys)
+        v = ingest(vibe, p, noun, prof=prof, own=own, origin=origin or f"Z-Image Turbo (Apache 2.0), imported from {folder.name}", extra_greys=greys, kind=kind)
         if v["kept"]:
             greys.append(v["grey"])  # a reject must not block a later good one as its duplicate
             out["kept"] += 1
@@ -679,15 +766,24 @@ def estimate_seconds(count: int) -> float:
     return 20.0 + SECONDS_PER_STILL * max(0, int(count))
 
 
-def plan(vibe: str, count: int = DEFAULT_GROW, *, nouns: list[str] | None = None, own: bool = False, seed: int | None = None) -> dict:
-    """What a grow would render: the nouns and prompts, before any GPU work (the desk shows it, tests use it)."""
-    count = max(1, min(int(count or DEFAULT_GROW), MAX_GROW))
+def plan(vibe: str, count: int | None = None, *, nouns: list[str] | None = None, own: bool = False, seed: int | None = None,
+         kind: str = "object") -> dict:
+    """What a grow would render: the nouns and prompts, before any GPU work (the desk shows it, tests use it).
+    ``kind="scene"`` plans scene subjects (``DEFAULT_GROW_SCENES`` of them, from ``configs/scenes.json``; typed
+    ``nouns`` are scene subjects too, never "own")."""
+    kind = "scene" if kind == "scene" else "object"
+    own = bool(own) and kind != "scene"
+    count = max(1, min(int(count or (DEFAULT_GROW_SCENES if kind == "scene" else DEFAULT_GROW)), MAX_GROW))
     if own:
         picked = own_nouns(nouns or [])
+    elif kind == "scene":
+        picked = [clean_noun(n, SCENE_NOUN_LIMIT) for n in (nouns or []) if clean_noun(n, SCENE_NOUN_LIMIT)] \
+            or scene_nouns_for(vibe, count, have=scene_nouns_in(vibe), seed=seed)
+        picked = picked[:MAX_GROW]
     else:
         picked = [clean_noun(n) for n in (nouns or []) if clean_noun(n)] or nouns_for(vibe, count, have=nouns_in(vibe), seed=seed)
         picked = picked[:MAX_GROW]
-    return {"vibe": vibe, "nouns": picked, "prompts": [prompt_for(vibe, n) for n in picked], "own": bool(own),
+    return {"vibe": vibe, "kind": kind, "nouns": picked, "prompts": [prompt_for(vibe, n, kind) for n in picked], "own": bool(own),
             "seconds": estimate_seconds(len(picked)), "have": counts(vibe)}
 
 
@@ -697,16 +793,20 @@ def _client(cfg: dict | None):
     return restyle._make_client(cfg or {"comfy": {"proxy_url": "http://127.0.0.1:8189"}})
 
 
-def grow(vibe: str, count: int = DEFAULT_GROW, *, nouns: list[str] | None = None, own: bool = False, cfg: dict | None = None,
+def grow(vibe: str, count: int | None = None, *, nouns: list[str] | None = None, own: bool = False, cfg: dict | None = None,
          seed: int | None = None, progress: Callable | None = None, cancel: Callable[[], bool] | None = None,
-         client=None, sheet: bool = True) -> dict:
+         client=None, sheet: bool = True, kind: str = "object") -> dict:
     """Render ``count`` new stills for ``vibe`` (or the user's own ``nouns`` with ``own``), check each against the
     pool, keep the good ones. Every prompt is queued at once and collected in order; ``progress(done, total,
     kept)`` after each; ``cancel()`` true stops collecting (queued renders still finish on the GPU, unused).
-    Returns the tally: ``asked``, ``made``, ``kept``, ``rejected`` by reason, ``files``, ``seconds``."""
-    p = plan(vibe, count, nouns=nouns, own=own, seed=seed)
+    ``kind="scene"`` renders scenes through the same graph (the scene prompt, the relaxed checks, ``kind`` on the
+    row). Returns the tally: ``asked``, ``made``, ``kept``, ``rejected`` by reason, ``files``, ``seconds``."""
+    kind = "scene" if kind == "scene" else "object"
+    p = plan(vibe, count, nouns=nouns, own=own, seed=seed, kind=kind)
+    own = p["own"]
     picked = p["nouns"]
-    out = {"vibe": vibe, "own": bool(own), "asked": len(picked), "made": 0, "kept": 0, "rejected": {}, "rejected_n": 0, "files": [], "seconds": 0.0, "nouns": picked}
+    out = {"vibe": vibe, "kind": kind, "own": bool(own), "asked": len(picked), "made": 0, "kept": 0, "rejected": {}, "rejected_n": 0,
+           "files": [], "seconds": 0.0, "nouns": picked}
     if not picked:
         out["note"] = "nothing to render: no subjects left for this vibe" if not own else "type a shape or two first"
         return out
@@ -716,13 +816,13 @@ def grow(vibe: str, count: int = DEFAULT_GROW, *, nouns: list[str] | None = None
     jobs = []
     for i, noun in enumerate(picked):
         wf = client.workflows.from_file(str(GRAPH))
-        wf.set_input(N_TEXT, "text", prompt_for(vibe, noun))
+        wf.set_input(N_TEXT, "text", prompt_for(vibe, noun, kind))
         wf.set_input(N_SEED, "seed", base_seed + i)
         wf.set_input(N_SIZE, "width", W)
         wf.set_input(N_SIZE, "height", H)
         wf.set_input(N_SAVE, "filename_prefix", f"xenoform/stills/{vibe}")
         jobs.append((noun, base_seed + i, client.submit(wf)))
-    prof = pool_profile(vibe)
+    prof = pool_profile(vibe, kind)
     greys: list = []
     incoming = root() / vibe / "_incoming"
     incoming.mkdir(parents=True, exist_ok=True)
@@ -744,7 +844,7 @@ def grow(vibe: str, count: int = DEFAULT_GROW, *, nouns: list[str] | None = None
                 progress(k + 1, len(jobs), out["kept"])
             continue
         out["made"] += 1
-        v = ingest(vibe, src, noun, prof=prof, own=own, extra_greys=greys, seed=sd)
+        v = ingest(vibe, src, noun, prof=prof, own=own, extra_greys=greys, seed=sd, kind=kind)
         src.unlink(missing_ok=True)
         if v["kept"]:
             greys.append(v["grey"])
@@ -762,7 +862,7 @@ def grow(vibe: str, count: int = DEFAULT_GROW, *, nouns: list[str] | None = None
     except OSError:
         pass
     if sheet and kept_paths:
-        out["sheet"] = str(contact_sheet(kept_paths, root() / vibe / "sheet.jpg"))
+        out["sheet"] = str(contact_sheet(kept_paths, root() / vibe / ("scenes.jpg" if kind == "scene" else "sheet.jpg")))
     out["seconds"] = round(time.time() - t0, 1)
     return out
 

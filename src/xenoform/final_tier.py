@@ -205,16 +205,20 @@ def final_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
     from xenoform.cloud_morph import _client, _job_result
 
     client = client or _client(cfg)
-    prompt = mp.prompt_for(vibe, "ltx25")
     size = sizes(vertical)
     if vertical:
         from xenoform.portrait import PROMPT_SUFFIX, portrait_stills
 
         stills = portrait_stills(stills, Path(work), background=(state or {}).get("still_background"))
-        prompt = prompt.rstrip() + PROMPT_SUFFIX
     from xenoform.guardrails import guard_prompt, negative_for
 
-    prompt = guard_prompt(prompt, state)
+    def prompt_for_pair(i: int) -> str:  # a pair that touches a scene gets the scene prompt (morph_pass.prompt_for)
+        text = mp.prompt_for(vibe, "ltx25", mp.pair_kinds(stills[i], stills[i + 1]))
+        if vertical:
+            text = text.rstrip() + PROMPT_SUFFIX
+        return guard_prompt(text, state)
+
+    prompt = prompt_for_pair(0) if len(stills) > 1 else guard_prompt(mp.prompt_for(vibe, "ltx25"), state)
     negative = negative_for(NEGATIVE, state)
     tune = tuned(vibe)
     assets: dict = {}
@@ -226,7 +230,7 @@ def final_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
         return assets[path]
 
     def one(i: int, shot: dict, with_upscale: bool) -> Path:
-        wf = client.workflows.from_json(graph(prompt, negative=negative, length=gen_length(float(shot.get("render_s") or shot["seconds"])),
+        wf = client.workflows.from_json(graph(prompt_for_pair(i), negative=negative, length=gen_length(float(shot.get("render_s") or shot["seconds"])),
                                               seed=int(seed) + i, upscale=with_upscale,
                                               width=size["render"][0], height=size["render"][1],
                                               out_w=size["out"][0], out_h=size["out"][1], **tune))

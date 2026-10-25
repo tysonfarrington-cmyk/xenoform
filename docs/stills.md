@@ -76,6 +76,37 @@ studio where its pool sits on a dark gradient; iridescent-glass lost 10, mostly 
 have; the regenerated chrome kept 31), 45 skipped as banned props (pocket watch, vinyl record, cassette, vintage
 microphone) or nouns the pool already had. The grey-studio chrome pass fails whole on backdrop.
 
+## Scenes
+
+A second kind of still beside the objects: **scenes**, wide frames in the vibe's material and light with no single
+centred object (cosmic: a dark shore under a star field, a corridor of mirrors in violet light; neon-noir: a rain-slick
+alley lit by magenta and cyan neon). `configs/scenes.json` lists four to eight subjects per featured vibe (and a default
+list for the rest) and `configs/still_prompts.json` carries a `scene` prefix per vibe: wide frame, the vibe's material
+and light, no centred object, no people, no text. They render through the same Z-Image graph into the vibe's folder,
+listed in `stills.json` with `kind: "scene"`:
+
+```bash
+xenoform stills grow cosmic --kind scene --count 8
+```
+
+The Library row's **Grow 8 scenes** chip and `POST /api/stills/grow` with `kind: "scene"` do the same. A scene is a whole
+frame, so the object-shaped checks step aside for it (no centred-subject size, no backdrop drift, no cropped edge, and no
+zoom in `normalise_scale`); **soft** and **duplicate** still apply, the duplicate check against the vibe's other scenes.
+
+Fine-tune → **Scenes** (the make body's `scene_stills`: `"off"` by default, `"mix"`, `"only"`) says how the chain uses
+them. **Mix** lands a scene on every passage change (the story plan's section boundaries; on a short clip with no
+passages, the first still and every fourth) with objects between, so the shore morphs into the orb and the orb into the
+corridor of mirrors; **Only** morphs scenes alone; **Off** never draws a scene, even when the vibe has them. No still
+repeats either way: past the scenes a vibe has, a slot is an object. The record (`simple/simple.json`) carries
+`scene_mode` and `scene_files` (which stills were scenes), the stills animatic previews the same slots, and a re-cut
+keeps them. A vibe asked for scenes it has none of cuts objects only and says so in the record's notes.
+
+A morph that touches a scene gets its own prompt (`morph_pass.prompt_for(kinds=)`: "a wide landscape scene slowly melts
+and flows into one single sculptural object that forms at its centre", and the reverse, and scene to scene) and its
+scene guide stays uncompressed: the object prompt's "one single object ... stays centred" contradicts a wide frame at
+the guide, and LTX then abandoned the scene at frame 1 (a cut, not a morph) on the first cosmic test. One variant per
+pair kind, so a run encodes at most three more prompts on the CPU.
+
 ## The chain
 
 `morph_pass.pick_stills` orders the pool before walking it: **your own shapes first**, then the objects the vibe has

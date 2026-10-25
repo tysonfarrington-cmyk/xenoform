@@ -449,8 +449,8 @@ def grow_family_for_cut(state: dict, vibe: str, need: int, cfg: dict | None, rep
     from xenoform import morph_pass as _mp
     from xenoform import stills as _stills
 
-    if engine == "mock" or state.get("auto_grow") is False:
-        return None
+    if engine == "mock" or state.get("auto_grow") is False or _mp.scenes_choice(state) == "only":
+        return None  # a scenes-only cut draws on no object family
     # the family exactly as pick_stills will sort on it: looked up under the asked vibe (a vibe that borrows a pool
     # keeps its own weights), the idea's named family first, else the vibe's own with the seed turning a tie
     asked = str(state.get("vibe") or "") or vibe
@@ -478,6 +478,15 @@ def grow_family_for_cut(state: dict, vibe: str, need: int, cfg: dict | None, rep
     except Exception as exc:  # the cut goes on with the pool it has
         log.warning("grow for idea skipped: %s", exc)
         return None
+
+
+def _scene_kw(state: dict, shots: list[dict], count: int, assign: list | None = None) -> dict:
+    """``scene_at`` for ``stills_for`` (``morph_pass.scene_slots``: the stills of the chain that are scenes), only when
+    the scenes choice is on, so an object cut calls ``stills_for(state, count)`` exactly as before."""
+    from xenoform import morph_pass as _mp
+
+    choice = _mp.scenes_choice(state)
+    return {"scene_at": _mp.scene_slots(shots, count, choice, assign=assign)} if choice != "off" else {}
 
 
 def _merge_to(shots: list[dict], n: int) -> list[dict]:
@@ -517,17 +526,22 @@ def long_song_chain(state: dict, directed: dict, audio_path: Path, shots: list[d
     capping it; the idea's family grown first when ``grow``; past the cap the song is re-planned with fewer, longer
     shots on the bars and merged down to the count when the planner's roles still outnumber it. Returns
     ``(shots, plan, chain, notes)``."""
-    from xenoform.morph_pass import catalogue as _catalogue, vibe_for as _vibe_for
+    from xenoform.morph_pass import catalogue as _catalogue, rows_of_kind as _rows_of_kind, scenes_choice as _scenes_choice
+    from xenoform.morph_pass import vibe_for as _vibe_for
 
     notes: list[dict] = []
     duration = float(directed.get("duration") or 0.0)
     beats_list = list(directed.get("beats") or [])
     pool_vibe = _vibe_for(state)
     asked = str(state.get("vibe") or "")
+    choice = _scenes_choice(state)
 
     def pool_count() -> int:
+        # the rows the scenes choice lets the cut draw on (objects alone, scenes alone, both); a vibe asked for scenes
+        # it has none of falls back to its objects, as the pick does
         cat = _catalogue()
-        return len(cat.get(pool_vibe) or []) + (len(cat.get(asked) or []) if asked and asked != pool_vibe else 0)
+        rows = list(cat.get(pool_vibe) or []) + (list(cat.get(asked) or []) if asked and asked != pool_vibe else [])
+        return len(_rows_of_kind(rows, choice)) or len(rows)
 
     pool_n = pool_count()
     chain = clip_plan(shots, duration, beats_list, pool=pool_n or None, tier=opt["tier"])
@@ -982,8 +996,11 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
                report: Callable[[str, float, str], None], *, cancel: Callable[[], bool] | None = None,
                client=None, engine: str | None = None) -> dict:
     """Plan, render on open weights, then compose with the beat FX at the chosen aspect."""
+    from xenoform import morph_pass as _mp
+
     started = time.perf_counter()
     opt = options(state)
+    scene_choice = _mp.scenes_choice(state)  # off / mix / only: whether the chain morphs scenes as well as objects
     work = Path(work) / "simple"
     work.mkdir(parents=True, exist_ok=True)
     shots, plan = shots_for(state, directed, Path(audio_path))
@@ -996,7 +1013,8 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
         # a cut past the cap gets fewer, longer shots instead of a loop (long_song_chain, shared with the animatic)
         shots, plan, chain, pre_notes = long_song_chain(state, directed, Path(audio_path), shots, plan, opt, cfg=cfg,
                                                         report=report, engine=engine)
-        vibe, stills = stills_for({**state, "cut_plan": None}, chain["morphs"] + 1)  # n morphs need n + 1 distinct stills
+        vibe, stills = stills_for({**state, "cut_plan": None}, chain["morphs"] + 1,  # n morphs need n + 1 distinct stills
+                                  **_scene_kw(state, shots, chain["morphs"] + 1, chain["assign"]))
         for shot, ci in zip(shots, chain["assign"]):
             shot["clip"] = int(ci)
             shot["render_s"] = int(chain["clip_s"])
@@ -1008,7 +1026,8 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
                                 f"no object twice")
     else:
         render_shots = shots
-    vibe, stills = (vibe, stills) if long_song else stills_for({**state, "cut_plan": plan if plan.get("stills") else None}, len(shots) + 1)
+    vibe, stills = (vibe, stills) if long_song else stills_for({**state, "cut_plan": plan if plan.get("stills") else None}, len(shots) + 1,
+                                                                **_scene_kw(state, shots, len(shots) + 1))
     repeat_note = ""
     unique = len({str(s.get("path")) for s in stills})
     if unique < len(stills) and not plan.get("stills") and not long_song:
@@ -1017,7 +1036,7 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
         shots, plan = shots_for({**state, "morph_count": n}, directed, Path(audio_path))
         if len(shots) > n:  # a planner that ignores the count: keep the first n shots, stretched to fill
             shots = _stretch(shots[:n], float(directed.get("duration") or 0.0))
-        vibe, stills = stills_for({**state, "cut_plan": None}, len(shots) + 1)
+        vibe, stills = stills_for({**state, "cut_plan": None}, len(shots) + 1, **_scene_kw(state, shots, len(shots) + 1))
         render_shots = shots
         repeat_note = (f"Only {unique} distinct stills in the {vibe} pool: {len(shots)} longer morphs instead of "
                        f"repeating stills. Add stills (or pick a bigger vibe) for faster morphing.")
@@ -1053,6 +1072,12 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
         size = (int(fmt.get("width") or size[0]), int(fmt.get("height") or size[1]))  # the house output size (1080x1920)
     fps = int(fmt.get("fps") or beatfx.FPS) if vertical_house else beatfx.FPS
     notes: list[dict] = list(pre_notes)
+    scene_files = [s["file"] for s in stills if s.get("kind") == "scene"]  # which stills of the chain are scenes
+    if scene_choice != "off" and not scene_files:
+        notes.append({"scenes": f"{scene_choice} asked, but the {vibe} pool has no scenes yet: objects only "
+                                f"(Fine-tune > Library > Grow scenes, or xenoform stills grow {vibe} --kind scene)"})
+    elif scene_files:
+        report("restyle", 0.08, f"{len(scene_files)} scene{'s' if len(scene_files) != 1 else ''} in the chain ({scene_choice})")
     report("restyle", 0.1, f"{len(render_shots)} {'Final (LTX-2.3)' if engine == 'ltx23' else 'Draft (LTX 0.9.5)'} morphs Â· "
                            f"{len(shots)} shots Â· {opt['energy']} Â· {opt['aspect']}")
     if native_draft:
@@ -1198,13 +1223,14 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
             "vertical": ("native" if native else "crop") if opt["aspect"] == "9:16" else None,
             "fx": opt["fx"], "overlay": made["overlay"], "end_card": card, "vibe": vibe,
             "stills": [s["file"] for s in stills], "shots": shots, "plan_name": plan.get("name", ""), "chain": chain or None,
+            "scene_mode": scene_choice, "scene_files": scene_files,  # the scenes choice and which stills were scenes
             "families": sorted({_fam for _fam in (s.get("family") or "" for s in stills) if _fam}),
             "plan_shots": plan_shots, "clips": [str(c) for c in clips], "audio_path": str(audio_path),
             "transitions": transitions, "size": list(size) if size else None, "fps": fps, "seed": seed,
             "palette_image": str(stills[0]["path"]) if stills else None, "vertical_house": vertical_house,
             "recut_state": {k: state.get(k) for k in ("vibe", "aspect", "quality_tier", "energy_preset", "dance_fx", "stem_orbit", "pace",
                                                       "beat_fx", "beat_overlay", "end_card", "stems_path", "macros", "still_background",
-                                                      "performer", "performer_style", "foreshadow")},
+                                                      "performer", "performer_style", "foreshadow", "scene_stills")},
             "roles": plan.get("roles"), "performer": performer_info, "own": own_info,
             "handoffs_s": [s["start"] for s in shots] + [shots[-1]["end"]], "fallbacks": notes,
             "beats": [round(float(b), 4) for b in (directed.get("beats") or [])],
@@ -1244,10 +1270,12 @@ def stills_animatic(directed: dict, state: dict, audio_path: Path, out_path: Pat
         # the same chain the render will make (pool cap, re-plan, merge), so the animatic previews the same cut; it
         # does not grow the library, so a cut that grows its family may afford a few more morphs than previewed
         shots, plan, chain, _ = long_song_chain(state, directed, Path(audio_path), shots, plan, options(state), grow=False)
-        vibe, pool = stills_for({**state, "cut_plan": None}, chain["morphs"] + 1, record=False)
+        vibe, pool = stills_for({**state, "cut_plan": None}, chain["morphs"] + 1, record=False,
+                                **_scene_kw(state, shots, chain["morphs"] + 1, chain["assign"]))
         picks = [pool[ci] for ci in chain["assign"]]
     else:
-        vibe, pool = stills_for({**state, "cut_plan": plan if plan.get("stills") else None}, len(shots) + 1, record=False)
+        vibe, pool = stills_for({**state, "cut_plan": plan if plan.get("stills") else None}, len(shots) + 1, record=False,
+                                **_scene_kw(state, shots, len(shots) + 1))
         picks = pool[:len(shots)]
     w, h = int(size[0]), int(size[1])
     if h > w:  # portrait: the whole object re-laid on the house ground, as the render will be

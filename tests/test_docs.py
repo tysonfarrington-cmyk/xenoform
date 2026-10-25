@@ -81,3 +81,13 @@ def test_reproduce_page_exists_and_points_at_the_bundled_song():
 
 def test_changelog_has_the_release():
     assert "## 0.3.0" in _read("CHANGELOG.md")
+
+
+def test_scenes_are_in_the_public_docs():
+    """Scenes (26 Oct): the README names them, the unreleased changelog carries the line, the stills page has the section."""
+    readme = _read("README.md")
+    assert "scenes" in readme and "Grow 8 scenes" in readme
+    unreleased = _read("CHANGELOG.md").split("## 0.3.3")[1].split("## 0.3.2")[0]
+    assert "scene_stills" in unreleased and "configs/scenes.json" in unreleased
+    stills = _read("docs/stills.md")
+    assert "## Scenes" in stills and "--kind scene" in stills

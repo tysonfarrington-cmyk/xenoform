@@ -2,57 +2,68 @@
  "neon-noir": {
   "prefix": "Cinematic studio photograph, neon noir, a sculpture of glossy black glass and smoked chrome beaded with rain droplets, standing on black rain-slick asphalt, hard magenta key light from the left and cyan rim light from the right, light rain haze and volumetric mist, neon reflections in the wet ground, deep black background, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces.",
   "subject": "One single {noun} made of black wet lacquered glass, catching the neon.",
-  "source": "scripts/vibe_objects/featured_prompts.json"
+  "source": "scripts/vibe_objects/featured_prompts.json",
+  "scene": "Cinematic wide shot, neon noir, a rain-slick city scene at night, glossy black asphalt and smoked chrome beaded with rain, hard magenta light from the left and cyan rim light from the right, volumetric mist and light rain, neon reflections across the wet ground, no signage, the whole frame filled edge to edge, no single centred object, no people, no faces, no text, no letters, no watermark, crisp focus, high detail, elegant."
  },
  "porcelain-kintsugi": {
   "prefix": "Studio photograph, a sculpture of glossy white porcelain broken and repaired with bright shining gold kintsugi seams running across its surface, soft diffuse museum lighting, gentle falloff, plain warm pale grey seamless backdrop filling the whole background, no softbox, no lamp, no light fixture visible, no studio equipment, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces.",
   "subject": "One single {noun} made of glossy white porcelain with kintsugi gold seams.",
-  "source": "scripts/vibe_objects/featured_prompts.json"
+  "source": "scripts/vibe_objects/featured_prompts.json",
+  "scene": "Wide museum photograph, an architectural scene of glossy white porcelain surfaces broken and repaired with bright shining gold kintsugi seams running across walls and floor, soft diffuse light, warm pale grey haze in the distance, the whole frame filled edge to edge, no single centred object, no people, no faces, no text, no letters, no watermark, crisp focus, high detail, elegant."
  },
  "bioluminescent": {
   "prefix": "Studio macro photograph, translucent deep-sea creature-like form glowing with bioluminescent cyan and green light, soft inner glow, drifting particles, pitch black abyss, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
   "subject": "One single bioluminescent {noun}, glowing teal and violet from within.",
-  "source": "scripts/vibe_objects/featured_prompts.json"
+  "source": "scripts/vibe_objects/featured_prompts.json",
+  "scene": "Wide underwater shot, a deep-sea scene glowing with bioluminescent cyan and green light, translucent forms and drifting particles across the whole frame, soft inner glow, pitch black abyss beyond, the whole frame filled edge to edge, no single centred object, no people, no faces, no text, no letters, no watermark, crisp focus, high detail, elegant."
  },
  "risograph": {
   "prefix": "Risograph print illustration, flat graphic shapes in exactly two fluorescent ink colours, fluorescent pink and bright blue, visible halftone grain, slight misregistration of the two ink layers, off-white textured paper background, flat print with no shading beyond halftone, not a photograph, bold simplified design, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces.",
   "subject": "A risograph print of one single {noun}.",
-  "source": "scripts/vibe_objects/featured_prompts.json"
+  "source": "scripts/vibe_objects/featured_prompts.json",
+  "scene": "Risograph print illustration of a wide landscape scene, flat graphic shapes in exactly two fluorescent ink colours, fluorescent pink and bright blue, visible halftone grain, slight misregistration of the two ink layers, off-white textured paper, flat print with no shading beyond halftone, not a photograph, bold simplified design filling the whole page, no single centred object, no people, no faces, no text, no letters."
  },
  "iridescent-glass": {
   "prefix": "Studio macro photograph, a sculpture of hand-blown iridescent glass with a thin-film rainbow sheen, bright caustics and refractions, backlit by a softbox, soft pearl-grey gradient seamless backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces.",
   "subject": "One single {noun} made of hand-blown dichroic iridescent glass.",
-  "source": "scripts/vibe_objects/featured_prompts.json"
+  "source": "scripts/vibe_objects/featured_prompts.json",
+  "scene": "Cinematic wide shot, an architectural scene of hand-blown iridescent glass with a thin-film rainbow sheen, bright caustics and refractions across the whole frame, backlit, soft pearl-grey haze in the distance, the whole frame filled edge to edge, no single centred object, no people, no faces, no text, no letters, no watermark, crisp focus, high detail, elegant."
  },
  "ink-wash": {
   "prefix": "Japanese sumi-e ink wash painting, black ink bleeding into wet rice paper, expressive loaded brush strokes with dry-brush texture, soft grey washes and deep black accents, generous empty space of pale rice paper around the subject, even daylight on paper, not a photograph, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces.",
   "subject": "A sumi-e ink wash painting of one single {noun}.",
-  "source": "scripts/vibe_objects/featured_prompts.json"
+  "source": "scripts/vibe_objects/featured_prompts.json",
+  "scene": "Japanese sumi-e ink wash landscape painting, black ink bleeding into wet rice paper, expressive loaded brush strokes with dry-brush texture, soft grey washes and deep black accents, mist left as empty pale paper, even daylight on paper, not a photograph, a wide scene across the whole sheet, no single centred object, no people, no faces, no text, no letters, no calligraphy, no seals."
  },
  "cyberspace-95": {
   "prefix": "1995 cyberspace computer graphics, a glowing green and cyan wireframe model with low-poly gouraud shading, phosphor glow, faint scanlines, standing on an infinite glowing grid floor receding into pure black, self-lit wireframe, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces.",
   "subject": "One single {noun} as a glowing green wireframe low-poly model.",
-  "source": "scripts/vibe_objects/featured_prompts.json"
+  "source": "scripts/vibe_objects/featured_prompts.json",
+  "scene": "1995 cyberspace computer graphics, a wide scene of glowing green and cyan wireframe geometry with low-poly gouraud shading, phosphor glow, faint scanlines, an infinite glowing grid floor receding into pure black, self-lit wireframe filling the whole frame, no single centred object, no people, no faces, no text, no letters."
  },
  "wet-paint": {
   "prefix": "Studio macro photograph, a sculpture formed from thick glossy wet acrylic paint, swirling ribbons of cobalt blue, vermilion red and cream, heavy impasto ridges and glossy highlights, soft key light, cream seamless backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces.",
   "subject": "One single {noun} sculpted from thick wet swirling acrylic paint.",
-  "source": "scripts/vibe_objects/featured_prompts.json"
+  "source": "scripts/vibe_objects/featured_prompts.json",
+  "scene": "Cinematic wide shot, a landscape formed from thick glossy wet acrylic paint, swirling ribbons of cobalt blue, vermilion red and cream, heavy impasto ridges and glossy highlights across the whole frame, soft key light, the whole frame filled edge to edge, no single centred object, no people, no faces, no text, no letters, no watermark, crisp focus, high detail, elegant."
  },
  "shadow-self": {
   "prefix": "High-contrast film noir photograph, a sculptural object seen as a strong backlit silhouette, a single hard shaft of white light from behind through curling smoke, a bright rim of light tracing its edge, deep black shadows, 35mm film grain, black void, no human figure, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces.",
   "subject": "The backlit silhouette of one single {noun}, smoke curling around it.",
-  "source": "scripts/vibe_objects/featured_prompts.json"
+  "source": "scripts/vibe_objects/featured_prompts.json",
+  "scene": "High-contrast film noir photograph of a wide empty scene, a single hard shaft of white light from behind through curling smoke, deep black shadows, bright rims of light tracing the edges, 35mm film grain, the whole frame filled with haze and dark architecture, no human figure, no single centred object, no people, no faces, no text, no letters, crisp focus, high detail."
  },
  "botanical": {
   "prefix": "Macro botanical photograph, a single living plant form on pure black, delicate dewy petals, rich natural colour, soft side light, shallow depth of field with crisp focus on the subject, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces.",
   "subject": "One single {noun}, a macro timelapse photograph on pure black.",
-  "source": "scripts/vibe_objects/featured_prompts.json"
+  "source": "scripts/vibe_objects/featured_prompts.json",
+  "scene": "Wide macro botanical photograph, a scene of living plant forms on pure black, delicate dewy petals and leaves across the whole frame, rich natural colour, soft side light, the whole frame filled edge to edge, no single centred object, no people, no faces, no text, no letters, no watermark, crisp focus, high detail, elegant."
  },
  "chrome-mercury": {
   "prefix": "Studio macro photograph, flawless liquid chrome and mercury, mirror surface reflecting soft gradient light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
   "subject": "One single {noun} made of liquid mirror chrome.",
-  "source": "scripts/vibe_objects/extended_prompts.json"
+  "source": "scripts/vibe_objects/extended_prompts.json",
+  "scene": "Cinematic wide establishing shot, a landscape of flawless liquid chrome and mercury, mirror surfaces reflecting a soft gradient sky, deep graphite haze at the horizon, long strip highlights, the whole frame filled edge to edge, no single centred object, no people, no faces, no text, no letters, no watermark, crisp focus, high detail, elegant."
  },
  "ferrofluid": {
   "prefix": "Studio macro photograph, jet-black glossy ferrofluid with sharp magnetic spikes and ridges, cold white rim light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
@@ -142,36 +153,43 @@
  "liquid-gold": {
   "prefix": "Studio macro photograph, pure black void, one single large object centred and filling most of the frame, seamless backdrop, soft gradient light, faint floor reflection, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
   "subject": "One single {noun} made of liquid mercury with an iridescent sheen.",
-  "source": "written 25 Oct 2026 to match the regraded pool"
+  "source": "written 25 Oct 2026 to match the regraded pool",
+  "scene": "Cinematic wide shot, a landscape of molten 24k gold, glowing orange-hot edges cooling to polished gold, drips and splashes, dark forge smoke and a warm underglow, the whole frame filled edge to edge, no single centred object, no people, no faces, no text, no letters, no watermark, crisp focus, high detail, elegant."
  },
  "bloom": {
   "prefix": "Studio macro photograph, pure black void, one single large object centred and filling most of the frame, seamless backdrop, soft gradient light, faint floor reflection, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
   "subject": "One single {noun} made of iridescent oil-slick glass.",
-  "source": "written 25 Oct 2026 to match the regraded pool"
+  "source": "written 25 Oct 2026 to match the regraded pool",
+  "scene": "Cinematic wide shot, a scene of iridescent petals and pearly glass under a soft magenta rim light, fresh spring-green haze at the horizon, soft gradient light, the whole frame filled edge to edge, no single centred object, no people, no faces, no text, no letters, no watermark, crisp focus, high detail, elegant."
  },
  "neon-night": {
   "prefix": "Studio macro photograph, pure black void, one single large object centred and filling most of the frame, seamless backdrop, soft gradient light, faint floor reflection, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
   "subject": "One single {noun} made of polished black glass with faint magenta reflections.",
-  "source": "written 25 Oct 2026 to match the regraded pool"
+  "source": "written 25 Oct 2026 to match the regraded pool",
+  "scene": "Cinematic wide shot, a night scene of rain-slick black glass and smoked chrome, hot magenta and sodium-amber neon reflections, deep crimson-black haze, no signage, the whole frame filled edge to edge, no single centred object, no people, no faces, no text, no letters, no watermark, crisp focus, high detail, elegant."
  },
  "ocean": {
   "prefix": "Studio macro photograph, pure black void, one single large object centred and filling most of the frame, seamless backdrop, soft gradient light, faint floor reflection, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
   "subject": "One single {noun} made of iridescent glass with a teal sheen.",
-  "source": "written 25 Oct 2026 to match the regraded pool"
+  "source": "written 25 Oct 2026 to match the regraded pool",
+  "scene": "Cinematic wide underwater shot, a scene of iridescent shell and chrome surfaces under aqua caustic light, deep teal water fading to darkness, the whole frame filled edge to edge, no single centred object, no people, no faces, no text, no letters, no watermark, crisp focus, high detail, elegant."
  },
  "cosmic": {
   "prefix": "Studio macro photograph, pure black void, one single large object centred and filling most of the frame, seamless backdrop, soft gradient light, faint floor reflection, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
   "subject": "One single {noun} made of iridescent dichroic glass, violet and blue.",
-  "source": "written 25 Oct 2026 to match the regraded pool"
+  "source": "written 25 Oct 2026 to match the regraded pool",
+  "scene": "Cinematic wide shot, a scene of iridescent dichroic glass and pearl surfaces under a cobalt and violet glow, a star field and deep indigo haze at the horizon, soft gradient light, faint reflections, the whole frame filled edge to edge, no single centred object, no people, no faces, no text, no letters, no watermark, crisp focus, high detail, elegant."
  },
  "black": {
   "prefix": "Studio macro photograph, pure black void, one single large object centred and filling most of the frame, seamless backdrop, soft gradient light, faint floor reflection, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
   "subject": "One single {noun} made of polished black glass.",
-  "source": "written 25 Oct 2026 to match the regraded pool"
+  "source": "written 25 Oct 2026 to match the regraded pool",
+  "scene": "Cinematic wide shot, a scene of black glass and iridescent liquid metal in a pure black void, violet and teal edge light tracing the forms, no floor, the whole frame filled edge to edge, no single centred object, no people, no faces, no text, no letters, no watermark, crisp focus, high detail, elegant."
  },
  "paper-summer": {
   "prefix": "Bright airy studio photograph, warm morning sunlight, soft cream and pale apricot background with a gentle gradient, one single object centred and fully in frame, soft contact shadow, crisp focus, high detail, clean, no text, no letters, no people.",
   "subject": "One single {noun} folded from translucent white paper, its folds turning soft and organic like wet porcelain.",
-  "source": "written 25 Oct 2026 to match the regraded pool"
+  "source": "written 25 Oct 2026 to match the regraded pool",
+  "scene": "Bright airy wide photograph, a scene built from folded white paper and glazed porcelain, warm morning sunlight, soft cream and pale apricot haze at the horizon, soft contact shadows, the whole frame filled edge to edge, no single centred object, no people, no faces, no text, no letters, no watermark, crisp focus, high detail, clean."
  }
 }

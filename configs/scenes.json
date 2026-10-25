@@ -1,0 +1,160 @@
+{
+ "version": 1,
+ "note": "Scene subjects: wide frames in the vibe's material and light, no single centred object, no people, no text. A vibe without a list draws on the default list. Grown with `xenoform stills grow <vibe> --kind scene`, listed with kind: scene, and used by the Simple make body's scene_stills choice (mix, only).",
+ "default": [
+  "a wide empty landscape at dusk",
+  "a corridor receding into haze",
+  "a shore under a vast sky",
+  "a canyon of layered rock",
+  "a forest edge in soft light",
+  "a still lake with a far horizon",
+  "rolling dunes to the horizon",
+  "an arched hall receding into darkness"
+ ],
+ "vibes": {
+  "chrome-mercury": [
+   "a flooded mirror hall of liquid chrome",
+   "a mercury sea under a grey gradient sky",
+   "a chrome canyon with molten rivers",
+   "a hall of chrome pillars receding into fog",
+   "a mercury waterfall over polished steps",
+   "rolling dunes of liquid chrome"
+  ],
+  "neon-noir": [
+   "a rain-slick alley lit by magenta and cyan neon",
+   "a wet rooftop above a neon city",
+   "an empty underpass with cyan strip lights in rain",
+   "a flooded car park under sodium and magenta light",
+   "a neon pier over black water in the rain",
+   "a glass tunnel of reflections and neon haze"
+  ],
+  "porcelain-kintsugi": [
+   "a hall of cracked porcelain walls mended with gold",
+   "a porcelain riverbed with gold seams",
+   "a field of broken porcelain tiles mended with gold",
+   "porcelain cliffs with gold veins over a pale sea",
+   "a porcelain staircase with kintsugi cracks",
+   "an arched porcelain corridor seamed with gold"
+  ],
+  "bioluminescent": [
+   "a deep-sea trench of glowing cyan plankton",
+   "a forest of glowing kelp in the black abyss",
+   "a cave of bioluminescent coral",
+   "drifting glowing jellies over a dark seabed",
+   "a glowing reef wall receding into darkness",
+   "a river of green light on the ocean floor"
+  ],
+  "risograph": [
+   "rolling hills under a halftone sun",
+   "a city skyline of flat shapes in two inks",
+   "a forest of pink trunks and blue canopies",
+   "a harbour of flat boats on a halftone sea",
+   "a mountain range in two ink colours",
+   "a flat-printed desert under a blue moon"
+  ],
+  "iridescent-glass": [
+   "a cathedral of iridescent glass panes",
+   "a glass forest with rainbow-sheen trunks",
+   "a canyon of dichroic glass walls",
+   "a frozen glass sea with rainbow caustics",
+   "a corridor of glass arches throwing rainbows",
+   "a glass dune field under pearl light"
+  ],
+  "liquid-gold": [
+   "a river of molten gold through dark rock",
+   "a forge hall with pools of molten gold",
+   "a gold waterfall into a black lake",
+   "dunes of polished gold under forge smoke",
+   "a cavern dripping molten gold",
+   "a gold sea with a cooling crust"
+  ],
+  "ink-wash": [
+   "misty mountains in sumi ink",
+   "a bamboo grove in ink wash",
+   "a lone pine on an ink cliff above mist",
+   "a river bend through ink hills",
+   "a temple roof above fog in ink wash",
+   "reeds on a still lake in ink"
+  ],
+  "cyberspace-95": [
+   "an infinite wireframe grid under a black sky",
+   "a wireframe city of green towers",
+   "a tunnel of glowing wireframe rings",
+   "a low-poly mountain range on a glowing grid",
+   "a wireframe highway receding to a vanishing point",
+   "a cyan wireframe canyon"
+  ],
+  "wet-paint": [
+   "rolling hills of thick wet paint",
+   "a sea of swirling cobalt and vermilion paint",
+   "a sky of impasto clouds over a cream field",
+   "a canyon of paint ridges",
+   "a river of cream paint between cobalt banks",
+   "a storm of swirling paint ribbons"
+  ],
+  "shadow-self": [
+   "an empty stage in a single shaft of light and smoke",
+   "a long corridor of hard backlight and smoke",
+   "a doorway of light in a black void with curling smoke",
+   "venetian blind shadows across a smoky room",
+   "a tunnel of haze lit from the far end",
+   "bare trees as silhouettes in backlit fog"
+  ],
+  "botanical": [
+   "a dark greenhouse of dewy petals",
+   "a meadow of flowers on black at night",
+   "a canopy of leaves against pure black",
+   "a bed of moss and ferns in soft side light",
+   "a tangle of vines and blooms in the dark",
+   "a forest floor of mushrooms and dew"
+  ],
+  "cosmic": [
+   "a dark shore under a star field",
+   "a corridor of mirrors in violet light",
+   "a nebula over a glass desert",
+   "a ring of planets above a black sea",
+   "a crystal cave lit cobalt and violet",
+   "an aurora over an indigo plain"
+  ],
+  "bloom": [
+   "a spring meadow in pearly light",
+   "a greenhouse of iridescent petals",
+   "a path through magenta blossom",
+   "a pond of pearl lilies",
+   "a hillside of soft green and petals",
+   "an orchard in bloom under soft light"
+  ],
+  "neon-night": [
+   "a rain-slick street under magenta neon",
+   "a black glass city at night",
+   "an empty neon arcade in rain",
+   "a wet rooftop under sodium lamps",
+   "a neon bridge over black water",
+   "a tunnel of smoked chrome and neon"
+  ],
+  "ocean": [
+   "a teal reef under caustic light",
+   "an underwater canyon with shafts of light",
+   "a kelp forest in aqua light",
+   "a sandy seabed with rippling caustics",
+   "a sunken arch in teal water",
+   "a coral wall fading into deep teal"
+  ],
+  "black": [
+   "a black void with a horizon of violet light",
+   "a dark glass floor reflecting a teal glow",
+   "a black cavern with iridescent liquid metal walls",
+   "black dunes under a violet sky",
+   "a black corridor with an edge of teal light",
+   "a still black lake under no sky"
+  ],
+  "paper-summer": [
+   "a paper city in morning sun",
+   "folded paper hills under a cream sky",
+   "a paper forest with soft shadows",
+   "a paper harbour with folded boats",
+   "a paper desert of folded dunes",
+   "a porcelain and paper garden"
+  ]
+ }
+}

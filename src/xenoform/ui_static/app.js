@@ -119,7 +119,7 @@ function easyCrumbs(easy) {
 }
 
 // The last session's vibe and Fine-tune choices survive a reload or a desk restart (the song cannot: uploads live on the server).
-const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow"];
+const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow", "scenes"];
 function saveEasy() {
   if (!state || !state.easy) return;
   try {
@@ -301,6 +301,8 @@ function payload() {
     // The house look (demo_house): dance_fx "auto" | "off" | a preset; stem_orbit on unless switched off.
     dance_fx: (state.easy && state.easy.danceFx) || "auto",
     foreshadow: (state.easy && state.easy.foreshadow) || "auto",
+    // Scenes (stills.kind "scene"): "off" (objects only), "mix" (a scene at every passage change), "only" (scenes alone)
+    scene_stills: (state.easy && state.easy.scenes) || "off",
     stem_orbit: !(state.easy && state.easy.stemOrbit === false),
     macros: (window.XENO_MACROS ? window.XENO_MACROS() : null),
     length_s: Number((state.easy && state.easy.lengthS) || 0),
@@ -2495,6 +2497,7 @@ function renderEasy() {
         <div class="simple-knobs"></div>
         ${lookRow(easy.danceFx || "auto", "easy-look")}
         ${foreshadowRow(easy)}
+        ${scenesRow(easy)}
         <button type="button" class="generate easy-row" data-act="easy-recut-knobs"${easy.showcase || !easyVideoId() ? " disabled" : ""}>Re-cut with these knobs</button>
         <p class="note">Re-composes the same morphs with the knobs, the look and the orbit as they are now. No GPU, no new pictures: a fraction of the render time.</p>
         <div class="energy-head"><h3>Try another vibe</h3><span>Same song, same story</span></div>
@@ -2546,6 +2549,7 @@ function renderEasy() {
         <div class="simple-knobs"></div>
         ${lookRow(easy.danceFx || "auto", "easy-look")}
         ${foreshadowRow(easy)}
+        ${scenesRow(easy)}
         <p class="note look-note">${esc(lookNote(easy.danceFx || "auto"))}</p>
       </section>
       ${fineTune(easy)}
@@ -2594,7 +2598,7 @@ function fineTune(easy) {
     setTimeout(() => { loadStills(true).finally(() => { state.stillsLoading = false; }); }, 0);
   }
   const bits = [easy.aspect || "9:16", (easy.energyPreset || "dense") === "dense" ? "Dense" : "Flow", (easy.tier || "draft") === "final" ? "Final" : "Draft",
-    lookLabel(easy.danceFx || "auto")];
+    lookLabel(easy.danceFx || "auto"), easy.scenes && easy.scenes !== "off" ? `Scenes ${easy.scenes}` : ""].filter(Boolean);
   return `<details class="fine-tune" id="fine-tune"${open ? " open" : ""}>
       <summary>Fine-tune <small>${esc(bits.join(" · "))}</small></summary>
       ${simpleOptions(easy)}
@@ -2680,14 +2684,15 @@ function stillsRow(easy) {
   const running = job.status === "running" || job.status === "starting";
   const vibe = vibeById(easy.vibe);
   const name = (vibe && vibe.name) || easy.vibe || "this vibe";
-  const parts = [`${have.shipped} shipped`, `${have.grown} grown here`, have.own ? `${have.own} of your own` : ""].filter(Boolean);
+  const parts = [`${have.shipped} shipped`, `${have.grown} grown here`, have.own ? `${have.own} of your own` : "", have.scenes ? `${have.scenes} scenes` : ""].filter(Boolean);
   const left = lib.vibe === easy.vibe && lib.subjects_left != null ? ` · ${lib.subjects_left} subjects left to render` : "";
   const grow = Number(lib.default_grow || 36);
+  const growScenes = Number(lib.default_grow_scenes || 8);
   let status = "";
   if (running) {
     const eta = Number(job.eta_s || 0) - (Date.now() / 1000 - Number(job.started || 0));
     const left = eta > 0 ? `about ${clockText(eta)} left` : (job.done ? "finishing" : "loading the model, the first render takes longer");
-    status = `Growing ${job.vibe}: ${job.done || 0} of ${job.asked || 0} rendered · kept ${job.kept || 0} · ${left}`;
+    status = `Growing ${job.kind === "scene" ? "scenes for " : ""}${job.vibe}: ${job.done || 0} of ${job.asked || 0} rendered · kept ${job.kept || 0} · ${left}`;
   } else if (easy.stillsNote) {
     status = easy.stillsNote;
   } else if (job.status === "done" && job.note) {
@@ -2695,10 +2700,11 @@ function stillsRow(easy) {
   } else if (job.status === "error" && job.note) {
     status = `Library: ${job.note}`;
   }
-  const note = status || `Every still is rendered on this GPU (Z-Image Turbo, about ${Math.round(Number(lib.seconds_per_still || 6))} s each), checked against the vibe's own pool (backdrop, size, cropped, soft, duplicate) and kept under the work folder; delete a jpg there to drop it. Your own shapes go first in the chain.`;
+  const note = status || `Every still is rendered on this GPU (Z-Image Turbo, about ${Math.round(Number(lib.seconds_per_still || 6))} s each), checked against the vibe's own pool (backdrop, size, cropped, soft, duplicate) and kept under the work folder; delete a jpg there to drop it. Your own shapes go first in the chain. Scenes are wide frames in the vibe's light (a dark shore, a corridor of mirrors); the Scenes row morphs them in.`;
   return `<div class="simple-seg own-row library-row"><span>Library</span>
       <span class="library-count">${esc(name)}: ${esc(parts.join(" · "))}${esc(left)}</span>
       <button type="button" class="ghost" data-act="easy-grow"${running || !easy.vibe ? " disabled" : ""} title="Render ${grow} new objects for this vibe on this GPU">Grow ${grow} more</button>
+      <button type="button" class="ghost chip" data-act="easy-grow-scenes"${running || !easy.vibe ? " disabled" : ""} title="Render ${growScenes} wide scenes for this vibe on this GPU; the Scenes row below morphs them in">Grow ${growScenes} scenes</button>
       <label class="ghost cloud-toggle">Your own shapes <input type="text" id="easy-own-shapes" value="${esc(easy.ownShapes || "")}" spellcheck="false" aria-label="Your own shapes, comma-separated" placeholder="a brass astrolabe, a wolf skull"></label>
       <button type="button" class="ghost" data-act="easy-make-shapes"${running || !easy.vibe ? " disabled" : ""} title="Render the shapes you typed in this vibe's material">Make them</button>
       ${running ? '<button type="button" class="ghost" data-act="easy-grow-stop">Stop</button>' : ""}
@@ -2724,6 +2730,24 @@ function foreshadowRow(easy) {
   const choices = [["auto", "Auto"], ["off", "Off"], ["trace", "Trace"], ["negative", "Negative"], ["slices", "Slices"], ["silhouette", "Silhouette"]];
   return `${simpleSeg("easy-foreshadow", current, choices, "Foreshadow")}
       <p class="note">${esc(FORESHADOW_NOTES[current] || FORESHADOW_NOTES.auto)} It rides the song's other stem under Intensity, starts earlier with Speed, and echoes a beat after a cut into Polly or your own clip.</p>`;
+}
+
+// Scenes: a second kind of still beside the objects (wide frames in the vibe's light, grown with "Grow 8 scenes" on the
+// Library row). Off morphs objects alone; Mix lands a scene on every passage change (the song's section switches, else
+// every fourth still) and morphs scenes into objects and back; Only morphs scenes alone. The make body carries it as
+// scene_stills; the record says which stills were scenes and a re-cut keeps them.
+const SCENES_NOTES = {
+  off: "Objects only: every morph travels between single objects.",
+  mix: "A scene at every passage change, objects between: the shore morphs into the orb, the orb into the corridor of mirrors.",
+  only: "Scenes alone: every morph travels between wide frames in the vibe's light.",
+};
+function scenesRow(easy) {
+  const current = ["off", "mix", "only"].includes(easy.scenes) ? easy.scenes : "off";
+  const have = ((state.stills || {}).counts || {})[easy.vibe] || {};
+  const none = current !== "off" && easy.vibe && state.stills && !Number(have.scenes || 0)
+    ? ` This vibe has no scenes yet: grow some on the Library row first, or the cut stays objects only.` : "";
+  return `${simpleSeg("easy-scenes", current, [["off", "Off"], ["mix", "Mix"], ["only", "Only"]], "Scenes")}
+      <p class="note">${esc((SCENES_NOTES[current] || SCENES_NOTES.off) + none)}</p>`;
 }
 
 function machineRows(easy) {
@@ -2957,6 +2981,7 @@ function applySimpleRecipe(recipe) {
   easy.endCard = !!recipe.end_card;
   easy.danceFx = recipe.dance_fx || "auto";
   easy.foreshadow = recipe.foreshadow || "auto";
+  easy.scenes = ["off", "mix", "only"].includes(recipe.scene_stills) ? recipe.scene_stills : "off";
   easy.lengthS = Number(recipe.length_s || 0);
   easy.performer = Number(recipe.performer || 0);
   easy.performerStyle = recipe.performer_style || "auto";
@@ -4246,7 +4271,7 @@ function adoptSession(data, options = {}) {
     transitionNote: previous ? previous.transitionNote || "" : "",
     easy: previous && previous.easy
       ? previous.easy
-      : Object.assign({ song: "", songLabel: "", vibe: "", idea: "", ownFolder: "", ownId: "", ownNote: "", ownShapes: "", stillsNote: "", foreshadow: "auto", phase: "song", note: "", playedHere: false,
+      : Object.assign({ song: "", songLabel: "", vibe: "", idea: "", ownFolder: "", ownId: "", ownNote: "", ownShapes: "", stillsNote: "", foreshadow: "auto", scenes: "off", phase: "song", note: "", playedHere: false,
           // the house (demo_house): 9:16 native, Dense, Draft, Beat FX, the house look, subject orbit, no end card
           energyPreset: "dense", aspect: "9:16", tier: "draft", fx: true, endCard: false, danceFx: "auto", stemOrbit: true },
         loadEasy()),
@@ -4830,6 +4855,8 @@ document.addEventListener("click", async (event) => {
     }
   } else if (act === "easy-grow") {
     growStills(false);
+  } else if (act === "easy-grow-scenes") {
+    growStills(false, "scene");
   } else if (act === "easy-make-shapes") {
     growStills(true);
   } else if (act === "easy-grow-stop") {
@@ -4871,6 +4898,9 @@ document.addEventListener("click", async (event) => {
     render();
   } else if (act === "easy-foreshadow") {
     state.easy.foreshadow = el.dataset.value || "auto";
+    render();
+  } else if (act === "easy-scenes") {
+    state.easy.scenes = ["off", "mix", "only"].includes(el.dataset.value) ? el.dataset.value : "off";
     render();
   } else if (act === "easy-orbit") {
     state.easy.stemOrbit = el.dataset.value !== "off";
@@ -6316,12 +6346,14 @@ async function loadStills(force) {
   render();
 }
 
-async function growStills(own) {
+async function growStills(own, kind) {
   if (!state.easy || !state.easy.vibe) return;
-  const body = { vibe: state.easy.vibe, own: !!own };
-  if (own) body.nouns = state.easy.ownShapes || "";
+  const scenes = kind === "scene";
+  const body = { vibe: state.easy.vibe, own: !!own && !scenes, kind: scenes ? "scene" : "object" };
+  if (own && !scenes) body.nouns = state.easy.ownShapes || "";
+  else if (scenes) body.count = Number((state.stills && state.stills.default_grow_scenes) || 8);
   else body.count = Number((state.stills && state.stills.default_grow) || 36);
-  state.easy.stillsNote = own ? "Rendering your shapes..." : "Queueing the renders...";
+  state.easy.stillsNote = own && !scenes ? "Rendering your shapes..." : scenes ? "Queueing the scenes..." : "Queueing the renders...";
   render();
   const response = await api("/api/stills/grow", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   const data = await response.json().catch(() => ({}));

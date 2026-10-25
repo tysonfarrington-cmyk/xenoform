@@ -278,12 +278,13 @@ def apply_punch(frame: np.ndarray, amount: float) -> np.ndarray:
     return np.clip(out, 0, 255).astype(np.uint8)
 
 
-def stills_for(state: dict, count: int, record: bool = True) -> tuple[str, list[dict]]:
+def stills_for(state: dict, count: int, record: bool = True, scene_at: list[int] | None = None) -> tuple[str, list[dict]]:
     """The cut plan's own stills when it names them, else the vibe chain. ``record`` False reads the pool
-    without marking the picks as used (the stills animatic and the confirm card preview the render's picks)."""
+    without marking the picks as used (the stills animatic and the confirm card preview the render's picks).
+    ``scene_at`` names the chain indices that are scenes under the Simple "mix" choice (``morph_pass.scene_slots``)."""
     nouns = list(((state.get("cut_plan") or {}).get("stills")) or [])
     if not nouns:
-        return chain_stills(state, count, record)
+        return chain_stills(state, count, record, scene_at)
     from xenoform.morph_pass import OBJECTS, manifest, vibe_for
 
     vibe = vibe_for(state)
@@ -372,14 +373,15 @@ def check_token(token: str, est: dict, now: float | None = None) -> str | None:
 # ---------------------------------------------------------------- stills and graph
 
 
-def chain_stills(state: dict, count: int, record: bool = True) -> tuple[str, list[dict]]:
+def chain_stills(state: dict, count: int, record: bool = True, scene_at: list[int] | None = None) -> tuple[str, list[dict]]:
     from xenoform.morph_pass import pick_stills, vibe_for
 
     if vibe_for(state) == "black":
         # The black chain is curated (rose -> jellyfish -> butterfly -> swallow -> drops), so a
         # story word must not rotate it. Every paid shot then starts from a still Tys has seen.
-        return pick_stills({key: state.get(key) for key in ("vibe", "palette", "preset")}, count, record=record)
-    return pick_stills(state, count, record=record)
+        return pick_stills({key: state.get(key) for key in ("vibe", "palette", "preset", "scene_stills")}, count, record=record,
+                           scene_at=scene_at)
+    return pick_stills(state, count, record=record, scene_at=scene_at)
 
 
 def build_graph(shots: list[dict], stills: list[dict], *, prompt: str, seed: int, model: str = "fast",
@@ -658,7 +660,8 @@ def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, cli
         wf.set_input("7", "image", asset(stills[i + 1]["path"]))
         from xenoform.guardrails import guard_prompt
 
-        wf.set_input("3", "text", guard_prompt(mp.prompt_for(vibe), state))
+        kinds = mp.pair_kinds(stills[i], stills[i + 1])  # a pair that touches a scene gets the scene prompt
+        wf.set_input("3", "text", guard_prompt(mp.prompt_for(vibe, kinds=kinds), state))
         wf.set_input("4", "text", mp.NEGATIVE)
         wf.set_input("9", "width", render_w)
         wf.set_input("9", "height", render_h)
@@ -667,8 +670,10 @@ def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, cli
         if "cfg" in tune:
             wf.set_input("14", "cfg", float(tune["cfg"]))
         if "img_compression" in tune:  # configs/autotune.json, per vibe (docs/AUTOTUNE.md)
-            wf.set_input("8", "img_compression", int(tune["img_compression"]))
-            wf.set_input("21", "img_compression", int(tune["img_compression"]))
+            # a scene guide stays uncompressed (node 8 preprocesses the start still, 21 the end): the compression is
+            # the freedom the morph takes from the guide, and a wide frame loses its texture to it at once
+            wf.set_input("8", "img_compression", 0 if kinds[0] == "scene" else int(tune["img_compression"]))
+            wf.set_input("21", "img_compression", 0 if kinds[1] == "scene" else int(tune["img_compression"]))
         if "guide_end_strength" in tune:
             wf.set_input("22", "strength", float(tune["guide_end_strength"]))
         wf.set_input("13", "noise_seed", int(seed) + i)
