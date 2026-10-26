@@ -2464,7 +2464,11 @@ function renderEasy() {
   }
   if (easy.phase === "result" || easy.phase === "showcase") {
     const showcase = easy.phase === "showcase" || !!easy.showcase;
-    const title = showcase ? "A finished one" : chosen && easy.vibe ? chosen.name : "Your cut";
+    const made = vibeById(easy.resultVibe || easy.vibe) || chosen;  // the cut's own vibe, whatever card is selected under Try another vibe
+    const title = showcase ? "A finished one" : made && easy.vibe ? made.name : "Your cut";
+    const another = !showcase && easy.vibe && easy.resultVibe && easy.vibe !== easy.resultVibe && chosen
+      ? `<button type="button" class="generate easy-row" data-act="easy-make">Make it with ${esc(chosen.name)}</button>`
+      : "";
     const actions = showcase
       ? `<button type="button" class="generate" data-act="easy-again">Make your own</button>
             <button type="button" class="ghost" data-act="easy-download">Download the showcase</button>`
@@ -2509,6 +2513,7 @@ function renderEasy() {
         <p class="note">Re-composes the same morphs with the knobs, the look and the orbit as they are now. No GPU, no new pictures: a fraction of the render time.</p>
         <div class="energy-head"><h3>Try another vibe</h3><span>Same song, same story</span></div>
         <div class="vibe-grid vibe-mini" role="radiogroup" aria-label="Try another vibe">${vibeCards(easy, true)}</div>
+        ${another}
         ${easy.cloudPlan ? cloudCard(easy.cloudPlan) : ""}
         <button type="button" class="ghost easy-row" data-act="easy-better">Make it better</button>
         <button type="button" class="text easy-row" data-act="easy-advanced" title="The director desk, opened on its Export step: Share cut, the shot list and the seed file for this cut, the storyboard and notes behind it">Director tools: storyboard, notes, export</button>
@@ -2832,7 +2837,7 @@ function morphControl(easy, tier, aspect, vertical) {
       <input type="range" min="1" max="40" step="1" value="${Math.min(40, n)}" data-act="easy-morphs" aria-label="Number of forms">
       <input type="number" min="1" max="120" step="1" value="${n}" data-act="easy-morphs" aria-label="Number of forms" style="width:4.5em">
       <span class="note">${esc(`${n} form${n === 1 ? "" : "s"}: ${morphEstimate(n, tier, aspect, vertical)}`)}</span>
-      <span class="note guard-live">${esc(morphGuardText(n))}</span>
+      <span class="note guard-live">${auto ? "" : esc(morphGuardText(n))}</span>
     </div>`;
 }
 // Live guardrail hint, mirroring configs/guardrails.json morph_density (15 sweet spot, 18 hard per 20 s).
@@ -2858,7 +2863,8 @@ function remixBox(easy) {
 }
 
 function galleryPanel() {
-  const rows = (state.videos || []).slice(0, 12);
+  // a row with no song and no vibe is a Director dry run or a test animatic (1.5 s renders named by their id): not a video of yours
+  const rows = (state.videos || []).filter((row) => row.song || row.vibe).slice(0, 12);
   if (!rows.length) {
     return `<section class="panel span gallery" id="my-videos"><h3>My videos</h3><p class="note">Videos you make in Simple mode show up here, with their recipe codes.</p></section>`;
   }
@@ -3218,15 +3224,17 @@ function tickEasy() {
 
 function cloudToggles(easy) {
   const overlay = !!easy.overlay;
-  const overlayButton = `<button type="button" class="ghost cloud-toggle${overlay ? " on" : ""}" data-act="easy-overlay" aria-pressed="${overlay ? "true" : "false"}">Beat overlay · ${overlay ? "on" : "off"}</button>`;
+  // a labelled row like the rest of Fine-tune, not an orphan "Beat overlay · off" button under the drawer
+  const overlayRow = `${simpleSeg("easy-overlay-set", overlay ? "on" : "off", [["off", "Off"], ["on", "On"]], "Beat overlay")}
+      <p class="note">${overlay ? "The waveform and the beat marks are drawn on the picture." : "Off: a clean export, nothing drawn on the picture."}</p>`;
   if (!state.paidCloud) {
     // Paid cloud renders are opt-in (Settings). Off, the main flow shows only open-weights choices.
-    return `<div class="cloud-opts">${overlayButton}</div>`;
+    return `<div class="cloud-opts">${overlayRow}</div>`;
   }
   const cloud = !!easy.cloud;
   return `<div class="cloud-opts">
       <button type="button" class="ghost cloud-toggle${cloud ? " on" : ""}" data-act="easy-cloud" aria-pressed="${cloud ? "true" : "false"}">Cloud quality · ${cloud ? "on" : "off"}</button>
-      <button type="button" class="ghost cloud-toggle${overlay ? " on" : ""}" data-act="easy-overlay" aria-pressed="${overlay ? "true" : "false"}">Beat overlay · ${overlay ? "on" : "off"}</button>
+      ${overlayRow}
       ${cloud ? `<label class="ghost cloud-toggle">Cut plan · ${easy.cutPlan ? `${(easy.cutPlan.shots || []).length} shots` : "auto (~5s on the beat)"}<input type="file" accept="application/json,.json" data-act="easy-cut-plan" hidden></label>${easy.cutPlan ? `<button type="button" class="ghost" data-act="easy-cut-clear">Clear cut plan</button>` : ""}` : ""}
       <p class="note">Paid cloud renders are on (Settings). Cloud quality renders the morphs with LTX-2.5 through a paid Comfy partner node, which is not open weights. You see the price and confirm it first. Off, everything stays on open weights on this machine.</p>
     </div>`;
@@ -3324,6 +3332,7 @@ async function easyMake() {
   state.easy.reopenUrl = "";
   state.easy.hookUrl = "";
   state.easy.recipe = "";
+  state.easy.resultVibe = state.easy.vibe;  // the vibe this cut is made with: the result's title, and "Try another vibe" compares to it
   state.easy.startedAt = Date.now();
   state.easy.firstMorph = null;
   state.easy.eta = state.comfyOk === false ? EASY_ETA_BROWSER_S : easyPlanEta() || easyEtaGuess();
@@ -4868,9 +4877,9 @@ document.addEventListener("click", async (event) => {
       if (!state.easy.song) {
         state.easy.note = "Choose a song, then Make.";
         setEasyPhase("choose");
-        render();
-      } else if (state.easy.playedHere) render();
-      else easyMake();
+      }
+      // the card only selects; "Make it with ..." under the grid starts the render (one click on a thumbnail used to)
+      render();
       return;
     }
     render();
@@ -4918,6 +4927,9 @@ document.addEventListener("click", async (event) => {
     api("/api/stills/stop", { method: "POST" }).then(() => loadStills(true));
   } else if (act === "easy-overlay") {
     state.easy.overlay = !state.easy.overlay;
+    render();
+  } else if (act === "easy-overlay-set") {
+    state.easy.overlay = el.dataset.value === "on";
     render();
   } else if (act === "easy-energy") {
     state.easy.energyPreset = el.dataset.value === "dense" ? "dense" : "flow";
@@ -5012,6 +5024,7 @@ document.addEventListener("click", async (event) => {
     if (!row) return;
     state.easy.reopenId = row.id;
     if (row.vibe && vibeById(row.vibe)) state.easy.vibe = row.vibe;
+    state.easy.resultVibe = state.easy.vibe;
     state.easy.reopenUrl = row.url;
     // Download / Share cut read the job id from here; a job record is not needed for a saved file.
     state.job = { id: row.id, status: "done", stage: "done", progress: 1, video: row.url, reopened: true };

@@ -95,3 +95,23 @@ def test_f1_no_surprise_dry_run():
     assert "Dry-run animatic (coloured blocks on the beat, no pictures)" in APP
     assert "Dry run when you generate: coloured blocks, no pictures" in APP
     assert '"Dry-run cut"' not in APP and "Dry run is the default" not in APP
+
+
+def test_g_simples_small_ones():
+    # My videos hides the nameless Director dry runs and test animatics
+    gallery = APP.split("function galleryPanel()", 1)[1].split("async function loadVideos()", 1)[0]
+    assert "filter((row) => row.song || row.vibe)" in gallery
+    # Forms: no guardrail warning against the Auto value the desk chose itself
+    forms = APP.split("function morphControl(easy, tier, aspect, vertical)", 1)[1].split("function morphGuardText", 1)[0]
+    assert '${auto ? "" : esc(morphGuardText(n))}' in forms
+    # Beat overlay is a labelled row with a note, not an orphan button
+    assert 'simpleSeg("easy-overlay-set", overlay ? "on" : "off", [["off", "Off"], ["on", "On"]], "Beat overlay")' in APP
+    assert 'act === "easy-overlay-set"' in APP
+    assert "Beat overlay · ${overlay" not in APP
+    # a vibe card on the result only selects; the render waits for "Make it with ..."
+    vibe = APP.split('act === "easy-vibe") {', 1)[1].split("} else if", 1)[0]
+    assert "else easyMake();" not in vibe
+    assert "state.easy.resultVibe = state.easy.vibe;" in APP
+    result = APP.split('if (easy.phase === "result" || easy.phase === "showcase") {', 1)[1].split("const preview = easy.vibe", 1)[0]
+    assert 'data-act="easy-make">Make it with ${esc(chosen.name)}</button>' in result
+    assert "const made = vibeById(easy.resultVibe || easy.vibe) || chosen;" in result
