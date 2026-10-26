@@ -199,6 +199,8 @@ def ensure_stills(elements: list[dict], folder) -> list[dict]:
     dest.mkdir(parents=True, exist_ok=True)
     painted = []
     for element in elements or []:
+        if not isinstance(element, dict):  # a bare id or name has nothing to paint
+            continue
         row = dict(element)
         sentence = str(row.get("sentence") or "").strip()
         if not sentence:

@@ -20,7 +20,7 @@ def test_simple_copy_is_on_the_desk_and_the_judges_page():
         assert name in script
     assert "Director tools: storyboard, notes, export" in script  # was "Open in Advanced" (docs/WORKFLOW_AUDIT.md, fix D)
     assert "Try another vibe" in script
-    assert "Make it better" in script
+    assert 'data-act="easy-better"' not in script  # the dead "Make it better" left the result screen (26 Oct)
     assert 'data-act="easy-make"' in script
     page = (ROOT / "src/xenoform/ui_static/index.html").read_text(encoding="utf-8")
     assert 'id="advanced-toggle"' in page

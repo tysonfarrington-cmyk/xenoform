@@ -409,7 +409,10 @@ def mount(
             video_duration=video_duration,
             ask_model=bool(body.get("ask_model")),
         )
-        elements = list(body.get("continuity") or data.get("continuity") or [])
+        continuity = body.get("continuity") or data.get("continuity") or []
+        if isinstance(continuity, dict):  # the desk sends the continuity bible ({elements, ...}); list(dict) was its keys (26 Oct)
+            continuity = continuity.get("elements") or []
+        elements = [row for row in (continuity or []) if isinstance(row, dict)]
         if jobs_video is not None and elements and any(scene.get("element_ids") for scene in scenes):
             from xenoform.continuity import critique, ensure_stills, rerender_ids
 

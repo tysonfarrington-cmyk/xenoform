@@ -2515,7 +2515,6 @@ function renderEasy() {
         <div class="vibe-grid vibe-mini" role="radiogroup" aria-label="Try another vibe">${vibeCards(easy, true)}</div>
         ${another}
         ${easy.cloudPlan ? cloudCard(easy.cloudPlan) : ""}
-        <button type="button" class="ghost easy-row" data-act="easy-better">Make it better</button>
         <button type="button" class="text easy-row" data-act="easy-advanced" title="The director desk, opened on its Export step: Share cut, the shot list and the seed file for this cut, the storyboard and notes behind it">Director tools: storyboard, notes, export</button>
         <button type="button" class="text easy-row" data-act="easy-again">Back to the song</button>
       </aside>`}
@@ -3300,7 +3299,8 @@ async function recutWithKnobs() {
     end_card: !!state.easy.endCard,
   };
   try {
-    const res = await api(`/api/jobs/${encodeURIComponent(id)}/recut`, body);
+    // the body went out as the fetch options once, so the desk sent a GET and got a 405 (26 Oct)
+    const res = await api(`/api/jobs/${encodeURIComponent(id)}/recut`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       state.easy.note = err.detail || "The re-cut did not start.";
@@ -5174,9 +5174,6 @@ document.addEventListener("click", async (event) => {
     if (target && target.scrollIntoView) target.scrollIntoView({ behavior: "smooth", block: "start" });
   } else if (act === "easy-recut-knobs") {
     recutWithKnobs();
-  } else if (act === "easy-better") {
-    el.classList.add("is-loading");
-    easyBetter();
   } else if (act === "easy-advanced") {
     enterAdvanced("export");  // from a finished cut: the step whose Share cut, Shot list and Seed file act on that cut
   } else if (act === "leave-advanced") {
