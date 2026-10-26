@@ -89,13 +89,21 @@ function easyCrumbs(easy) {
   const order = ["song", "vibe", "make", "refine", "share"];
   const labels = { song: "Song", vibe: "Vibe", make: "Prototype", refine: phase === "showcase" ? "Showcase" : "Refine", share: "Share" };
   const cur = video ? "refine" : making ? "make" : !easy.song ? "song" : !easy.vibe ? "vibe" : "make";
-  const ci = order.indexOf(cur);
+  const tool = phase === "tool";  // on Setup or Connect: no stage is current, each one reachable is a way back
+  const reach = tool ? order.indexOf(cur) + 1 : 0;
+  const ci = tool ? -1 : order.indexOf(cur);
   const items = order.map((key, i) => {
     const ahead = key === "share" && phase === "result";  // the cut's screen holds Share too: a button down to it
-    if ((i < ci && !making) || ahead) return `<button type="button" class="crumb${i < ci ? " done" : ""}" data-act="easy-crumb" data-step="${key}">${labels[key]}</button>`;
+    if ((i < ci && !making) || ahead || i < reach) return `<button type="button" class="crumb${i < ci ? " done" : ""}" data-act="easy-crumb" data-step="${key}">${labels[key]}</button>`;
     return `<span class="crumb${i === ci ? " now" : ""}${i < ci ? " done" : ""}"${i === ci ? ' aria-current="step"' : ""}>${labels[key]}</span>`;
   });
   return `<nav class="easy-crumbs" aria-label="Where you are">${items.join('<span class="crumb-sep" aria-hidden="true">›</span>')}</nav>`;
+}
+
+// Ctrl+Enter (Cmd+Enter on a Mac) makes: the Make button says so, as desktop software does
+function shortcutLabel() {
+  const mac = /Mac|iPhone|iPad/.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "");
+  return mac ? "⌘↵" : "Ctrl ↵";
 }
 
 // The last session's vibe and Fine-tune choices survive a reload or a desk restart (the song cannot: uploads live on the server).
@@ -752,7 +760,6 @@ function renderEasy() {
     const wrote = scenes.length ? "done" : "now";
     const painting = scenes.length ? "now" : "wait";
     return `<div class="easy easy-making">
-      ${easyCrumbs(easy)}
       <div class="easy-make-head">
         <div>
           <p class="eyebrow">${esc(chosen.name)} · ${esc(easy.songLabel || "Song")}${easy.madeLength ? ` · ${esc(String(easy.madeLength))} s prototype` : ""}${easy.madeTier === "final" ? " · Final" : ""}</p>
@@ -802,7 +809,6 @@ function renderEasy() {
     const proto = !showcase && Number(easy.madeLength) > 0;
     return `<div class="easy easy-done">
       <section class="easy-result">
-        ${easyCrumbs(easy)}
         <div class="easy-result-head">
           <div>
             <p class="eyebrow">${showcase ? "Showcase · made earlier" : proto ? `Prototype · ${esc(String(easy.madeLength))} s around the drop` : "Your video"}</p>
@@ -855,17 +861,15 @@ function renderEasy() {
   const proto = easyLengthIsProto(easy);
   return `<div class="easy easy-desk">
     <header class="easy-intro">
-      ${easyCrumbs(easy)}
-      <p class="eyebrow">Xenoform</p>
       <h2>Make a music video.</h2>
       <p class="lede">One object keeps transforming into the next, every change on the beat. A song and a vibe make a quick prototype; refine it on its timeline, then render the whole song or Final. Free, local, open weights.</p>
-      ${dropCard()}
     </header>
     <section class="easy-main">
       <section class="easy-step" data-tour="easy-song" data-song-drop="1">
         <div class="step-head"><h3>Song</h3>${songSet ? '<button type="button" class="text" data-act="easy-step" data-step="song">Change</button>' : ""}</div>
         ${songBlock}
         ${songSet ? "" : `<p class="note">${esc(easy.songLabel || "Drop a file here, or use the bundled demo.")}</p>`}
+        ${dropCard()}
       </section>
       <section class="easy-step" data-tour="easy-vibe">
         <div class="step-head"><h3>Vibe</h3><span>Pick one. You can try another after.</span></div>
@@ -895,7 +899,7 @@ function renderEasy() {
       <dl class="facts">
         ${easyPlanFacts(easy)}
       </dl>
-      <button type="button" class="generate easy-make" data-act="easy-make">${proto ? `Make a ${esc(String(easyLength(easy)))} s prototype` : "Make my video"}</button>
+      <button type="button" class="generate easy-make" data-act="easy-make"><span>${proto ? `Make a ${esc(String(easyLength(easy)))} s prototype` : "Make my video"}</span><kbd>${esc(shortcutLabel())}</kbd></button>
       <p class="note house-line">${proto
         ? `A Draft of ${esc(String(easyLength(easy)))} s around the drop, in minutes. Then refine it, and render the whole song or Final from its screen. Fine-tune → Length makes the whole song now.`
         : "9:16, Dense, Draft, Beat FX and the house look. Fine-tune below the vibes if you want to; Final is one press on the cut's screen."}</p>
@@ -2262,6 +2266,10 @@ function render() {
   state.view = viewFromHash();
   // One desk: the stages (Song, Vibe, Prototype, Refine, Share) or a tool page. There is no second desk to switch to.
   app.innerHTML = (state.view === "setup" || state.view === "connect") ? renderTool(state.view) : renderEasy();
+  // the stage strip lives in the toolbar, like the steps of a desktop tool, on every screen
+  const strip = document.getElementById("stage-slot");
+  if (strip) strip.innerHTML = state.easy ? easyCrumbs(Object.assign({}, state.easy, state.view === "simple" ? {} : { phase: "tool" })) : "";
+  document.body.dataset.phase = state.view === "simple" ? ((state.easy && state.easy.phase) || "choose") : state.view;
   saveEasy();
   paintJob();
   mountLive();

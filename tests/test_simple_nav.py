@@ -31,7 +31,10 @@ def test_back_button_and_showcase_phase():
 
 def test_breadcrumb_on_every_simple_screen():
     assert "function easyCrumbs(" in APP
-    assert APP.count("${easyCrumbs(easy)}") == 3  # making, result/showcase, choose
+    # since 27 Oct the strip lives in the toolbar (index.html #stage-slot), painted by render() on every screen
+    render = APP.split("function render() {", 1)[1].split("function renderTool(", 1)[0]
+    assert 'document.getElementById("stage-slot")' in render and "easyCrumbs(" in render
+    assert APP.count("${easyCrumbs(easy)}") == 0
     assert 'data-act="easy-crumb"' in APP and 'act === "easy-crumb"' in APP
     assert ".easy-crumbs" in CSS
 

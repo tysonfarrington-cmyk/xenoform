@@ -53,5 +53,7 @@ def test_body_copy_floor_keeps_mono_on_time_and_recipe():
     floor = css.split(".meta,", 1)[1]
     assert "font-size: 13px;" in floor
     assert ".when," in floor
-    assert ".recipe-code" in floor
     assert "font-family: var(--mono);" in floor
+    # the recipe line on the cut's screen is mono (desk.css, 27 Oct; the Director's .recipe-code box is gone)
+    desk = (STATIC / "desk.css").read_text(encoding="utf-8")
+    assert ".recipe-line code, .recipe-line { font-family: var(--x-font-mono);" in desk

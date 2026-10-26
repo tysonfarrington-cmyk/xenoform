@@ -38,68 +38,125 @@
   src: url("fonts/share-tech-mono-400.woff2") format("woff2");
 }
 
+/* Xenoform desk design system (v8, 27 Oct 2026): one dark studio palette with a single violet accent, the system UI
+   font for controls and Space Grotesk for the brand and titles, a radius and control-height scale, and the older token
+   names (zinc-*, panel, field, ink...) mapped onto it so app.css and the doc pages follow. Components live in desk.css. */
 :root {
-  --vermilion: #e8512e;
-  --peri: #5560dd;
-  --nightshade: #2e2752;
-  --lavender: #eef0fb;
-  --page-bg: #fcfcfc;
-  --page-text: #131316;
+  color-scheme: dark;
 
-  --zinc-50: #fafafa;
-  --zinc-100: #f4f4f5;
-  --zinc-200: #e4e4e7;
-  --zinc-300: #d4d4d8;
-  --zinc-400: #9f9fa9;
-  --zinc-500: #71717b;
-  --zinc-600: #52525c;
-  --zinc-700: #3f3f46;
-  --zinc-800: #27272a;
-  --zinc-900: #18181b;
-  --zinc-950: #09090b;
+  /* surfaces, darkest to lightest */
+  --x-bg: #0b0b0f;
+  --x-surface: #141419;
+  --x-surface-2: #1b1b22;
+  --x-surface-3: #23232c;
+  --x-surface-4: #2c2c37;
+  --x-well: #0f0f14;
+  --x-line: rgba(255, 255, 255, 0.07);
+  --x-line-2: rgba(255, 255, 255, 0.11);
+  --x-line-3: rgba(255, 255, 255, 0.18);
 
-  --font-space-grotesk: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-share-tech-mono: "Share Tech Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  /* text */
+  --x-text: #ececf1;
+  --x-text-2: #a9a9b6;
+  --x-text-3: #74747f;
 
+  /* the one accent, and the status colours */
+  --x-accent: #7c6cff;
+  --x-accent-hi: #9488ff;
+  --x-accent-lo: #6656f0;
+  --x-accent-soft: rgba(124, 108, 255, 0.16);
+  --x-accent-ring: rgba(124, 108, 255, 0.45);
+  --x-ok: #3ccf8e;
+  --x-warn: #f2b14a;
+  --x-bad: #ff6464;
+
+  /* shape and size */
+  --x-r-xs: 4px;
+  --x-r-sm: 6px;
+  --x-r-md: 8px;
+  --x-r-lg: 12px;
+  --x-h-sm: 30px;
+  --x-h-md: 36px;
+  --x-h-lg: 44px;
+  --x-h-xl: 52px;
+  --x-bar: 56px;
+
+  /* type */
+  --x-font-ui: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, Roboto, sans-serif;
+  --x-font-display: "Space Grotesk", var(--x-font-ui);
+  --x-font-mono: "Share Tech Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* depth and motion */
+  --x-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --x-shadow-2: 0 8px 24px -10px rgba(0, 0, 0, 0.7);
+  --x-shadow-pop: 0 24px 60px -20px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --x-hi: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --x-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --x-t-fast: 90ms;
+  --x-t: 160ms;
+
+  /* the older names, mapped onto the system */
+  --vermilion: #ff6a45;
+  --peri: var(--x-accent);
+  --nightshade: var(--x-accent-hi);
+  --lavender: var(--x-surface-3);
+  --page-bg: var(--x-bg);
+  --page-text: var(--x-text);
+  --zinc-50: var(--x-surface);
+  --zinc-100: var(--x-surface-2);
+  --zinc-200: var(--x-surface-3);
+  --zinc-300: var(--x-surface-4);
+  --zinc-400: #5d5d69;
+  --zinc-500: var(--x-text-3);
+  --zinc-600: var(--x-text-2);
+  --zinc-700: #c9c9d3;
+  --zinc-800: #dcdce4;
+  --zinc-900: #ececf1;
+  --zinc-950: #050507;
+  --font-space-grotesk: var(--x-font-display);
+  --font-share-tech-mono: var(--x-font-mono);
   --spacing: 0.25rem;
-  --radius-sm: 0.25rem;
-  --radius-md: 0.375rem;
-  --radius-lg: 0.5rem;
-  --radius-xl: 0.75rem;
-  --radius-2xl: 1rem;
+  --radius-sm: var(--x-r-xs);
+  --radius-md: var(--x-r-sm);
+  --radius-lg: var(--x-r-lg);
+  --radius-xl: var(--x-r-lg);
+  --radius-2xl: 16px;
   --radius-pill: 9999px;
-
-  --shadow-xs: 0 1px 2px rgba(9, 9, 11, 0.06);
-  --shadow-md: 0 8px 30px rgba(9, 9, 11, 0.12);
-  --shadow-lg: 0 8px 30px rgba(19, 19, 22, 0.1);
-  --shadow-overlay: 0 32px 80px -24px rgba(19, 19, 22, 0.35);
-
-  --ease: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-out: cubic-bezier(0, 0, 0.2, 1);
-  --duration: 150ms;
-  --press: 120ms;
-
-  --bg: var(--page-bg);
-  --panel: #ffffff;
-  --panel-2: var(--zinc-50);
-  --line: color-mix(in srgb, var(--zinc-900) 10%, transparent);
-  --line-strong: color-mix(in srgb, var(--zinc-900) 18%, transparent);
-  --text: var(--page-text);
-  --muted: var(--zinc-600);
-  --faint: var(--zinc-500);
-  --accent: var(--vermilion);
-  --brass: var(--peri);
-  --paper: var(--lavender);
-  --good: #2f6b4a;
-  --on-primary: var(--zinc-50);
-  --on-primary-muted: var(--zinc-300);
-  --field: #ffffff;
-  --header-bg: color-mix(in srgb, var(--page-bg) 88%, transparent);
-  --ink: var(--zinc-950);
-  --shadow: var(--shadow-xs);
-  --serif: var(--font-space-grotesk);
-  --sans: var(--font-space-grotesk);
-  --mono: var(--font-share-tech-mono);
+  --shadow-xs: var(--x-shadow-1);
+  --shadow-md: var(--x-shadow-2);
+  --shadow-lg: var(--x-shadow-2);
+  --shadow-overlay: var(--x-shadow-pop);
+  --ease: var(--x-ease);
+  --ease-out: var(--x-ease);
+  --duration: var(--x-t);
+  --press: var(--x-t-fast);
+  --bg: var(--x-bg);
+  --panel: var(--x-surface);
+  --panel-2: var(--x-surface-2);
+  --line: var(--x-line);
+  --line-strong: var(--x-line-2);
+  --text: var(--x-text);
+  --muted: var(--x-text-2);
+  --faint: var(--x-text-3);
+  --accent: var(--x-accent);
+  --brass: var(--x-accent);
+  --paper: var(--x-surface-2);
+  --good: var(--x-ok);
+  --on-primary: #fff;
+  --on-primary-muted: rgba(255, 255, 255, 0.72);
+  --field: var(--x-well);
+  --header-bg: rgba(11, 11, 15, 0.86);
+  --ink: var(--x-text);
+  --shadow: var(--x-shadow-1);
+  --serif: var(--x-font-display);
+  --sans: var(--x-font-ui);
+  --mono: var(--x-font-mono);
+  --grad: linear-gradient(135deg, #ff6a45 0%, #d9418f 48%, #7c6cff 100%);
+  --glow: 0 0 0 2px var(--x-accent), 0 8px 24px -8px var(--x-accent-ring);
+  --st-drums: #ff7a59;
+  --st-bass: #7c7cff;
+  --st-vocals: #f2b14a;
+  --st-other: #2cc4b4;
 }
 
 button,
@@ -184,57 +241,6 @@ button.is-loading::before {
   .upload:active {
     transform: none;
   }
-}
-
-button.generate,
-button.ghost,
-button.text,
-.upload,
-.chip,
-.scene-actions button,
-.add-row button,
-.dialog-actions button,
-.review-actions button,
-.notes-apply button,
-.note-actions button,
-.simple-actions button,
-.recipe-actions button,
-.song-actions button,
-.top-actions button {
-  border-radius: var(--radius-pill);
-}
-
-.register-btn,
-.treatment,
-.preset,
-.form-card,
-.add-card,
-.block,
-.scene,
-.panel,
-.review,
-.lesson-offer,
-.setup-banner,
-dialog,
-.wave-wrap,
-.swatch,
-.snippet pre,
-.connect pre,
-.patch,
-.recipe-code,
-.diff article {
-  border-radius: var(--radius-lg);
-}
-
-.register-btn,
-.treatment,
-.preset,
-.form-card {
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-  width: 100%;
-  text-align: left;
 }
 
 input,

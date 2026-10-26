@@ -1,9 +1,15 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>Xenoform Moves</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/static/theme.css">
 <link rel="stylesheet" href="/static/app.css">
-<style>body{max-width:980px;margin:24px auto;padding:0 16px;font-family:system-ui,sans-serif}
+<link rel="stylesheet" href="/static/desk.css">
+<style>body{max-width:980px;margin:24px auto;padding:0 16px}
+h1{font-family:var(--x-font-display);font-size:24px;margin:10px 0 6px}h2{margin:18px 0 8px}
 .moves{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
-.move{border:1px solid #444;border-radius:8px;padding:10px;cursor:pointer}.move.sel{outline:2px solid #5be1d7}
+.move{background:var(--x-surface);border:1px solid var(--x-line-2);border-radius:10px;padding:12px;cursor:pointer;transition:border-color 90ms,background-color 90ms}
+@media (hover:hover){.move:hover{border-color:var(--x-line-3);background:var(--x-surface-2)}}
+.move.sel{border-color:var(--x-accent);box-shadow:0 0 0 1px var(--x-accent)}
 .fit{font-size:12px;opacity:.75}label{display:block;margin:10px 0}textarea{width:100%;min-height:70px}
 video{max-height:70vh}</style></head>
 <body>
@@ -14,7 +20,7 @@ video{max-height:70vh}</style></head>
 <label>Describe the character (face, hair, clothes) <textarea id="look" placeholder="A 22-year-old woman with fair skin, light freckles, grey-blue eyes, a soft ash-silver bob, white bomber jacket, light blue jeans, white sneakers"></textarea></label>
 <p class="fit">Always added: closed-mouth smile, calm expression, detailed hands.</p>
 <h2>Move</h2><div class="moves" id="moves">Loading...</div>
-<p><button id="go" disabled>Render this move</button> <span id="status"></span></p>
+<p><button id="go" class="generate" disabled>Render this move</button> <span id="status"></span></p>
 <div id="out"></div>
 <script>
 let pick = null;
