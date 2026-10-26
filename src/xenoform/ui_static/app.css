@@ -1882,6 +1882,7 @@ body[data-advanced="1"][data-step="look"] #register-slot { display: block; }
   min-height: 32px;
 }
 .rail-link.on { background: var(--zinc-100); color: var(--ink); }
+.rail .rail-exit { margin: 0 0 10px; font-weight: 600; color: var(--ink); }  /* the way out of Director tools, first in the rail */
 .desk-main {
   min-width: 0;
   display: grid;

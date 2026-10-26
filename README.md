@@ -216,7 +216,7 @@ pytest                                       # the test suite
 
 ## Advanced desk
 
-The *Advanced* button in the header keeps the full director desk: a storyboard with one action shot per section, literary registers for the treatment, Director's notes (one plain-English note becomes a checked JSON patch), Review & fix (a rule-based critic that measures the cut and re-renders only the shots that drift), versions, and OSC and CSV export for TouchDesigner. Simple mode does not need any of it. The REST API the browser and the MCP server share is under `/api/v1/` (health, session, registers, storyboard, params, notes, review, render, frames, versions, export).
+The *Director tools* button in the header (it was called Advanced) keeps the full director desk; the logo, the browser's Back and the first item in its rail return to Simple. It holds a storyboard with one action shot per section, literary registers for the treatment, Director's notes (one plain-English note becomes a checked JSON patch), Review & fix (a rule-based critic that measures the cut and re-renders only the shots that drift), versions, and OSC and CSV export for TouchDesigner. Simple mode does not need any of it. The REST API the browser and the MCP server share is under `/api/v1/` (health, session, registers, storyboard, params, notes, review, render, frames, versions, export).
 
 Related pages: [docs/footage.md](docs/footage.md) (your own clips, the NASA library, camera roll), [docs/transitions.md](docs/transitions.md), [docs/VIBES.md](docs/VIBES.md), [docs/AUTOTUNE.md](docs/AUTOTUNE.md), [docs/LESSONS.md](docs/LESSONS.md), [docs/SURPRISE.md](docs/SURPRISE.md).
 

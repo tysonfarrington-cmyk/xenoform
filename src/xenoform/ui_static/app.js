@@ -515,12 +515,15 @@ const RAIL = [
   ["export", "8 Export"],
 ];
 
+// Advanced (Director tools) lives at its own URLs: #simple/desk for the Song, Story, Cast lock and Export steps, #director,
+// #scene and #notes for the rest. Plain #simple and the Simple phases are Simple, so the browser's Back leaves Advanced the
+// way it came in, the logo always goes home, and a reload lands in Simple unless the URL says desk.
 function railHash(step) {
   if (step === "notes") return "#notes";
   if (step === "setup") return "#setup";
   if (step === "connect") return "#connect";
   if (step === "look" || step === "shots" || step === "morph") return "#director";
-  return "#simple";
+  return "#simple/desk";
 }
 
 function deskStep() {
@@ -587,6 +590,7 @@ function railHtml(current) {
   }).join("");
   const footOn = (id) => (current === id ? " on" : "");
   return `<nav class="rail" aria-label="Your video">
+    <button type="button" class="rail-link rail-exit" data-act="leave-advanced">&larr; Back to Simple</button>
     <h2>Your video</h2>
     ${steps}
     <div class="rail-foot">
@@ -2652,7 +2656,7 @@ function performerRow(easy) {
   const n = Number(easy.performer || 0);
   const choices = [["0", "Off"], ["2", "2 shots"], ["4", "4 shots"]];
   const note = ok
-    ? `MiniMax H3 (open weights, on this GPU) has Polly sing the intro and drum the drop, cut 1:1 into the morph chain. About ${clockText(Number(info.seconds_per_shot || 420))} a shot on a 12 GB card. The reference still is Polly; drop your own full-body still under Cast lock in Advanced to replace her.`
+    ? `MiniMax H3 (open weights, on this GPU) has Polly sing the intro and drum the drop, cut 1:1 into the morph chain. About ${clockText(Number(info.seconds_per_shot || 420))} a shot on a 12 GB card. The reference still is Polly; drop your own full-body still under Cast lock in Director tools to replace her.`
     : `Off: ${esc(info.note || "the MiniMax H3 files are not installed")}. See Setup.`;
   const styles = [["auto", "Auto"], ["sing", "Sing"], ["drums", "Drums"], ["keys", "Keys"], ["guitar", "Guitar"], ["dance", "Dance"]];
   const styleRow = n ? simpleSeg("easy-performer-style", easy.performerStyle || "auto", styles, "Performance") : "";
@@ -5110,9 +5114,9 @@ document.addEventListener("click", async (event) => {
     el.classList.add("is-loading");
     easyBetter();
   } else if (act === "easy-advanced") {
-    syncAdvanced(true);
-    if (location.hash !== "#simple") location.hash = "simple";
-    else render();
+    enterAdvanced("song");
+  } else if (act === "leave-advanced") {
+    leaveAdvanced(false);
   } else if (act === "try-it") {
     el.classList.add("is-loading");
     tryDemo();
@@ -5736,8 +5740,12 @@ document.addEventListener("keydown", (event) => {
 
 document.getElementById("advanced-toggle").addEventListener("click", () => {
   const on = document.body.dataset.advanced === "1";
-  syncAdvanced(!on);
-  if (state) render();
+  if (!state) {
+    syncAdvanced(!on);
+    return;
+  }
+  if (on) leaveAdvanced(false);
+  else enterAdvanced();
 });
 
 document.getElementById("open-about").addEventListener("click", () => {
@@ -5855,12 +5863,16 @@ async function refreshComfy() {
   if (state) state.comfyOk = ok;
 }
 
-// The logo is a home button in Simple mode: back to the song screen (a running job keeps its making screen).
+// The logo is a home button: back to the song screen (a running job keeps its making screen), out of Director tools too.
 const brandLink = document.querySelector(".brand");
 if (brandLink) {
   brandLink.addEventListener("click", (event) => {
-    if (!state || !state.easy || document.body.dataset.advanced === "1") return;
+    if (!state || !state.easy) return;
     event.preventDefault();
+    if (document.body.dataset.advanced === "1") {
+      leaveAdvanced(true);
+      return;
+    }
     if (state.easy.phase !== "making") {
       state.easy.note = "";
       setEasyPhase("choose");
@@ -5878,15 +5890,19 @@ if (viewNav) {
     const view = link.dataset.view;
     const step = view === "notes" ? "notes" : view === "connect" ? "connect" : view === "setup" ? "setup" : view === "director" ? "shots" : "song";
     state.step = step;
-    if ((location.hash || "#simple") === railHash(step)) {
-      event.preventDefault();
-      render();
-    }
+    const hash = railHash(step);
+    event.preventDefault();
+    if ((location.hash || "#simple") === hash) render();
+    else location.hash = hash.slice(1);
   });
 }
 
 window.addEventListener("hashchange", () => {
   if (!state) return;
+  // The URL is the truth: a Director tools URL turns it on, a Simple URL (Back, the logo, a typed #simple) turns it off.
+  const advancedOn = document.body.dataset.advanced === "1";
+  if (advancedHash() && !advancedOn) syncAdvanced(true);
+  else if (!advancedHash() && advancedOn && viewFromHash() === "simple") syncAdvanced(false);
   if (viewFromHash() === "simple" && state.easy && document.body.dataset.advanced !== "1") easyPhaseFromHash();
   if (viewFromHash() === "notes" && !state.pending) {
     if (!state.note) state.note = SAMPLE_NOTE;
@@ -6859,17 +6875,59 @@ function syncAdvanced(next) {
   const button = document.getElementById("advanced-toggle");
   if (button) {
     button.setAttribute("aria-pressed", on ? "true" : "false");
-    button.textContent = on ? "Advanced on" : "Advanced";
+    button.textContent = on ? "← Back to Simple" : "Director tools";
   }
 }
 
+const ADVANCED_HASHES = ["#simple/desk", "#director", "#scene", "#script", "#looks", "#desk", "#notes"];
+function advancedHash(hash) {
+  const current = String(hash == null ? location.hash : hash) || "#simple";
+  return ADVANCED_HASHES.some((known) => current === known || current.startsWith(known + "/"));
+}
+
+// Into Director tools: the step's own URL is pushed, so Back comes out again.
+function enterAdvanced(step) {
+  if (!state) return;
+  syncAdvanced(true);
+  if (step) state.step = step;
+  const hash = railHash(state.step || "song");
+  if ((location.hash || "#simple") !== hash) {
+    try {
+      history.pushState(null, "", hash);
+    } catch (err) {
+      location.hash = hash.slice(1);
+      return;
+    }
+  }
+  render();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+// Out of Director tools: the logo goes home to the song screen; the button and the rail's first item return to the Simple
+// screen you left (a finished cut stays on its result, a running job keeps its making screen).
+function leaveAdvanced(home) {
+  if (!state) return;
+  syncAdvanced(false);
+  if (state.easy) {
+    const phase = state.easy.phase;
+    if (phase === "making") setEasyPhase("making");
+    else if (!home && (phase === "result" || phase === "showcase")) setEasyPhase(phase);
+    else {
+      state.easy.note = "";
+      setEasyPhase("choose");
+    }
+  }
+  render();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
 async function boot() {
-  syncAdvanced();
+  syncAdvanced(advancedHash());
   try {
     const response = await api("/api/demo");
     if (!response.ok) throw new Error("demo unavailable");
     adoptSession(await response.json());
-    if (state && state.easy && document.body.dataset.advanced !== "1") easyPhaseFromHash();
+    if (state && state.easy && document.body.dataset.advanced !== "1" && viewFromHash() === "simple") easyPhaseFromHash();
     setInterval(pollAgent, 3000);
     await loadSetup();
     if (viewFromHash() === "notes") {
