@@ -2235,3 +2235,6 @@ label.easy-paid { display: block; margin: 0.4rem 0 0.2rem; font-size: 0.86em; op
 .shots-lane.swapping .shot.swap { cursor: cell; }
 .shots-lane .shot.picked { outline: 2px solid var(--brass); outline-offset: -2px; }
 .shots-lane .lane-swap { margin-top: 8px; }
+.shots-lane .lane-open { display: flex; margin: 2px 0 3px; }
+.shots-lane .lane-open .shot { width: auto; min-width: 0; height: 22px; padding: 0 2px; --hue: 260; }
+.shots-lane .lane-open .shot i { line-height: 22px; font-size: 10px; }

@@ -333,13 +333,17 @@ def test_the_lane_names_the_slot_each_shot_lands_on_and_the_pinned_and_swapped_o
     assert rows[0]["pinned"] is True and rows[1]["pinned"] is False and rows[3]["swapped"] is True and rows[3]["to_kind"] == "scene"
     assert out["stills"][1] == {"index": 1, "file": "v/01_b.jpg", "noun": "b", "kind": "object", "pinned": True, "swapped": False}
     assert out["stills"][4]["swapped"] and out["stills"][4]["kind"] == "scene" and out["swaps"] == 1
-    assert out["vibe"] == "v" and out["swappable"] is True
+    assert out["opens_on"] == out["stills"][0] and out["opens_on"]["noun"] == "a"  # the first still, which no shot lands on
+    assert out["vibe"] == "v" and out["swappable"] is True and lane.build({})["opens_on"] is None
     assert lane.build({**info, "tier": "final"})["swappable"] is False and lane.build({})["swappable"] is False
 
 
 def test_front_end_offers_the_swap_on_the_lane():
     fn = APP.split("function shotsLane(easy)")[1].split("async function loadLane")[0]
     assert 'data-act="easy-swap-mode"' in fn and 'data-act="easy-swap-pick"' in fn and "swappable" in fn
+    # the opening tile: the chain's first still can be swapped too (no shot lands on it)
+    assert 'class="lane-open"' in fn and 'data-act="easy-swap-pick" data-slot="0"' in fn and "lane.opens_on" in fn
+    assert ".lane-open" in (ROOT / "src/xenoform/ui_static/app.css").read_text(encoding="utf-8")
     assert "async function swapStill" in APP and "/swap`" in APP and '"easy-swap", slot.index' in fn and 'data-act="easy-swap-cancel"' in fn
     swap = APP.split("async function swapStill")[1].split("\n}\n")[0]
     assert 'method: "POST"' in swap and "JSON.stringify" in swap and "poll(id);" in swap

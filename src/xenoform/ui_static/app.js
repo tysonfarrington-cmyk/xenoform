@@ -3096,16 +3096,32 @@ function shotsLane(easy) {
     if (slot) {
       const used = new Set(lane.stills.map((x) => x.file));
       const shot = lane.shots.find((x) => x.still === slot.index);
+      const opens = slot.index === 0;  // the chain's first still: no shot lands on it, the cut opens on it
+      const ends = slot.index === lane.stills.length - 1;
+      const verb = opens ? "opens on" : "lands on";
+      const touched = opens || ends ? "the one morph that touches it is" : "the two morphs that touch it are";
       picker = `<div class="lane-swap">
-          <p class="note">${shot ? `Shot ${shot.index + 1}` : "The cut"} lands on <b>${esc(slot.noun)}</b>${slot.kind === "scene" ? " (a scene)" : ""}${slot.swapped ? ", swapped in earlier" : ""}. Pick what it lands on instead: the two morphs that touch it are rendered again on the GPU and the cut re-composed (two morphs' worth of the render time above, plus the re-cut), the rest of the cut stays as it is.
+          <p class="note">${opens ? "The cut" : shot ? `Shot ${shot.index + 1}` : "The cut"} ${verb} <b>${esc(slot.noun)}</b>${slot.kind === "scene" ? " (a scene)" : ""}${slot.swapped ? ", swapped in earlier" : ""}. Pick what it ${verb} instead: ${touched} rendered again on the GPU and the cut re-composed (a morph's worth of the render time above each, plus the re-cut), the rest of the cut stays as it is.
             <button type="button" class="text" data-act="easy-swap-cancel">Cancel</button></p>
           ${libraryPicker(lane.vibe || easy.resultVibe || easy.vibe, "easy-swap", slot.index, used)}
         </div>`;
     }
   }
+  // the opening tile: the chain's first still, which no shot lands on (every shot names the still it lands on), so
+  // the cut's opening picture can be swapped too; outside swap mode it seeks to the top
+  let opening = "";
+  const first = lane.opens_on || (Array.isArray(lane.stills) ? lane.stills[0] : null);
+  if (first) {
+    const pick = swapping;
+    const act = pick ? `data-act="easy-swap-pick" data-slot="0" data-at="0"` : `data-act="easy-seek" data-at="0"`;
+    const title = `Opens on ${first.noun}${first.kind === "scene" ? " (scene)" : ""}${first.pinned ? " · pinned" : ""}${first.swapped ? " · swapped" : ""}${pick ? " · click to swap it" : ""}`;
+    const cls = `shot open${first.pinned ? " pinned" : ""}${first.swapped ? " swapped" : ""}${pick ? " swap" : ""}${pick && easy.swapSlot === 0 ? " picked" : ""}`;
+    opening = `<div class="lane-open"><button type="button" class="${cls}" ${act} title="${esc(title)}" aria-label="${esc(title)}"><i>opens on ${esc(first.noun)}</i></button></div>`;
+  }
   return `<div class="shots-lane${swapping ? " swapping" : ""}" aria-label="Shots">
       <div class="lane-head"><span>Shots</span><span class="note">${esc(facts)} · ${hint}</span>${toggle}</div>
       <div class="lane-overlays">${overlays}</div>
+      ${opening}
       <div class="lane-shots">${blocks}</div>
       ${picker}
     </div>`;

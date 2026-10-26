@@ -83,4 +83,5 @@ def build(info: dict, video_id: str = "") -> dict:
             "morphs": len(set(assign)) if assign else len(rows), "objects": len(set(stills)), "plan": str(info.get("plan_name") or ""),
             "pace": str(((info.get("recut_state") or {}).get("pace")) or ""), "engine": str(info.get("engine") or ""),
             "vibe": str(info.get("vibe") or ""), "tier": str(info.get("tier") or ""), "stills": chain_rows,
+            "opens_on": chain_rows[0] if chain_rows else None,  # the first still: no shot lands on it, the lane's opening tile does
             "swaps": len(swapped), "swappable": str(info.get("tier") or "draft") != "final" and bool(files)}
