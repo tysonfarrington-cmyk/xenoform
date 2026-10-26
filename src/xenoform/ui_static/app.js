@@ -1278,7 +1278,7 @@ function morphPanel() {
     .map(([id, label]) => {
       const on = id === method ? " on" : "";
       const pressed = id === method ? "true" : "false";
-      return `<button type="button" class="${on}" data-act="morph-method" data-method="${id}" aria-pressed="${pressed}">${label}</button>`;
+      return `<button type="button" class="chip${on}" data-act="morph-method" data-method="${id}" aria-pressed="${pressed}">${label}</button>`;
     })
     .join("");
   const join = morphJoin();
@@ -1288,6 +1288,7 @@ function morphPanel() {
   return `<section class="panel span" id="morph-panel">
     <p class="kicker">Morph</p>
     <h2>Blend two shots that already exist</h2>
+    <p class="note">The morph board for a storyboard render (Director tools' Generate): which engine blends the two shots at the drop. A pick here applies on the next Generate; nothing on screen changes now. A Simple cut morphs every shot through the vibe's stills and never uses this board.</p>
     <div class="morph-split">
       <figure class="morph-source">
         <video muted autoplay playsinline loop src="${esc(media("/static/library/" + clip + ".mp4"))}"></video>
@@ -1295,7 +1296,8 @@ function morphPanel() {
       </figure>
       <div>
         <p class="note">The blend names the two subjects in the brief and nothing from the register. A restyle uses LTX-2.3 when that file is on this machine. Fast stays on LTX 0.9.5. Seed 2727.</p>
-        <div class="toggle" role="group" aria-label="Morph method">${choices}</div>
+        <p class="seg-label">Method</p>
+        <div class="toggle chips morph-methods" role="group" aria-label="Morph method">${choices}</div>
         <div class="morph-actions">
           <button type="button" class="${state.morphFast ? "on" : ""}" data-act="morph-fast" aria-pressed="${state.morphFast ? "true" : "false"}">Fast</button>
           <button type="button" class="${state.morphHit !== false ? "on" : ""}" data-act="morph-hit" aria-pressed="${state.morphHit !== false ? "true" : "false"}">Hit flash</button>
@@ -1307,7 +1309,8 @@ function morphPanel() {
     <div id="morph-report">${morphReportHtml()}</div>
     <div id="library-browser" class="library-browser">
       <p class="kicker">Source library</p>
-      <h3>Partners for this scene</h3>
+      <h3>Clips and shapes the storyboard may pair with this shot</h3>
+      <p class="note">From the library folder in Settings (its library.json): Pin one to make it the partner of the shot above, Ban one to keep it out. This is not the vibe's objects; those are Fine-tune → Library in Simple.</p>
       <p class="note" id="library-note">Reading the library…</p>
       <p class="library-pair" id="library-pair"></p>
       <label class="field">Filter by tag

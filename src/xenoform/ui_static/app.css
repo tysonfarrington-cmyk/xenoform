@@ -1990,7 +1990,10 @@ body[data-advanced="1"][data-step="look"] #register-slot { display: block; }
 .library-card p { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
 .library-actions { display: flex; gap: 6px; margin-top: 6px; }
 .library-actions button { padding: 4px 8px; }
-.morph-panel .toggle, #morph-panel .toggle { flex-wrap: wrap; }
+/* the four method chips are four pills, not one wrapped pill that reads as a giant button (ui_v6 glasses .toggle with !important) */
+#morph-panel .toggle.morph-methods { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; padding: 0; overflow: visible; background: none !important; border: 0 !important; box-shadow: none !important; }
+#morph-panel .morph-methods .chip { flex: 0 0 auto; min-width: 0; padding: 6px 12px; border-radius: 999px; white-space: nowrap; font-size: 13px; }
+#morph-panel .seg-label { margin: 10px 0 0; }
 .tl-shot {
   position: relative;
   min-width: 0;

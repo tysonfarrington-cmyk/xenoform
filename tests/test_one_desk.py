@@ -59,3 +59,16 @@ def test_c1_guardrail_lines_fold_on_the_client():
     assert "(× ${n})" in fold  # identical lines once, with a count
     assert "/^\\[qa\\] ([a-z][a-z -]*?) at ([\\d.]+s)$/" in fold  # "[qa] glitch at 1.5s" x N folds into one line a kind
     assert "flag${at.length === 1" in fold
+
+
+def test_e_the_morph_panel_reads():
+    panel = APP.split("function morphPanel()", 1)[1].split("function morphReportHtml()", 1)[0]
+    # four separate pills (the Look row's chip markup), a label, and a sentence on what the board is and when it applies
+    assert 'class="toggle chips morph-methods" role="group" aria-label="Morph method"' in panel
+    assert 'class="chip${on}" data-act="morph-method"' in panel
+    assert "A pick here applies on the next Generate; nothing on screen changes now." in panel
+    # the source library says what it is, and that it is not the vibe's stills library
+    assert "Partners for this scene" not in panel
+    assert "<h3>Clips and shapes the storyboard may pair with this shot</h3>" in panel
+    assert "This is not the vibe's objects; those are Fine-tune → Library in Simple." in panel
+    assert "#morph-panel .toggle.morph-methods {" in CSS and "background: none !important" in CSS
