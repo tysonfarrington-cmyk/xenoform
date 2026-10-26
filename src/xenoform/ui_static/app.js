@@ -3913,10 +3913,41 @@ function paintJob() {
   const note = job.tier_note ? ` ${job.tier_note}` : "";
   const label = (job.status === "done" ? "Cut ready" : job.detail || "Working") + note;
   slot.innerHTML = `<div class="jobbar"><strong>${mode}</strong><span>${esc(label)}</span><div class="track"><span style="width:${width}%"></span></div></div>`;
-  const guard = (job.guardrails && job.guardrails.messages) || [];
+  const guard = guardLines((job.guardrails && job.guardrails.messages) || []);
   if (guard.length) {
     slot.innerHTML += `<div class="guardnotes"><strong>Guardrails</strong><ul>${guard.map((m) => `<li>${esc(m)}</li>`).join("")}</ul></div>`;
   }
+}
+
+// The guardrail report, one line per distinct message. The server emits one line per clamped boundary and one per QA
+// flag, which on a 103-shot song was fifty identical "match-cut already used 2x; this boundary is a clean beat cut" rows:
+// identical lines fold into one with a count, and the QA's timed flags ("[qa] glitch at 1.5s") fold into one line a kind.
+function guardLines(messages) {
+  const counts = new Map();
+  const flags = {};
+  const kinds = [];
+  (messages || []).forEach((raw) => {
+    const text = String(raw == null ? "" : raw).trim();
+    if (!text) return;
+    const flag = text.match(/^\[qa\] ([a-z][a-z -]*?) at ([\d.]+s)$/);
+    if (flag) {
+      if (!flags[flag[1]]) {
+        flags[flag[1]] = [];
+        kinds.push(flag[1]);
+      }
+      flags[flag[1]].push(flag[2]);
+      return;
+    }
+    counts.set(text, (counts.get(text) || 0) + 1);
+  });
+  const out = [];
+  counts.forEach((n, text) => out.push(n > 1 ? `${text} (× ${n})` : text));
+  kinds.forEach((kind) => {
+    const at = flags[kind];
+    const more = at.length > 8 ? ` and ${at.length - 8} more` : "";
+    out.push(`[qa] ${at.length} ${kind} flag${at.length === 1 ? "" : "s"} at ${at.slice(0, 8).join(", ")}${more}`);
+  });
+  return out;
 }
 
 const SECTION_COLOR = {

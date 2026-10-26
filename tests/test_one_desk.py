@@ -49,3 +49,13 @@ def test_b_setup_and_connect_are_reachable_from_simple():
     assert ".easy-tool {" in CSS
     reproduce = (ROOT / "docs" / "REPRODUCE.md").read_text(encoding="utf-8")
     assert "Open **Setup & models** from the" in reproduce and "Open **Setup** in the desk header" not in reproduce
+
+
+def test_c1_guardrail_lines_fold_on_the_client():
+    assert "function guardLines(" in APP
+    paint = APP.split("function paintJob()", 1)[1].split("function guardLines(", 1)[0]
+    assert "guardLines((job.guardrails && job.guardrails.messages) || [])" in paint
+    fold = APP.split("function guardLines(messages)", 1)[1].split("\n}\n", 1)[0]
+    assert "(× ${n})" in fold  # identical lines once, with a count
+    assert "/^\\[qa\\] ([a-z][a-z -]*?) at ([\\d.]+s)$/" in fold  # "[qa] glitch at 1.5s" x N folds into one line a kind
+    assert "flag${at.length === 1" in fold
