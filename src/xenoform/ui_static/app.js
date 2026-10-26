@@ -483,7 +483,7 @@ function stagesHtml() {
           width = Math.round((job.progress || 0) * 100);
         }
       } else if (id === "restyle") {
-        detail = state.live ? "Live, when you generate" : "Dry run, when you generate";
+        detail = state.live ? "Live, when you generate" : "Dry run when you generate: coloured blocks, no pictures";
       }
       return `<li class="${cls}"><b>${label}</b><span>${esc(detail)}<span class="bar"><span style="width:${width}%"></span></span></span></li>`;
     })
@@ -809,7 +809,7 @@ function renderAdvanced() {
       <p class="kicker">Picture · ${esc(qualityLabel(state.quality))}</p>
       <h2>${esc(state.quality === "live" ? "Browser preview" : state.videoLabel || "Picture")}</h2>
       ${stageMedia()}
-      <p class="caption"><b>${esc(registerName())}</b> · seed 2727 · ${esc(paletteLabel())} · ${state.live ? "Live endpoint armed" : "Dry run is the default"}</p>
+      <p class="caption"><b>${esc(registerName())}</b> · seed 2727 · ${esc(paletteLabel())} · ${state.live ? "Live: Generate renders through ComfyUI" : "Dry run: Generate draws coloured blocks on the beat, no pictures (Settings → Live ComfyUI renders)"}</p>
       ${qualityToggle()}
       ${stagesHtml()}
     </div>`;
@@ -4376,6 +4376,9 @@ function adoptSession(data, options = {}) {
     score: previous ? previous.score || null : null,
     videoModel: previous && previous.videoModel ? previous.videoModel : readVideoModel(),
     live: previous ? previous.live : false,
+    // Live follows ComfyUI once it answers (refreshComfy) unless Settings chose Dry run or Live by hand (liveChosen)
+    liveChosen: previous ? !!previous.liveChosen : false,
+    liveAuto: previous ? !!previous.liveAuto : false,
     addons: previous && previous.addons != null ? !!previous.addons : readAddons(),
     paidCloudEnv: data.paid_cloud ? String(data.paid_cloud.env || "") : previous ? previous.paidCloudEnv || "" : "",
     paidCloud: paidCloudFor(data, previous),
@@ -4433,7 +4436,7 @@ function watchJob(job) {
   state.previewUrl = "";
   state.previewNote = "";
   state.videoLabel = job.status === "done"
-    ? (state.quality === "turbo" ? "Turbo animatic" : (job.mode === "live" ? "Live cut" : "Dry-run cut"))
+    ? (state.quality === "turbo" ? "Turbo animatic" : (job.mode === "live" ? "Live cut" : "Dry-run animatic (coloured blocks on the beat, no pictures)"))
     : (job.detail || "Preview");
   state.reference = job.status === "done" ? "This pass" : "Preview";
   const player = document.getElementById("player");
@@ -5835,6 +5838,7 @@ document.getElementById("open-settings").addEventListener("click", () => {
 document.getElementById("save-settings").addEventListener("click", () => {
   if (!state) return;
   state.live = document.getElementById("mode-live").checked;
+  state.liveChosen = true;  // a choice made by hand stands; refreshComfy no longer flips it
   state.endpoint = document.getElementById("endpoint").value.trim() || "http://127.0.0.1:8188";
   state.addons = document.getElementById("addons").checked;
   writeAddons(state.addons);
@@ -5914,7 +5918,17 @@ async function refreshComfy() {
   }
   const note = document.getElementById("comfy-settings-status");
   if (note) note.textContent = `${label}. The desk pings /system_stats on ${endpoint}.`;
-  if (state) state.comfyOk = ok;
+  if (!state) return;
+  state.comfyOk = ok;
+  // No surprise dry run: the first time ComfyUI answers, Director tools' Generate renders (Simple always did) unless
+  // Settings picked Dry run or Live by hand. Once per session, so a later Settings choice stands.
+  if (ok && !state.live && !state.liveChosen && !state.liveAuto) {
+    state.live = true;
+    state.liveAuto = true;
+    const mode = document.getElementById("mode-live");
+    if (mode) mode.checked = true;
+    if (document.body.dataset.advanced === "1" && document.body.dataset.ready === "1" && !(state.job && state.job.status === "running")) render();
+  }
 }
 
 // The logo is a home button: back to the song screen (a running job keeps its making screen), out of Director tools too.

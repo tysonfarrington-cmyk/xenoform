@@ -80,3 +80,18 @@ def test_d_open_in_advanced_tells_the_truth():
     assert "Director tools: storyboard, notes, export</button>" in APP
     handler = APP.split('act === "easy-advanced") {', 1)[1].split("} else if", 1)[0]
     assert 'enterAdvanced("export");' in handler  # lands on the step whose actions work on the finished cut, not the Song step
+
+
+def test_f1_no_surprise_dry_run():
+    comfy = APP.split("async function refreshComfy()", 1)[1].split("const brandLink", 1)[0]
+    # the first time ComfyUI answers, Live goes on, once, unless Settings chose by hand
+    assert "if (ok && !state.live && !state.liveChosen && !state.liveAuto) {" in comfy
+    assert "state.live = true;" in comfy and "state.liveAuto = true;" in comfy
+    save = APP.split('document.getElementById("save-settings").addEventListener("click"', 1)[1].split("});", 1)[0]
+    assert "state.liveChosen = true;" in save
+    assert "liveChosen: previous ? !!previous.liveChosen : false," in APP
+    # and a dry run says what it is wherever the monitor names it
+    assert "Dry run: Generate draws coloured blocks on the beat, no pictures (Settings → Live ComfyUI renders)" in APP
+    assert "Dry-run animatic (coloured blocks on the beat, no pictures)" in APP
+    assert "Dry run when you generate: coloured blocks, no pictures" in APP
+    assert '"Dry-run cut"' not in APP and "Dry run is the default" not in APP
