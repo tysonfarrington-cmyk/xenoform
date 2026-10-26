@@ -72,3 +72,11 @@ def test_e_the_morph_panel_reads():
     assert "<h3>Clips and shapes the storyboard may pair with this shot</h3>" in panel
     assert "This is not the vibe's objects; those are Fine-tune → Library in Simple." in panel
     assert "#morph-panel .toggle.morph-methods {" in CSS and "background: none !important" in CSS
+
+
+def test_d_open_in_advanced_tells_the_truth():
+    assert "Open in Advanced" not in APP
+    assert APP.count('data-act="easy-advanced" title=') == 2  # the result aside and the showcase aside
+    assert "Director tools: storyboard, notes, export</button>" in APP
+    handler = APP.split('act === "easy-advanced") {', 1)[1].split("} else if", 1)[0]
+    assert 'enterAdvanced("export");' in handler  # lands on the step whose actions work on the finished cut, not the Song step

@@ -2412,7 +2412,7 @@ function showcaseAside() {
         <h3>Make your own</h3>
         <p class="note">This reel was made earlier with the same engine. Back to the song, pick a vibe, then Make: a 30 s cut takes a few minutes on a 12 GB GPU, a full song about twenty.</p>
         <button type="button" class="generate easy-row" data-act="easy-again">Back to the song</button>
-        <button type="button" class="text easy-row" data-act="easy-advanced">Open in Advanced</button>
+        <button type="button" class="text easy-row" data-act="easy-advanced" title="The director desk, opened on its Export step: Share cut, the shot list and the seed file for this cut, the storyboard and notes behind it">Director tools: storyboard, notes, export</button>
       </aside>`;
 }
 
@@ -2511,7 +2511,7 @@ function renderEasy() {
         <div class="vibe-grid vibe-mini" role="radiogroup" aria-label="Try another vibe">${vibeCards(easy, true)}</div>
         ${easy.cloudPlan ? cloudCard(easy.cloudPlan) : ""}
         <button type="button" class="ghost easy-row" data-act="easy-better">Make it better</button>
-        <button type="button" class="text easy-row" data-act="easy-advanced">Open in Advanced</button>
+        <button type="button" class="text easy-row" data-act="easy-advanced" title="The director desk, opened on its Export step: Share cut, the shot list and the seed file for this cut, the storyboard and notes behind it">Director tools: storyboard, notes, export</button>
         <button type="button" class="text easy-row" data-act="easy-again">Back to the song</button>
       </aside>`}
     </div>`;
@@ -5162,7 +5162,7 @@ document.addEventListener("click", async (event) => {
     el.classList.add("is-loading");
     easyBetter();
   } else if (act === "easy-advanced") {
-    enterAdvanced("song");
+    enterAdvanced("export");  // from a finished cut: the step whose Share cut, Shot list and Seed file act on that cut
   } else if (act === "leave-advanced") {
     leaveAdvanced(false);
   } else if (act === "go") {

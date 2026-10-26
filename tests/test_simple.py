@@ -18,7 +18,7 @@ def test_simple_copy_is_on_the_desk_and_the_judges_page():
     script = (ROOT / "src/xenoform/ui_static/app.js").read_text(encoding="utf-8")
     for name in VIBES:
         assert name in script
-    assert "Open in Advanced" in script
+    assert "Director tools: storyboard, notes, export" in script  # was "Open in Advanced" (docs/WORKFLOW_AUDIT.md, fix D)
     assert "Try another vibe" in script
     assert "Make it better" in script
     assert 'data-act="easy-make"' in script
