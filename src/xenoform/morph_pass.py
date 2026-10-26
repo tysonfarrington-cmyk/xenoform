@@ -320,11 +320,21 @@ def pick_stills(state: dict, count: int, record: bool = True, scene_at: list[int
         scene_rows = [r for r in asked_rows if stills.kind_of(r) == "scene"] + scene_rows
         own = [r for r in asked_rows if stills.kind_of(r) == "object"] + own
     look_vibe = asked if asked in VIBE_LOOK else vibe
+    from xenoform import idea as _idea
+
+    reading = _idea.reading_for(state)  # what the idea line asked for (xenoform.idea): its scenes and shapes lead
+    if reading.get("own") and own:
+        wanted = {stills.clean_noun(o) for o in reading["own"]}
+        own.sort(key=lambda r: 0 if str(r.get("noun") or "").lower() in wanted else 1)  # the line's shapes first among yours
+    if reading.get("scenes") and scene_rows:
+        wanted_scenes = {stills.clean_noun(s, stills.SCENE_NOUN_LIMIT) for s in reading["scenes"]}
+        scene_rows.sort(key=lambda r: 0 if str(r.get("noun") or "").lower() in wanted_scenes else 1)  # the typed place opens
     words = stills.content_words(_story_words(state))  # the stop words out: "to" must not pick the reel-to-reel
     typed = stills.content_words(_idea_words(state))  # the idea line and the brief: what the user actually asked for
     # objects that belong together: the cut draws on one family first (the idea line's word, else the vibe's
     # heaviest family, the tie turned by the seed), freshest first within it, the rest of the pool after
-    named = stills.family_named(asked or vibe, typed) or stills.family_named(asked or vibe, words)  # the idea's family first
+    named = str(reading.get("family") or "") or stills.family_named(asked or vibe, typed) \
+        or stills.family_named(asked or vibe, words)  # the idea's family first
     family = named or stills.family_for_cut(asked or vibe, set(), seed=int(state.get("seed") or 0))
     for r in pool:
         r["family"] = stills.family_of(str(r.get("noun") or ""))

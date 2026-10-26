@@ -234,13 +234,17 @@ def _vocals_in(stem_env: dict | None, t0: float, t1: float) -> float | None:
     return float(sum(v[a:b]) / (b - a)) / peak
 
 
-def performer_slots(shots: list[dict], count: int, stem_env: dict | None = None, style: str = "auto") -> list[dict]:
+def performer_slots(shots: list[dict], count: int, stem_env: dict | None = None, style: str = "auto", *,
+                    max_s: float = PERFORMER_MAX_S) -> list[dict]:
     """Where the performer appears: runs of consecutive shots, each at least ``PERFORMER_MIN_S`` long,
     starting a passage. Priority: the intro first, then the first drop (drums), then each further passage
-    in order; never two slots back to back, at most ``count``. What she does: ``style`` when set; else she
+    in order; never two slots back to back, at most ``count``. A run takes whole shots up to ``max_s`` (the
+    longest clip H3 makes; a short clip the idea line brought her into passes half its length, so the morphs
+    keep the other half). What she does: ``style`` when set; else she
     sings where the song's vocal stem sings (real lip-sync to the vocal), drums on the first drop, dances on
     the other loud passages, and on the quiet ones plays keys, then dances, then guitar (``PERFORMER_QUIET_CYCLE``)."""
     count = int(count)
+    max_s = max(float(max_s), PERFORMER_MIN_S)
     if count <= 0 or not shots:
         return []
     style = str(style or "auto").lower()
@@ -254,7 +258,7 @@ def performer_slots(shots: list[dict], count: int, stem_env: dict | None = None,
             j += 1
         if total < PERFORMER_MIN_S:
             continue
-        while j < len(shots) and shots[j].get("section", section) == section and total + float(shots[j].get("seconds") or 0) <= PERFORMER_MAX_S:
+        while j < len(shots) and shots[j].get("section", section) == section and total + float(shots[j].get("seconds") or 0) <= max_s:
             total += float(shots[j].get("seconds") or 0)  # take whole shots up to the longest clip H3 makes
             j += 1
         t0, t1 = float(shots[i]["start"]), float(shots[j - 1]["end"])
@@ -456,9 +460,11 @@ def grow_family_for_cut(state: dict, vibe: str, need: int, cfg: dict | None, rep
     # keeps its own weights), the idea's named family first, else the vibe's own with the seed turning a tie
     asked = str(state.get("vibe") or "") or vibe
     words = _stills.content_words(_mp._story_words(state))
+    from xenoform import idea as _idea
+
     typed = _stills.content_words(_mp._idea_words(state))  # the idea line first, as pick_stills reads it
-    family = _stills.family_named(asked, typed) or _stills.family_named(asked, words) \
-        or _stills.family_for_cut(asked, set(), seed=int(state.get("seed") or 0))
+    family = str(_idea.reading_for(state).get("family") or "") or _stills.family_named(asked, typed) \
+        or _stills.family_named(asked, words) or _stills.family_for_cut(asked, set(), seed=int(state.get("seed") or 0))
     if not family:
         return None
     cat = _mp.catalogue()
@@ -480,6 +486,52 @@ def grow_family_for_cut(state: dict, vibe: str, need: int, cfg: dict | None, rep
         return {"family": family, "asked": len(nouns), "kept": result.get("kept", 0)}
     except Exception as exc:  # the cut goes on with the pool it has
         log.warning("grow for idea skipped: %s", exc)
+        return None
+
+
+def grow_for_idea(state: dict, vibe: str, cfg: dict | None, report: Callable | None = None, *, engine: str | None = None,
+                  reading: dict | None = None) -> dict | None:
+    """The scenes and shapes the idea line asks for, grown before the cut under the pool vibe ``vibe`` the way
+    ``grow_family_for_cut`` grows a family: the typed scene subjects as wide frames (``idea.SCENES_PER_SUBJECT`` seeds
+    each), the things the catalogue lacks as the user's own shapes, the named catalogue nouns the pool lacks as
+    objects (``idea.grow_plan``). Only when ComfyUI has Z-Image, never for a mock render, ``state["auto_grow"]`` False
+    turns it off. Returns the tally (``scenes`` / ``own`` / ``nouns`` asked and kept), or None when nothing grew."""
+    from xenoform import idea as _idea
+    from xenoform import stills as _stills
+
+    if engine == "mock" or state.get("auto_grow") is False:
+        return None
+    reading = reading if reading is not None else _idea.reading_for(state)
+    plan = _idea.grow_plan(reading, vibe)
+    if not plan["count"]:
+        return None
+    try:
+        if not _stills.available(cfg).get("ok"):
+            return None
+        bits = []
+        if plan["scenes"]:
+            bits.append(f"{len(plan['scenes'])} scene{'s' if len(plan['scenes']) != 1 else ''} ({'; '.join(dict.fromkeys(plan['scenes']))})")
+        shapes = plan["own"] + plan["nouns"]
+        if shapes:
+            bits.append(f"{len(shapes)} shape{'s' if len(shapes) != 1 else ''} ({', '.join(shapes)})")
+        if report:
+            report("restyle", 0.03, f"Growing {' and '.join(bits)} for your line (about {plan['seconds']} s)")
+        out: dict = {"asked": plan["count"], "kept": 0}
+        if plan["scenes"]:
+            got = _stills.grow(vibe, len(plan["scenes"]), nouns=plan["scenes"], cfg=cfg, sheet=False, kind="scene")
+            out["scenes"] = {"asked": len(plan["scenes"]), "kept": int(got.get("kept", 0)), "files": list(got.get("files") or [])}
+            out["kept"] += int(got.get("kept", 0))
+        if plan["own"]:
+            got = _stills.grow(vibe, len(plan["own"]), nouns=plan["own"], own=True, cfg=cfg, sheet=False)
+            out["own"] = {"asked": len(plan["own"]), "kept": int(got.get("kept", 0)), "files": list(got.get("files") or [])}
+            out["kept"] += int(got.get("kept", 0))
+        if plan["nouns"]:
+            got = _stills.grow(vibe, len(plan["nouns"]), nouns=plan["nouns"], cfg=cfg, sheet=False)
+            out["nouns"] = {"asked": len(plan["nouns"]), "kept": int(got.get("kept", 0)), "files": list(got.get("files") or [])}
+            out["kept"] += int(got.get("kept", 0))
+        return out
+    except Exception as exc:  # the cut goes on with the pool it has
+        log.warning("grow for the idea line skipped: %s", exc)
         return None
 
 
@@ -999,9 +1051,17 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
                report: Callable[[str, float, str], None], *, cancel: Callable[[], bool] | None = None,
                client=None, engine: str | None = None) -> dict:
     """Plan, render on open weights, then compose with the beat FX at the chosen aspect."""
+    from xenoform import idea as _idea
     from xenoform import morph_pass as _mp
 
     started = time.perf_counter()
+    # the idea line shapes a Simple cut (xenoform.idea): Scenes to Mix when it names a place, Polly on when it names a
+    # dancer or singer, the reading kept for the pick and the record; the model refines it when XENO_LLM_URL is set
+    reading: dict | None = None
+    if _idea.applies(state) and str(state.get("idea") or "").strip():
+        reading = state["idea_reading"] if isinstance(state.get("idea_reading"), dict) \
+            else _idea.read(str(state["idea"]), str(state.get("vibe") or ""))
+        state = _idea.shape_state(state, reading)
     opt = options(state)
     scene_choice = _mp.scenes_choice(state)  # off / mix / only: whether the chain morphs scenes as well as objects
     work = Path(work) / "simple"
@@ -1011,6 +1071,13 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     long_song = duration > LONG_SONG_S and not plan.get("stills") and not state.get("cut_plan")
     pre_notes: list[dict] = []  # what the plan decided before the render; folded into the record's notes below
     chain: dict = {}
+    line_notes: list[dict] = []
+    if reading:
+        # the scenes and shapes the line asks for, grown first so the pick below finds them (a few stills, about six
+        # seconds each, only when ComfyUI has Z-Image; auto_grow False turns it off, as for the family grow)
+        grown_line = grow_for_idea(state, _mp.vibe_for(state), cfg, report, engine=engine, reading=reading)
+        if grown_line:
+            line_notes.append({"grown_for_line": grown_line})
     if long_song:
         # Music-video mode: one morph a shot, no object twice (see clip_plan); the pool and the tier cap it, and
         # a cut past the cap gets fewer, longer shots instead of a loop (long_song_chain, shared with the animatic)
@@ -1074,7 +1141,7 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     if native and vertical_house and fmt.get("native_vertical") and not os.environ.get("XENO_FINAL_916_OUT", "").strip():
         size = (int(fmt.get("width") or size[0]), int(fmt.get("height") or size[1]))  # the house output size (1080x1920)
     fps = int(fmt.get("fps") or beatfx.FPS) if vertical_house else beatfx.FPS
-    notes: list[dict] = list(pre_notes)
+    notes: list[dict] = list(line_notes) + list(pre_notes)
     scene_files = [s["file"] for s in stills if s.get("kind") == "scene"]  # which stills of the chain are scenes
     if scene_choice != "off" and not scene_files:
         notes.append({"scenes": f"{scene_choice} asked, but the {vibe} pool has no scenes yet: objects only "
@@ -1123,10 +1190,13 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
         s["morph"] = int(s.get("clip", i))
     performer_info: dict = {"shots": 0, "slots": [], "notes": []}
     n_perf = opt.get("performer") or 0
-    if n_perf and long_song:
+    # a long song gets its slots as before; a short clip gets one only when the idea line asked for her ("girl
+    # dancing" on the 12 s demo: one slot of the first passage, the morphs after it)
+    if n_perf and (long_song or bool((reading or {}).get("performer"))):
         # Performer shots: MiniMax H3 (open weights, local) has the reference character sing or drum to the
         # song segment; each slot replaces a run of morph shots with one clip played 1:1 (a hard cut in and out).
-        slots = performer_slots(shots, n_perf, stem_env_for(state), performer_style(state))
+        slots = performer_slots(shots, n_perf, stem_env_for(state), performer_style(state),
+                                max_s=PERFORMER_MAX_S if long_song else max(PERFORMER_MIN_S, duration * 0.5))
         custom = Path(str(state.get("performer_ref") or state.get("hero_path") or "")) if (state.get("performer_ref") or state.get("hero_path")) else None
         if custom is not None and not custom.is_file():
             custom = None
@@ -1237,6 +1307,7 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
             "fx": opt["fx"], "overlay": made["overlay"], "end_card": card, "vibe": vibe,
             "stills": [s["file"] for s in stills], "shots": shots, "plan_name": plan.get("name", ""), "chain": chain or None,
             "scene_mode": scene_choice, "scene_files": scene_files,  # the scenes choice and which stills were scenes
+            "idea": reading,  # what the idea line was read as (xenoform.idea), or None
             # the Chain row's pins (which slots the user chose), the still preparation a swap must repeat, the swaps so far
             "pins": {str(i): s["file"] for i, s in enumerate(stills) if s.get("pinned")},
             "pinned": [i for i, s in enumerate(stills) if s.get("pinned")],
@@ -1281,6 +1352,9 @@ def chain_preview(directed: dict, state: dict, audio_path: Path) -> dict:
     """The chain a Make of ``state`` will morph through, without rendering or marking a still used: the planned shots,
     the stills in order (``stills``, n morphs over n + 1 stills) and the still each shot plays (``picks``). The stills
     animatic cuts these to the song; the Chain row shows them before Make, pins and all (``morph_pass.pins_of``)."""
+    from xenoform import idea as _idea
+
+    state = _idea.shape_state(state)  # the idea line's Scenes and Polly choices, read by the rules (no model here)
     shots, plan = shots_for(state, directed, Path(audio_path))
     duration = float(directed.get("duration") or shots[-1]["end"])
     long_song = duration > LONG_SONG_S and not plan.get("stills")

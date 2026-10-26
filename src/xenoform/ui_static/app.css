@@ -2238,3 +2238,7 @@ label.easy-paid { display: block; margin: 0.4rem 0 0.2rem; font-size: 0.86em; op
 .shots-lane .lane-open { display: flex; margin: 2px 0 3px; }
 .shots-lane .lane-open .shot { width: auto; min-width: 0; height: 22px; padding: 0 2px; --hue: 260; }
 .shots-lane .lane-open .shot i { line-height: 22px; font-size: 10px; }
+
+/* The idea line, read: what the cut will make of it, under the field as it is typed. */
+.idea-reading { margin-top: 4px; color: var(--text); }
+.idea-reading[hidden] { display: none; }

@@ -2430,6 +2430,8 @@ function renderEasy() {
     const chainLine = chainStills.map((s) => s.noun || "").filter(Boolean).join(" \u2192 ");
     const story = chainLine || (easy.idea ? `Your line: ${easy.idea}` : chosen.line);
     const storyLabel = chainLine ? `The chain: ${chainStills.length} stills, ${Math.max(0, chainStills.length - 1)} morphs` : "The idea";
+    const lineRead = ideaReading();  // what the line asked for, under the chain (the scenes it grows, Polly)
+    const lineNote = lineRead && lineRead.summary ? `<p class="note">Your line, read: ${esc(lineRead.summary)}</p>` : "";
     const heard = easy.song ? "done" : "now";
     const wrote = scenes.length ? "done" : "now";
     const painting = scenes.length ? "now" : "wait";
@@ -2463,6 +2465,7 @@ function renderEasy() {
           </ol>
           <p class="eyebrow">${esc(storyLabel)}</p>
           <p>${esc(story)}</p>
+          ${lineNote}
           <p class="note" id="easy-progress">${esc(easy.note || "Reading the song.")}</p>
           <p class="note">You can leave this page. The video keeps going and waits for you.</p>
         </aside>
@@ -2558,9 +2561,10 @@ function renderEasy() {
         <div class="vibe-grid" role="radiogroup" aria-label="Vibe">${vibeCards(easy, false, "featured")}</div>
         ${moreVibes(easy)}
         <label class="idea-field">Your idea in one line, if you have one.
-          <input id="easy-idea" type="text" maxlength="170" value="${esc(easy.idea || "")}" aria-label="One line, optional" placeholder="Name an object or a family: a chrome moth, lanterns, sea creatures. Empty, and the vibe decides." autocomplete="off" />
+          <input id="easy-idea" type="text" maxlength="170" value="${esc(easy.idea || "")}" aria-label="One line, optional" placeholder="A place, an object, a dancer: a girl dancing in a neon city at night, lanterns, a chrome moth. Empty, and the vibe decides." autocomplete="off" />
         </label>
-        <p class="note">The line picks the objects: a word that names one of the library's objects opens the cut on it and fills the chain with its family (moth, lantern, heron, sea creatures, instruments). Other words change nothing yet. For a place, grow scenes on the Library row; for a dancer, Fine-tune \u2192 Performer.</p>
+        ${ideaReadingLine(easy)}
+        <p class="note">The line shapes the cut: a place becomes a scene the morphs pass through (rendered before Make, about 20 s), an object the library knows opens the cut and fills the chain with its family (moth, lantern, heron, sea creatures), a thing it lacks is rendered as your own shape, and a dancer or singer brings Polly in. What the line was read as shows under it; Scenes and Performer in Fine-tune still have the last word.</p>
       </section>
       <section class="panel span simple-knobs-panel" data-tour="easy-macros">
         <h3>Knobs</h3>
@@ -2737,6 +2741,63 @@ function stillsRow(easy) {
 // (POST /api/simple/chain, dense.chain_preview: nothing rendered, nothing marked used). Click a slot and pick another
 // object or scene from the vibe's library; a pinned slot holds through Make (the make body's chain_pins, which
 // morph_pass.pick_stills honours slot by slot), the rest are picked fresh. The idea line, Scenes and Length move the picks.
+// The idea line, read (POST /api/simple/idea, xenoform.idea): the scenes it names (grown before Make), the objects the
+// library knows, the shapes it lacks, Polly when it names a dancer or singer. Shown under the line as it is typed.
+let ideaTimer = null;
+function ideaKey() {
+  const e = state.easy || {};
+  return JSON.stringify([e.vibe || "", String(e.idea || "").trim()]);
+}
+function scheduleIdea() {
+  if (ideaTimer) clearTimeout(ideaTimer);
+  ideaTimer = setTimeout(() => { ideaTimer = null; loadIdea(ideaKey()); }, 400);
+}
+async function loadIdea(key) {
+  const e = state.easy || {};
+  if (!String(e.idea || "").trim()) { state.ideaReading = { key, data: null }; paintIdeaReading(); return; }
+  let data;
+  try {
+    const res = await api("/api/simple/idea", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ idea: e.idea, vibe: e.vibe || "" }) });
+    const body = await res.json().catch(() => ({}));
+    data = res.ok ? body : { error: body.detail || "The line could not be read." };
+  } catch (err) {
+    data = { error: "The line could not be read." };
+  }
+  if (!state.easy || ideaKey() !== key) return;  // the line moved on; a newer request follows
+  state.ideaReading = { key, data };
+  paintIdeaReading();
+}
+function ideaReading() {
+  return state.ideaReading && state.ideaReading.key === ideaKey() && state.ideaReading.data && !state.ideaReading.data.error
+    ? state.ideaReading.data : null;
+}
+function ideaReadingText(easy) {
+  if (!String(easy.idea || "").trim()) return "";
+  const have = state.ideaReading && state.ideaReading.key === ideaKey() ? state.ideaReading.data : undefined;
+  if (have === undefined) return "Reading your line...";
+  if (!have) return "";
+  if (have.error) return have.error;
+  if (!have.summary) return "Nothing the cut can use yet: name a place (a neon city at night), an object (lanterns) or a dancer.";
+  const grow = have.grow || {};
+  const bits = [];
+  if (grow.scenes && grow.scenes.length) bits.push(`${grow.scenes.length} scene${grow.scenes.length === 1 ? "" : "s"}`);
+  const shapes = (grow.own || []).length + (grow.nouns || []).length;
+  if (shapes) bits.push(`${shapes} shape${shapes === 1 ? "" : "s"}`);
+  const growing = bits.length ? ` Make renders ${bits.join(" and ")} for it first (about ${grow.seconds || 20} s).` : "";
+  return `Read as: ${have.summary}${growing}`;
+}
+function ideaReadingLine(easy) {
+  if (!state.ideaReading || state.ideaReading.key !== ideaKey()) scheduleIdea();
+  const text = ideaReadingText(easy);
+  return `<p class="note idea-reading" id="easy-idea-reading"${text ? "" : " hidden"}>${esc(text)}</p>`;
+}
+function paintIdeaReading() {
+  const el = document.getElementById("easy-idea-reading");
+  if (!el) return;  // another screen: the next render draws it
+  const text = ideaReadingText(state.easy || {});
+  el.textContent = text;
+  el.hidden = !text;
+}
 let chainTimer = null;
 function chainKey() {
   const e = state.easy || {};
@@ -5588,6 +5649,7 @@ document.addEventListener("input", (event) => {
     state.titleText = target.value;
   } else if (target.id === "easy-idea") {
     state.easy.idea = target.value;
+    scheduleIdea();  // what the line was read as (scenes, objects, Polly) shows under it as it is typed
     if (state.easy.song && state.easy.vibe) scheduleChain(chainKey());  // the idea line moves the picks: the Chain row follows
   } else if (target.id === "easy-own-shapes") {
     state.easy.ownShapes = target.value;

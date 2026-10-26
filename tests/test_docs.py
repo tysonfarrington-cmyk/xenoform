@@ -93,6 +93,17 @@ def test_the_chain_row_and_the_swap_are_in_the_public_docs():
     assert "Choosing it." in stills and "Changing it after the cut." in stills
 
 
+def test_the_idea_line_is_in_the_public_docs():
+    """The idea line shapes the cut (26 Oct): the README says what the line can do, the changelog carries the module and
+    the route, the stills page has the section."""
+    readme = _read("README.md")
+    assert "Your idea in one line" in readme and "/api/simple/idea" in readme and "Polly: dancing" in readme
+    unreleased = _read("CHANGELOG.md").split("## 0.3.3")[1].split("## 0.3.2")[0]
+    assert "xenoform.idea" in unreleased and "/api/simple/idea" in unreleased and "grow_for_idea" in unreleased
+    stills = _read("docs/stills.md")
+    assert "## The idea line" in stills and "/api/simple/idea" in stills
+
+
 def test_scenes_are_in_the_public_docs():
     """Scenes (26 Oct): the README names them, the unreleased changelog carries the line, the stills page has the section."""
     readme = _read("README.md")

@@ -1417,12 +1417,14 @@ def create_app(cfg: dict | None = None):
         (``dense.chain_preview``): nothing rendered, nothing marked used. A Length cut is previewed on the window the
         Make will trim (the same maths as ``_trim_audio``, without the trim), so its count may differ by a still."""
         from xenoform import morph_pass as _mp
+        from xenoform import idea as _idea
         from xenoform.dense import chain_preview
         from xenoform.director import apply_director
 
         state = dict(body or {})
         if isinstance(state.get("scenes"), str):
             state["scene_stills"] = state.pop("scenes")
+        state = _idea.shape_state(state)  # the idea line's Scenes choice, so scene_mode below says what the preview drew
         if not isinstance(state.get("cut_plan"), dict):
             state.pop("cut_plan", None)
         audio_id = str(state.get("audio_id") or "demo")
@@ -1522,6 +1524,20 @@ def create_app(cfg: dict | None = None):
     def simple_chain(body: dict) -> dict:
         """The same, for the whole make body the desk sends (the idea line, Length, Your footage, the pins, every knob)."""
         return _chain_for(body or {})
+
+    @app.post("/api/simple/idea")
+    def simple_idea(body: dict) -> dict:
+        """What the idea line was read as (``xenoform.idea.read``: ``scenes`` to grow as wide frames, ``objects`` the
+        catalogue knows, ``own`` shapes to grow, ``family``, ``performer``, one ``summary`` line) and what a Make will
+        grow for it first (``grow``, under ``pool_vibe``), so the desk says so under the line before Make."""
+        from xenoform import idea as _idea
+        from xenoform import morph_pass as _mp
+
+        line = str((body or {}).get("idea") or "")
+        vibe = str((body or {}).get("vibe") or "")
+        reading = _idea.read(line, vibe)
+        pool_vibe = _mp.vibe_for({"vibe": vibe}) if vibe else ""
+        return {**reading, "grow": _idea.grow_plan(reading, pool_vibe), "pool_vibe": pool_vibe}
 
     def _video_dir(video_id: str) -> Path:
         folder = work_dir() / "jobs" / storage_id(video_id, fallback="")

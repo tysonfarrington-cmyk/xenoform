@@ -151,7 +151,9 @@ def test_vibe_stories_have_no_verb_nouns(register):
 
 def test_making_screen_joins_story_lines_as_sentences_and_has_no_static_minute():
     app = (STATIC / "app.js").read_text(encoding="utf-8")
-    assert "storySentence(scene.action)" in app
+    # the making screen shows the chain this Make morphs through, not the Director storyboard's sentences (26 Oct,
+    # tests/test_idea_line.py); the sentence helper stays for the Director screens
+    assert "function storySentence" in app and "The chain: ${chainStills.length} stills" in app
     assert "About a minute" not in app and "About 1 minute" not in app and "about a minute" not in app
     assert "easyProgressText(job)" in app
     turbo = (ROOT / "src" / "xenoform" / "turbo.py").read_text(encoding="utf-8")

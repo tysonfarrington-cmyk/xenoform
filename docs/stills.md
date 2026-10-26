@@ -131,6 +131,27 @@ the same Draft path with the cut's own seed for those morphs and the still prepa
 other clip is kept, and the cut is re-composed through the re-cut path with the knobs as they stand. The record is
 updated in place (`stills`, `scene_files`, `clips`, a `swaps` log); the new clips sit under `simple/swaps/<n>/`.
 
+## The idea line
+
+The Simple desk's one line is read before Make (`xenoform.idea.read`, rules and no model: a spelling map for the
+typos a line is typed with, lexicons of places, skies and lights, people and what they play, comma groups split again
+at the prepositions that introduce a place; `XENO_LLM_URL` lets `xenoform.llm` refine the reading) into what the
+library can grow and the chain can use:
+
+- **scenes**: a place and its light become a scene subject ("girl dancing to rave music in a cyber punk city outside
+  wearhouse, lazers" → "a cyberpunk city outside a warehouse with lasers"), rendered as wide frames before the cut
+  (`dense.grow_for_idea`: three seeds of each subject, under the pool vibe, `kind="scene"`), with Scenes set to Mix
+  when the user left it Off, and that scene first among the scene rows so the cut opens on it;
+- **objects**: a catalogue noun opens the cut and names its family as before ("a chrome moth"), and a thing the
+  catalogue lacks ("lasers", "a wolf skull") is grown as one of your own shapes, first in the chain;
+- **Polly**: a person doing something brings the performer in ("girl dancing" → on, dance; "singing" → sing; a person
+  with no performance → the auto mix), two slots when the user left her Off, and on a short clip too.
+
+`POST /api/simple/idea` with `idea` and `vibe` returns the reading (`scenes`, `objects`, `own`, `family`, `performer`,
+one `summary` line) and what a Make will grow for it (`grow`); the desk shows the summary under the field as it is
+typed. The record carries the reading under `idea`. Fine-tune's Scenes and Performer still have the last word: a
+choice made there is kept.
+
 ## Limits
 
 - Stills only. A moving object to morph into (a still plus a short idle clip of it) is the next step after the contest.
