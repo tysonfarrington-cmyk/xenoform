@@ -65,5 +65,4 @@ def test_idea_catalog_and_page():
     assert raw.status_code == 200
     assert raw.json()["fields"]["brief"]["categories"][0]["ideas"]
     script = client.get("/static/app.js")
-    assert 'id="style-note"' in script.text
-    assert 'id="transition-note"' in script.text
+    assert 'id="easy-idea"' in script.text  # the one line the idea rows attach to on the desk (one desk, 26 Oct)

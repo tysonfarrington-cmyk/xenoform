@@ -64,7 +64,7 @@
 
   function viewName() {
     const hash = (location.hash || "#simple").replace("#", "").split("/")[0] || "simple";
-    return hash === "scene" ? "director" : hash;
+    return hash === "setup" || hash === "connect" ? hash : "simple";
   }
 
   function reduceMotion() {
@@ -112,8 +112,7 @@
     document.body.appendChild(root);
     document.getElementById("tutorial-start").addEventListener("click", () => {
       dismissOffer(true);
-      const simple = document.body.dataset.advanced !== "1";
-      begin(simple ? "simple" : "first-video", { resume: false });
+      begin("simple", { resume: false });
     });
     document.getElementById("tutorial-later").addEventListener("click", () => dismissOffer(true));
     document.getElementById("tour-back").addEventListener("click", back);
@@ -136,15 +135,10 @@
     ensureRoot();
     const offer = document.getElementById("tutorial-offer");
     offer.hidden = false;
-    const simple = document.body.dataset.advanced !== "1";
     const title = document.getElementById("tutorial-offer-title");
     const copy = document.getElementById("tutorial-offer-copy");
-    if (title) title.textContent = simple ? "Simple mode in 30 seconds" : "Walk the desk";
-    if (copy) {
-      copy.textContent = simple
-        ? "Song, a vibe, then Make. You can leave and come back, or skip it."
-        : "A short tour, one control at a time. You can leave and come back, or skip it.";
-    }
+    if (title) title.textContent = "The desk in a minute";
+    if (copy) copy.textContent = "A song, a vibe, the knobs, then a prototype. You can leave and come back, or skip it.";
     const start = document.getElementById("tutorial-start");
     if (start) start.focus();
   }
@@ -638,8 +632,8 @@
       open.dataset.bound = "1";
       open.addEventListener("click", () => {
         const saved = read();
-        const fallback = document.body.dataset.advanced === "1" ? "first-video" : "simple";
-        const id = saved.active && !saved.done[saved.active] ? saved.active : fallback;
+        const known = catalog && (catalog.tours || []).some((tour) => tour.id === saved.active);
+        const id = saved.active && known && !saved.done[saved.active] ? saved.active : "simple";
         const mid = id && Number(saved.progress[id] || 0) > 0 && !saved.done[id];
         begin(id, { resume: !!mid });
       });

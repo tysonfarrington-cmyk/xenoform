@@ -18,15 +18,17 @@ Drop in a song and pick a vibe. Xenoform reads the beats, the sections and the d
 
 It is a music video director, not a visualiser: visualisers pulse to the beat and montage tools cut between unrelated clips. Here the song decides what the subject becomes.
 
-### Simple mode: three decisions
+### One desk: Song, Vibe, Prototype, Refine, Share
 
-Simple mode is a song, a vibe and **Make**. Under the vibes sit four knobs (**Intensity** for the beat pulse and flash, **Speed** for the cut density and trail length, **Chaos** for the punches, stutters and how far the subject swings, **Glow** for the bloom) and the **Look** chips. Everything else sits in a **Fine-tune** drawer and has a sensible default from the house profile (`configs/defaults_demo.json`, the look used in the demo video). The app times the cut to the song, morphs one object into the next on the beat, reacts to the stems and applies the look; the knobs set how hard.
+The desk is one flow, shown as a strip on every screen. A song and a vibe make a quick **prototype**; its own screen is where you **refine** it (the timeline, the knobs, a re-cut without the GPU) and **render** it whole or at Final, then **share** it. There is no second desk: the old Advanced (Director tools) desk drove a storyboard path the cuts never used, and it was folded away on 26 Oct 2026 ([docs/WORKFLOW_AUDIT.md](docs/WORKFLOW_AUDIT.md)).
+
+The first screen is a song, a vibe and **Make**. Under the vibes sit four knobs (**Intensity** for the beat pulse and flash, **Speed** for the cut density and trail length, **Chaos** for the punches, stutters and how far the subject swings, **Glow** for the bloom) and the **Look** chips. Everything else sits in a **Fine-tune** drawer and has a sensible default from the house profile (`configs/defaults_demo.json`, the look used in the demo video). The app times the cut to the song, morphs one object into the next on the beat, reacts to the stems and applies the look; the knobs set how hard.
 
 | Decision | Default | Notes |
 | --- | --- | --- |
 | Song | Bundled demo (`examples/demo.wav`) | Or drop any wav/mp3/mp4. Stems split in the background the moment it loads (Demucs on the CPU, the band split without it), so the first Make reacts to them. |
 | Vibe | 12 featured vibes, 29 in the registry | Each vibe has its own stills, look, LTX settings and transitions ([docs/VIBES.md](docs/VIBES.md)). |
-| Make | Draft, the whole song | Draft is LTX-Video 0.9.5. A 20 s clip is about a minute on a 12 GB card; a four-minute song is a shot every bar over a loop of up to 30 morphs and takes about 20 minutes. The panel beside Make says the video length, the shot and morph count and the time before you press it. Final is LTX-2.3 22B distilled fp8 plus a 4x upscale, with its own estimate. |
+| Make | Draft; a song over 45 s is prototyped as 30 s around the drop | The first Make of a long song is a quick prototype (Fine-tune → Length keeps the choice once you pick one); the cut's screen then has **Render the whole song** and **Render at Final**. Draft is LTX-Video 0.9.5. A 20 s clip is about a minute on a 12 GB card; a four-minute song is a shot every bar over a loop of up to 30 morphs and takes about 20 minutes. The panel beside Make says the video length, the shot and morph count and the time before you press it. Final is LTX-2.3 22B distilled fp8 plus a 4x upscale, with its own estimate. |
 
 In the Fine-tune drawer: aspect (**9:16** default, 16:9 and 1:1 stay), **Length** (the whole song, or 60, 30 or 15 seconds centred on the drop), energy (Flow or Dense), **Model** (Draft is LTX-Video 0.9.5, Final is LTX-2.3 22B), **GPU** (auto-detected preset, or CPU, 8, 12 or 24 GB), **Renders on** (the ComfyUI address; paid cloud renders stay off unless you switch them on, and they are not open weights), Forms (morph count, Auto or 1 to 40), macro knobs (**Intensity, Speed, Chaos, Glow**), one reaction lane per stem, the Look (`dance_fx` preset or auto), **Foreshadow** (the next object traced, negative, sliced or silhouetted into the tail of the shot before it, riding the song's other stem; Auto picks by the vibe), stem orbit on or off, beat FX, the end card, **Your footage** (a folder on your machine, or clips and images dropped on the row: the images lead the morph chain as morph targets, each clip is cut in on the beat as one run of shots at the start of a passage, 2 to 8 s, played 1:1), and a MIDI controller panel. The end card burns the recipe code and `github.com/tysonfarrington-cmyk/xenoform` into the last two seconds.
 
@@ -36,7 +38,7 @@ In the Fine-tune drawer: aspect (**9:16** default, 16:9 and 1:1 stay), **Length*
 
 **The chain is yours to choose** (Fine-tune → Chain): the row shows the stills this Make will morph through, in order, the way the draft previews them (`POST /api/simple/chain`, nothing rendered). Click a slot and pick another object or scene from the vibe's library; a pinned slot holds through Make (the make body's `chain_pins`, which the pick honours slot by slot and fills the rest around, no still twice), the other slots are picked fresh each time, and the record says which slots were pinned.
 
-After a render the knobs stay live: turn Intensity, Speed, Chaos or Glow, pick another Look, and **Re-cut** re-composes the same morphs without the GPU in a fraction of the render time. On the shots lane under the player, **Swap an object** replaces the still a shot lands on: only the two morphs that touch it are rendered again (Draft: two morphs' worth of the cut's render time, about 40 s on a 12 GB card, plus the re-cut), the rest of the cut is kept and re-composed (`POST /api/jobs/{id}/swap`; the record logs the swap). Also **15 s hook**, **Copy recipe code**, **My videos**. Paste a recipe code under *Make my video* to remix someone else's.
+After a render the knobs stay live: turn Intensity, Speed, Chaos or Glow, pick another Look, and **Re-cut** re-composes the same morphs without the GPU in a fraction of the render time. On the shots lane under the player, **Swap an object** replaces the still a shot lands on: only the two morphs that touch it are rendered again (Draft: two morphs' worth of the cut's render time, about 40 s on a 12 GB card, plus the re-cut), the rest of the cut is kept and re-composed (`POST /api/jobs/{id}/swap`; the record logs the swap). Under the timeline the **Share** row has **Share cut** (a 720p H.264 under 16 MB for a post), **15 s hook**, **Copy recipe code**, the cut's **Shot list** and **Seed file**, and VJ mode with this song's stems; **Download** in the head is the file at the size it was rendered. Every cut lands in **My videos**. Paste a recipe code in Fine-tune to remix someone else's.
 
 The lane is a **Timeline** ([docs/TIMELINE.md](docs/TIMELINE.md)): click a shot to hold it on its object or let it morph, give it its own Look and beat-FX intensity, swap the object it lands on, re-render its morph with another seed, length or prompt variant (`POST /api/jobs/{id}/rerender`, one Draft morph on the GPU), or **Generate here** a fresh run of morphs over the next 5, 10 or 15 s cut in like your own clip (`POST /api/jobs/{id}/insert`); click a boundary to make it a Cut instead of a morph handoff and to dress it with a premium transition or a boundary kind. **Apply** re-cuts from the cached morphs with these edits, no GPU; the record keeps them (`shot_overrides`, `boundary_overrides`) through every later re-cut.
 
@@ -78,7 +80,7 @@ This entry claims the **LTX bonus**: LTX-2.3 is the core video model for Final, 
 
 None of these run unless you turn them on, and the demo, the judges page and Setup never use them.
 
-- **Paid cloud renders (LTX-2.5 partner node).** Settings → "Paid cloud renders", or `XENO_PAID_CLOUD=1`. Only then does Simple mode show *Cloud quality*, which renders with `LtxApi25ImageToVideo` (`workflows/ltx25_partner_flf_api.json`) behind a price card and a confirm click, and labels the result `cloud-rendered`. With it off, `/api/cloud/estimate` answers 403.
+- **Paid cloud renders (LTX-2.5 partner node).** Settings → "Paid cloud renders", or `XENO_PAID_CLOUD=1`. Only then does Fine-tune show *Cloud quality*, which renders with `LtxApi25ImageToVideo` (`workflows/ltx25_partner_flf_api.json`) behind a price card and a confirm click, and labels the result `cloud-rendered`. With it off, `/api/cloud/estimate` answers 403.
 - **Comfy Cloud backend.** `comfy.backend: "cloud"` with `COMFY_ORG_API_KEY` runs the same open-weights graphs on Comfy Cloud (`scripts/cloud_smoke.py`, `configs/cloud_models.json`). Partner and API nodes are blocked on that path too.
 - **Add-ons switch** (`comfy.addons`, `XENO_ADDONS`): FLUX 3 API, H3 API, partner nodes and cloud LLMs. `Xenoform.bat` sets `XENO_ADDONS=0`.
 - **Local LTX-2.5 open weights.** `workflows/ltx25_morph_api.json` is wired and picked automatically when the four LTX-2.5 files are in the models folder (gated Hugging Face repo, LTX-2.x Community License). It is not the default and has not been run on the 12 GB development card.
@@ -118,7 +120,7 @@ By hand, on any platform:
 
 </details>
 
-![Simple mode](docs/quickstart-simple.png)
+![The desk](docs/quickstart-simple.png)
 
 ![Setup check, with disk space and one download button per model](docs/quickstart-setup.png)
 
@@ -220,11 +222,9 @@ xenoform run --config configs/example.json --synth --out work/xenoform.mp4   # t
 pytest                                       # the test suite
 ```
 
-## Advanced desk
+## Deeper controls
 
-The *Director tools* button in the header (it was called Advanced) keeps the full director desk; the logo, the browser's Back and the first item in its rail return to Simple. It holds a storyboard with one action shot per section, literary registers for the treatment, Director's notes (one plain-English note becomes a checked JSON patch), Review & fix (a rule-based critic that measures the cut and re-renders only the shots that drift), versions, and OSC and CSV export for TouchDesigner. Simple mode does not need any of it. The REST API the browser and the MCP server share is under `/api/v1/` (health, session, registers, storyboard, params, notes, review, render, frames, versions, export).
-
-Related pages: [docs/footage.md](docs/footage.md) (your own clips, the NASA library, camera roll), [docs/transitions.md](docs/transitions.md), [docs/VIBES.md](docs/VIBES.md), [docs/AUTOTUNE.md](docs/AUTOTUNE.md), [docs/LESSONS.md](docs/LESSONS.md), [docs/SURPRISE.md](docs/SURPRISE.md).
+Everything deeper than the four knobs sits on the same desk: **Fine-tune** under the knobs (length, aspect, energy, Draft or Final, the GPU and the ComfyUI address, Polly and **your own full-body still** for her, your own footage, the stills library, the chain, foreshadow, scenes, beat FX, orbit, end card, a recipe to paste), the **Timeline** on the cut's screen (each shot and each handoff), and the **…** menu in the header (Settings, Setup & models, Connect an AI, the Expert guardrails switch, Copy diagnostics, the judges page). The REST API the browser and the MCP server share is under `/api/` and `/api/v1/` (health, session, registers, storyboard, params, notes, review, render, frames, versions, export); the storyboard, registers, Director's notes and the critic stay there for MCP clients and scripts, not on the desk.
 
 ## Layout
 
@@ -234,7 +234,7 @@ install.bat, install.ps1, install.sh   create .venv with Python 3.12 and install
 pyproject.toml, requirements.txt       pinned dependencies (comfy-sdk 0.5.0, comfy-api-proxy 0.1.6)
 __init__.py, web/                      optional ComfyUI node pack entry (Try It, Setup Check)
 src/xenoform/
-  ui.py, ui_static/                    the desk: Simple mode, /vj, /moves, /judges, /licences, /credits
+  ui.py, ui_static/                    the desk, /vj, /moves, /judges, /licences, /credits
   dense.py, morph_pass.py, final_tier.py, portrait.py   cut plan, morph chain, Draft and Final tiers
   dance_fx.py, stem_orbit.py, transitions_fx.py, beatfx.py   looks, orbit, transitions, beat FX, end card
   stem_react.py, stems_api.py, stems.py, midi_bridge.py   stems and MIDI

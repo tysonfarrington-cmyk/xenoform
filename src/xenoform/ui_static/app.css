@@ -1379,18 +1379,6 @@ body[data-tour="1"] #review-fix {
   outline-offset: 2px;
 }
 
-body[data-advanced="0"] #generate-gate,
-body[data-advanced="0"] .views,
-body[data-advanced="0"] #copy-diagnostics,
-body[data-advanced="0"] #open-settings,
-body[data-advanced="0"] #review-fix,
-body[data-advanced="0"] #generate,
-body[data-advanced="0"] #jobslot,
-body[data-advanced="0"] #register-slot,
-body[data-advanced="0"] #reviewslot {
-  display: none;
-}
-
 .easy {
   max-width: 880px;
   margin: 0 auto;
@@ -1496,7 +1484,7 @@ button.easy-make {
 }
 .easy-result .screen video.on { opacity: 1; }
 .easy-result audio { display: none; }
-body[data-advanced="0"] .top > .ow-badge { margin-left: auto; }
+body[data-desk] .top > .ow-badge { margin-left: auto; }
 .easy button:focus-visible,
 .easy input:focus-visible,
 .easy .upload:focus-within {
@@ -1795,9 +1783,6 @@ body[data-advanced="0"] .top > .ow-badge { margin-left: auto; }
   .easy-desk, .easy-done, .easy-make-grid { grid-template-columns: 1fr; }
   .easy-side { position: static; }
 }
-
-body[data-advanced="1"] #register-slot { display: none; }
-body[data-advanced="1"][data-step="look"] #register-slot { display: block; }
 
 .desk-app {
   display: grid;
@@ -2112,7 +2097,6 @@ button.easy-showcase { width: 100%; margin-top: 8px; }
   .top-actions summary,
   .generate-gate { white-space: nowrap; }
   .top-actions { flex-wrap: wrap; justify-content: flex-end; }
-  body[data-advanced="1"] .top-actions { margin-left: auto; }
 }
 
 /* Simple finishing: energy, aspect, quality, FX, end card; remix box; My videos */
@@ -2139,23 +2123,23 @@ button.easy-showcase { width: 100%; margin-top: 8px; }
 .licence-table th, .licence-table td { text-align: left; padding: 4px 6px; border-bottom: 1px solid rgba(255,255,255,.08); vertical-align: top; }
 .licence-table th { opacity: .7; font-weight: 500; }
 
-/* Simple mode: the header scrolls away instead of sitting over the Vibe cards; the side panel sticks to the top edge. */
-body[data-advanced="0"] .top { position: relative; }
-body[data-advanced="0"] .easy-side { top: 16px; }
+/* The desk: the header scrolls away instead of sitting over the Vibe cards; the side panel sticks to the top edge. */
+body[data-desk] .top { position: relative; }
+body[data-desk] .easy-side { top: 16px; }
 
 .guard-expert{display:inline-flex;gap:6px;align-items:center;font-size:12px;opacity:.75;margin:6px 0}
 .guardnotes{font-size:12px;margin-top:6px;padding:6px 10px;border-left:2px solid #c9a227;opacity:.9}
 .guardnotes ul{margin:4px 0 0 16px;padding:0}
 .guard-live{color:#c9a227}
 
-/* UI v7: Simple mode is song, vibe, Make. Everything else sits in the Fine-tune drawer. */
-body[data-advanced="0"] .comfy-status {
+/* UI v7: the desk is song, vibe, Make. Everything else sits in the Fine-tune drawer. */
+body[data-desk] .comfy-status {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 3px 10px; border-radius: 999px; font-size: 11px;
   border: 1px solid var(--line, rgba(28,28,30,.1)); background: rgba(255,255,255,.55);
 }
-body[data-advanced="0"] .comfy-status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #c9a227; }
-body[data-advanced="0"] .comfy-status[data-ok="1"]::before { background: #1f8a55; }
+body[data-desk] .comfy-status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #c9a227; }
+body[data-desk] .comfy-status[data-ok="1"]::before { background: #1f8a55; }
 .house-line { margin: 6px 0 0; }
 .fine-tune { margin-top: 8px; border-radius: 12px; }
 .fine-tune > summary { cursor: pointer; padding: 8px 10px; font-weight: 600; font-size: 14px; list-style: none; display: flex; align-items: center; gap: 8px; }
@@ -2275,3 +2259,25 @@ label.easy-paid { display: block; margin: 0.4rem 0 0.2rem; font-size: 0.86em; op
 .shots-lane .tl-dress-row select { max-width: 100%; }
 .shots-lane .lane-apply-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 8px; }
 .shots-lane .lane-apply-row .note { margin: 0; flex: 1 1 240px; }
+
+/* One desk (26 Oct): the cut's screen is Refine and Share, the header is the brand, ComfyUI, Open weights, Tutorial, "..." */
+.easy-share { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.easy-share .share-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.easy-share .share-row a.ghost { display: inline-flex; align-items: center; padding: 8px 14px; border-radius: 9999px; text-decoration: none; color: var(--text); font-size: 15px;
+  background: linear-gradient(180deg, rgba(255,255,255,.95), rgba(246,245,241,.8)); border: 1px solid rgba(28,28,30,.1);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.95), 0 2px 6px -2px rgba(28,28,30,.12); }
+.easy-share .share-row a.ghost:hover { background: #fff; }
+.easy-side .render-head { margin-top: 16px; }
+#easy-guard .guardnotes summary { cursor: pointer; font-size: 12px; }
+#easy-guard .guardnotes ul { max-height: 220px; overflow: auto; }
+.performer-own { align-items: center; }
+.performer-own .hero-thumb { width: 48px; height: 64px; object-fit: cover; border-radius: 8px; }
+.more-panel .guard-expert { display: flex; margin: 4px 0; padding: 6px 10px; font-size: 13px; opacity: 1; color: var(--muted); }
+.more-panel a.text { display: block; padding: 8px 12px; border-radius: 9999px; color: var(--text); text-decoration: none; font-size: 15px;
+  background: linear-gradient(180deg, rgba(255,255,255,.95), rgba(246,245,241,.8)); border: 1px solid rgba(28,28,30,.1);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.95), 0 2px 6px -2px rgba(28,28,30,.12); }
+.more-panel a.text:hover { background: #fff; }
+/* the sticky side column is taller than a laptop window (906 px on the first screen, more on the cut's): it scrolls on its
+   own, so the Render row, the vibes and the tools line under Make are reachable without scrolling the page to its end */
+body[data-desk] .easy-side { max-height: calc(100vh - 32px); overflow-y: auto; overscroll-behavior: contain; }
+@media (max-width: 1000px) { body[data-desk] .easy-side { max-height: none; overflow: visible; } }

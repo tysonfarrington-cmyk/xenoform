@@ -21,15 +21,17 @@ def test_simple_ideas_show_the_dice_and_two_chips():
 
 def test_overview_tab_and_overflow_menu():
     page = (STATIC / "index.html").read_text(encoding="utf-8")
-    assert 'data-view="simple">Overview</a>' in page
+    assert 'class="views"' not in page and "Overview</a>" not in page  # one desk: no mode tabs (26 Oct)
     assert 'class="more-menu"' in page
     menu = page.split('class="more-menu"', 1)[1].split("</details>", 1)[0]
+    for item in ("Setup &amp; models", "Connect an AI", 'id="open-settings"', 'id="guard-expert"', "Judges page"):
+        assert item in menu
     assert "Copy diagnostics" in menu
     assert "About" in menu
     assert "Reset tutorial" in menu
     assert "Tutorial" in page
     script = (STATIC / "app.js").read_text(encoding="utf-8")
-    assert 'class="kicker">Overview</p>' in script
+    assert 'class="kicker">Overview</p>' not in script  # the Director desk's Overview panel went with it (26 Oct)
     assert "Make my video" in script
     assert 'data-act="easy-stop"' in script
     assert "Try another vibe" in script
@@ -39,7 +41,6 @@ def test_keyboard_and_tour_focus_the_button():
     app = (STATIC / "app.js").read_text(encoding="utf-8")
     assert 'event.key === "Enter"' in app
     assert "/cancel" in app
-    assert "[data-act=expand]" in app
     tour = (STATIC / "tutorial.js").read_text(encoding="utf-8")
     assert "tutorial-start" in tour
     assert 'getElementById("tour-next")' in tour

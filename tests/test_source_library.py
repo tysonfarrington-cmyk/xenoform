@@ -216,13 +216,9 @@ def test_library_routes_and_the_desk_controls(tmp_path: Path):
     assert "checked" in html.split('id="exclude-faces"', 1)[0][-80:] or 'id="exclude-faces" checked' in html
     assert 'id="allow-pd-us"' in html
     script = APP.read_text(encoding="utf-8")
-    assert "library-browser" in script
-    assert 'data-act="library-pin"' in script
-    assert 'data-act="library-ban"' in script
-    easy = script.split("function renderEasy()", 1)[1].split("function placeKey", 1)[0]
-    assert "library-browser" not in easy
+    # the Director desk's source-library browser left the desk with it (one desk, 26 Oct); the routes stay for MCP
+    assert "library-browser" not in script and 'data-act="library-pin"' not in script
     css = CSS.read_text(encoding="utf-8")
-    assert ".library-grid" in css
     assert "shimmer" not in css
 
 

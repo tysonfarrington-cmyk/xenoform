@@ -65,7 +65,6 @@ def test_front_end_draws_the_lane_and_names_the_browser_tier():
     css = (ROOT / "src/xenoform/ui_static/app.css").read_text(encoding="utf-8")
     assert "function shotsLane(easy)" in js and "${shotsLane(easy)}" in js and 'data-act="easy-seek"' in js
     assert "/api/videos/${encodeURIComponent(id)}/shots" in js and ".shots-lane .shot" in css
-    assert 'label: "Browser preview"' in js and 'if (value === "live") return "Browser preview";' in js
     assert "ComfyUI is not answering at ${" in js and "not answering: Make will play the vibe's pictures in the browser, no render" in js
     assert "Seconds, in the browser" not in js  # the silent fallback wording is gone
 

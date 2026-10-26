@@ -243,17 +243,3 @@ textarea {
   border-radius: var(--radius-md);
 }
 
-body[data-advanced="0"] .mix,
-body[data-advanced="0"] .recipe-chip,
-body[data-advanced="0"] .recipe-code,
-body[data-advanced="0"] .recipe-actions,
-body[data-advanced="0"] .recipe-code ~ .hint,
-body[data-advanced="0"] .recipe-code ~ .note,
-body[data-advanced="0"] .stages,
-body[data-advanced="0"] .card-row,
-body[data-advanced="0"] .other-forms,
-body[data-advanced="0"] .ledger-raw,
-body[data-advanced="0"] .note-depth,
-body[data-advanced="0"] .locks {
-  display: none;
-}

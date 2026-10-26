@@ -220,6 +220,24 @@ and pinned by `tests/test_one_desk.py` (the desk) and `tests/test_one_desk_serve
 | G | a172b5d | My videos hides the nine nameless rows; Forms shows no guardrail line while Auto; Beat overlay is an Off / On row with a note; a vibe card on the result selects and shows "Make it with Neon noir" instead of rendering on the click |
 | C2, F2 | 35ccaa1 | one guardrail line a kind from `transitions_fx.guard`, no `native_vertical` line at the 9:16 default, the stills draft for a director animatic with a vibe; committed ready, **not on 47322 until a restart** |
 
+### 3.1b The fold, landed early (26 Oct evening)
+
+Tys after the A to G fixes: "I still see a simple and director mode - it looks the same? I thought we were going to streamline
+the whole app?" So the restructure below moved up from November and landed the same evening, in one commit. What it is, against
+the plan in 3.2:
+
+| Plan step | What landed |
+| --- | --- |
+| 1. Stage router | One render path (`renderEasy`, or `renderTool` for `#setup` / `#connect`); the strip is **Song › Vibe › Prototype › Refine › Share**; `syncAdvanced`, the toggle, `renderAdvanced`, the rail, the nav and every `data-advanced` rule are gone; old hashes land on the desk. The hashes stay `#simple/...` (not renamed), so the VJ page's Desk link and old bookmarks work. |
+| 2. The lane as the timeline | Already built by the timeline session the same afternoon (shot and boundary drawers, re-render, Generate here); the fold made it the Refine stage and gave it the Share row beneath. |
+| 3. Fold the panels | Polly's own still into Fine-tune → Performer; shot list, seed file, VJ into Share; Setup, Connect, Settings, Expert into the **…** menu. Removed from the desk, because they changed nothing in a cut: notes and versions, Review & fix, the morph board and source library, registers and treatments, the storyboard, transition and look selects, Energy slider, lyric align, quality pill and live canvas, gates. |
+| 4. One engine | The make body is always `mode: "simple"`; the storyboard transition rows and the end-card text are gone from it; the routes behind the removed panels stay for MCP. The `XF-` recipe left the desk with the Export step. |
+| Prototype stage | New: a song over 45 s is made first as a 30 s Draft around the drop; the cut's screen offers the whole song and Final. |
+
+Verified on the preview desk (47322): the old URLs, the logo and Back from a tool page, the menu, Settings, a reopened cut's
+Refine and Share, a simulated 3.5-minute song's prototype button and make body, and one real Make (bundled demo, Molten gold, End
+card on: 4:33, the End card burned into the last frames, the Guardrails line "1 setting adjusted · 1 check flagged").
+
 ### 3.2 After the deadline: the restructure (the first two weeks of November)
 
 In this order, each step shippable on its own:

@@ -80,7 +80,7 @@ House roles (`DEMO_HOUSE["dance_fx"]`): intro = cyan-flash 1.25, vj = cool-echo 
 
 **Stems:** a render uses the job's split stems when `state["stems_path"]` points at a `stem_react.envelopes` JSON (`POST /api/stems` writes `work/ui/stems/<hash>/stems.json`); otherwise a 4-role envelope is derived from the mix (kick flux -> bass, transient flux -> drums, loudness -> other) with the beat grid as drum hits. Up to **32 named stems** are accepted (`stem_react.MAX_STEMS`); `macros.stems {name: gain 0..1}` weights each stem before it feeds its role (drums / bass / other / vocals).
 
-**/api/generate payload keys** for the look (Simple mode, read by `dense.options` / `dense.macros`):
+**/api/generate payload keys** for the look (every Make is `mode: "simple"`, read by `dense.options` / `dense.macros`):
 - `dance_fx`: `"auto"` (default: the vibe's `fx_defaults.dance_fx` from configs/vibes.json when set, else the house role presets) | `"off"` | a preset name.
 - `stem_orbit`: `true` (default) | `false`.
 - `macros`: `{"intensity": 0..1, "speed": 0..1, "chaos": 0..1, "glow": 0..1, "stems": {"<stem>": 0..1}}` (0.5 / 0.5 / 0.3 / 0.4 neutral). `intensity` scales the beat FX, `chaos` above 0.5 adds wobble (never in the 9:16 house look), `speed` biases the auto morph count (x0.6 .. x1.4) and shortens dance_fx echo trails, `glow` scales halation / depth bloom and the beat-FX bloom, `stems` are the per-stem gains.

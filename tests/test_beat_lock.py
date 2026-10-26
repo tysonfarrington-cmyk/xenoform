@@ -86,8 +86,7 @@ def test_hit_control_stays_off_the_simple_desk():
     root = Path(__file__).resolve().parents[1]
     script = (root / "src" / "xenoform" / "ui_static" / "app.js").read_text(encoding="utf-8")
     css = (root / "src" / "xenoform" / "ui_static" / "app.css").read_text(encoding="utf-8")
-    assert "morph-hit" in script
-    assert "Hit flash" in script
+    assert "Hit flash" not in script  # the Director morph board's control left with it (one desk, 26 Oct)
     easy = script.split("function renderEasy()", 1)[1].split("function placeKey", 1)[0]
     assert "morph-hit" not in easy
     assert "shimmer" not in css

@@ -53,7 +53,7 @@ def test_xenoform_route_serves_the_desk():
             assert body["audio_id"] == "demo"
             script = await client.get("/xenoform/static/app.js")
             assert script.status == 200
-            assert b"Try the demo" in await script.read()
+            assert b"Make a music video." in await script.read()
         finally:
             await client.close()
 

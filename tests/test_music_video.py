@@ -234,7 +234,7 @@ def test_simple_options_describe_the_plan(client):
 
 def test_desk_has_the_length_control_and_the_plan_facts():
     assert 'simpleSeg("easy-length"' in APP and 'act === "easy-length"' in APP
-    assert "length_s: Number(" in APP and "length: String(easy.lengthS || 0)" in APP
+    assert "length_s: easyLength(state.easy)" in APP and "length: String(easyLength(easy))" in APP
     assert "function easyPlanFacts" in APP and "over a loop of" in APP
     assert "up to 15 morphs" not in APP
 

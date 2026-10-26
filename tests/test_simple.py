@@ -1,4 +1,4 @@
-"""Simple mode is the first screen. Advanced keeps the full desk."""
+"""The desk is one flow (Song, Vibe, Prototype, Refine, Share); there is no Advanced desk since 26 Oct."""
 
 import json
 from pathlib import Path
@@ -18,13 +18,13 @@ def test_simple_copy_is_on_the_desk_and_the_judges_page():
     script = (ROOT / "src/xenoform/ui_static/app.js").read_text(encoding="utf-8")
     for name in VIBES:
         assert name in script
-    assert "Director tools: storyboard, notes, export" in script  # was "Open in Advanced" (docs/WORKFLOW_AUDIT.md, fix D)
+    assert "Director tools" not in script and "Open in Advanced" not in script  # one desk (26 Oct)
     assert "Try another vibe" in script
     assert 'data-act="easy-better"' not in script  # the dead "Make it better" left the result screen (26 Oct)
     assert 'data-act="easy-make"' in script
     page = (ROOT / "src/xenoform/ui_static/index.html").read_text(encoding="utf-8")
-    assert 'id="advanced-toggle"' in page
-    assert 'data-advanced="0"' in page
+    assert 'id="advanced-toggle"' not in page and 'data-advanced' not in page
+    assert 'data-desk="1"' in page
     client = TestClient(create_app())
     home = client.get("/")
     assert home.status_code == 200
@@ -42,8 +42,7 @@ def test_simple_copy_is_on_the_desk_and_the_judges_page():
             assert row["name"] in judges.text, row["id"]
     tours = json.loads((ROOT / "src/xenoform/ui_static/tutorial.json").read_text(encoding="utf-8"))
     names = [tour["name"] for tour in tours["tours"]]
-    assert names[0] == "Simple mode in 30 seconds"
-    assert "Make your first video" in names
+    assert names == ["The desk in a minute"]  # one desk, one tour (26 Oct)
 
 
 def test_a_vibe_can_keep_morphs_off_while_the_track_is_loud():

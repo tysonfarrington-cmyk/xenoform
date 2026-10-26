@@ -33,9 +33,9 @@ Press **Watch a finished one** for a pre-rendered reel of LTX morphs cut to the 
    - Optional: **Z-Image Turbo** (18 GB) only if you want to make new vibe stills; the shipped stills already cover 29 vibes. **Wan Animate 2** (Comfy-Org `Wan2.2-Animate-2` repack: int8 model, lightx2v LoRA, UMT5-XXL fp8, CLIP vision H, Wan 2.1 VAE) only for Moves.
 3. `Xenoform.bat` starts `comfy-api-proxy` on port 8189 for you. By hand: `.venv/bin/comfy-api-proxy run --comfyui http://127.0.0.1:8188 --port 8189`. The desk header shows **connected** when `/system_stats` answers.
 
-## 5. The demo cut in Simple mode (about 3 minutes on a 12 GB card)
+## 5. The demo cut on the desk (about 4 minutes on a 12 GB card)
 
-Simple mode is three decisions. Leave everything in the **Fine-tune** drawer at its default: that is the `demo_house` profile from `configs/defaults_demo.json`, the look used in the demo video.
+The desk is a song, a vibe and Make. Leave everything in the **Fine-tune** drawer at its default: that is the `demo_house` profile from `configs/defaults_demo.json`, the look used in the demo video.
 
 1. Song: **Bundled demo** (or drop your own file).
 2. Vibe: **chrome-mercury** (the first featured vibe) gives the chrome-pour chain; any of the 12 featured vibes works the same way.

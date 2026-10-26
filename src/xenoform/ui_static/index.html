@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="/static/ui_v4.css" />
   <link rel="stylesheet" href="/static/ui_v6.css" />
 </head>
-<body data-advanced="0">
+<body data-desk="1">
   <header class="top">
     <a class="brand" href="#simple">
       <span>
@@ -19,14 +19,6 @@
         <em>Every drop is a transformation.</em>
       </span>
     </a>
-    <nav class="views" aria-label="How you direct">
-      <a href="#simple" data-view="simple">Overview</a>
-      <a href="#director" data-view="director">Director</a>
-      <a href="#notes" data-view="notes">Notes</a>
-      <a href="#connect" data-view="connect">Connect</a>
-      <a href="#setup" data-view="setup">Setup</a>
-      <a href="/judges">Judges</a>
-    </nav>
     <p class="comfy-status" id="comfy-status" data-ok="0">ComfyUI not connected</p>
     <a class="ow-badge" href="/licences" title="LTX-2.3 has a revenue threshold. FLUX.2 Klein 9B is non-commercial. This desk uses the Apache 2.0 4B.">Open weights</a>
     <div class="top-actions">
@@ -36,22 +28,16 @@
         <div class="more-panel">
           <button type="button" class="text" data-act="go" data-hash="setup">Setup &amp; models</button>
           <button type="button" class="text" data-act="go" data-hash="connect">Connect an AI</button>
+          <button type="button" class="text" id="open-settings">Settings</button>
+          <label class="guard-expert" title="Guardrails clamp settings known to cause flaky output (laggy morph counts, stutter in morph runs, cropped 9:16, shimmer, 12 GB VRAM...). Expert keeps your values and only warns. Hard bans still apply."><input type="checkbox" id="guard-expert"> Expert: keep my values (guardrails only warn)</label>
           <button type="button" class="text" id="copy-diagnostics">Copy diagnostics</button>
+          <a class="text" href="/judges">Judges page</a>
           <button type="button" class="text" id="open-about">About</button>
           <button type="button" class="text" id="reset-tutorial">Reset tutorial</button>
         </div>
       </details>
-      <button type="button" class="text" id="open-settings">Settings</button>
-      <button type="button" class="text" id="advanced-toggle" aria-pressed="false">Director tools</button>
-      <button type="button" class="ghost" id="review-fix">Review &amp; fix</button>
-      <div id="generate-gate" class="generate-gate" data-gate="1"></div>
-      <button type="button" class="generate" id="generate">Generate</button>
     </div>
   </header>
-  <div id="register-slot"></div>
-  <div id="reviewslot"></div>
-  <label class="guard-expert" title="Guardrails clamp settings known to cause flaky output (laggy morph counts, stutter in morph runs, cropped 9:16, shimmer, 12 GB VRAM...). Expert keeps your values and only warns. Hard bans still apply."><input type="checkbox" id="guard-expert"> Expert: override guardrails</label>
-  <div id="jobslot"></div>
   <main id="app">
     <p class="boot">Opening the desk…</p>
   </main>
@@ -62,7 +48,7 @@
       <p class="tagline">Every drop is a transformation.</p>
       <p class="subhead">A music video director, not a visualiser.</p>
       <p class="pitch">Xenoform turns a song into a music video where one object keeps transforming into the next, every change landing on the beat. Free, local, open weights.</p>
-      <p class="note">A draft in about 3 seconds, then LTX morphs on your own GPU. Simple mode is a song, a vibe, Make: 9:16, Dense, Draft and the house look by default, with Flow, 16:9 and 1:1, a Final tier, the Look presets, macros, stem reactions, a 15 s hook and recipe codes under Fine-tune. Registers, the storyboard with per-boundary transitions and per-shot looks, MCP and the critic are under Director tools (the header button; the logo brings you back). Live visuals run at <a href="/vj">/vj</a> (a MIDI controller drives the macros on both pages); TouchDesigner gets OSC from the <span class="mono">xenoform osc</span> command.</p>
+      <p class="note">One desk: a song and a vibe make a quick prototype (a Draft of 30 s around the drop for a long song: a stills draft in seconds, LTX morphs on your own GPU in minutes); refine it on its timeline (each shot's object, look and FX, each handoff, a morph re-rendered, a run generated), re-cut it with the knobs without the GPU, then render the whole song or Final and share it. 9:16, Dense, Draft and the house look by default, with Flow, 16:9 and 1:1, the Look presets, stem reactions, Polly, your own footage and recipe codes under Fine-tune. Any AI can drive the same desk over MCP (… → Connect an AI). Live visuals run at <a href="/vj">/vj</a> (a MIDI controller drives the macros on both pages); TouchDesigner gets OSC from the <span class="mono">xenoform osc</span> command.</p>
       <table class="licence-table">
         <thead><tr><th>Model</th><th>Used for</th><th>Licence</th></tr></thead>
         <tbody>
@@ -88,10 +74,6 @@
     <form method="dialog">
       <p class="kicker">Endpoint</p>
       <h2>How the cut is made</h2>
-      <div class="modes">
-        <label><input type="radio" name="mode" id="mode-dry" value="dry" checked /> Dry run</label>
-        <label><input type="radio" name="mode" id="mode-live" value="live" /> Live ComfyUI</label>
-      </div>
       <label class="field">Comfy base URL
         <input id="endpoint" type="url" spellcheck="false" placeholder="http://127.0.0.1:8188" />
       </label>
@@ -103,11 +85,11 @@
         </select>
       </label>
       <p class="note">LTX-2.3 is the default core. LTX-2.5 is local open weights under the LTX-2.x Community License, free under $10M annual revenue. If that distilled file is missing, or the open-weights check fails, the cut stays on LTX-2.3. Turbo stays on LTX 0.9.5, and an 8 GB card stays on 0.9.5 unless you pick 2.5. Partner nodes stay out.</p>
-      <p class="note">Dry run is the default. It renders the liquid body, slices it on the script, and passes those slices through — no weights, no GPU. Live sends each slice through the Comfy SDK to the local proxy on port 8189. This URL stays the ComfyUI health ping.</p>
+      <p class="note">Make renders through ComfyUI at this address (the Comfy SDK, through the local proxy on port 8189) whenever it answers; when it does not, Make plays the vibe's pictures in the browser and says so.</p>
       <label class="addon"><input type="checkbox" id="addons" /> Add-ons</label>
       <p class="note">Off by default. This covers FLUX 3 API, H3 API, partner nodes, and cloud LLMs. The demo, the judges page, and setup never need it.</p>
       <label class="addon"><input type="checkbox" id="paid-cloud" /> Paid cloud renders (partner node, not open weights)</label>
-      <p class="note">Off by default. On, Simple mode shows Cloud quality: LTX-2.5 morphs rendered by a paid Comfy partner node, billed to your Comfy account after a price card and a confirm click. The default path is 100% open weights and never needs this. <span id="paid-cloud-env"></span></p>
+      <p class="note">Off by default. On, Fine-tune shows Cloud quality: LTX-2.5 morphs rendered by a paid Comfy partner node, billed to your Comfy account after a price card and a confirm click. The default path is 100% open weights and never needs this. <span id="paid-cloud-env"></span></p>
       <p class="kicker">Source library</p>
       <label class="field">Library folder
         <input id="library-folder" type="text" spellcheck="false" placeholder="./library" autocomplete="off" />

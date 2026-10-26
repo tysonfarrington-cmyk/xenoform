@@ -1,7 +1,10 @@
-"""One desk (docs/WORKFLOW_AUDIT.md, the before-deadline list, 26 Oct): a way out of Director tools (A), Setup and
-Connect reachable from Simple (B), the guardrail lines grouped (C1), the Morph panel that reads (E), "Open in Advanced"
-telling the truth (D), no surprise dry run (F1), and Simple's small ones (G). String pins against the desk files."""
+"""One desk (26 Oct, Tys: "get rid of the simple/advanced and combine it into one; the simple can be kept as a
+prototyping stage"). The Director desk is gone from the page: one flow of stages (Song, Vibe, Prototype, Refine, Share),
+the few Director pieces that changed a cut folded in (the per-shot edits are the timeline's, Polly's own still is in
+Fine-tune, the shot list and seed file are in Share, Setup and Connect are tool pages), and the rest removed. These are
+string pins against the desk files; tests/test_one_desk_server.py has the server halves."""
 
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -11,107 +14,110 @@ CSS = (STATIC / "app.css").read_text(encoding="utf-8")
 INDEX = (STATIC / "index.html").read_text(encoding="utf-8")
 
 
-def test_a_director_tools_has_a_way_out():
-    # the toggle is relabelled and reads as the exit while it is on
-    assert 'id="advanced-toggle" aria-pressed="false">Director tools</button>' in INDEX
-    assert 'Back to Simple" : "Director tools";' in APP
-    # Advanced lives at its own URLs, so Back leaves it and a reload lands in Simple unless the URL says desk
-    assert 'return "#simple/desk";' in APP
-    assert "function advancedHash(" in APP and "function enterAdvanced(" in APP and "function leaveAdvanced(" in APP
-    assert "syncAdvanced(advancedHash());" in APP  # boot derives the mode from the URL, not from localStorage
-    hashchange = APP.split('window.addEventListener("hashchange"', 1)[1].split("});", 1)[0]
-    assert "if (advancedHash() && !advancedOn) syncAdvanced(true);" in hashchange
-    assert 'viewFromHash() === "simple") syncAdvanced(false);' in hashchange
-    # the logo goes home from Advanced too; the rail's first item and the button return to the screen you left
-    brand = APP.split('const brandLink = document.querySelector(".brand");', 1)[1].split("const viewNav", 1)[0]
-    assert 'document.body.dataset.advanced === "1") return;' not in brand
-    assert "leaveAdvanced(true);" in brand
-    rail = APP.split("function railHtml(current)", 1)[1].split("function songStep()", 1)[0]
-    assert 'data-act="leave-advanced">&larr; Back to Simple</button>' in rail
-    assert rail.index("rail-exit") < rail.index("<h2>Your video</h2>")
-    assert 'act === "leave-advanced"' in APP
-    assert ".rail .rail-exit {" in CSS
-    # a finished cut stays on its result when you come back through the button (home only through the logo)
-    leave = APP.split("function leaveAdvanced(home)", 1)[1].split("async function boot()", 1)[0]
-    assert '(phase === "result" || phase === "showcase")) setEasyPhase(phase);' in leave
+def _fn(name, until):
+    return APP.split(name, 1)[1].split(until, 1)[0]
 
 
-def test_b_setup_and_connect_are_reachable_from_simple():
-    assert "function renderTool(" in APP
-    render = APP.split("function render()", 1)[1].split("function renderTool(", 1)[0]
-    assert "renderTool(state.view)" in render  # #setup and #connect draw inside the Simple shell, no Director tools needed
-    menu = INDEX.split('class="more-menu"', 1)[1].split("</details>", 1)[0]
-    assert 'data-act="go" data-hash="setup">Setup &amp; models</button>' in menu
-    assert 'data-act="go" data-hash="connect">Connect an AI</button>' in menu
-    aside = APP.split('<aside class="panel easy-side" data-tour="easy-make">', 1)[1].split("</aside>", 1)[0]
-    assert 'data-hash="setup"' in aside and 'data-hash="connect"' in aside
-    assert 'act === "go"' in APP
-    assert ".easy-tool {" in CSS
-    reproduce = (ROOT / "docs" / "REPRODUCE.md").read_text(encoding="utf-8")
-    assert "Open **Setup & models** from the" in reproduce and "Open **Setup** in the desk header" not in reproduce
+def test_there_is_no_second_desk():
+    for gone in ('id="advanced-toggle"', 'class="views"', 'id="generate"', 'id="review-fix"', 'id="generate-gate"',
+                 'id="register-slot"', 'id="reviewslot"', 'id="jobslot"', "data-advanced", 'id="mode-dry"', 'id="mode-live"'):
+        assert gone not in INDEX, gone
+    assert '<body data-desk="1">' in INDEX
+    for gone in ("syncAdvanced", "enterAdvanced", "leaveAdvanced", "renderAdvanced", "railHtml", "renderDirector",
+                 "renderNotes", "notesPanel", "morphPanel", "treatmentPanel", "paintRegisters", "runReview",
+                 "dataset.advanced", "Director tools", "Xenoform · Simple"):
+        assert gone not in APP, gone
+    render = _fn("function render() {", "function renderTool(")
+    assert 'renderTool(state.view) : renderEasy()' in render
+    assert "data-advanced" not in CSS and 'body[data-desk] .comfy-status {' in CSS
 
 
-def test_c1_guardrail_lines_fold_on_the_client():
-    assert "function guardLines(" in APP
-    paint = APP.split("function paintJob()", 1)[1].split("function guardLines(", 1)[0]
-    assert "guardLines((job.guardrails && job.guardrails.messages) || [])" in paint
-    fold = APP.split("function guardLines(messages)", 1)[1].split("\n}\n", 1)[0]
-    assert "(× ${n})" in fold  # identical lines once, with a count
-    assert "/^\\[qa\\] ([a-z][a-z -]*?) at ([\\d.]+s)$/" in fold  # "[qa] glitch at 1.5s" x N folds into one line a kind
-    assert "flag${at.length === 1" in fold
+def test_old_director_urls_land_on_the_desk():
+    view = _fn("function viewFromHash() {", "function setEasyPhase(")
+    assert 'if (name === "setup" || name === "connect") return name;' in view and 'return "simple";' in view
+    # #director, #notes, #scene, #simple/desk ... are tidied to #simple (Back and the logo then agree)
+    assert 'history.replaceState(null, "", "#simple")' in _fn("function easyPhaseFromHash()", "function easyCrumbs(")
+    brand = _fn('const brandLink = document.querySelector(".brand");', 'window.addEventListener("hashchange"')
+    assert brand.index("history.pushState") < brand.index('setEasyPhase("choose")')  # Back returns to a tool page
 
 
-def test_e_the_morph_panel_reads():
-    panel = APP.split("function morphPanel()", 1)[1].split("function morphReportHtml()", 1)[0]
-    # four separate pills (the Look row's chip markup), a label, and a sentence on what the board is and when it applies
-    assert 'class="toggle chips morph-methods" role="group" aria-label="Morph method"' in panel
-    assert 'class="chip${on}" data-act="morph-method"' in panel
-    assert "A pick here applies on the next Generate; nothing on screen changes now." in panel
-    # the source library says what it is, and that it is not the vibe's stills library
-    assert "Partners for this scene" not in panel
-    assert "<h3>Clips and shapes the storyboard may pair with this shot</h3>" in panel
-    assert "This is not the vibe's objects; those are Fine-tune → Library in Simple." in panel
-    assert "#morph-panel .toggle.morph-methods {" in CSS and "background: none !important" in CSS
+def test_the_stage_strip():
+    crumbs = _fn("function easyCrumbs(easy) {", "const EASY_SAVED_KEYS")
+    assert 'const order = ["song", "vibe", "make", "refine", "share"];' in crumbs
+    assert 'make: "Prototype"' in crumbs and 'share: "Share"' in crumbs and '"Refine"' in crumbs
+    handler = APP.split('act === "easy-crumb") {', 1)[1].split("} else if", 1)[0]
+    assert 'share: "#easy-share"' in handler and 'refine: ".shots-lane, .tl-panel"' in handler
 
 
-def test_d_open_in_advanced_tells_the_truth():
-    assert "Open in Advanced" not in APP
-    assert APP.count('data-act="easy-advanced" title=') == 2  # the result aside and the showcase aside
-    assert "Director tools: storyboard, notes, export</button>" in APP
-    handler = APP.split('act === "easy-advanced") {', 1)[1].split("} else if", 1)[0]
-    assert 'enterAdvanced("export");' in handler  # lands on the step whose actions work on the finished cut, not the Song step
+def test_the_prototype_stage():
+    assert "const PROTO_S = 30;" in APP and "const PROTO_MAX_S = 45;" in APP
+    length = _fn("function easyLength(easy) {", "function easyLengthIsProto(")
+    assert "return easySongSeconds() > PROTO_MAX_S ? PROTO_S : 0;" in length
+    assert "length_s: easyLength(state.easy)," in APP
+    assert "Make a ${esc(String(easyLength(easy)))} s prototype" in APP
+    make = _fn("async function easyMake() {", "function placeKey(")
+    assert "state.easy.madeLength = easyLength(state.easy);" in make and 'state.easy.madeTier = state.easy.tier || "draft";' in make
 
 
-def test_f1_no_surprise_dry_run():
-    comfy = APP.split("async function refreshComfy()", 1)[1].split("const brandLink", 1)[0]
-    # the first time ComfyUI answers, Live goes on, once, unless Settings chose by hand
-    assert "if (ok && !state.live && !state.liveChosen && !state.liveAuto) {" in comfy
-    assert "state.live = true;" in comfy and "state.liveAuto = true;" in comfy
-    save = APP.split('document.getElementById("save-settings").addEventListener("click"', 1)[1].split("});", 1)[0]
-    assert "state.liveChosen = true;" in save
-    assert "liveChosen: previous ? !!previous.liveChosen : false," in APP
-    # and a dry run says what it is wherever the monitor names it
-    assert "Dry run: Generate draws coloured blocks on the beat, no pictures (Settings → Live ComfyUI renders)" in APP
-    assert "Dry-run animatic (coloured blocks on the beat, no pictures)" in APP
-    assert "Dry run when you generate: coloured blocks, no pictures" in APP
-    assert '"Dry-run cut"' not in APP and "Dry run is the default" not in APP
-
-
-def test_g_simples_small_ones():
-    # My videos hides the nameless Director dry runs and test animatics
-    gallery = APP.split("function galleryPanel()", 1)[1].split("async function loadVideos()", 1)[0]
-    assert "filter((row) => row.song || row.vibe)" in gallery
-    # Forms: no guardrail warning against the Auto value the desk chose itself
-    forms = APP.split("function morphControl(easy, tier, aspect, vertical)", 1)[1].split("function morphGuardText", 1)[0]
-    assert '${auto ? "" : esc(morphGuardText(n))}' in forms
-    # Beat overlay is a labelled row with a note, not an orphan button
-    assert 'simpleSeg("easy-overlay-set", overlay ? "on" : "off", [["off", "Off"], ["on", "On"]], "Beat overlay")' in APP
-    assert 'act === "easy-overlay-set"' in APP
-    assert "Beat overlay · ${overlay" not in APP
-    # a vibe card on the result only selects; the render waits for "Make it with ..."
-    vibe = APP.split('act === "easy-vibe") {', 1)[1].split("} else if", 1)[0]
-    assert "else easyMake();" not in vibe
-    assert "state.easy.resultVibe = state.easy.vibe;" in APP
+def test_the_cut_screen_is_refine_and_share():
     result = APP.split('if (easy.phase === "result" || easy.phase === "showcase") {', 1)[1].split("const preview = easy.vibe", 1)[0]
-    assert 'data-act="easy-make">Make it with ${esc(chosen.name)}</button>' in result
-    assert "const made = vibeById(easy.resultVibe || easy.vibe) || chosen;" in result
+    assert "${shotsLane(easy)}" in result and "${renderRow(easy)}" in result and "shareRow(easy)" in result
+    assert 'id="easy-guard"' in result and "guardDetails(state.job)" in result
+    assert 'id="energy"' not in result  # the Energy slider re-cut the Director storyboard, never the video
+    assert 'data-act="easy-advanced"' not in APP
+    share = _fn("function shareRow(easy) {", "function renderRow(easy)")
+    for item in ("Share cut · 720p", "15 s hook", "Copy recipe code", "/api/jobs/${job}/notes", "/api/jobs/${job}/seed", "vjUrl()"):
+        assert item in share, item
+    render_row = _fn("function renderRow(easy) {", "function renderEasy()")
+    assert 'data-act="easy-render-full"' in render_row and 'data-act="easy-render-final"' in render_row
+    handler = APP.split('act === "easy-render-full" || act === "easy-render-final") {', 1)[1].split("} else if", 1)[0]
+    assert "state.easy.lengthS = 0;" in handler and 'state.easy.tier = "final";' in handler and "easyMake()" in handler
+    # Download is the file at full size; Share cut is the 720p copy (Download used to be that copy too)
+    download = APP.split('act === "easy-download") {', 1)[1].split("} else if", 1)[0]
+    assert "/api/videos/${encodeURIComponent(id)}/video" in download and "shareCut(" not in download
+
+
+def test_the_make_body():
+    body = _fn("function payload() {", "function vjUrl()")
+    assert "scene_transitions:" not in body  # the engine never read them; the guard reported a line a boundary from them
+    assert len(re.findall(r"\bend_card:", body)) == 1  # the Director's text copy overwrote the End card switch
+    assert 'mode: "simple",' in body and 'hero_id: state.heroId || ""' in body
+    generate = _fn("async function generate() {", "async function poll(")
+    assert "showGate" not in generate and "storyApproved" not in generate
+
+
+def test_the_menu_and_settings():
+    menu = INDEX.split('class="more-menu"', 1)[1].split("</details>", 1)[0]
+    for item in ('data-hash="setup"', 'data-hash="connect"', 'id="open-settings"', 'id="guard-expert"',
+                 'id="copy-diagnostics"', 'href="/judges"', 'id="open-about"', 'id="reset-tutorial"'):
+        assert item in menu, item
+    assert "Dry run" not in INDEX.split('<dialog id="settings">', 1)[1].split("</dialog>", 1)[0]
+
+
+def test_polly_takes_your_own_still_in_fine_tune():
+    row = _fn("function performerRow(easy) {", "function ownRow(easy)")
+    assert 'id="hero-file"' in row and 'data-act="easy-hero-clear"' in row
+    assert "Cast lock" not in row
+    assert 'act === "easy-hero-clear"' in APP and "uploadHero(target.files[0])" in APP
+
+
+def test_guardrail_lines_fold():
+    paint = _fn("function guardDetails(job) {", "function guardLines(")
+    assert "guardLines(" in paint and 'id="easy-guard"' in APP
+    fold = APP.split("function guardLines(messages)", 1)[1].split("\n}\n", 1)[0]
+    assert "(× ${n})" in fold and "flag${at.length === 1" in fold
+
+
+def test_duplicate_names_are_gone():
+    # a second kindLabel (the review panel's) overrode the timeline's, so every hand-picked boundary read "Board fix";
+    # a second copyText returned nothing, so "Copy recipe code" never said it had copied
+    assert len(re.findall(r"^function kindLabel\(", APP, re.M)) == 1 and "function kindLabel(lane, id)" in APP
+    assert len(re.findall(r"^async function copyText\(", APP, re.M)) == 1
+    names = re.findall(r"^(?:async )?function ([A-Za-z_$][\w$]*)\(", APP, re.M)
+    assert len(names) == len(set(names)), sorted({n for n in names if names.count(n) > 1})
+
+
+def test_a_failed_render_says_why_and_the_side_column_scrolls():
+    poll = _fn("async function poll(id) {", 'document.addEventListener("click"')
+    assert "The render stopped: ${why}" in poll
+    assert "body[data-desk] .easy-side { max-height: calc(100vh - 32px); overflow-y: auto;" in CSS

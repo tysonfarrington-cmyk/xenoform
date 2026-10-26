@@ -62,7 +62,7 @@ def test_preview_control_stays_off_the_simple_desk():
     root = Path(__file__).resolve().parents[1]
     script = (root / "src" / "xenoform" / "ui_static" / "app.js").read_text(encoding="utf-8")
     css = (root / "src" / "xenoform" / "ui_static" / "app.css").read_text(encoding="utf-8")
-    assert 'data-act="preview"' in script
+    assert 'data-act="preview"' not in script  # the Director desk's preview control left with it (one desk, 26 Oct)
     easy = script.split("function renderEasy()", 1)[1].split("function placeKey", 1)[0]
     assert 'data-act="preview"' not in easy
     assert "morph-method" not in easy

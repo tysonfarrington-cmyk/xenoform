@@ -67,7 +67,7 @@ def test_app_js_fetches_the_catalogue_and_resolves_strips_through_pool():
 
 def test_simple_first_screen_is_three_decisions_with_fine_tune_behind_a_drawer():
     easy = APP.split("function renderEasy()")[1].split("// ---------------------------------------------------------------- Simple finishing")[0]
-    assert "A song, a vibe, Make." in easy
+    assert "A song and a vibe make a quick prototype" in easy
     assert '<details class="fine-tune" id="fine-tune"' in APP and "<summary>Fine-tune" in APP
     # the drawer holds the finishing options, the cloud toggles and the recipe box; the first screen shows Make
     tune = APP.split("function fineTune(easy)")[1].split("const LOOK_PRESETS")[0]
@@ -108,12 +108,12 @@ def test_more_vibes_drawer_lists_the_legacy_vibes_in_simple():
 
 
 def test_comfy_pill_shows_in_simple_and_links_to_vj_and_midi():
-    assert 'body[data-advanced="0"] .comfy-status,\n' not in CSS
-    assert 'body[data-advanced="0"] .comfy-status {' in CSS
+    assert 'body[data-desk] .comfy-status,\n' not in CSS
+    assert 'body[data-desk] .comfy-status {' in CSS
     assert 'VJ mode: live visuals' in APP and 'href="${esc(vjUrl())}" target="_blank"' in APP and 'data-act="easy-midi"' in APP  # the link carries the song and stems, in a new tab
     assert "function openMidiDrawer()" in APP
-    export = APP.split("function exportStep()")[1].split("function inspectorFor")[0]
-    assert "Open in VJ with this song's stems" in export and 'data-act="mcp-copy"' in export and 'data-act="easy-midi"' in export
+    share = APP.split("function shareRow(easy)")[1].split("function renderRow(easy)")[0]
+    assert "Play it live in VJ mode" in share and "vjUrl()" in share  # the cut's Share row (one desk, 26 Oct)
 
 
 def test_about_text_is_honest_about_osc_vj_and_midi():
@@ -204,23 +204,17 @@ def test_generate_injects_the_cached_stems_path(client, tmp_path, monkeypatch):
     assert captured["body"]["stems_path"] == "C:/elsewhere/stems.json"
 
 
-# ---------------------------------------------------------------- Advanced: transitions and looks
+# ---------------------------------------------------------------- Per-boundary transitions and per-shot looks
 
-def test_advanced_transition_select_markup_and_payload_keys():
-    assert 'api("/api/v1/transitions")' in APP and "async function loadTransitions()" in APP
-    rows = APP.split("function transitionRows()")[1].split("function vjUrl()")[0]
-    assert 'data-act="scene-transition"' in rows and 'aria-label="Transition from shot' in rows
-    assert 'row.tier !== "classic"' in rows and "xeno-guard-expert" in rows  # classic only under Expert
-    assert "const TRANSITION_MAX = 2;" in APP and 'TRANSITION_EXEMPT = ["cut", "scene-morph", "black-hold"]' in APP
-    assert "clean beat cut" in rows  # the over-the-cap warning
-    assert "function boundaryKind(index)" in APP and "function recommendedTransition(kind)" in APP
-    assert "${transitionRows()}" in APP.split("function shotsStep()")[1].split("function exportStep()")[0]
-    # payload: the boundary list guardrails consume, and scenes[i].transition / scenes[i].dance_fx
-    payload = APP.split("function payload()")[1].split("function renderSetup")[0]
-    assert "scene_transitions: sceneTransitionPlan().map(" in payload
-    assert 'dance_fx: scene.dance_fx || ""' in payload and "transition: (sceneTransitionPlan()[scene.index] || {}).kind" in payload
-    assert 'data-act="scene-look"' in APP and "function lookOptions(current)" in APP
-    assert 'target.dataset.act === "scene-transition"' in APP and 'target.dataset.act === "scene-look"' in APP
+def test_per_boundary_edits_are_the_timelines_now():
+    # one desk (26 Oct): the Director desk's transition select per boundary and look select per scene card left with
+    # it; the make body no longer sends their scene_transitions rows (the engine never read them). A boundary is
+    # dressed and a shot's look set on the cut's timeline, through the re-cut (tests/test_timeline.py).
+    assert "function transitionRows()" not in APP and 'data-act="scene-transition"' not in APP
+    assert 'data-act="scene-look"' not in APP and "function lookOptions(current)" not in APP
+    payload = APP.split("function payload()")[1].split("function vjUrl()")[0]
+    assert "scene_transitions:" not in payload and "sceneTransitionPlan" not in APP
+    assert 'id="tl-dress"' in APP or "tl-dress" in APP
 
 
 def test_guardrails_cap_the_boundary_list_the_desk_sends():
