@@ -1883,6 +1883,11 @@ body[data-advanced="1"][data-step="look"] #register-slot { display: block; }
 }
 .rail-link.on { background: var(--zinc-100); color: var(--ink); }
 .rail .rail-exit { margin: 0 0 10px; font-weight: 600; color: var(--ink); }  /* the way out of Director tools, first in the rail */
+.easy-tool { display: block; max-width: 980px; margin: 0 auto; }  /* Setup & models and Connect an AI inside Simple */
+.easy-tool-head { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.easy-tool-head .eyebrow { margin: 0; }
+.easy-tool .kicker { display: block; }
+.tools-line button.text { padding: 0; }
 .desk-main {
   min-width: 0;
   display: grid;

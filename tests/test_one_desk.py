@@ -34,3 +34,18 @@ def test_a_director_tools_has_a_way_out():
     # a finished cut stays on its result when you come back through the button (home only through the logo)
     leave = APP.split("function leaveAdvanced(home)", 1)[1].split("async function boot()", 1)[0]
     assert '(phase === "result" || phase === "showcase")) setEasyPhase(phase);' in leave
+
+
+def test_b_setup_and_connect_are_reachable_from_simple():
+    assert "function renderTool(" in APP
+    render = APP.split("function render()", 1)[1].split("function renderTool(", 1)[0]
+    assert "renderTool(state.view)" in render  # #setup and #connect draw inside the Simple shell, no Director tools needed
+    menu = INDEX.split('class="more-menu"', 1)[1].split("</details>", 1)[0]
+    assert 'data-act="go" data-hash="setup">Setup &amp; models</button>' in menu
+    assert 'data-act="go" data-hash="connect">Connect an AI</button>' in menu
+    aside = APP.split('<aside class="panel easy-side" data-tour="easy-make">', 1)[1].split("</aside>", 1)[0]
+    assert 'data-hash="setup"' in aside and 'data-hash="connect"' in aside
+    assert 'act === "go"' in APP
+    assert ".easy-tool {" in CSS
+    reproduce = (ROOT / "docs" / "REPRODUCE.md").read_text(encoding="utf-8")
+    assert "Open **Setup & models** from the" in reproduce and "Open **Setup** in the desk header" not in reproduce

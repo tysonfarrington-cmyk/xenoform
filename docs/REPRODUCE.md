@@ -26,7 +26,7 @@ Press **Watch a finished one** for a pre-rendered reel of LTX morphs cut to the 
 ## 4. Start ComfyUI and the models
 
 1. Start ComfyUI 0.33 or newer on port 8188. The shipped graphs use core nodes only.
-2. Open **Setup** in the desk header. It lists each model with its size and a Download button (downloads resume and are checksummed):
+2. Open **Setup & models** from the … menu in the desk header (or the link under Make my video). It lists each model with its size and a Download button (downloads resume and are checksummed):
    - **LTX-Video 0.9.5** (6.3 GB) and **T5-XXL fp8** (5.2 GB): required for Draft morphs. At 100 Mbit/s that is about 15 minutes together; on a faster line, a few minutes.
    - **LTX-2.3 22B distilled fp8** for Final, plus `ltx-2.3-spatial-upscaler-x2-1.1.safetensors` and the Gemma 3 12B text encoder. The full distilled file on the Setup page is 46 GB; the fp8 file the 12 GB path uses goes in `models/checkpoints` by hand.
    - **Real-ESRGAN x4plus** (`models/upscale_models/RealESRGAN_x4plus.pth`, from the Real-ESRGAN v0.1.0 release on GitHub) for the Final upscale.

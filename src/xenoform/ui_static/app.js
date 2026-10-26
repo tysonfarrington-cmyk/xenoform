@@ -2572,6 +2572,7 @@ function renderEasy() {
       <p class="note"><a href="${esc(vjUrl())}" target="_blank" rel="noopener">VJ mode: live visuals to this song's stems &rarr;</a> · <button type="button" class="text" data-act="easy-midi">MIDI controller</button></p>
       <button type="button" class="ghost easy-showcase" data-act="easy-showcase">Watch a finished one · plays now</button>
       <p class="note" id="easy-note">${esc(easy.note || "No ComfyUI? It plays in your browser.")}</p>
+      <p class="note tools-line"><button type="button" class="text" data-act="go" data-hash="setup">Setup &amp; models</button> · <button type="button" class="text" data-act="go" data-hash="connect">Connect an AI</button></p>
       <p class="side-foot"><a class="ow-badge" href="${esc(media("/licences"))}" title="LTX-2.3 has a revenue threshold. FLUX.2 Klein 9B is non-commercial. This desk uses the Apache 2.0 4B.">Open weights</a></p>
     </aside>
   </div>`;
@@ -3460,7 +3461,7 @@ function render() {
   });
   const generate = document.getElementById("generate");
   generate.disabled = Boolean(state.job && state.job.status === "running");
-  const view = advanced ? renderAdvanced() : renderEasy();
+  const view = advanced ? renderAdvanced() : (state.view === "setup" || state.view === "connect") ? renderTool(state.view) : renderEasy();
   app.innerHTML = view;
   if (!advanced) saveEasy();
   paintRegisters();
@@ -3483,6 +3484,19 @@ function render() {
   scheduleScore();
   scheduleOpener();
   restorePlace(place);
+}
+
+// Setup & models and Connect an AI as full pages inside Simple (the "..." menu, the line under Make, #setup and #connect),
+// so a judge following docs/REPRODUCE.md never needs Director tools to download a model.
+function renderTool(view) {
+  const title = view === "setup" ? "Setup & models" : "Connect an AI";
+  return `<div class="easy easy-tool">
+    <div class="easy-tool-head">
+      <button type="button" class="ghost easy-back" data-act="go" data-hash="simple">&larr; Back to the desk</button>
+      <p class="eyebrow">Xenoform · ${esc(title)}</p>
+    </div>
+    ${view === "setup" ? renderSetup() : renderConnect()}
+  </div>`;
 }
 
 function mountLive() {
@@ -5117,6 +5131,12 @@ document.addEventListener("click", async (event) => {
     enterAdvanced("song");
   } else if (act === "leave-advanced") {
     leaveAdvanced(false);
+  } else if (act === "go") {
+    const menu = el.closest("details.more-menu");
+    if (menu) menu.open = false;
+    const hash = "#" + String(el.dataset.hash || "simple");
+    if ((location.hash || "#simple") === hash) render();
+    else location.hash = hash.slice(1);
   } else if (act === "try-it") {
     el.classList.add("is-loading");
     tryDemo();
