@@ -633,6 +633,7 @@ def guard(kinds: Sequence[str], *, expert: bool = False, seed: int = 0, cap: int
     classic_ok = expert or not r.get("classic_expert_only", True)
     rng = np.random.default_rng(seed)
     used: dict[str, int] = {}
+    overflow: dict[str, int] = {}
     out, msgs = [], []
     for k in kinds:
         nk = k
@@ -647,10 +648,14 @@ def guard(kinds: Sequence[str], *, expert: bool = False, seed: int = 0, cap: int
                 msgs.append(f"{k} is banned by the house rules; using {nk}")
         if nk in TRANSITIONS and nk not in EXEMPT_FROM_CAP:
             if used.get(nk, 0) >= cap and not expert:
-                msgs.append(f"{nk} already used {cap}x; this boundary is a clean beat cut")
+                overflow[nk] = overflow.get(nk, 0) + 1
                 nk = "cut"
             used[nk] = used.get(nk, 0) + 1
         out.append(nk)
+    # one line a kind, not one a boundary: a 103-shot song once reported fifty identical rows (docs/WORKFLOW_AUDIT.md, C2)
+    for kind, n in overflow.items():
+        tail = "boundary is a clean beat cut" if n == 1 else "boundaries are clean beat cuts"
+        msgs.append(f"{kind} already used {cap}x; {n} more {tail}")
     return out, msgs
 
 

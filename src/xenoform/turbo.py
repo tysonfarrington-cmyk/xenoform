@@ -658,7 +658,9 @@ def _run_turbo(
     def on_scene(index: int, total: int) -> None:
         report("animatic", (index + 1) / max(total, 1), f"Scene {index + 1} of {total}")
 
-    simple_mode = str(state.get("mode") or "") == "simple"  # the Simple desk sends mode: "simple"
+    # the Simple desk sends mode: "simple"; a director render with a vibe previews the vibe's stills too, since the painted
+    # blocks showed no object or scene at all (docs/WORKFLOW_AUDIT.md, F2)
+    simple_mode = str(state.get("mode") or "") == "simple" or bool(str(state.get("vibe") or "").strip())
     painted: dict = {}
     if simple_mode:
         # Simple mode: the draft is the vibe's stills hard-cut on the planned shots (seconds, and it looks like the

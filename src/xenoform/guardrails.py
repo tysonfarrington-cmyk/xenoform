@@ -203,7 +203,12 @@ def apply(body: dict | None, *, expert: bool | None = None, duration: float | No
     # native vertical
     r = R.get("native_vertical")
     if r and str(body.get("aspect") or "") == "9:16":
-        if str(body.get("vertical_mode") or "auto") != "native" and rep.clamp("native_vertical", f"9:16 was '{body.get('vertical_mode') or 'auto'}' (wide crop); render native {r['width']}x{r['height']} + upscale"):
+        mode = str(body.get("vertical_mode") or "auto")
+        if mode == "auto" and not expert:
+            # the default resolves to native without a report line: nothing of the user's was changed, and the line
+            # "9:16 was 'auto' (wide crop)" used to open every default cut's Guardrails panel (docs/WORKFLOW_AUDIT.md, C2)
+            body["vertical_mode"] = "native"
+        elif mode != "native" and rep.clamp("native_vertical", f"9:16 was '{mode}' (wide crop); render native {r['width']}x{r['height']} + upscale"):
             body["vertical_mode"] = "native"
         body.setdefault("upscaler", r.get("upscaler"))
 
