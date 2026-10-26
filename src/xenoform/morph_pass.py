@@ -95,11 +95,21 @@ def vibe_for(state: dict) -> str:
     return PALETTE_VIBE.get(str(state.get("palette") or ""), "liquid-gold")
 
 
+def _idea_words(state: dict) -> list[str]:
+    """The words the user typed: the idea line and the brief. They name the family and the lead object before any
+    other text does, so "a heron over the marsh" opens on the heron whatever the storyboard says."""
+    text = " ".join(str(state.get(key) or "") for key in ("idea", "brief"))
+    return re.findall(r"[a-z]+", text.lower().replace("_", " ").replace("-", " "))
+
+
 def _story_words(state: dict) -> list[str]:
     bits = [str(state.get("brief") or ""), str(state.get("story") or ""), str(state.get("idea") or "")]
-    for scene in state.get("scenes") or []:  # the Advanced desk's scene list; a string here is the Simple scenes choice
-        if isinstance(scene, dict):
-            bits += [str(scene.get(key) or "") for key in ("form", "action", "guide", "text")]
+    # the Director storyboard's scene cards come with every Make; a Simple cut never renders them, so their words
+    # must not steer its objects ("the rocket climbs past the bulb" named the fruit family on the demo, 26 Oct)
+    if str(state.get("mode") or "") != "simple":
+        for scene in state.get("scenes") or []:  # the Advanced desk's scene list; a string here is the Simple scenes choice
+            if isinstance(scene, dict):
+                bits += [str(scene.get(key) or "") for key in ("form", "action", "guide", "text")]
     for custom in state.get("customs") or []:
         bits.append(str(custom.get("noun") or custom.get("name") or ""))
     return re.findall(r"[a-z]+", " ".join(bits).lower().replace("_", " ").replace("-", " "))
@@ -311,9 +321,10 @@ def pick_stills(state: dict, count: int, record: bool = True, scene_at: list[int
         own = [r for r in asked_rows if stills.kind_of(r) == "object"] + own
     look_vibe = asked if asked in VIBE_LOOK else vibe
     words = stills.content_words(_story_words(state))  # the stop words out: "to" must not pick the reel-to-reel
+    typed = stills.content_words(_idea_words(state))  # the idea line and the brief: what the user actually asked for
     # objects that belong together: the cut draws on one family first (the idea line's word, else the vibe's
     # heaviest family, the tie turned by the seed), freshest first within it, the rest of the pool after
-    named = stills.family_named(asked or vibe, words)  # a family the idea line names, else ""
+    named = stills.family_named(asked or vibe, typed) or stills.family_named(asked or vibe, words)  # the idea's family first
     family = named or stills.family_for_cut(asked or vibe, set(), seed=int(state.get("seed") or 0))
     for r in pool:
         r["family"] = stills.family_of(str(r.get("noun") or ""))
@@ -332,7 +343,9 @@ def pick_stills(state: dict, count: int, record: bool = True, scene_at: list[int
             return (in_family, tick) if named else (0 if tick == 0 else 1, in_family, tick)
 
         pool.sort(key=key)
-    lead = next((i for i, item in enumerate(pool) if set(item["noun"].split()) & words), None)
+    lead = next((i for i, item in enumerate(pool) if set(item["noun"].split()) & typed), None)
+    if lead is None:
+        lead = next((i for i, item in enumerate(pool) if set(item["noun"].split()) & words), None)
     if lead:
         # the object the idea names opens the cut; the rest keep their order (a rotation here once pushed the family
         # just grown for the idea to the back of the pool, behind the lead, 26 Oct), unless the pool is a curated

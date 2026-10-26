@@ -456,7 +456,9 @@ def grow_family_for_cut(state: dict, vibe: str, need: int, cfg: dict | None, rep
     # keeps its own weights), the idea's named family first, else the vibe's own with the seed turning a tie
     asked = str(state.get("vibe") or "") or vibe
     words = _stills.content_words(_mp._story_words(state))
-    family = _stills.family_named(asked, words) or _stills.family_for_cut(asked, set(), seed=int(state.get("seed") or 0))
+    typed = _stills.content_words(_mp._idea_words(state))  # the idea line first, as pick_stills reads it
+    family = _stills.family_named(asked, typed) or _stills.family_named(asked, words) \
+        or _stills.family_for_cut(asked, set(), seed=int(state.get("seed") or 0))
     if not family:
         return None
     cat = _mp.catalogue()

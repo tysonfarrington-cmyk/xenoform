@@ -2424,7 +2424,12 @@ function renderEasy() {
   if (easy.phase === "making") {
     const width = Math.round(((state.job && state.job.progress) || 0.08) * 100);
     const scenes = state.scenes || [];
-    const story = scenes.map((scene) => storySentence(scene.action)).filter(Boolean).slice(0, 2).join(" ") || easy.idea || chosen.line;
+    // the chain this Make morphs through (the Chain row's preview), not the Director storyboard: a Simple cut never
+    // renders the storyboard, and "The rocket climbs past the bulb" under a cosmic cut read as a promise (26 Oct)
+    const chainStills = (state.chain && state.chain.data && !state.chain.data.error && state.chain.data.stills) || [];
+    const chainLine = chainStills.map((s) => s.noun || "").filter(Boolean).join(" \u2192 ");
+    const story = chainLine || (easy.idea ? `Your line: ${easy.idea}` : chosen.line);
+    const storyLabel = chainLine ? `The chain: ${chainStills.length} stills, ${Math.max(0, chainStills.length - 1)} morphs` : "The idea";
     const heard = easy.song ? "done" : "now";
     const wrote = scenes.length ? "done" : "now";
     const painting = scenes.length ? "now" : "wait";
@@ -2456,7 +2461,7 @@ function renderEasy() {
             <li class="${painting}">Painting the shots</li>
             <li class="wait">Cutting to the beat</li>
           </ol>
-          <p class="eyebrow">The story</p>
+          <p class="eyebrow">${esc(storyLabel)}</p>
           <p>${esc(story)}</p>
           <p class="note" id="easy-progress">${esc(easy.note || "Reading the song.")}</p>
           <p class="note">You can leave this page. The video keeps going and waits for you.</p>
@@ -2553,8 +2558,9 @@ function renderEasy() {
         <div class="vibe-grid" role="radiogroup" aria-label="Vibe">${vibeCards(easy, false, "featured")}</div>
         ${moreVibes(easy)}
         <label class="idea-field">Your idea in one line, if you have one.
-          <input id="easy-idea" type="text" maxlength="170" value="${esc(easy.idea || "")}" aria-label="One line, optional" placeholder="Leave this empty and the vibe decides." autocomplete="off" />
+          <input id="easy-idea" type="text" maxlength="170" value="${esc(easy.idea || "")}" aria-label="One line, optional" placeholder="Name an object or a family: a chrome moth, lanterns, sea creatures. Empty, and the vibe decides." autocomplete="off" />
         </label>
+        <p class="note">The line picks the objects: a word that names one of the library's objects opens the cut on it and fills the chain with its family (moth, lantern, heron, sea creatures, instruments). Other words change nothing yet. For a place, grow scenes on the Library row; for a dancer, Fine-tune \u2192 Performer.</p>
       </section>
       <section class="panel span simple-knobs-panel" data-tour="easy-macros">
         <h3>Knobs</h3>
