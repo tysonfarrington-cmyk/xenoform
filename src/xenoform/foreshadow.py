@@ -127,18 +127,21 @@ def plan(shots: list[dict], clips: list, beats, fps: int, mode: str, p: dict, *,
     def hard(i: int) -> bool:
         return 0 <= i < len(shots) and any(bool(shots[i].get(m)) for m in marks)
 
+    def held(i: int) -> bool:  # the timeline's Hold: the shot shows its first frame throughout, and the join after it is a cut
+        return 0 <= i < len(shots) and bool(shots[i].get("hold"))
+
     for si, shot in enumerate(shots):
         n = int(shot.get("frames") or 0)
         entry: dict = {"mode": mode, "lead": 0, "echo": 0, "target": None, "prev": None}
         if si + 1 < len(shots) and si + 1 < len(clips) and n > 0:
-            which = "first" if hard(si + 1) else "last"
+            which = "first" if (hard(si + 1) or held(si) or held(si + 1)) else "last"
             tgt = frame(si + 1, which)
             if tgt is not None:
                 entry["target"] = tgt
                 entry["lead"] = int(min(lead, max(MIN_LEAD_FRAMES, n // 2)))
                 entry["which"] = which
-        if si > 0 and si - 1 < len(clips) and n > 0 and (hard(si) or hard(si - 1)):
-            prev = frame(si - 1, "last")  # across a hard cut: the object that just left echoes out for a beat
+        if si > 0 and si - 1 < len(clips) and n > 0 and (hard(si) or hard(si - 1) or held(si - 1)):
+            prev = frame(si - 1, "first" if held(si - 1) else "last")  # across a hard cut: the object that just left echoes out for a beat
             if prev is not None:
                 entry["prev"] = prev
                 entry["echo"] = int(min(echo, max(2, n // 3)))

@@ -215,6 +215,8 @@ def shot_indices(shot: dict, n_src: int) -> np.ndarray:
     """
     count = int(shot["frames"])
     last = max(n_src - 1, 0)
+    if shot.get("hold"):  # the timeline's Hold: the start object held still for the whole shot (docs/TIMELINE.md)
+        return np.zeros(count, dtype=int)
     u = np.linspace(0.0, 1.0, count) if count > 1 else np.zeros(count)
     if shot.get("ease") == "in":
         u = u ** 1.6

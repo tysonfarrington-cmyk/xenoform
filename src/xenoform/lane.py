@@ -1,10 +1,11 @@
-"""The shots lane: a finished cut as a read-only strip of shots (the seed of the timeline).
+"""The shots lane, now the timeline's model for the desk (docs/TIMELINE.md).
 
-``build`` turns a cut's record (``simple/simple.json``, written by ``dense.run_simple``) into what the desk draws
-under the result player: every shot with its length, section, the object it morphs from and the one it lands on,
-the transition at each section boundary (the vibe's premium pick, or the boundary kind Chaos gave the handoff: a smear,
-a strobe cut, a wipe, a chromatic rip), and the performer and own-footage slots laid over the shots. Nothing
-here renders or edits; the lane shows what the cut did and lets a click seek the player.
+``build`` turns a cut's record (``simple/simple.json``, written by ``dense.run_simple`` and updated by every edit) into
+what the desk draws under the result player: every shot with its length, section, the object it morphs from and the
+one it lands on, the transition at each boundary (the vibe's premium pick, the boundary kind Chaos gave the handoff, or
+what the timeline chose by hand), the shot's own overrides (a hold, a look, an FX intensity), the performer, own-footage
+and generated runs laid over the shots, and the choices the timeline panel offers (``choices``). Nothing here renders
+or edits; the routes beside ``recut`` do that, and this is what they read back.
 """
 from __future__ import annotations
 
@@ -22,6 +23,26 @@ def noun_of(still: str) -> str:
     return re.sub(r"^\d+[_\- ]*", "", stem).replace("_", " ").strip() or stem
 
 
+def choices() -> dict:
+    """What a boundary and a shot on the timeline may be set to: the transition kinds (premium, core and classic, all
+    CPU) and the boundary kinds with their labels and one-line notes, the plays, the FX intensity range, the re-render
+    variants and lengths, the run lengths."""
+    from xenoform import dense as _D
+    from xenoform import transitions_fx as T
+
+    kinds = [{"id": k, "label": str(v.get("label") or k), "note": str(v.get("note") or ""), "group": str(v.get("tier") or "core")}
+             for k, v in T.TRANSITIONS.items() if not v.get("gpu")]
+    kinds.sort(key=lambda r: ({"premium": 0, "core": 1, "classic": 2}.get(r["group"], 3), r["label"]))
+    notes = {"smear": "datamosh-style block displacement along the drums for half a bar; the next object pushes through",
+             "strobe": "the two objects alternate frame by frame for a beat, luma-matched",
+             "wipe": "the next object enters as strips, or as an iris where the song is loud, on the bass over a bar",
+             "rip": "the two pictures' colour channels offset and crossed on the other stem"}
+    kinds += [{"id": k, "label": _B.LABELS.get(k, k), "note": notes.get(k, ""), "group": "boundary"} for k in _B.KINDS]
+    return {"transition_kinds": kinds, "plays": list(_D.PLAY), "fx_intensity": [0.0, 1.0],
+            "rerender_variants": list(_D.RERENDER_VARIANTS), "render_s": list(_D.RENDER_S_RANGE),
+            "insert_seconds": [int(x) for x in _D.INSERT_SECONDS]}
+
+
 def build(info: dict, video_id: str = "") -> dict:
     shots = list(info.get("shots") or [])
     files = [str(f) for f in (info.get("stills") or [])]
@@ -37,6 +58,14 @@ def build(info: dict, video_id: str = "") -> dict:
     own = info.get("own") if isinstance(info.get("own"), dict) else {}
     perf_slots = {int(s["first"]): s for s in (perf.get("slots") or []) if isinstance(s, dict) and "first" in s}
     own_slots = {int(s["first"]): s for s in (own.get("slots") or []) if isinstance(s, dict) and "first" in s}
+    inserts = [x for x in (info.get("inserts") or []) if isinstance(x, dict)]
+    # the timeline's overrides as the record keeps them (string keys), and how often a shot's morph was re-rendered
+    so = {int(k): v for k, v in (info.get("shot_overrides") or {}).items() if str(k).lstrip("-").isdigit() and isinstance(v, dict)}
+    bo = {int(k): v for k, v in (info.get("boundary_overrides") or {}).items() if str(k).lstrip("-").isdigit() and isinstance(v, dict)}
+    rerendered: dict[int, int] = {}
+    for r in info.get("rerenders") or []:
+        if isinstance(r, dict) and str(r.get("shot", "")).lstrip("-").isdigit():
+            rerendered[int(r["shot"])] = rerendered.get(int(r["shot"]), 0) + 1
     rows = []
     for i, s in enumerate(shots):
         start, end = float(s.get("start") or 0.0), float(s.get("end") or 0.0)
@@ -45,21 +74,62 @@ def build(info: dict, video_id: str = "") -> dict:
         a, b = (m % len(stills), (m + 1) % len(stills)) if stills else (0, 0)
         src = stills[a] if stills else ""
         dst = stills[b] if stills else ""
+        gen = s.get("generated") if isinstance(s.get("generated"), dict) else None
+        if gen is not None:  # a generated run: its own stills, not the chain's
+            gi = int(gen.get("insert", -1))
+            ins = inserts[gi] if 0 <= gi < len(inserts) else {}
+            run_nouns = [noun_of(f) for f in (ins.get("stills") or [])]
+            q = int(gen.get("index") or 0)
+            src = run_nouns[q] if q < len(run_nouns) else ""
+            dst = run_nouns[q + 1] if q + 1 < len(run_nouns) else ""
         row = {"index": i, "start": round(start, 3), "end": round(end, 3), "seconds": round(end - start, 3),
                "section": str(s.get("section") or ""), "boundary": str(s.get("boundary") or ""), "from": src, "to": dst}
-        if stills and not (s.get("performer") or s.get("own")):
+        if gen is not None:
+            row["generated"] = int(gen.get("insert", 0))
+        elif s.get("performer"):
+            row["performer"] = True
+        elif s.get("own"):
+            row["own"] = True
+        if stills and not (s.get("performer") or s.get("own") or gen):
             # the chain slots the shot's morph leaves and lands on: a swap on the lane names the landing still
             row.update({"from_still": a, "still": b, "to_file": files[b], "to_kind": "scene" if files[b] in scene_files else "object",
-                        "pinned": b in pinned, "swapped": b in swapped})
+                        "pinned": b in pinned, "swapped": b in swapped, "morph": m})
         t = transitions[i] if i < len(transitions) else None
         if isinstance(t, dict) and t.get("kind"):
             row["transition"] = str(t["kind"])
+            row["transition_id"] = str(t["kind"])
         b = boundary_fx[i] if i < len(boundary_fx) else None
         if isinstance(b, dict) and b.get("kind"):  # a boundary kind took this handoff (the premium pick stepped aside)
             row["transition"] = _B.label(b)
+            row["transition_id"] = str(b["kind"])
             row["kind"] = str(b["kind"])
+        o = so.get(i) or {}
+        if o.get("play") == "hold" or s.get("hold"):
+            row["hold"] = True
+        if o.get("look"):
+            row["look"] = str(o["look"])
+        if o.get("fx_intensity") is not None:
+            row["fx_intensity"] = float(o["fx_intensity"])
+        if i in bo and bo[i].get("fx"):
+            row["fx_override"] = str(bo[i]["fx"])
+        if i in rerendered:
+            row["rerendered"] = rerendered[i]
+        if i > 0:
+            prev = rows[i - 1]
+            hard = any(prev.get(k) for k in ("hold", "performer", "own")) or prev.get("generated") is not None \
+                or any(row.get(k) for k in ("performer", "own")) or row.get("generated") is not None
+            if row.get("generated") is not None and prev.get("generated") == row.get("generated"):
+                hard = bool(prev.get("hold"))  # inside one run the joins are morph landings
+            row["handoff"] = "cut" if hard else "morph"  # a visible cut into this shot: out of a hold or across an insert's edge
         rows.append(row)
     overlays = []
+    for gi, ins in enumerate(inserts):
+        first, last = int(ins.get("first", 0)), int(ins.get("last", ins.get("first", 0)))
+        if first < len(rows):
+            count = len(ins.get("clips") or []) or (last - first + 1)
+            overlays.append({"kind": "generated", "first": first, "last": last, "start": rows[first]["start"],
+                             "end": rows[min(last, len(rows) - 1)]["end"], "label": f"Generated · {count} morph{'s' if count != 1 else ''}",
+                             "insert": gi})
     for first, slot in sorted(perf_slots.items()):
         last = int(slot.get("last", first))
         if first < len(shots):
@@ -79,9 +149,15 @@ def build(info: dict, video_id: str = "") -> dict:
             sections[-1]["end"] = r["end"]
     chain_rows = [{"index": k, "file": f, "noun": stills[k], "kind": "scene" if f in scene_files else "object",
                    "pinned": k in pinned, "swapped": k in swapped} for k, f in enumerate(files)]
+    draft = str(info.get("tier") or "draft") != "final"
     return {"id": video_id, "duration": round(duration, 3), "shots": rows, "sections": sections, "overlays": overlays,
             "morphs": len(set(assign)) if assign else len(rows), "objects": len(set(stills)), "plan": str(info.get("plan_name") or ""),
             "pace": str(((info.get("recut_state") or {}).get("pace")) or ""), "engine": str(info.get("engine") or ""),
             "vibe": str(info.get("vibe") or ""), "tier": str(info.get("tier") or ""), "stills": chain_rows,
             "opens_on": chain_rows[0] if chain_rows else None,  # the first still: no shot lands on it, the lane's opening tile does
-            "swaps": len(swapped), "swappable": str(info.get("tier") or "draft") != "final" and bool(files)}
+            "swaps": len(swapped), "swappable": draft and bool(files),
+            # the timeline: the overrides as persisted, the GPU edits so far, what may be edited, and the choices
+            "shot_overrides": {str(k): v for k, v in sorted(so.items())}, "boundary_overrides": {str(k): v for k, v in sorted(bo.items())},
+            "rerenders": sum(rerendered.values()), "inserts": len(inserts), "editable": bool(rows) and bool(info.get("clips")),
+            "rerenderable": draft and bool(info.get("clips")), "beats": [round(float(b), 3) for b in (info.get("beats") or [])],
+            "drop": info.get("drop"), "choices": choices() if rows else {}}

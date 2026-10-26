@@ -628,6 +628,10 @@ def create_app(cfg: dict | None = None):
         if not (folder / "simple" / "simple.json").is_file():
             raise HTTPException(400, "This video has no cached morphs to re-cut.")
         overrides = {k: body.get(k) for k in ("macros", "dance_fx", "stem_orbit", "beat_fx", "end_card", "beat_overlay", "foreshadow") if k in body}
+        # the timeline's per-shot and per-boundary overrides (docs/TIMELINE.md): whole maps, each replacing the record's
+        for key in ("shot_overrides", "boundary_overrides"):
+            if key in body and isinstance(body.get(key), (dict, list)):
+                overrides[key] = body[key]
         with _LOCK:
             job.update({"status": "running", "stage": "assemble", "progress": 0.05, "detail": "Re-cutting from the cached morphs",
                         "error": None})
@@ -725,6 +729,103 @@ def create_app(cfg: dict | None = None):
 
         threading.Thread(target=run, name=f"swap-{job_id}", daemon=True).start()
         return {"id": job_id, "status": "running", "slot": slot, "file": file}
+
+    def _cut_job_for_edit(job_id: str, verb: str) -> tuple[dict, Path]:
+        """The job and folder of a finished Simple cut a timeline edit may act on; a cut reopened after a desk restart
+        is registered from its folder. Raises the plain-words refusals (404, 409, 400)."""
+        folder = work_dir() / "jobs" / storage_id(job_id, fallback="")
+        with _LOCK:
+            job = _JOBS.get(job_id)
+            if job is None and (folder / "simple" / "simple.json").is_file() and (folder / "xenoform.mp4").is_file():
+                job = {"id": job_id, "status": "done", "stage": "done", "progress": 1.0, "detail": "Reopened",
+                       "video_version": 0, "video": f"/api/jobs/{job_id}/video?v=0", "path": str(folder / "xenoform.mp4"), "error": None}
+                _JOBS[job_id] = job
+        if job is None:
+            raise HTTPException(404, "No such video.")
+        if job.get("status") == "running":
+            raise HTTPException(409, "That video is still rendering.")
+        if not (folder / "simple" / "simple.json").is_file():
+            raise HTTPException(400, f"This video has no cached morphs to {verb}.")
+        return job, folder
+
+    def _run_edit(job: dict, job_id: str, name: str, ready: str, failed: str, fn) -> None:
+        """Run a timeline edit (a GPU pair render and the re-compose) on a thread, the job showing its progress and
+        bumping its video version when the re-cut lands, as the swap does."""
+        def on_progress(stage: str, frac: float, detail: str) -> None:
+            with _LOCK:
+                job.update({"stage": stage, "progress": float(frac), "detail": detail})
+
+        def run() -> None:
+            try:
+                rec = fn(on_progress)
+                with _LOCK:
+                    version = int(job.get("video_version") or 0) + 1
+                    job.update({"status": "done", "stage": "done", "progress": 1.0, "video_version": version,
+                                "video": f"/api/jobs/{job_id}/video?v={version}", "detail": ready,
+                                "look": rec.get("look"), "recuts": rec.get("recuts"), "swaps": len(rec.get("swaps") or []),
+                                "rerenders": len(rec.get("rerenders") or []), "inserts": len(rec.get("inserts") or [])})
+            except Exception as exc:
+                log.exception("%s %s", name, job_id)
+                from xenoform.errors import plain_error
+
+                with _LOCK:
+                    job.update({"status": "done", "stage": "done", "progress": 1.0, "detail": f"{failed} {plain_error(exc)}", "error": None})
+
+        threading.Thread(target=run, name=f"{name}-{job_id}", daemon=True).start()
+
+    @app.post("/api/jobs/{job_id}/rerender")
+    def rerender_job(job_id: str, body: dict | None = None) -> dict:
+        """Re-render the morph one shot plays (``dense.rerender_morph``, docs/TIMELINE.md 1.5): another seed, length (2 to
+        5 s of source) or prompt variant, one Draft morph on the GPU, then the re-compose with the timeline as it stands.
+        Body: ``shot``; optional ``seed``, ``render_s``, ``variant``."""
+        from xenoform.dense import RERENDER_VARIANTS, RENDER_S_RANGE, rerender_morph
+
+        body = body or {}
+        job, folder = _cut_job_for_edit(job_id, "re-render")
+        try:
+            shot = int(body.get("shot"))
+        except (TypeError, ValueError):
+            raise HTTPException(400, "Which shot? The timeline names each shot by its index.")
+        seed = body.get("seed")
+        if seed not in (None, ""):
+            try:
+                seed = int(seed)
+            except (TypeError, ValueError):
+                raise HTTPException(400, "The seed is a whole number.")
+        else:
+            seed = None
+        render_s = body.get("render_s")
+        if render_s not in (None, ""):
+            try:
+                render_s = int(round(float(render_s)))
+            except (TypeError, ValueError):
+                raise HTTPException(400, "The morph's length is a number of seconds, 2 to 5.")
+            if not RENDER_S_RANGE[0] <= render_s <= RENDER_S_RANGE[1]:
+                raise HTTPException(400, f"The morph's length is {RENDER_S_RANGE[0]} to {RENDER_S_RANGE[1]} s of source.")
+        else:
+            render_s = None
+        variant = str(body.get("variant") or "auto").strip().lower()
+        if variant not in RERENDER_VARIANTS:
+            raise HTTPException(400, f"No prompt variant called {variant}; one of {', '.join(RERENDER_VARIANTS)}.")
+        try:  # the cheap refusals answer at once
+            rec = json.loads((folder / "simple" / "simple.json").read_text(encoding="utf-8"))
+        except ValueError:
+            raise HTTPException(400, "This cut's record did not read.")
+        shots = list(rec.get("plan_shots") or rec.get("shots") or [])
+        if not 0 <= shot < len(shots):
+            raise HTTPException(400, f"This cut has {len(shots)} shots; shot {shot} is not one of them.")
+        if str(rec.get("tier") or "draft") == "final":
+            raise HTTPException(400, "A re-render makes a Draft morph; this cut is Final. Make it again instead.")
+        from xenoform.dense import _under_insert
+
+        under = _under_insert(shots[shot])
+        if under:
+            raise HTTPException(400, f"Shot {shot + 1} is {under}: it plays no morph of the chain to re-render.")
+        with _LOCK:
+            job.update({"status": "running", "stage": "restyle", "progress": 0.05, "detail": f"Re-rendering shot {shot + 1}'s morph", "error": None})
+        _run_edit(job, job_id, "rerender", "Re-render ready", "The re-render did not run.",
+                  lambda report: rerender_morph(folder, shot, seed=seed, render_s=render_s, variant=variant, cfg=cfg, report=report))
+        return {"id": job_id, "status": "running", "shot": shot, "seed": seed, "render_s": render_s, "variant": variant}
 
     @app.post("/api/morph/board")
     def morph_board(body: dict) -> dict:

@@ -3108,10 +3108,63 @@ async function loadSimpleOptions() {
   }
 }
 
-// The shots lane: the finished cut as a strip of shots under the player (GET /api/videos/<id>/shots, lane.build).
-// Read-only: each block is a shot, its width the shot's share of the cut, its colour the section; a click seeks
-// the player to it. Performer and own-footage slots sit as bars over the shots. The seed of the timeline.
+// The Timeline panel (docs/TIMELINE.md): the finished cut under the player as tracks (GET /api/videos/<id>/shots,
+// lane.build). Each block is a shot, its width the shot's share of the cut, its colour the section; between the shots sit
+// the boundary handles; under them the song's passages. Polly's, your own and the generated runs sit as bars over the
+// shots. A click on a shot or a boundary seeks the player there and opens its drawer: Play (Morph / Hold), Look and FX
+// intensity for a shot, Handoff (Morph / Cut) and the dressing (a transition or a boundary kind) for a boundary. Apply
+// re-cuts from the cached morphs with these edits (POST /api/jobs/<id>/recut with shot_overrides / boundary_overrides,
+// no GPU) and the record keeps them. The GPU buttons (swap, re-render, generate here) post their own routes.
 const SECTION_HUES = { intro: 210, calm: 200, sustain: 190, build: 40, release: 60, drop: 350, drop_late: 20, outro: 230 };
+function timelineState(easy, lane) {
+  // the edits as the desk holds them before Apply, seeded from what the record persisted; a new cut starts afresh
+  if (!easy.tl || easy.tl.id !== lane.id) {
+    easy.tl = { id: lane.id, shots: JSON.parse(JSON.stringify(lane.shot_overrides || {})), bounds: JSON.parse(JSON.stringify(lane.boundary_overrides || {})) };
+  }
+  return easy.tl;
+}
+function canonOverride(o) {
+  const out = {};
+  Object.keys(o || {}).sort().forEach((k) => {
+    const v = o[k];
+    if (v == null || v === "" || v === "auto" || v === "morph") return;
+    out[k] = typeof v === "number" ? Math.round(v * 1000) / 1000 : v;
+  });
+  return out;
+}
+function timelineDirty(easy, lane) {
+  const tl = timelineState(easy, lane);
+  let n = 0;
+  [["shots", "shot_overrides"], ["bounds", "boundary_overrides"]].forEach(([mine, theirs]) => {
+    const keys = new Set(Object.keys(tl[mine] || {}).concat(Object.keys(lane[theirs] || {})));
+    keys.forEach((k) => {
+      if (JSON.stringify(canonOverride(tl[mine][k])) !== JSON.stringify(canonOverride((lane[theirs] || {})[k]))) n += 1;
+    });
+  });
+  return n;
+}
+function setShotOverride(easy, lane, index, key, value) {
+  if (!lane) return;
+  const tl = timelineState(easy, lane);
+  const k = String(index);
+  const o = Object.assign({}, tl.shots[k] || {});
+  if (value == null || value === "" || value === "auto" || value === "morph") delete o[key];
+  else o[key] = value;
+  if (Object.keys(o).length) tl.shots[k] = o;
+  else delete tl.shots[k];
+}
+function setBoundOverride(easy, lane, index, fx) {
+  if (!lane) return;
+  const tl = timelineState(easy, lane);
+  const k = String(index);
+  if (!fx || fx === "auto") delete tl.bounds[k];
+  else tl.bounds[k] = { fx };
+}
+function kindLabel(lane, id) {
+  const rows = (lane.choices && lane.choices.transition_kinds) || [];
+  const row = rows.find((r) => r.id === id);
+  return row ? row.label : id;
+}
 function shotsLane(easy) {
   const id = easyVideoId();
   if (!id || easy.showcase || easy.playedHere) return "";
@@ -3121,7 +3174,7 @@ function shotsLane(easy) {
       state.laneLoading = id;
       setTimeout(() => loadLane(id), 0);
     }
-    return `<div class="shots-lane" aria-label="Shots"><p class="note">Reading the cut's shots...</p></div>`;
+    return `<div class="shots-lane" aria-label="Timeline"><p class="note">Reading the cut's shots...</p></div>`;
   }
   if (!lane.shots || !lane.shots.length) return lane.note ? `<p class="note">${esc(lane.note)}</p>` : "";
   const total = Math.max(Number(lane.duration) || 0, 0.001);
@@ -3129,25 +3182,56 @@ function shotsLane(easy) {
   // replaces it (POST /api/jobs/<id>/swap: only the two morphs that touch that still are rendered again, the rest kept)
   const canSwap = lane.swappable !== false && Array.isArray(lane.stills) && lane.stills.length > 0;
   const swapping = canSwap && !!easy.swapMode;
+  const tl = timelineState(easy, lane);
+  const picked = easy.tlPick && easy.tlFor === id ? easy.tlPick : null;
   const blocks = lane.shots.map((s) => {
     const w = (100 * (Number(s.seconds) || 0)) / total;
     const hue = SECTION_HUES[s.section] != null ? SECTION_HUES[s.section] : 260;
+    const o = tl.shots[String(s.index)] || {};
+    const held = o.play === "hold";
+    const edited = held || !!o.look || o.fx_intensity != null;
     const label = s.to ? `${s.from} → ${s.to}` : s.from;
-    const marks = `${s.pinned ? " · pinned" : ""}${s.swapped ? " · swapped" : ""}`;
-    const title = `${clockText(s.start)} · ${s.seconds} s${s.section ? ` · ${s.section}` : ""}${s.transition ? ` · ${s.transition}` : ""}${label ? ` · ${label}` : ""}${marks}`;
+    const marks = `${s.pinned ? " · pinned" : ""}${s.swapped ? " · swapped" : ""}${held ? " · held" : ""}${o.look ? ` · look ${o.look}` : ""}${o.fx_intensity != null ? ` · FX ${o.fx_intensity}` : ""}${s.rerendered ? " · re-rendered" : ""}${s.generated != null ? " · generated" : ""}${s.performer ? " · Polly" : ""}${s.own ? " · your clip" : ""}`;
+    const title = `Shot ${s.index + 1} · ${clockText(s.start)} · ${s.seconds} s${s.section ? ` · ${s.section}` : ""}${s.transition ? ` · ${s.transition}` : ""}${label ? ` · ${label}` : ""}${marks}`;
     const pick = swapping && s.still != null;
-    const act = pick ? `data-act="easy-swap-pick" data-slot="${s.still}" data-at="${s.start}"` : `data-act="easy-seek" data-at="${s.start}"`;
-    const cls = `shot${s.boundary ? " boundary" : ""}${s.transition ? " has-transition" : ""}${s.pinned ? " pinned" : ""}${s.swapped ? " swapped" : ""}${pick ? " swap" : ""}${pick && easy.swapSlot === s.still ? " picked" : ""}`;
+    const act = pick ? `data-act="easy-swap-pick" data-slot="${s.still}" data-at="${s.start}"` : `data-act="easy-tl-shot" data-index="${s.index}" data-at="${s.start}"`;
+    const cls = `shot${s.boundary ? " boundary" : ""}${s.transition ? " has-transition" : ""}${s.pinned ? " pinned" : ""}${s.swapped ? " swapped" : ""}${pick ? " swap" : ""}${pick && easy.swapSlot === s.still ? " picked" : ""}${held ? " held" : ""}${edited ? " edited" : ""}${s.rerendered ? " rerendered" : ""}${s.generated != null ? " generated" : ""}${!swapping && picked && picked.kind === "shot" && picked.index === s.index ? " picked" : ""}`;
     return `<button type="button" class="${cls}" style="width:${w.toFixed(3)}%;--hue:${hue}" ${act} title="${esc(title)}" aria-label="${esc(title)}"><i>${esc(s.to || s.from || "")}</i></button>`;
+  }).join("");
+  // the boundaries: one handle at each join (into shot i, i from 1): Morph or Cut, and what dresses it (the pickers'
+  // choice on Auto, else the transition or boundary kind set by hand)
+  const bounds = lane.shots.filter((s) => s.index > 0).map((s) => {
+    const left = (100 * Number(s.start)) / total;
+    const o = tl.bounds[String(s.index)] || {};
+    const prevHeld = (tl.shots[String(s.index - 1)] || {}).play === "hold";
+    const cut = prevHeld || s.handoff === "cut";
+    const dress = o.fx && o.fx !== "auto" ? o.fx : "";
+    const kindNow = dress === "none" ? "" : dress ? kindLabel(lane, dress) : (s.transition || "");
+    const what = `${cut ? "Cut" : "Morph"}${kindNow ? ` · ${kindNow}` : ""}`;
+    const glyph = kindNow ? "◆" : cut ? "┃" : "·";
+    const cls = `bound${cut ? " cut" : ""}${kindNow ? " dressed" : ""}${dress || prevHeld ? " edited" : ""}${picked && picked.kind === "bound" && picked.index === s.index ? " picked" : ""}`;
+    const title = `Boundary into shot ${s.index + 1} · ${clockText(s.start)} · ${what}${s.boundary ? ` · ${s.boundary}` : ""} · click to change it`;
+    return `<button type="button" class="${cls}" style="left:${left.toFixed(3)}%" data-act="easy-tl-bound" data-index="${s.index}" data-at="${s.start}" title="${esc(title)}" aria-label="${esc(title)}">${glyph}</button>`;
   }).join("");
   const overlays = (lane.overlays || []).map((o) => {
     const left = (100 * Number(o.start)) / total;
     const w = (100 * (Number(o.end) - Number(o.start))) / total;
-    return `<span class="overlay ${esc(o.kind)}" style="left:${left.toFixed(3)}%;width:${w.toFixed(3)}%" title="${esc(o.kind === "performer" ? `Polly: ${o.label}` : `Your clip: ${o.label}`)}">${esc(o.kind === "performer" ? `Polly · ${o.label}` : o.label)}</span>`;
+    const title = o.kind === "performer" ? `Polly: ${o.label}` : o.kind === "generated" ? `Generated run: ${o.label}` : `Your clip: ${o.label}`;
+    return `<span class="overlay ${esc(o.kind)}" style="left:${left.toFixed(3)}%;width:${w.toFixed(3)}%" title="${esc(title)}">${esc(o.kind === "performer" ? `Polly · ${o.label}` : o.label)}</span>`;
   }).join("");
+  // the song under the shots: its passages (a click seeks there) and the drop
+  const passages = (lane.sections || []).map((sec) => {
+    const left = (100 * Number(sec.start)) / total;
+    const w = (100 * (Number(sec.end) - Number(sec.start))) / total;
+    const hue = SECTION_HUES[sec.section] != null ? SECTION_HUES[sec.section] : 260;
+    return `<button type="button" class="passage" style="left:${left.toFixed(3)}%;width:${w.toFixed(3)}%;--hue:${hue}" data-act="easy-seek" data-at="${sec.start}" title="${esc(`${sec.section} · ${clockText(sec.start)} to ${clockText(sec.end)}`)}"><i>${esc(sec.section)}</i></button>`;
+  }).join("");
+  const dropMark = lane.drop != null && Number(lane.drop) > 0 ? `<span class="drop-mark" style="left:${((100 * Number(lane.drop)) / total).toFixed(3)}%" title="${esc(`the drop · ${clockText(lane.drop)}`)}"></span>` : "";
+  const song = passages || dropMark ? `<div class="lane-song" aria-label="Song">${passages}${dropMark}</div>` : "";
   const facts = [`${lane.shots.length} shots`, lane.morphs ? `${lane.morphs} morphs over ${lane.objects} objects` : "", lane.pace ? `${lane.pace} pace` : "",
-    (lane.sections || []).length > 1 ? `${lane.sections.length} passages` : "", lane.swaps ? `${lane.swaps} swap${lane.swaps === 1 ? "" : "s"}` : ""].filter(Boolean).join(" · ");
-  const hint = swapping ? "click a shot to swap the object it lands on" : "click a shot to jump there";
+    (lane.sections || []).length > 1 ? `${lane.sections.length} passages` : "", lane.swaps ? `${lane.swaps} swap${lane.swaps === 1 ? "" : "s"}` : "",
+    lane.rerenders ? `${lane.rerenders} re-render${lane.rerenders === 1 ? "" : "s"}` : "", lane.inserts ? `${lane.inserts} generated run${lane.inserts === 1 ? "" : "s"}` : ""].filter(Boolean).join(" · ");
+  const hint = swapping ? "click a shot to swap the object it lands on" : "click a shot or a boundary to change it";
   const toggle = canSwap
     ? `<button type="button" class="text lane-swap-toggle" data-act="easy-swap-mode" aria-pressed="${swapping ? "true" : "false"}">${swapping ? "Done swapping" : "Swap an object"}</button>`
     : "";
@@ -3179,14 +3263,143 @@ function shotsLane(easy) {
     const cls = `shot open${first.pinned ? " pinned" : ""}${first.swapped ? " swapped" : ""}${pick ? " swap" : ""}${pick && easy.swapSlot === 0 ? " picked" : ""}`;
     opening = `<div class="lane-open"><button type="button" class="${cls}" ${act} title="${esc(title)}" aria-label="${esc(title)}"><i>opens on ${esc(first.noun)}</i></button></div>`;
   }
-  return `<div class="shots-lane${swapping ? " swapping" : ""}" aria-label="Shots">
-      <div class="lane-head"><span>Shots</span><span class="note">${esc(facts)} · ${hint}</span>${toggle}</div>
+  const pending = timelineDirty(easy, lane);
+  const anyEdits = Object.keys(tl.shots).length + Object.keys(tl.bounds).length + Object.keys(lane.shot_overrides || {}).length + Object.keys(lane.boundary_overrides || {}).length;
+  const applyRow = lane.editable !== false && !swapping
+    ? `<div class="lane-apply-row">
+        <button type="button" class="generate lane-apply" data-act="easy-tl-apply"${pending ? "" : " disabled"}>Apply${pending ? ` ${pending} edit${pending === 1 ? "" : "s"}` : ""}</button>
+        ${anyEdits ? `<button type="button" class="text" data-act="easy-tl-reset">Reset the timeline</button>` : ""}
+        <span class="note">Apply re-cuts from the cached morphs with these edits, no GPU; they stay with the cut through later re-cuts.</span>
+      </div>`
+    : "";
+  const drawer = swapping ? "" : timelineDrawer(easy, lane, tl, picked);
+  return `<div class="shots-lane tl-panel${swapping ? " swapping" : ""}" aria-label="Timeline">
+      <div class="lane-head"><span>Timeline</span><span class="note">${esc(facts)} · ${hint}</span>${toggle}</div>
       <div class="lane-overlays">${overlays}</div>
       ${opening}
       <div class="lane-shots">${blocks}</div>
+      <div class="lane-bounds">${bounds}</div>
+      ${song}
       ${picker}
+      ${drawer}
+      ${applyRow}
     </div>`;
 }
+
+// The drawer under the timeline for the clicked shot or boundary.
+function timelineDrawer(easy, lane, tl, picked) {
+  if (!picked) return "";
+  const s = lane.shots.find((x) => x.index === picked.index);
+  if (!s) return "";
+  const choices = lane.choices || {};
+  if (picked.kind === "shot") {
+    const o = tl.shots[String(s.index)] || {};
+    const held = o.play === "hold";
+    const label = s.to ? `${s.from} → ${s.to}` : s.from;
+    const under = s.performer ? "Polly's shot" : s.own ? "your clip" : s.generated != null ? "a generated run" : "";
+    const fxVal = o.fx_intensity != null ? Number(o.fx_intensity) : null;
+    const canGpu = lane.rerenderable !== false && s.still != null && !under;
+    const insertS = choices.insert_seconds || [5, 10, 15];
+    const renderS = choices.render_s || [2, 5];
+    const lengthOpts = [];
+    for (let v = renderS[0]; v <= renderS[1]; v += 1) lengthOpts.push(v);
+    const variants = choices.rerender_variants || ["auto"];
+    const variantName = (v) => (v === "auto" ? "by the stills" : v === "object" ? "object to object" : v === "scene" ? "scene to scene" : v.replace("-", " to "));
+    return `<div class="tl-drawer" id="tl-drawer">
+      <div class="tl-drawer-head"><b>Shot ${s.index + 1}</b><span class="note">${esc(clockText(s.start))} · ${esc(String(s.seconds))} s${s.section ? ` · ${esc(s.section)}` : ""}${label ? ` · ${esc(label)}` : ""}${under ? ` · ${esc(under)}` : ""}${s.rerendered ? ` · re-rendered ${s.rerendered}×` : ""}</span><button type="button" class="text" data-act="easy-tl-close">Close</button></div>
+      <div class="simple-seg"><span>Play</span><div class="toggle chips" role="group" aria-label="Play">
+        <button type="button" class="chip${held ? "" : " on"}" data-act="easy-tl-play" data-index="${s.index}" data-value="morph" aria-pressed="${held ? "false" : "true"}">Morph</button>
+        <button type="button" class="chip${held ? " on" : ""}" data-act="easy-tl-play" data-index="${s.index}" data-value="hold" aria-pressed="${held ? "true" : "false"}">Hold</button></div></div>
+      <p class="note">${held ? "Held: the shot keeps its start object still (the orbit, the look and the beat FX still move it) and the join after it is a cut." : "Morph: the clip plays whole and lands on the next object; the join after it is continuous. Hold keeps the start object still and makes that join a cut."}</p>
+      ${lookRow(o.look || "auto", "easy-tl-look", s.index)}
+      <div class="simple-seg tl-fx-row"><span>FX intensity</span><input id="tl-fx" type="range" min="0" max="1" step="0.05" value="${fxVal != null ? fxVal : 0.8}" data-index="${s.index}" aria-label="Beat FX intensity for this shot" /><b id="tl-fx-readout">${fxVal != null ? fxVal.toFixed(2) : "as the knob"}</b>${fxVal != null ? `<button type="button" class="text" data-act="easy-tl-fx-clear" data-index="${s.index}">As the knob</button>` : ""}</div>
+      ${canGpu ? `<div class="tl-gpu">
+        <p class="note">On the GPU (Draft; a morph takes about what one morph took above, then the re-cut):</p>
+        <div class="tl-gpu-row"><button type="button" class="ghost" data-act="easy-tl-swap" data-slot="${s.still}">Swap the object it lands on</button><span class="note">the two morphs that touch it are rendered again</span></div>
+        <div class="tl-gpu-row"><button type="button" class="ghost" data-act="easy-tl-rerender" data-index="${s.index}">Re-render this morph</button>
+          <label>seed <input id="tl-seed" type="number" placeholder="next" min="0" step="1" aria-label="Seed, empty for the next one" /></label>
+          <label>length <select id="tl-render-s" aria-label="Seconds of source"><option value="">as it is</option>${lengthOpts.map((v) => `<option value="${v}">${v} s</option>`).join("")}</select></label>
+          <label>prompt <select id="tl-variant" aria-label="Prompt variant">${variants.map((v) => `<option value="${esc(v)}">${esc(variantName(v))}</option>`).join("")}</select></label></div>
+      </div>` : under ? `<p class="note">This shot is ${esc(under)}: it has no morph of the chain to swap or re-render; its look and FX are yours to set.</p>` : ""}
+    </div>`;
+  }
+  if (s.index < 1) return "";
+  const prev = lane.shots.find((x) => x.index === s.index - 1) || {};
+  const o = tl.bounds[String(s.index)] || {};
+  const prevHeld = (tl.shots[String(s.index - 1)] || {}).play === "hold";
+  const hardAnyway = s.handoff === "cut" && !prev.hold && !prevHeld;  // a clip arrives or leaves here: a cut whatever is set
+  const fx = o.fx || "auto";
+  const rows = choices.transition_kinds || [];
+  const groups = [["premium", "Premium transitions"], ["core", "Core"], ["classic", "Classic"], ["boundary", "Boundary kinds"]];
+  const options = `<option value="auto"${fx === "auto" ? " selected" : ""}>Auto${s.transition ? ` (now ${esc(s.transition)})` : " (the pickers decide)"}</option>`
+    + `<option value="none"${fx === "none" ? " selected" : ""}>None (a bare handoff)</option>`
+    + groups.map(([g, name]) => {
+      const rs = rows.filter((r) => r.group === g);
+      return rs.length ? `<optgroup label="${name}">${rs.map((r) => `<option value="${esc(r.id)}"${fx === r.id ? " selected" : ""}>${esc(r.label)}</option>`).join("")}</optgroup>` : "";
+    }).join("");
+  const note = fx === "auto" ? (s.transition ? `The pickers gave this join ${s.transition}.` : "A plain handoff: the pickers gave this join nothing.")
+    : fx === "none" ? "Nothing drawn over the join." : ((rows.find((r) => r.id === fx) || {}).note || "");
+  return `<div class="tl-drawer" id="tl-drawer">
+    <div class="tl-drawer-head"><b>Boundary into shot ${s.index + 1}</b><span class="note">${esc(clockText(s.start))}${s.boundary ? ` · ${esc(s.boundary)}` : ""}${s.section ? ` · ${esc(s.section)}` : ""} · ${esc(prev.to || prev.from || "")} | ${esc(s.to || s.from || "")}</span><button type="button" class="text" data-act="easy-tl-close">Close</button></div>
+    <div class="simple-seg"><span>Handoff</span><div class="toggle chips" role="group" aria-label="Handoff">
+      <button type="button" class="chip${prevHeld ? "" : " on"}" data-act="easy-tl-handoff" data-index="${s.index}" data-value="morph" aria-pressed="${prevHeld ? "false" : "true"}"${hardAnyway ? " disabled" : ""}>Morph</button>
+      <button type="button" class="chip${prevHeld ? " on" : ""}" data-act="easy-tl-handoff" data-index="${s.index}" data-value="cut" aria-pressed="${prevHeld ? "true" : "false"}"${hardAnyway ? " disabled" : ""}>Cut</button></div></div>
+    <p class="note">${hardAnyway ? "This join is a cut already: a clip arrives or leaves here." : prevHeld ? `Cut: shot ${s.index} holds its object and the picture jumps here on the beat.` : "Morph: the morph before lands on the object the next one leaves from, so nothing jumps. Cut holds the shot before on its object and jumps here."}</p>
+    <div class="simple-seg tl-dress-row"><span>Dress it</span><select id="tl-dress" data-index="${s.index}" aria-label="Transition or boundary kind at this join">${options}</select></div>
+    <p class="note">${esc(note)}</p>
+  </div>`;
+}
+
+// A timeline edit that goes through the job (the re-cut with the overrides, a re-render, a generated run): the making
+// screen shows it, the lane reloads when it lands and the player seeks to what was clicked.
+async function postCutEdit(id, route, body, detail, at, stage) {
+  if (!id || !state.easy) return false;
+  try {
+    const res = await api(`/api/jobs/${encodeURIComponent(id)}/${route}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      state.easy.note = err.detail || "That did not start.";
+      render();
+      return false;
+    }
+    state.job = Object.assign({}, state.job || {}, { id, status: "running", stage: stage || "restyle", progress: 0.05, detail });
+    state.easy.tlSeek = at != null ? Number(at) : null;
+    setEasyPhase("making");
+    state.easy.recutting = true;
+    render();
+    poll(id);
+    return true;
+  } catch (err) {
+    state.easy.note = "That did not start.";
+    render();
+    return false;
+  }
+}
+async function applyTimeline() {
+  const id = easyVideoId();
+  const lane = state.lane && state.lane.id === id ? state.lane : null;
+  if (!id || !lane || !state.easy) return;
+  const tl = timelineState(state.easy, lane);
+  const pick = state.easy.tlPick;
+  const at = pick ? (lane.shots.find((x) => x.index === pick.index) || {}).start : null;
+  const n = timelineDirty(state.easy, lane);
+  await postCutEdit(id, "recut", { shot_overrides: tl.shots, boundary_overrides: tl.bounds },
+    `Re-cutting from the cached morphs with ${n} timeline edit${n === 1 ? "" : "s"}`, at, "assemble");
+}
+async function rerenderShot(index) {
+  const id = easyVideoId();
+  const lane = state.lane && state.lane.id === id ? state.lane : null;
+  if (!id || !lane) return;
+  const seedEl = document.getElementById("tl-seed");
+  const lenEl = document.getElementById("tl-render-s");
+  const varEl = document.getElementById("tl-variant");
+  const body = { shot: Number(index), variant: (varEl && varEl.value) || "auto" };
+  if (seedEl && seedEl.value !== "") body.seed = Number(seedEl.value);
+  if (lenEl && lenEl.value !== "") body.render_s = Number(lenEl.value);
+  const shot = lane.shots.find((x) => x.index === Number(index)) || {};
+  await postCutEdit(id, "rerender", body, `Re-rendering shot ${Number(index) + 1}'s morph on the GPU`, shot.start);
+}
+
 
 // Swap one still of the finished cut (the lane's picker): the desk re-renders the two morphs that touch it on the GPU
 // and re-composes; the job runs like a re-cut, the making screen shows it, the lane reloads when it is done.
@@ -3222,7 +3435,21 @@ async function loadLane(id) {
     state.lane = { id, shots: [], note: "The cut's shots could not be read." };
   }
   if (state.laneLoading === id) state.laneLoading = "";
+  if (state.easy) {
+    state.easy.tl = null;  // the edits start again from what the record now holds
+    if (state.easy.tlFor !== id) { state.easy.tlPick = null; state.easy.tlFor = id; }
+  }
   render();
+  const seek = state.easy ? state.easy.tlSeek : null;
+  if (seek != null) {  // after an edit the player comes back where you were working
+    state.easy.tlSeek = null;
+    const player = document.getElementById("player");
+    if (player) {
+      const go = () => { try { player.currentTime = Math.max(0, Number(seek) || 0); } catch (e) { /* not seekable yet */ } };
+      if (player.readyState >= 1) go();
+      else player.addEventListener("loadedmetadata", go, { once: true });
+    }
+  }
 }
 
 function easyVideoId() {
@@ -3549,6 +3776,10 @@ async function recutWithKnobs() {
     beat_fx: state.easy.fx !== false,
     end_card: !!state.easy.endCard,
   };
+  if (state.easy.tl && state.easy.tl.id === id) {  // the timeline's edits waiting for Apply ride along with the knobs
+    body.shot_overrides = state.easy.tl.shots;
+    body.boundary_overrides = state.easy.tl.bounds;
+  }
   try {
     // the body went out as the fetch options once, so the desk sent a GET and got a 405 (26 Oct)
     const res = await api(`/api/jobs/${encodeURIComponent(id)}/recut`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -5221,6 +5452,48 @@ document.addEventListener("click", async (event) => {
     render();
   } else if (act === "easy-swap") {
     swapStill(easyVideoId(), Number(el.dataset.slot), el.dataset.file || "");
+  } else if (act === "easy-tl-shot" || act === "easy-tl-bound") {
+    // the timeline: a click opens the shot's or the boundary's drawer and seeks the player there (a little before a join)
+    state.easy.tlPick = { kind: act === "easy-tl-shot" ? "shot" : "bound", index: Number(el.dataset.index) };
+    state.easy.tlFor = easyVideoId();
+    const player = document.getElementById("player");
+    const at = Number(el.dataset.at) || 0;
+    if (player) player.currentTime = act === "easy-tl-bound" ? Math.max(0, at - 0.6) : at;
+    render();
+  } else if (act === "easy-tl-close") {
+    state.easy.tlPick = null;
+    render();
+  } else if (act === "easy-tl-play") {
+    setShotOverride(state.easy, state.lane, Number(el.dataset.index), "play", el.dataset.value);
+    render();
+  } else if (act === "easy-tl-look") {
+    setShotOverride(state.easy, state.lane, Number(el.dataset.index), "look", el.dataset.value);
+    render();
+  } else if (act === "easy-tl-fx-clear") {
+    setShotOverride(state.easy, state.lane, Number(el.dataset.index), "fx_intensity", null);
+    render();
+  } else if (act === "easy-tl-handoff") {
+    // a Cut at a boundary is a Hold on the shot before it (docs/TIMELINE.md): one edit, seen from either side
+    setShotOverride(state.easy, state.lane, Number(el.dataset.index) - 1, "play", el.dataset.value === "cut" ? "hold" : "morph");
+    render();
+  } else if (act === "easy-tl-apply") {
+    applyTimeline();
+  } else if (act === "easy-tl-reset") {
+    if (state.lane) {
+      const tl = timelineState(state.easy, state.lane);
+      tl.shots = {};
+      tl.bounds = {};
+      const persisted = Object.keys(state.lane.shot_overrides || {}).length + Object.keys(state.lane.boundary_overrides || {}).length;
+      if (persisted) applyTimeline();
+      else render();
+    }
+  } else if (act === "easy-tl-swap") {
+    state.easy.swapMode = true;
+    state.easy.swapSlot = Number(el.dataset.slot);
+    state.easy.tlPick = null;
+    render();
+  } else if (act === "easy-tl-rerender") {
+    rerenderShot(Number(el.dataset.index));
   } else if (act === "easy-overlay") {
     state.easy.overlay = !state.easy.overlay;
     render();
@@ -5647,6 +5920,11 @@ document.addEventListener("input", (event) => {
     queueCut(40);
   } else if (target.id === "title-card") {
     state.titleText = target.value;
+  } else if (target.id === "tl-fx") {
+    // the timeline's per-shot FX intensity: the readout follows the thumb, the lane redraws on change
+    setShotOverride(state.easy, state.lane, Number(target.dataset.index), "fx_intensity", Math.round(Number(target.value) * 1000) / 1000);
+    const readout = document.getElementById("tl-fx-readout");
+    if (readout) readout.textContent = Number(target.value).toFixed(2);
   } else if (target.id === "easy-idea") {
     state.easy.idea = target.value;
     scheduleIdea();  // what the line was read as (scenes, objects, Polly) shows under it as it is typed
@@ -5705,7 +5983,12 @@ document.addEventListener("input", (event) => {
 document.addEventListener("change", (event) => {
   const target = event.target;
   if (!state) return;
-  if (target.dataset.act === "easy-cut-plan") {
+  if (target.id === "tl-dress") {  // the timeline: what dresses this boundary (a transition, a boundary kind, none, auto)
+    setBoundOverride(state.easy, state.lane, Number(target.dataset.index), target.value);
+    render();
+  } else if (target.id === "tl-fx") {
+    render();
+  } else if (target.dataset.act === "easy-cut-plan") {
     const file = target.files && target.files[0];
     if (!file) return;
     file.text().then((text) => {

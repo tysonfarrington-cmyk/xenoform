@@ -1421,10 +1421,14 @@ def stills_animatic(directed: dict, state: dict, audio_path: Path, out_path: Pat
 
 def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Callable[[str, float, str], None] | None = None,
                      cfg: dict | None = None) -> dict:
-    """Re-compose a finished Simple job from its cached morphs with new knobs, look, orbit or beat FX.
+    """Re-compose a finished Simple job from its cached morphs with new knobs, look, orbit or beat FX, and with the
+    timeline's per-shot and per-boundary overrides (docs/TIMELINE.md).
 
-    No GPU: the morph clips, the plan and the song are read from ``<job>/simple/simple.json``. The job's
-    ``xenoform.mp4`` is replaced (``publish_file``) and the updated record returned."""
+    No GPU: the morph clips, the plan and the song are read from ``<job>/simple/simple.json``. ``overrides`` carries
+    the knob keys (``macros``, ``dance_fx``, ...) and, when the timeline sends them, ``shot_overrides`` and
+    ``boundary_overrides`` (whole maps: each replaces the record's; absent, the record's are kept, so a re-cut with new
+    knobs keeps every timeline edit). The job's ``xenoform.mp4`` is replaced (``publish_file``) and the updated record
+    returned."""
     job_dir = Path(job_dir)
     work = job_dir / "simple"
     rec_path = work / "simple.json"
@@ -1438,13 +1442,17 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
     audio = Path(rec.get("audio_path") or "")
     if not audio.is_file():
         raise FileNotFoundError("The song file for this video is gone; load it again and render.")
+    raw = dict(overrides or {})
+    so_raw = raw.pop("shot_overrides", None)
+    bo_raw = raw.pop("boundary_overrides", None)
     state = dict(rec.get("recut_state") or {})
-    state.update({k: v for k, v in (overrides or {}).items() if v is not None})
+    state.update({k: v for k, v in raw.items() if v is not None})
     opt = options(state)
     hp = house(state, cfg)
     import copy as _copy
 
     shots = _copy.deepcopy(shots)
+    n = len(shots)
     m = macros(state)
     apply_macros(shots, m, hp if rec.get("vertical_house") else None)
     vibe = str(rec.get("vibe") or state.get("vibe") or "")
@@ -1457,9 +1465,17 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
             drop = find_drop(audio, list(rec.get("beats") or []), float(shots[-1].get("end") or 0.0))
         except Exception:
             drop = None
-    boundary_fx = _B.pick(shots, m, list(rec.get("beats") or []), int(rec.get("fps") or 24), seed=int(rec.get("seed") or 0),
+    fps = int(rec.get("fps") or 24)
+    beats = list(rec.get("beats") or [])
+    boundary_fx = _B.pick(shots, m, beats, fps, seed=int(rec.get("seed") or 0),
                           premium=transitions, drop=drop)  # re-picked from the knobs as they are now: the same knobs give the same kinds
     transitions = _B.clear_premium(transitions, boundary_fx)
+    # the timeline: the maps sent replace the record's, the record's hold otherwise; a Cut handoff is a hold on the shot before
+    so = shot_overrides_of(so_raw if so_raw is not None else rec.get("shot_overrides"), n)
+    bo = boundary_overrides_of(bo_raw if bo_raw is not None else rec.get("boundary_overrides"), n)
+    so, bo = fold_handoffs(so, bo)
+    transitions, boundary_fx, tl_notes = apply_timeline(shots, so, bo, vibe=vibe, house=hp, transitions=transitions,
+                                                        boundary_fx=boundary_fx, beats=beats, fps=fps, drop=drop)
     look_preset = beatfx.resolve_dance_preset(opt["dance_fx"], vibe, hp)
     if look_preset == "off" and not opt["stem_orbit"]:
         opt["stem_orbit"] = True  # as in run_simple: no look and no orbit would leave held stills dead
@@ -1468,12 +1484,12 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
     engine = str(rec.get("tier") or "draft")
     tmp = job_dir / "xenoform.recut.mp4"
     if report:
-        report("assemble", 0.1, "Re-cutting from the cached morphs (no GPU)")
+        report("assemble", 0.1, "Re-cutting from the cached morphs (no GPU)" + (f" with {len(so) + len(bo)} timeline edits" if (so or bo) else ""))
     from xenoform import foreshadow as _fs
 
     fs_mode = _fs.mode_for(opt["foreshadow"], vibe)
     made = beatfx.compose(clips, shots, audio, tmp, aspect=opt["aspect"], quality="final" if engine == "final" else "draft",
-                          fx=opt["fx"], overlay=opt["overlay"], beats=list(rec.get("beats") or []), report=report, size=size, fps=int(rec.get("fps") or 24),
+                          fx=opt["fx"], overlay=opt["overlay"], beats=beats, report=report, size=size, fps=fps,
                           dance_fx=look_preset, stem_orbit=opt["stem_orbit"], stem_env=stem_env, macros=m, house=hp,
                           end_card=opt["end_card"], seed=int(rec.get("seed") or 0), palette_image=rec.get("palette_image"),
                           adaptive=str(opt.get("dance_fx") or "auto").strip().lower() == "auto", transitions=transitions,
@@ -1485,9 +1501,345 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
     publish_file(tmp, job_dir / "xenoform.mp4")
     rec.update({"shots": shots, "look": made.get("look"), "macros": m, "recut_state": state, "transitions": transitions,
                 "boundary_fx": boundary_fx, "handoffs": made.get("boundary_fx"), "drop": drop,
+                "shot_overrides": {str(k): v for k, v in sorted(so.items())},
+                "boundary_overrides": {str(k): v for k, v in sorted(bo.items())},
+                "timeline": {"shots": len(so), "boundaries": len(bo), "notes": tl_notes},
                 "recuts": int(rec.get("recuts") or 0) + 1})
     rec_path.write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
     return rec
+
+
+# ---------------------------------------------------------------- the timeline (docs/TIMELINE.md)
+
+PLAY = ("morph", "hold")
+LOOK_AUTO = ("", "auto", "default")
+
+
+def _premium_kinds() -> set[str]:
+    """The transition kinds a boundary may be dressed with by hand: every CPU kind of ``transitions_fx`` (the GPU scene
+    morph is not a Simple-cut transition)."""
+    from xenoform import transitions_fx as T
+
+    return {k for k, v in T.TRANSITIONS.items() if not v.get("gpu")}
+
+
+def shot_overrides_of(raw, n: int) -> dict[int, dict]:
+    """The timeline's per-shot overrides, normalised: ``{index: {"play": "hold", "look": preset | "off",
+    "fx_intensity": 0..1}}`` with only the keys that change something (Morph and Auto are the defaults and are dropped),
+    indices inside the cut. Accepts a dict keyed by index (``"3"``) or a list with one entry a shot."""
+    pairs: list = []
+    if isinstance(raw, dict):
+        pairs = list(raw.items())
+    elif isinstance(raw, (list, tuple)):
+        pairs = list(enumerate(raw))
+    out: dict[int, dict] = {}
+    for k, v in pairs:
+        try:
+            i = int(k)
+        except (TypeError, ValueError):
+            continue
+        if not 0 <= i < n or not isinstance(v, dict):
+            continue
+        o: dict = {}
+        play = str(v.get("play") or "").strip().lower()
+        if play == "hold":
+            o["play"] = "hold"
+        if "look" in v and v.get("look") is not None:
+            look = str(v.get("look") or "").strip().lower()
+            if look not in LOOK_AUTO:
+                o["look"] = look
+        if v.get("fx_intensity") is not None:
+            try:
+                o["fx_intensity"] = round(max(0.0, min(1.0, float(v["fx_intensity"]))), 3)
+            except (TypeError, ValueError):
+                pass
+        if o:
+            out[i] = o
+    return out
+
+
+def boundary_overrides_of(raw, n: int) -> dict[int, dict]:
+    """The timeline's per-boundary overrides, normalised: ``{index: {"handoff": "cut" | "morph", "fx": "none" |
+    premium kind | boundary kind}}`` for the boundary into shot ``index`` (1 up); Auto is dropped, an unknown kind too."""
+    from xenoform import boundary_fx as _B
+
+    pairs: list = []
+    if isinstance(raw, dict):
+        pairs = list(raw.items())
+    elif isinstance(raw, (list, tuple)):
+        pairs = list(enumerate(raw))
+    premium = _premium_kinds()
+    out: dict[int, dict] = {}
+    for k, v in pairs:
+        try:
+            i = int(k)
+        except (TypeError, ValueError):
+            continue
+        if not 1 <= i < n or not isinstance(v, dict):
+            continue
+        o: dict = {}
+        hand = str(v.get("handoff") or "").strip().lower()
+        if hand in ("cut", "morph"):
+            o["handoff"] = hand
+        fx = str(v.get("fx") or "").strip().lower()
+        if fx == "none" or fx in premium or fx in _B.KINDS:
+            o["fx"] = fx
+        if o:
+            out[i] = o
+    return out
+
+
+def fold_handoffs(so: dict[int, dict], bo: dict[int, dict]) -> tuple[dict[int, dict], dict[int, dict]]:
+    """A Cut at the boundary into shot i is a Hold on shot i - 1 (the only visible cut in a chain of morphs; see
+    docs/TIMELINE.md 1.3): the handoff keys move onto the shot overrides, and a boundary left with nothing goes."""
+    so = {k: dict(v) for k, v in so.items()}
+    bo = {k: dict(v) for k, v in bo.items()}
+    for i in sorted(bo):
+        hand = bo[i].pop("handoff", None)
+        if hand == "cut":
+            so.setdefault(i - 1, {})["play"] = "hold"
+        elif hand == "morph" and i - 1 in so:
+            so[i - 1].pop("play", None)
+            if not so[i - 1]:
+                del so[i - 1]
+        if not bo[i]:
+            del bo[i]
+    return so, bo
+
+
+def _premium_window(shots: list[dict], i: int, kind: str) -> dict:
+    """A premium transition entry for the boundary into shot ``i``, its window sized as ``boundary_transitions`` sizes one."""
+    frames = int(min(12, max(4, int(shots[i].get("frames") or 24) // 3, 4), (int(shots[i - 1].get("frames") or 24) // 2)))
+    return {"kind": kind, "frames": max(2, frames), "boundary": str(shots[i].get("boundary") or "") or "timeline", "user": True}
+
+
+def apply_timeline(shots: list[dict], so: dict[int, dict], bo: dict[int, dict], *, vibe: str, house: dict | None,
+                   transitions: list | None, boundary_fx: list, beats: list, fps: int, drop: float | None) -> tuple[list | None, list, list[str]]:
+    """Lay the timeline's overrides over the composed shots and the pickers' lists, in place for the shots.
+
+    Per shot: Hold marks ``hold`` (and ``cut_out``: the join after it is a cut), Look sets ``dance_fx`` to the resolved
+    preset for that shot alone, FX intensity replaces the knob's value. Per boundary: ``none`` clears the premium window
+    and the kind, a premium kind sets the window and clears the kind, a boundary kind sets the kind and clears the
+    window; what the pickers chose stays where nothing was said. Returns the two lists and the notes (an unknown look,
+    a kind a short shot could not take, a hand-picked premium type past the house cap, which is kept as picked)."""
+    from xenoform import boundary_fx as _B
+    from xenoform import transitions_fx as T
+
+    notes: list[str] = []
+    n = len(shots)
+    for i, o in sorted(so.items()):
+        if not 0 <= i < n:
+            continue
+        s = shots[i]
+        if o.get("play") == "hold":
+            s["hold"] = True
+            s["cut_out"] = True
+        if "look" in o:
+            try:
+                s["dance_fx"] = beatfx.resolve_dance_preset(o["look"], vibe, house)
+            except ValueError:
+                notes.append(f"shot {i + 1}: no look called {o['look']!r}; the cut's look stays")
+        if "fx_intensity" in o:
+            s["fx_intensity"] = float(o["fx_intensity"])
+    bx = list(boundary_fx or [])[:n] + [None] * max(0, n - len(boundary_fx or []))
+    tr = list(transitions)[:n] + [None] * max(0, n - len(transitions)) if transitions is not None else None
+    premium = _premium_kinds()
+    for i, o in sorted(bo.items()):
+        if not 1 <= i < n or "fx" not in o:
+            continue
+        fx = o["fx"]
+        if fx == "none":
+            bx[i] = None
+            if tr is not None:
+                tr[i] = None
+        elif fx in _B.KINDS:
+            entry = _B.make(shots, i, fx, beats, fps, drop=drop)
+            if entry is None:
+                notes.append(f"boundary {i}: the shots beside it are too short for a {_B.LABELS.get(fx, fx)}; left as the pickers had it")
+                continue
+            bx[i] = entry
+            if tr is not None:
+                tr[i] = None
+        elif fx in premium:
+            if tr is None:
+                tr = [None] * n
+            tr[i] = _premium_window(shots, i, fx)
+            bx[i] = None
+    if tr is not None:
+        cap = T._resolve_rules(None, None, None)[0]
+        uses: dict[str, int] = {}
+        for t in tr:
+            if isinstance(t, dict) and t.get("kind") and t["kind"] not in T.EXEMPT_FROM_CAP:
+                uses[t["kind"]] = uses.get(t["kind"], 0) + 1
+        for kind, count in sorted(uses.items()):
+            if count > cap and any(isinstance(t, dict) and t.get("kind") == kind and t.get("user") for t in tr):
+                notes.append(f"{kind} is on {count} boundaries, past the house cap of {cap}; kept as picked on the timeline")
+    return tr, bx, notes
+
+
+# ---------------------------------------------------------------- the pair renderer on the timeline
+
+RERENDER_VARIANTS = {"auto": None, "object": ("object", "object"), "scene-object": ("scene", "object"),
+                     "object-scene": ("object", "scene"), "scene": ("scene", "scene")}
+RENDER_S_RANGE = (2, 5)
+INSERT_SECONDS = (5.0, 10.0, 15.0)
+INSERT_RANGE = (3.0, 20.0)
+
+
+def _prep_of(rec: dict) -> dict:
+    """How the cut prepared its stills, so a pair rendered after it is prepared the same way: ``native_draft`` (portrait
+    re-lay at ``draft_size``), ``background`` (black ground), ``mock`` (the test engine)."""
+    prep = rec.get("prep") if isinstance(rec.get("prep"), dict) else None
+    if prep is not None:
+        native_draft, background = bool(prep.get("native_draft")), prep.get("background")
+    else:  # a record from before ``prep``: the note the Draft 9:16 path leaves
+        native_draft = any("native_draft" in note for note in rec.get("fallbacks") or [] if isinstance(note, dict))
+        background = None
+    draft_size = tuple(int(v) for v in ((prep or {}).get("draft_size") or DRAFT_916)) if native_draft else None
+    return {"native_draft": native_draft, "background": background, "draft_size": draft_size,
+            "mock": str(rec.get("engine") or "").startswith("mock")}
+
+
+def _prepare_rows(rows: list[dict], prep: dict, work: Path) -> list[dict]:
+    """The still rows prepared as the cut prepared its stills (black ground, then the portrait re-lay)."""
+    prepared = [dict(r) for r in rows]
+    if prep.get("background") == "black":
+        from xenoform.portrait import black_stills
+
+        prepared = black_stills(prepared, work)
+    if prep.get("native_draft"):
+        from xenoform.portrait import portrait_stills
+
+        prepared = portrait_stills(prepared, work, prep["draft_size"][0], prep["draft_size"][1], background=prep.get("background"))
+    return prepared
+
+
+def _render_pairs(render_shots: list[dict], rows: list[dict], dest_dir: Path, prep: dict, *, seed: int, vibe: str, cfg: dict | None,
+                  state: dict, client=None, report=None) -> list[Path]:
+    """``len(render_shots)`` morphs over ``rows`` (one more still than shots) through the Draft path, the cut's engine."""
+    if prep.get("mock"):
+        from xenoform.cloud_morph import _mock_clips
+
+        return _mock_clips(render_shots, rows, dest_dir, *(prep.get("draft_size") or (768, 432)))
+    return _draft_clips(render_shots, rows, dest_dir, cfg or {}, seed, vibe, client, None, state, report=report,
+                        size=prep.get("draft_size"))
+
+
+def _load_cut(job_dir: Path, verb: str) -> tuple[Path, Path, dict]:
+    """The record of a finished Simple cut, or the plain-words refusal."""
+    job_dir = Path(job_dir)
+    work = job_dir / "simple"
+    rec_path = work / "simple.json"
+    if not rec_path.is_file():
+        raise FileNotFoundError(f"This video has no cached morphs to {verb} (it was not made by Simple mode).")
+    rec = json.loads(rec_path.read_text(encoding="utf-8"))
+    shots = list(rec.get("plan_shots") or rec.get("shots") or [])
+    clips = [str(c) for c in rec.get("clips") or []]
+    if not shots or not clips or len(clips) != len(shots):
+        raise FileNotFoundError("The cached morphs for this video are gone; render it again.")
+    if str(rec.get("tier") or "draft") == "final":
+        raise ValueError(f"A {verb} renders Draft morphs; this cut is Final. Make it again instead.")
+    return job_dir, work, rec
+
+
+def _under_insert(shot: dict) -> str:
+    """Why a shot has no morph of the chain: Polly, your clip or a generated run; "" when it plays a chain morph."""
+    if shot.get("performer"):
+        return "Polly"
+    if shot.get("own"):
+        return "one of your clips"
+    if shot.get("generated"):
+        return "a generated run"
+    return ""
+
+
+def rerender_morph(job_dir: Path, shot: int, *, seed: int | None = None, render_s: int | None = None, variant: str = "auto",
+                   cfg: dict | None = None, report: Callable[[str, float, str], None] | None = None, client=None) -> dict:
+    """Re-render the morph one shot of a finished Simple cut plays, with another seed, length or prompt variant
+    (docs/TIMELINE.md 1.5), and re-compose.
+
+    The pair is the two chain stills the shot's morph runs between, prepared as the cut prepared them; the seed is the
+    one given, else the next in the shot's own sequence (the cut's seed for that morph, then 1009 further each time);
+    ``render_s`` (2 to 5) changes how many seconds of source the morph has (the shot's frames stay on the beat, its
+    ``speed`` follows); ``variant`` forces the pair's prompt (``RERENDER_VARIANTS``: by the stills' kinds, object to
+    object, scene to object, object to scene, scene to scene). The new clip replaces ``clips[shot]``, the record logs it
+    under ``rerenders`` and the cut re-composes through ``recut_from_cache`` with the timeline as it stands. A Final cut
+    and a shot under Polly, your clip or a generated run are refused."""
+    job_dir, work, rec = _load_cut(job_dir, "re-render")
+    shots = list(rec.get("plan_shots") or rec.get("shots") or [])
+    clips = [str(c) for c in rec.get("clips") or []]
+    files = [str(f) for f in rec.get("stills") or []]
+    n = len(files)
+    try:
+        j = int(shot)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("Which shot? A re-render names a shot of the cut by its index.") from exc
+    if not 0 <= j < len(shots):
+        raise ValueError(f"This cut has {len(shots)} shots; shot {j} is not one of them.")
+    s = shots[j]
+    under = _under_insert(s)
+    if under:
+        raise ValueError(f"Shot {j + 1} is {under}: it plays no morph of the chain to re-render.")
+    m = s.get("morph", s.get("clip"))
+    if m is None and len(clips) == n - 1:  # a record from before the morph index: one morph a shot
+        m = j
+    if m is None or not 0 <= int(m) < n - 1:
+        raise ValueError(f"Shot {j + 1} plays no morph of the chain to re-render.")
+    m = int(m)
+    variant = str(variant or "auto").strip().lower()
+    if variant not in RERENDER_VARIANTS:
+        raise ValueError(f"No prompt variant called {variant!r}; one of {', '.join(RERENDER_VARIANTS)}.")
+    scene_files = {str(f) for f in rec.get("scene_files") or []}
+    rows = _still_rows(files, scene_files)
+    pair = [dict(rows[m]), dict(rows[m + 1])]
+    kinds = RERENDER_VARIANTS[variant]
+    if kinds:
+        for row, kind in zip(pair, kinds):
+            row["kind"] = kind  # ``_local_clips`` reads the pair's kinds for the prompt and the guide compression
+    seconds = float(s.get("seconds") or (float(s.get("end") or 0.0) - float(s.get("start") or 0.0)) or 1.0)
+    old_render_s = int(s.get("render_s") or (rec.get("chain") or {}).get("clip_s") or max(2, int(round(seconds))))
+    if render_s is not None:
+        try:
+            render_s = int(round(float(render_s)))
+        except (TypeError, ValueError) as exc:
+            raise ValueError("The morph's length is a number of seconds, 2 to 5.") from exc
+        if not RENDER_S_RANGE[0] <= render_s <= RENDER_S_RANGE[1]:
+            raise ValueError(f"The morph's length is {RENDER_S_RANGE[0]} to {RENDER_S_RANGE[1]} s of source; {render_s} is outside that.")
+    else:
+        render_s = old_render_s
+    rerenders = list(rec.get("rerenders") or [])
+    tries = sum(1 for r in rerenders if isinstance(r, dict) and r.get("shot") == j)
+    base_seed = int(rec.get("seed") or 2727)
+    seed = int(seed) if seed is not None else base_seed + m + 1009 * (tries + 1)
+    prep = _prep_of(rec)
+    vibe = str(rec.get("vibe") or "")
+    state = dict(rec.get("recut_state") or {})
+    dest_dir = work / "rerenders" / f"{len(rerenders):02d}"
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    ready = _prepare_rows(pair, prep, work)
+    render_shot = {"index": m, "seconds": float(render_s), "render_s": render_s, "frames": int(render_s * FPS), "effects": []}
+    if report:
+        report("restyle", 0.1, f"Re-rendering shot {j + 1}: {pair[0].get('noun') or '?'} -> {pair[1].get('noun') or '?'} "
+                               f"(seed {seed}, {render_s} s{'' if variant == 'auto' else ', ' + variant})")
+    started = time.perf_counter()
+    got = _render_pairs([render_shot], ready, dest_dir, prep, seed=seed, vibe=vibe, cfg=cfg, state=state, client=client)[0]
+    dest = dest_dir / f"morph{m:02d}.mp4"
+    shutil.move(str(got), dest)
+    clips[j] = str(dest)
+    if render_s != old_render_s:  # the shot keeps its frames on the beat; the source length and the play speed move
+        for lst in (rec.get("plan_shots") or [], rec.get("shots") or []):
+            if j < len(lst) and isinstance(lst[j], dict):
+                lst[j]["render_s"] = render_s
+                lst[j]["speed"] = round(render_s / max(seconds, 0.1), 3)
+    from datetime import datetime
+
+    rec.update({"clips": clips, "rerenders": rerenders + [{"shot": j, "morph": m, "seed": seed, "render_s": render_s, "variant": variant,
+                                                           "clip": str(dest), "seconds": round(time.perf_counter() - started, 2),
+                                                           "at": datetime.now().astimezone().isoformat(timespec="seconds")}]})
+    (work / "simple.json").write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
+    if report:
+        report("assemble", 0.55, "Re-cutting with the new morph (no GPU)")
+    return recut_from_cache(job_dir, {}, report=report, cfg=cfg)
 
 
 # ---------------------------------------------------------------- swapping a still after the cut
@@ -1579,7 +1931,7 @@ def swap_still(job_dir: Path, slot: int, file: str, *, cfg: dict | None = None,
 
     def shot_for(m: int) -> int | None:
         for j, s in enumerate(shots):
-            if s.get("performer") or s.get("own"):
+            if s.get("performer") or s.get("own") or s.get("generated"):
                 continue
             mm = s.get("morph", s.get("clip"))
             if mm is None and len(clips) == n - 1:  # a record from before the morph index: one morph a shot
@@ -1590,15 +1942,9 @@ def swap_still(job_dir: Path, slot: int, file: str, *, cfg: dict | None = None,
 
     targets = {m: j for m, j in ((m, shot_for(m)) for m in touch) if j is not None}
     if not targets:
-        raise ValueError("That still sits under Polly or one of your clips: no morph of the cut lands on it.")
-    prep = rec.get("prep") if isinstance(rec.get("prep"), dict) else None
-    if prep is not None:
-        native_draft, background = bool(prep.get("native_draft")), prep.get("background")
-    else:  # a record from before ``prep``: the note the Draft 9:16 path leaves
-        native_draft = any("native_draft" in note for note in rec.get("fallbacks") or [] if isinstance(note, dict))
-        background = None
-    draft_size = tuple(int(v) for v in ((prep or {}).get("draft_size") or DRAFT_916)) if native_draft else None
-    mock = str(rec.get("engine") or "").startswith("mock")
+        raise ValueError("That still sits under Polly, one of your clips or a generated run: no morph of the cut lands on it.")
+    prep = _prep_of(rec)
+    native_draft, background, draft_size, mock = prep["native_draft"], prep["background"], prep["draft_size"], prep["mock"]
     vibe = str(rec.get("vibe") or new.get("vibe") or "")
     seed = int(rec.get("seed") or 2727)
     state = dict(rec.get("recut_state") or {})

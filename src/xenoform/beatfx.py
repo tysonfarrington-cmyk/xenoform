@@ -591,9 +591,13 @@ def _shot_frames(clip: Path, shot: dict, si: int, n0: int, total: int, *, aspect
     if len(frames) == 0:
         raise RuntimeError(f"Shot {si + 1} came back with no frames.")
     a, b = shot_centres(frames) if aspect != "16:9" else ((0.5, 0.5), (0.5, 0.5))
+    if shot.get("hold"):
+        b = a  # a held shot never leaves its first frame, so the reframe does not drift either
     idx = shot_indices(shot, len(frames))
     count = max(len(idx) - 1, 1)
     look = LookPass(**look_kwargs)
+    if shot.get("dance_fx"):  # the timeline's per-shot Look: a resolved preset or "off" for this shot alone (docs/TIMELINE.md)
+        look.mode = str(shot["dance_fx"])
     look.start_shot(si, len(idx), n0 / fps)
     out = np.empty((len(idx), h, w, 3), dtype=np.uint8)
     n = int(n0)
@@ -749,8 +753,10 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
     look = LookPass(dance_fx=dance_fx, stem_orbit=stem_orbit, stem_env=stem_env, macros=macros, house=house,
                     beats=beats, fps=fps, shots=len(shots), end_card=end_card, seed=seed, palette_image=palette_image,
                     adaptive=adaptive, quality=quality)
-    env = envelopes(audio_path, total, fps=fps) if (fx or look.active) else None
-    if look.active and not look.env:
+    # a shot with its own look (the timeline) needs the envelopes even when the cut's look is off
+    shot_looks = any(str(s.get("dance_fx") or "") not in ("", "off") for s in shots)
+    env = envelopes(audio_path, total, fps=fps) if (fx or look.active or shot_looks) else None
+    if (look.active or shot_looks) and not look.env:
         look.env = mix_stem_env(env, beats, fps)
     glow_gain = bloom_gain((macros or {}).get("glow", 0.4))  # the beat FX bloom: none at Glow 0, 1.6 at 1
     punch = punch_curve(shots)
@@ -790,7 +796,7 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
                   look_kwargs=dict(dance_fx=dance_fx, stem_orbit=stem_orbit, stem_env=look.env, macros=macros, house=house,
                                    beats=beats, fps=fps, shots=len(shots), end_card=end_card, seed=seed,
                                    palette_image=palette_image, adaptive=adaptive, quality=quality))
-    workers = look_workers(total, heavy=bool(fx or look.active))
+    workers = look_workers(total, heavy=bool(fx or look.active or shot_looks))
     if workers > 1:
         log.info("compose: %d shots over %d worker processes", len(shots), workers)
     # the foreshadow layer: the next object brought into each shot's tail (foreshadow.plan reads the edge frames here,

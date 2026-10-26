@@ -2242,3 +2242,36 @@ label.easy-paid { display: block; margin: 0.4rem 0 0.2rem; font-size: 0.86em; op
 /* The idea line, read: what the cut will make of it, under the field as it is typed. */
 .idea-reading { margin-top: 4px; color: var(--text); }
 .idea-reading[hidden] { display: none; }
+
+/* The Timeline panel (docs/TIMELINE.md): boundary handles under the shots, the song's passages under them, a drawer for the
+   clicked shot or boundary, and the marks of an edited, held, re-rendered or generated shot. */
+.shots-lane.tl-panel .lane-bounds { position: relative; height: 16px; margin-top: 1px; }
+.shots-lane .bound { position: absolute; top: 0; transform: translateX(-50%); width: 14px; height: 16px; padding: 0; border: 0; border-radius: 3px; background: transparent; color: var(--muted, #8a8a8a); font-size: 11px; line-height: 16px; cursor: pointer; }
+.shots-lane .bound:hover, .shots-lane .bound:focus-visible { background: rgba(120, 120, 140, .25); color: var(--text); outline: none; }
+.shots-lane .bound.cut { color: var(--text); font-weight: 700; }
+.shots-lane .bound.dressed { color: #d9a400; }
+.shots-lane .bound.edited { box-shadow: inset 0 0 0 1px var(--brass); }
+.shots-lane .bound.picked { background: var(--brass); color: #111; }
+.shots-lane .shot.held { background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, .22) 0 3px, transparent 3px 7px); }
+.shots-lane .shot.edited { outline: 1px solid var(--brass); outline-offset: -1px; }
+.shots-lane .shot.rerendered::after { content: ""; position: absolute; left: 3px; bottom: 3px; width: 6px; height: 6px; border-radius: 50%; background: #5ad1ff; }
+.shots-lane .shot.generated { box-shadow: inset 0 -3px 0 #2a9d8f; }
+.shots-lane .overlay.generated { background: #2a9d8f; }
+.shots-lane .lane-song { position: relative; height: 16px; margin-top: 3px; }
+.shots-lane .passage { position: absolute; top: 0; height: 14px; padding: 0 4px; border: 0; border-radius: 3px; background: hsl(var(--hue, 260) 25% 30%); color: #eee; font-size: 10px; line-height: 14px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; cursor: pointer; text-align: left; }
+.shots-lane .passage i { font-style: normal; }
+.shots-lane .passage:hover, .shots-lane .passage:focus-visible { background: hsl(var(--hue, 260) 35% 40%); outline: none; }
+.shots-lane .drop-mark { position: absolute; top: -2px; width: 2px; height: 18px; background: #ff4d6d; pointer-events: none; }
+.shots-lane .tl-drawer { margin-top: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; display: flex; flex-direction: column; gap: 6px; }
+.shots-lane .tl-drawer-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+.shots-lane .tl-drawer-head .text { margin-left: auto; }
+.shots-lane .tl-drawer .note { margin: 0; }
+.shots-lane .tl-fx-row input[type="range"] { flex: 1 1 120px; min-width: 100px; }
+.shots-lane .tl-fx-row b { font-size: 12px; min-width: 76px; }
+.shots-lane .tl-gpu { display: flex; flex-direction: column; gap: 6px; padding-top: 6px; border-top: 1px dashed var(--line); }
+.shots-lane .tl-gpu-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; }
+.shots-lane .tl-gpu-row label { display: inline-flex; align-items: center; gap: 4px; }
+.shots-lane .tl-gpu-row input[type="number"] { width: 90px; }
+.shots-lane .tl-dress-row select { max-width: 100%; }
+.shots-lane .lane-apply-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 8px; }
+.shots-lane .lane-apply-row .note { margin: 0; flex: 1 1 240px; }

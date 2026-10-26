@@ -190,6 +190,34 @@ def clear_premium(premium: list | None, picks: list) -> list | None:
     return [None if (i < len(picks) and picks[i]) else t for i, t in enumerate(premium)]
 
 
+def make(shots: list[dict], i: int, kind: str, beats, fps: int, *, variant: str | None = None,
+         drop: float | None = None) -> dict | None:
+    """One entry for the boundary into shot ``i`` with ``kind``, shaped as ``pick`` shapes one (the window in beats
+    centred on the cut, the stem, the wipe's iris on a loud role or from the drop on): the timeline's hand-picked
+    boundary kind (docs/TIMELINE.md). None when the kind is unknown, ``i`` is not a boundary or a shot beside it is
+    too short for a window."""
+    kind = str(kind or "").strip().lower()
+    n = len(shots)
+    if kind not in KINDS or not 1 <= i < n:
+        return None
+    if int(shots[i].get("frames") or 0) < 2 * MIN_HALF or int(shots[i - 1].get("frames") or 0) < 2 * MIN_HALF:
+        return None
+    period = _beat_period(beats)
+    role = str(shots[i].get("section") or "")
+    t = float(shots[i].get("start") or 0.0)
+    win = max(2 * MIN_HALF, int(round(BEATS[kind] * period * fps)))
+    tail = max(MIN_HALF, min(win // 2, int(shots[i - 1]["frames"]) // 2))
+    head = max(MIN_HALF, min(win - win // 2, int(shots[i]["frames"]) // 2))
+    loud = role in IRIS_ROLES or (not role and drop is not None and t >= float(drop) - 1e-6)
+    if kind == "wipe":
+        variant = variant if variant in ("iris", "strips") else ("iris" if loud else "strips")
+    else:
+        variant = ""
+    return {"kind": kind, "frames": tail + head, "tail": tail, "head": head, "section": role,
+            "boundary": str(shots[i].get("boundary") or ""), "stem": STEM[kind], "variant": variant, "t": round(t, 3),
+            "user": True}
+
+
 def label(entry: dict | None) -> str:
     """What the lane calls it: "smear", "strobe cut", "iris wipe" / "strip wipe", "chromatic rip"."""
     if not isinstance(entry, dict) or not entry.get("kind"):
@@ -240,12 +268,18 @@ def plan(picks: list, shots: list[dict], clips: list, *, read_edge: Callable[[Pa
     def hard(i: int) -> bool:
         return 0 <= i < n and any(bool(shots[i].get(m)) for m in marks)
 
+    def held(i: int) -> bool:  # a held shot (the timeline's Hold / Cut) shows its first frame throughout
+        return 0 <= i < n and bool(shots[i].get("hold"))
+
+    def visible(i: int, which: str):  # the edge frame the shot really shows: a held shot's last frame is its first
+        return frame(i, "first" if held(i) else which)
+
     for i, pk in enumerate(picks or []):
         if not isinstance(pk, dict) or not pk.get("kind") or i < 1 or i >= n:
             continue
-        across_hard = hard(i) or hard(i - 1)
-        other_head = frame(i - 1, "last") if across_hard else frame(i, "last")
-        other_tail = frame(i, "first") if across_hard else frame(i, "last")
+        across_hard = hard(i) or hard(i - 1) or held(i - 1)  # out of a held shot the join is a cut (docs/TIMELINE.md)
+        other_head = visible(i - 1, "last") if across_hard else visible(i, "last")
+        other_tail = visible(i, "first") if across_hard else visible(i, "last")
         common = {"kind": str(pk["kind"]), "stem": str(pk.get("stem") or STEM[str(pk["kind"])]), "variant": str(pk.get("variant") or ""),
                   "index": i}
         if other_head is not None and int(pk.get("head") or 0) > 0:
