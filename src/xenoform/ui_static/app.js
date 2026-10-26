@@ -3320,6 +3320,9 @@ function timelineDrawer(easy, lane, tl, picked) {
           <label>seed <input id="tl-seed" type="number" placeholder="next" min="0" step="1" aria-label="Seed, empty for the next one" /></label>
           <label>length <select id="tl-render-s" aria-label="Seconds of source"><option value="">as it is</option>${lengthOpts.map((v) => `<option value="${v}">${v} s</option>`).join("")}</select></label>
           <label>prompt <select id="tl-variant" aria-label="Prompt variant">${variants.map((v) => `<option value="${esc(v)}">${esc(variantName(v))}</option>`).join("")}</select></label></div>
+        <div class="tl-gpu-row"><button type="button" class="ghost" data-act="easy-tl-insert" data-index="${s.index}">Generate here</button>
+          <label>length <select id="tl-insert-s" aria-label="Seconds to generate">${insertS.map((v) => `<option value="${v}"${v === 10 ? " selected" : ""}>${v} s</option>`).join("")}</select></label>
+          <span class="note">a fresh run of morphs over this shot and the next ones, new objects from the library (the Chain row's pins honoured), cut in like your own clip</span></div>
       </div>` : under ? `<p class="note">This shot is ${esc(under)}: it has no morph of the chain to swap or re-render; its look and FX are yours to set.</p>` : ""}
     </div>`;
   }
@@ -3399,7 +3402,16 @@ async function rerenderShot(index) {
   const shot = lane.shots.find((x) => x.index === Number(index)) || {};
   await postCutEdit(id, "rerender", body, `Re-rendering shot ${Number(index) + 1}'s morph on the GPU`, shot.start);
 }
-
+async function insertRun(index) {
+  const id = easyVideoId();
+  const lane = state.lane && state.lane.id === id ? state.lane : null;
+  if (!id || !lane) return;
+  const lenEl = document.getElementById("tl-insert-s");
+  const seconds = Number((lenEl && lenEl.value) || 10);
+  const shot = lane.shots.find((x) => x.index === Number(index)) || {};
+  await postCutEdit(id, "insert", { first: Number(index), seconds, pins: (state.easy && state.easy.pins) || {} },
+    `Generating ${seconds} s of new morphs from shot ${Number(index) + 1} on the GPU`, shot.start);
+}
 
 // Swap one still of the finished cut (the lane's picker): the desk re-renders the two morphs that touch it on the GPU
 // and re-composes; the job runs like a re-cut, the making screen shows it, the lane reloads when it is done.
@@ -5494,6 +5506,8 @@ document.addEventListener("click", async (event) => {
     render();
   } else if (act === "easy-tl-rerender") {
     rerenderShot(Number(el.dataset.index));
+  } else if (act === "easy-tl-insert") {
+    insertRun(Number(el.dataset.index));
   } else if (act === "easy-overlay") {
     state.easy.overlay = !state.easy.overlay;
     render();

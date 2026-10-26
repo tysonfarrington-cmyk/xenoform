@@ -1842,6 +1842,128 @@ def rerender_morph(job_dir: Path, shot: int, *, seed: int | None = None, render_
     return recut_from_cache(job_dir, {}, report=report, cfg=cfg)
 
 
+def insert_span(shots: list[dict], first: int, seconds: float) -> tuple[int, int]:
+    """The run "Generate here" covers: shot ``first`` and the ones after it until ``seconds`` are covered (whole shots,
+    never past the end, never into Polly or an own clip or another run). ``(first, last)``."""
+    n = len(shots)
+    if not 0 <= first < n:
+        raise ValueError(f"This cut has {n} shots; shot {first} is not one of them.")
+    under = _under_insert(shots[first])
+    if under:
+        raise ValueError(f"Shot {first + 1} is {under}; start the run on a shot that plays a morph of the chain.")
+    want = max(INSERT_RANGE[0], min(INSERT_RANGE[1], float(seconds or INSERT_SECONDS[1])))
+    total, last = 0.0, first
+    for j in range(first, n):
+        if _under_insert(shots[j]):
+            break
+        length = float(shots[j].get("seconds") or (float(shots[j].get("end") or 0.0) - float(shots[j].get("start") or 0.0)))
+        if j > first and abs(total + length - want) >= abs(total - want) - 1e-6:
+            break  # the next shot would not bring the run nearer the length asked (a tie keeps the shorter run)
+        total += length
+        last = j
+        if total >= want - 1e-6:
+            break
+    return first, last
+
+
+def insert_generated(job_dir: Path, first: int, *, seconds: float = 10.0, pins: dict | list | None = None, seed: int | None = None,
+                     cfg: dict | None = None, report: Callable[[str, float, str], None] | None = None, client=None) -> dict:
+    """"Generate 10 s here": a fresh Draft chain over a span of a finished Simple cut, inserted as a run of shots, and
+    the cut re-composed (docs/TIMELINE.md 1.6).
+
+    The span is ``insert_span``; k shots take k morphs over k + 1 stills picked by ``morph_pass.pick_stills`` for the
+    cut's vibe and idea with ``pins`` (slot -> still file) honoured and the stills already in the cut left out, each
+    morph rendered at its shot's ``render_s`` through the Draft path and prepared as the cut prepared its stills. The
+    shots of the run keep their timing, effects, look and FX; they carry ``generated: {insert, index}`` and no chain
+    ``morph`` (the chain's ``stills`` are untouched), ``clips`` point at the new morphs, and ``inserts`` logs the run."""
+    from xenoform import morph_pass as _mp
+    from xenoform import stills as _stills
+
+    job_dir, work, rec = _load_cut(job_dir, "generate into")
+    shots = list(rec.get("plan_shots") or rec.get("shots") or [])
+    clips = [str(c) for c in rec.get("clips") or []]
+    try:
+        first = int(first)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("Where? A generated run starts on a shot of the cut, named by its index.") from exc
+    first, last = insert_span(shots, first, float(seconds or INSERT_SECONDS[1]))
+    span = shots[first:last + 1]
+    k = len(span)
+    inserts = list(rec.get("inserts") or [])
+    vibe = str(rec.get("vibe") or "")
+    state = dict(rec.get("recut_state") or {})
+    state.setdefault("vibe", vibe)
+    pins_map = _mp.pins_of({"chain_pins": pins}) if pins is not None else {}
+    used = {str(f) for f in rec.get("stills") or []}
+    for ins in inserts:
+        used.update(str(f) for f in (ins.get("stills") or []))
+    scene_kw = _scene_kw(state, span, k + 1)
+    _look_vibe, picked = _mp.pick_stills(state, k + 1 + len(used), record=False, pins=pins_map, **scene_kw)
+    held = {i: row for i, row in enumerate(picked[:k + 1]) if row.get("pinned")}
+    fresh = [row for row in picked if not row.get("pinned") and str(row.get("file")) not in used]
+    spare = [row for row in picked if not row.get("pinned") and str(row.get("file")) in used]  # a small pool: the cut's own stills again
+    rows: list[dict] = []
+    for slot in range(k + 1):
+        if slot in held:
+            rows.append(dict(held[slot]))
+        elif fresh:
+            rows.append(dict(fresh.pop(0)))
+        elif spare:
+            rows.append(dict(spare.pop(0)))
+        else:
+            raise ValueError(f"The {vibe} library has no still left for a run of {k} morphs; grow some first.")
+    prep = _prep_of(rec)
+    ready = _prepare_rows(rows, prep, work)
+    render_shots = []
+    for q, s in enumerate(span):
+        seconds_q = float(s.get("seconds") or (float(s.get("end") or 0.0) - float(s.get("start") or 0.0)) or 1.0)
+        render_s = int(s.get("render_s") or (rec.get("chain") or {}).get("clip_s") or max(2, int(round(seconds_q))))
+        render_shots.append({"index": q, "seconds": float(render_s), "render_s": render_s, "frames": int(render_s * FPS), "effects": []})
+    seed = int(seed) if seed is not None else int(rec.get("seed") or 2727) + 5000 * (len(inserts) + 1)
+    dest_dir = work / "inserts" / f"{len(inserts):02d}"
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    nouns = [str(r.get("noun") or "") for r in rows]
+    if report:
+        report("restyle", 0.1, f"Generating {k} morph{'s' if k != 1 else ''} over shots {first + 1} to {last + 1}: " + " -> ".join(nouns))
+
+    def pair_report(stage: str, frac: float, detail: str) -> None:
+        if report:
+            report(stage, frac, detail)
+
+    started = time.perf_counter()
+    got = _render_pairs(render_shots, ready, dest_dir, prep, seed=seed, vibe=vibe, cfg=cfg, state=state, client=client, report=pair_report)
+    new_clips = []
+    for q, path in enumerate(got):
+        dest = dest_dir / f"morph{q:02d}.mp4"
+        shutil.move(str(path), dest)
+        new_clips.append(str(dest))
+        clips[first + q] = str(dest)
+    idx = len(inserts)
+    for lst in (rec.get("plan_shots") or [], rec.get("shots") or []):
+        for q in range(k):
+            j = first + q
+            if j < len(lst) and isinstance(lst[j], dict):
+                lst[j].pop("morph", None)
+                lst[j].pop("clip", None)
+                lst[j]["generated"] = {"insert": idx, "index": q}
+    from datetime import datetime
+
+    entry = {"first": first, "last": last, "start": float(span[0].get("start") or 0.0), "end": float(span[-1].get("end") or 0.0),
+             "seconds": round(sum(float(s.get("seconds") or 0.0) for s in span), 4), "stills": [str(r.get("file")) for r in rows],
+             "nouns": nouns, "kinds": [_stills.kind_of(r) for r in rows], "clips": new_clips, "pins": {str(a): b for a, b in pins_map.items()},
+             "seed": seed, "render_s": [r["render_s"] for r in render_shots], "took_s": round(time.perf_counter() - started, 2),
+             "at": datetime.now().astimezone().isoformat(timespec="seconds")}
+    rec.update({"clips": clips, "inserts": inserts + [entry]})
+    (work / "simple.json").write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
+    try:
+        _stills.mark_used(vibe, [str(r.get("file")) for r in rows if not r.get("user")])
+    except Exception:  # usage is a preference, never a failure
+        log.debug("usage for the generated run", exc_info=True)
+    if report:
+        report("assemble", 0.55, "Re-cutting with the generated run (no GPU)")
+    return recut_from_cache(job_dir, {}, report=report, cfg=cfg)
+
+
 # ---------------------------------------------------------------- swapping a still after the cut
 
 

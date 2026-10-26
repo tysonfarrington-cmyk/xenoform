@@ -827,6 +827,52 @@ def create_app(cfg: dict | None = None):
                   lambda report: rerender_morph(folder, shot, seed=seed, render_s=render_s, variant=variant, cfg=cfg, report=report))
         return {"id": job_id, "status": "running", "shot": shot, "seed": seed, "render_s": render_s, "variant": variant}
 
+    @app.post("/api/jobs/{job_id}/insert")
+    def insert_job(job_id: str, body: dict | None = None) -> dict:
+        """"Generate 10 s here" (``dense.insert_generated``, docs/TIMELINE.md 1.6): a fresh Draft chain over the span from
+        shot ``first`` (about ``seconds`` long, 5, 10 or 15), the Chain row's ``pins`` honoured, inserted as a run of shots
+        and the cut re-composed. One Draft morph a shot on the GPU."""
+        from xenoform.dense import INSERT_RANGE, INSERT_SECONDS, insert_generated, insert_span
+
+        body = body or {}
+        job, folder = _cut_job_for_edit(job_id, "generate into")
+        try:
+            first = int(body.get("first"))
+        except (TypeError, ValueError):
+            raise HTTPException(400, "Where? The run starts on a shot of the cut, named by its index.")
+        try:
+            seconds = float(body.get("seconds") or INSERT_SECONDS[1])
+        except (TypeError, ValueError):
+            raise HTTPException(400, "The run's length is a number of seconds.")
+        if not INSERT_RANGE[0] <= seconds <= INSERT_RANGE[1]:
+            raise HTTPException(400, f"A run is {int(INSERT_RANGE[0])} to {int(INSERT_RANGE[1])} s long.")
+        pins = body.get("pins") if isinstance(body.get("pins"), (dict, list)) else None
+        seed = body.get("seed")
+        if seed not in (None, ""):
+            try:
+                seed = int(seed)
+            except (TypeError, ValueError):
+                raise HTTPException(400, "The seed is a whole number.")
+        else:
+            seed = None
+        try:  # the cheap refusals answer at once
+            rec = json.loads((folder / "simple" / "simple.json").read_text(encoding="utf-8"))
+        except ValueError:
+            raise HTTPException(400, "This cut's record did not read.")
+        if str(rec.get("tier") or "draft") == "final":
+            raise HTTPException(400, "A generated run is made of Draft morphs; this cut is Final. Make it again instead.")
+        shots = list(rec.get("plan_shots") or rec.get("shots") or [])
+        try:
+            first, last = insert_span(shots, first, seconds)
+        except ValueError as exc:
+            raise HTTPException(400, str(exc))
+        with _LOCK:
+            job.update({"status": "running", "stage": "restyle", "progress": 0.05,
+                        "detail": f"Generating {last - first + 1} morph{'s' if last != first else ''} over shots {first + 1} to {last + 1}", "error": None})
+        _run_edit(job, job_id, "insert", "Generated run ready", "The generated run did not run.",
+                  lambda report: insert_generated(folder, first, seconds=seconds, pins=pins, seed=seed, cfg=cfg, report=report))
+        return {"id": job_id, "status": "running", "first": first, "last": last, "seconds": seconds}
+
     @app.post("/api/morph/board")
     def morph_board(body: dict) -> dict:
         from xenoform.morph import plan_board
