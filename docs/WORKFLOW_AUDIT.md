@@ -205,7 +205,20 @@ A, B, C1 and E together are about three hours and remove the three ways a judge 
 hours. C2 and F2 are the only Python and can ride the next restart. Total about six hours of landed work; "Advanced" relabelled
 "Director tools" (already in the DIRECTION plan for Thursday) folds into A.
 
-None of this was done in this session: the deliverable is the audit, and the list above is for Tys to say go on.
+**Landed, 26 Oct, after Tys said go** ("Yes, land the before-deadline fixes from docs/WORKFLOW_AUDIT.md, A, B, C1 and E
+first, then D, F1, G, with C2 and F2 ready for the next desk restart"), each verified on the preview desk at 47322 after a reload
+and pinned by `tests/test_one_desk.py` (the desk) and `tests/test_one_desk_server.py` (the server):
+
+| Fix | Commit | What changed on screen |
+| --- | --- | --- |
+| A | 1cef168 | Director tools lives at `#simple/desk`, `#director`, `#scene`, `#notes`; entering pushes the URL, so Back comes out; the logo goes home; the header button reads "← Back to Simple" while on and the rail opens with the same item; a reopened cut stays on its result when you come back; a reload lands in Simple unless the URL says desk |
+| B | 1499571 | `#setup` and `#connect` draw inside the Simple shell with "← Back to the desk"; entries in the … menu and a line under Make my video; REPRODUCE step 4 reworded |
+| C1 | eb65d1d | the job bar's Guardrails list folds identical lines ("… (× 51)") and timed QA flags into one line a kind: the H6 report went from 59 lines to 3 |
+| E | b928a87 | four separate method pills under a Method label, the panel opens with what the board is and when it applies, the source library is "Clips and shapes the storyboard may pair with this shot" with where they come from and that they are not the vibe's stills |
+| D | 63c0f34 | "Director tools: storyboard, notes, export" opens the Export step, whose Shot list and Seed file point at the reopened cut |
+| F1 | 6ff4357 | Director tools boots Live once ComfyUI answers (unless Settings chose by hand); the caption, the stage list and the finished label name a dry run as coloured blocks, no pictures |
+| G | a172b5d | My videos hides the nine nameless rows; Forms shows no guardrail line while Auto; Beat overlay is an Off / On row with a note; a vibe card on the result selects and shows "Make it with Neon noir" instead of rendering on the click |
+| C2, F2 | 35ccaa1 | one guardrail line a kind from `transitions_fx.guard`, no `native_vertical` line at the 9:16 default, the stills draft for a director animatic with a vibe; committed ready, **not on 47322 until a restart** |
 
 ### 3.2 After the deadline: the restructure (the first two weeks of November)
 
