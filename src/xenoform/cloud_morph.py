@@ -694,7 +694,7 @@ def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, cli
         if report:  # the desk re-estimates from the real pace of "Morph k of N"
             pace = (time.perf_counter() - started) / (i + 1)
             left = int(round(pace * (len(jobs) - i - 1)))
-            report("restyle", 0.1 + 0.45 * (i + 1) / len(jobs), f"Morph {i + 1} of {len(jobs)}" + (f" Â· about {left} s left" if left else ""))
+            report("restyle", 0.1 + 0.45 * (i + 1) / len(jobs), f"Morph {i + 1} of {len(jobs)}" + (f" · about {left} s left" if left else ""))
     return clips
 
 

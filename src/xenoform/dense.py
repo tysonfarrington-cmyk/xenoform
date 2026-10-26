@@ -1148,8 +1148,8 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
                                 f"(Fine-tune > Library > Grow scenes, or xenoform stills grow {vibe} --kind scene)"})
     elif scene_files:
         report("restyle", 0.08, f"{len(scene_files)} scene{'s' if len(scene_files) != 1 else ''} in the chain ({scene_choice})")
-    report("restyle", 0.1, f"{len(render_shots)} {'Final (LTX-2.3)' if engine == 'ltx23' else 'Draft (LTX 0.9.5)'} morphs Â· "
-                           f"{len(shots)} shots Â· {opt['energy']} Â· {opt['aspect']}")
+    report("restyle", 0.1, f"{len(render_shots)} {'Final (LTX-2.3)' if engine == 'ltx23' else 'Draft (LTX 0.9.5)'} morphs · "
+                           f"{len(shots)} shots · {opt['energy']} · {opt['aspect']}")
     if native_draft:
         from xenoform.portrait import portrait_stills
 

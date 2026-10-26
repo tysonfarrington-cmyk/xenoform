@@ -1,7 +1,7 @@
 """Turbo: an animatic in seconds, then a small LTX pass on the same seed.
 
 The animatic never calls a video model. One keyframe per scene (4 steps at
-384Ã—216) sits on the beat grid. Hard cuts join the shots. A signature scene
+384×216) sits on the beat grid. Hard cuts join the shots. A signature scene
 crossfades, with a zoom regather, and a beat flash rides the picture. Dry run
 stops there. Live mode then replaces it with a chain of A->B guided morphs
 between per-vibe stills (LTX 0.9.5 at 512x288, see ``morph_pass``), one per
@@ -95,14 +95,14 @@ _ETA = {
         "short": "~4 min",
         "first_s": 240,
         "again_s": 50,
-        "line": "512Ã—288, 12 steps, or 704Ã—384 on a 12 GB card when an fp8 LTX-2.3 file is present, about 210 seconds a shot. LTX-2.3 is the core action model. LTX 0.9.5 covers morphs and Turbo. About 4 minutes the first time on LTX 0.9.5.",
+        "line": "512×288, 12 steps, or 704×384 on a 12 GB card when an fp8 LTX-2.3 file is present, about 210 seconds a shot. LTX-2.3 is the core action model. LTX 0.9.5 covers morphs and Turbo. About 4 minutes the first time on LTX 0.9.5.",
     },
     "final": {
         "label": "Final",
         "short": "~10 min",
         "first_s": 600,
         "again_s": 160,
-        "line": "640Ã—360 at 24 fps, or 768Ã—432 on 24 GB with LTX-2.3 as the core model. LTX 0.9.5 covers morphs. Same seed, same guides, same retime in seconds.",
+        "line": "640×360 at 24 fps, or 768×432 on 24 GB with LTX-2.3 as the core model. LTX 0.9.5 covers morphs. Same seed, same guides, same retime in seconds.",
     },
 }
 
@@ -777,7 +777,7 @@ def _run_turbo(
         logging.getLogger("xenoform").exception("director notes")
     detail = f"{'Cut' if mode == 'turbo' else 'Animatic'} ready in {elapsed:.1f}s"  # the morphs ran: it is a cut now
     if painted["hits"]:
-        detail += f" Â· {painted['hits']} cached"
+        detail += f" · {painted['hits']} cached"
     if warning:
         detail = warning
     report("assemble", 1.0, detail)
