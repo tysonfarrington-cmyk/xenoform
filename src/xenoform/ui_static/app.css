@@ -2199,3 +2199,39 @@ body[data-advanced="0"] .comfy-status[data-ok="1"]::before { background: #1f8a55
 .machine-where .toggle { flex-wrap: wrap; gap: 0.4rem; align-items: center; }
 .machine-where input[type="text"] { font: inherit; padding: 0.15rem 0.4rem; border-radius: 0.5rem; border: 1px solid rgba(28,28,30,.18); background: rgba(255,255,255,.7); }
 label.easy-paid { display: block; margin: 0.4rem 0 0.2rem; font-size: 0.86em; opacity: 0.85; }
+
+/* The Chain row (Fine-tune): the stills a Make morphs through, in order; a slot opens the library picker, a pinned slot holds. */
+.chain-row .chain-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.chain-row .chain-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.chain-strip { display: flex; flex-wrap: wrap; gap: 6px; }
+.chain-strip.stale { opacity: 0.55; }
+.chain-slot { position: relative; width: 76px; }
+.chain-slot .chain-pick { display: block; width: 100%; padding: 0; border: 2px solid var(--line); border-radius: 8px; background: var(--zinc-50); color: var(--text); cursor: pointer; overflow: hidden; text-align: left; }
+.chain-slot .chain-pick img, .chain-slot .chain-user { display: block; width: 100%; height: 42px; object-fit: cover; background: #111; }
+.chain-slot .chain-user { font-size: 10px; line-height: 42px; text-align: center; color: #ddd; }
+.chain-slot .chain-pick i { display: block; font-style: normal; font-size: 10px; line-height: 1.2; padding: 3px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chain-slot .chain-pick:hover, .chain-slot .chain-pick:focus-visible { border-color: var(--brass); outline: none; }
+.chain-slot.pinned .chain-pick { border-color: var(--peri, #6b4cff); box-shadow: 0 0 0 1px var(--peri, #6b4cff) inset; }
+.chain-slot.is-scene .chain-pick i::before { content: "scene · "; opacity: 0.7; }
+.chain-slot.picking .chain-pick { border-color: var(--brass); box-shadow: 0 0 0 2px var(--brass); }
+.chain-slot .unpin { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; padding: 0; border: 0; border-radius: 50%; background: var(--peri, #6b4cff); color: #fff; font-size: 12px; line-height: 18px; cursor: pointer; }
+.chain-picker { margin-top: 2px; }
+
+/* The library picker (the Chain row and the lane's swap): the vibe's objects, then its scenes, each a thumbnail. */
+.lib-picker { display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; padding: 6px; border: 1px solid var(--line); border-radius: 10px; }
+.lib-group > span { display: block; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; opacity: .7; margin-bottom: 4px; }
+.lib-tiles { display: flex; flex-wrap: wrap; gap: 5px; }
+.lib-thumb { width: 72px; padding: 0; border: 2px solid transparent; border-radius: 7px; background: var(--zinc-50); color: var(--text); cursor: pointer; overflow: hidden; text-align: left; }
+.lib-thumb img { display: block; width: 100%; height: 40px; object-fit: cover; background: #111; }
+.lib-thumb i { display: block; font-style: normal; font-size: 10px; line-height: 1.2; padding: 2px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lib-thumb:hover, .lib-thumb:focus-visible { border-color: var(--brass); outline: none; }
+.lib-thumb.taken { opacity: 0.4; cursor: default; }
+.lib-thumb.is-scene i::before { content: "scene · "; opacity: 0.7; }
+
+/* Swap an object on the shots lane: in swap mode a shot picks the still it lands on; pinned and swapped slots are marked. */
+.shots-lane .lane-head .lane-swap-toggle { margin-left: auto; white-space: nowrap; }
+.shots-lane .shot.pinned::before { content: ""; position: absolute; right: 3px; top: 3px; width: 6px; height: 6px; border-radius: 50%; background: var(--peri, #6b4cff); }
+.shots-lane .shot.swapped::before { content: ""; position: absolute; right: 3px; top: 3px; width: 6px; height: 6px; border-radius: 50%; background: #ffd166; }
+.shots-lane.swapping .shot.swap { cursor: cell; }
+.shots-lane .shot.picked { outline: 2px solid var(--brass); outline-offset: -2px; }
+.shots-lane .lane-swap { margin-top: 8px; }

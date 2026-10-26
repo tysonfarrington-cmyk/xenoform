@@ -12,6 +12,7 @@ import time
 import uuid
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 from fastapi import File, HTTPException, Request, UploadFile
 
@@ -654,6 +655,77 @@ def create_app(cfg: dict | None = None):
         threading.Thread(target=run, name=f"recut-{job_id}", daemon=True).start()
         return {"id": job_id, "status": "running"}
 
+    @app.post("/api/jobs/{job_id}/swap")
+    def swap_job(job_id: str, body: dict | None = None) -> dict:
+        """Swap one still of a finished Simple cut (``dense.swap_still``): the two morphs that touch it are re-rendered
+        on the GPU (Draft, about a minute a pair), the rest kept, and the cut re-composed. Body: ``slot`` (the chain
+        index the lane names as ``still``) and ``file`` (a library row's file). A cut reopened after a desk restart
+        is registered from its folder."""
+        from xenoform.dense import swap_still
+
+        body = body or {}
+        folder = work_dir() / "jobs" / storage_id(job_id, fallback="")
+        with _LOCK:
+            job = _JOBS.get(job_id)
+            if job is None and (folder / "simple" / "simple.json").is_file() and (folder / "xenoform.mp4").is_file():
+                job = {"id": job_id, "status": "done", "stage": "done", "progress": 1.0, "detail": "Reopened",
+                       "video_version": 0, "video": f"/api/jobs/{job_id}/video?v=0", "path": str(folder / "xenoform.mp4"), "error": None}
+                _JOBS[job_id] = job
+        if job is None:
+            raise HTTPException(404, "No such video.")
+        if job.get("status") == "running":
+            raise HTTPException(409, "That video is still rendering.")
+        if not (folder / "simple" / "simple.json").is_file():
+            raise HTTPException(400, "This video has no cached morphs to swap into.")
+        try:
+            slot = int(body.get("slot"))
+        except (TypeError, ValueError):
+            raise HTTPException(400, "Which slot? The lane names the still a shot lands on.")
+        file = str(body.get("file") or "").strip()
+        if not file:
+            raise HTTPException(400, "Which still? Pick one from the library.")
+        try:  # the cheap refusals (a Final cut, a still already in the chain, no such file) answer at once
+            rec = json.loads((folder / "simple" / "simple.json").read_text(encoding="utf-8"))
+        except ValueError:
+            raise HTTPException(400, "This cut's record did not read.")
+        from xenoform.dense import library_row
+
+        files = [str(f) for f in rec.get("stills") or []]
+        if not 0 <= slot < len(files):
+            raise HTTPException(400, f"This cut has {len(files)} stills; slot {slot} is not one of them.")
+        if str(rec.get("tier") or "draft") == "final":
+            raise HTTPException(400, "A swap re-renders a Draft morph pair; this cut is Final. Make it again with the Chain row instead.")
+        if library_row(file) is None:
+            raise HTTPException(400, f"{file} is not in the stills library.")
+        if file in files:
+            raise HTTPException(400, f"{file.split('/')[-1]} is already in this cut; a still appears once.")
+        with _LOCK:
+            job.update({"status": "running", "stage": "restyle", "progress": 0.05, "detail": f"Swapping still {slot + 1}: re-rendering the morphs that touch it",
+                        "error": None})
+
+        def on_progress(stage: str, frac: float, detail: str) -> None:
+            with _LOCK:
+                job.update({"stage": stage, "progress": float(frac), "detail": detail})
+
+        def run() -> None:
+            try:
+                rec = swap_still(folder, slot, file, cfg=cfg, report=on_progress)
+                with _LOCK:
+                    version = int(job.get("video_version") or 0) + 1
+                    job.update({"status": "done", "stage": "done", "progress": 1.0, "video_version": version,
+                                "video": f"/api/jobs/{job_id}/video?v={version}", "detail": "Swap ready",
+                                "look": rec.get("look"), "recuts": rec.get("recuts"), "swaps": len(rec.get("swaps") or [])})
+            except Exception as exc:
+                log.exception("swap %s", job_id)
+                from xenoform.errors import plain_error
+
+                with _LOCK:
+                    job.update({"status": "done", "stage": "done", "progress": 1.0, "detail": f"The swap did not run. {plain_error(exc)}",
+                                "error": None})
+
+        threading.Thread(target=run, name=f"swap-{job_id}", daemon=True).start()
+        return {"id": job_id, "status": "running", "slot": slot, "file": file}
+
     @app.post("/api/morph/board")
     def morph_board(body: dict) -> dict:
         from xenoform.morph import plan_board
@@ -954,7 +1026,45 @@ def create_app(cfg: dict | None = None):
             out["have"] = stills.counts(vibe)
             out["subjects_left"] = len(stills.nouns_for(vibe, 10_000, have=stills.nouns_in(vibe)))
             out["scene_subjects"] = len(stills.scene_list(vibe))
+            out["rows"] = _library_rows(vibe)  # what the Chain row and the lane's swap pick from
         return out
+
+    def _library_rows(vibe: str) -> list[dict]:
+        """The vibe's library as the pickers show it: its own rows, then the pool it borrows when it has too few of its
+        own (``morph_pass.vibe_for``), each with its thumbnail url, objects before scenes."""
+        from xenoform import morph_pass as _mp
+        from xenoform import stills
+
+        cat = _mp.catalogue()
+        pool = _mp.vibe_for({"vibe": vibe}) if vibe else ""
+        rows = []
+        for under in [vibe] + ([pool] if pool and pool != vibe else []):
+            for r in cat.get(under) or []:
+                rows.append({"file": str(r.get("file") or ""), "noun": str(r.get("noun") or ""), "kind": stills.kind_of(r),
+                             "own": bool(r.get("own")), "shipped": bool(r.get("shipped")), "vibe": under,
+                             "thumb": "/api/stills/thumb?file=" + quote(str(r.get("file") or ""), safe="/")})
+        rows.sort(key=lambda r: (r["kind"] != "object", 0))  # stable: objects first, each pool's order kept
+        return rows
+
+    @app.get("/api/stills/thumb")
+    def stills_thumb(file: str = ""):
+        """A still of the library by its file (``cosmic/042_wolf_skull.jpg``): the shipped pool, else the work folder."""
+        from xenoform import morph_pass as _mp
+        from xenoform import stills
+
+        rel = str(file or "").strip().replace("\\", "/")
+        if not rel or rel.startswith("/") or ".." in rel.split("/") or ":" in rel:
+            raise HTTPException(404, "No such still")
+        for base in (_mp.OBJECTS, stills.root()):
+            path = (base / rel)
+            try:
+                path.resolve().relative_to(Path(base).resolve())
+            except ValueError:
+                continue
+            if path.is_file():
+                kind = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp"}.get(path.suffix.lower(), "application/octet-stream")
+                return FileResponse(path, media_type=kind, headers={"Cache-Control": "max-age=600"})
+        raise HTTPException(404, "No such still")
 
     @app.post("/api/stills/grow")
     def library_grow(body: dict) -> dict:
@@ -1301,6 +1411,117 @@ def create_app(cfg: dict | None = None):
             "house": {"aspect": "9:16", "energy": "dense", "tier": "draft", "dance_fx": "auto", "stem_orbit": True,
                       "beat_fx": True, "end_card": False},
         }
+
+    def _chain_for(body: dict) -> dict:
+        """The stills a Make of ``body`` will morph through, in order, as the stills animatic previews them
+        (``dense.chain_preview``): nothing rendered, nothing marked used. A Length cut is previewed on the window the
+        Make will trim (the same maths as ``_trim_audio``, without the trim), so its count may differ by a still."""
+        from xenoform import morph_pass as _mp
+        from xenoform.dense import chain_preview
+        from xenoform.director import apply_director
+
+        state = dict(body or {})
+        if isinstance(state.get("scenes"), str):
+            state["scene_stills"] = state.pop("scenes")
+        if not isinstance(state.get("cut_plan"), dict):
+            state.pop("cut_plan", None)
+        audio_id = str(state.get("audio_id") or "demo")
+        try:
+            features = dict(_features_for(audio_id))
+        except HTTPException:
+            raise HTTPException(400, "Load a song to see its chain.")
+        if audio_id in {"", "demo"}:
+            audio = repo_root() / "examples" / "demo.wav"
+        else:
+            with _LOCK:
+                audio = _AUDIO.get(audio_id)
+        if audio is None or not Path(audio).is_file():
+            raise HTTPException(400, "Load a song to see its chain.")
+        try:
+            length_s = float(state.get("length_s") or 0)
+        except (TypeError, ValueError):
+            length_s = 0.0
+        dur = float(features.get("duration") or 0.0)
+        if length_s > 0 and dur > length_s + 1.0:
+            beats = [float(b) for b in (features.get("beats") or [])]
+            try:
+                from xenoform.beatfx import drop_time
+
+                drop = float(drop_time(Path(audio), beats))
+            except Exception:
+                drop = dur * 0.6
+            start = max(0.0, min(drop - length_s * 0.45, dur - length_s))
+            if state.get("length_start") not in (None, ""):
+                try:
+                    start = max(0.0, min(float(state["length_start"]), dur - length_s))
+                except (TypeError, ValueError):
+                    pass
+            earlier = [b for b in beats if b <= start + 1e-6]
+            if earlier:
+                start = max(earlier)
+            end = start + length_s
+            features["beats"] = [round(b - start, 4) for b in beats if start <= b < end]
+            features["duration"] = length_s
+            features["sections"] = [{**s, "start": round(max(0.0, float(s.get("start") or 0.0) - start), 4),
+                                     "end": round(min(length_s, float(s.get("end") or 0.0) - start), 4)}
+                                    for s in (features.get("sections") or [])
+                                    if float(s.get("end") or 0.0) > start and float(s.get("start") or 0.0) < end]
+        own_folder = str(state.get("own_folder") or "").strip()
+        own_id = str(state.get("own_id") or "")
+        if own_id:
+            with _LOCK:
+                dropped = _OWN.get(own_id)
+            if dropped is not None and Path(dropped).is_dir():
+                own_folder = str(dropped)
+        if own_folder:
+            try:
+                from xenoform import own_media
+
+                found = own_media.scan(own_folder)
+                state["morph_targets"] = list(found["images"]) + [str(p) for p in (state.get("morph_targets") or []) if str(p) not in found["images"]]
+            except Exception:
+                pass
+        try:
+            directed = apply_director(features, state)
+        except Exception:
+            directed = features
+        from xenoform.cloud_morph import CutPlanError
+
+        try:
+            pre = chain_preview(directed, state, Path(audio))
+        except CutPlanError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        pins = _mp.pins_of(state)
+        rows = [{"index": k, "file": str(s.get("file") or ""), "noun": str(s.get("noun") or ""),
+                 "kind": "scene" if str(s.get("kind") or "") == "scene" else "object", "own": bool(s.get("own")),
+                 "user": bool(s.get("user")), "pinned": bool(s.get("pinned")),
+                 "thumb": "/api/stills/thumb?file=" + quote(str(s.get("file") or ""), safe="/") if not s.get("user") else ""}
+                for k, s in enumerate(pre["stills"])]
+        dropped_pins = sorted(k for k in pins if k < len(rows) and not rows[k]["pinned"])
+        return {"vibe": pre["vibe"], "pool_vibe": _mp.vibe_for(state), "count": len(rows), "morphs": max(0, len(rows) - 1),
+                "shots": len(pre["shots"]), "long_song": bool(pre["long_song"]), "scene_mode": _mp.scenes_choice(state),
+                "stills": rows, "pinned": [r["index"] for r in rows if r["pinned"]], "dropped_pins": dropped_pins,
+                "length_s": length_s if length_s > 0 and dur > length_s + 1.0 else 0}
+
+    @app.get("/api/simple/chain")
+    def simple_chain_get(audio_id: str = "demo", vibe: str = "", idea: str = "", scene_stills: str = "off", energy_preset: str = "dense",
+                         quality_tier: str = "draft", aspect: str = "9:16", length_s: float = 0.0, morph_count: str = "auto",
+                         chain_pins: str = "", seed: int = 0) -> dict:
+        """The chain a Make with these choices will morph through (``chain_pins``: a JSON object of slot to file)."""
+        pins = {}
+        if chain_pins:
+            try:
+                pins = json.loads(chain_pins)
+            except ValueError:
+                raise HTTPException(400, "chain_pins is a JSON object of slot to still file.")
+        return _chain_for({"audio_id": audio_id, "vibe": vibe, "idea": idea, "scene_stills": scene_stills, "energy_preset": energy_preset,
+                           "quality_tier": quality_tier, "aspect": aspect, "length_s": length_s, "morph_count": morph_count,
+                           "chain_pins": pins, "seed": seed, "mode": "simple"})
+
+    @app.post("/api/simple/chain")
+    def simple_chain(body: dict) -> dict:
+        """The same, for the whole make body the desk sends (the idea line, Length, Your footage, the pins, every knob)."""
+        return _chain_for(body or {})
 
     def _video_dir(video_id: str) -> Path:
         folder = work_dir() / "jobs" / storage_id(video_id, fallback="")

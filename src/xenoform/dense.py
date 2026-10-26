@@ -329,6 +329,7 @@ def apply_performer_slots(shots: list[dict], clips: list, slots: list[dict], ren
             merged["source"] = Path(str(sl["clip"])).name
         merged.pop("ease", None)
         merged.pop("clip", None)
+        merged.pop("morph", None)  # a slot plays its own clip, no morph
         out_shots.append(merged)
         out_clips.append(Path(rendered[sl["first"]]["clip"]))
         i = sl["last"] + 1
@@ -1116,6 +1117,8 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
                              size=DRAFT_916 if native_draft else None)
     if long_song:
         clips = [clips[ci] for ci in chain["assign"]]  # one entry per shot, walking the loop
+    for i, s in enumerate(shots):  # which morph each shot plays: a swap after the cut finds the two that touch a still
+        s["morph"] = int(s.get("clip", i))
     performer_info: dict = {"shots": 0, "slots": [], "notes": []}
     n_perf = opt.get("performer") or 0
     if n_perf and long_song:
@@ -1232,6 +1235,12 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
             "fx": opt["fx"], "overlay": made["overlay"], "end_card": card, "vibe": vibe,
             "stills": [s["file"] for s in stills], "shots": shots, "plan_name": plan.get("name", ""), "chain": chain or None,
             "scene_mode": scene_choice, "scene_files": scene_files,  # the scenes choice and which stills were scenes
+            # the Chain row's pins (which slots the user chose), the still preparation a swap must repeat, the swaps so far
+            "pins": {str(i): s["file"] for i, s in enumerate(stills) if s.get("pinned")},
+            "pinned": [i for i, s in enumerate(stills) if s.get("pinned")],
+            "prep": {"background": background, "native_draft": bool(native_draft), "native": bool(native),
+                     "draft_size": list(DRAFT_916) if native_draft else None},
+            "swaps": [],
             "families": sorted({_fam for _fam in (s.get("family") or "" for s in stills) if _fam}),
             "plan_shots": plan_shots, "clips": [str(c) for c in clips], "audio_path": str(audio_path),
             "transitions": transitions, "boundary_fx": boundary_fx, "drop": plan.get("drop"), "size": list(size) if size else None,
@@ -1239,7 +1248,7 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
             "palette_image": str(stills[0]["path"]) if stills else None, "vertical_house": vertical_house,
             "recut_state": {k: state.get(k) for k in ("vibe", "aspect", "quality_tier", "energy_preset", "dance_fx", "stem_orbit", "pace",
                                                       "beat_fx", "beat_overlay", "end_card", "stems_path", "macros", "still_background",
-                                                      "performer", "performer_style", "foreshadow", "scene_stills")},
+                                                      "performer", "performer_style", "foreshadow", "scene_stills", "chain_pins")},
             "roles": plan.get("roles"), "performer": performer_info, "own": own_info,
             "handoffs_s": [s["start"] for s in shots] + [shots[-1]["end"]], "fallbacks": notes,
             "beats": [round(float(b), 4) for b in (directed.get("beats") or [])],
@@ -1266,18 +1275,17 @@ def ground_is_black(stills: list[dict], *, luma: float = 16.0) -> bool:
     return float(sum(float(part.mean()) * part.size for part in border) / sum(part.size for part in border)) < luma
 
 
-def stills_animatic(directed: dict, state: dict, audio_path: Path, out_path: Path, work: Path, *,
-                    size: tuple[int, int] = (216, 384), fps: int = 12) -> dict:
-    """The Simple-mode draft: the vibe's stills hard-cut on the planned shots with the song, in a few
-    seconds, so the first thing on screen is the real cut's skeleton (not the CPU blob animatic)."""
-    work = Path(work)
-    work.mkdir(parents=True, exist_ok=True)
+def chain_preview(directed: dict, state: dict, audio_path: Path) -> dict:
+    """The chain a Make of ``state`` will morph through, without rendering or marking a still used: the planned shots,
+    the stills in order (``stills``, n morphs over n + 1 stills) and the still each shot plays (``picks``). The stills
+    animatic cuts these to the song; the Chain row shows them before Make, pins and all (``morph_pass.pins_of``)."""
     shots, plan = shots_for(state, directed, Path(audio_path))
     duration = float(directed.get("duration") or shots[-1]["end"])
     long_song = duration > LONG_SONG_S and not plan.get("stills")
-    # record=False: the animatic previews the picks the render will make; only the render marks them used
+    chain: dict = {}
+    # record=False: the preview shows the picks the render will make; only the render marks them used
     if long_song:
-        # the same chain the render will make (pool cap, re-plan, merge), so the animatic previews the same cut; it
+        # the same chain the render will make (pool cap, re-plan, merge), so the preview shows the same cut; it
         # does not grow the library, so a cut that grows its family may afford a few more morphs than previewed
         shots, plan, chain, _ = long_song_chain(state, directed, Path(audio_path), shots, plan, options(state), grow=False)
         vibe, pool = stills_for({**state, "cut_plan": None}, chain["morphs"] + 1, record=False,
@@ -1287,6 +1295,18 @@ def stills_animatic(directed: dict, state: dict, audio_path: Path, out_path: Pat
         vibe, pool = stills_for({**state, "cut_plan": plan if plan.get("stills") else None}, len(shots) + 1, record=False,
                                 **_scene_kw(state, shots, len(shots) + 1))
         picks = pool[:len(shots)]
+    return {"shots": shots, "plan": plan, "long_song": long_song, "chain": chain, "vibe": vibe, "stills": pool, "picks": picks,
+            "duration": duration}
+
+
+def stills_animatic(directed: dict, state: dict, audio_path: Path, out_path: Path, work: Path, *,
+                    size: tuple[int, int] = (216, 384), fps: int = 12) -> dict:
+    """The Simple-mode draft: the vibe's stills hard-cut on the planned shots with the song, in a few
+    seconds, so the first thing on screen is the real cut's skeleton (not the CPU blob animatic)."""
+    work = Path(work)
+    work.mkdir(parents=True, exist_ok=True)
+    pre = chain_preview(directed, state, Path(audio_path))  # the one chain the render makes and the Chain row shows
+    shots, duration, long_song, vibe, picks = pre["shots"], pre["duration"], pre["long_song"], pre["vibe"], pre["picks"]
     w, h = int(size[0]), int(size[1])
     if h > w:  # portrait: the whole object re-laid on the house ground, as the render will be
         from xenoform.portrait import portrait_stills
@@ -1392,3 +1412,173 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
                 "recuts": int(rec.get("recuts") or 0) + 1})
     rec_path.write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
     return rec
+
+
+# ---------------------------------------------------------------- swapping a still after the cut
+
+
+def library_row(file: str) -> dict | None:
+    """A still file (``cosmic/042_wolf_skull.jpg``) as its catalogue row with ``path``, under whichever vibe lists it;
+    None when no library has it."""
+    from xenoform import morph_pass as _mp
+
+    file = str(file or "").strip().replace("\\", "/")
+    for vibe, rows in _mp.catalogue().items():
+        for r in rows:
+            if str(r.get("file") or "") == file:
+                return {**r, "vibe": vibe}
+    return None
+
+
+def _still_rows(files: list[str], scene_files: set) -> list[dict]:
+    """The cut's stills as rows with paths: the library's row, else the file where the pools keep it (a still culled
+    from the library since the cut still morphs); a still gone from the machine is an error."""
+    from xenoform import morph_pass as _mp
+    from xenoform import stills as _stills
+    from xenoform.lane import noun_of
+
+    rows = []
+    for f in files:
+        r = library_row(f)
+        if r is None:
+            for base in (_mp.OBJECTS, _stills.root()):
+                if (base / f).is_file():
+                    r = {"file": f, "noun": noun_of(f), "path": str(base / f)}
+                    break
+        if r is None:
+            raise FileNotFoundError(f"The still {f} is no longer on this machine.")
+        if f in scene_files:
+            r = {**r, "kind": "scene"}
+        rows.append(r)
+    return rows
+
+
+def swap_still(job_dir: Path, slot: int, file: str, *, cfg: dict | None = None,
+               report: Callable[[str, float, str], None] | None = None, client=None) -> dict:
+    """Swap one still of a finished Simple cut (the shots lane's swap) and re-render only the morphs that touch it.
+
+    Still ``slot`` of the record's chain becomes ``file`` (a library row: an object or a scene of any vibe). The two
+    morphs that land on and leave that still (one at either end of the chain) are rendered again through the Draft
+    path (``cloud_morph._local_clips``, two morphs' worth of the cut's render time, about 40 s on a 12 GB card; the same
+    noise seed the cut used for those morphs), with the still prepared as the cut prepared its stills (black ground, portrait re-lay). Every
+    other clip is kept, the record is updated in place (``stills``, ``scene_files``, ``clips``, a ``swaps`` log) and
+    the cut is re-composed through ``recut_from_cache`` with the knobs as they stand. A Final cut, a still already in
+    the chain, a slot under a performer or own clip, and a library file that does not exist are refused."""
+    from xenoform import stills as _stills
+
+    job_dir = Path(job_dir)
+    work = job_dir / "simple"
+    rec_path = work / "simple.json"
+    if not rec_path.is_file():
+        raise FileNotFoundError("This video has no cached morphs to swap into (it was not made by Simple mode).")
+    rec = json.loads(rec_path.read_text(encoding="utf-8"))
+    files = [str(f) for f in rec.get("stills") or []]
+    n = len(files)
+    try:
+        slot = int(slot)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("Which slot? A swap names a still of the chain by its index.") from exc
+    if not files or not 0 <= slot < n:
+        raise ValueError(f"This cut has {n} stills; slot {slot} is not one of them.")
+    if str(rec.get("tier") or "draft") == "final":
+        raise ValueError("A swap re-renders a Draft morph pair; this cut is Final. Make it again with the Chain row instead.")
+    file = str(file or "").strip().replace("\\", "/")
+    new = library_row(file)
+    if new is None:
+        raise ValueError(f"{file or '(nothing)'} is not in the stills library.")
+    if file == files[slot]:
+        raise ValueError(f"{new.get('noun') or file} is the still already in slot {slot}.")
+    if file in files:
+        raise ValueError(f"{new.get('noun') or file} is already in this cut (slot {files.index(file)}); a still appears once.")
+    shots = list(rec.get("plan_shots") or rec.get("shots") or [])
+    clips = [str(c) for c in rec.get("clips") or []]
+    if not shots or not clips or len(clips) != len(shots):
+        raise FileNotFoundError("The cached morphs for this video are gone; render it again.")
+    scene_files = {str(f) for f in rec.get("scene_files") or []}
+    old = files[slot]
+    rows = _still_rows(files, scene_files)
+    rows[slot] = dict(new)
+    # the morphs that touch the slot: the one landing on it and the one leaving it, and the shots that play them
+    touch = [m for m in (slot - 1, slot) if 0 <= m < n - 1]
+
+    def shot_for(m: int) -> int | None:
+        for j, s in enumerate(shots):
+            if s.get("performer") or s.get("own"):
+                continue
+            mm = s.get("morph", s.get("clip"))
+            if mm is None and len(clips) == n - 1:  # a record from before the morph index: one morph a shot
+                mm = j
+            if mm is not None and int(mm) == m:
+                return j
+        return None
+
+    targets = {m: j for m, j in ((m, shot_for(m)) for m in touch) if j is not None}
+    if not targets:
+        raise ValueError("That still sits under Polly or one of your clips: no morph of the cut lands on it.")
+    prep = rec.get("prep") if isinstance(rec.get("prep"), dict) else None
+    if prep is not None:
+        native_draft, background = bool(prep.get("native_draft")), prep.get("background")
+    else:  # a record from before ``prep``: the note the Draft 9:16 path leaves
+        native_draft = any("native_draft" in note for note in rec.get("fallbacks") or [] if isinstance(note, dict))
+        background = None
+    draft_size = tuple(int(v) for v in ((prep or {}).get("draft_size") or DRAFT_916)) if native_draft else None
+    mock = str(rec.get("engine") or "").startswith("mock")
+    vibe = str(rec.get("vibe") or new.get("vibe") or "")
+    seed = int(rec.get("seed") or 2727)
+    state = dict(rec.get("recut_state") or {})
+    swaps = list(rec.get("swaps") or [])
+    swap_dir = work / "swaps" / f"{len(swaps):02d}"
+    swap_dir.mkdir(parents=True, exist_ok=True)
+    need = sorted({k for m in targets for k in (m, m + 1)})
+    prepared = [dict(rows[k]) for k in need]
+    if background == "black":
+        from xenoform.portrait import black_stills
+
+        prepared = black_stills(prepared, work)
+    if native_draft:
+        from xenoform.portrait import portrait_stills
+
+        prepared = portrait_stills(prepared, work, draft_size[0], draft_size[1], background=background)
+    ready = dict(zip(need, prepared))
+    started = time.perf_counter()
+    new_clips: dict[int, str] = {}
+    for m, j in sorted(targets.items()):
+        shot = shots[j]
+        render_s = int(shot.get("render_s") or (rec.get("chain") or {}).get("clip_s") or max(2, int(round(float(shot.get("seconds") or 2.0)))))
+        render_shot = {"index": m, "seconds": float(render_s), "render_s": render_s, "frames": int(render_s * FPS), "effects": []}
+        pair = [ready[m], ready[m + 1]]
+        if report:
+            report("restyle", 0.1 + 0.4 * len(new_clips) / len(targets),
+                   f"Re-rendering morph {m + 1} of {n - 1}: {pair[0].get('noun') or '?'} -> {pair[1].get('noun') or '?'}")
+        if mock:
+            from xenoform.cloud_morph import _mock_clips
+
+            got = _mock_clips([render_shot], pair, swap_dir, *(draft_size or (768, 432)))[0]
+        else:
+            got = _draft_clips([render_shot], pair, swap_dir, cfg or {}, seed + m, vibe, client, None, state, size=draft_size)[0]
+        dest = swap_dir / f"morph{m:02d}.mp4"
+        shutil.move(str(got), dest)
+        new_clips[j] = str(dest)
+    files[slot] = file
+    scene_files.discard(old)
+    if _stills.kind_of(new) == "scene":
+        scene_files.add(file)
+    for j, path in new_clips.items():
+        clips[j] = path
+    from datetime import datetime
+
+    rec.update({"stills": files, "scene_files": [f for f in files if f in scene_files], "clips": clips,
+                "families": sorted({fam for fam in (_stills.family_of(str(r.get("noun") or "")) for r in rows) if fam}),
+                "swaps": swaps + [{"slot": slot, "from": old, "to": file, "morphs": sorted(targets), "shots": sorted(targets.values()),
+                                   "clips": {str(j): p for j, p in new_clips.items()}, "seconds": round(time.perf_counter() - started, 2),
+                                   "at": datetime.now().astimezone().isoformat(timespec="seconds")}]})
+    if slot == 0:
+        rec["palette_image"] = str(ready[0]["path"])  # the look's palette still is the chain's first
+    rec_path.write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
+    try:
+        _stills.mark_used(str(new.get("vibe") or vibe), [file])
+    except Exception:  # usage is a preference, never a failure
+        log.debug("usage for the swapped still", exc_info=True)
+    if report:
+        report("assemble", 0.55, "Re-cutting with the new morphs (no GPU)")
+    return recut_from_cache(job_dir, {}, report=report, cfg=cfg)

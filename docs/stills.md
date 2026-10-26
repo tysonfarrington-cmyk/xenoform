@@ -117,6 +117,20 @@ the morphs render previews the same picks without counting as a use, so the skel
 objects. A vibe with no shipped stills borrows a pool until it has three of its own; while it borrows, the stills it
 does have (your own shapes included) lead the chain.
 
+**Choosing it.** Fine-tune → Chain draws that chain before Make (`POST /api/simple/chain` with the make body, or `GET`
+with the main choices; `dense.chain_preview` is the one function the stills animatic cuts from). A click on a slot opens
+the vibe's library (`GET /api/stills?vibe=<vibe>` lists the rows, `/api/stills/thumb?file=<vibe>/<name>` serves a still)
+and the pick is pinned: the make body's `chain_pins` (`{"3": "cosmic/042_wolf_skull.jpg"}`, or a list with one entry a
+slot) reaches `pick_stills(pins=)`, which holds every pinned slot and fills the rest exactly as above from the pool
+without the pinned stills, so nothing appears twice; the scene slots of a Mix cut move around the pins. A pin past the
+chain's end, a file the library no longer has, or a file pinned twice is dropped. The record lists `pins` and `pinned`.
+
+**Changing it after the cut.** The shots lane's *Swap an object* (`POST /api/jobs/<id>/swap` with `slot` and `file`,
+`dense.swap_still`) replaces one still of a finished Draft cut: the two morphs that touch it are rendered again through
+the same Draft path with the cut's own seed for those morphs and the still prepared as the cut prepared its stills, every
+other clip is kept, and the cut is re-composed through the re-cut path with the knobs as they stand. The record is
+updated in place (`stills`, `scene_files`, `clips`, a `swaps` log); the new clips sit under `simple/swaps/<n>/`.
+
 ## Limits
 
 - Stills only. A moving object to morph into (a still plus a short idle clip of it) is the next step after the contest.

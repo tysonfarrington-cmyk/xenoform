@@ -119,7 +119,7 @@ function easyCrumbs(easy) {
 }
 
 // The last session's vibe and Fine-tune choices survive a reload or a desk restart (the song cannot: uploads live on the server).
-const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow", "scenes"];
+const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow", "scenes", "pins"];
 function saveEasy() {
   if (!state || !state.easy) return;
   try {
@@ -303,6 +303,8 @@ function payload() {
     foreshadow: (state.easy && state.easy.foreshadow) || "auto",
     // Scenes (stills.kind "scene"): "off" (objects only), "mix" (a scene at every passage change), "only" (scenes alone)
     scene_stills: (state.easy && state.easy.scenes) || "off",
+    // The Chain row's pins: chain slot -> still file; the pick holds them and fills the rest (morph_pass.pins_of)
+    chain_pins: (state.easy && state.easy.pins) || {},
     stem_orbit: !(state.easy && state.easy.stemOrbit === false),
     macros: (window.XENO_MACROS ? window.XENO_MACROS() : null),
     length_s: Number((state.easy && state.easy.lengthS) || 0),
@@ -2616,6 +2618,7 @@ function fineTune(easy) {
       ${simpleOptions(easy)}
       ${ownRow(easy)}
       ${stillsRow(easy)}
+      ${chainRow(easy)}
       ${cloudToggles(easy)}
       ${remixBox(easy)}
     </details>`;
@@ -2722,6 +2725,120 @@ function stillsRow(easy) {
       ${running ? '<button type="button" class="ghost" data-act="easy-grow-stop">Stop</button>' : ""}
     </div>
     <p class="note">${esc(note)}</p>`;
+}
+
+// The Chain row: the stills this Make will morph through, in order, as the stills draft previews them
+// (POST /api/simple/chain, dense.chain_preview: nothing rendered, nothing marked used). Click a slot and pick another
+// object or scene from the vibe's library; a pinned slot holds through Make (the make body's chain_pins, which
+// morph_pass.pick_stills honours slot by slot), the rest are picked fresh. The idea line, Scenes and Length move the picks.
+let chainTimer = null;
+function chainKey() {
+  const e = state.easy || {};
+  const m = window.XENO_MACROS ? window.XENO_MACROS() : null;
+  const counts = (state.stills && state.stills.counts && state.stills.counts[e.vibe]) || null;
+  return JSON.stringify([e.song, state.audioId, e.vibe, e.idea || "", e.scenes || "off", e.energyPreset, e.tier, e.aspect, e.lengthS, e.lengthStart,
+    e.morphs, e.ownFolder, e.ownId, e.pins || {}, m && m.speed, counts]);
+}
+function scheduleChain(key) {
+  if (chainTimer) clearTimeout(chainTimer);
+  chainTimer = setTimeout(() => { chainTimer = null; loadChain(key); }, 350);
+}
+async function loadChain(key) {
+  if (!state.easy || !state.easy.song || !state.easy.vibe) { state.chain = { key, data: null }; return; }
+  state.chain = Object.assign({}, state.chain || {}, { key, loading: true });
+  let data;
+  try {
+    const res = await api("/api/simple/chain", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload()) });
+    const body = await res.json().catch(() => ({}));
+    data = res.ok ? body : { error: body.detail || "The chain could not be read." };
+  } catch (err) {
+    data = { error: "The chain could not be read." };
+  }
+  if (!state.easy || chainKey() !== key) return;  // the choices moved on; a newer request follows
+  state.chain = { key, data };
+  render();
+}
+// A vibe's library rows (objects, then scenes, each with its thumbnail), for the Chain row's picker and the lane's swap.
+function libraryRows(vibe) {
+  if (!vibe) return [];
+  state.libraryRows = state.libraryRows || {};
+  if (state.libraryRows[vibe]) return state.libraryRows[vibe];
+  if (state.stills && state.stills.vibe === vibe && Array.isArray(state.stills.rows)) return state.stills.rows;
+  state.libraryLoading = state.libraryLoading || {};
+  if (!state.libraryLoading[vibe]) {
+    state.libraryLoading[vibe] = true;
+    setTimeout(() => loadLibraryRows(vibe), 0);
+  }
+  return null;
+}
+async function loadLibraryRows(vibe) {
+  try {
+    const res = await api(`/api/stills?vibe=${encodeURIComponent(vibe)}`);
+    const data = res.ok ? await res.json() : {};
+    state.libraryRows[vibe] = Array.isArray(data.rows) ? data.rows : [];
+  } catch (err) {
+    state.libraryRows[vibe] = [];
+  }
+  state.libraryLoading[vibe] = false;
+  render();
+}
+function libraryPicker(vibe, act, slot, used) {
+  const rows = libraryRows(vibe);
+  if (!rows) return `<p class="note">Reading the ${esc(vibe)} library...</p>`;
+  if (!rows.length) return `<p class="note">The ${esc(vibe)} library is empty: grow some stills on the Library row first.</p>`;
+  const tile = (r) => {
+    const taken = used.has(r.file);
+    return `<button type="button" class="lib-thumb${taken ? " taken" : ""}${r.kind === "scene" ? " is-scene" : ""}" data-act="${act}" data-slot="${slot}" data-file="${esc(r.file)}"${taken ? " disabled" : ""} title="${esc(r.noun + (r.kind === "scene" ? " (scene)" : "") + (taken ? " · already in the chain" : ""))}"><img src="${esc(media(r.thumb))}" alt="" loading="lazy"><i>${esc(r.noun)}</i></button>`;
+  };
+  const objects = rows.filter((r) => r.kind !== "scene");
+  const scenes = rows.filter((r) => r.kind === "scene");
+  return `<div class="lib-picker">
+      ${objects.length ? `<div class="lib-group"><span>Objects</span><div class="lib-tiles">${objects.map(tile).join("")}</div></div>` : ""}
+      ${scenes.length ? `<div class="lib-group"><span>Scenes</span><div class="lib-tiles">${scenes.map(tile).join("")}</div></div>` : ""}
+    </div>`;
+}
+function chainRow(easy) {
+  if (!easy.vibe) return "";
+  const key = chainKey();
+  if (!state.chain || state.chain.key !== key) scheduleChain(key);
+  const have = state.chain && state.chain.data;
+  const stale = !!(state.chain && state.chain.key !== key);
+  const pins = easy.pins || {};
+  const nPins = Object.keys(pins).length;
+  let strip = "";
+  let facts = "";
+  if (!easy.song) strip = `<p class="note">Choose a song and the chain appears here.</p>`;
+  else if (!have) strip = `<p class="note">Reading the chain...</p>`;
+  else if (have.error) strip = `<p class="note">${esc(have.error)}</p>`;
+  else {
+    const slots = (have.stills || []).map((s) => {
+      const title = `${s.index + 1}. ${s.noun}${s.kind === "scene" ? " (scene)" : ""}${s.user ? " (your image)" : ""}${s.pinned ? " · pinned, click × to let the pick choose" : " · click to choose another"}`;
+      return `<div class="chain-slot${s.pinned ? " pinned" : ""}${s.kind === "scene" ? " is-scene" : ""}${easy.chainPick === s.index ? " picking" : ""}">
+          <button type="button" class="chain-pick" data-act="easy-chain-slot" data-slot="${s.index}" title="${esc(title)}" aria-label="${esc(title)}">${s.thumb ? `<img src="${esc(media(s.thumb))}" alt="" loading="lazy">` : `<span class="chain-user">yours</span>`}<i>${esc(s.noun)}</i></button>
+          ${s.pinned ? `<button type="button" class="unpin" data-act="easy-unpin" data-slot="${s.index}" title="Unpin: let the pick choose this slot" aria-label="Unpin slot ${s.index + 1}">×</button>` : ""}
+        </div>`;
+    }).join("");
+    strip = `<div class="chain-strip${stale ? " stale" : ""}" role="list" aria-label="The chain">${slots}</div>`;
+    facts = `${have.count} stills, ${have.morphs} morph${have.morphs === 1 ? "" : "s"}${have.long_song ? ", one a shot" : ""}${have.length_s ? ` on the ${have.length_s} s cut` : ""}${have.scene_mode && have.scene_mode !== "off" ? ` · scenes ${have.scene_mode}` : ""}${have.pinned && have.pinned.length ? ` · ${have.pinned.length} pinned` : ""}${have.dropped_pins && have.dropped_pins.length ? ` · ${have.dropped_pins.length} pin${have.dropped_pins.length === 1 ? "" : "s"} past the chain or gone from the library` : ""}`;
+  }
+  let picker = "";
+  if (have && !have.error && easy.chainPick != null && (have.stills || []).some((s) => s.index === easy.chainPick)) {
+    const slot = have.stills.find((s) => s.index === easy.chainPick);
+    const used = new Set(have.stills.filter((s) => s.index !== slot.index).map((s) => s.file));
+    picker = `<div class="chain-picker">
+        <p class="note">Slot ${slot.index + 1} is <b>${esc(slot.noun)}</b>${slot.kind === "scene" ? " (a scene)" : ""}. Pick what goes there instead; it holds through Make.
+          <button type="button" class="text" data-act="easy-chain-cancel">Cancel</button></p>
+        ${libraryPicker(easy.vibe, "easy-pin", slot.index, used)}
+      </div>`;
+  }
+  return `<div class="simple-seg own-row chain-row"><span>Chain</span>
+      <div class="chain-body">
+        <div class="chain-head"><span class="note">${esc(facts || "The stills this Make morphs through, in order")}</span>${nPins ? `<button type="button" class="text" data-act="easy-chain-reset" title="Let the pick choose every slot again">Unpin all</button>` : ""}</div>
+        ${strip}
+        ${picker}
+      </div>
+    </div>
+    <p class="note">The stills this Make will morph through, in order, the way the draft previews them. Click a slot to choose another object or scene from the library: a pinned slot holds through Make, the rest are picked fresh each time (the idea line, Scenes and Length move them). After the cut, the shots lane under the player swaps one object and re-renders only the two morphs that touch it.</p>`;
 }
 
 // The foreshadow layer: the next object arrives before its shot, the way a new sound is introduced before it takes
@@ -2941,12 +3058,20 @@ function shotsLane(easy) {
   }
   if (!lane.shots || !lane.shots.length) return lane.note ? `<p class="note">${esc(lane.note)}</p>` : "";
   const total = Math.max(Number(lane.duration) || 0, 0.001);
+  // Swap an object: in swap mode a click on a shot picks the still it lands on, and the library picker under the lane
+  // replaces it (POST /api/jobs/<id>/swap: only the two morphs that touch that still are rendered again, the rest kept)
+  const canSwap = lane.swappable !== false && Array.isArray(lane.stills) && lane.stills.length > 0;
+  const swapping = canSwap && !!easy.swapMode;
   const blocks = lane.shots.map((s) => {
     const w = (100 * (Number(s.seconds) || 0)) / total;
     const hue = SECTION_HUES[s.section] != null ? SECTION_HUES[s.section] : 260;
     const label = s.to ? `${s.from} → ${s.to}` : s.from;
-    const title = `${clockText(s.start)} · ${s.seconds} s${s.section ? ` · ${s.section}` : ""}${s.transition ? ` · ${s.transition}` : ""}${label ? ` · ${label}` : ""}`;
-    return `<button type="button" class="shot${s.boundary ? " boundary" : ""}${s.transition ? " has-transition" : ""}" style="width:${w.toFixed(3)}%;--hue:${hue}" data-act="easy-seek" data-at="${s.start}" title="${esc(title)}" aria-label="${esc(title)}"><i>${esc(s.to || s.from || "")}</i></button>`;
+    const marks = `${s.pinned ? " · pinned" : ""}${s.swapped ? " · swapped" : ""}`;
+    const title = `${clockText(s.start)} · ${s.seconds} s${s.section ? ` · ${s.section}` : ""}${s.transition ? ` · ${s.transition}` : ""}${label ? ` · ${label}` : ""}${marks}`;
+    const pick = swapping && s.still != null;
+    const act = pick ? `data-act="easy-swap-pick" data-slot="${s.still}" data-at="${s.start}"` : `data-act="easy-seek" data-at="${s.start}"`;
+    const cls = `shot${s.boundary ? " boundary" : ""}${s.transition ? " has-transition" : ""}${s.pinned ? " pinned" : ""}${s.swapped ? " swapped" : ""}${pick ? " swap" : ""}${pick && easy.swapSlot === s.still ? " picked" : ""}`;
+    return `<button type="button" class="${cls}" style="width:${w.toFixed(3)}%;--hue:${hue}" ${act} title="${esc(title)}" aria-label="${esc(title)}"><i>${esc(s.to || s.from || "")}</i></button>`;
   }).join("");
   const overlays = (lane.overlays || []).map((o) => {
     const left = (100 * Number(o.start)) / total;
@@ -2954,12 +3079,55 @@ function shotsLane(easy) {
     return `<span class="overlay ${esc(o.kind)}" style="left:${left.toFixed(3)}%;width:${w.toFixed(3)}%" title="${esc(o.kind === "performer" ? `Polly: ${o.label}` : `Your clip: ${o.label}`)}">${esc(o.kind === "performer" ? `Polly · ${o.label}` : o.label)}</span>`;
   }).join("");
   const facts = [`${lane.shots.length} shots`, lane.morphs ? `${lane.morphs} morphs over ${lane.objects} objects` : "", lane.pace ? `${lane.pace} pace` : "",
-    (lane.sections || []).length > 1 ? `${lane.sections.length} passages` : ""].filter(Boolean).join(" · ");
-  return `<div class="shots-lane" aria-label="Shots">
-      <div class="lane-head"><span>Shots</span><span class="note">${esc(facts)} · click a shot to jump there</span></div>
+    (lane.sections || []).length > 1 ? `${lane.sections.length} passages` : "", lane.swaps ? `${lane.swaps} swap${lane.swaps === 1 ? "" : "s"}` : ""].filter(Boolean).join(" · ");
+  const hint = swapping ? "click a shot to swap the object it lands on" : "click a shot to jump there";
+  const toggle = canSwap
+    ? `<button type="button" class="text lane-swap-toggle" data-act="easy-swap-mode" aria-pressed="${swapping ? "true" : "false"}">${swapping ? "Done swapping" : "Swap an object"}</button>`
+    : "";
+  let picker = "";
+  if (swapping && easy.swapSlot != null) {
+    const slot = lane.stills.find((x) => x.index === easy.swapSlot);
+    if (slot) {
+      const used = new Set(lane.stills.map((x) => x.file));
+      const shot = lane.shots.find((x) => x.still === slot.index);
+      picker = `<div class="lane-swap">
+          <p class="note">${shot ? `Shot ${shot.index + 1}` : "The cut"} lands on <b>${esc(slot.noun)}</b>${slot.kind === "scene" ? " (a scene)" : ""}${slot.swapped ? ", swapped in earlier" : ""}. Pick what it lands on instead: the two morphs that touch it are rendered again on the GPU and the cut re-composed (two morphs' worth of the render time above, plus the re-cut), the rest of the cut stays as it is.
+            <button type="button" class="text" data-act="easy-swap-cancel">Cancel</button></p>
+          ${libraryPicker(lane.vibe || easy.resultVibe || easy.vibe, "easy-swap", slot.index, used)}
+        </div>`;
+    }
+  }
+  return `<div class="shots-lane${swapping ? " swapping" : ""}" aria-label="Shots">
+      <div class="lane-head"><span>Shots</span><span class="note">${esc(facts)} · ${hint}</span>${toggle}</div>
       <div class="lane-overlays">${overlays}</div>
       <div class="lane-shots">${blocks}</div>
+      ${picker}
     </div>`;
+}
+
+// Swap one still of the finished cut (the lane's picker): the desk re-renders the two morphs that touch it on the GPU
+// and re-composes; the job runs like a re-cut, the making screen shows it, the lane reloads when it is done.
+async function swapStill(id, slot, file) {
+  if (!id || !state.easy || slot == null || !file) return;
+  try {
+    const res = await api(`/api/jobs/${encodeURIComponent(id)}/swap`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slot: Number(slot), file }) });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      state.easy.note = err.detail || "The swap did not start.";
+      render();
+      return;
+    }
+    state.job = Object.assign({}, state.job || {}, { id, status: "running", stage: "restyle", progress: 0.05, detail: "Re-rendering the two morphs that touch the swapped still" });
+    state.easy.swapSlot = null;
+    state.easy.swapMode = false;
+    setEasyPhase("making");
+    state.easy.recutting = true;
+    render();
+    poll(id);
+  } catch (err) {
+    state.easy.note = "The swap did not start.";
+    render();
+  }
 }
 
 async function loadLane(id) {
@@ -4827,6 +4995,11 @@ async function poll(id) {
       setEasyPhase("result");
       state.easy.playedHere = false;
       state.easy.warm = true;
+      if (state.easy.recutting) {  // a re-cut or a swap: the lane reads the record again and a reopened player reloads
+        state.easy.recutting = false;
+        state.lane = null;
+        if (state.easy.reopenUrl) state.easy.reopenUrl = `${String(state.easy.reopenUrl).split("?")[0]}?v=${job.video_version || Date.now()}`;
+      }
       const took = Number(job.took_s || job.seconds || 0);
       state.easy.took = took;
       state.easy.note = String(job.detail || "").startsWith("The animatic is ready")
@@ -4871,6 +5044,10 @@ document.addEventListener("click", async (event) => {
   } else if (act === "use-demo" || act === "easy-demo") {
     useDemoSong();
   } else if (act === "easy-vibe") {
+    if ((el.dataset.vibe || "") !== (state.easy.vibe || "")) {  // the pins name one vibe's stills: another vibe starts unpinned
+      state.easy.pins = {};
+      state.easy.chainPick = null;
+    }
     state.easy.vibe = el.dataset.vibe || "";
     state.easy.note = "";
     if (state.easy.phase === "result" || state.easy.phase === "showcase") {
@@ -4925,6 +5102,42 @@ document.addEventListener("click", async (event) => {
     growStills(true);
   } else if (act === "easy-grow-stop") {
     api("/api/stills/stop", { method: "POST" }).then(() => loadStills(true));
+  } else if (act === "easy-chain-slot") {
+    const slot = Number(el.dataset.slot);
+    state.easy.chainPick = state.easy.chainPick === slot ? null : slot;
+    render();
+  } else if (act === "easy-chain-cancel") {
+    state.easy.chainPick = null;
+    render();
+  } else if (act === "easy-pin") {
+    const pins = Object.assign({}, state.easy.pins || {});
+    pins[String(Number(el.dataset.slot))] = el.dataset.file || "";
+    state.easy.pins = pins;
+    state.easy.chainPick = null;
+    render();  // the pins are in the chain key, so the row reads the chain again with them
+  } else if (act === "easy-unpin") {
+    const pins = Object.assign({}, state.easy.pins || {});
+    delete pins[String(Number(el.dataset.slot))];
+    state.easy.pins = pins;
+    render();
+  } else if (act === "easy-chain-reset") {
+    state.easy.pins = {};
+    state.easy.chainPick = null;
+    render();
+  } else if (act === "easy-swap-mode") {
+    state.easy.swapMode = !state.easy.swapMode;
+    state.easy.swapSlot = null;
+    render();
+  } else if (act === "easy-swap-pick") {
+    state.easy.swapSlot = Number(el.dataset.slot);
+    const player = document.getElementById("player");
+    if (player) player.currentTime = Number(el.dataset.at) || 0;
+    render();
+  } else if (act === "easy-swap-cancel") {
+    state.easy.swapSlot = null;
+    render();
+  } else if (act === "easy-swap") {
+    swapStill(easyVideoId(), Number(el.dataset.slot), el.dataset.file || "");
   } else if (act === "easy-overlay") {
     state.easy.overlay = !state.easy.overlay;
     render();
@@ -5353,6 +5566,7 @@ document.addEventListener("input", (event) => {
     state.titleText = target.value;
   } else if (target.id === "easy-idea") {
     state.easy.idea = target.value;
+    if (state.easy.song && state.easy.vibe) scheduleChain(chainKey());  // the idea line moves the picks: the Chain row follows
   } else if (target.id === "easy-own-shapes") {
     state.easy.ownShapes = target.value;
     state.easy.stillsNote = "";

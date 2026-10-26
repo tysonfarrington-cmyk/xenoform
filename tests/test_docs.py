@@ -83,6 +83,16 @@ def test_changelog_has_the_release():
     assert "## 0.3.0" in _read("CHANGELOG.md")
 
 
+def test_the_chain_row_and_the_swap_are_in_the_public_docs():
+    """The chain, chosen (26 Oct): the README names the Chain row and the lane's swap, the changelog carries the keys."""
+    readme = _read("README.md")
+    assert "Fine-tune → Chain" in readme and "Swap an object" in readme and "chain_pins" in readme
+    unreleased = _read("CHANGELOG.md").split("## 0.3.3")[1].split("## 0.3.2")[0]
+    assert "chain_pins" in unreleased and "/api/jobs/{id}/swap" in unreleased and "/api/simple/chain" in unreleased
+    stills = _read("docs/stills.md")
+    assert "Choosing it." in stills and "Changing it after the cut." in stills
+
+
 def test_scenes_are_in_the_public_docs():
     """Scenes (26 Oct): the README names them, the unreleased changelog carries the line, the stills page has the section."""
     readme = _read("README.md")

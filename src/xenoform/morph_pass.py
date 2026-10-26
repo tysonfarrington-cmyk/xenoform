@@ -221,13 +221,61 @@ def scene_slots(shots: list[dict] | None, count: int, choice: str = "mix", assig
     return sorted(slots)
 
 
-def pick_stills(state: dict, count: int, record: bool = True, scene_at: list[int] | None = None) -> tuple[str, list[dict]]:
+def pins_of(state: dict | None) -> dict[int, str]:
+    """The Simple make body's ``chain_pins``: the stills the user chose slot by slot on the Chain row, as a mapping
+    of chain index to still file (``"cosmic/042_wolf_skull.jpg"``). Accepts a dict (``{"3": file}``) or a list with
+    one entry a slot (``[null, null, file]``); an empty or malformed entry is no pin."""
+    raw = (state or {}).get("chain_pins")
+    pairs: list = []
+    if isinstance(raw, dict):
+        pairs = list(raw.items())
+    elif isinstance(raw, (list, tuple)):
+        pairs = list(enumerate(raw))
+    out: dict[int, str] = {}
+    for k, v in pairs:
+        try:
+            k = int(k)
+        except (TypeError, ValueError):
+            continue
+        text = str(v or "").strip().replace("\\", "/") if isinstance(v, str) else str((v or {}).get("file") or "").strip() if isinstance(v, dict) else ""
+        if k >= 0 and text:
+            out[k] = text
+    return out
+
+
+def _pinned_rows(pins: dict[int, str], cat: dict, vibe: str, asked: str, count: int) -> dict[int, dict]:
+    """The pinned slots resolved to catalogue rows (the vibe's pool, then the asked vibe's own): a slot past the
+    chain's end, a file the library does not have, or a file pinned twice (the lower slot keeps it) is dropped."""
+    by_file: dict[str, dict] = {}
+    for under in ([vibe] + ([asked] if asked and asked != vibe else [])):
+        for r in cat.get(under) or []:
+            by_file.setdefault(str(r.get("file") or ""), {**r, "_vibe": under})
+    out: dict[int, dict] = {}
+    seen: set[str] = set()
+    for k in sorted(pins):
+        f = pins[k]
+        if k >= count or f in seen or f not in by_file:
+            if f not in by_file and k < count:
+                log.info("chain pin %s: %s is not in the %s library; the slot is picked as usual", k, f, vibe)
+            continue
+        seen.add(f)
+        out[k] = {**by_file[f], "pinned": True}
+    return out
+
+
+def pick_stills(state: dict, count: int, record: bool = True, scene_at: list[int] | None = None,
+                pins: dict | None = None) -> tuple[str, list[dict]]:
     """``count`` stills for the vibe. A story noun that names a pool object leads; ``record`` marks the picks
     as used so the next cut prefers the others (``stills.mark_used``).
 
     Scenes (``scenes_choice``): "off" draws on objects alone, "only" on scene rows alone, "mix" puts a scene at
     each index in ``scene_at`` (``scene_slots``: the passage changes, else every fourth) and objects between, no
     still twice; past the scene rows the pool has, a slot is an object, and a pool with no scenes is objects only.
+
+    Pins (``pins``, else the body's ``chain_pins`` through ``pins_of``): a mapping of chain index to still file the
+    user chose on the Chain row. A pinned slot holds that still whatever the order or the scene slots would have put
+    there; the other slots are filled as they always were, from the pool without the pinned stills, so no still
+    appears twice. The pinned rows come back with ``pinned`` True.
 
     Returns the *look* vibe (what the prompt, negative and tuning use) and the stills.
     A registry vibe without stills of its own borrows the pool ``vibes.pool()`` names,
@@ -239,9 +287,18 @@ def pick_stills(state: dict, count: int, record: bool = True, scene_at: list[int
     asked = str(state.get("vibe") or "")
     choice = scenes_choice(state)
     cat = catalogue()
+    count = int(count)
+    pins = pins_of({"chain_pins": pins}) if pins is not None else pins_of(state)
+    held = _pinned_rows(pins, cat, vibe, asked, count)
+    held_files = {str(r.get("file")) for r in held.values()}
+    free_slots = [k for k in range(count) if k not in held]
+    if scene_at is None and choice == "mix":
+        scene_at = scene_slots(None, count, "mix")  # the default on the whole chain, before the pins take their slots
+    if scene_at is not None:  # the scene slots the pins left, as indices into the free slots
+        scene_at = [free_slots.index(int(k)) for k in scene_at if int(k) in free_slots]
     # the objects this vibe has used least first (a cut never laps a library bigger than itself, and the next cut
     # opens on objects the last one left alone), shipped order within; rows remember the vibe they are used under
-    rows = [{**r, "_vibe": vibe} for r in stills.order_fresh(vibe, list(cat[vibe]))]
+    rows = [{**r, "_vibe": vibe} for r in stills.order_fresh(vibe, list(cat[vibe])) if str(r.get("file")) not in held_files]
     scene_rows = [r for r in rows if stills.kind_of(r) == "scene"]
     pool = [r for r in rows if stills.kind_of(r) == "object"]
     # the user's own shapes lead whatever the story names; a vibe that borrows a pool (none or too few stills of its
@@ -249,7 +306,7 @@ def pick_stills(state: dict, count: int, record: bool = True, scene_at: list[int
     own = [r for r in pool if r.get("own")]
     pool = [r for r in pool if not r.get("own")]
     if asked != vibe and asked in cat:
-        asked_rows = [{**r, "_vibe": asked} for r in stills.order_fresh(asked, list(cat[asked]))]
+        asked_rows = [{**r, "_vibe": asked} for r in stills.order_fresh(asked, list(cat[asked])) if str(r.get("file")) not in held_files]
         scene_rows = [r for r in asked_rows if stills.kind_of(r) == "scene"] + scene_rows
         own = [r for r in asked_rows if stills.kind_of(r) == "object"] + own
     look_vibe = asked if asked in VIBE_LOOK else vibe
@@ -285,23 +342,28 @@ def pick_stills(state: dict, count: int, record: bool = True, scene_at: list[int
     # A chain of ``count`` takes the first ``count`` objects when the pool is bigger, so the walk below only
     # repeats pairings when the whole pool is smaller than the cut (a 20 s clip over twelve stills never repeats one).
     objects = user_targets(state) + own + pool
+    n_free = len(free_slots)  # the slots the pins left are filled as before, over the pool without the pinned stills
+    if n_free and not objects and not scene_rows:
+        # the pins took the whole pool: the free slots walk the pinned stills again rather than crash on nothing
+        objects = [dict(r) for r in held.values()]
     if choice == "only" and scene_rows:
-        picked = chain_walk(user_targets(state) + scene_rows, count)
+        free = chain_walk(user_targets(state) + scene_rows, n_free)
     elif choice == "mix" and scene_rows:
-        slots = scene_at if scene_at is not None else scene_slots(None, count, "mix")
-        slots = sorted({int(k) for k in slots if 0 <= int(k) < count})[:len(scene_rows)]  # no scene twice
-        n_obj = count - len(slots)
+        slots = scene_at if scene_at is not None else scene_slots(None, n_free, "mix")
+        slots = sorted({int(k) for k in slots if 0 <= int(k) < n_free})[:len(scene_rows)]  # no scene twice
+        n_obj = n_free - len(slots)
         between = chain_walk(objects, n_obj) if objects else chain_walk(scene_rows[len(slots):] or scene_rows, n_obj)
-        picked, scenes_, si, oi = [], scene_rows[:len(slots)], 0, 0
-        for k in range(count):
+        free, scenes_, si, oi = [], scene_rows[:len(slots)], 0, 0
+        for k in range(n_free):
             if k in slots:
-                picked.append(scenes_[si])
+                free.append(scenes_[si])
                 si += 1
             else:
-                picked.append(between[oi])
+                free.append(between[oi])
                 oi += 1
     else:
-        picked = chain_walk(objects, count)
+        free = chain_walk(objects, n_free)
+    picked = [held[k] if k in held else free.pop(0) for k in range(count)]  # the pins hold their slots
     if record:
         for under in {p["_vibe"] for p in picked if p.get("_vibe")}:
             stills.mark_used(under, [p["file"] for p in picked if p.get("_vibe") == under])

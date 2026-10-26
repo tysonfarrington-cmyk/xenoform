@@ -24,7 +24,11 @@ def noun_of(still: str) -> str:
 
 def build(info: dict, video_id: str = "") -> dict:
     shots = list(info.get("shots") or [])
-    stills = [noun_of(s) for s in (info.get("stills") or [])]
+    files = [str(f) for f in (info.get("stills") or [])]
+    stills = [noun_of(s) for s in files]
+    scene_files = {str(f) for f in (info.get("scene_files") or [])}
+    pinned = {int(k) for k in (info.get("pinned") or []) if str(k).lstrip("-").isdigit()}
+    swapped = {int(s["slot"]) for s in (info.get("swaps") or []) if isinstance(s, dict) and "slot" in s}
     chain = info.get("chain") or {}
     assign = list(chain.get("assign") or []) if isinstance(chain, dict) else []
     transitions = list(info.get("transitions") or [])
@@ -36,11 +40,17 @@ def build(info: dict, video_id: str = "") -> dict:
     rows = []
     for i, s in enumerate(shots):
         start, end = float(s.get("start") or 0.0), float(s.get("end") or 0.0)
-        m = int(assign[i]) if i < len(assign) else i
-        src = stills[m % len(stills)] if stills else ""
-        dst = stills[(m + 1) % len(stills)] if stills else ""
+        # the morph the shot plays: the record says (``morph``, since the swap), else the long-song chain's assign, else i
+        m = int(s["morph"]) if s.get("morph") is not None else int(assign[i]) if i < len(assign) else i
+        a, b = (m % len(stills), (m + 1) % len(stills)) if stills else (0, 0)
+        src = stills[a] if stills else ""
+        dst = stills[b] if stills else ""
         row = {"index": i, "start": round(start, 3), "end": round(end, 3), "seconds": round(end - start, 3),
                "section": str(s.get("section") or ""), "boundary": str(s.get("boundary") or ""), "from": src, "to": dst}
+        if stills and not (s.get("performer") or s.get("own")):
+            # the chain slots the shot's morph leaves and lands on: a swap on the lane names the landing still
+            row.update({"from_still": a, "still": b, "to_file": files[b], "to_kind": "scene" if files[b] in scene_files else "object",
+                        "pinned": b in pinned, "swapped": b in swapped})
         t = transitions[i] if i < len(transitions) else None
         if isinstance(t, dict) and t.get("kind"):
             row["transition"] = str(t["kind"])
@@ -67,6 +77,10 @@ def build(info: dict, video_id: str = "") -> dict:
             sections.append({"section": r["section"], "start": r["start"], "end": r["end"]})
         elif sections and r["section"] == sections[-1]["section"]:
             sections[-1]["end"] = r["end"]
+    chain_rows = [{"index": k, "file": f, "noun": stills[k], "kind": "scene" if f in scene_files else "object",
+                   "pinned": k in pinned, "swapped": k in swapped} for k, f in enumerate(files)]
     return {"id": video_id, "duration": round(duration, 3), "shots": rows, "sections": sections, "overlays": overlays,
             "morphs": len(set(assign)) if assign else len(rows), "objects": len(set(stills)), "plan": str(info.get("plan_name") or ""),
-            "pace": str(((info.get("recut_state") or {}).get("pace")) or ""), "engine": str(info.get("engine") or "")}
+            "pace": str(((info.get("recut_state") or {}).get("pace")) or ""), "engine": str(info.get("engine") or ""),
+            "vibe": str(info.get("vibe") or ""), "tier": str(info.get("tier") or ""), "stills": chain_rows,
+            "swaps": len(swapped), "swappable": str(info.get("tier") or "draft") != "final" and bool(files)}
