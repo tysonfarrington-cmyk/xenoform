@@ -257,3 +257,31 @@ def test_the_desk_shows_the_reading_under_the_line_and_on_the_making_screen():
     assert "scheduleIdea()" in handler
     css = (ROOT / "src/xenoform/ui_static/app.css").read_text(encoding="utf-8")
     assert ".idea-reading" in css
+
+
+def test_a_feel_group_sets_the_knobs_and_the_look():
+    # 27 Oct (Pause's demo: "Then say how it should feel"): a comma group of feel words is the cut's feel, not a thing
+    from xenoform import idea
+
+    r = idea.read("a moth, a wet street at night, slow and dreamy", "neon-noir", llm=False)
+    assert r["feel"]["words"] == ["slow", "dreamy"] and r["feel"]["macros"]["speed"] < 0.3 and r["feel"]["macros"]["glow"] > 0.7
+    assert "dreamy" not in " ".join(r["own"] + r["objects"] + r["scenes"]) and "Feel: slow, dreamy" in r["summary"]
+    hard = idea.read("hard and glitchy, electric", "neon-noir", llm=False)["feel"]
+    assert hard["macros"]["chaos"] > 0.7 and hard["macros"]["intensity"] > 0.8 and hard["look"] == "cyan-flash"
+    assert idea.read("very fast", "", llm=False)["feel"]["macros"]["speed"] > idea.read("fast", "", llm=False)["feel"]["macros"]["speed"]
+    # only a whole group of feel words counts: a dark lake is a place, a hard hat is a thing
+    assert idea.read("a moth on a dark lake", "neon-noir", llm=False)["feel"] is None
+    assert idea.read("a hard hat", "neon-noir", llm=False)["feel"] is None
+    # a call with no knobs (MCP, the CLI) takes the line's; the desk's own knobs and a picked Look are kept
+    st = idea.shape_state({"idea": "a moth, hard and glitchy, electric", "vibe": "neon-noir"})
+    assert st["macros"]["chaos"] > 0.7 and st["dance_fx"] == "cyan-flash"
+    st = idea.shape_state({"idea": "a moth, hard and glitchy", "vibe": "neon-noir", "macros": {"chaos": 0.1}, "dance_fx": "warm-leak"})
+    assert st["macros"] == {"chaos": 0.1} and st["dance_fx"] == "warm-leak"
+
+
+def test_the_desk_moves_the_knobs_once_for_a_feel():
+    app = (ROOT / "src/xenoform/ui_static/app.js").read_text(encoding="utf-8")
+    apply = app.split("function applyFeel(data) {", 1)[1].split("\n}\n", 1)[0]
+    assert "state.easy.feelSig === sig" in apply and "window.XENO_MACRO_SET(k, Number(v))" in apply
+    assert "render()" not in apply  # painted in place: a render would take the caret out of the line
+    assert '"feelSig"]' in app and "applyFeel(data);" in app and "Then how it should feel: slow and dreamy." in app

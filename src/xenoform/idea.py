@@ -133,7 +133,96 @@ MODIFIERS = frozenset(("cyberpunk neon dark bright wet rainy foggy misty empty a
 
 CONNECTORS = frozenset("and or to with of".split())
 
-EMPTY: dict = {"line": "", "scenes": [], "objects": [], "own": [], "family": "", "performer": None, "summary": "", "source": "rules"}
+EMPTY: dict = {"line": "", "scenes": [], "objects": [], "own": [], "family": "", "performer": None, "feel": None, "summary": "",
+               "source": "rules"}
+
+# ------------------------------------------------------------------------------------------------ the feel
+# How it should feel (27 Oct; Pause's demo: "Add your clips. Then say how it should feel."): a comma group made only of
+# feel words ("slow and dreamy", "hard and glitchy", "warm, hazy") sets the four knobs and the Look the way a director
+# asks for them. Only a whole group of feel words counts, so "a dark lake" stays a place and "a hard hat" a thing. The
+# values are knob positions (0..1); several words average per knob, "very" pushes a word a step further out, and the
+# first colour word picks the Look.
+FEEL_WORDS: dict[str, dict] = {
+    # pace (Speed: the cut density and the trail length)
+    "slow": {"speed": 0.2}, "slower": {"speed": 0.2}, "unhurried": {"speed": 0.2}, "languid": {"speed": 0.15},
+    "floaty": {"speed": 0.25, "glow": 0.6}, "floating": {"speed": 0.25, "glow": 0.6}, "drifting": {"speed": 0.25},
+    "fast": {"speed": 0.85}, "faster": {"speed": 0.85}, "quick": {"speed": 0.8}, "rapid": {"speed": 0.9},
+    "frantic": {"speed": 0.95, "chaos": 0.8, "intensity": 0.85}, "hectic": {"speed": 0.9, "chaos": 0.7},
+    # energy (Intensity: the beat pulse and the flash)
+    "calm": {"intensity": 0.25, "chaos": 0.1, "speed": 0.35}, "gentle": {"intensity": 0.25, "chaos": 0.1},
+    "soft": {"intensity": 0.3, "glow": 0.5}, "chill": {"intensity": 0.3, "speed": 0.35, "chaos": 0.1},
+    "mellow": {"intensity": 0.3, "speed": 0.35}, "peaceful": {"intensity": 0.2, "chaos": 0.05, "speed": 0.3},
+    "serene": {"intensity": 0.2, "chaos": 0.05, "glow": 0.55},
+    "meditative": {"intensity": 0.2, "speed": 0.2, "chaos": 0.0}, "quiet": {"intensity": 0.2},
+    "subtle": {"intensity": 0.25, "glow": 0.3}, "minimal": {"intensity": 0.2, "chaos": 0.0, "glow": 0.2},
+    "punchy": {"intensity": 0.8}, "hard": {"intensity": 0.85, "chaos": 0.6}, "heavy": {"intensity": 0.85, "speed": 0.6},
+    "aggressive": {"intensity": 0.9, "chaos": 0.7, "speed": 0.75}, "intense": {"intensity": 0.9},
+    "energetic": {"intensity": 0.8, "speed": 0.7}, "hype": {"intensity": 0.85, "speed": 0.75},
+    "hyped": {"intensity": 0.85, "speed": 0.75}, "explosive": {"intensity": 0.95, "chaos": 0.7},
+    "loud": {"intensity": 0.85}, "bouncy": {"intensity": 0.7, "speed": 0.65},
+    # chaos (Chaos: the punches, the stutters, the camera's swing and the handoff kinds)
+    "glitchy": {"chaos": 0.9}, "glitch": {"chaos": 0.9}, "chaotic": {"chaos": 1.0, "speed": 0.85},
+    "wild": {"chaos": 0.85}, "crazy": {"chaos": 0.9, "speed": 0.8}, "manic": {"chaos": 0.95, "speed": 0.9},
+    "unhinged": {"chaos": 1.0, "intensity": 0.9}, "maxed": {"chaos": 1.0, "speed": 1.0, "intensity": 1.0, "glow": 1.0},
+    "chopped": {"chaos": 0.8, "speed": 0.85}, "clean": {"chaos": 0.05, "glow": 0.2},
+    "smooth": {"chaos": 0.1, "speed": 0.35}, "steady": {"chaos": 0.05}, "still": {"chaos": 0.0, "speed": 0.2},
+    "hypnotic": {"speed": 0.3, "chaos": 0.15, "glow": 0.55},
+    # light (Glow: the bloom)
+    "dreamy": {"glow": 0.75, "speed": 0.3, "chaos": 0.1}, "hazy": {"glow": 0.7}, "glowing": {"glow": 0.8},
+    "ethereal": {"glow": 0.75, "intensity": 0.35}, "luminous": {"glow": 0.8}, "blooming": {"glow": 0.8},
+    "bright": {"glow": 0.65}, "dark": {"glow": 0.2}, "moody": {"glow": 0.25, "look": "noir-glow"},
+    "noir": {"glow": 0.3, "look": "noir-glow"}, "gritty": {"glow": 0.15, "chaos": 0.5}, "crisp": {"glow": 0.1},
+    "sharp": {"glow": 0.1},
+    # colour (the Look)
+    "warm": {"look": "warm-leak"}, "golden": {"look": "warm-leak"}, "cold": {"look": "cool-echo"},
+    "cool": {"look": "cool-echo"}, "icy": {"look": "cool-echo"}, "trippy": {"look": "negative-rush", "chaos": 0.6},
+    "psychedelic": {"look": "negative-rush", "chaos": 0.7, "glow": 0.7},
+    "electric": {"look": "cyan-flash", "intensity": 0.8}, "flashy": {"look": "cyan-flash", "intensity": 0.75},
+}
+FEEL_BOOST = frozenset("very super extremely really so totally insanely".split())
+FEEL_FILLER = frozenset(("and a an the but yet then with feel feels feeling vibe vibes mood tone pace paced energy it "
+                         "should be make keep more quite kinda bit little all over overall throughout").split()) | FEEL_BOOST
+FEEL_KNOBS = ("intensity", "speed", "chaos", "glow")
+
+
+def feel_of(group_words: list[str]) -> dict | None:
+    """The feel a comma group asks for when every word in it is a feel word or a filler; None otherwise."""
+    words = [w for w in group_words if w]
+    if not words or not any(w in FEEL_WORDS for w in words):
+        return None
+    if any(w not in FEEL_WORDS and w not in FEEL_FILLER for w in words):
+        return None
+    picked: list[str] = []
+    sums: dict[str, list[float]] = {}
+    look = ""
+    for i, w in enumerate(words):
+        spec = FEEL_WORDS.get(w)
+        if not spec:
+            continue
+        boost = i > 0 and words[i - 1] in FEEL_BOOST
+        picked.append(("very " if boost else "") + w)
+        for knob, value in spec.items():
+            if knob == "look":
+                look = look or str(value)
+                continue
+            v = float(value)
+            if boost:
+                v = v + 0.1 if v > 0.5 else v - 0.1
+            sums.setdefault(knob, []).append(max(0.0, min(1.0, v)))
+    macros = {k: round(sum(v) / len(v), 2) for k, v in sums.items()}
+    return {"words": picked, "macros": {k: macros[k] for k in FEEL_KNOBS if k in macros}, "look": look}
+
+
+def _merge_feel(a: dict | None, b: dict | None) -> dict | None:
+    if not a:
+        return b
+    if not b:
+        return a
+    macros = dict(a.get("macros") or {})
+    for k, v in (b.get("macros") or {}).items():
+        macros[k] = round((macros[k] + v) / 2, 2) if k in macros else v
+    return {"words": list(a.get("words") or []) + list(b.get("words") or []),
+            "macros": {k: macros[k] for k in FEEL_KNOBS if k in macros}, "look": a.get("look") or b.get("look") or ""}
 
 
 # ------------------------------------------------------------------------------------------------ words
@@ -298,6 +387,17 @@ def read(line: str, vibe: str = "", *, llm: bool | None = None) -> dict:
     details: list[str] = []
     own: list[str] = []
     objects: list[str] = []
+    feel: dict | None = None
+    kept: list[str] = []
+    for group in groups:  # "slow and dreamy" is how the cut should feel, not a thing or a place
+        group_feel = feel_of(_words(group))
+        if group_feel:
+            feel = _merge_feel(feel, group_feel)
+        else:
+            kept.append(group)
+    if feel:
+        groups = kept
+        text = ", ".join(kept)
     all_words = _words(text)
     for group in groups:
         chunks = _chunks(group)
@@ -361,10 +461,10 @@ def read(line: str, vibe: str = "", *, llm: bool | None = None) -> dict:
         family = stills.family_named(vibe, stills.content_words(family_words(all_words)))
     performer = _performer(all_words)
     reading = {"line": str(line or "").strip(), "scenes": scenes, "objects": objects[:MAX_OBJECTS], "own": own[:MAX_OWN],
-               "family": family or "", "performer": performer, "source": "rules"}
+               "family": family or "", "performer": performer, "feel": feel, "source": "rules"}
     ask = bool(os.environ.get("XENO_LLM_URL", "").strip()) if llm is None else bool(llm)
     if ask:
-        reading = refine(reading, line, vibe)
+        reading = refine(reading, text if feel else line, vibe)  # the feel words are not things for the model to grow
     reading["summary"] = summary(reading)
     return reading
 
@@ -419,6 +519,12 @@ def summary(reading: dict) -> str:
     perf = reading.get("performer")
     if perf:
         bits.append("Polly: " + PERFORMER_WORDS.get(str(perf.get("style") or "auto"), "performing") + ".")
+    feel = reading.get("feel")
+    if feel:
+        knobs = [f"{k.capitalize()} {round(float(v) * 100)}" for k, v in (feel.get("macros") or {}).items()]
+        if feel.get("look"):
+            knobs.append("Look " + str(feel["look"]).replace("-", " "))
+        bits.append("Feel: " + ", ".join(feel.get("words") or []) + (f" ({', '.join(knobs)})" if knobs else "") + ".")
     return " ".join(bits)
 
 
@@ -518,6 +624,12 @@ def shape_state(state: dict, reading: dict | None = None) -> dict:
     if reading.get("scenes") and _mp.scenes_choice(state) == "off":
         state["scene_stills"] = "mix"
         state.pop("scenes", None) if isinstance(state.get("scenes"), str) else None
+    feel = reading.get("feel")
+    if feel:  # the desk moves its knobs itself and sends them; a call with no knobs (MCP, the CLI) takes the line's
+        if not isinstance(state.get("macros"), dict) and feel.get("macros"):
+            state["macros"] = dict(feel["macros"])
+        if feel.get("look") and str(state.get("dance_fx") or "auto") == "auto":
+            state["dance_fx"] = feel["look"]
     perf = reading.get("performer")
     if perf:
         if _dense.performer_choice(state) == 0:

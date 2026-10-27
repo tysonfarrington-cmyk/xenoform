@@ -107,7 +107,7 @@ function shortcutLabel() {
 }
 
 // The last session's vibe and Fine-tune choices survive a reload or a desk restart (the song cannot: uploads live on the server).
-const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow", "scenes", "pins"];
+const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow", "scenes", "pins", "feelSig"];
 function saveEasy() {
   if (!state || !state.easy) return;
   try {
@@ -876,10 +876,10 @@ function renderEasy() {
         <div class="vibe-grid" role="radiogroup" aria-label="Vibe">${vibeCards(easy, false, "featured")}</div>
         ${moreVibes(easy)}
         <label class="idea-field">Your idea in one line, if you have one.
-          <input id="easy-idea" type="text" maxlength="170" value="${esc(easy.idea || "")}" aria-label="One line, optional" placeholder="A place, an object, a dancer: a girl dancing in a neon city at night, lanterns, a chrome moth. Empty, and the vibe decides." autocomplete="off" />
+          <input id="easy-idea" type="text" maxlength="170" value="${esc(easy.idea || "")}" aria-label="One line, optional" placeholder="A place, an object, a dancer: a moth, a lantern, a wet street at night. Then how it should feel: slow and dreamy." autocomplete="off" />
         </label>
         ${ideaReadingLine(easy)}
-        <p class="note">The line shapes the cut: a place becomes a scene the morphs pass through (rendered before Make, about 20 s), an object the library knows opens the cut and fills the chain with its family (moth, lantern, heron, sea creatures), a thing it lacks is rendered as your own shape, and a dancer or singer brings Polly in. What the line was read as shows under it; Scenes and Performer in Fine-tune still have the last word.</p>
+        <p class="note">The line shapes the cut: a place becomes a scene the morphs pass through (rendered before Make, about 20 s), an object the library knows opens the cut and fills the chain with its family (moth, lantern, heron, sea creatures), a thing it lacks is rendered as your own shape, and a dancer or singer brings Polly in. Say how it should feel after a comma (slow and dreamy, hard and glitchy, warm and hazy) and the knobs and the Look move to it; move them after if you like. Empty, and the vibe decides. What the line was read as shows under it; Scenes and Performer in Fine-tune still have the last word.</p>
       </section>
       <section class="panel span simple-knobs-panel" data-tour="easy-macros">
         <h3>Knobs</h3>
@@ -1089,7 +1089,29 @@ async function loadIdea(key) {
   }
   if (!state.easy || ideaKey() !== key) return;  // the line moved on; a newer request follows
   state.ideaReading = { key, data };
+  applyFeel(data);
   paintIdeaReading();
+}
+// "slow and dreamy" in the line (xenoform.idea.feel_of): the knobs and the Look move to it once, when the feel words
+// change, so a knob moved by hand afterwards stays where it was put (feelSig is saved with the desk's choices). The
+// chips and knobs are painted in place: a render here would take the caret out of the line while it is typed.
+function applyFeel(data) {
+  const feel = data && !data.error ? data.feel : null;
+  if (!feel || !state.easy) return;
+  const sig = JSON.stringify([feel.words || [], feel.look || ""]);
+  if (state.easy.feelSig === sig) return;
+  state.easy.feelSig = sig;
+  Object.entries(feel.macros || {}).forEach(([k, v]) => { if (window.XENO_MACRO_SET) window.XENO_MACRO_SET(k, Number(v)); });
+  if (feel.look) {
+    state.easy.danceFx = feel.look;
+    document.querySelectorAll('[data-act="easy-look"]').forEach((chip) => {
+      const on = chip.dataset.value === feel.look;
+      chip.classList.toggle("on", on);
+      chip.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    document.querySelectorAll(".look-note").forEach((note) => { note.textContent = lookNote(feel.look); });
+  }
+  saveEasy();
 }
 function ideaReading() {
   return state.ideaReading && state.ideaReading.key === ideaKey() && state.ideaReading.data && !state.ideaReading.data.error
