@@ -121,3 +121,13 @@ def test_a_failed_render_says_why_and_the_side_column_scrolls():
     poll = _fn("async function poll(id) {", 'document.addEventListener("click"')
     assert "The render stopped: ${why}" in poll
     assert "body[data-desk] .easy-side { max-height: calc(100vh - 32px); overflow-y: auto;" in CSS
+
+
+def test_render_at_final_keeps_the_prototypes_chain():
+    # the pick favours the least-used stills, so a fresh Final could morph through other objects than the prototype
+    # you approved (27 Oct, found making the tutorial): Final pins every slot of the cut's chain first
+    handler = APP.split('act === "easy-render-full" || act === "easy-render-final") {', 1)[1].split("} else if", 1)[0]
+    assert "lane.stills.filter((s) => s && s.file && s.index != null)" in handler
+    assert "state.easy.pins[String(s.index)] = s.file;" in handler
+    assert handler.index("state.easy.pins") > handler.index('state.easy.tier = "final";')  # the whole song is not pinned
+    assert "Final keeps this cut's objects in the same order" in APP

@@ -88,14 +88,21 @@ function easyCrumbs(easy) {
   const making = phase === "making";
   const order = ["song", "vibe", "make", "refine", "share"];
   const labels = { song: "Song", vibe: "Vibe", make: "Prototype", refine: phase === "showcase" ? "Showcase" : "Refine", share: "Share" };
+  const hints = {
+    song: "Drop a track or use the bundled demo. The desk finds the beats, the sections and the drop.",
+    vibe: "What everything is made of and how it is lit. Then one line: what you want to see, and how it should feel.",
+    make: "A quick Draft of the cut, in minutes: the objects morph on every beat, lit by the song.",
+    refine: "Fix what you do not like on the timeline (swap an object, hold a shot, change a handoff), re-cut without the GPU, then render at Final.",
+    share: "Download the file, a 720p copy for a post, the 15 s hook, the recipe code.",
+  };
   const cur = video ? "refine" : making ? "make" : !easy.song ? "song" : !easy.vibe ? "vibe" : "make";
   const tool = phase === "tool";  // on Setup or Connect: no stage is current, each one reachable is a way back
   const reach = tool ? order.indexOf(cur) + 1 : 0;
   const ci = tool ? -1 : order.indexOf(cur);
   const items = order.map((key, i) => {
     const ahead = key === "share" && phase === "result";  // the cut's screen holds Share too: a button down to it
-    if ((i < ci && !making) || ahead || i < reach) return `<button type="button" class="crumb${i < ci ? " done" : ""}" data-act="easy-crumb" data-step="${key}">${labels[key]}</button>`;
-    return `<span class="crumb${i === ci ? " now" : ""}${i < ci ? " done" : ""}"${i === ci ? ' aria-current="step"' : ""}>${labels[key]}</span>`;
+    if ((i < ci && !making) || ahead || i < reach) return `<button type="button" class="crumb${i < ci ? " done" : ""}" data-act="easy-crumb" data-step="${key}" title="${esc(hints[key])}">${labels[key]}</button>`;
+    return `<span class="crumb${i === ci ? " now" : ""}${i < ci ? " done" : ""}"${i === ci ? ' aria-current="step"' : ""} title="${esc(hints[key])}">${labels[key]}</span>`;
   });
   return `<nav class="easy-crumbs" aria-label="Where you are">${items.join('<span class="crumb-sep" aria-hidden="true">›</span>')}</nav>`;
 }
@@ -736,7 +743,7 @@ function renderRow(easy) {
   ].join("");
   const note = noSong
     ? "The song is not loaded in this window (uploads live on the desk until it restarts): choose it again on the first screen to render."
-    : `A new render with this vibe, your line, the chain and the knobs. Final is LTX-2.3 at full size, roughly 90 s of GPU per second of video on a 12 GB card. Edits on this timeline stay with this cut.`;
+    : `A new render with this vibe, your line and the knobs. Final keeps this cut's objects in the same order (its chain is pinned) and is LTX-2.3 at full size, roughly 90 s of GPU per second of video on a 12 GB card. Handoff edits on this timeline stay with this cut: make them again on the sharp one.`;
   return `<div class="energy-head render-head"><h3>Render</h3><span>${part ? "The prototype becomes the video" : "The sharp version"}</span></div>
       ${buttons}
       <p class="note">${esc(note)}</p>`;
@@ -2063,8 +2070,41 @@ function tickEasy() {
     const overall = Number(job.overall);
     const frac = Number.isFinite(overall) && overall > 0 ? overall : Math.min(0.9, elapsed / Math.max(1, easyEtaLive()));
     bar.style.width = `${Math.round(Math.max(0.02, Math.min(1, frac)) * 100)}%`;
+    tabTitle(`(${Math.round(Math.max(0.02, Math.min(1, frac)) * 100)}%) Making · Xenoform`);
   }
 }
+
+// Step away while it renders (a Final is twenty minutes): the tab title counts up, and when the cut is ready the tab
+// says so and, if the page is hidden and notifications are allowed (asked once, on the first Make), a notification
+// does too. The title comes back when you return to the tab.
+const TAB_TITLE = document.title;
+function tabTitle(text) {
+  document.title = text || TAB_TITLE;
+}
+function askToNotify() {
+  try {
+    if ("Notification" in window && Notification.permission === "default") Notification.requestPermission().catch(() => {});
+  } catch (err) {}
+}
+function notifyReady(job, failed) {
+  const easy = (state && state.easy) || {};
+  const vibe = vibeById(easy.resultVibe || easy.vibe);
+  const what = `${vibe ? vibe.name : "Your video"}${easy.songLabel ? ` · ${easy.songLabel}` : ""}`;
+  tabTitle(failed ? "Render stopped · Xenoform" : "✓ Your video is ready · Xenoform");
+  try {
+    if (document.hidden && "Notification" in window && Notification.permission === "granted") {
+      const took = Number(job && (job.took_s || job.seconds)) || 0;
+      new Notification(failed ? "The render stopped" : "Your video is ready", {
+        body: failed ? `${what}: open the desk to see why.` : `${what}${took ? ` · took ${clockText(took)}` : ""}`,
+        icon: media("/static/vibes/" + ((vibe && vibe.id) || "cosmic") + ".jpg"),
+        tag: "xenoform-render",
+      });
+    }
+  } catch (err) {}
+}
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && state && state.easy && state.easy.phase !== "making") tabTitle();
+});
 
 function cloudToggles(easy) {
   const overlay = !!easy.overlay;
@@ -2193,6 +2233,7 @@ async function easyMake() {
   if (easyTimer) clearInterval(easyTimer);
   easyTimer = setInterval(tickEasy, 1000);
   setEasyPhase("making");
+  askToNotify();  // a Make is the user's click: the one moment a browser lets a page ask
   state.easy.note = "Reading the song. A few seconds.";
   state.brief = (state.easy.idea || "").trim() || vibe.line;
   state.palette = vibe.palette;
@@ -2897,6 +2938,7 @@ async function poll(id) {
   if (state.easy && state.easy.phase === "making") {
     if (job.video) showEasyPreview(job.video);
     if (job.status === "done") {
+      notifyReady(job, false);
       setEasyPhase("result");
       state.easy.playedHere = false;
       state.easy.warm = true;
@@ -2920,6 +2962,7 @@ async function poll(id) {
       // say why: the error bar that named it lived on the Director desk, so a failed Simple cut used to say nothing
       const why = job.status === "error" ? String(job.error || job.detail || "").trim() : "";
       state.easy.note = why ? `The render stopped: ${why} Playing the pictures for this vibe instead.` : "Playing the pictures for this vibe.";
+      if (job.status === "error") notifyReady(job, true); else tabTitle();
       state.easy.failed = job.status === "error";
       render();
       return;
@@ -3261,6 +3304,14 @@ document.addEventListener("click", async (event) => {
     else {
       state.easy.lengthS = Number(state.easy.madeLength) || 0;
       state.easy.tier = "final";
+      // Final keeps the prototype's objects: every slot of this cut's chain (swaps included) is pinned, so the sharp
+      // version morphs through the stills you approved instead of a fresh pick (the pick favours the least-used stills)
+      const lane = state.lane && state.lane.id === easyVideoId() ? state.lane : null;
+      const kept = lane && Array.isArray(lane.stills) ? lane.stills.filter((s) => s && s.file && s.index != null) : [];
+      if (kept.length) {
+        state.easy.pins = {};
+        kept.forEach((s) => { state.easy.pins[String(s.index)] = s.file; });
+      }
     }
     loadSimpleOptions().then(() => easyMake());
   } else if (act === "easy-hero-clear") {
