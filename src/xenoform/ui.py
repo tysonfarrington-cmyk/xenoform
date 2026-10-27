@@ -1770,6 +1770,153 @@ def create_app(cfg: dict | None = None):
         pack = edit_export.build(_video_dir(video_id), video_id)  # the pack made for this cut, or a new one if it changed
         return FileResponse(pack["zip"], media_type="application/zip", filename=pack["zip_name"], headers={"Cache-Control": "no-store"})
 
+    @app.get("/api/videos/{video_id}/poster.jpg")
+    def video_poster(video_id: str) -> FileResponse:
+        """A frame of the cut for the Variations page: just after the drop the record names, else two fifths in."""
+        from xenoform.video import ffmpeg_bin, probe_video
+
+        folder = _video_dir(video_id)
+        src, dest = folder / "xenoform.mp4", folder / "poster.jpg"
+        if not dest.is_file() or dest.stat().st_mtime < src.stat().st_mtime:
+            info = probe_video(src)
+            seconds = info["frames"] / info["fps"] if info["fps"] else 0.0
+            try:
+                drop = json.loads((folder / "simple" / "simple.json").read_text(encoding="utf-8")).get("drop")
+            except (OSError, ValueError):
+                drop = None
+            at = float(drop) + 0.4 if drop is not None and float(drop) + 0.4 < seconds else 0.4 * seconds
+            subprocess.run([ffmpeg_bin(), "-v", "error", "-y", "-ss", f"{at:.2f}", "-i", str(src), "-frames:v", "1",
+                            "-vf", "scale=360:-2", "-q:v", "4", str(dest)], check=True)
+        return FileResponse(dest, media_type="image/jpeg", headers={"Cache-Control": "no-store"})
+
+    # Variations (xenoform.batch): several Drafts of one idea queued for the night, one at a time on a free GPU, and
+    # compared in the morning on /variations, where any of them can be queued again at Final.
+    _batch: dict[str, Any] = {}
+
+    def _gpu_busy() -> str:
+        from xenoform import batch
+
+        with _LOCK:
+            if any(item.get("status") == "running" for item in _JOBS.values()):
+                return "A cut is rendering on this desk: the next variation waits for it."
+        return batch.comfy_busy(str(cfg["comfy"].get("base_url") or "http://127.0.0.1:8188"))
+
+    def _job_of(job_id: str) -> dict | None:
+        with _LOCK:
+            job = _JOBS.get(job_id)
+            return dict(job) if job is not None else None
+
+    def _cancel_job(job_id: str) -> None:
+        with _LOCK:
+            event = _CANCEL.get(job_id)
+        if event is not None:
+            event.set()
+
+    def _batches():
+        """The one queue of this desk, made on first use (no thread runs until a batch is queued or resumed)."""
+        from xenoform import batch
+
+        if "runner" not in _batch:
+            _batch["runner"] = batch.Runner(work_dir() / "batches", start=lambda body: _start_job(body)["id"],
+                                            job_of=_job_of, busy=_gpu_busy, cancel=_cancel_job)
+        return _batch["runner"]
+
+    def _batch_view(b: dict) -> dict:
+        """A batch as the page shows it: each item without its make body, what it varied, its cut, poster and time,
+        and the measured time of what is still to run."""
+        from xenoform import batch
+
+        rates = batch.measured(work_dir() / "jobs", float(b.get("seconds") or 0.0) or None)
+        items, left = [], 0.0
+        for it in b.get("items") or []:
+            body = it.get("body") or {}
+            row = {k: it.get(k) for k in ("k", "label", "vary", "kind", "of", "status", "detail", "job_id", "progress", "took_s", "eta_s")}
+            row.update({"vibe": body.get("vibe") or "", "seed": body.get("seed"), "idea": body.get("idea") or "",
+                        "look": body.get("dance_fx") or "auto",
+                        "knobs": {k: v for k, v in (body.get("macros") or {}).items() if k in ("intensity", "speed", "chaos", "glow")}})
+            if it.get("status") == "done" and it.get("job_id"):
+                row.update({"video": f"/api/videos/{it['job_id']}/video", "poster": f"/api/videos/{it['job_id']}/poster.jpg"})
+            if it.get("status") == "running" and it.get("eta_s") is not None:
+                left += float(it["eta_s"] or 0.0)
+            elif it.get("status") in ("queued", "waiting"):
+                left += float((rates.get(it.get("kind") or "draft") or {}).get("eta_s") or 0.0)
+            items.append(row)
+        return {**{k: b.get(k) for k in ("id", "created", "vary", "count", "song", "idea", "vibe", "length_s", "seconds")},
+                "items": items, "left_s": round(left, 1), "measured": rates}
+
+    @app.get("/variations")
+    def variations_page() -> FileResponse:
+        return FileResponse(Path(__file__).parent / "ui_static" / "variations.html")
+
+    @app.get("/api/batches")
+    def batches_index(seconds: float = 0.0) -> dict:
+        """Every batch, newest first, and what a cut ``seconds`` long takes here (``batch.measured``)."""
+        from xenoform import batch
+
+        return {"batches": [_batch_view(b) for b in _batches().batches()], "counts": list(batch.COUNTS),
+                "vary": list(batch.VARY), "measured": batch.measured(work_dir() / "jobs", seconds or None)}
+
+    @app.post("/api/batches")
+    def batches_add(body: dict) -> dict:
+        """Queue ``count`` Drafts of the make body ``body``, varying ``vary`` (seed, vibe or feel)."""
+        make = dict(body.get("body") or {})
+        audio_id = str(make.get("audio_id") or "demo")
+        with _LOCK:
+            known = audio_id == "demo" or audio_id in _AUDIO
+        if not known:
+            raise HTTPException(400, "Load a song before queueing variations.")
+        try:
+            features = _features_for(audio_id)
+        except HTTPException:
+            features = {}
+        # the cut's length, for the measured estimate: the Length picked, else the whole song
+        seconds = float(make.get("length_s") or 0.0) or float(features.get("duration") or 0.0)
+        try:
+            b = _batches().add(make, int(body.get("count") or 0), str(body.get("vary") or ""), seconds=seconds)
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        return _batch_view(b)
+
+    @app.get("/api/batches/{batch_id}")
+    def batch_get(batch_id: str) -> dict:
+        b = _batches().get(batch_id)
+        if b is None:
+            raise HTTPException(404, "No such batch.")
+        return _batch_view(b)
+
+    @app.post("/api/batches/{batch_id}/cancel")
+    def batch_cancel(batch_id: str) -> dict:
+        try:
+            return _batch_view(_batches().cancel(batch_id))
+        except KeyError as exc:
+            raise HTTPException(404, "No such batch.") from exc
+
+    @app.post("/api/batches/{batch_id}/resume")
+    def batch_resume(batch_id: str) -> dict:
+        try:
+            return _batch_view(_batches().resume(batch_id))
+        except KeyError as exc:
+            raise HTTPException(404, "No such batch.") from exc
+
+    @app.post("/api/batches/{batch_id}/items/{k}/final")
+    def batch_final(batch_id: str, k: int) -> dict:
+        """Render this one at Final: the variation's own body at Final, its chain pinned from the cut it made."""
+        runner = _batches()
+        b = runner.get(batch_id)
+        src = next((i for i in (b or {}).get("items") or [] if i.get("k") == k and i.get("kind") == "draft"), None)
+        if b is None or src is None:
+            raise HTTPException(404, "No such variation.")
+        if src.get("status") != "done" or not src.get("job_id"):
+            raise HTTPException(409, "This variation has not made its Draft yet.")
+        pins = {}
+        try:
+            rec = json.loads((work_dir() / "jobs" / storage_id(src["job_id"]) / "simple" / "simple.json").read_text(encoding="utf-8"))
+            pins = {str(i): str(f) for i, f in enumerate(rec.get("stills") or [])}
+        except (OSError, ValueError):
+            pass
+        runner.add_final(batch_id, k, pins)
+        return _batch_view(runner.get(batch_id) or b)
+
     @app.get("/api/videos/{video_id}/video")
     def video_file(video_id: str) -> FileResponse:
         return FileResponse(_video_dir(video_id) / "xenoform.mp4", media_type="video/mp4", headers={"Cache-Control": "no-store"})

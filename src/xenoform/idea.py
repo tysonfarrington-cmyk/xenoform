@@ -268,6 +268,14 @@ def _words(text: str) -> list[str]:
     return re.findall(r"[a-z0-9][a-z0-9\-]*", str(text or "").lower())
 
 
+def split_feel(line: str) -> tuple[str, str]:
+    """``line`` as typed, split into the rest and its feel groups: "a moth, a lantern, moody and punchy" ->
+    ("a moth, a lantern", "moody and punchy"). The variations put another feel clause in its place."""
+    groups = [g.strip() for g in re.split(r"[,;/.!?]+", str(line or "")) if g.strip()]
+    feel = [g for g in groups if feel_of(_words(_normalise(g)))]
+    return ", ".join(g for g in groups if g not in feel), ", ".join(feel)
+
+
 def _chunks(group: str) -> list[list[str]]:
     """A comma group split at the prepositions that introduce a place, each chunk its words (the preposition kept
     in front): "girl dancing to rave music in a cyberpunk city outside warehouse" -> four chunks."""

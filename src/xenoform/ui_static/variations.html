@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Xenoform Variations</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/static/theme.css">
+<link rel="stylesheet" href="/static/app.css">
+<link rel="stylesheet" href="/static/desk.css">
+<style>body{max-width:1180px;margin:24px auto;padding:0 16px}
+h1{font-family:var(--x-font-display);font-size:24px;margin:10px 0 6px}
+h2{font-size:17px;margin:0}
+.batch{background:var(--x-surface);border:1px solid var(--x-line-2);border-radius:12px;padding:14px;margin:16px 0}
+.batch-head{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:baseline;justify-content:space-between}
+.batch-head .actions{display:flex;gap:8px}
+.meta{font-size:13px;opacity:.75;margin:4px 0 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:12px}
+.card{background:var(--x-surface-2);border:1px solid var(--x-line-2);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
+.card.final{border-color:var(--x-accent)}
+.frame{aspect-ratio:9/16;background:#05050a center/cover no-repeat;position:relative;display:flex;align-items:center;justify-content:center}
+.frame video{width:100%;height:100%;object-fit:cover;display:block}
+.frame .state{font-size:13px;opacity:.8;padding:12px;text-align:center}
+.frame .bar{position:absolute;left:0;bottom:0;height:3px;background:var(--x-accent)}
+.frame button.play{position:absolute;inset:auto auto 10px 10px}
+.body{padding:10px;display:flex;flex-direction:column;gap:6px;font-size:13px}
+.label{font-weight:600;font-size:14px}
+.knobs{opacity:.75}
+.status{font-size:12px;opacity:.8}
+.status.error{color:var(--x-danger, #ff6b6b);opacity:1}
+.empty{opacity:.75}
+</style></head>
+<body>
+<p><a href="/">&larr; Back to the desk</a></p>
+<h1>Variations</h1>
+<p>Several Drafts of one idea, each varying one thing (the seed, the vibe or the feel), made one after another while you sleep. Watch them side by side, then render the one you like at Final. Queue them from the desk: Prototype, under Make.</p>
+<p class="meta" id="measured"></p>
+<div id="list"><p class="empty">Loading...</p></div>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+function span(seconds) {
+  const s = Math.max(0, Math.round(Number(seconds || 0)));
+  if (s < 90) return `${s} s`;
+  const m = Math.round(s / 60);
+  return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ""}`;
+}
+function clock(seconds) {
+  const s = Math.max(0, Math.round(Number(seconds || 0)));
+  const h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, r = s % 60;
+  return h ? `${h}:${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}` : `${m}:${String(r).padStart(2, "0")}`;
+}
+const WHAT = { seed: "the seed", vibe: "the vibe", feel: "the feel" };
+const STATUS = { queued: "Queued", waiting: "Waiting for the GPU", running: "Rendering", done: "", error: "Failed", cancelled: "Cancelled", stopped: "Stopped" };
+const playing = new Set();
+
+function knobs(k) {
+  const order = ["intensity", "speed", "chaos", "glow"];
+  const bits = order.filter((n) => k && k[n] != null).map((n) => `${n[0].toUpperCase()}${n.slice(1)} ${Math.round(Number(k[n]) * 100)}`);
+  return bits.join(" · ");
+}
+function frame(b, it) {
+  if (it.status === "done" && it.video) {
+    const key = `${b.id}:${it.k}`;
+    if (playing.has(key)) return `<div class="frame"><video src="${esc(it.video)}" poster="${esc(it.poster)}" controls autoplay loop playsinline></video></div>`;
+    return `<div class="frame" style="background-image:url('${esc(it.poster)}')"><button type="button" class="generate play" data-play="${esc(key)}">Play</button></div>`;
+  }
+  const pct = it.status === "running" ? Math.round(Number(it.progress || 0) * 100) : 0;
+  const words = it.status === "running" ? `${pct} %${it.eta_s ? ` · about ${span(it.eta_s)} left` : ""}` : (STATUS[it.status] || it.status);
+  return `<div class="frame"><span class="state">${esc(words)}</span>${pct ? `<span class="bar" style="width:${pct}%"></span>` : ""}</div>`;
+}
+function card(b, it) {
+  const final = it.kind === "final";
+  const took = it.took_s ? `Took ${clock(it.took_s)}` : "";
+  const detail = it.status === "done" ? took : `${STATUS[it.status] || it.status}${it.detail ? `: ${it.detail}` : ""}`;
+  const finalled = b.items.some((x) => x.kind === "final" && x.of === it.k && x.status !== "cancelled");
+  const finalEta = b.measured && b.measured.final ? ` (the last Final here, ${Math.round(b.measured.final.latest.seconds)} s, took ${clock(b.measured.final.latest.took_s)})` : "";
+  const button = !final && it.status === "done"
+    ? (finalled ? `<span class="status">Final queued below</span>` : `<button type="button" class="ghost" data-final="${esc(b.id)}:${it.k}" title="This variation again at Final: LTX-2.3, sharp and full size, the same objects in the same order${esc(finalEta)}">Render this one at Final</button>`)
+    : "";
+  return `<div class="card${final ? " final" : ""}" data-key="${esc(b.id)}:${it.k}">${frame(b, it)}<div class="body">
+      <span class="label">${esc(it.label)}</span>
+      <span class="knobs">${esc([it.vibe, it.look !== "auto" ? it.look : "", knobs(it.knobs)].filter(Boolean).join(" · "))}</span>
+      ${b.vary === "feel" || final ? `<span class="knobs">${esc(it.idea)}</span>` : ""}
+      <span class="status${it.status === "error" ? " error" : ""}">${esc(detail)}</span>
+      ${it.status === "done" && it.job_id ? `<a class="status" href="/api/videos/${esc(it.job_id)}/video" download="xenoform-${esc(it.job_id)}.mp4">Download</a>` : ""}
+      ${button}
+    </div></div>`;
+}
+function batchHtml(b) {
+  const done = b.items.filter((x) => x.status === "done").length;
+  const open = b.items.some((x) => ["queued", "waiting", "running"].includes(x.status));
+  const stopped = b.items.some((x) => x.status === "stopped");
+  const when = new Date(b.created).toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" });
+  const left = open && b.left_s ? ` · about ${span(b.left_s)} to go` : "";
+  return `<section class="batch"><div class="batch-head">
+      <div><h2>${esc(b.idea || b.vibe || "Variations")}</h2>
+      <p class="meta">${esc(when)} · ${esc(b.song || "the song")} · ${b.count} Drafts varying ${esc(WHAT[b.vary] || b.vary)} · ${done} of ${b.items.length} done${esc(left)}</p></div>
+      <div class="actions">${open ? `<button type="button" class="ghost" data-cancel="${esc(b.id)}">Cancel the rest</button>` : ""}${stopped ? `<button type="button" class="ghost" data-resume="${esc(b.id)}">Resume</button>` : ""}</div>
+    </div><div class="grid">${b.items.map((it) => card(b, it)).join("")}</div></section>`;
+}
+let last = "";
+// The page redraws while a batch runs; a card whose video is playing is carried into the new page as it is (moved in
+// the same task, so it keeps playing).
+function show(html) {
+  const next = document.createElement("div");
+  next.innerHTML = html;
+  document.querySelectorAll("#list .card[data-key]").forEach((old) => {
+    if (!old.querySelector("video")) return;
+    const fresh = [...next.querySelectorAll(".card[data-key]")].find((c) => c.dataset.key === old.dataset.key);
+    if (fresh) fresh.replaceWith(old);
+  });
+  $("list").replaceChildren(...next.childNodes);
+}
+async function load() {
+  try {
+    const res = await fetch("/api/batches");
+    const data = await res.json();
+    const m = data.measured || {};
+    const bits = [];
+    if (m.draft) bits.push(`a Draft takes about ${Math.round(m.draft.per_s)} s for each second of video (${m.draft.cuts} cuts; the last, ${Math.round(m.draft.latest.seconds)} s long, took ${clock(m.draft.latest.took_s)})`);
+    if (m.final) bits.push(`the last Final, ${Math.round(m.final.latest.seconds)} s long, took ${clock(m.final.latest.took_s)}`);
+    $("measured").textContent = bits.length ? `Measured on this machine: ${bits.join("; ")}.` : "";
+    const html = (data.batches || []).length ? data.batches.map(batchHtml).join("") : `<p class="empty">No variations yet. On the desk, pick a song and a vibe, write your line, then Queue Drafts under Make.</p>`;
+    if (html !== last) { show(html); last = html; }
+    const busy = (data.batches || []).some((b) => b.items.some((x) => ["queued", "waiting", "running"].includes(x.status)));
+    setTimeout(load, busy ? 5000 : 30000);
+  } catch (err) {
+    $("list").innerHTML = `<p class="empty">The desk is not answering. Is it running?</p>`;
+    last = "";
+    setTimeout(load, 15000);
+  }
+}
+async function post(url) {
+  const res = await fetch(url, { method: "POST" });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    alert(body.detail || "That did not work.");
+  }
+  last = "";
+  load();
+}
+document.addEventListener("click", (event) => {
+  const el = event.target.closest("[data-play],[data-final],[data-cancel],[data-resume]");
+  if (!el) return;
+  if (el.dataset.play) { playing.add(el.dataset.play); last = ""; load(); return; }
+  if (el.dataset.final) { const [bid, k] = el.dataset.final.split(":"); el.disabled = true; post(`/api/batches/${bid}/items/${k}/final`); return; }
+  if (el.dataset.cancel) { post(`/api/batches/${el.dataset.cancel}/cancel`); return; }
+  if (el.dataset.resume) post(`/api/batches/${el.dataset.resume}/resume`);
+});
+load();
+</script>
+</body></html>

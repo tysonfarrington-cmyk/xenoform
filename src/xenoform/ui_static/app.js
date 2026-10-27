@@ -114,7 +114,7 @@ function shortcutLabel() {
 }
 
 // The last session's vibe and Fine-tune choices survive a reload or a desk restart (the song cannot: uploads live on the server).
-const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow", "scenes", "pins", "feelSig"];
+const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow", "scenes", "pins", "feelSig", "batchN", "batchVary"];
 function saveEasy() {
   if (!state || !state.easy) return;
   try {
@@ -912,6 +912,7 @@ function renderEasy() {
       <p class="note house-line">${proto
         ? `A Draft of ${esc(String(easyLength(easy)))} s around the drop, in minutes. Then refine it, and render the whole song or Final from its screen. Fine-tune → Length makes the whole song now.`
         : "9:16, Dense, Draft, Beat FX and the house look. Fine-tune below the vibes if you want to; Final is one press on the cut's screen."}</p>
+      ${variationsRow(easy)}
       ${easy.cloudPlan ? cloudCard(easy.cloudPlan) : ""}
       <p class="note"><a href="/moves">Moves: make a character dance to a real dance clip (Wan Animate 2) &rarr;</a></p>
       <p class="note"><a href="${esc(vjUrl())}" target="_blank" rel="noopener">VJ mode: live visuals to this song's stems &rarr;</a> · <button type="button" class="text" data-act="easy-midi">MIDI controller</button></p>
@@ -921,6 +922,92 @@ function renderEasy() {
       <p class="side-foot"><a class="ow-badge" href="${esc(media("/licences"))}" title="LTX-2.3 has a revenue threshold. FLUX.2 Klein 9B is non-commercial. This desk uses the Apache 2.0 4B.">Open weights</a></p>
     </aside>
   </div>`;
+}
+
+// Variations (xenoform.batch, from Pause's "Thirty nights. Thirty uploads."): several Drafts of this idea queued for the
+// night, each varying one thing, run one at a time on a free GPU and compared on /variations in the morning. The time is
+// what a Draft this long took on this machine (GET /api/batches?seconds=, the took.json beside every cut).
+const VARY_NOTES = {
+  seed: "The same settings with a fresh roll each: other objects, other morphs, other handoffs.",
+  vibe: "Your line in the next vibes along, one vibe each.",
+  feel: "Your line with another feel each (slow and dreamy, hard and glitchy, warm and hazy...): its knobs and its Look.",
+};
+function spanText(seconds) {
+  const m = Math.max(1, Math.round(Number(seconds || 0) / 60));
+  return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ""}`;
+}
+function variationsRow(easy) {
+  const n = Number(easy.batchN) || 3;
+  const vary = easy.batchVary || "seed";
+  const seconds = easyLength(easy) || easySongSeconds();
+  const rates = state.batchRates && state.batchRates.seconds === seconds ? state.batchRates.measured : null;
+  if (!rates && state.batchRatesFor !== seconds) loadBatchRates(seconds);
+  const each = rates && rates.draft && Number(rates.draft.eta_s);
+  const time = each ? ` · about ${spanText(n * each)}` : "";
+  const measured = each ? ` A Draft this long takes about ${spanText(each)} here (${rates.draft.cuts} cuts measured)${rates.final ? `; the last Final, ${Math.round(rates.final.latest.seconds)} s, took ${spanText(rates.final.latest.took_s)}` : ""}.` : "";
+  return `<div class="variations-row" data-tour="easy-variations">
+      ${simpleSeg("easy-batch-n", String(n), [["3", "3"], ["5", "5"], ["10", "10"]], "Variations")}
+      ${simpleSeg("easy-batch-vary", vary, [["seed", "Seed"], ["vibe", "Vibe"], ["feel", "Feel"]], "Vary")}
+      <button type="button" class="ghost easy-row" data-act="easy-batch">Queue ${n} Drafts${esc(time)}</button>
+      <p class="note">${esc(VARY_NOTES[vary] || "")} They run one after another and wait for any other render, so leave them overnight.${esc(measured)} <a href="/variations" target="_blank" rel="noopener">Compare them &rarr;</a></p>
+    </div>`;
+}
+async function loadBatchRates(seconds) {
+  state.batchRatesFor = seconds;
+  try {
+    const res = await api(`/api/batches?seconds=${encodeURIComponent(seconds)}`);
+    const data = await res.json();
+    if (res.ok && state) {
+      state.batchRates = { seconds, measured: data.measured || {} };
+      render();
+    }
+  } catch (err) {
+    // the row reads without a time
+  }
+}
+async function easyBatch(button) {
+  const vibe = vibeById(state.easy.vibe);
+  const n = Number(state.easy.batchN) || 3;
+  const vary = state.easy.batchVary || "seed";
+  if (!vibe || !state.easy.song) {
+    state.easy.note = "Choose a song and a vibe, then queue the variations.";
+    render();
+    return;
+  }
+  if (button) button.classList.add("is-loading");
+  await refreshComfy();
+  if (!state.comfyOk) {
+    if (button && button.isConnected) button.classList.remove("is-loading");
+    state.easy.note = "ComfyUI is not answering, and variations are renders. Start it, then queue them.";
+    render();
+    return;
+  }
+  // the body a Make would send (easyMake's own preparation, without the making screen), at Draft
+  const tier = state.easy.tier;
+  state.brief = (state.easy.idea || "").trim() || vibe.line;
+  state.palette = vibe.palette;
+  state.register = vibe.register;
+  state.morphCap = vibe.morph ? 1 : 0;
+  state.energy = energyFromTrack();
+  state.continuous = false;
+  state.quality = "live";
+  await planStory();
+  if (!state || !state.easy) return;
+  state.quality = "turbo";
+  state.live = true;
+  state.easy.tier = "draft";
+  const body = payload();
+  state.easy.tier = tier;
+  try {
+    const res = await api("/api/batches", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body, count: n, vary }) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "The variations did not queue.");
+    const left = Number(data.left_s) > 0 ? `, about ${spanText(data.left_s)} in all here` : "";
+    state.easy.note = `${data.items.length} Drafts queued, varying the ${vary}${left}. They run one after another: Compare them, under the button, shows each as it lands.`;
+  } catch (err) {
+    state.easy.note = String(err.message || err);
+  }
+  render();
 }
 
 // ---------------------------------------------------------------- Simple finishing (open weights)
@@ -3217,6 +3304,16 @@ document.addEventListener("click", async (event) => {
     easyHook();
   } else if (act === "easy-edit") {
     easyEdit();
+  } else if (act === "easy-batch-n") {
+    state.easy.batchN = Number(el.dataset.value) || 3;
+    saveEasy();
+    render();
+  } else if (act === "easy-batch-vary") {
+    state.easy.batchVary = el.dataset.value || "seed";
+    saveEasy();
+    render();
+  } else if (act === "easy-batch") {
+    easyBatch(el);
   } else if (act === "easy-copy-recipe") {
     const code = state.easy.recipe || (await easyRecipeFor(easyVideoId()));
     state.easy.recipe = code;

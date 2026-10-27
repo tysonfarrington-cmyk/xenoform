@@ -284,4 +284,5 @@ def test_the_desk_moves_the_knobs_once_for_a_feel():
     apply = app.split("function applyFeel(data) {", 1)[1].split("\n}\n", 1)[0]
     assert "state.easy.feelSig === sig" in apply and "window.XENO_MACRO_SET(k, Number(v))" in apply
     assert "render()" not in apply  # painted in place: a render would take the caret out of the line
-    assert '"feelSig"]' in app and "applyFeel(data);" in app and "Then how it should feel: slow and dreamy." in app
+    saved = app.split("const EASY_SAVED_KEYS = [", 1)[1].split("];", 1)[0]
+    assert '"feelSig"' in saved and "applyFeel(data);" in app and "Then how it should feel: slow and dreamy." in app

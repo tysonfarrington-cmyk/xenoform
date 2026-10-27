@@ -659,6 +659,10 @@ dialog .addon { display: flex; align-items: center; gap: 8px; font-size: 13px; c
   .top-actions { margin-left: auto; }
   #app { padding: 14px 12px 40px; }
 }
+/* Variations under Make (xenoform.batch): how many, what varies, the queue button, as one block */
+.easy-side .variations-row { display: flex; flex-direction: column; gap: 8px; margin: 14px 0 4px; padding-top: 12px; border-top: 1px solid var(--x-line-2); }
+.easy-side .variations-row .note { margin: 0; }
+
 @media (max-width: 560px) {
   body[data-desk] .comfy-status { padding: 0 9px; font-size: 0; gap: 0; }
   body[data-desk] .comfy-status::before { margin: 0; }
