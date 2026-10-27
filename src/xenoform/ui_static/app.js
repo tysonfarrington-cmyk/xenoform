@@ -716,12 +716,14 @@ function shareRow(easy) {
       <div class="share-row">
         <button type="button" class="ghost" data-act="easy-share" title="A 720p H.264 under 16 MB, for a post">Share cut · 720p</button>
         <button type="button" class="ghost" data-act="easy-hook" title="Cuts the strongest drop into a 15 second clip, same aspect and FX">15 s hook</button>
+        <button type="button" class="ghost" data-act="easy-edit" title="The cut as a timeline for DaVinci Resolve, Premiere or Final Cut: a clip a shot, the song under it, markers at the drop, zipped with the media">Edit in Resolve</button>
         <button type="button" class="ghost" data-act="easy-copy-recipe">Copy recipe code</button>
         <a class="ghost" href="${esc(media(`/api/jobs/${job}/notes`))}" target="_blank" rel="noopener" title="Every shot with its time, object and transition (SHOTS.md)">Shot list</a>
         <a class="ghost" href="${esc(media(`/api/jobs/${job}/seed`))}" download="xenoform-${esc(id)}-seed.json" title="The seeds and settings the render used">Seed file</a>
         <a class="ghost" href="${esc(vjUrl())}" target="_blank" rel="noopener">Play it live in VJ mode</a>
       </div>
       ${easy.hookUrl ? `<p class="note">15 s hook ready: <a href="${esc(media(easy.hookUrl))}" download>download the hook</a>${easy.hookInfo ? ` · ${esc(easy.hookInfo)}` : ""}</p>` : ""}
+      ${easy.editUrl ? `<p class="note">Edit pack ready: <a href="${esc(media(easy.editUrl))}" download>download the zip</a>${easy.editInfo ? ` · ${esc(easy.editInfo)}` : ""}</p>` : ""}
       ${easy.recipe ? `<p class="note recipe-line">Recipe <code>${esc(easy.recipe)}</code></p>` : ""}
     </section>`;
 }
@@ -1885,6 +1887,27 @@ async function easyHook() {
   render();
 }
 
+// Edit in Resolve: the cut laid out as an editor's timeline (a clip a shot, the song, markers) and zipped with its media.
+// The pack is also left unzipped beside the cut, so on this machine the timeline file can be imported from there.
+async function easyEdit() {
+  const id = easyVideoId();
+  if (!id) return;
+  state.easy.note = "Laying the cut out as a timeline for Resolve, Premiere or Final Cut.";
+  render();
+  try {
+    const res = await api(`/api/videos/${id}/edit`, { method: "POST" });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.detail || "The edit pack did not build.");
+    state.easy.editUrl = body.url;
+    state.easy.editInfo = `${body.shots} shots on V1, ${body.song ? "the song on A1, " : ""}${body.markers} marker${body.markers === 1 ? "" : "s"}, ${body.mb} MB. `
+      + `Resolve: File › Import › Timeline, pick ${body.timeline}; Premiere: File › Import, the same file; Final Cut: ${body.fcpxml}. Unzipped already in ${body.folder}`;
+    state.easy.note = "";
+  } catch (err) {
+    state.easy.note = String(err.message || err);
+  }
+  render();
+}
+
 async function easyRecipeFor(id) {
   const row = (state.videos || []).find((item) => item.id === id);
   if (row && row.recipe) return row.recipe;
@@ -2220,6 +2243,7 @@ async function easyMake() {
   state.easy.reopenId = "";
   state.easy.reopenUrl = "";
   state.easy.hookUrl = "";
+  state.easy.editUrl = "";
   state.easy.recipe = "";
   state.easy.resultVibe = state.easy.vibe;  // the vibe this cut is made with: the result's title, and "Try another vibe" compares to it
   // what this Make is, for the Render row on the cut's screen: a part of the song (a prototype) offers the whole song,
@@ -2945,6 +2969,7 @@ async function poll(id) {
       if (state.easy.recutting) {  // a re-cut or a swap: the lane reads the record again and a reopened player reloads
         state.easy.recutting = false;
         state.lane = null;
+        state.easy.editUrl = "";  // the pack laid out the cut before this edit: Edit in Resolve makes the new one
         if (state.easy.reopenUrl) state.easy.reopenUrl = `${String(state.easy.reopenUrl).split("?")[0]}?v=${job.video_version || Date.now()}`;
       }
       const took = Number(job.took_s || job.seconds || 0);
@@ -3190,6 +3215,8 @@ document.addEventListener("click", async (event) => {
     render();
   } else if (act === "easy-hook") {
     easyHook();
+  } else if (act === "easy-edit") {
+    easyEdit();
   } else if (act === "easy-copy-recipe") {
     const code = state.easy.recipe || (await easyRecipeFor(easyVideoId()));
     state.easy.recipe = code;
@@ -3224,6 +3251,7 @@ document.addEventListener("click", async (event) => {
     state.easy.note = row.seconds ? `Took ${clockText(Number(row.seconds))}.` : "";
     state.easy.hookUrl = row.hook ? `/api/videos/${row.id}/hook.mp4` : "";
     state.easy.hookInfo = "";
+    state.easy.editUrl = "";
     state.easy.showcase = false;
     state.easy.playedHere = false;
     setEasyPhase("result");

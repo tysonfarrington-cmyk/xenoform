@@ -1749,6 +1749,27 @@ def create_app(cfg: dict | None = None):
         return FileResponse(path, media_type="video/mp4", filename=f"xenoform-hook-{video_id}.mp4",
                             headers={"Cache-Control": "no-store"})
 
+    @app.post("/api/videos/{video_id}/edit")
+    def video_edit(video_id: str) -> dict:
+        """Share › Edit in Resolve (``edit_export.build``): the cut as a timeline for Resolve, Premiere or Final Cut,
+        a clip a shot on V1, the song on A1, markers at the drop and the dressed handoffs, zipped with its media."""
+        from xenoform import edit_export
+
+        folder = _video_dir(video_id)
+        try:
+            pack = edit_export.build(folder, video_id)
+        except Exception as exc:  # ffmpeg or the disk: say so on the desk instead of a bare 500
+            log.exception("edit pack for %s", video_id)
+            raise HTTPException(500, f"The edit pack did not build: {exc}") from exc
+        return {**{k: v for k, v in pack.items() if k != "signature"}, "url": f"/api/videos/{video_id}/edit.zip"}
+
+    @app.get("/api/videos/{video_id}/edit.zip")
+    def video_edit_zip(video_id: str) -> FileResponse:
+        from xenoform import edit_export
+
+        pack = edit_export.build(_video_dir(video_id), video_id)  # the pack made for this cut, or a new one if it changed
+        return FileResponse(pack["zip"], media_type="application/zip", filename=pack["zip_name"], headers={"Cache-Control": "no-store"})
+
     @app.get("/api/videos/{video_id}/video")
     def video_file(video_id: str) -> FileResponse:
         return FileResponse(_video_dir(video_id) / "xenoform.mp4", media_type="video/mp4", headers={"Cache-Control": "no-store"})
