@@ -1292,11 +1292,11 @@ function stillsRow(easy) {
 // The idea line, its reading and its help: what an object cut morphs through (a clips cut has no objects to name).
 function ideaBlock(easy) {
   return `        <label class="idea-field">What it morphs through <small>optional · things, a theme, a place, a feel</small>
-          <input id="easy-idea" type="text" maxlength="170" value="${esc(easy.idea || "")}" aria-label="What it morphs through, optional" placeholder="a rally car, a trophy, a chequered flag, a desert at dusk, fast and punchy" autocomplete="off" />
+          <input id="easy-idea" type="text" maxlength="170" value="${esc(easy.idea || "")}" aria-label="What it morphs through, optional" placeholder="a nautilus, a jellyfish, an orchid, a moonlit shore, slow and dreamy" autocomplete="off" />
         </label>
         ${ideaReadingLine(easy)}
         <details class="idea-help"><summary>How the line works</summary>
-          <p class="note">Commas split it. Things become the objects the morphs travel between: one the library knows brings its family along, one it lacks is drawn new in this vibe's material before Make. A theme (racing, pirates, halloween, astronauts, gaming and about thirty more) brings fifteen things of its own and keeps the chain on them. A place becomes wide scenes the morphs pass through. A feel (slow and dreamy, hard and glitchy) moves the knobs and the Look. It never changes the vibe, and it cannot tell a story: every shot is still one thing becoming the next. Empty, and the vibe decides.</p>
+          <p class="note">Commas split it. Things become the objects the morphs travel between: one the library knows brings its family along, one it lacks is drawn new in this vibe's material before Make. A theme (underwater, magic, dinosaurs, space, halloween and about thirty more) brings fifteen things of its own and keeps the chain on them. A place becomes wide scenes the morphs pass through. A feel (slow and dreamy, hard and glitchy) moves the knobs and the Look. It never changes the vibe, and it cannot tell a story: every shot is still one thing becoming the next. Empty, and the vibe decides.</p>
         </details>`;
 }
 
@@ -1382,7 +1382,7 @@ function ideaReading() {
 // intuitive without having to read a block of fine print"): what the morphs travel between, what they pass through, how
 // it feels, who performs; "new" on what Make draws first. With the line empty, the same rows show what can go in it.
 const IDEA_ROWS = [["thing", "Morphs through"], ["place", "Passes through"], ["feel", "Feels"], ["who", "Performer"]];
-const IDEA_EXAMPLES = { thing: ["a rally car", "a trophy"], place: ["a desert at dusk"], feel: ["fast and punchy"] };
+const IDEA_EXAMPLES = { thing: ["a nautilus", "a jellyfish"], place: ["a moonlit shore"], feel: ["slow and dreamy"] };
 function ideaChip(kind, text, tag) {
   return `<span class="ir ${kind}">${esc(text)}${tag ? ` <i>${esc(tag)}</i>` : ""}</span>`;
 }
@@ -1427,7 +1427,7 @@ function ideaReadingHtml(easy) {
     extra.who = `<span class="ir-note">${Number(easy.performer || 0) > 0 ? "Polly performs it" : "Polly is off (Work in progress)"}</span>`;
   }
   const body = ideaRows(rows, extra);
-  if (!body) return `<p class="note ir-foot">Nothing to morph between yet: name things (a rally car, a trophy), a place or how it feels.</p>`;
+  if (!body) return `<p class="note ir-foot">Nothing to morph between yet: name things (a nautilus, a jellyfish), a place or how it feels.</p>`;
   const things = (grow.own || []).length + (grow.nouns || []).length;
   const places = new Set((grow.scenes || []).map(bare)).size;
   const stills = Number(grow.count) || things + (grow.scenes || []).length;

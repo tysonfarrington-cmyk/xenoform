@@ -47,4 +47,20 @@ def test_themes_sit_beside_places_feels_and_the_library():
 
 def test_the_chips_name_the_theme():
     assert 'if (have.theme) extra.thing = `<span class="ir-note">the ${esc(have.theme)} theme</span>`;' in APP
-    assert "A theme (racing, pirates, halloween, astronauts, gaming and about thirty more) brings fifteen things" in APP
+    assert "A theme (underwater, magic, dinosaurs, space, halloween and about thirty more) brings fifteen things" in APP
+
+
+def test_a_themes_own_name_is_the_theme_even_where_it_is_a_place():
+    # 29 Oct: "underwater", "space" and "the wild west" read as scenes; typed alone, a theme's name means its things
+    for line, theme in (("underwater", "underwater"), ("underwater theme", "underwater"), ("space", "space"), ("the wild west", "wild west")):
+        r = idea.read(line, "none", llm=False)
+        assert r["theme"] == theme and not r["scenes"] and len(r["theme_things"]) == 15, line
+    assert idea.read("an underwater world", "none", llm=False)["scenes"] == ["an underwater world"]  # a place stays a place
+
+
+def test_the_underwater_theme_is_sea_life_that_morphs_well():
+    # Tys, 29 Oct, of the racing example: "you want to see cars driving not morphing"
+    things = idea.THEMES["underwater"]["things"]
+    assert not {"diving helmet", "anchor", "ship's wheel", "submarine", "porthole"} & set(things)
+    assert {"jellyfish", "octopus", "seahorse", "nautilus", "manta ray"} <= set(things)
+

@@ -61,5 +61,5 @@ console.log(JSON.stringify({{ full, empty, nothing }}));
     assert '<span class="ir feel">fast, punchy</span>' in full and "Speed 85 · Look cyan-flash" in full
     assert '<span class="ir who">girl dancing</span>' in full and "Polly is off (Work in progress)" in full
     assert "Make draws 5 new stills first (2 things, 1 place), about 46 s." in full
-    assert "ir thing example" in got["empty"] and "a rally car" in got["empty"] and "Empty, and the vibe decides." in got["empty"]
+    assert "ir thing example" in got["empty"] and "a nautilus" in got["empty"] and "Empty, and the vibe decides." in got["empty"]
     assert "Nothing to morph between yet" in got["nothing"]

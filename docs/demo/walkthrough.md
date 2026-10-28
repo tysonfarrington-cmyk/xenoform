@@ -23,7 +23,7 @@ the social post. Voice-over over the screen, the outputs played full frame, capt
 | --- | --- | --- |
 | 0:00 | Three cuts, fast: a liquid-gold Final, the Caligari to NASA clips cut, a None cut | Xenoform turns a song into a music video where every beat is a transformation. |
 | 0:07 | The Song step: drop a song; the vibe grid, None last | Drop in a song and pick a vibe: molten gold, neon noir, ink and paper, or None, the things just as they are. |
-| 0:15 | The idea line: "racing" grows its chips | Then say what it morphs through. A theme like racing brings fifteen things of its own. |
+| 0:15 | The idea line: "underwater" grows its chips | Then say what it morphs through. A theme like underwater brings fifteen things of its own. |
 | 0:22 | Make; the making screen, the chain, the steps | Make listens to the song, plans a shot for every bar, picks the objects and renders a morph for each one. |
 | 0:32 | The result playing | Every shot is one object turning into the next, cut to the song's own bars. |
 | 0:39 | Morph styles side by side: Melt, Shatter, Bloom, Spin, Fold | Five ways to change, and the change can land right on the beat. |
@@ -78,8 +78,9 @@ the social post. Voice-over over the screen, the outputs played full frame, capt
   used: no clipping, no long gap inside a line, and no ending that rises 15% or more over the line's own pitch (one
   line was reworded to land).
 - **The screen** was recorded from a desk on this machine in headless Edge over the DevTools protocol at 1440x810, 4/3
-  scale (1920x1080 frames), with a drawn cursor and highlights; the Make, the racing chips and the timeline edit are
-  real (the None "car rally racing" cut, 5ce3c134). Recording found the desk blinking on every click (fixed in
+  scale (1920x1080 frames), with a drawn cursor and highlights; the Make, the underwater chips and the timeline edit are
+  real (a None "underwater" cut; racing was the first example, dropped: "you want to see cars driving not
+  morphing"). Recording found the desk blinking on every click (fixed in
   f9eaa7e).
 - **The short** (1:40 to 1:44 by voice) and **the long** (5:36 in af_heart, nine chapters with labels) are in
   `Desktop\xeno_walkthrough_29oct`, with 720p review copies. Captions are burned in from the voice copy; the music bed

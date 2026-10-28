@@ -63,5 +63,5 @@ def test_the_making_screen_shows_the_chain_and_the_field_says_what_it_does():
     assert "state.chain" in making and "storySentence(scene.action)" not in making
     assert 'eyebrow" id="easy-chain-label">${esc(storyLabel)}' in app and "function paintMaking(job)" in app and "`The chain${made ? \"\" : " in app and ": ${chainStills.length} stills" in app
     # the line shapes the cut now (xenoform.idea, tests/test_idea.py): the field shows what it became, and no longer "nothing yet"
-    assert 'placeholder="a rally car, a trophy' in app and '["thing", "Morphs through"]' in app
+    assert 'placeholder="a nautilus, a jellyfish' in app and '["thing", "Morphs through"]' in app
     assert "How the line works" in app and "Other words change nothing yet" not in app

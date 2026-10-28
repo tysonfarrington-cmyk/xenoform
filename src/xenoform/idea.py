@@ -151,7 +151,10 @@ THEMES: dict[str, dict] = {
     "space": {"words": "astronaut astronauts spaceflight cosmonaut nasa scifi spacefaring",
               "things": ["astronaut helmet", "rocket", "satellite", "ringed planet", "lunar lander", "jetpack", "flying saucer", "meteorite", "lunar rover", "ray gun", "astronaut glove", "brass orrery", "oxygen tank", "radio telescope", "escape pod"]},
     "underwater": {"words": "undersea marine nautical diving scuba",
-                   "things": ["diving helmet", "anchor", "jellyfish", "ship's wheel", "seashell", "octopus", "seahorse", "submarine", "starfish", "pufferfish", "manta ray", "anglerfish", "porthole", "pearl oyster", "humpback whale"]},
+                   # sea life only: soft, flowing forms are what a morph does best (Tys, 29 Oct, of the racing example:
+                   # "you want to see cars driving not morphing"); the diving helmet, anchor, ship's wheel, submarine and
+                   # porthole made way for the nautilus, sea turtle, coral, sea urchin and lionfish
+                   "things": ["jellyfish", "octopus", "seahorse", "nautilus", "manta ray", "seashell", "starfish", "pufferfish", "sea turtle", "anglerfish", "coral", "sea urchin", "pearl oyster", "lionfish", "humpback whale"]},
     "pirates": {"words": "pirate pirates buccaneer buccaneers",
                 "things": ["treasure chest", "pirate hat", "cutlass", "ship in a bottle", "compass", "parrot", "flintlock pistol", "spyglass", "powder keg", "cannon", "galleon", "ship's bell", "skeleton key", "sextant", "pearl necklace"]},
     "halloween": {"words": "halloween spooky horror",
@@ -474,6 +477,16 @@ def _theme_of(group_words: list[str]) -> str:
     return THEME_OF.get(content[-1], "") if content else ""
 
 
+def _theme_named(group_words: list[str]) -> str:
+    """The theme a comma group is just the name of ("underwater", "space theme", "the wild west"), even where the name is
+    also a place word: typed on its own, a theme's name means its things, not a scene of it."""
+    content = [w for w in group_words if w not in STOP]
+    while content and content[-1] in THEME_TAIL:
+        content.pop()
+    name = " ".join(content)
+    return name if name in THEMES else ""
+
+
 def read(line: str, vibe: str = "", *, llm: bool | None = None) -> dict:
     """The reading of ``line`` for ``vibe``: ``scenes`` (subjects to grow as wide frames), ``objects`` (catalogue
     nouns), ``own`` (typed shapes the catalogue lacks), ``family`` (the family the line names, if any), ``performer``
@@ -504,6 +517,11 @@ def read(line: str, vibe: str = "", *, llm: bool | None = None) -> dict:
     for group in groups:
         chunks = _chunks(group)
         group_words = _words(group)
+        named = _theme_named(group_words)
+        if named:  # "underwater" alone is the underwater theme; "an underwater world" is still a scene
+            if named not in themes:
+                themes.append(named)
+            continue
         found = _find_nouns(group, nouns)
         for noun in found:
             if noun not in objects:

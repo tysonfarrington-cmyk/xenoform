@@ -256,7 +256,7 @@ def test_an_upscale_that_fails_keeps_the_draft_clip(tmp_path, monkeypatch):
     assert out == [clip] and notes[0]["fallback"] == "draft-size"
 
 
-@pytest.mark.parametrize("line,kind", [("racing", "theme"), ("a wet street at night", "Scenes:"), ("slow and dreamy", "Feel:")])
+@pytest.mark.parametrize("line,kind", [("underwater", "theme"), ("a wet street at night", "Scenes:"), ("slow and dreamy", "Feel:")])
 def test_the_idea_lines_examples_read_as_their_kind(line, kind):
     from xenoform import idea
 
