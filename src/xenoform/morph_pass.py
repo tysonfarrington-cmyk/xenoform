@@ -508,20 +508,24 @@ def prompt_for(vibe: str, engine: str = "ltx095", kinds: tuple[str, str] | None 
 def ltx25_present(root: Path | None = None) -> bool:
     if root is None:
         try:
-            from xenoform.models_setup import models_dir
+            from xenoform.models_setup import models_root  # was models_dir, which never existed: always False
 
-            root = Path(models_dir() or "")
+            root = Path(models_root() or "")
         except Exception:
             return False
     return all((Path(root) / folder / name).is_file() for folder, name in LTX25_FILES)
 
 
 def pick_engine() -> str:
-    """``ltx25`` when its four files are on disk (or ``XENO_MORPH_ENGINE`` asks), else ``ltx095``."""
+    """``ltx095`` unless ``XENO_MORPH_ENGINE=ltx25`` asks for LTX-2.5 and its four files are on disk.
+
+    LTX-2.5 used to be picked whenever its files were there (the check never found them). It is opt-in now: on the 29 Oct
+    test pair its first/last-frame graph held the first object and cut to the second near the end rather than morphing,
+    and the 22B model on a 12 GB card takes minutes a morph against the Draft's seconds."""
     forced = os.environ.get("XENO_MORPH_ENGINE", "").strip().lower()
-    if forced in ("ltx25", "ltx095"):
-        return forced
-    return "ltx25" if ltx25_present() and GRAPH25.exists() else "ltx095"
+    if forced == "ltx25":
+        return "ltx25" if ltx25_present() and GRAPH25.exists() else "ltx095"
+    return "ltx095"
 
 
 def _graph_path(work: Path, engine: str = "ltx095") -> Path:

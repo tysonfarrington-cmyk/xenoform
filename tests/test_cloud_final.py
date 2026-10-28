@@ -24,6 +24,16 @@ def test_the_graph_is_the_open_weights_ltx25_morph_at_the_shots_size():
         cloud_final.graph("x", length=73, seed=1, width=720, height=1280)  # LTX wants multiples of 32
 
 
+def test_the_default_is_ltx23_which_morphs_and_its_graph_keeps_the_upscaler_here():
+    # 29 Oct, the test pair on Comfy Cloud: LTX-2.5's first/last-frame graph held the shell and cut to the owl near the end
+    assert cloud_final.model() == "ltx23" and cloud_final.label() == "LTX-2.3"
+    g = cloud_final.graph_for("ltx23", "a morph", length=73, seed=5, width=576, height=1024)
+    assert cloud_backend.guard(g) == []  # no upscale model and no partner node goes to Cloud
+    assert g["100"]["class_type"] == "LoadImage" and g["101"]["class_type"] == "LoadImage"
+    assert g["7"]["inputs"]["width"] == 288 and g["7"]["inputs"]["height"] == 512  # stage one at half size
+    assert cloud_final.INPUT_NODES["ltx23"] == ("100", "101") and cloud_final.INPUT_NODES["ltx25"] == ("6", "7")
+
+
 def test_it_is_ready_only_with_the_key_in_the_environment_and_never_shows_it(monkeypatch):
     monkeypatch.delenv(cloud_backend.KEY_ENV, raising=False)
     off = cloud_final.ready()
@@ -55,8 +65,9 @@ class FakeCloud:
             self.live += 1
             self.peak = max(self.peak, self.live)
         try:
-            i = int(graph["19"]["inputs"]["filename_prefix"][-2:])
-            assert set(inputs) == {"6", "7"}
+            save = next(n for n in graph.values() if n["class_type"] == "SaveVideo")
+            i = int(save["inputs"]["filename_prefix"][-2:])
+            assert len(inputs) == 2 and all(graph[nid]["class_type"] == "LoadImage" for nid in inputs)
             if i in self.fail:
                 raise cloud_backend.CloudJobFailed("job ended error")
             Path(out_dir).mkdir(parents=True, exist_ok=True)
@@ -86,6 +97,9 @@ def test_every_shot_goes_to_cloud_three_at_a_time_and_a_failed_one_falls_back_to
     seen = []
     clips, notes = cloud_final.cloud_clips(shots, stills, tmp_path, {}, 2727, "none", vertical=False, backend=fake,
                                            draft=draft, report=lambda stage, frac, detail: seen.append(detail))
+    clips25, _ = cloud_final.cloud_clips(shots[:1], stills[:2], tmp_path / "25", {}, 2727, "none", vertical=False,
+                                         backend=FakeCloud(), name="ltx25")
+    assert clips25[0].name == "cloud00.mp4"
     assert len(clips) == 5 and clips[2].name == "draft2.mp4" and clips[0].name == "cloud00.mp4" and drafted == [2]
     assert notes == [{"shot": 2, "fallback": "ltx095-draft", "why": "job ended error"}]
     assert fake.prepared == 5 and fake.peak <= 3 and "Comfy Cloud" in seen[-1]

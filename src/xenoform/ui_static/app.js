@@ -2719,8 +2719,8 @@ function cloudFinalRow(easy) {
   const est = info.estimate || {};
   const about = est.seconds ? `, about ${clockText(Number(est.seconds))}` : "";
   return `<label class="addon cloud-final-ok"><input type="checkbox" data-act="easy-cloud-final-ok"${easy.cloudFinalOk ? " checked" : ""}>
-      Spend my Comfy Cloud credits: ${esc(String(est.morphs || "the"))} LTX-2.5 morphs on Comfy Cloud, three at a time${esc(about)}.</label>
-    <p class="note">Open weights on Comfy's GPUs (LTX-2.5, ${esc(info.render || "576x1024")}), scaled to full size here. At most ${esc(String(info.max_morphs || 16))} morphs a cut; a morph that fails on Cloud falls back to its Draft.</p>`;
+      Spend my Comfy Cloud credits: ${esc(String(est.morphs || "the"))} ${esc(info.model || "LTX")} morphs on Comfy Cloud, three at a time${esc(about)}.</label>
+    <p class="note">Open weights on Comfy's GPUs (${esc(info.model || "LTX")}, ${esc(info.render || "576x1024")}), scaled to full size here. At most ${esc(String(info.max_morphs || 16))} morphs a cut; a morph that fails on Cloud falls back to its Draft.</p>`;
 }
 
 async function easyMake() {

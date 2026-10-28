@@ -51,6 +51,23 @@ def test_ltx25_is_picked_only_when_its_files_exist(tmp_path, monkeypatch):
     assert mp.ltx25_present(tmp_path) is True
     monkeypatch.setenv("XENO_MORPH_ENGINE", "ltx095")
     assert mp.pick_engine() == "ltx095"
+    # 29 Oct: present is not enough, LTX-2.5 is asked for by name (its graph cut rather than morphed on the test pair)
+    monkeypatch.delenv("XENO_MORPH_ENGINE", raising=False)
+    monkeypatch.setattr(mp, "ltx25_present", lambda root=None: True)
+    assert mp.pick_engine() == "ltx095"
+    monkeypatch.setenv("XENO_MORPH_ENGINE", "ltx25")
+    assert mp.pick_engine() == "ltx25"
+
+
+def test_ltx25_present_reads_the_desks_models_folder(tmp_path, monkeypatch):
+    from xenoform import models_setup
+
+    monkeypatch.setattr(models_setup, "models_root", lambda: tmp_path)
+    assert mp.ltx25_present() is False  # it used to import a models_dir that never existed and so always said False
+    for folder, name in mp.LTX25_FILES:
+        (tmp_path / folder).mkdir(exist_ok=True)
+        (tmp_path / folder / name).write_bytes(b"")
+    assert mp.ltx25_present() is True
 
 
 def test_ltx25_graph_mirrors_the_morph_node_ids():

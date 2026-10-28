@@ -1249,7 +1249,12 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     if any(s != "melt" for s in render_styles):
         notes.append({"morph_styles": _ms.info(render_styles)})
     write_chain(work, stills)  # the making screen's "The chain:" line, now with what the line grew (ui._run_job)
-    label = {"ltx23": "Final (LTX-2.3)", "ltx25cloud": "Cloud Final (LTX-2.5 on Comfy Cloud)"}.get(engine, "Draft (LTX 0.9.5)")
+    if engine == "ltx25cloud":
+        from xenoform import cloud_final as _cf
+
+        label = f"Cloud Final ({_cf.label()} on Comfy Cloud)"
+    else:
+        label = {"ltx23": "Final (LTX-2.3)"}.get(engine, "Draft (LTX 0.9.5)")
     report("restyle", 0.1, f"{len(render_shots)} {label} morphs · "
                            f"{len(shots)} shots · {opt['energy']} · {opt['aspect']}")
     if native_draft:
@@ -1311,8 +1316,8 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
         size = upscale_pass.out_size(opt["aspect"])
         clips, up_notes = cloud_final.to_full_size(clips, work, size, cfg, fallbacks=[n["shot"] for n in cloud_notes],
                                                    client=client, cancel=cancel, report=report, fps=fps)
-        notes.append({"cloud_final": f"{len(clips) - len(cloud_notes)} of {len(clips)} morphs rendered with LTX-2.5 on Comfy "
-                                     f"Cloud (open weights), scaled here to {size[0]}x{size[1]}"})
+        notes.append({"cloud_final": f"{len(clips) - len(cloud_notes)} of {len(clips)} morphs rendered with {cloud_final.label()} on "
+                                     f"Comfy Cloud (open weights), scaled here to {size[0]}x{size[1]}"})
         notes.extend(up_notes)
     else:
         clips = _draft_clips(render_shots, stills, work, cfg, seed, vibe, client, cancel, state, report=report,
@@ -1485,7 +1490,7 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     shutil.copyfile(tmp, out_path)
     info = {"engine": {"ltx23": "LTX-2.3 22B distilled fp8 + 4x upscale (Final)",
                        "ltx095": "LTX 0.9.5 + 4x upscale (Fast Final)" if opt["fast"] else "LTX 0.9.5 (Draft)",
-                       "ltx25cloud": "LTX-2.5 22B distilled on Comfy Cloud + 4x upscale (Cloud Final)",
+                       "ltx25cloud": "Cloud Final on Comfy Cloud (open weights), scaled to full size here",
                        "mock": "mock cross-fades (test)"}[engine],
             "fast": bool(opt["fast"]), "cloud": bool(opt["cloud"]),
             "open_weights": True, "energy": opt["energy"], "aspect": opt["aspect"], "tier": opt["tier"],

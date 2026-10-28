@@ -1619,7 +1619,7 @@ def create_app(cfg: dict | None = None):
             "shots": len(shots),
             # Cloud Final: LTX-2.5 open weights on Comfy Cloud (cloud_final); "ready" says whether the key is in this desk's
             # environment, never the key
-            "cloud_final": {**_cloud_final.ready(), "max_morphs": _cloud_final.MAX_MORPHS,
+            "cloud_final": {**_cloud_final.ready(), "max_morphs": _cloud_final.MAX_MORPHS, "model": _cloud_final.label(),
                             "render": "x".join(map(str, _cloud_final.RENDER_916 if aspect == "9:16" else _cloud_final.RENDER_169)),
                             "estimate": _cloud_final.estimate(int((plan.get("estimate") or {}).get("morphs") or len(shots)))},
             "final": {"ready": files["ready"], "upscale": files["upscale"], "files": files["files"],

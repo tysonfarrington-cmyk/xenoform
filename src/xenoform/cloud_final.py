@@ -1,16 +1,22 @@
-"""Cloud Final: the open-weights LTX-2.5 morph on Comfy Cloud, for a sharper cut than this GPU makes in good time, or
-for a machine without the GPU (Tys, 29 Oct: "we have access to ltx 2.5 though ?? and a comfyui sub thing ?? surely
-there can at least be an option for that if the competition is by comfyui").
+"""Cloud Final: the open-weights morph on Comfy Cloud, for a sharper cut than this GPU makes in good time, or for a
+machine without the GPU (Tys, 29 Oct: "we have access to ltx 2.5 though ?? and a comfyui sub thing ?? surely there can
+at least be an option for that if the competition is by comfyui").
 
-Each shot is one first/last-frame morph through ``workflows/ltx25_morph_api.json`` (the distilled 22B LTX-2.5
-transformer, 8 steps, open weights under the LTX-2.x Community License), run on Comfy Cloud by ``cloud_backend``, at
-most three at once, at 576x1024 from the portrait stills (1024x576 for 16:9). This machine then upscales each clip to
-the cut's full size (``upscale_pass``: Comfy Cloud keeps upscalers local), and the cut is composed here as ever.
+Each shot is one first/last-frame morph run on Comfy Cloud by ``cloud_backend``, at most three at once (the Creator
+plan's API concurrency), at 576x1024 from the portrait stills (1024x576 for 16:9), on Comfy's 96 GB GPUs. Two graphs:
 
-It stays open weights: the same open models, only the hardware is Comfy's; ``cloud_backend.guard`` refuses a partner
-or API node before anything is sent. It spends the account's Comfy Cloud credits, so a Make asks for it with
-``cloud_final_ok`` (the desk's tick), nothing is sent without ``COMFY_ORG_API_KEY`` in the desk's environment, and a cut takes at most
-``MAX_MORPHS`` morphs. A shot that fails on Cloud falls back to its local Draft morph; the notes say which.
+* ``ltx23`` (the default): the local Final's two-stage LTX-2.3 graph (``final_tier.graph``) without its upscaler. It
+  morphs: on the 29 Oct test pair (nautilus -> owl, 3 s) the shell turns into the owl in mid-clip, and Comfy Cloud
+  gives it a size this card cannot (448x768 here).
+* ``ltx25`` (``XENO_CLOUD_MODEL=ltx25``): ``workflows/ltx25_morph_api.json``, the distilled 22B LTX-2.5. On the same pair,
+  locally and on Cloud alike, it held the shell for most of the clip and switched to the owl near the end: a late cut,
+  not a morph. It stays behind the switch until a setting or the layout-to-render IC-LoRA makes it morph.
+
+This machine then scales each clip to the cut's full size (Comfy Cloud keeps upscalers local) and composes the cut as
+ever. It stays open weights: the same open models, only the hardware is Comfy's; ``cloud_backend.guard`` refuses a
+partner or API node before anything is sent. It spends the account's Comfy Cloud credits, so a Make asks for it with
+``cloud_final_ok`` (the desk's tick), nothing is sent without ``COMFY_ORG_API_KEY`` in the desk's environment, and a cut
+takes at most ``MAX_MORPHS`` morphs. A shot that fails on Cloud falls back to its local Draft morph; the notes say which.
 """
 
 from __future__ import annotations
@@ -24,37 +30,48 @@ from typing import Callable
 
 ROOT = Path(__file__).resolve().parents[2]
 GRAPH = ROOT / "workflows" / "ltx25_morph_api.json"
-RENDER_916 = (576, 1024)  # portrait 9:16; LTX wants multiples of 32
+MODEL = os.environ.get("XENO_CLOUD_MODEL", "").strip().lower() or "ltx23"
+MODELS = {"ltx23": "LTX-2.3", "ltx25": "LTX-2.5"}
+INPUT_NODES = {"ltx23": ("100", "101"), "ltx25": ("6", "7")}  # where each graph takes its two stills
+RENDER_916 = (576, 1024)  # portrait 9:16; multiples of 64, so LTX-2.3's first stage (half size) still fits
 RENDER_169 = (1024, 576)
 FPS = 24
 MAX_MORPHS = 16  # a 30 s cut is about twelve: the cap keeps a long song from spending a month of credits
-# Wall time for one morph job on Comfy Cloud, upload to download, before it is measured on the account (the one-clip
-# test sets it); three run at once, and each clip's local upscale (upscale_pass) comes on top
-SECONDS_PER_MORPH = 75.0
-MEASURED = False
+# Wall time for one morph job on Comfy Cloud, upload to download: 58 s for the 3 s LTX-2.5 test clip (29 Oct); three run
+# at once, and the scale to full size here comes on top
+SECONDS_PER_MORPH = 60.0
+MEASURED = True
 NEGATIVE = "text, letters, watermark, logo, two objects, duplicated features, cut, flicker, blurry, low quality, cartoon, people, hands"
 KEY_HINT = ("Cloud Final needs your Comfy Cloud API key as COMFY_ORG_API_KEY in the environment the desk starts in "
             "(set it yourself, never paste it into the desk), then restart the desk.")
+
+
+def model() -> str:
+    return MODEL if MODEL in MODELS else "ltx23"
+
+
+def label() -> str:
+    return MODELS[model()]
 
 
 def ready() -> dict:
     """Whether a Cloud Final can be sent: the key in the environment and the graph on disk. Never reads the key out."""
     from xenoform.cloud_backend import KEY_ENV
 
-    if not GRAPH.is_file():
+    if model() == "ltx25" and not GRAPH.is_file():
         return {"ready": False, "why": f"{GRAPH.name} is missing."}
     if not os.environ.get(KEY_ENV, "").strip():
         return {"ready": False, "why": KEY_HINT}
     return {"ready": True, "why": ""}
 
 
-def estimate(morphs: int, parallel: int = 3, upscale_s: float = 20.0) -> dict:
-    """Rough wall time for ``morphs`` Cloud morphs (``parallel`` at once) and their local upscale."""
+def estimate(morphs: int, parallel: int = 3, scale_s: float = 3.0) -> dict:
+    """Rough wall time for ``morphs`` Cloud morphs (``parallel`` at once) and their scale to full size here."""
     n = max(0, min(int(morphs), MAX_MORPHS))
     rounds = -(-n // max(1, parallel))
-    secs = int(round(rounds * SECONDS_PER_MORPH + n * upscale_s))
-    return {"morphs": n, "seconds": secs, "jobs": n, "parallel": parallel, "measured": MEASURED,
-            "basis": "Comfy Cloud, three morphs at once, then the upscale on this machine"}
+    secs = int(round(rounds * SECONDS_PER_MORPH + n * scale_s))
+    return {"morphs": n, "seconds": secs, "jobs": n, "parallel": parallel, "measured": MEASURED, "model": label(),
+            "basis": "Comfy Cloud, three morphs at once, then the scale to full size on this machine"}
 
 
 def graph(prompt: str, *, length: int, seed: int, width: int, height: int, negative: str | None = None,
@@ -78,12 +95,25 @@ def graph(prompt: str, *, length: int, seed: int, width: int, height: int, negat
     return g
 
 
+def graph_for(name: str, prompt: str, *, length: int, seed: int, width: int, height: int, negative: str | None = None,
+              img_compression: int = 18, end_strength: float = 1.0, prefix: str = "xenoform/cloud") -> dict:
+    """The Cloud graph for ``name``: LTX-2.3's two-stage Final without its upscaler, or the LTX-2.5 morph graph."""
+    if name == "ltx25":
+        return graph(prompt, length=length, seed=seed, width=width, height=height, negative=negative,
+                     img_compression=img_compression, end_strength=end_strength, prefix=prefix)
+    from xenoform import final_tier
+
+    return final_tier.graph(prompt, length=length, seed=seed, upscale=False, prefix=prefix, width=width, height=height,
+                            out_w=width, out_h=height, img_compression=img_compression, end_strength=end_strength,
+                            negative=negative)
+
+
 def to_full_size(clips: list[Path], work: Path, out: tuple[int, int], cfg: dict, *, fallbacks: list[int] = (), client=None,
                  cancel: Callable[[], bool] | None = None, report: Callable[[str, float, str], None] | None = None,
                  fps: float = 24.0) -> tuple[list[Path], list[dict]]:
-    """The clips at the cut's size. A Cloud clip is scaled here with Lanczos: a 576x1024 LTX-2.5 render is sharp, and a
-    4x model would make it 2304x4096, too big for this card and no better. A Draft fallback (320x576) goes through Fast
-    Final's upscaler like any Draft."""
+    """The clips at the cut's size. A Cloud clip is scaled here with Lanczos: a 576x1024 render is sharp, and a 4x model
+    would make it 2304x4096, too big for this card and no better. A Draft fallback (320x576) goes through Fast Final's
+    upscaler like any Draft."""
     import subprocess
 
     from xenoform import upscale_pass
@@ -111,9 +141,10 @@ def to_full_size(clips: list[Path], work: Path, out: tuple[int, int], cfg: dict,
 def cloud_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, seed: int, vibe: str, *,
                 cancel: Callable[[], bool] | None = None, report: Callable[[str, float, str], None] | None = None,
                 draft: Callable[[list[int]], dict[int, Path]] | None = None, vertical: bool = True,
-                state: dict | None = None, styles: list[str] | None = None, backend=None) -> tuple[list[Path], list[dict]]:
-    """Render every shot's morph on Comfy Cloud. Returns the clips (at the render size; the caller upscales them) and
-    one note per shot that fell back to its Draft morph."""
+                state: dict | None = None, styles: list[str] | None = None, backend=None,
+                name: str | None = None) -> tuple[list[Path], list[dict]]:
+    """Render every shot's morph on Comfy Cloud. Returns the clips (at the render size; the caller scales them) and
+    one note per shot that fell back to its Draft morph. ``name`` picks the graph (``model()`` when not given)."""
     from xenoform import cloud_backend as cb
     from xenoform import final_tier
     from xenoform import morph_pass as mp
@@ -126,6 +157,8 @@ def cloud_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
     if len(shots) > MAX_MORPHS:
         raise cb.CloudRefused(f"Cloud Final takes at most {MAX_MORPHS} morphs; this cut has {len(shots)}. "
                               "A shorter Length keeps it under.")
+    name = name or model()
+    a_node, b_node = INPUT_NODES[name]
     backend = backend or cb.CloudBackend.from_config(cfg)
     work = Path(work)
     w, h = RENDER_916 if vertical else RENDER_169
@@ -142,10 +175,10 @@ def cloud_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
         style = styles[i] if styles and i < len(styles) else "melt"
         text = mp.prompt_for(vibe, "ltx25", mp.pair_kinds(stills[i], stills[i + 1]), style=style).rstrip() + PROMPT_SUFFIX
         length = final_tier.gen_length(float(shots[i].get("render_s") or shots[i]["seconds"]))
-        g = graph(guard_prompt(text, state), negative=negative, length=length, seed=int(seed) + i, width=w, height=h,
-                  prefix=f"xenoform/cloud{i:02d}", **tune)
+        g = graph_for(name, guard_prompt(text, state), negative=negative, length=length, seed=int(seed) + i, width=w,
+                      height=h, prefix=f"xenoform/cloud{i:02d}", **tune)
         return {"graph": g, "out_dir": work / "cloud" / f"{i:02d}",
-                "inputs": {"6": Path(stills[i]["path"]), "7": Path(stills[i + 1]["path"])}}
+                "inputs": {a_node: Path(stills[i]["path"]), b_node: Path(stills[i + 1]["path"])}}
 
     jobs = [job(i) for i in range(len(shots))]
     for j in jobs:  # the whole batch is refused up front, before any upload, if one graph has a partner node
@@ -180,7 +213,7 @@ def cloud_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
                     notes.append({"shot": i, "fallback": "ltx095-draft", "why": str(exc)[:200]})
                 if report:
                     report("restyle", 0.12 + 0.7 * done / max(len(jobs), 1),
-                           f"Cloud Final: morph {done} of {len(jobs)} back from Comfy Cloud (LTX-2.5, open weights)")
+                           f"Cloud Final: morph {done} of {len(jobs)} back from Comfy Cloud ({MODELS[name]}, open weights)")
     if cancel and cancel():
         raise JobCancelled("Cancelled. The morphs already running on Comfy Cloud finished; nothing new was sent.")
     if failed:
