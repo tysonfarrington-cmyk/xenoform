@@ -99,6 +99,10 @@ def build(info: dict, video_id: str = "") -> dict:
             row["performer"] = True
         elif s.get("own"):
             row["own"] = True
+        if s.get("own") and s.get("label"):  # a clips cut's clip shot (clip_cut): its clip's name
+            row["from"] = str(s["label"])
+        if isinstance(s.get("clip_morph"), dict):  # a clips cut's morph: from one clip into the next
+            row.update({"from": str(s["clip_morph"].get("from") or ""), "to": str(s["clip_morph"].get("to") or ""), "clip_morph": True})
         if s.get("dropped"):  # deleted on the timeline: zero length, the shot before plays on (dense.arrange_shots)
             row["dropped"] = True
         if s.get("plays") is not None:  # the slot plays another shot's morph (Move, Duplicate)
@@ -180,11 +184,12 @@ def build(info: dict, video_id: str = "") -> dict:
             "pace": str(((info.get("recut_state") or {}).get("pace")) or ""), "engine": str(info.get("engine") or ""),
             "vibe": str(info.get("vibe") or ""), "tier": str(info.get("tier") or ""), "stills": chain_rows,
             "opens_on": chain_rows[0] if chain_rows else None,  # the first still: no shot lands on it, the lane's opening tile does
-            "swaps": len(swapped), "swappable": draft and bool(files),
+            "swaps": len(swapped), "swappable": draft and bool(files) and info.get("source") != "clips",
             # the timeline: the overrides as persisted, the GPU edits so far, what may be edited, and the choices
             "shot_overrides": {str(k): v for k, v in sorted(so.items())}, "boundary_overrides": {str(k): v for k, v in sorted(bo.items())},
             "rerenders": sum(rerendered.values()), "inserts": len(inserts), "dreams": len(info.get("dreams") or []),
             "editable": bool(rows) and bool(info.get("clips")),
-            "rerenderable": draft and bool(info.get("clips")), "beats": [round(float(b), 3) for b in (info.get("beats") or [])],
+            "rerenderable": draft and bool(info.get("clips")) and info.get("source") != "clips",
+            "source": str(info.get("source") or "objects"), "beats": [round(float(b), 3) for b in (info.get("beats") or [])],
             "drop": info.get("drop"), "morph_style": str(info.get("morph_style") or "auto"),
             "morph_timing": str(info.get("morph_timing") or "smooth"), "choices": choices() if rows else {}}

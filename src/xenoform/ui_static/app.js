@@ -114,7 +114,7 @@ function shortcutLabel() {
 }
 
 // The last session's vibe and Fine-tune choices survive a reload or a desk restart (the song cannot: uploads live on the server).
-const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow", "scenes", "pins", "feelSig", "batchN", "batchVary", "clipsOn", "scenesChosen", "morphStyle", "morphTiming", "effects"];
+const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow", "scenes", "pins", "feelSig", "batchN", "batchVary", "morphSource", "scenesChosen", "morphStyle", "morphTiming", "effects"];
 function saveEasy() {
   if (!state || !state.easy) return;
   try {
@@ -217,7 +217,7 @@ function payload() {
     own_shapes: (state.easy && state.easy.ownShapes) || "",  // the shapes typed in Your own shapes: they lead this cut (morph_pass.pick_stills)
     own_id: (state.easy && state.easy.ownId) || "",
     // the clips in that folder are cut in only with Work in progress > Your clips on; the images always lead the chain
-    cut_in_clips: !!(state.easy && state.easy.clipsOn),
+    morph_source: morphSource(state.easy),  // objects or your clips, never both in one cut (xenoform.clip_cut)
     // (the Director desk's scene_transitions rows are gone: the engine never read them, and the transition guard
     // reported one clamp line per boundary from them; per-boundary dressing is the timeline's, on the re-cut)
     idea:(state.easy && state.easy.idea) || "",
@@ -786,10 +786,14 @@ function renderEasy() {
     // (job.chain, simple/chain.json once the line's stills are grown) wins over the Chain row's pre-Make preview, which
     // never shows what Make grows for the line (the rally car of "car rally race", 28 Oct).
     const made = state.job && Array.isArray(state.job.chain) && state.job.chain.length ? state.job.chain : null;
-    const chainStills = made || (state.chain && state.chain.data && !state.chain.data.error && state.chain.data.stills) || [];
+    // a clips cut has no object chain to preview: its own clips list arrives with job.chain
+    const preview = morphSource(easy) === "clips" ? null : state.chain && state.chain.data && !state.chain.data.error && state.chain.data.stills;
+    const chainStills = made || preview || [];
     const chainLine = chainStills.map((s) => s.noun || "").filter(Boolean).join(" \u2192 ");
     const story = chainLine || (easy.idea ? `Your line: ${easy.idea}` : chosen.line);
-    const storyLabel = !chainLine ? "The idea"
+    const clipsCut = morphSource(easy) === "clips";
+    const storyLabel = !chainLine ? (clipsCut ? "Your clips" : "The idea")
+      : clipsCut ? `Your clips: ${chainStills.length} stretches, ${Math.max(0, chainStills.length - 1)} morphs between them`
       : `The chain${made ? "" : " (preview: Make may grow more for your line)"}: ${chainStills.length} stills, ${Math.max(0, chainStills.length - 1)} morphs`;
     const lineRead = ideaReading();  // what the line asked for, under the chain (the scenes it grows, Polly)
     const lineNote = lineRead && lineRead.summary ? `<p class="note">Your line, read: ${esc(lineRead.summary)}</p>` : "";
@@ -809,10 +813,10 @@ function renderEasy() {
       </div>
       <div class="easy-make-grid">
         <div>
-          <div class="monitor" style="background-image:url(${esc(media(chosen.still))})">
+          <div class="monitor"${clipsCut ? "" : ` style="background-image:url(${esc(media(chosen.still))})"`}>
             <span class="monitor-pill">${esc(scenes.length ? `Shot 1 of ${scenes.length}` : "Reading the song")}</span>
           </div>
-          <div class="filmstrip">${shotStrip(chosen.id)}</div>
+          ${clipsCut ? "" : `<div class="filmstrip">${shotStrip(chosen.id)}</div>`}
           <div class="track" aria-hidden="true"><span style="width:${width}%"></span></div>
         </div>
         <aside class="panel">
@@ -873,8 +877,7 @@ function renderEasy() {
         ${timingRow(easy.morphTiming || "smooth", "easy-morph-timing")}
         ${effectsRow(easy.effects, "easy-effect")}
         ${lookRow(easy.danceFx || "auto", "easy-look")}
-        ${foreshadowRow(easy)}
-        ${scenesRow(easy)}
+        ${(state.lane && state.lane.source === "clips") || morphSource(easy) === "clips" ? "" : `${foreshadowRow(easy)}${scenesRow(easy)}`}
         <button type="button" class="generate easy-row" data-act="easy-recut-knobs"${easy.showcase || !easyVideoId() ? " disabled" : ""}>${pendingCount(easy) ? `Apply ${pendingCount(easy)} change${pendingCount(easy) === 1 ? "" : "s"}` : "Re-cut with these knobs"}</button>
         <p class="note">Re-composes the same morphs with the knobs, the look and the orbit as they are now, and with the timeline's edits. No GPU, no new pictures: a fraction of the render time.</p>
         ${renderRow(easy)}
@@ -915,13 +918,8 @@ function renderEasy() {
         <div class="step-head"><h3>Vibe</h3><span>Pick one. You can try another after.</span></div>
         <div class="vibe-grid" role="radiogroup" aria-label="Vibe">${vibeCards(easy, false, "featured")}</div>
         ${moreVibes(easy)}
-        <label class="idea-field">What it morphs through <small>optional · things, a theme, a place, a feel</small>
-          <input id="easy-idea" type="text" maxlength="170" value="${esc(easy.idea || "")}" aria-label="What it morphs through, optional" placeholder="a rally car, a trophy, a chequered flag, a desert at dusk, fast and punchy" autocomplete="off" />
-        </label>
-        ${ideaReadingLine(easy)}
-        <details class="idea-help"><summary>How the line works</summary>
-          <p class="note">Commas split it. Things become the objects the morphs travel between: one the library knows brings its family along, one it lacks is drawn new in this vibe's material before Make. A theme (racing, pirates, halloween, astronauts, gaming and about thirty more) brings five things of its own. A place becomes wide scenes the morphs pass through. A feel (slow and dreamy, hard and glitchy) moves the knobs and the Look. It never changes the vibe, and it cannot tell a story: every shot is still one thing becoming the next. Empty, and the vibe decides.</p>
-        </details>
+        ${sourceRow(easy)}
+        ${morphSource(easy) === "objects" ? ideaBlock(easy) : ""}
       </section>
       <section class="panel span simple-knobs-panel" data-tour="easy-macros">
         <h3>Knobs</h3>
@@ -933,8 +931,7 @@ function renderEasy() {
         <p class="note morph-timing-note">${esc(MORPH_TIMING_NOTES[easy.morphTiming || "smooth"] || "")}</p>
         ${effectsRow(easy.effects, "easy-effect")}
         ${lookRow(easy.danceFx || "auto", "easy-look")}
-        ${foreshadowRow(easy)}
-        ${scenesRow(easy)}
+        ${morphSource(easy) === "objects" ? `${foreshadowRow(easy)}${scenesRow(easy)}` : ""}
         <p class="note look-note">${esc(lookNote(easy.danceFx || "auto"))}</p>
       </section>
       ${fineTune(easy)}
@@ -1081,9 +1078,7 @@ function fineTune(easy) {
   return `<details class="fine-tune" id="fine-tune"${open ? " open" : ""}>
       <summary>Fine-tune <small>${esc(bits.join(" · "))}</small></summary>
       ${simpleOptions(easy)}
-      ${ownRow(easy)}
-      ${stillsRow(easy)}
-      ${chainRow(easy)}
+      ${morphSource(easy) === "objects" ? `${ownRow(easy)}${stillsRow(easy)}${chainRow(easy)}` : ""}
       ${beatOverlayRow(easy)}
       ${remixBox(easy)}
     </details>`;
@@ -1094,14 +1089,11 @@ function fineTune(easy) {
 // Each works as it did; it only lives here until it is finished.
 function wipDrawer(easy) {
   const open = readDrawer("xeno-wip");
-  const clips = !!easy.clipsOn;
   const item = (title, why, body) => `<div class="wip-item"><h4>${esc(title)}</h4><p class="note">${esc(why)}</p>${body}</div>`;
   return `<details class="fine-tune wip-drawer" id="wip-drawer"${open ? " open" : ""}>
-      <summary>Work in progress <small>Polly · your clips · cloud · Moves · VJ and MIDI · Connect an AI</small></summary>
+      <summary>Work in progress <small>Polly · cloud · Moves · VJ and MIDI · Connect an AI</small></summary>
       <p class="note wip-lede">Xenoform is the morph engine. These work, but they are not the engine and not finished, so they wait here.</p>
       ${item("Performer", "Polly sings, drums or dances to the song in a few shots of the cut (MiniMax H3). The idea line no longer brings her in: switch her on here.", performerRow(easy))}
-      ${item("Your clips", "Clips in your folder or files cut in on the beat, one passage each: the start of a music video maker beside the engine. Your images lead the morphs either way.",
-        simpleSeg("easy-clips", clips ? "on" : "off", [["off", "Off"], ["on", "Cut them in"]], "Your clips"))}
       ${item("Paid cloud", "LTX-2.5 through a paid Comfy partner node: not open weights, off by default.", cloudRows(easy))}
       ${item("Live", "Character dances, live visuals to the stems, a MIDI controller on the knobs.",
         `<p class="note"><a href="/moves">Moves: make a character dance to a real dance clip (Wan Animate 2) &rarr;</a></p>
@@ -1240,9 +1232,9 @@ function performerRow(easy) {
 // in on the beat only with Work in progress > Your clips on (one run of shots at the start of a passage, 2 to 8 s,
 // trimmed around its middle and played 1:1 like a performer shot).
 function ownRow(easy) {
-  const note = easy.ownNote || "Your images lead the morphs, in name order. Leave empty and the vibe's own objects carry the cut. Clips in the folder wait for Work in progress > Your clips.";
+  const note = easy.ownNote || "Your images lead the morphs, in name order. Leave empty and the vibe's own objects carry the cut. Clips are never cut into objects: for them, Morph > Your clips at the top.";
   return `<div class="simple-seg own-row" data-own-drop><span>Your images</span>
-      <label class="ghost cloud-toggle">Folder <input type="text" id="easy-own-folder" value="${esc(easy.ownFolder || "")}" spellcheck="false" aria-label="Folder of your clips and images" placeholder="a folder of clips and images"></label>
+      <label class="ghost cloud-toggle">Folder <input type="text" id="easy-own-folder" value="${esc(easy.ownFolder || "")}" spellcheck="false" aria-label="Folder of your images" placeholder="a folder of images"></label>
       <label class="ghost cloud-toggle">Drop or pick files <input type="file" multiple accept="video/*,image/*" data-act="easy-own-files" hidden></label>
       ${easy.ownId ? `<button type="button" class="ghost" data-act="easy-own-clear">Clear files</button>` : ""}
     </div>
@@ -1292,6 +1284,39 @@ function stillsRow(easy) {
       <label class="ghost cloud-toggle">Your own shapes <input type="text" id="easy-own-shapes" value="${esc(easy.ownShapes || "")}" spellcheck="false" aria-label="Your own shapes, comma-separated" placeholder="a brass astrolabe, a wolf skull"></label>
       <button type="button" class="ghost" data-act="easy-make-shapes"${running || !easy.vibe ? " disabled" : ""} title="Render the shapes you typed in this vibe's material">Make them</button>
       ${running ? '<button type="button" class="ghost" data-act="easy-grow-stop">Stop</button>' : ""}
+    </div>
+    <p class="note">${esc(note)}</p>`;
+}
+
+// The idea line, its reading and its help: what an object cut morphs through (a clips cut has no objects to name).
+function ideaBlock(easy) {
+  return `        <label class="idea-field">What it morphs through <small>optional · things, a theme, a place, a feel</small>
+          <input id="easy-idea" type="text" maxlength="170" value="${esc(easy.idea || "")}" aria-label="What it morphs through, optional" placeholder="a rally car, a trophy, a chequered flag, a desert at dusk, fast and punchy" autocomplete="off" />
+        </label>
+        ${ideaReadingLine(easy)}
+        <details class="idea-help"><summary>How the line works</summary>
+          <p class="note">Commas split it. Things become the objects the morphs travel between: one the library knows brings its family along, one it lacks is drawn new in this vibe's material before Make. A theme (racing, pirates, halloween, astronauts, gaming and about thirty more) brings fifteen things of its own and keeps the chain on them. A place becomes wide scenes the morphs pass through. A feel (slow and dreamy, hard and glitchy) moves the knobs and the Look. It never changes the vibe, and it cannot tell a story: every shot is still one thing becoming the next. Empty, and the vibe decides.</p>
+        </details>`;
+}
+
+// Objects or your clips (Tys, 28 Oct: "if we are going to morph movie clips, make it so its just movie clips, and if we
+// are doing objects just objects"): what a Make morphs through. Your clips play in turn, each morphing into the next
+// (xenoform.clip_cut); the idea line, the library, the Chain row, Scenes and Foreshadow belong to objects and step aside.
+function morphSource(easy) {
+  return easy && easy.morphSource === "clips" ? "clips" : "objects";
+}
+function sourceRow(easy) {
+  const src = morphSource(easy);
+  const seg = simpleSeg("easy-source", src, [["objects", "Objects"], ["clips", "Your clips"]], "Morph");
+  if (src !== "clips") return `${seg}<p class="note">The vibe's objects, or the things your line names, each turning into the next.</p>`;
+  const has = !!(easy.ownFolder || easy.ownId);
+  const note = easy.ownNote || (has ? "Your clips play in turn on the beat, each its busiest stretch, and every one morphs into the next. No objects, no stills."
+    : "Choose a folder of clips or drop them here (mp4, mov or webm, 2 s or more each). They play in turn, each morphing into the next.");
+  return `${seg}
+    <div class="simple-seg own-row clips-row" data-own-drop><span>Your clips</span>
+      <label class="ghost cloud-toggle">Folder <input type="text" id="easy-own-folder" value="${esc(easy.ownFolder || "")}" spellcheck="false" aria-label="Folder of your clips" placeholder="a folder of clips"></label>
+      <label class="ghost cloud-toggle">Drop or pick files <input type="file" multiple accept="video/*" data-act="easy-own-files" hidden></label>
+      ${easy.ownId ? `<button type="button" class="ghost" data-act="easy-own-clear">Clear files</button>` : ""}
     </div>
     <p class="note">${esc(note)}</p>`;
 }
@@ -1838,20 +1863,20 @@ function shotOrderRow(lane, tl, s) {
       <button type="button" class="chip" data-act="easy-tl-dup" data-index="${s.index}"${s.index >= n - 1 ? " disabled" : ""}>Duplicate into the next</button>
       <button type="button" class="chip${o.drop ? " on" : ""}" data-act="easy-tl-drop" data-index="${s.index}" aria-pressed="${o.drop ? "true" : "false"}">${o.drop ? "Deleted · restore" : "Delete"}</button>
       ${src !== s.index ? `<button type="button" class="chip" data-act="easy-tl-source-clear" data-index="${s.index}">Its own morph</button>` : ""}</div></div>
-    <p class="note">${esc(o.drop ? "Deleted: the shot before plays on through its time. Restore brings it back." : moved ? `This slot ${moved}. The timing stays on the beat; the joins either side become cuts where the objects no longer meet.` : "Move swaps this morph with its neighbour's slot; Duplicate plays it again in the next slot; Delete lets the shot before play on. The beat timing stays where it is.")}</p>`;
+    ${o.drop ? `<p class="note">Deleted: the shot before plays on through its time.</p>` : moved ? `<p class="note">This slot ${esc(moved)}.</p>` : ""}`;
 }
 function cutShiftRow(lane, tl, s) {
   const o = tl.bounds[String(s.index)] || {};
   const shift = Number(o.shift || 0);
   const beat = beatPeriod(lane);
   const step = (k) => Math.round((shift + k * beat) * 1000) / 1000;
-  return `<div class="simple-seg tl-shift"><span>Move the cut</span><div class="toggle chips" role="group" aria-label="Move this cut">
+  return `<div class="simple-seg tl-shift"><span>Move it</span><div class="toggle chips" role="group" aria-label="Move this cut">
       <button type="button" class="chip" data-act="easy-tl-shift" data-index="${s.index}" data-value="${step(-1)}">◀ a beat earlier</button>
       <button type="button" class="chip" data-act="easy-tl-shift" data-index="${s.index}" data-value="${step(-0.5)}">◀ half</button>
       <button type="button" class="chip" data-act="easy-tl-shift" data-index="${s.index}" data-value="${step(0.5)}">half ▶</button>
       <button type="button" class="chip" data-act="easy-tl-shift" data-index="${s.index}" data-value="${step(1)}">a beat later ▶</button>
       ${shift ? `<button type="button" class="chip" data-act="easy-tl-shift" data-index="${s.index}" data-value="0">Back</button>` : ""}</div></div>
-    <p class="note">${shift ? `Moved ${shift > 0 ? "later" : "earlier"} by ${Math.abs(shift).toFixed(2)} s (${(Math.abs(shift) / beat).toFixed(1)} beats): shot ${s.index} ${shift > 0 ? "grows" : "shrinks"}, shot ${s.index + 1} ${shift > 0 ? "shrinks" : "grows"}.` : "Trim: the cut moves a beat or half a beat at a time; the shot before and the one after share the change."}</p>`;
+    ${shift ? `<p class="note">Moved ${shift > 0 ? "later" : "earlier"} by ${Math.abs(shift).toFixed(2)} s (${(Math.abs(shift) / beat).toFixed(1)} beats).</p>` : ""}`;
 }
 function kindLabel(lane, id) {
   const rows = (lane.choices && lane.choices.transition_kinds) || [];
@@ -1890,10 +1915,13 @@ function shotsLane(easy) {
     const act = pick ? `data-act="easy-swap-pick" data-slot="${s.still}" data-at="${s.start}"` : `data-act="easy-tl-shot" data-index="${s.index}" data-at="${s.start}"`;
     const cls = `shot${s.boundary ? " boundary" : ""}${s.transition ? " has-transition" : ""}${s.pinned ? " pinned" : ""}${s.swapped ? " swapped" : ""}${pick ? " swap" : ""}${pick && easy.swapSlot === s.still ? " picked" : ""}${held ? " held" : ""}${edited ? " edited" : ""}${s.rerendered ? " rerendered" : ""}${s.generated != null ? " generated" : ""}${!swapping && picked && picked.kind === "shot" && picked.index === s.index ? " picked" : ""}`;
     const badge = s.style && s.style !== "melt" ? `<b class="tl-style">${esc(morphStyleLabel(s.style))}</b>` : "";  // how this morph changes
+    // each tile shows the cut itself at the shot's middle (GET /api/videos/<id>/frame.jpg), so a shot is a picture, not a word
+    const mid = Number(s.start) + Number(s.seconds) / 2;
+    const thumb = `--thumb:url('${media(`/api/videos/${encodeURIComponent(id)}/frame.jpg?t=${mid.toFixed(2)}&w=160&v=${lane.version || 0}`)}')`;
     if (s.dropped || o.drop) {  // deleted: a sliver at its place, the drawer restores it
       return `<button type="button" class="${cls} dropped" style="flex:0 0 7px;--hue:${hue}" data-act="easy-tl-shot" data-index="${s.index}" data-at="${s.start}" title="${esc(`Shot ${s.index + 1} deleted · click to restore`)}" aria-label="${esc(`Shot ${s.index + 1} deleted`)}"></button>`;
     }
-    return `<button type="button" class="${cls}" style="width:${w.toFixed(3)}%;--hue:${hue}" ${act} title="${esc(title)}" aria-label="${esc(title)}">${badge}<i>${esc(s.to || s.from || "")}</i></button>`;
+    return `<button type="button" class="${cls}" style="width:${w.toFixed(3)}%;--hue:${hue};${thumb}" ${act} title="${esc(title)}" aria-label="${esc(title)}"><b class="tl-n">${s.index + 1}</b>${badge}<i>${esc(s.to || s.from || "")}</i></button>`;
   }).join("");
   // the boundaries: one handle at each join (into shot i, i from 1): Morph or Cut, and what dresses it (the pickers'
   // choice on Auto, else the transition or boundary kind set by hand)
@@ -1906,9 +1934,10 @@ function shotsLane(easy) {
     const kindNow = dress === "none" ? "" : dress ? kindLabel(lane, dress) : (s.transition || "");
     const what = `${cut ? "Cut" : "Morph"}${kindNow ? ` · ${kindNow}` : ""}`;
     const glyph = kindNow ? "◆" : cut ? "┃" : "·";
-    const cls = `bound${cut ? " cut" : ""}${kindNow ? " dressed" : ""}${dress || prevHeld ? " edited" : ""}${picked && picked.kind === "bound" && picked.index === s.index ? " picked" : ""}`;
-    const title = `Boundary into shot ${s.index + 1} · ${clockText(s.start)} · ${what}${s.boundary ? ` · ${s.boundary}` : ""} · click to change it`;
-    return `<button type="button" class="${cls}" style="left:${left.toFixed(3)}%" data-act="easy-tl-bound" data-index="${s.index}" data-at="${s.start}" title="${esc(title)}" aria-label="${esc(title)}">${glyph}</button>`;
+    const shifted = Number(o.shift || 0) ? " moved" : "";
+    const cls = `join${cut ? " cut" : ""}${kindNow ? " dressed" : ""}${dress || prevHeld || shifted ? " edited" : ""}${picked && picked.index === s.index && easy.tlTab === "join" ? " picked" : ""}`;
+    const title = `The join into shot ${s.index + 1} · ${clockText(s.start)} · ${what}${s.boundary ? ` · ${s.boundary}` : ""} · click to change it`;
+    return `<button type="button" class="${cls}" style="left:${left.toFixed(3)}%" data-act="easy-tl-bound" data-index="${s.index}" data-at="${s.start}" title="${esc(title)}" aria-label="${esc(title)}"><span>${glyph === "·" ? "" : glyph}</span></button>`;
   }).join("");
   const overlays = (lane.overlays || []).map((o) => {
     const left = (100 * Number(o.start)) / total;
@@ -1928,10 +1957,8 @@ function shotsLane(easy) {
   const facts = [`${lane.shots.length} shots`, lane.morphs ? `${lane.morphs} morphs over ${lane.objects} objects` : "", lane.pace ? `${lane.pace} pace` : "",
     (lane.sections || []).length > 1 ? `${lane.sections.length} passages` : "", lane.swaps ? `${lane.swaps} swap${lane.swaps === 1 ? "" : "s"}` : "",
     lane.rerenders ? `${lane.rerenders} re-render${lane.rerenders === 1 ? "" : "s"}` : "", lane.inserts ? `${lane.inserts} generated run${lane.inserts === 1 ? "" : "s"}` : "", lane.dreams ? `${lane.dreams} dream${lane.dreams === 1 ? "" : "s"}` : ""].filter(Boolean).join(" · ");
-  const hint = swapping ? "click a shot to swap the object it lands on" : "click a shot or a boundary to change it";
-  const toggle = canSwap
-    ? `<button type="button" class="text lane-swap-toggle" data-act="easy-swap-mode" aria-pressed="${swapping ? "true" : "false"}">${swapping ? "Done swapping" : "Swap an object"}</button>`
-    : "";
+  const hint = swapping ? "click a shot to swap the object it lands on" : "click a shot, or the seam between two, to change it";
+  const toggle = swapping ? `<button type="button" class="text lane-swap-toggle" data-act="easy-swap-mode" aria-pressed="true">Done swapping</button>` : "";
   let picker = "";
   if (swapping && easy.swapSlot != null) {
     const slot = lane.stills.find((x) => x.index === easy.swapSlot);
@@ -1965,7 +1992,7 @@ function shotsLane(easy) {
   const applyRow = lane.editable !== false && !swapping
     ? `<div class="lane-apply-row">
         ${anyEdits ? `<button type="button" class="text" data-act="easy-tl-reset">Reset the timeline</button>` : ""}
-        <span class="note">${pending ? `${pending} timeline edit${pending === 1 ? "" : "s"} waiting: Apply in the bar at the bottom re-cuts with them.` : "An edit here waits for Apply in the bar at the bottom, with any knob you turned; it stays with the cut through later re-cuts."}</span>
+        <span class="note">${pending ? `${pending} edit${pending === 1 ? "" : "s"} waiting for Apply (the bar at the bottom).` : "Edits wait for Apply in the bar at the bottom, and stay with the cut."}</span>
       </div>`
     : "";
   const drawer = swapping ? "" : timelineDrawer(easy, lane, tl, picked);
@@ -1974,8 +2001,7 @@ function shotsLane(easy) {
       <div class="lane-track" id="lane-track" data-total="${total}">
         <div class="lane-overlays">${overlays}</div>
         ${opening}
-        <div class="lane-shots">${blocks}</div>
-        <div class="lane-bounds">${bounds}</div>
+        <div class="lane-shots-wrap"><div class="lane-shots">${blocks}</div><div class="lane-joins">${bounds}</div></div>
         ${song}
         <span class="lane-playhead" id="lane-playhead" aria-hidden="true"></span>
       </div>
@@ -2007,80 +2033,95 @@ function shotEffectsRow(o, index) {
       <button type="button" class="chip${own ? "" : " on"}" data-act="easy-tl-effect" data-index="${index}" data-value="cut" aria-pressed="${own ? "false" : "true"}">As the cut</button>${chips}</div></div>`;
 }
 
-// The drawer under the timeline for the clicked shot or boundary.
+// The drawer under the timeline: one shot, in four tabs (Tys, 28 Oct: "the time line is a bit confusing to use").
+// Shot: how it plays and where it sits; Look: its look, colour, effects and FX; Join: the seam into it (Morph or Cut,
+// moved a beat, dressed with a transition); Regenerate: what the GPU can redo (object cuts). A seam opens Join.
+const TL_TABS = [["shot", "Shot"], ["look", "Look"], ["join", "Join"], ["gpu", "Regenerate"]];
+const TL_TAB_NOTES = {
+  shot: "How this shot plays and where it sits. The beat timing never moves.",
+  look: "This shot's own look, colour and effects. Leave them as the cut and the knobs decide.",
+  join: "The seam into this shot: a morph that flows or a cut that jumps, moved a beat, dressed with a transition.",
+  gpu: "These render again on the GPU (Draft): about a morph's time each, then the re-cut.",
+};
 function timelineDrawer(easy, lane, tl, picked) {
   if (!picked) return "";
   const s = lane.shots.find((x) => x.index === picked.index);
   if (!s) return "";
+  const n = lane.shots.length;
   const choices = lane.choices || {};
-  if (picked.kind === "shot") {
-    const o = tl.shots[String(s.index)] || {};
-    const held = o.play === "hold";
-    const label = s.to ? `${s.from} → ${s.to}` : s.from;
-    const under = s.performer ? "Polly's shot" : s.own ? "your clip" : s.generated != null ? "a generated run" : "";
+  const o = tl.shots[String(s.index)] || {};
+  const bo = tl.bounds[String(s.index)] || {};
+  const held = o.play === "hold";
+  const prevHeld = (tl.shots[String(s.index - 1)] || {}).play === "hold";
+  const label = s.to ? `${s.from} → ${s.to}` : s.from;
+  const under = s.performer ? "Polly's shot" : s.own ? "your clip" : s.generated != null ? "a generated run" : "";
+  const canGpu = lane.rerenderable !== false && s.still != null && !under;
+  const dream = dreamRow(lane, s, choices);
+  const tabs = TL_TABS.filter(([id]) => (id !== "join" || s.index > 0) && (id !== "gpu" || canGpu || dream));
+  const tab = tabs.some(([id]) => id === easy.tlTab) ? easy.tlTab : "look";
+  const edited = {
+    shot: held || o.source != null || !!o.drop || !!o.timing,
+    look: !!o.look || !!o.grade || Array.isArray(o.effects) || o.fx_intensity != null,
+    join: !!bo.fx || !!bo.shift || prevHeld,
+    gpu: false,
+  };
+  const head = `<div class="tl-drawer-head">
+      <button type="button" class="text tl-step" data-act="easy-tl-step" data-value="-1"${s.index < 1 ? " disabled" : ""} aria-label="The shot before">◀</button>
+      <b>Shot ${s.index + 1} <small>of ${n}</small></b>
+      <button type="button" class="text tl-step" data-act="easy-tl-step" data-value="1"${s.index >= n - 1 ? " disabled" : ""} aria-label="The shot after">▶</button>
+      <span class="note">${esc(clockText(s.start))} · ${esc(String(s.seconds))} s${label ? ` · ${esc(label)}` : ""}${under ? ` · ${esc(under)}` : ""}</span>
+      <button type="button" class="text" data-act="easy-tl-close">Close</button></div>
+    <div class="tl-tabs" role="tablist">${tabs.map(([id, name]) => `<button type="button" role="tab" class="tl-tab${id === tab ? " on" : ""}" data-act="easy-tl-tab" data-value="${id}" aria-selected="${id === tab ? "true" : "false"}">${name}${edited[id] ? '<i class="tl-dot" aria-label="edited"></i>' : ""}</button>`).join("")}</div>
+    <p class="note tl-tab-note">${esc(TL_TAB_NOTES[tab])}</p>`;
+  let body = "";
+  if (tab === "shot") {
+    body = `<div class="simple-seg"><span>Play</span><div class="toggle chips" role="group" aria-label="Play">
+        <button type="button" class="chip${held ? "" : " on"}" data-act="easy-tl-play" data-index="${s.index}" data-value="morph" aria-pressed="${held ? "false" : "true"}">${s.own ? "Play" : "Morph"}</button>
+        <button type="button" class="chip${held ? " on" : ""}" data-act="easy-tl-play" data-index="${s.index}" data-value="hold" aria-pressed="${held ? "true" : "false"}">Hold</button></div></div>
+      ${shotOrderRow(lane, tl, s)}
+      ${under || held ? "" : timingRow(o.timing || "auto", "easy-tl-timing", s.index, lane.morph_timing || "smooth")}`;
+  } else if (tab === "look") {
     const fxVal = o.fx_intensity != null ? Number(o.fx_intensity) : null;
-    const canGpu = lane.rerenderable !== false && s.still != null && !under;
+    body = `${lookRow(o.look || "auto", "easy-tl-look", s.index)}
+      ${shotColourRows(o, s.index)}
+      ${shotEffectsRow(o, s.index)}
+      <div class="simple-seg tl-fx-row"><span>Beat FX</span><input id="tl-fx" type="range" min="0" max="1" step="0.05" value="${fxVal != null ? fxVal : 0.8}" data-index="${s.index}" aria-label="Beat FX intensity for this shot" /><b id="tl-fx-readout">${fxVal != null ? fxVal.toFixed(2) : "as the knob"}</b>${fxVal != null ? `<button type="button" class="text" data-act="easy-tl-fx-clear" data-index="${s.index}">As the knob</button>` : ""}</div>`;
+  } else if (tab === "join") {
+    const prev = lane.shots.find((x) => x.index === s.index - 1) || {};
+    const hardAnyway = s.handoff === "cut" && !prev.hold && !prevHeld;  // a clip arrives or leaves here: a cut whatever is set
+    const fx = bo.fx || "auto";
+    const rows = choices.transition_kinds || [];
+    const groups = [["premium", "Premium transitions"], ["core", "Core"], ["classic", "Classic"], ["boundary", "Boundary kinds"]];
+    const options = `<option value="auto"${fx === "auto" ? " selected" : ""}>Auto${s.transition ? ` (now ${esc(s.transition)})` : " (the pickers decide)"}</option>`
+      + `<option value="none"${fx === "none" ? " selected" : ""}>None</option>`
+      + groups.map(([g, name]) => {
+        const rs = rows.filter((r) => r.group === g);
+        return rs.length ? `<optgroup label="${name}">${rs.map((r) => `<option value="${esc(r.id)}"${fx === r.id ? " selected" : ""}>${esc(r.label)}</option>`).join("")}</optgroup>` : "";
+      }).join("");
+    body = `<div class="simple-seg"><span>Handoff</span><div class="toggle chips" role="group" aria-label="Handoff">
+        <button type="button" class="chip${prevHeld ? "" : " on"}" data-act="easy-tl-handoff" data-index="${s.index}" data-value="morph" aria-pressed="${prevHeld ? "false" : "true"}"${hardAnyway ? " disabled" : ""}>Flow</button>
+        <button type="button" class="chip${prevHeld ? " on" : ""}" data-act="easy-tl-handoff" data-index="${s.index}" data-value="cut" aria-pressed="${prevHeld ? "true" : "false"}"${hardAnyway ? " disabled" : ""}>Cut</button></div></div>
+      ${hardAnyway ? `<p class="note">A clip arrives or leaves here: this seam is a cut whatever is set.</p>` : ""}
+      ${cutShiftRow(lane, tl, s)}
+      <div class="simple-seg tl-dress-row"><span>Transition</span><select id="tl-dress" data-index="${s.index}" aria-label="Transition at this seam">${options}</select></div>`;
+  } else {
     const insertS = choices.insert_seconds || [5, 10, 15];
     const renderS = choices.render_s || [2, 5];
     const lengthOpts = [];
     for (let v = renderS[0]; v <= renderS[1]; v += 1) lengthOpts.push(v);
     const variants = choices.rerender_variants || ["auto"];
     const variantName = (v) => (v === "auto" ? "by the stills" : v === "object" ? "object to object" : v === "scene" ? "scene to scene" : v.replace("-", " to "));
-    return `<div class="tl-drawer" id="tl-drawer">
-      <div class="tl-drawer-head"><b>Shot ${s.index + 1}</b><span class="note">${esc(clockText(s.start))} · ${esc(String(s.seconds))} s${s.section ? ` · ${esc(s.section)}` : ""}${label ? ` · ${esc(label)}` : ""}${under ? ` · ${esc(under)}` : ""}${s.style && !under ? ` · ${esc(morphStyleLabel(s.style))}` : ""}${s.rerendered ? ` · re-rendered ${s.rerendered}×` : ""}</span><button type="button" class="text" data-act="easy-tl-close">Close</button></div>
-      <div class="simple-seg"><span>Play</span><div class="toggle chips" role="group" aria-label="Play">
-        <button type="button" class="chip${held ? "" : " on"}" data-act="easy-tl-play" data-index="${s.index}" data-value="morph" aria-pressed="${held ? "false" : "true"}">Morph</button>
-        <button type="button" class="chip${held ? " on" : ""}" data-act="easy-tl-play" data-index="${s.index}" data-value="hold" aria-pressed="${held ? "true" : "false"}">Hold</button></div></div>
-      <p class="note">${held ? "Held: the shot keeps its start object still (the orbit, the look and the beat FX still move it) and the join after it is a cut." : "Morph: the clip plays whole and lands on the next object; the join after it is continuous. Hold keeps the start object still and makes that join a cut."}</p>
-      ${shotOrderRow(lane, tl, s)}
-      ${lookRow(o.look || "auto", "easy-tl-look", s.index)}
-      <div class="simple-seg tl-fx-row"><span>FX intensity</span><input id="tl-fx" type="range" min="0" max="1" step="0.05" value="${fxVal != null ? fxVal : 0.8}" data-index="${s.index}" aria-label="Beat FX intensity for this shot" /><b id="tl-fx-readout">${fxVal != null ? fxVal.toFixed(2) : "as the knob"}</b>${fxVal != null ? `<button type="button" class="text" data-act="easy-tl-fx-clear" data-index="${s.index}">As the knob</button>` : ""}</div>
-      ${shotColourRows(o, s.index)}
-      ${shotEffectsRow(o, s.index)}
-      ${under || held ? "" : `${timingRow(o.timing || "auto", "easy-tl-timing", s.index, lane.morph_timing || "smooth")}
-      <p class="note">${esc(o.timing ? MORPH_TIMING_NOTES[o.timing] || "" : "When this morph's change happens: the cut's Timing until you pick one. Apply re-cuts it, no GPU.")}</p>`}
-      ${canGpu ? `<div class="tl-gpu">
-        <p class="note">On the GPU (Draft; a morph takes about what one morph took above, then the re-cut):</p>
-        ${morphStyleRow(s.style || "melt", "easy-tl-style", s.index, false)}
-        <p class="note">How this morph changes: now ${esc(morphStyleLabel(s.style || "melt"))}. Another chip re-renders it that way, the rest of the cut kept.</p>
-        <div class="tl-gpu-row"><button type="button" class="ghost" data-act="easy-tl-swap" data-slot="${s.still}">Swap the object it lands on</button><span class="note">the two morphs that touch it are rendered again</span></div>
-        <div class="tl-gpu-row"><button type="button" class="ghost" data-act="easy-tl-rerender" data-index="${s.index}">Re-render this morph</button>
-          <label>seed <input id="tl-seed" type="number" placeholder="next" min="0" step="1" aria-label="Seed, empty for the next one" /></label>
-          <label>length <select id="tl-render-s" aria-label="Seconds of source"><option value="">as it is</option>${lengthOpts.map((v) => `<option value="${v}">${v} s</option>`).join("")}</select></label>
-          <label>prompt <select id="tl-variant" aria-label="Prompt variant">${variants.map((v) => `<option value="${esc(v)}">${esc(variantName(v))}</option>`).join("")}</select></label></div>
-        <div class="tl-gpu-row"><button type="button" class="ghost" data-act="easy-tl-insert" data-index="${s.index}">Generate here</button>
-          <label>length <select id="tl-insert-s" aria-label="Seconds to generate">${insertS.map((v) => `<option value="${v}"${v === 10 ? " selected" : ""}>${v} s</option>`).join("")}</select></label>
-          <span class="note">a fresh run of morphs over this shot and the next ones, new objects from the library (the Chain row's pins honoured), cut in like your own clip</span></div>
-      </div>` : under ? `<p class="note">This shot is ${esc(under)}: it has no morph of the chain to swap or re-render; its look and FX are yours to set.</p>` : ""}
-      ${dreamRow(lane, s, choices)}
-    </div>`;
+    body = `${canGpu ? `${morphStyleRow(s.style || "melt", "easy-tl-style", s.index, false)}
+      <div class="tl-gpu-row"><button type="button" class="ghost" data-act="easy-tl-swap" data-slot="${s.still}">Swap the object it lands on</button></div>
+      <div class="tl-gpu-row"><button type="button" class="ghost" data-act="easy-tl-rerender" data-index="${s.index}">Re-render this morph</button>
+        <label>seed <input id="tl-seed" type="number" placeholder="next" min="0" step="1" aria-label="Seed, empty for the next one" /></label>
+        <label>length <select id="tl-render-s" aria-label="Seconds of source"><option value="">as it is</option>${lengthOpts.map((v) => `<option value="${v}">${v} s</option>`).join("")}</select></label>
+        <label>prompt <select id="tl-variant" aria-label="Prompt variant">${variants.map((v) => `<option value="${esc(v)}">${esc(variantName(v))}</option>`).join("")}</select></label></div>
+      <div class="tl-gpu-row"><button type="button" class="ghost" data-act="easy-tl-insert" data-index="${s.index}">Generate here</button>
+        <label>length <select id="tl-insert-s" aria-label="Seconds to generate">${insertS.map((v) => `<option value="${v}"${v === 10 ? " selected" : ""}>${v} s</option>`).join("")}</select></label></div>` : ""}
+      ${dream}`;
   }
-  if (s.index < 1) return "";
-  const prev = lane.shots.find((x) => x.index === s.index - 1) || {};
-  const o = tl.bounds[String(s.index)] || {};
-  const prevHeld = (tl.shots[String(s.index - 1)] || {}).play === "hold";
-  const hardAnyway = s.handoff === "cut" && !prev.hold && !prevHeld;  // a clip arrives or leaves here: a cut whatever is set
-  const fx = o.fx || "auto";
-  const rows = choices.transition_kinds || [];
-  const groups = [["premium", "Premium transitions"], ["core", "Core"], ["classic", "Classic"], ["boundary", "Boundary kinds"]];
-  const options = `<option value="auto"${fx === "auto" ? " selected" : ""}>Auto${s.transition ? ` (now ${esc(s.transition)})` : " (the pickers decide)"}</option>`
-    + `<option value="none"${fx === "none" ? " selected" : ""}>None (a bare handoff)</option>`
-    + groups.map(([g, name]) => {
-      const rs = rows.filter((r) => r.group === g);
-      return rs.length ? `<optgroup label="${name}">${rs.map((r) => `<option value="${esc(r.id)}"${fx === r.id ? " selected" : ""}>${esc(r.label)}</option>`).join("")}</optgroup>` : "";
-    }).join("");
-  const note = fx === "auto" ? (s.transition ? `The pickers gave this join ${s.transition}.` : "A plain handoff: the pickers gave this join nothing.")
-    : fx === "none" ? "Nothing drawn over the join." : ((rows.find((r) => r.id === fx) || {}).note || "");
-  return `<div class="tl-drawer" id="tl-drawer">
-    <div class="tl-drawer-head"><b>Boundary into shot ${s.index + 1}</b><span class="note">${esc(clockText(s.start))}${s.boundary ? ` · ${esc(s.boundary)}` : ""}${s.section ? ` · ${esc(s.section)}` : ""} · ${esc(prev.to || prev.from || "")} | ${esc(s.to || s.from || "")}</span><button type="button" class="text" data-act="easy-tl-close">Close</button></div>
-    <div class="simple-seg"><span>Handoff</span><div class="toggle chips" role="group" aria-label="Handoff">
-      <button type="button" class="chip${prevHeld ? "" : " on"}" data-act="easy-tl-handoff" data-index="${s.index}" data-value="morph" aria-pressed="${prevHeld ? "false" : "true"}"${hardAnyway ? " disabled" : ""}>Morph</button>
-      <button type="button" class="chip${prevHeld ? " on" : ""}" data-act="easy-tl-handoff" data-index="${s.index}" data-value="cut" aria-pressed="${prevHeld ? "true" : "false"}"${hardAnyway ? " disabled" : ""}>Cut</button></div></div>
-    <p class="note">${hardAnyway ? "This join is a cut already: a clip arrives or leaves here." : prevHeld ? `Cut: shot ${s.index} holds its object and the picture jumps here on the beat.` : "Morph: the morph before lands on the object the next one leaves from, so nothing jumps. Cut holds the shot before on its object and jumps here."}</p>
-    ${cutShiftRow(lane, tl, s)}
-    <div class="simple-seg tl-dress-row"><span>Dress it</span><select id="tl-dress" data-index="${s.index}" aria-label="Transition or boundary kind at this join">${options}</select></div>
-    <p class="note">${esc(note)}</p>
-  </div>`;
+  return `<div class="tl-drawer" id="tl-drawer">${head}<div class="tl-tab-body">${body}</div></div>`;
 }
 
 // Dream this span (xenoform.dream): Z-Image Turbo img2img over 1 to 3 s from this shot, every other frame (12 a second),
@@ -2665,6 +2706,11 @@ async function recutWithKnobs() {
 async function easyMake() {
   const vibe = vibeById(state.easy.vibe);
   if (!vibe) return;
+  if (morphSource(state.easy) === "clips" && !state.easy.ownFolder && !state.easy.ownId) {
+    state.easy.note = "Your clips first: choose a folder of clips, or drop them on the Your clips row.";
+    render();
+    return;
+  }
   if (!state.paidCloud) state.easy.cloud = false;
   if (state.easy.cloud && !state.easy.cloudToken) {
     await easyCloudEstimate();
@@ -3160,7 +3206,9 @@ function paintMaking(job) {
   const label = document.getElementById("easy-chain-label");
   const text = document.getElementById("easy-chain");
   if (chain && label && text) {
-    label.textContent = `The chain: ${chain.length} stills, ${Math.max(0, chain.length - 1)} morphs`;
+    label.textContent = chain.every((c) => c.kind === "clip")  // a clips cut (clip_cut writes its clips' names)
+      ? `Your clips: ${chain.length} stretches, ${Math.max(0, chain.length - 1)} morphs between them`
+      : `The chain: ${chain.length} stills, ${Math.max(0, chain.length - 1)} morphs`;
     text.textContent = chain.map((s) => s.noun || "").filter(Boolean).join(" → ");
   }
 }
@@ -3714,12 +3762,28 @@ document.addEventListener("click", async (event) => {
   } else if (act === "easy-swap") {
     swapStill(easyVideoId(), Number(el.dataset.slot), el.dataset.file || "");
   } else if (act === "easy-tl-shot" || act === "easy-tl-bound") {
-    // the timeline: a click opens the shot's or the boundary's drawer and seeks the player there (a little before a join)
-    state.easy.tlPick = { kind: act === "easy-tl-shot" ? "shot" : "bound", index: Number(el.dataset.index) };
+    // the timeline: a click opens the shot's drawer (a seam opens its Join tab) and seeks the player there (a little
+    // before a seam)
+    state.easy.tlPick = { kind: "shot", index: Number(el.dataset.index) };
+    if (act === "easy-tl-bound") state.easy.tlTab = "join";
     state.easy.tlFor = easyVideoId();
     const player = document.getElementById("player");
     const at = Number(el.dataset.at) || 0;
     if (player) player.currentTime = act === "easy-tl-bound" ? Math.max(0, at - 0.6) : at;
+    render();
+  } else if (act === "easy-tl-tab") {
+    state.easy.tlTab = el.dataset.value || "look";
+    render();
+  } else if (act === "easy-tl-step") {
+    const lane = state.lane;
+    const pick = state.easy.tlPick;
+    if (lane && pick) {
+      const next = Math.max(0, Math.min(lane.shots.length - 1, pick.index + Number(el.dataset.value)));
+      state.easy.tlPick = { kind: "shot", index: next };
+      const shot = lane.shots.find((x) => x.index === next);
+      const player = document.getElementById("player");
+      if (player && shot) player.currentTime = Number(shot.start) || 0;
+    }
     render();
   } else if (act === "easy-tl-close") {
     state.easy.tlPick = null;
@@ -3873,8 +3937,8 @@ document.addEventListener("click", async (event) => {
     state.easy.scenes = ["off", "mix", "only"].includes(el.dataset.value) ? el.dataset.value : "off";
     state.easy.scenesChosen = true;  // picked by hand: the idea line no longer turns Off into Mix
     render();
-  } else if (act === "easy-clips") {
-    state.easy.clipsOn = el.dataset.value === "on";
+  } else if (act === "easy-source") {
+    state.easy.morphSource = el.dataset.value === "clips" ? "clips" : "objects";
     render();
   } else if (act === "easy-orbit") {
     state.easy.stemOrbit = el.dataset.value !== "off";
@@ -4025,6 +4089,8 @@ document.addEventListener("click", async (event) => {
       return;
     }
     if (state.easy.resultVibe && vibeById(state.easy.resultVibe)) state.easy.vibe = state.easy.resultVibe;
+    const cutLane = state.lane && state.lane.id === easyVideoId() ? state.lane : null;
+    if (cutLane && cutLane.source) state.easy.morphSource = cutLane.source === "clips" ? "clips" : "objects";  // a clips cut renders as one
     if (act === "easy-render-full") state.easy.lengthS = 0;
     else {
       state.easy.lengthS = Number(state.easy.madeLength) || 0;

@@ -110,6 +110,37 @@ def window_start(clip_seconds: float, need_s: float) -> float:
     return round(max(0.0, (float(clip_seconds) - float(need_s)) / 2.0), 3)
 
 
+def ranked_starts(src: str | Path, clip_seconds: float, need_s: float, *, rate: float = 2.0, most: int = 6) -> list[float]:
+    """The starts of up to ``most`` stretches of ``need_s`` that do not overlap, the one with the most picture first
+    (``busiest_start``'s measure). A clips cut that returns to a clip takes the next one, so a return is never the blank
+    sky the offset from the first stretch once landed on (28 Oct). ``[busiest_start]`` when the clip will not read."""
+    import numpy as np
+
+    first = busiest_start(src, clip_seconds, need_s, rate=rate)
+    if float(clip_seconds) <= float(need_s) + 0.5:
+        return [first]
+    try:
+        raw = subprocess.run(["ffmpeg", "-v", "error", "-i", str(src), "-an", "-vf", f"fps={rate},scale=64:36,format=gray",
+                              "-f", "rawvideo", "-"], check=True, capture_output=True).stdout
+        g = np.frombuffer(raw, np.uint8).reshape(-1, 36, 64).astype(np.float32)
+    except Exception:
+        return [first]
+    detail = g.std(axis=(1, 2)) + np.abs(np.diff(g, axis=2)).mean(axis=(1, 2)) + np.abs(np.diff(g, axis=1)).mean(axis=(1, 2))
+    span = max(1, int(round(float(need_s) * rate)))
+    if len(detail) <= span:
+        return [first]
+    sums = np.convolve(detail, np.ones(span), mode="valid")
+    limit = max(0.0, float(clip_seconds) - float(need_s))
+    out = [first]
+    for k in np.argsort(-sums):
+        start = round(float(min(limit, k / rate)), 3)
+        if all(abs(start - s) >= float(need_s) for s in out):
+            out.append(start)
+        if len(out) >= most:
+            break
+    return out
+
+
 def busiest_start(src: str | Path, clip_seconds: float, need_s: float, *, rate: float = 2.0) -> float:
     """Where the run has the most picture in it: the window of ``need_s`` whose frames carry the most detail (grey
     spread plus edges, on a 64x36 copy two frames a second), the middle winning a tie. The middle of a Nosferatu reel is
@@ -213,5 +244,6 @@ def splice(morph_in: str | Path | None, clip: str | Path, morph_out: str | Path 
     return Path(out)
 
 
-__all__ = ["MIN_S", "MAX_S", "MIN_CLIP_S", "MAX_ITEMS", "MORPH_S", "scan", "clip_slots", "window_start", "size_for",
+__all__ = ["MIN_S", "MAX_S", "MIN_CLIP_S", "MAX_ITEMS", "MORPH_S", "scan", "clip_slots", "window_start", "busiest_start",
+           "ranked_starts", "size_for",
            "render_clip", "morph_frames", "first_last", "splice"]

@@ -47,4 +47,4 @@ def test_themes_sit_beside_places_feels_and_the_library():
 
 def test_the_chips_name_the_theme():
     assert 'if (have.theme) extra.thing = `<span class="ir-note">the ${esc(have.theme)} theme</span>`;' in APP
-    assert "A theme (racing, pirates, halloween, astronauts, gaming and about thirty more) brings five things" in APP
+    assert "A theme (racing, pirates, halloween, astronauts, gaming and about thirty more) brings fifteen things" in APP

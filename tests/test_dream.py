@@ -192,8 +192,8 @@ def test_the_route_refuses_plainly_and_runs_the_dream(tmp_path, monkeypatch):
 
 
 def test_the_desk_offers_dream_here_on_the_timeline():
-    drawer = APP.split('if (picked.kind === "shot") {', 1)[1].split("if (s.index < 1)", 1)[0]
-    assert "${dreamRow(lane, s, choices)}" in drawer
+    drawer = APP.split("function timelineDrawer(easy, lane, tl, picked) {", 1)[1].split("// Dream this span", 1)[0]
+    assert "const dream = dreamRow(lane, s, choices);" in drawer and "${dream}" in drawer
     row = APP.split("function dreamRow(lane, s, choices) {", 1)[1].split("async function dreamRun", 1)[0]
     assert 'data-act="easy-tl-dream"' in row and 'id="tl-dream-s"' in row and 'id="tl-dream-depth"' in row and "s.performer || s.own" in row
     assert 'postCutEdit(id, "dream", { first: Number(index), seconds, depth }' in APP and 'act === "easy-tl-dream"' in APP

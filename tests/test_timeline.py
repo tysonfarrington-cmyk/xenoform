@@ -455,7 +455,7 @@ def test_the_rerender_route_runs_the_edit_and_refuses_plainly(tmp_path, monkeypa
 
 def test_the_desk_draws_the_timeline_panel_and_posts_the_edits():
     fn = APP.split("function shotsLane(easy)")[1].split("async function loadLane")[0]
-    assert 'aria-label="Timeline"' in fn and 'data-act="easy-tl-shot"' in fn and 'data-act="easy-tl-bound"' in fn and 'class="lane-bounds"' in fn
+    assert 'aria-label="Timeline"' in fn and 'data-act="easy-tl-shot"' in fn and 'data-act="easy-tl-bound"' in fn and 'class="lane-joins"' in fn
     assert 'class="lane-song"' in fn and 'data-act="easy-seek"' in fn and "drop-mark" in fn
     assert 'data-act="easy-tl-reset"' in fn and "timelineDirty" in fn and 'id="lane-playhead"' in fn
     # one Apply for the timeline and the knobs: the bar at the bottom of the window (28 Oct)
@@ -465,7 +465,10 @@ def test_the_desk_draws_the_timeline_panel_and_posts_the_edits():
     assert 'lookRow(o.look || "auto", "easy-tl-look", s.index)' in fn and 'id="tl-fx"' in fn and 'data-act="easy-tl-fx-clear"' in fn
     assert 'data-act="easy-tl-swap"' in fn and 'data-act="easy-tl-rerender"' in fn
     assert 'id="tl-seed"' in fn and 'id="tl-render-s"' in fn and 'id="tl-variant"' in fn
-    assert "Hold keeps the start object still" in fn and "Cut holds the shot before on its object" in fn
+    # one drawer for a shot in four tabs, a seam opens its Join tab, and a step between shots (28 Oct timeline pass)
+    assert 'const TL_TABS = [["shot", "Shot"], ["look", "Look"], ["join", "Join"], ["gpu", "Regenerate"]];' in fn
+    assert 'data-act="easy-tl-tab"' in fn and 'data-act="easy-tl-step"' in fn and "/frame.jpg?t=" in fn
+    assert 'if (act === "easy-tl-bound") state.easy.tlTab = "join";' in APP
     assert "async function postCutEdit" in fn and "/${route}`" in fn and "tlSeek" in fn
     assert "async function applyTimeline" in fn and "shot_overrides: tl.shots, boundary_overrides: tl.bounds" in fn
     assert "async function rerenderShot" in fn and '"rerender"' in fn
@@ -479,7 +482,9 @@ def test_the_desk_draws_the_timeline_panel_and_posts_the_edits():
     assert "state.easy.tl = null" in load and "loadedmetadata" in load
     # the swap's strings the earlier test pins are still there, inside the same panel
     assert 'data-act="easy-swap-mode"' in fn and 'class="lane-open"' in fn
-    for rule in (".shots-lane .bound", ".shots-lane .shot.held", ".shots-lane .lane-song", ".shots-lane .tl-drawer", ".shots-lane .overlay.generated",
+    desk_css = (Path(__file__).resolve().parents[1] / "src" / "xenoform" / "ui_static" / "desk.css").read_text(encoding="utf-8")
+    assert ".shots-lane .lane-joins .join" in desk_css and ".tl-tabs" in desk_css and "var(--thumb, none)" in desk_css
+    for rule in (".shots-lane .shot.held", ".shots-lane .lane-song", ".shots-lane .tl-drawer", ".shots-lane .overlay.generated",
                  ".shots-lane .shot.rerendered::after", ".shots-lane .lane-apply-row"):
         assert rule in CSS, rule
 

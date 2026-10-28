@@ -201,6 +201,19 @@ runs the six steps. A swap keeps doing the same.
 
 ---
 
+## 4a. The 29 Oct pass
+
+Tys: "the time line is a bit confusing to use". The lane's tiles are the cut's own frames (`GET
+/api/videos/{id}/frame.jpg?t=&w=`, cached per version of the video; the lane route carries `version`), numbered; the
+seams between them are handles on the tiles themselves (`.lane-joins`), not a row of glyphs under them. One drawer for a
+shot, in tabs: **Shot** (Play, Order, Timing), **Look** (Look, Colour, Effects, Beat FX), **Join** (Flow or Cut, Move it,
+Transition: the seam into this shot; a click on a seam opens it), **Regenerate** (style, swap, re-render, Generate here,
+Dream here; object cuts). ◀ ▶ step to the shot before and after. Every edit waits in the one Apply bar.
+
+A clips cut (`source: "clips"`, `xenoform.clip_cut`) shows its clip shots by their clip's name and its morph shots as
+"from → to"; it is neither swappable nor re-renderable, and its Look, Colour, Effects, Order and Join edits re-cut as on
+an object cut.
+
 ## 5. On the desk
 
 The lane under the result player becomes the **Timeline** panel (the first slice):

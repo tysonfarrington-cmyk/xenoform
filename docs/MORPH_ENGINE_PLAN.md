@@ -219,6 +219,12 @@ Draft morph from the object before into its first frame and closes on one from i
 (`dense._clip_morphs`, `own_media.splice`); the public-domain test clips are copied to `work/ui/own/pd_clips_test`
 (Caligari 1920, Nosferatu 1922, NASA). A 20 s song has few passages, so a clip-to-clip reel was made directly.
 
+**Clips mode** (Tys, 28 Oct: "keep the clips and objects seperated. if we are going to morph movie clips, make it so
+its just movie clips, and if we are doing objects just objects"). `xenoform.clip_cut`: Morph > Your clips makes a cut of
+only the user's clips, a clip and a morph alternating on the song's shots, each morph from the last frame shown into the
+next first frame on the cut's tier; an object cut never takes a clip (the own-clip slots in object cuts are gone from the
+desk). E6, the middle tier, landed as the Fast Final.
+
 ## 5. After the contest: the music video maker
 
 The split Tys described stays the direction: a music video maker (song plus footage, an audio-reactive auto-edit) with the morph

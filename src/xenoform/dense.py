@@ -1103,7 +1103,7 @@ def write_chain(work: Path, stills: list[dict]) -> Path | None:
     line's stills are grown and picked, so the desk's making screen shows the chain Make made rather than the Chain
     row's pre-Make preview (which never has the rally car "car rally race" grows, 28 Oct). Never breaks a render."""
     rows = [{"noun": str(s.get("noun") or Path(str(s.get("file") or s.get("path") or "")).stem.split("_", 1)[-1].replace("_", " ")),
-             "kind": "scene" if str(s.get("kind") or "") == "scene" else "object"} for s in stills or []]
+             "kind": str(s.get("kind")) if str(s.get("kind") or "") in ("scene", "clip") else "object"} for s in stills or []]
     try:
         path = Path(work) / CHAIN_FILE
         path.write_text(json.dumps(rows), encoding="utf-8")
@@ -1112,11 +1112,12 @@ def write_chain(work: Path, stills: list[dict]) -> Path | None:
         return None
 
 
-def _draft_clips(shots, stills, work, cfg, seed, vibe, client, cancel, state=None, report=None, size=None, styles=None):
+def _draft_clips(shots, stills, work, cfg, seed, vibe, client, cancel, state=None, report=None, size=None, styles=None,
+                 prompt=None, negative=None):
     from xenoform.cloud_morph import _local_clips
 
     return _local_clips(shots, stills, work, cfg, seed, vibe, client=client, cancel=cancel, state=state, report=report,
-                        size=size, styles=styles)
+                        size=size, styles=styles, prompt=prompt, negative=negative)
 
 
 def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg: dict, state: dict,
@@ -1126,6 +1127,11 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     from xenoform import idea as _idea
     from xenoform import morph_pass as _mp
 
+    from xenoform import clip_cut
+
+    if clip_cut.wants(state):  # Clips mode: only the user's clips, each morphing into the next (Tys, 28 Oct)
+        return clip_cut.run(directed, Path(audio_path), Path(out_path), Path(work), cfg, state, report, cancel=cancel,
+                            client=client, engine=engine)
     started = time.perf_counter()
     # the idea line shapes a Simple cut (xenoform.idea): Scenes to Mix when it names a place, Polly on when it names a
     # dancer or singer, the reading kept for the pick and the record; the model refines it when XENO_LLM_URL is set

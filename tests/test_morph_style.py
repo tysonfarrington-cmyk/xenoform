@@ -199,7 +199,7 @@ def test_the_desk_has_the_morph_row_and_the_timeline_chips():
     assert 'morph_style: (state.easy && state.easy.morphStyle) || "auto"' in body and "morph_styles: (state.easy && state.easy.carryStyles) || null" in body
     assert '"morphStyle"' in APP.split("const EASY_SAVED_KEYS = [", 1)[1].split("];", 1)[0]
     assert 'act === "easy-morph-style"' in APP and 'act === "easy-tl-style"' in APP
-    drawer = APP.split('if (picked.kind === "shot") {', 1)[1].split("if (s.index < 1)", 1)[0]
+    drawer = APP.split("function timelineDrawer(easy, lane, tl, picked) {", 1)[1].split("// Dream this span", 1)[0]
     assert 'morphStyleRow(s.style || "melt", "easy-tl-style", s.index, false)' in drawer
     assert "if (style && MORPH_STYLES.includes(style)) body.style = style;" in APP
     final = APP.split('act === "easy-render-full" || act === "easy-render-final") {', 1)[1].split("} else if", 1)[0]

@@ -159,7 +159,7 @@ def test_the_desk_has_the_timing_rows():
     assert 'morph_timing: (state.easy && state.easy.morphTiming) || "smooth"' in APP
     assert 'morph_timing: state.easy.morphTiming || "smooth",' in APP.split("async function recutWithKnobs()", 1)[1].split("try {", 1)[0]
     assert '"morphTiming"' in APP.split("const EASY_SAVED_KEYS = [", 1)[1].split("];", 1)[0]
-    drawer = APP.split('if (picked.kind === "shot") {', 1)[1].split("if (s.index < 1)", 1)[0]
+    drawer = APP.split("function timelineDrawer(easy, lane, tl, picked) {", 1)[1].split("// Dream this span", 1)[0]
     assert 'timingRow(o.timing || "auto", "easy-tl-timing", s.index, lane.morph_timing || "smooth")' in drawer
     assert 'setShotOverride(state.easy, state.lane, Number(el.dataset.index), "timing", el.dataset.value);' in APP
     assert "easy.morphTiming = recipe.morph_timing" in APP

@@ -201,7 +201,8 @@ def final_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
                 cancel: Callable[[], bool] | None = None, report: Callable[[str, float, str], None] | None = None,
                 draft: Callable[[list[int]], dict[int, Path]] | None = None,
                 vertical: bool = False, state: dict | None = None,
-                styles: list[str] | None = None) -> tuple[list[Path], list[dict]]:
+                styles: list[str] | None = None, relay: bool = True, prompt_text: str | None = None,
+                negative_text: str | None = None) -> tuple[list[Path], list[dict]]:
     """Render every shot on LTX-2.3 (+ ClearReality). Returns clips and one note per fallback. ``styles`` is how each
     shot's object changes (``morph_style``; Melt when not given).
 
@@ -219,18 +220,19 @@ def final_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
     if vertical:
         from xenoform.portrait import PROMPT_SUFFIX, portrait_stills
 
-        stills = portrait_stills(stills, Path(work), background=(state or {}).get("still_background"))
+        if relay:  # a clip's frames (clip_cut) are portrait already and fill it: relay=False keeps them as they are
+            stills = portrait_stills(stills, Path(work), background=(state or {}).get("still_background"))
     from xenoform.guardrails import guard_prompt, negative_for
 
     def prompt_for_pair(i: int) -> str:  # a pair that touches a scene gets the scene prompt (morph_pass.prompt_for)
         style = styles[i] if styles and i < len(styles) else "melt"
-        text = mp.prompt_for(vibe, "ltx25", mp.pair_kinds(stills[i], stills[i + 1]), style=style)
+        text = prompt_text or mp.prompt_for(vibe, "ltx25", mp.pair_kinds(stills[i], stills[i + 1]), style=style)
         if vertical:
             text = text.rstrip() + PROMPT_SUFFIX
         return guard_prompt(text, state)
 
     prompt = prompt_for_pair(0) if len(stills) > 1 else guard_prompt(mp.prompt_for(vibe, "ltx25"), state)
-    negative = negative_for(NEGATIVE, state)
+    negative = negative_for(negative_text or NEGATIVE, state)
     tune = tuned(vibe)
     assets: dict = {}
     upscale = os.environ.get("XENO_FINAL_UPSCALE", "1").strip() not in {"0", "false", "off"}

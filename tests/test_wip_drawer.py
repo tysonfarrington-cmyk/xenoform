@@ -23,7 +23,8 @@ def _fn(start: str, end: str) -> str:
 def test_the_drawer_holds_everything_that_is_not_the_engine():
     wip = _fn("function wipDrawer(easy) {", "const LOOK_PRESETS")
     assert '<details class="fine-tune wip-drawer" id="wip-drawer"' in wip and "<summary>Work in progress" in wip
-    for part in ("performerRow(easy)", 'simpleSeg("easy-clips"', "cloudRows(easy)", 'href="/moves"', "vjUrl()",
+    assert 'simpleSeg("easy-clips"' not in wip  # clips never go into an object cut: Morph > Your clips is its own cut
+    for part in ("performerRow(easy)", "cloudRows(easy)", 'href="/moves"', "vjUrl()",
                  'data-act="easy-midi"', 'data-hash="connect"'):
         assert part in wip, part
     assert 'readDrawer("xeno-wip")' in wip and '"wip-drawer": "xeno-wip"' in APP  # closed by default, remembered
@@ -38,27 +39,27 @@ def test_the_drawer_holds_everything_that_is_not_the_engine():
     assert ".wip-item {" in CSS and ".wip-drawer" in CSS
 
 
-def test_your_images_stay_in_the_engine_and_your_clips_wait_for_the_switch():
+def test_your_images_stay_in_the_engine_and_your_clips_are_their_own_cut():
     own = _fn("function ownRow(easy) {", "// The stills library")
-    assert "<span>Your images</span>" in own and "Work in progress > Your clips" in own
+    assert "<span>Your images</span>" in own and "Morph > Your clips" in own
     body = _fn("function payload() {", "function vjUrl()")
-    assert "cut_in_clips: !!(state.easy && state.easy.clipsOn)" in body
-    assert 'act === "easy-clips"' in APP and '"clipsOn"' in APP.split("const EASY_SAVED_KEYS = [", 1)[1].split("];", 1)[0]
+    assert "morph_source: morphSource(state.easy)" in body and "cut_in_clips" not in body
+    assert 'act === "easy-source"' in APP and '"morphSource"' in APP.split("const EASY_SAVED_KEYS = [", 1)[1].split("];", 1)[0]
 
 
 @pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="ffmpeg makes the clip")
-def test_the_make_body_drops_your_clips_unless_they_are_switched_on(tmp_path):
+def test_an_object_cut_never_takes_your_clips_and_a_clips_cut_takes_only_them(tmp_path):
     folder = tmp_path / "own"
     folder.mkdir()
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc=size=320x180:rate=24:duration=3",
                     "-c:v", "libx264", "-pix_fmt", "yuv420p", str(folder / "b_clip.mp4")], check=True)
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=c=orange:size=64x64", "-frames:v", "1",
                     str(folder / "a_still.png")], check=True)
-    off = ui._apply_own({"own_folder": str(folder), "cut_in_clips": False})
-    assert off["own_clips"] == [] and [Path(p).name for p in off["morph_targets"]] == ["a_still.png"]
-    on = ui._apply_own({"own_folder": str(folder), "cut_in_clips": True})
-    assert len(on["own_clips"]) == 1 and Path(on["own_clips"][0]["path"]).name == "b_clip.mp4"
-    assert len(ui._apply_own({"own_folder": str(folder)})["own_clips"]) == 1  # MCP and the CLI keep the old behaviour
+    for body in ({"own_folder": str(folder)}, {"own_folder": str(folder), "cut_in_clips": True}):
+        objects = ui._apply_own(body)
+        assert objects["own_clips"] == [] and [Path(p).name for p in objects["morph_targets"]] == ["a_still.png"]
+    clips = ui._apply_own({"own_folder": str(folder), "morph_source": "clips"})
+    assert clips["morph_targets"] == [] and [Path(c["path"]).name for c in clips["own_clips"]] == ["b_clip.mp4"]
 
 
 def test_the_idea_line_names_things_to_morph_and_leaves_polly_off():

@@ -1785,23 +1785,9 @@ def create_app(cfg: dict | None = None):
             info = json.loads(path.read_text(encoding="utf-8"))
         except ValueError:
             return {"id": video_id, "duration": 0.0, "shots": [], "sections": [], "overlays": [], "note": "This cut's shot record did not read."}
-        return lane.build(info, video_id)
-
-    @app.get("/api/videos/{video_id}/shots")
-    def video_shots(video_id: str) -> dict:
-        """The cut's shots lane, read-only (``lane.build``): every shot with its object, section and boundary, the
-        transitions, the performer and own-footage slots, from the job's simple.json. The seed of the timeline."""
-        from xenoform import lane
-
-        folder = _video_dir(video_id)
-        path = folder / "simple" / "simple.json"
-        if not path.is_file():
-            return {"id": video_id, "duration": 0.0, "shots": [], "sections": [], "overlays": [], "note": "This cut has no shot record."}
-        try:
-            info = json.loads(path.read_text(encoding="utf-8"))
-        except ValueError:
-            return {"id": video_id, "duration": 0.0, "shots": [], "sections": [], "overlays": [], "note": "This cut's shot record did not read."}
-        return lane.build(info, video_id)
+        out = lane.build(info, video_id)
+        out["version"] = (folder / "xenoform.mp4").stat().st_mtime_ns  # the tiles' frame pictures change with the video
+        return out
 
     @app.post("/api/videos/{video_id}/hook")
     def video_hook(video_id: str, body: dict | None = None) -> dict:
@@ -1872,6 +1858,27 @@ def create_app(cfg: dict | None = None):
 
         pack = edit_export.build(_video_dir(video_id), video_id)  # the pack made for this cut, or a new one if it changed
         return FileResponse(pack["zip"], media_type="application/zip", filename=pack["zip_name"], headers={"Cache-Control": "no-store"})
+
+    @app.get("/api/videos/{video_id}/frame.jpg")
+    def video_frame(video_id: str, t: float = 0.0, w: int = 160) -> FileResponse:
+        """One frame of the cut at ``t`` seconds, ``w`` pixels wide: the timeline's tiles show each shot as it looks in
+        the cut (the shot's middle), for an object cut and a clips cut alike. Cached per version of the video."""
+        from xenoform.video import ffmpeg_bin
+
+        folder = _video_dir(video_id)
+        src = folder / "xenoform.mp4"
+        width = max(48, min(480, int(w)))
+        t = max(0.0, float(t))
+        dest = folder / "thumbs" / f"{src.stat().st_mtime_ns}_{t:.2f}_{width}.jpg"
+        if not dest.is_file():
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            import subprocess
+
+            subprocess.run([ffmpeg_bin(), "-y", "-v", "error", "-ss", f"{t:.3f}", "-i", str(src), "-frames:v", "1",
+                            "-vf", f"scale={width}:-2", "-q:v", "4", str(dest)], check=False, capture_output=True)
+            if not dest.is_file():
+                raise HTTPException(404, "No frame there.")
+        return FileResponse(dest, media_type="image/jpeg", headers={"Cache-Control": "max-age=86400"})
 
     @app.get("/api/videos/{video_id}/poster.jpg")
     def video_poster(video_id: str) -> FileResponse:
@@ -2889,8 +2896,14 @@ def _apply_own(body: dict) -> dict:
 
             found = own_media.scan(own_folder)
             extra = [str(p) for p in (body.get("morph_targets") or []) if str(p) not in found["images"]]
-            body["morph_targets"] = list(found["images"]) + extra
-            body["own_clips"] = found["clips"] if body.get("cut_in_clips", True) is not False else []
+            # clips and objects never share a cut (Tys, 28 Oct): a clips cut takes only the clips, an object cut only
+            # the images (they lead the chain) and leaves the clips out, whatever cut_in_clips says
+            if str(body.get("morph_source") or "").strip().lower() == "clips":
+                body["morph_targets"] = []
+                body["own_clips"] = found["clips"]
+            else:
+                body["morph_targets"] = list(found["images"]) + extra
+                body["own_clips"] = []
             body["own_folder"] = found["folder"]
         except Exception as exc:
             log.warning("own folder %s skipped: %s", own_folder, exc)

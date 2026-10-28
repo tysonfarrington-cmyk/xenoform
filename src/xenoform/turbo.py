@@ -665,12 +665,17 @@ def _run_turbo(
     if simple_mode:
         # Simple mode: the draft is the vibe's stills hard-cut on the planned shots (seconds, and it looks like the
         # real cut's skeleton), not the CPU blob animatic, which for a full song took minutes and looked like nothing.
+        from xenoform import clip_cut
         from xenoform.dense import stills_animatic
 
-        report("animatic", 0.1, "Cutting the stills to the beat")
+        clips_cut = clip_cut.wants(state)  # a clips cut's draft is its clips, never the vibe's stills
+        report("animatic", 0.1, "Cutting your clips to the beat" if clips_cut else "Cutting the stills to the beat")
         try:
             # the stills draft follows the cut's aspect (the live-keyframe landscape rule is for the painted path)
-            info = stills_animatic(directed, state, Path(audio_path), out_path, work, size=animatic_size({**state, "live": False}))
+            if clips_cut:
+                info = clip_cut.animatic(directed, state, Path(audio_path), out_path, work, size=animatic_size({**state, "live": False}))
+            else:
+                info = stills_animatic(directed, state, Path(audio_path), out_path, work, size=animatic_size({**state, "live": False}))
             painted = {"hits": 0, "misses": 0, "paint_s": 0.0, "segments": [], "batches": 0, "fps": float(FPS),
                        "stills": info, "proof_frames": [], "proof_verdict": "stills"}
         except Exception as exc:

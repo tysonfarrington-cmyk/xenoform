@@ -19,7 +19,7 @@ def _fn(start: str, end: str) -> str:
 
 
 def test_the_field_is_short_and_the_fine_print_is_folded():
-    vibe = _fn('<section class="easy-step" data-tour="easy-vibe">', "</section>")
+    vibe = _fn('<section class="easy-step" data-tour="easy-vibe">', "</section>") + _fn("function ideaBlock(easy) {", "\n}\n")
     assert "What it morphs through <small>optional · things, a theme, a place, a feel</small>" in vibe and "${ideaReadingLine(easy)}" in vibe
     assert '<details class="idea-help"><summary>How the line works</summary>' in vibe
     assert "Your idea in one line, if you have one." not in APP  # the old label and its paragraph are gone

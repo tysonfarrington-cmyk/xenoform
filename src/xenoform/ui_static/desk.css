@@ -604,7 +604,6 @@ button.easy-showcase { width: 100%; margin-top: 12px; }
 .shots-lane .shot.picked { outline: 2px solid #fff; outline-offset: -2px; }
 .shots-lane .overlay { border-radius: var(--x-r-xs); }
 .shots-lane .tl-drawer { padding: 12px; background: var(--x-surface-2); border: 1px solid var(--x-line-2); border-radius: 10px; }
-.shots-lane .bound { border-radius: var(--x-r-xs); }
 
 /* Share */
 .easy-share { padding: 14px 16px; margin-top: 0; border-top: 1px solid var(--x-line); }
@@ -752,3 +751,36 @@ body[data-knobs="folded"] .easy-done > .easy-side .knobs-fold { float: none; mar
 
 /* the estimate under Forms carries where the time goes (its title) */
 .time-tip { cursor: help; text-decoration: underline dotted; text-underline-offset: 3px; }
+
+/* the timeline pass (28 Oct): picture tiles, seams you can hit, one drawer in tabs */
+.shots-lane .lane-shots { height: 58px; }
+.shots-lane .lane-shots .shot { background-image: linear-gradient(to top, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0) 55%), var(--thumb, none);
+  background-size: cover; background-position: center; background-color: hsl(var(--hue, 260) 35% 26%); }
+.shots-lane .lane-shots .shot i { position: absolute; left: 0; right: 0; bottom: 0; line-height: 16px; font-size: 10px; text-shadow: 0 1px 2px #000; }
+.shots-lane .lane-shots .shot .tl-n { position: absolute; left: 3px; top: 3px; font-size: 10px; font-weight: 600; line-height: 1; padding: 2px 4px;
+  border-radius: 3px; background: rgba(0, 0, 0, 0.6); color: #fff; }
+.shots-lane .lane-shots .shot.picked { outline: 2px solid var(--x-accent, #8b7bff); outline-offset: -2px; }
+.shots-lane .lane-shots-wrap { position: relative; }
+.shots-lane .lane-joins { position: absolute; inset: 0; pointer-events: none; }
+.shots-lane .lane-joins .join { position: absolute; top: -3px; bottom: -3px; width: 14px; margin-left: -7px; padding: 0; border: 0; background: transparent;
+  pointer-events: auto; cursor: pointer; display: flex; align-items: flex-end; justify-content: center; }
+.shots-lane .lane-joins .join::before { content: ""; position: absolute; top: 0; bottom: 0; left: 6px; width: 2px; background: rgba(255, 255, 255, 0); transition: background 0.12s; }
+.shots-lane .lane-joins .join:hover::before, .shots-lane .lane-joins .join.picked::before { background: rgba(255, 255, 255, 0.9); }
+.shots-lane .lane-joins .join.cut::before { background: rgba(255, 209, 102, 0.85); }
+.shots-lane .lane-joins .join span { position: relative; font-size: 10px; line-height: 12px; color: #ffd166; transform: translateY(10px); }
+.shots-lane .lane-joins .join.edited span::after { content: "•"; color: var(--x-accent, #8b7bff); }
+.tl-drawer-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tl-drawer-head b small { font-weight: 400; color: var(--x-text-3); }
+.tl-drawer-head .tl-step { min-width: 30px; }
+.tl-drawer-head .note { flex: 1 1 200px; margin: 0; }
+.tl-tabs { display: flex; gap: 4px; margin: 10px 0 4px; border-bottom: 1px solid var(--x-line); }
+.tl-tab { position: relative; padding: 7px 14px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--x-text-2); font-size: 13px; cursor: pointer; }
+.tl-tab.on { color: var(--x-text); border-bottom-color: var(--x-accent, #8b7bff); }
+.tl-tab .tl-dot { display: inline-block; width: 6px; height: 6px; margin-left: 6px; border-radius: 50%; background: var(--x-accent, #8b7bff); vertical-align: middle; }
+.tl-tab-note { margin: 4px 0 8px; }
+.tl-colour { grid-template-columns: minmax(0, 520px); }
+.tl-grade { grid-template-columns: 84px minmax(0, 1fr) 54px; }
+/* a held shot keeps its picture under the stripes; a deleted one is only the striped sliver */
+.shots-lane .lane-shots .shot.held { background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.22) 0 3px, transparent 3px 7px),
+  linear-gradient(to top, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0) 55%), var(--thumb, none); }
+.shots-lane .lane-shots .shot.dropped { background: repeating-linear-gradient(135deg, rgba(255, 90, 90, 0.55) 0 2px, transparent 2px 5px); }

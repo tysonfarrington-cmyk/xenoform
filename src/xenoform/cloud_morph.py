@@ -656,7 +656,7 @@ def _job_result(client, job):
 
 def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, client=None, cancel=None,
                  state: dict | None = None, report=None, size: tuple[int, int] | None = None,
-                 styles: list[str] | None = None) -> list[Path]:
+                 styles: list[str] | None = None, prompt: str | None = None, negative: str | None = None) -> list[Path]:
     """Free: one LTX 0.9.5 A->B morph per shot through the existing morph graph.
 
     ``size`` overrides the render size (Draft 9:16 renders portrait 320x576 from re-laid stills); ``styles`` is how
@@ -683,8 +683,8 @@ def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, cli
 
         kinds = mp.pair_kinds(stills[i], stills[i + 1])  # a pair that touches a scene gets the scene prompt
         style = styles[i] if styles and i < len(styles) else "melt"
-        wf.set_input("3", "text", guard_prompt(mp.prompt_for(vibe, kinds=kinds, style=style), state))
-        wf.set_input("4", "text", mp.NEGATIVE)
+        wf.set_input("3", "text", guard_prompt(prompt or mp.prompt_for(vibe, kinds=kinds, style=style), state))
+        wf.set_input("4", "text", negative or mp.NEGATIVE)
         wf.set_input("9", "width", render_w)
         wf.set_input("9", "height", render_h)
         wf.set_input("9", "length", mp.gen_length(int(round(min(float(shot.get("render_s") or shot["seconds"]), 5.0) * FPS))))
