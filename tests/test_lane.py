@@ -60,6 +60,29 @@ def test_desk_serves_the_lane_per_video_and_refuses_an_unknown_one():
     assert client.get("/api/videos/no-such-video/shots").status_code == 404
 
 
+def test_a_fast_or_cloud_final_cut_is_not_swapped_or_re_rendered(tmp_path):
+    """Their record says tier "draft" with a flag: the lane offers no Swap or Re-render, and the desk refuses one
+    (a Draft-size morph would be spliced into the full-size cut)."""
+    import json
+
+    import pytest
+
+    from xenoform import dense
+
+    info = {"shots": [{"start": 0.0, "end": 2.0, "morph": 0}], "stills": ["v/00_a.jpg", "v/01_b.jpg"], "clips": ["c0.mp4"], "tier": "draft"}
+    assert lane.build(info)["swappable"] is True and lane.build(info)["rerenderable"] is True
+    for flag in ("fast", "cloud"):
+        out = lane.build({**info, flag: True})
+        assert out["swappable"] is False and out["rerenderable"] is False and out["editable"] is True
+        (tmp_path / "simple").mkdir(exist_ok=True)
+        (tmp_path / "simple" / "simple.json").write_text(json.dumps({**info, flag: True}), encoding="utf-8")
+        name = "Fast Final" if flag == "fast" else "Cloud Final"
+        with pytest.raises(ValueError, match=name):
+            dense._load_cut(tmp_path, "re-render")
+        with pytest.raises(ValueError, match=name):
+            dense.swap_still(tmp_path, 1, "v/02_c.jpg")
+
+
 def test_front_end_draws_the_lane_and_names_the_browser_tier():
     js = (ROOT / "src/xenoform/ui_static/app.js").read_text(encoding="utf-8")
     css = (ROOT / "src/xenoform/ui_static/app.css").read_text(encoding="utf-8")
