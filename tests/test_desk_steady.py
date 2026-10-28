@@ -26,6 +26,15 @@ def test_a_redraw_keeps_every_scrolled_panel_and_the_row_you_are_on():
     assert "if (box === node) return;" in _fn("function restoreAnchor(app, anchor)", "function rememberPlace()")
 
 
+def test_a_redraw_never_fades_the_desk_only_a_new_screen_does():
+    # found recording the walkthrough, 29 Oct: every click blanked the desk and slid it 4 px (the fade-in on #app's children)
+    css = (STATIC / "desk.css").read_text(encoding="utf-8")
+    assert "#app > * { animation" not in css and "#app[data-enter] > * { animation: xd-in" in css
+    draw = _fn("function render()", "function renderTool(")
+    assert "if (screen !== lastScreen) app.dataset.enter" in draw and "delete app.dataset.enter" in draw
+    assert draw.index("app.dataset.enter") < draw.index("app.innerHTML")
+
+
 def test_a_running_grow_rewrites_its_line_instead_of_redrawing_the_desk():
     load = _fn("async function loadStills(force)", "async function growStills(")
     assert 'getElementById("library-status")' in load and "stillsStatus(state.easy)" in load and "return;" in load

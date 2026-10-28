@@ -287,7 +287,8 @@ label.easy-paid, .addon { display: flex; align-items: center; gap: 8px; font-siz
 .easy-desk { grid-template-columns: minmax(0, 1fr) 380px; column-gap: 18px; align-items: start; }
 .easy-done { grid-template-columns: minmax(0, 1fr) 380px; column-gap: 18px; }
 .easy-make-grid { grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; }
-#app > * { animation: xd-in 0.22s var(--x-ease) both; }
+/* the screen fades in when it changes (render() sets data-enter), never on a redraw of the same screen */
+#app[data-enter] > * { animation: xd-in 0.22s var(--x-ease) both; }
 @keyframes xd-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 
 /* a page title, not a landing-page hero */
@@ -707,7 +708,7 @@ dialog .addon { display: flex; align-items: center; gap: 8px; font-size: 13px; c
   .easy-intro .lede { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  #app > *, .happen li.now::before { animation: none; }
+  #app[data-enter] > *, .happen li.now::before { animation: none; }
 }
 
 /* Edit in Resolve: what happened and the three steps in Resolve, where the click was (not a line of small print) */

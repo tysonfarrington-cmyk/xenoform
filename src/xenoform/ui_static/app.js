@@ -2897,10 +2897,19 @@ function restorePlace(place) {
   }
 }
 
+// The screen render() last drew (view and phase). A click redraws the whole desk, and the fade-in on #app's children
+// blanked it and slid it 4 px on every click; now it plays only when the screen changes.
+let lastScreen = "";
+
 function render() {
   const place = rememberPlace();
   const app = document.getElementById("app");
   state.view = viewFromHash();
+  const phase = (state.easy && state.easy.phase) || "";  // song, choose and vibe all draw the one desk
+  const screen = `${state.view}:${["making", "result", "showcase"].includes(phase) ? phase : "desk"}`;
+  if (screen !== lastScreen) app.dataset.enter = "1";
+  else delete app.dataset.enter;
+  lastScreen = screen;
   // One desk: the stages (Song, Vibe, Prototype, Refine, Share) or a tool page. There is no second desk to switch to.
   app.innerHTML = (state.view === "setup" || state.view === "connect") ? renderTool(state.view) : renderEasy();
   // the stage strip lives in the toolbar, like the steps of a desktop tool, on every screen
