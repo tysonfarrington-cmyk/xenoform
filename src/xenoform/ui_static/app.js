@@ -912,7 +912,7 @@ function renderEasy() {
         </label>
         ${ideaReadingLine(easy)}
         <details class="idea-help"><summary>How the line works</summary>
-          <p class="note">Commas split it. Things become the objects the morphs travel between: one the library knows brings its family along, one it lacks is drawn new in this vibe's material before Make. A place becomes wide scenes the morphs pass through. A feel (slow and dreamy, hard and glitchy) moves the knobs and the Look. It never changes the vibe, and it cannot tell a story: every shot is still one thing becoming the next. Empty, and the vibe decides.</p>
+          <p class="note">Commas split it. Things become the objects the morphs travel between: one the library knows brings its family along, one it lacks is drawn new in this vibe's material before Make. A theme (racing, pirates, halloween, astronauts, gaming and about thirty more) brings five things of its own. A place becomes wide scenes the morphs pass through. A feel (slow and dreamy, hard and glitchy) moves the knobs and the Look. It never changes the vibe, and it cannot tell a story: every shot is still one thing becoming the next. Empty, and the vibe decides.</p>
         </details>
       </section>
       <section class="panel span simple-knobs-panel" data-tour="easy-macros">
@@ -1363,6 +1363,7 @@ function ideaReadingHtml(easy) {
   if (have.family) rows.thing.push(ideaChip("thing", String(have.family).replace(/-/g, " "), "fills the rest"));
   (have.scenes || []).forEach((s) => rows.place.push(ideaChip("place", s, isNew(s) || "scene")));
   const extra = {};
+  if (have.theme) extra.thing = `<span class="ir-note">the ${esc(have.theme)} theme</span>`;  // idea.THEMES: a theme word grows its things
   if (have.feel) {
     rows.feel.push(ideaChip("feel", (have.feel.words || []).join(", ")));
     const knobs = Object.entries(have.feel.macros || {}).map(([k, v]) => `${k.charAt(0).toUpperCase()}${k.slice(1)} ${Math.round(Number(v) * 100)}`);

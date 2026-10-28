@@ -33,10 +33,10 @@ log = logging.getLogger("xenoform.idea")
 
 MAX_SCENES = 2          # scene subjects one line can ask for (a third place is noise)
 MAX_OBJECTS = 6         # catalogue nouns kept from one line
-MAX_OWN = 4             # typed shapes grown for one line (about six seconds each)
+MAX_OWN = 5             # typed shapes grown for one line (about six seconds each); a theme brings five
 SCENES_PER_SUBJECT = 3  # renders of one typed scene subject (one seed each; the duplicate check culls near copies)
 SCENES_MAX = 4          # scenes one Make grows for the line
-SHAPES_MAX = 4          # shapes (own and catalogue) one Make grows for the line
+SHAPES_MAX = 5          # shapes (own and catalogue) one Make grows for the line
 SUBJECT_LIMIT = 80      # a scene subject is a short sentence (stills.SCENE_NOUN_LIMIT)
 PERFORMER_DEFAULT = 2   # Polly's slots when she is switched on (the line no longer switches her on; kept for callers)
 
@@ -133,8 +133,85 @@ MODIFIERS = frozenset(("cyberpunk neon dark bright wet rainy foggy misty empty a
 
 CONNECTORS = frozenset("and or to with of".split())
 
+# A theme the line names grows its things (Tys, 28 Oct: "make a theme word like 'car rally racing' grow four or five
+# related things on its own"). A comma group whose last word is one of a theme's words (a trailing "theme", "vibe" or
+# "style" ignored) is that theme, unless it names something the library knows or a place: "car rally racing" and
+# "pirates" are themes, "a rally car" is a thing. Each theme's things are single objects a still can show whole on a
+# plain ground; the catalogue's own nouns among them join the objects, the rest are grown as shapes.
+THEMES: dict[str, dict] = {
+    "racing": {"words": "racing race races rally rallies rallying motorsport motorsports grandprix nascar f1 drifting karting",
+               "things": ["rally car", "racing helmet", "trophy", "chequered flag", "steering wheel"]},
+    "space": {"words": "astronaut astronauts spaceflight cosmonaut nasa scifi spacefaring",
+              "things": ["astronaut helmet", "rocket", "satellite", "ringed planet", "lunar lander"]},
+    "underwater": {"words": "undersea marine nautical diving scuba",
+                   "things": ["diving helmet", "anchor", "jellyfish", "ship's wheel", "seashell"]},
+    "pirates": {"words": "pirate pirates buccaneer buccaneers",
+                "things": ["treasure chest", "pirate hat", "cutlass", "ship in a bottle", "compass"]},
+    "halloween": {"words": "halloween spooky horror",
+                  "things": ["carved pumpkin", "skull", "witch hat", "black cat", "candelabra"]},
+    "christmas": {"words": "christmas xmas festive yuletide",
+                  "things": ["bauble", "reindeer", "snow globe", "gift box", "candy cane"]},
+    "football": {"words": "football soccer",
+                 "things": ["football", "football boot", "trophy", "whistle", "goalkeeper glove"]},
+    "basketball": {"words": "basketball nba",
+                   "things": ["basketball", "basketball hoop", "sneaker", "trophy", "scoreboard"]},
+    "skateboarding": {"words": "skating skateboarding skater skaters",
+                      "things": ["skateboard", "sneaker", "spray can", "boombox", "traffic cone"]},
+    "surfing": {"words": "surf surfing surfer surfers",
+                "things": ["surfboard", "seashell", "palm tree", "sunglasses", "flip flop"]},
+    "gaming": {"words": "gaming gamer gamers videogame videogames",
+               "things": ["arcade cabinet", "game controller", "joystick", "pixel heart", "cassette tape"]},
+    "coffee": {"words": "coffee espresso barista",
+               "things": ["coffee cup", "espresso machine", "coffee bean", "moka pot", "croissant"]},
+    "cooking": {"words": "cooking baking chef chefs cookery",
+                "things": ["chef's knife", "cast iron pan", "whisk", "layer cake", "pepper grinder"]},
+    "medieval": {"words": "medieval knight knights kingdom chivalry",
+                 "things": ["knight's helmet", "sword", "shield", "crown", "goblet"]},
+    "samurai": {"words": "samurai ninja ninjas dojo",
+                "things": ["katana", "samurai helmet", "paper lantern", "bonsai tree", "folding fan"]},
+    "egypt": {"words": "egypt egyptian pharaoh pharaohs",
+              "things": ["pharaoh mask", "scarab", "ankh", "sphinx", "canopic jar"]},
+    "wild west": {"words": "western cowboy cowboys wildwest",
+                  "things": ["cowboy hat", "horseshoe", "sheriff badge", "cactus", "cowboy boot"]},
+    "magic": {"words": "magic wizard wizards witch witches witchcraft sorcery sorcerer",
+              "things": ["wizard hat", "crystal ball", "spell book", "potion bottle", "magic wand"]},
+    "dinosaurs": {"words": "dinosaur dinosaurs prehistoric jurassic",
+                  "things": ["t-rex skull", "dinosaur egg", "ammonite", "amber", "fern"]},
+    "robots": {"words": "robot robots robotics android androids cyborg cyborgs",
+               "things": ["robot head", "circuit board", "robotic arm", "gear", "microchip"]},
+    "casino": {"words": "casino casinos gambling poker vegas",
+               "things": ["dice", "poker chip", "playing card", "slot machine", "roulette wheel"]},
+    "circus": {"words": "circus funfair",
+               "things": ["circus tent", "carousel horse", "juggling pin", "ringmaster hat", "balloon animal"]},
+    "fashion": {"words": "fashion couture catwalk",
+                "things": ["high heel", "handbag", "perfume bottle", "sunglasses", "lipstick"]},
+    "gardening": {"words": "gardening gardener botanical florist",
+                  "things": ["watering can", "rose", "tulip", "garden gnome", "flower pot"]},
+    "aviation": {"words": "aviation airshow aeroplanes airplanes planes pilots",
+                 "things": ["propeller plane", "pilot goggles", "jet engine", "hot air balloon", "paper plane"]},
+    "trains": {"words": "train trains railway railways railroad",
+               "things": ["steam locomotive", "railway signal", "pocket watch", "train ticket", "lantern"]},
+    "science": {"words": "science scientist scientists chemistry physics",
+                "things": ["microscope", "test tube", "atom model", "beaker", "telescope"]},
+    "camping": {"words": "camping hiking outdoors",
+                "things": ["tent", "lantern", "compass", "hiking boot", "campfire"]},
+    "sweets": {"words": "candy sweets dessert desserts confectionery",
+               "things": ["lollipop", "cupcake", "macaron", "doughnut", "gummy bear"]},
+    "boxing": {"words": "boxing boxer boxers",
+               "things": ["boxing glove", "championship belt", "punching bag", "boxing bell", "trophy"]},
+    "golf": {"words": "golf golfing golfer",
+             "things": ["golf ball", "golf club", "golf flag", "trophy", "golf cart"]},
+    "travel": {"words": "travel travelling traveling holiday vacation",
+               "things": ["suitcase", "passport", "globe", "camera", "postcard"]},
+    "romance": {"words": "wedding romance valentine valentines",
+                "things": ["wedding ring", "rose", "heart locket", "champagne glass", "love letter"]},
+}
+THEME_OF = {w: name for name, t in THEMES.items() for w in t["words"].split()}
+THEME_TAIL = frozenset("theme themed vibe vibes style aesthetic stuff".split())  # "a racing theme" is the racing theme
+THEME_THINGS = 5  # what one theme grows at most (the shapes cap is the same)
+
 EMPTY: dict = {"line": "", "scenes": [], "objects": [], "own": [], "family": "", "performer": None, "feel": None, "summary": "",
-               "source": "rules"}
+               "source": "rules", "theme": "", "theme_things": []}
 
 # ------------------------------------------------------------------------------------------------ the feel
 # How it should feel (27 Oct; Pause's demo: "Add your clips. Then say how it should feel."): a comma group made only of
@@ -381,6 +458,15 @@ def _scene_phrase(chunks: list[list[str]], first: bool) -> list[str]:
     return out
 
 
+def _theme_of(group_words: list[str]) -> str:
+    """The theme a comma group names (``THEMES``): its last content word, a trailing "theme" or "vibe" dropped, is one
+    of a theme's words. "" for a group that names a thing ("a rally car" ends on the car)."""
+    content = [w for w in group_words if w not in STOP]
+    while content and content[-1] in THEME_TAIL:
+        content.pop()
+    return THEME_OF.get(content[-1], "") if content else ""
+
+
 def read(line: str, vibe: str = "", *, llm: bool | None = None) -> dict:
     """The reading of ``line`` for ``vibe``: ``scenes`` (subjects to grow as wide frames), ``objects`` (catalogue
     nouns), ``own`` (typed shapes the catalogue lacks), ``family`` (the family the line names, if any), ``performer``
@@ -395,6 +481,7 @@ def read(line: str, vibe: str = "", *, llm: bool | None = None) -> dict:
     details: list[str] = []
     own: list[str] = []
     objects: list[str] = []
+    themes: list[str] = []
     feel: dict | None = None
     kept: list[str] = []
     for group in groups:  # "slow and dreamy" is how the cut should feel, not a thing or a place
@@ -430,6 +517,10 @@ def read(line: str, vibe: str = "", *, llm: bool | None = None) -> dict:
             subject = " ".join(words_).strip()
             if subject and subject not in scenes and len(scenes) < MAX_SCENES:
                 scenes.append(subject[:SUBJECT_LIMIT].strip())
+            for chunk in chunks:  # "car rally racing in a desert at dusk": the place is a scene, the racing a theme
+                theme = _theme_of(chunk) if chunk not in place_chunks and chunk not in sky_chunks and chunk not in music_chunks else ""
+                if theme and theme not in themes:
+                    themes.append(theme)
             continue
         lights = [LIGHT_OBJECTS[w] for w in group_words if w in LIGHT_OBJECTS]
         if lights:
@@ -442,6 +533,11 @@ def read(line: str, vibe: str = "", *, llm: bool | None = None) -> dict:
             continue
         if found or named_family:
             continue
+        theme = _theme_of(group_words)
+        if theme:  # "car rally racing": the theme's things, below, not one shape called "car rally racing"
+            if theme not in themes:
+                themes.append(theme)
+            continue
         content = [w for w in group_words if w not in STOP and w not in PEOPLE and w not in PERSON_VERBS
                    and w not in PERFORM_VERBS and w not in MUSIC and w not in PARTY and w not in SKIES
                    and not any(w in v for v in PERFORMANCES.values())]
@@ -451,6 +547,19 @@ def read(line: str, vibe: str = "", *, llm: bool | None = None) -> dict:
             shape = " ".join(content[:-1] + [singular(content[-1])]).strip()
             if shape and shape not in own and len(own) < MAX_OWN:
                 own.append(shape)
+    # a theme's things after the ones typed: the catalogue's own join the objects, the rest are grown as shapes
+    theme_things: list[str] = []
+    for theme in themes:
+        for thing in THEMES[theme]["things"]:
+            if len(theme_things) >= THEME_THINGS:
+                break
+            if nouns.get(thing) is not None:
+                if thing not in objects:
+                    objects.append(thing)
+                    theme_things.append(thing)
+            elif thing not in own and len(own) < MAX_OWN:
+                own.append(thing)
+                theme_things.append(thing)
     # the lights of a later group belong to the first scene: "..., lasers" -> "a cyberpunk city ..., lasers"
     for w in all_words:
         if w in LIGHT_OBJECTS and w not in details and not any(w in s.split() for s in scenes):
@@ -469,7 +578,8 @@ def read(line: str, vibe: str = "", *, llm: bool | None = None) -> dict:
         family = stills.family_named(vibe, stills.content_words(family_words(all_words)))
     performer = _performer(all_words)
     reading = {"line": str(line or "").strip(), "scenes": scenes, "objects": objects[:MAX_OBJECTS], "own": own[:MAX_OWN],
-               "family": family or "", "performer": performer, "feel": feel, "source": "rules"}
+               "family": family or "", "performer": performer, "feel": feel, "source": "rules",
+               "theme": themes[0] if themes else "", "theme_things": theme_things}
     ask = bool(os.environ.get("XENO_LLM_URL", "").strip()) if llm is None else bool(llm)
     if ask:
         reading = refine(reading, text if feel else line, vibe)  # the feel words are not things for the model to grow
@@ -523,7 +633,7 @@ def summary(reading: dict) -> str:
     if not things and reading.get("family"):
         things = [reading["family"].replace("-", " ") + " (the family)"]
     if things or own:
-        bits.append("Objects: " + ", ".join(things + own) + ".")
+        bits.append("Objects: " + ", ".join(things + own) + (f" (the {reading['theme']} theme)" if reading.get("theme") else "") + ".")
     perf = reading.get("performer")
     if perf:  # read, but she renders only when switched on in Work in progress
         bits.append("Polly: " + PERFORMER_WORDS.get(str(perf.get("style") or "auto"), "performing") + " (in Work in progress).")
