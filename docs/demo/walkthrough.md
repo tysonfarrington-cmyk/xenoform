@@ -70,10 +70,29 @@ the social post. Voice-over over the screen, the outputs played full frame, capt
 6. **Tys uploads and posts** (YouTube, public or unlisted), puts the link in README.md, CONTEST.md and the post, and
    submits the form. Nothing is uploaded or posted by an agent.
 
+## Made (29 Oct)
+
+- **The voice** is Kokoro-82M (Apache 2.0, open weights, read on the CPU with kokoro-onnx), from the voice copies
+  `short_voice.json` and `long_voice.json` (one line a shot; `say` is what the voice reads where it differs from the
+  caption). "Xenoform" is read ZEE-no-form (espeak's own guess is ZEN-o-form). Every line is measured before it is
+  used: no clipping, no long gap inside a line, and no ending that rises 15% or more over the line's own pitch (one
+  line was reworded to land).
+- **The screen** was recorded from a desk on this machine in headless Edge over the DevTools protocol at 1440x810, 4/3
+  scale (1920x1080 frames), with a drawn cursor and highlights; the Make, the racing chips and the timeline edit are
+  real (the None "car rally racing" cut, 5ce3c134). Recording found the desk blinking on every click (fixed in
+  f9eaa7e).
+- **The short** (1:40 to 1:44 by voice) and **the long** (5:36 in af_heart, nine chapters with labels) are in
+  `Desktop\xeno_walkthrough_29oct`, with 720p review copies. Captions are burned in from the voice copy; the music bed
+  is "Morphing Wobble", ducked under the voice (looped under the long one); the mix is -16 LUFS.
+- **The long one's chapters** (for the YouTube description, af_heart timing): 0:00 What it is · 0:20 Song and vibe ·
+  0:54 What it morphs through · 1:37 Make · 2:10 The engine · 3:17 The timeline · 4:05 Your clips · 4:33 Share ·
+  4:56 How it's built.
+
 ## Still to decide
 
-- The voice: a local open-weights voice (for example Kokoro, Apache 2.0; a download of a few hundred MB, so it needs
-  Tys's OK), ElevenLabs on Tys's account (his credits), or Tys's own.
-- The three opening cuts: which Finals to render overnight after the Thursday 9 pm freeze.
+- Which Kokoro voice: af_heart (US female), am_michael (US male) or bm_george (UK male). Swapping is a re-read and a
+  re-assembly, about ten minutes.
+- The three opening cuts: which Finals to render overnight after the Thursday 9 pm freeze (the cut uses earlier Finals
+  until then).
 - 16:9 for the contest video (the desk is a 16:9 screen; CONTEST.md still says 9:16 from when the demo was the app's
   own output) with a 9:16 cut for the post.
