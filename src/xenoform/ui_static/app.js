@@ -734,7 +734,13 @@ function shareRow(easy) {
         <a class="ghost" href="${esc(media(`/api/jobs/${job}/seed`))}" download="xenoform-${esc(id)}-seed.json" title="The seeds and settings the render used">Seed file</a>
       </div>
       ${easy.hookUrl ? `<p class="note">15 s hook ready: <a href="${esc(media(easy.hookUrl))}" download>download the hook</a>${easy.hookInfo ? ` · ${esc(easy.hookInfo)}` : ""}</p>` : ""}
-      ${easy.editUrl ? `<p class="note">Edit pack ready: <a href="${esc(media(easy.editUrl))}" download>download the zip</a>${easy.editInfo ? ` · ${esc(easy.editInfo)}` : ""}</p>` : ""}
+      ${easy.editBusy ? `<div class="edit-ready"><b>Laying the cut out as a timeline…</b><span class="note">a few seconds: every shot is copied beside the song</span></div>` : ""}
+      ${easy.editUrl && !easy.editBusy ? `<div class="edit-ready">
+        <b>${easy.editOpened ? `The edit pack is open in Explorer, ${esc(easy.editTimeline || "the timeline file")} selected.` : "The edit pack is ready."}</b>
+        <ol class="edit-steps"><li>In Resolve: File › Import › Timeline…</li><li>Pick <code>${esc(easy.editTimeline || "the .xml")}</code>${easy.editOpened ? " in the folder that just opened" : " from the zip"}</li><li>Leave “Automatically import source clips” on: every shot lands on V1, the song on A1, the markers on the drop</li></ol>
+        <div class="share-row"><button type="button" class="ghost" data-act="easy-edit-open">Open the folder again</button><a class="ghost" href="${esc(media(easy.editUrl))}" download>Download the zip</a></div>
+        ${easy.editInfo ? `<p class="note">${esc(easy.editInfo)}</p>` : ""}
+      </div>` : ""}
       ${easy.recipe ? `<p class="note recipe-line">Recipe <code>${esc(easy.recipe)}</code></p>` : ""}
     </section>`;
 }
@@ -792,7 +798,7 @@ function renderEasy() {
     return `<div class="easy easy-making">
       <div class="easy-make-head">
         <div>
-          <p class="eyebrow">${esc(chosen.name)} · ${esc(easy.songLabel || "Song")}${easy.madeLength ? ` · ${esc(String(easy.madeLength))} s prototype` : ""}${easy.madeTier === "final" ? " · Final" : ""}</p>
+          <p class="eyebrow">${esc(chosen.name)} · ${esc(easy.songLabel || "Song")}${easy.madeLength ? ` · ${esc(String(easy.madeLength))} s prototype` : ""}${easy.madeTier === "final" ? " · Final" : easy.madeTier === "fast" ? " · Fast Final" : ""}</p>
           <h2>${easy.madeLength ? "Making the prototype." : "Making your video."}</h2>
         </div>
         <div class="easy-make-actions">
@@ -810,14 +816,14 @@ function renderEasy() {
         </div>
         <aside class="panel">
           <h3>What is happening</h3>
-          <ol class="happen">
+          <ol class="happen" id="easy-happen">
             <li class="${heard}">Listened to the song</li>
             <li class="${wrote}">Wrote the story</li>
             <li class="${painting}">Painting the shots</li>
             <li class="wait">Cutting to the beat</li>
           </ol>
-          <p class="eyebrow">${esc(storyLabel)}</p>
-          <p>${esc(story)}</p>
+          <p class="eyebrow" id="easy-chain-label">${esc(storyLabel)}</p>
+          <p id="easy-chain">${esc(story)}</p>
           ${lineNote}
           <p class="note" id="easy-progress">${esc(easy.note || "Reading the song.")}</p>
           <p class="note">You can leave this page. The video keeps going and waits for you.</p>
@@ -860,6 +866,7 @@ function renderEasy() {
         ${showcase ? "" : shareRow(easy)}
       </section>
       ${showcase ? showcaseAside() : `<aside class="panel easy-side" data-tour="easy-refine">
+        <button type="button" class="knobs-fold" data-act="easy-knobs-fold" title="Fold the knobs away and give the video and the timeline the width; click again to bring them back" aria-label="Fold the knobs away">${knobsFolded() ? "‹ Knobs" : "Hide ›"}</button>
         <div class="energy-head"><h3>Knobs</h3><span>Turn, then re-cut. No GPU.</span></div>
         <div class="simple-knobs"></div>
         ${timingRow(easy.morphTiming || "smooth", "easy-morph-timing")}
@@ -867,7 +874,7 @@ function renderEasy() {
         ${lookRow(easy.danceFx || "auto", "easy-look")}
         ${foreshadowRow(easy)}
         ${scenesRow(easy)}
-        <button type="button" class="generate easy-row" data-act="easy-recut-knobs"${easy.showcase || !easyVideoId() ? " disabled" : ""}>Re-cut with these knobs</button>
+        <button type="button" class="generate easy-row" data-act="easy-recut-knobs"${easy.showcase || !easyVideoId() ? " disabled" : ""}>${pendingCount(easy) ? `Apply ${pendingCount(easy)} change${pendingCount(easy) === 1 ? "" : "s"}` : "Re-cut with these knobs"}</button>
         <p class="note">Re-composes the same morphs with the knobs, the look and the orbit as they are now, and with the timeline's edits. No GPU, no new pictures: a fraction of the render time.</p>
         ${renderRow(easy)}
         <div class="energy-head"><h3>Try another vibe</h3><span>Same song, same line</span></div>
@@ -907,8 +914,8 @@ function renderEasy() {
         <div class="step-head"><h3>Vibe</h3><span>Pick one. You can try another after.</span></div>
         <div class="vibe-grid" role="radiogroup" aria-label="Vibe">${vibeCards(easy, false, "featured")}</div>
         ${moreVibes(easy)}
-        <label class="idea-field">Your idea <small>optional</small>
-          <input id="easy-idea" type="text" maxlength="170" value="${esc(easy.idea || "")}" aria-label="Your idea, optional" placeholder="a rally car, a trophy, a chequered flag, a desert at dusk, fast and punchy" autocomplete="off" />
+        <label class="idea-field">What it morphs through <small>optional · things, a theme, a place, a feel</small>
+          <input id="easy-idea" type="text" maxlength="170" value="${esc(easy.idea || "")}" aria-label="What it morphs through, optional" placeholder="a rally car, a trophy, a chequered flag, a desert at dusk, fast and punchy" autocomplete="off" />
         </label>
         ${ideaReadingLine(easy)}
         <details class="idea-help"><summary>How the line works</summary>
@@ -957,9 +964,9 @@ function renderEasy() {
 // night, each varying one thing, run one at a time on a free GPU and compared on /variations in the morning. The time is
 // what a Draft this long took on this machine (GET /api/batches?seconds=, the took.json beside every cut).
 const VARY_NOTES = {
-  seed: "The same settings with a fresh roll each: other objects, other morphs, other handoffs.",
-  vibe: "Your line in the next vibes along, one vibe each.",
-  feel: "Your line with another feel each (slow and dreamy, hard and glitchy, warm and hazy...): its knobs and its Look.",
+  seed: "Each one keeps your settings and rolls new dice: other objects from the library, other morphs, other handoffs.",
+  vibe: "Each one is your line in another vibe (another material and light), one vibe each.",
+  feel: "Each one is your line with another feel (slow and dreamy, hard and glitchy, warm and hazy...): its knobs and its Look.",
 };
 function spanText(seconds) {
   const m = Math.max(1, Math.round(Number(seconds || 0) / 60));
@@ -974,11 +981,14 @@ function variationsRow(easy) {
   const each = rates && rates.draft && Number(rates.draft.eta_s);
   const time = each ? ` · about ${spanText(n * each)}` : "";
   const measured = each ? ` A Draft this long takes about ${spanText(each)} here (${rates.draft.cuts} cuts measured)${rates.final ? `; the last Final, ${Math.round(rates.final.latest.seconds)} s, took ${spanText(rates.final.latest.took_s)}` : ""}.` : "";
+  // Variations are extra Drafts queued for later, separate from Make: they never make Make slower or faster. One is a
+  // Draft of the settings as they are, run when the GPU is free (nothing varies, so the second row hides).
   return `<div class="variations-row" data-tour="easy-variations">
-      ${simpleSeg("easy-batch-n", String(n), [["3", "3"], ["5", "5"], ["10", "10"]], "Variations")}
-      ${simpleSeg("easy-batch-vary", vary, [["seed", "Seed"], ["vibe", "Vibe"], ["feel", "Feel"]], "Vary")}
-      <button type="button" class="ghost easy-row" data-act="easy-batch">Queue ${n} Drafts${esc(time)}</button>
-      <p class="note">${esc(VARY_NOTES[vary] || "")} They run one after another and wait for any other render, so leave them overnight.${esc(measured)} <a href="/variations" target="_blank" rel="noopener">Compare them &rarr;</a></p>
+      <p class="note">Queue Drafts to render later, one after another, while you do something else. Make is not affected.</p>
+      ${simpleSeg("easy-batch-n", String(n), [["1", "1"], ["3", "3"], ["5", "5"], ["10", "10"]], "How many")}
+      ${n > 1 ? simpleSeg("easy-batch-vary", vary, [["seed", "New objects"], ["vibe", "Other vibes"], ["feel", "Other feels"]], "What changes") : ""}
+      <button type="button" class="ghost easy-row" data-act="easy-batch">Queue ${n} Draft${n === 1 ? "" : "s"}${esc(time)}</button>
+      <p class="note">${n > 1 ? esc(VARY_NOTES[vary] || "") : "One Draft of your settings as they are, started as soon as nothing else is rendering."} ${n > 1 ? "They run one after another and wait for any other render, so leave them overnight." : ""}${esc(measured)} <a href="/variations" target="_blank" rel="noopener">Compare them &rarr;</a></p>
     </div>`;
 }
 async function loadBatchRates(seconds) {
@@ -1032,7 +1042,9 @@ async function easyBatch(button) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || "The variations did not queue.");
     const left = Number(data.left_s) > 0 ? `, about ${spanText(data.left_s)} in all here` : "";
-    state.easy.note = `${data.items.length} Drafts queued, varying the ${vary}${left}. They run one after another: Compare them, under the button, shows each as it lands.`;
+    state.easy.note = data.items.length === 1
+      ? `One Draft queued${left}. It starts when nothing else is rendering: Compare them, under the button, shows it when it lands.`
+      : `${data.items.length} Drafts queued, ${{ seed: "new objects", vibe: "another vibe", feel: "another feel" }[vary] || vary} in each${left}. They run one after another: Compare them, under the button, shows each as it lands.`;
   } catch (err) {
     state.easy.note = String(err.message || err);
   }
@@ -1239,32 +1251,41 @@ function ownRow(easy) {
 // The stills library: the objects this vibe's morphs travel between. The repo ships a seed set; Grow renders more
 // on this GPU (Z-Image Turbo through ComfyUI, about 6 s a still), each checked against the vibe's own pool and kept
 // under work/ui/objects. Your own shapes are typed subjects rendered in the vibe's material; they go first in the chain.
-function stillsRow(easy) {
+// The library row's two live lines: the vibe's counts and the running grow, both rewritten in place while a grow runs.
+function stillsCount(easy) {
   const lib = state.stills || {};
   const have = (lib.counts || {})[easy.vibe] || { shipped: 0, grown: 0, own: 0, total: 0 };
-  const job = lib.job || {};
-  const running = job.status === "running" || job.status === "starting";
   const vibe = vibeById(easy.vibe);
   const name = (vibe && vibe.name) || easy.vibe || "this vibe";
   const parts = [`${have.shipped} shipped`, `${have.grown} grown here`, have.own ? `${have.own} of your own` : "", have.scenes ? `${have.scenes} scenes` : ""].filter(Boolean);
   const left = lib.vibe === easy.vibe && lib.subjects_left != null ? ` · ${lib.subjects_left} subjects left to render` : "";
-  const grow = Number(lib.default_grow || 36);
-  const growScenes = Number(lib.default_grow_scenes || 8);
-  let status = "";
-  if (running) {
+  return `${name}: ${parts.join(" · ")}${left}`;
+}
+function stillsStatus(easy) {
+  const job = (state.stills || {}).job || {};
+  if (job.status === "running" || job.status === "starting") {
     const eta = Number(job.eta_s || 0) - (Date.now() / 1000 - Number(job.started || 0));
     const left = eta > 0 ? `about ${clockText(eta)} left` : (job.done ? "finishing" : "loading the model, the first render takes longer");
-    status = `Growing ${job.kind === "scene" ? "scenes for " : ""}${job.vibe}: ${job.done || 0} of ${job.asked || 0} rendered · kept ${job.kept || 0} · ${left}`;
-  } else if (easy.stillsNote) {
-    status = easy.stillsNote;
-  } else if (job.status === "done" && job.note) {
-    status = `${job.vibe}: ${job.note}`;
-  } else if (job.status === "error" && job.note) {
-    status = `Library: ${job.note}`;
+    return `Growing ${job.kind === "scene" ? "scenes for " : ""}${job.vibe}: ${job.done || 0} of ${job.asked || 0} rendered · kept ${job.kept || 0} · ${left}`;
   }
-  const note = status || `Every still is rendered on this GPU (Z-Image Turbo, about ${Math.round(Number(lib.seconds_per_still || 6))} s each), checked against the vibe's own pool (backdrop, size, cropped, soft, duplicate) and kept under the work folder; delete a jpg there to drop it. Your own shapes go first in the chain. Scenes are wide frames in the vibe's light (a dark shore, a corridor of mirrors); the Scenes row morphs them in.`;
+  if (easy.stillsNote) return easy.stillsNote;
+  if (job.status === "done" && job.note) return `${job.vibe}: ${job.note}`;
+  if (job.status === "error" && job.note) return `Library: ${job.note}`;
+  return "";
+}
+function stillsRow(easy) {
+  const lib = state.stills || {};
+  const job = lib.job || {};
+  const running = job.status === "running" || job.status === "starting";
+  const grow = Number(lib.default_grow || 36);
+  const growScenes = Number(lib.default_grow_scenes || 8);
+  const status = stillsStatus(easy);
+  // the status sits on its own fixed line and the explanation never swaps for it, so the row keeps its height while a
+  // grow runs; loadStills rewrites just this line every few seconds (stillsStatus) instead of redrawing the desk
+  const note = `Every still is rendered on this GPU (Z-Image Turbo, about ${Math.round(Number(lib.seconds_per_still || 6))} s each), checked against the vibe's own pool (backdrop, size, cropped, soft, duplicate) and kept under the work folder; delete a jpg there to drop it. Your own shapes go first in the chain. Scenes are wide frames in the vibe's light (a dark shore, a corridor of mirrors); the Scenes row morphs them in.`;
   return `<div class="simple-seg own-row library-row"><span>Library</span>
-      <span class="library-count">${esc(name)}: ${esc(parts.join(" · "))}${esc(left)}</span>
+      <span class="library-count" id="library-count">${esc(stillsCount(easy))}</span>
+      <span class="library-status" id="library-status" aria-live="polite">${esc(status)}</span>
       <button type="button" class="ghost" data-act="easy-grow"${running || !easy.vibe ? " disabled" : ""} title="Render ${grow} new objects for this vibe on this GPU">Grow ${grow} more</button>
       <button type="button" class="ghost chip" data-act="easy-grow-scenes"${running || !easy.vibe ? " disabled" : ""} title="Render ${growScenes} wide scenes for this vibe on this GPU; the Scenes row below morphs them in">Grow ${growScenes} scenes</button>
       <label class="ghost cloud-toggle">Your own shapes <input type="text" id="easy-own-shapes" value="${esc(easy.ownShapes || "")}" spellcheck="false" aria-label="Your own shapes, comma-separated" placeholder="a brass astrolabe, a wolf skull"></label>
@@ -1582,7 +1603,7 @@ function simpleOptions(easy) {
       ${simpleSeg("easy-aspect", aspect, [["16:9", "16:9"], ["9:16", "9:16"], ["1:1", "1:1"]], "Aspect")}
       ${simpleSeg("easy-length", String(easyLength(easy)), [["0", "Full song"], ["60", "60 s"], ["30", "30 s"], ["15", "15 s"]], "Length")}
       <p class="note">${esc(lengthNote(easy))}</p>
-      ${simpleSeg("easy-tier", tier, [["draft", "Draft"], ["final", "Final"]], "Model")}
+      ${simpleSeg("easy-tier", tier, [["draft", "Draft"], ["fast", "Fast Final"], ["final", "Final"]], "Model")}
       ${machineRows(easy)}
       ${aspect === "9:16" && tier === "final" ? simpleSeg("easy-vertical", vertical, [["native", "Native"], ["crop", "Crop"]], "Vertical") : ""}
       ${morphControl(easy, tier, aspect, vertical)}
@@ -1591,13 +1612,13 @@ function simpleOptions(easy) {
       ${simpleSeg("easy-card", card ? "on" : "off", [["off", "Off"], ["on", "On"]], "End card")}
       <p class="note">${esc(energy === "dense" ? "Dense: a song cuts two bars a shot and a bar on the drop, light punches on the downbeats, and loops a chain of up to 30 morphs so every handoff stays one continuous transformation; a clip under 20 s cuts a shot a bar, then every half bar from the drop, with stutters, holds and punches." : "Flow: one morph per section, cut on the bar.")}
       ${esc(vertNote)}
-      ${esc(tier === "final" ? " " + finalEtaText() : " Draft: LTX 0.9.5, the quick pass.")}
+      ${esc(tier === "final" ? " " + finalEtaText() : tier === "fast" ? " Fast Final: the Draft's morphs (LTX 0.9.5), each upscaled 4x to 1080×1920 and cut at full size. The motion is the Draft's, the picture is full size, in a fraction of the Final's time." : " Draft: LTX 0.9.5, the quick pass.")}
       ${esc(easy.overlay ? "" : " Clean export: no waveform or text on the picture.")}</p>
     </div>`;
 }
 
 // Morph count: Auto (from clip length + BPM) or a fixed number of forms, with a time/VRAM estimate.
-const MORPH_COST = {draft: {s: 35, vram_gb: 7.5}, final: {s: 110, vram_gb: 11.2}, final_916: {s: 140, vram_gb: 11.4}};
+const MORPH_COST = {draft: {s: 35, vram_gb: 7.5}, fast: {s: 55, vram_gb: 7.5}, final: {s: 110, vram_gb: 11.2}, final_916: {s: 140, vram_gb: 11.4}};
 function autoMorphs(energy) {
   const m = state.simpleOptions && state.simpleOptions.morphs;
   if (m && m.auto) return m.auto;
@@ -1606,7 +1627,7 @@ function autoMorphs(energy) {
   return Math.max(1, Math.round(secs / (energy === "dense" ? bar / 2 : Math.max(bar * 2, 4))));
 }
 function morphEstimate(count, tier, aspect, vertical) {
-  const key = tier === "final" && aspect === "9:16" && vertical === "native" ? "final_916" : (tier === "final" ? "final" : "draft");
+  const key = tier === "final" && aspect === "9:16" && vertical === "native" ? "final_916" : (tier === "final" || tier === "fast" ? tier : "draft");
   const c = MORPH_COST[key];
   const secs = c.s * count + 20;
   return `about ${clockText(secs)}, peak VRAM ~${c.vram_gb} GB`;
@@ -1867,19 +1888,21 @@ function shotsLane(easy) {
   const anyEdits = Object.keys(tl.shots).length + Object.keys(tl.bounds).length + Object.keys(lane.shot_overrides || {}).length + Object.keys(lane.boundary_overrides || {}).length;
   const applyRow = lane.editable !== false && !swapping
     ? `<div class="lane-apply-row">
-        <button type="button" class="generate lane-apply" data-act="easy-tl-apply"${pending ? "" : " disabled"}>Apply${pending ? ` ${pending} edit${pending === 1 ? "" : "s"}` : ""}</button>
         ${anyEdits ? `<button type="button" class="text" data-act="easy-tl-reset">Reset the timeline</button>` : ""}
-        <span class="note">Apply re-cuts from the cached morphs with these edits, no GPU; they stay with the cut through later re-cuts.</span>
+        <span class="note">${pending ? `${pending} timeline edit${pending === 1 ? "" : "s"} waiting: Apply in the bar at the bottom re-cuts with them.` : "An edit here waits for Apply in the bar at the bottom, with any knob you turned; it stays with the cut through later re-cuts."}</span>
       </div>`
     : "";
   const drawer = swapping ? "" : timelineDrawer(easy, lane, tl, picked);
   return `<div class="shots-lane tl-panel${swapping ? " swapping" : ""}" aria-label="Timeline">
       <div class="lane-head"><span>Timeline</span><span class="note">${esc(facts)} · ${hint}</span>${toggle}</div>
-      <div class="lane-overlays">${overlays}</div>
-      ${opening}
-      <div class="lane-shots">${blocks}</div>
-      <div class="lane-bounds">${bounds}</div>
-      ${song}
+      <div class="lane-track" id="lane-track" data-total="${total}">
+        <div class="lane-overlays">${overlays}</div>
+        ${opening}
+        <div class="lane-shots">${blocks}</div>
+        <div class="lane-bounds">${bounds}</div>
+        ${song}
+        <span class="lane-playhead" id="lane-playhead" aria-hidden="true"></span>
+      </div>
       ${picker}
       ${drawer}
       ${applyRow}
@@ -2175,20 +2198,34 @@ async function easyHook() {
 async function easyEdit() {
   const id = easyVideoId();
   if (!id) return;
-  state.easy.note = "Laying the cut out as a timeline for Resolve, Premiere or Final Cut.";
+  state.easy.editBusy = true;
   render();
   try {
     const res = await api(`/api/videos/${id}/edit`, { method: "POST" });
     const body = await res.json();
     if (!res.ok) throw new Error(body.detail || "The edit pack did not build.");
     state.easy.editUrl = body.url;
+    state.easy.editTimeline = body.timeline;
     state.easy.editInfo = `${body.shots} shots on V1, ${body.song ? "the song on A1, " : ""}${body.markers} marker${body.markers === 1 ? "" : "s"}, ${body.mb} MB. `
-      + `Resolve: File › Import › Timeline, pick ${body.timeline}; Premiere: File › Import, the same file; Final Cut: ${body.fcpxml}. Unzipped already in ${body.folder}`;
-    state.easy.note = "";
+      + `Premiere: File › Import, the same file; Final Cut: ${body.fcpxml}. Unzipped in ${body.folder}`;
+    state.easy.editOpened = await easyEditOpen(id);
   } catch (err) {
     state.easy.note = String(err.message || err);
   }
+  state.easy.editBusy = false;
   render();
+}
+
+// The pack's folder in Explorer with the timeline file selected (POST /api/videos/{id}/edit/reveal); false where the
+// desk cannot open a window on this screen.
+async function easyEditOpen(id) {
+  try {
+    const res = await api(`/api/videos/${encodeURIComponent(id || easyVideoId())}/edit/reveal`, { method: "POST" });
+    const body = await res.json();
+    return !!(res.ok && body.opened);
+  } catch (err) {
+    return false;
+  }
 }
 
 async function easyRecipeFor(id) {
@@ -2488,6 +2525,7 @@ async function easyCloudEstimate() {
 async function recutWithKnobs() {
   const id = easyVideoId();
   if (!id || !state.easy) return;
+  state.easy.knobsTouched = {};
   const body = {
     macros: window.XENO_MACROS ? window.XENO_MACROS() : null,
     dance_fx: state.easy.danceFx || "auto",
@@ -2600,9 +2638,75 @@ function placeKey(node) {
   return ["act", node.dataset.act, node.dataset.vibe || "", node.dataset.index || "", node.dataset.quality || "", node.dataset.method || "", node.dataset.step || ""].join(":");
 }
 
+// Nothing moves under you when the desk redraws. render() builds the desk anew from innerHTML, so without this a click
+// in the scrolled inspector column (Foreshadow, Look) jumped the column to its top, and a row changing height above
+// you (a note that grows, stills arriving while a grow runs) moved the page. Every scrolled panel gets its place back,
+// and the row you were on (the one holding the focused control, else the one a third of the way down the window) is
+// put back where it was on the screen.
+const SCROLLERS = ".easy-side";
+function anchorKey(node) {
+  if (!node || node.nodeType !== 1) return "";
+  if (node.id) return `#${CSS.escape(node.id)}`;
+  const d = node.dataset || {};
+  if (d.tour) return `[data-tour="${CSS.escape(d.tour)}"]`;
+  if (!d.act) return "";
+  // a control: the very button clicked (Foreshadow's Trace, not the column it sits in)
+  return `[data-act="${CSS.escape(d.act)}"]${d.value != null ? `[data-value="${CSS.escape(d.value)}"]` : ""}${d.index != null ? `[data-index="${CSS.escape(d.index)}"]` : ""}`;
+}
+function scrollerKey(node, seen) {
+  const base = anchorKey(node) || `${node.tagName}.${node.className && node.className.baseVal == null ? node.className : ""}`;
+  seen[base] = (seen[base] || 0) + 1;
+  return `${base}@${seen[base]}`;
+}
+function rememberScrollers(root) {
+  const out = {};
+  const seen = {};
+  for (const node of root.querySelectorAll("*")) {
+    const key = scrollerKey(node, seen);
+    if (node.scrollTop || node.scrollLeft) out[key] = [node.scrollTop, node.scrollLeft];
+  }
+  return out;
+}
+function restoreScrollers(root, saved) {
+  if (!saved || !Object.keys(saved).length) return;
+  const seen = {};
+  for (const node of root.querySelectorAll("*")) {
+    const at = saved[scrollerKey(node, seen)];
+    if (at) {
+      node.scrollTop = at[0];
+      node.scrollLeft = at[1];
+    }
+  }
+}
+function rememberAnchor(app) {
+  const focus = document.activeElement;
+  let node = focus && focus !== document.body && app.contains(focus) ? focus : null;
+  if (!node) node = document.elementFromPoint(Math.round(window.innerWidth * 0.4), Math.round(Math.min(window.innerHeight / 3, 320)));
+  while (node && node !== app && !anchorKey(node)) node = node.parentElement;
+  if (!node || node === app || !app.contains(node)) return null;
+  const key = anchorKey(node);
+  return { key, nth: [...app.querySelectorAll(key)].indexOf(node), top: node.getBoundingClientRect().top };
+}
+function restoreAnchor(app, anchor) {
+  if (!anchor) return;
+  const node = app.querySelectorAll(anchor.key)[Math.max(0, anchor.nth)];
+  if (!node) return;
+  const delta = node.getBoundingClientRect().top - anchor.top;
+  if (Math.abs(delta) < 1) return;
+  const box = node.closest(SCROLLERS);
+  if (box === node) return;  // a scrolled panel itself keeps its own place (restoreScrollers)
+  if (box) box.scrollTop += delta;
+  else window.scrollBy(0, delta);
+}
+
 function rememberPlace() {
   const node = document.activeElement;
+  const app = document.getElementById("app");
   const place = { y: window.scrollY || 0, key: placeKey(node), start: null, end: null };
+  if (app) {
+    place.scrollers = rememberScrollers(app);
+    place.anchor = rememberAnchor(app);
+  }
   if (node && node.selectionStart != null) {
     place.start = node.selectionStart;
     place.end = node.selectionEnd;
@@ -2613,6 +2717,11 @@ function rememberPlace() {
 function restorePlace(place) {
   if (!place || document.body.dataset.tour === "1") return;
   if (place.y) window.scrollTo(0, place.y);
+  const app = document.getElementById("app");
+  if (app) {
+    restoreScrollers(app, place.scrollers);
+    restoreAnchor(app, place.anchor);
+  }
   if (!place.key) return;
   let node = null;
   if (place.key.startsWith("#")) node = document.getElementById(place.key.slice(1));
@@ -2649,6 +2758,7 @@ function render() {
   const strip = document.getElementById("stage-slot");
   if (strip) strip.innerHTML = state.easy ? easyCrumbs(Object.assign({}, state.easy, state.view === "simple" ? {} : { phase: "tool" })) : "";
   document.body.dataset.phase = state.view === "simple" ? ((state.easy && state.easy.phase) || "choose") : state.view;
+  document.body.dataset.knobs = knobsFolded() ? "folded" : "open";
   saveEasy();
   paintJob();
   mountLive();
@@ -2658,6 +2768,8 @@ function render() {
   if (window.XENO_TUTORIAL) window.XENO_TUTORIAL.sync();
   scheduleOpener();
   restorePlace(place);
+  paintPlayhead();
+  paintPending();
 }
 
 // Setup & models and Connect an AI as full pages on the desk (the "..." menu, the line under Make, #setup and #connect).
@@ -2854,6 +2966,103 @@ function guardDetails(job) {
   const head = [clamps ? `${clamps} setting${clamps === 1 ? "" : "s"} adjusted` : "", qa ? `${qa} check${qa === 1 ? "" : "s"} flagged` : ""].filter(Boolean).join(" · ");
   return `<details class="guardnotes"><summary>Guardrails: ${esc(head)}</summary><ul>${lines.map((m) => `<li>${esc(m)}</li>`).join("")}</ul></details>`;
 }
+// The knobs column folds to a slim tab on the cut's screen (remembered), so the video and the timeline get the width.
+function knobsFolded() {
+  try { return localStorage.getItem("xeno-knobs-folded") === "1"; } catch (err) { return false; }
+}
+
+// Changes waiting on a cut: the knob rows turned since the last re-cut (a set of rows, so three clicks on Look are one
+// change) and the timeline's edits. One bar at the bottom of the window applies all of them in one re-cut from the
+// cached morphs; the lane's Apply and the knobs' Re-cut used to be two buttons for the same thing (28 Oct).
+const KNOB_ACTS = { "easy-look": "Look", "easy-effect": "Effects", "easy-morph-timing": "Timing", "easy-foreshadow": "Foreshadow", "easy-scenes": "Scenes" };
+function touchKnob(row) {
+  if (!state.easy) return;
+  state.easy.knobsTouched = Object.assign({}, state.easy.knobsTouched || {}, { [row]: 1 });
+  paintPending();
+}
+document.addEventListener("xeno-knobs", () => {
+  if (state && state.easy && state.easy.phase === "result") touchKnob("Knobs");
+});
+function pendingParts(easy) {
+  const rows = Object.keys((easy && easy.knobsTouched) || {});
+  const id = easyVideoId();
+  const lane = state.lane && state.lane.id === id ? state.lane : null;
+  const edits = lane ? timelineDirty(easy, lane) : 0;
+  return { rows, edits };
+}
+function pendingCount(easy) {
+  const { rows, edits } = pendingParts(easy);
+  return rows.length + edits;
+}
+function pendingBar(easy) {
+  if (!easy || easy.phase !== "result" || easy.showcase || !easyVideoId()) return "";
+  const { rows, edits } = pendingParts(easy);
+  const n = rows.length + edits;
+  if (!n) return "";
+  const what = [rows.length ? rows.join(", ") : "", edits ? `${edits} timeline edit${edits === 1 ? "" : "s"}` : ""].filter(Boolean).join(" · ");
+  return `<div class="pending-bar" role="status">
+      <span><b>${n} change${n === 1 ? "" : "s"} waiting</b> <span class="note">${esc(what)}</span></span>
+      <button type="button" class="generate" data-act="easy-apply">Apply · re-cut</button>
+      <span class="note">from the cached morphs, no GPU</span>
+    </div>`;
+}
+function paintPending() {
+  // docked on the body, outside #app: an animated ancestor there would make position:fixed sit mid-page
+  let dock = document.getElementById("pending-dock");
+  if (!dock) {
+    dock = document.createElement("div");
+    dock.id = "pending-dock";
+    document.body.appendChild(dock);
+  }
+  dock.innerHTML = state && state.easy && state.view === "simple" ? pendingBar(state.easy) : "";
+  const button = document.querySelector('[data-act="easy-recut-knobs"]');
+  const n = state.easy ? pendingCount(state.easy) : 0;
+  if (button) button.textContent = n ? `Apply ${n} change${n === 1 ? "" : "s"}` : "Re-cut with these knobs";
+}
+
+// The timeline's playhead: where the player is, over the shots, moving while it plays (the lane is a percentage of
+// the cut's length, data-total on #lane-track).
+let playheadFrame = 0;
+function paintPlayhead() {
+  const head = document.getElementById("lane-playhead");
+  const track = document.getElementById("lane-track");
+  const player = document.getElementById("player");
+  if (!head || !track || !player) return;
+  const total = Number(track.dataset.total) || player.duration || 1;
+  const at = Math.max(0, Math.min(1, (player.currentTime || 0) / total));
+  head.style.left = `${(100 * at).toFixed(3)}%`;
+  head.classList.toggle("on", at > 0 || !player.paused);
+}
+function playheadLoop() {
+  paintPlayhead();
+  const player = document.getElementById("player");
+  playheadFrame = player && !player.paused && !player.ended ? requestAnimationFrame(playheadLoop) : 0;
+}
+["play", "playing", "seeked", "timeupdate", "pause", "loadedmetadata"].forEach((type) => {
+  document.addEventListener(type, (event) => {
+    if (!event.target || event.target.id !== "player") return;
+    if (!playheadFrame) playheadLoop();
+  }, true);
+});
+
+// The making screen's live parts, painted in place on every poll: the step the render is on, and the chain once the
+// render has picked it. That chain replaces the pre-Make preview, which never knew the stills Make grows for the line;
+// the screen used to keep the preview's 41 stills up through a whole Final that rendered 15 (28 Oct).
+const MAKING_STEP = { analyze: 0, draft: 1, morphs: 2, cut: 3, assemble: 3, card: 3, save: 3, qa: 3, done: 4 };
+function paintMaking(job) {
+  const at = MAKING_STEP[String((job.timing && job.timing.phase) || job.stage || "")];  // job_timing's canonical phase
+  if (at != null) {
+    document.querySelectorAll("#easy-happen li").forEach((li, i) => { li.className = i < at ? "done" : i === at ? "now" : "wait"; });
+  }
+  const chain = Array.isArray(job.chain) && job.chain.length ? job.chain : null;
+  const label = document.getElementById("easy-chain-label");
+  const text = document.getElementById("easy-chain");
+  if (chain && label && text) {
+    label.textContent = `The chain: ${chain.length} stills, ${Math.max(0, chain.length - 1)} morphs`;
+    text.textContent = chain.map((s) => s.noun || "").filter(Boolean).join(" → ");
+  }
+}
+
 function paintJob() {
   const slot = document.getElementById("easy-guard");
   if (slot) slot.innerHTML = guardDetails(state && state.job);
@@ -3002,6 +3211,10 @@ function adoptSession(data, options = {}) {
     drive: data.drive || null,
     liveAiRequested: previous ? !!previous.liveAiRequested : false,
     liveAiPresent: previous ? !!previous.liveAiPresent : false,
+    // the machine check and any model download outlive a new song: Setup & models read "Checking this machine…"
+    // for good after an upload, because the fresh state had dropped them and nothing asked again
+    setup: previous ? previous.setup || null : null,
+    downloads: previous ? previous.downloads || {} : {},
     interpolate: previous ? !!previous.interpolate : false,
     guideId: previous ? previous.guideId || "" : "",
     recording: previous ? !!previous.recording : false,
@@ -3286,6 +3499,7 @@ async function poll(id) {
     }
     const line = document.getElementById("easy-progress");
     if (line) line.textContent = easyProgressText(job);
+    paintMaking(job);
   }
   paintJob();
   if (job.status === "running") setTimeout(() => poll(id), 400);
@@ -3295,6 +3509,7 @@ document.addEventListener("click", async (event) => {
   const el = event.target.closest("[data-act]");
   if (!el || !state) return;
   const act = el.dataset.act;
+  if (KNOB_ACTS[act] && state.easy && state.easy.phase === "result" && el.closest(".easy-side")) touchKnob(KNOB_ACTS[act]);
   if (act === "palette") {
     openPalette();
   } else if (act === "palette-run") {
@@ -3420,8 +3635,11 @@ document.addEventListener("click", async (event) => {
     // a Cut at a boundary is a Hold on the shot before it (docs/TIMELINE.md): one edit, seen from either side
     setShotOverride(state.easy, state.lane, Number(el.dataset.index) - 1, "play", el.dataset.value === "cut" ? "hold" : "morph");
     render();
-  } else if (act === "easy-tl-apply") {
-    applyTimeline();
+  } else if (act === "easy-knobs-fold") {
+    try { localStorage.setItem("xeno-knobs-folded", knobsFolded() ? "0" : "1"); } catch (err) {}
+    render();
+  } else if (act === "easy-tl-apply" || act === "easy-apply") {
+    recutWithKnobs();
   } else if (act === "easy-tl-reset") {
     if (state.lane) {
       const tl = timelineState(state.easy, state.lane);
@@ -3523,7 +3741,7 @@ document.addEventListener("click", async (event) => {
     state.easy.vertical = el.dataset.value === "crop" ? "crop" : "native";
     render();
   } else if (act === "easy-tier") {
-    state.easy.tier = el.dataset.value === "final" ? "final" : "draft";
+    state.easy.tier = ["final", "fast"].includes(el.dataset.value) ? el.dataset.value : "draft";
     render();
     loadSimpleOptions().then(render);
   } else if (act === "easy-fx") {
@@ -3534,10 +3752,12 @@ document.addEventListener("click", async (event) => {
     render();
   } else if (act === "easy-hook") {
     easyHook();
+  } else if (act === "easy-edit-open") {
+    easyEditOpen();
   } else if (act === "easy-edit") {
     easyEdit();
   } else if (act === "easy-batch-n") {
-    state.easy.batchN = Number(el.dataset.value) || 3;
+    state.easy.batchN = [1, 3, 5, 10].includes(Number(el.dataset.value)) ? Number(el.dataset.value) : 3;
     saveEasy();
     render();
   } else if (act === "easy-batch-vary") {
@@ -3567,6 +3787,7 @@ document.addEventListener("click", async (event) => {
     const row = (state.videos || []).find((item) => item.id === el.dataset.id);
     if (!row) return;
     state.easy.reopenId = row.id;
+    state.easy.knobsTouched = {};
     if (row.vibe && vibeById(row.vibe)) state.easy.vibe = row.vibe;
     state.easy.resultVibe = state.easy.vibe;
     state.easy.madeTier = row.tier || "draft";  // the Render row offers Final for a Draft; a saved cut's length is not known
@@ -4166,7 +4387,20 @@ window.addEventListener("hashchange", () => {
 function renderSetup() {
   const setup = state.setup;
   if (!setup) {
+    // never wait on a check nobody started: ask now, and say so if the desk does not answer
+    if (!setupAsking) {
+      setupAsking = true;
+      loadSetup().then(() => {
+        setupAsking = false;
+        if (!state.setup) state.setup = { failed: true };
+        if (state.view === "setup") render();
+      });
+    }
     return `<section class="panel"><p class="boot">Checking this machine…</p></section>`;
+  }
+  if (setup.failed) {
+    return `<section class="panel"><p class="boot">The desk did not answer the machine check.</p>
+      <button type="button" class="ghost" data-act="check-extra">Check again</button></section>`;
   }
   const tier = setup.tier || {};
   const cards = (setup.models || [])
@@ -4239,6 +4473,7 @@ function renderSetup() {
   </div>`;
 }
 
+let setupAsking = false;
 async function loadSetup() {
   try {
     const response = await api("/api/setup");
@@ -4274,12 +4509,15 @@ async function uploadOwn(files) {
 
 // The library counts and the running grow (GET /api/stills); polled every few seconds while a grow runs.
 let stillsTimer = null;
+let wasRunning = false;
 async function loadStills(force) {
   if (!state.easy || (!force && state.stills && !(state.stills.job && (state.stills.job.status === "running" || state.stills.job.status === "starting")))) return;
   try {
     const query = state.easy.vibe ? `?vibe=${encodeURIComponent(state.easy.vibe)}` : "";
     const res = await api(`/api/stills${query}`);
     if (!res.ok) return;
+    const before = state.stills && state.stills.job;
+    wasRunning = !!before && (before.status === "running" || before.status === "starting");
     state.stills = await res.json();
   } catch (err) {
     return;
@@ -4287,6 +4525,14 @@ async function loadStills(force) {
   const running = state.stills.job && (state.stills.job.status === "running" || state.stills.job.status === "starting");
   if (running && !stillsTimer) stillsTimer = setTimeout(() => { stillsTimer = null; loadStills(true); }, 3000);
   if (!running && state.stills.job && state.stills.job.status === "done" && state.easy) state.easy.stillsNote = "";
+  // while the grow runs only its two lines change: rewrite them where they are, so nothing on the desk flickers
+  const line = document.getElementById("library-status");
+  const count = document.getElementById("library-count");
+  if (running && wasRunning && line && count) {
+    line.textContent = stillsStatus(state.easy);
+    count.textContent = stillsCount(state.easy);
+    return;
+  }
   render();
 }
 

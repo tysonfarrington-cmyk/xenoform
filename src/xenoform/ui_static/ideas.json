@@ -531,6 +531,74 @@
           ]
         }
       ]
+    },
+    "morph": {
+      "label": "What it morphs through",
+      "categories": [
+        {
+          "id": "things",
+          "name": "Things",
+          "ideas": [
+            "a moth, a lantern, a brass key, an hourglass",
+            "a rally car, a racing helmet, a trophy, a chequered flag",
+            "a raven skull, a black rose, an iron crown",
+            "a seahorse, a nautilus, a jellyfish, a pearl",
+            "a jewelled dragon egg, a phoenix feather, a griffin statue",
+            "an orrery, a pocket watch, a brass telescope",
+            "a chameleon, a hummingbird, an orchid",
+            "an electric guitar, a jukebox, a drum kit",
+            "a plague doctor mask, a gargoyle, a bone flute",
+            "a glass heart, a fish made of keys, a melting pocket watch"
+          ]
+        },
+        {
+          "id": "theme",
+          "name": "A theme",
+          "ideas": [
+            "racing",
+            "medieval",
+            "magic",
+            "dinosaurs",
+            "robots",
+            "circus",
+            "halloween",
+            "samurai",
+            "pirates",
+            "egypt",
+            "aviation",
+            "trains",
+            "gaming"
+          ]
+        },
+        {
+          "id": "place",
+          "name": "A place",
+          "ideas": [
+            "a wet street at night",
+            "a desert at dusk",
+            "a corridor of mirrors",
+            "a frozen lake under the stars",
+            "a jungle after rain",
+            "a cathedral of glass",
+            "a neon arcade",
+            "a misty pine forest"
+          ]
+        },
+        {
+          "id": "feel",
+          "name": "A feel",
+          "ideas": [
+            "slow and dreamy",
+            "hard and glitchy",
+            "warm and hazy",
+            "fast and punchy",
+            "dark and heavy",
+            "wild and chaotic",
+            "calm and glowing",
+            "cold and sharp"
+          ]
+        }
+      ]
     }
   }
 }

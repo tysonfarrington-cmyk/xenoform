@@ -269,6 +269,21 @@ def content_words(words) -> set[str]:
     return {str(w).lower() for w in (words or ()) if str(w).lower() not in STOP_WORDS and len(str(w)) > 1}
 
 
+GENERIC_LABEL_WORDS = frozenset("things big living high strange intricate".split())  # "Big iconic things" names nothing by "things"
+NOUN_JOINS = re.compile(r"\s(?:with|holding|of|on|in|under|from|made|full|into|topped|carved|crowned|perched|curled|mid)\s")
+
+
+def noun_keys(noun: str) -> set[str]:
+    """The words of a catalogue noun that name it in an idea line. A short noun answers to each of its words ("sea
+    turtle"); a described one only to its head ("seashell holding a tiny city" to "seashell", "dragon skull with curling
+    horns" to "skull"), or a line with "city" in it would pick the surreal family (28 Oct)."""
+    words = str(noun).lower().split()
+    if len(words) <= 2:
+        return content_words(words)
+    head = NOUN_JOINS.split(" " + str(noun).lower() + " ", maxsplit=1)[0].split()
+    return content_words(head[-1:]) if head else set()
+
+
 def family_named(vibe: str, words: set[str] | None = None) -> str:
     """The family a word of the idea line names (a family's noun or its label), or "" when none does."""
     fams = (subjects().get("families") or {})
@@ -276,11 +291,11 @@ def family_named(vibe: str, words: set[str] | None = None) -> str:
     if not words:
         return ""
     for fam, row in fams.items():
-        label_words = content_words(re.findall(r"[a-z]+", str(row.get("label") or "").lower())) | content_words(fam.split("-"))
+        label_words = (content_words(re.findall(r"[a-z]+", str(row.get("label") or "").lower())) | content_words(fam.split("-"))) - GENERIC_LABEL_WORDS
         if words & label_words:
             return fam
         for noun in row.get("nouns") or []:
-            if content_words(str(noun).lower().split()) & words:
+            if noun_keys(noun) & words:
                 return fam
     return ""
 
@@ -331,7 +346,18 @@ def clean_noun(text: str, limit: int = 40) -> str:
         if stripped == low:
             break
         low = stripped
-    return low[:limit].strip()
+    return clip_words(low, limit)
+
+
+def clip_words(text: str, limit: int) -> str:
+    """``text`` cut to ``limit`` characters at a word: "a canyon of birds until the thread holds" read back as
+    "...a canyon of birds unt" (28 Oct). A single word longer than half the limit is cut where it falls."""
+    text = str(text).strip()
+    if len(text) <= limit:
+        return text
+    head = text[:limit + 1]
+    cut = head.rsplit(" ", 1)[0] if " " in head else ""
+    return (cut if len(cut) >= limit // 2 else text[:limit]).strip()
 
 
 SCENE_NOUN_LIMIT = 80

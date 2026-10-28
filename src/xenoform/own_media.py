@@ -129,4 +129,60 @@ def render_clip(src: str | Path, start_s: float, frames: int, size: tuple[int, i
     return out
 
 
-__all__ = ["MIN_S", "MAX_S", "MIN_CLIP_S", "MAX_ITEMS", "scan", "clip_slots", "window_start", "size_for", "render_clip"]
+# Clip morphs (Tys, 28 Oct: "i want to see if you can morph clips ... as a transition type"): a clip's slot opens on a
+# generated morph from the object the shot before landed on into the clip's first frame, and closes on one from its
+# last frame into the object the next shot starts from, so footage grows out of the chain and dissolves back into it.
+MORPH_S = 0.75        # each morph in and out of a clip
+MORPH_SHARE = 1 / 3   # and never more than this of the slot, so the clip itself is seen
+
+
+def morph_frames(frames: int, fps: float, *, into: bool = True, out_of: bool = True) -> tuple[int, int]:
+    """Frames of the morph into and out of a clip slot of ``frames`` frames (0 where the slot opens or ends the cut)."""
+    each = max(0, min(int(round(MORPH_S * float(fps))), int(int(frames) * MORPH_SHARE)))
+    return (each if into else 0), (each if out_of else 0)
+
+
+def first_last(clip: str | Path, dest_dir: str | Path, size: tuple[int, int]) -> tuple[Path, Path]:
+    """The clip's first and last frames as PNGs at ``size`` (the morph render's size), for the morphs' far ends."""
+    from PIL import Image
+
+    from xenoform.video import read_all_frames
+
+    frames = read_all_frames(clip)
+    dest = Path(dest_dir)
+    dest.mkdir(parents=True, exist_ok=True)
+    out = []
+    for name, frame in (("first", frames[0]), ("last", frames[-1])):
+        p = dest / f"{Path(clip).stem}_{name}.png"
+        Image.fromarray(frame).convert("RGB").resize((int(size[0]), int(size[1])), Image.LANCZOS).save(p)
+        out.append(p)
+    return out[0], out[1]
+
+
+def _fit(frames, count: int, size: tuple[int, int]) -> list:
+    """``frames`` resampled in time to ``count`` and scaled to ``size``."""
+    import numpy as np
+    from PIL import Image
+
+    if count <= 0 or not len(frames):
+        return []
+    idx = np.linspace(0, len(frames) - 1, count).round().astype(int)
+    w, h = int(size[0]), int(size[1])
+    return [np.asarray(Image.fromarray(frames[i]).resize((w, h), Image.LANCZOS)) for i in idx]
+
+
+def splice(morph_in: str | Path | None, clip: str | Path, morph_out: str | Path | None, out: str | Path, *,
+           n_in: int, n_out: int, size: tuple[int, int], fps: float = 24) -> Path:
+    """One slot's file: the morph into the clip (``n_in`` frames, ending on its first frame), the clip, the morph out
+    of it (``n_out`` frames, from its last frame). A morph that is missing leaves the clip's own frames there."""
+    from xenoform.video import read_all_frames, write_mp4
+
+    body = list(read_all_frames(clip))
+    head = _fit(read_all_frames(morph_in), n_in, size) if morph_in and n_in else []
+    tail = _fit(read_all_frames(morph_out), n_out, size) if morph_out and n_out else []
+    write_mp4(out, head + body + tail, fps, crf=17)
+    return Path(out)
+
+
+__all__ = ["MIN_S", "MAX_S", "MIN_CLIP_S", "MAX_ITEMS", "MORPH_S", "scan", "clip_slots", "window_start", "size_for",
+           "render_clip", "morph_frames", "first_last", "splice"]

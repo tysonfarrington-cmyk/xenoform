@@ -2,7 +2,7 @@
 (function () {
   const BIND = [
     { sel: "#brief", field: "brief", tour: true },
-    { sel: "#easy-idea", field: "brief" },
+    { sel: "#easy-idea", field: "morph" },
     { sel: "textarea[data-prompt]", field: "shot" },
     { sel: "textarea[data-scene='action']", field: "shot" },
     { sel: "[data-scene='verb']", field: "shot" },
@@ -86,10 +86,10 @@
     return (space > 20 ? cut.slice(0, space) : cut).replace(/[\s,;:.]+$/, "");
   }
 
-  function nextValue(current, idea, replace, max) {
+  function nextValue(current, idea, replace, max, joiner) {
     const clean = String(idea || "").trim();
     if (replace || !String(current || "").trim()) return clip(clean, max);
-    const joined = String(current).replace(/\s+$/, "") + " " + clean;
+    const joined = String(current).replace(/[\s,]+$/, "") + (joiner || " ") + clean;
     if (max && joined.length > max) return clip(clean, max);
     return joined;
   }
@@ -97,7 +97,7 @@
   function applyTo(input, idea, replace) {
     if (!input || input.disabled) return;
     const max = Number(input.getAttribute("maxlength")) || 0;
-    input.value = nextValue(input.value, idea, replace, max);
+    input.value = nextValue(input.value, idea, replace, max, plainIdeas(input) ? ", " : " ");
     input.dispatchEvent(new Event("input", { bubbles: true }));
     input.dispatchEvent(new Event("change", { bubbles: true }));
   }
@@ -134,8 +134,10 @@
     const slot = slotFor(input, field);
     slot.category = ((slot.category % cats.length) + cats.length) % cats.length;
     const cat = cats[slot.category];
-    const ideas = visible(cat.ideas || [], slot.salt, input);
     const plain = plainIdeas(input);
+    const ideas = plain
+      ? cats.map((c, i) => { const list = c.ideas || []; return list.length ? { kind: c.name, idea: list[(slot.salt + i * 3) % list.length] } : null; }).filter(Boolean)
+      : visible(cat.ideas || [], slot.salt, input).map((idea) => ({ kind: "", idea }));
     row.replaceChildren();
     const meta = document.createElement("div");
     meta.className = "idea-meta";
@@ -158,21 +160,31 @@
     const hint = document.createElement("span");
     hint.className = "idea-hint";
     hint.textContent = "Shift replaces";
-    if (plain) meta.append(dice);
+    if (plain) {
+      dice.dataset.act = "idea-shuffle";  // on the idea line the die deals four new examples instead of filling one
+      dice.setAttribute("aria-label", "Show other examples");
+      dice.replaceChildren(dieIcon(), document.createTextNode(" Other examples"));
+      meta.append(dice);
+    }
     else meta.append(label, shuffle, dice, hint);
     const chips = document.createElement("div");
     chips.className = "idea-chips";
     chips.setAttribute("role", "group");
     if (plain) chips.setAttribute("aria-label", "Ideas");
     else chips.setAttribute("aria-labelledby", label.id);
-    ideas.forEach((idea) => {
+    ideas.forEach(({ kind, idea }) => {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "idea-chip";
       button.dataset.act = "idea-use";
       button.dataset.idea = idea;
-      button.textContent = idea;
-      button.title = plain ? idea : idea + " — add this idea. Hold Shift to replace the text.";
+      if (kind) {
+        const tag = document.createElement("small");
+        tag.className = "idea-kind";
+        tag.textContent = kind;
+        button.append(tag, document.createTextNode(" " + idea));
+      } else button.textContent = idea;
+      button.title = plain ? `${kind}: add “${idea}” to the line` : idea + " — add this idea. Hold Shift to replace the text.";
       chips.appendChild(button);
     });
     row.append(meta, chips);
@@ -233,8 +245,8 @@
     if (shuffle) {
       const slot = slotFor(input, field);
       const total = categories(field).length || 1;
-      slot.category = (slot.category + 1) % total;
-      slot.salt = Math.floor(Math.random() * 10);
+      if (!plainIdeas(input)) slot.category = (slot.category + 1) % total;
+      slot.salt = plainIdeas(input) ? slot.salt + 1 : Math.floor(Math.random() * 10);
       paint(row, input, field);
       const next = row.querySelector("[data-act=idea-shuffle]");
       if (next) next.focus();

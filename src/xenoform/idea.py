@@ -38,6 +38,13 @@ SCENES_PER_SUBJECT = 3  # renders of one typed scene subject (one seed each; the
 SCENES_MAX = 4          # scenes one Make grows for the line
 SHAPES_MAX = 5          # shapes (own and catalogue) one Make grows for the line
 SUBJECT_LIMIT = 80      # a scene subject is a short sentence (stills.SCENE_NOUN_LIMIT)
+
+
+def _clip(text: str) -> str:
+    """A scene subject cut to ``SUBJECT_LIMIT`` at a word (``stills.clip_words``), never "...of birds unt"."""
+    from xenoform.stills import clip_words
+
+    return clip_words(text, SUBJECT_LIMIT)
 PERFORMER_DEFAULT = 2   # Polly's slots when she is switched on (the line no longer switches her on; kept for callers)
 
 STOP = frozenset(("a an the and or of to in on by with for from at into over under as is are its it this that these those "
@@ -516,7 +523,7 @@ def read(line: str, vibe: str = "", *, llm: bool | None = None) -> dict:
                 words_ = _scene_phrase([c for c in chunks if c in place_chunks or c in sky_chunks], True)
             subject = " ".join(words_).strip()
             if subject and subject not in scenes and len(scenes) < MAX_SCENES:
-                scenes.append(subject[:SUBJECT_LIMIT].strip())
+                scenes.append(_clip(subject))
             for chunk in chunks:  # "car rally racing in a desert at dusk": the place is a scene, the racing a theme
                 theme = _theme_of(chunk) if chunk not in place_chunks and chunk not in sky_chunks and chunk not in music_chunks else ""
                 if theme and theme not in themes:
@@ -567,7 +574,7 @@ def read(line: str, vibe: str = "", *, llm: bool | None = None) -> dict:
     if scenes and details:
         extra = [d for d in details if d not in scenes[0].split()]
         if extra:
-            scenes[0] = (scenes[0] + " with " + " and ".join(extra))[:SUBJECT_LIMIT].strip()
+            scenes[0] = _clip(scenes[0] + " with " + " and ".join(extra))
     family = (nouns.get(objects[0]) if objects else "") or _family_label(text, labels)
     if not family:
         # the pick's own lookup ("a chess game played by machines" -> the chess knight's family), so the desk says what
@@ -675,7 +682,7 @@ def refine(reading: dict, line: str, vibe: str = "") -> dict:
         log.info("idea refine skipped: %s", exc)
         return reading
     out = dict(reading)
-    scenes = [re.sub(r"\s+", " ", str(s)).strip().lower()[:SUBJECT_LIMIT] for s in (data.get("scenes") or []) if str(s).strip()]
+    scenes = [_clip(re.sub(r"\s+", " ", str(s)).strip().lower()) for s in (data.get("scenes") or []) if str(s).strip()]
     if scenes:
         out["scenes"] = scenes[:MAX_SCENES]
     nouns, _ = _catalogue()

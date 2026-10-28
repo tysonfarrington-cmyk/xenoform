@@ -66,7 +66,7 @@
     const kn=document.querySelector(`.xf-knob[data-k="${CSS.escape(k)}"]`);if(kn)paint(kn,k);
     const r=document.querySelector(`.xf-lane input[data-k="${CSS.escape(k)}"]`);if(r){r.value=pct(M[k]);r.style.setProperty("--p",r.value+"%");r.nextElementSibling.textContent=r.value;}
     clearTimeout(window.XENO_MACRO_SET.t);window.XENO_MACRO_SET.t=setTimeout(save,150);};
-  const save=()=>{localStorage.setItem(KEY,JSON.stringify(M));};
+  const save=()=>{localStorage.setItem(KEY,JSON.stringify(M));document.dispatchEvent(new CustomEvent("xeno-knobs"));};  // the desk counts a turned knob as a change waiting for Apply
   const pct=v=>Math.round(v*100);
   const ARC=(v)=>{const a0=-135,a1=a0+270*v,r=25,c=27,p=a=>[c+r*Math.sin(a*Math.PI/180),c-r*Math.cos(a*Math.PI/180)];
     const [x0,y0]=p(a0),[x1,y1]=p(a1),[xe,ye]=p(135);

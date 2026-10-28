@@ -130,10 +130,11 @@ def test_the_draft_and_final_renderers_give_each_shot_its_style(tmp_path, monkey
     _local_clips(shots[:1], stills[:2], tmp_path, {}, 2727, "neon-noir", client=_client(wfs))
     assert "slowly melts" in wfs[0].inputs[("3", "text")]  # no styles: Melt, as before
     seen = []
-    monkeypatch.setattr(final_tier, "graph", lambda prompt, **kw: seen.append(prompt) or {"prompt": prompt})
+    monkeypatch.setattr(final_tier, "graph", lambda prompt, **kw: seen.append((kw["seed"], prompt)) or {"prompt": prompt})
     wfs.clear()
     final_tier.final_clips(shots[:2], stills[:3], tmp_path, {}, 2727, "neon-noir", client=_client(wfs), styles=["spin", "fold"])
-    assert "spins fast on its axis" in seen[0] and "folds and creases like paper" in seen[1]
+    seen.sort()  # the Final renders shots that share a prompt back to back; each keeps its seed (2727 + its index)
+    assert "spins fast on its axis" in seen[0][1] and "folds and creases like paper" in seen[1][1]
 
 
 def test_a_cut_records_its_styles_and_the_lane_reads_them(tmp_path, monkeypatch):

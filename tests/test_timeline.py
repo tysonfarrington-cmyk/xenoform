@@ -457,7 +457,10 @@ def test_the_desk_draws_the_timeline_panel_and_posts_the_edits():
     fn = APP.split("function shotsLane(easy)")[1].split("async function loadLane")[0]
     assert 'aria-label="Timeline"' in fn and 'data-act="easy-tl-shot"' in fn and 'data-act="easy-tl-bound"' in fn and 'class="lane-bounds"' in fn
     assert 'class="lane-song"' in fn and 'data-act="easy-seek"' in fn and "drop-mark" in fn
-    assert 'data-act="easy-tl-apply"' in fn and 'data-act="easy-tl-reset"' in fn and "timelineDirty" in fn
+    assert 'data-act="easy-tl-reset"' in fn and "timelineDirty" in fn and 'id="lane-playhead"' in fn
+    # one Apply for the timeline and the knobs: the bar at the bottom of the window (28 Oct)
+    bar = APP.split("function pendingBar(easy)")[1].split("function paintPending")[0]
+    assert 'data-act="easy-apply"' in bar and "timeline edit" in bar
     assert "function timelineDrawer" in fn and 'data-act="easy-tl-play"' in fn and 'data-act="easy-tl-handoff"' in fn and 'id="tl-dress"' in fn
     assert 'lookRow(o.look || "auto", "easy-tl-look", s.index)' in fn and 'id="tl-fx"' in fn and 'data-act="easy-tl-fx-clear"' in fn
     assert 'data-act="easy-tl-swap"' in fn and 'data-act="easy-tl-rerender"' in fn

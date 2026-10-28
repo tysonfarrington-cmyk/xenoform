@@ -13,8 +13,10 @@ def test_simple_ideas_show_the_dice_and_two_chips():
     assert "#note-text" not in script
     assert "[data-card]" not in script
     assert "Shift replaces" in script
-    plain = script.split("if (plain) meta.append(dice);", 1)[1].split("ideas.forEach", 1)[0]
-    assert "Shuffle" not in plain
+    # the idea line shows one example of each kind it reads; its die deals new examples rather than filling one in
+    plain = script.split("if (plain) {", 1)[1].split("ideas.forEach", 1)[0]
+    assert "Shuffle" not in plain and "Other examples" in plain
+    assert '{ sel: "#easy-idea", field: "morph" }' in script
     css = (STATIC / "app.css").read_text(encoding="utf-8")
     assert ".easy .kicker { display: none; }" in css
 

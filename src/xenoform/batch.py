@@ -35,7 +35,7 @@ from urllib.request import Request, urlopen
 
 log = logging.getLogger("xenoform")
 
-COUNTS = (3, 5, 10)
+COUNTS = (1, 3, 5, 10)  # 1: one Draft of the settings as they are, queued to run when the GPU is free
 VARY = ("seed", "vibe", "feel")
 SEED = 2727  # dense.run_simple's seed when the body names none
 SEED_STEP = 1009
@@ -146,7 +146,8 @@ def comfy_busy(url: str, timeout: float = 3.0) -> str:
 def _cut_seconds(folder: Path) -> tuple[str, float]:
     rec = json.loads((folder / "simple" / "simple.json").read_text(encoding="utf-8"))
     shots = rec.get("shots") or []
-    return str(rec.get("tier") or "draft"), float(shots[-1].get("end") or 0.0) if shots else 0.0
+    tier = "fast" if rec.get("fast") else str(rec.get("tier") or "draft")  # a Fast Final is a Draft plus its upscale
+    return tier, float(shots[-1].get("end") or 0.0) if shots else 0.0
 
 
 _MEASURED: dict[tuple[str, float], tuple[float, dict]] = {}
@@ -168,7 +169,7 @@ def measured(jobs: Path, seconds: float | None = None) -> dict:
 
 
 def _measure(jobs: Path, seconds: float | None) -> dict:
-    rows: dict[str, list[tuple[float, float, float]]] = {"draft": [], "final": []}
+    rows: dict[str, list[tuple[float, float, float]]] = {"draft": [], "fast": [], "final": []}
     for folder in Path(jobs).glob("*") if Path(jobs).is_dir() else []:
         try:
             took = float(json.loads((folder / "took.json").read_text(encoding="utf-8")).get("took_s") or 0.0)

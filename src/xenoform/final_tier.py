@@ -252,11 +252,17 @@ def final_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
     clips: dict[int, Path] = {}
     notes: list[dict] = []
     need_draft: list[int] = []
-    for i, shot in enumerate(shots):
+    # Shots that share a prompt render back to back. ComfyUI keeps the last prompt's text encoding, and reading the
+    # 11 GB Gemma encoder costs about 60 s a shot on this card (28 Oct log: 340 s a 2-3 s shot, 296-302 s when the
+    # prompt was the one before's). A cut's prompts are its few style and object/scene pairings, so in this order most
+    # shots skip the encoder; each clip keeps its own index, seed and file.
+    order = sorted(range(len(shots)), key=lambda i: (prompt_for_pair(i) if len(stills) > 1 else "", i))
+    for k, i in enumerate(order):
+        shot = shots[i]
         mp.stop_queued([], cancel)
         if report:
-            report("restyle", 0.12 + 0.75 * i / max(len(shots), 1),
-                   f"Final: morph {i + 1} of {len(shots)} on LTX-2.3" + (" (native 9:16)" if vertical else ""))
+            report("restyle", 0.12 + 0.75 * k / max(len(shots), 1),
+                   f"Final: morph {k + 1} of {len(shots)} on LTX-2.3" + (" (native 9:16)" if vertical else ""))
         try:
             clips[i] = one(i, shot, upscale)
             continue

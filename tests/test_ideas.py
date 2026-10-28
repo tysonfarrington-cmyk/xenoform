@@ -36,7 +36,12 @@ DARK = ("night", "ash", "storm", "dark", "eclipse", "soot", "ember", "hush")
 def test_idea_catalog_and_page():
     data = json.loads((ROOT / "src/xenoform/ui_static/ideas.json").read_text(encoding="utf-8"))
     fields = data["fields"]
-    assert list(fields) == ["brief", "style", "shot", "transition"]
+    assert list(fields) == ["brief", "style", "shot", "transition", "morph"]
+    # the idea line's own examples (28 Oct): one list a kind it reads, never the Director's story premises
+    morph = fields.pop("morph")
+    assert [c["id"] for c in morph["categories"]] == ["things", "theme", "place", "feel"]
+    assert all(c["ideas"] and len(set(c["ideas"])) == len(c["ideas"]) for c in morph["categories"])
+    assert not any(word in json.dumps(morph).lower() for word in BANNED)
     blob = json.dumps(data).lower()
     for word in BANNED:
         assert word not in blob

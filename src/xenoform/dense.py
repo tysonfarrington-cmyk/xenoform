@@ -56,7 +56,8 @@ MAX_SHOT_S = 4.0              # a morph is rendered at 2 to 5 s; a shot much lon
 # longer shots rather than a loop. The pool caps it too: a vibe with twelve stills gives eleven morphs.
 MORPH_CAP = {"draft": 48, "final": 12}
 LONG_SONG_S = 20.0            # above this the story plan, the chain reuse and performer slots apply (the demo clip stays on the demo1 plan)
-COMPOSE_S_PER_FRAME = {"draft": 0.2, "final": 0.3}  # measured: 1440 frames at 540x960 composed in 285 s (look pass 155 s)
+COMPOSE_S_PER_FRAME = {"draft": 0.2, "final": 0.3}
+FAST_UPSCALE_S = 20.0  # Fast Final: one Draft clip through its upscaler (upscale_pass.SECONDS_PER_CLIP, measured 28 Oct)  # measured: 1440 frames at 540x960 composed in 285 s (look pass 155 s)
 
 # ---- morph count: "auto" (from clip length + BPM) or a fixed number of forms
 MORPH_SLIDER = (1, 40)      # the desk slider; the number box allows up to MORPH_MAX
@@ -65,7 +66,8 @@ MIN_SLOT_S = 0.3            # a morph never gets less screen time than this
 # measured on an RTX 3080 Ti 12 GB (ComfyUI shared, 2 s renders): seconds per morph and peak VRAM
 # draft: measured 23 Oct 2026, 12 four-second morphs in 122 s warm on a 3080 Ti (about 10 s each); 12 s per 2 s morph keeps a margin
 COST = {"draft": {"s": 12.0, "vram_gb": 7.5}, "final": {"s": 110.0, "vram_gb": 11.2},
-        "final_916": {"s": 140.0, "vram_gb": 11.4}, "preview": {"s": 0.5, "vram_gb": 0.0}}
+        "final_916": {"s": 140.0, "vram_gb": 11.4}, "preview": {"s": 0.5, "vram_gb": 0.0},
+        "fast": {"s": 12.0 + FAST_UPSCALE_S, "vram_gb": 7.5}}  # Fast Final: a Draft morph, then its upscale
 
 
 def _period(beats: list) -> float:
@@ -312,6 +314,46 @@ def _render_performer(audio_path: Path, slot: dict, vibe: str, still: Path, work
                          source_path=source.get("path") if source else None, source_offset=float(source.get("offset") or 0.0) if source else 0.0)
 
 
+def _clip_morphs(body: Path, dest: Path, slot: dict, shots: list[dict], stills: list[dict], n_in: int, n_out: int,
+                 work: Path, cfg: dict, seed: int, vibe: str, client, cancel, state: dict, opt: dict, native_draft: bool,
+                 fps: float) -> Path:
+    """An own clip's slot with a morph in and a morph out (``own_media.splice``): from the object the shot before the
+    slot lands on into the clip's first frame, and from its last frame into the object the shot after starts from.
+    Both render on the Draft model (``cloud_morph._local_clips``, in their own folder so the cut's ``localNN`` clips are
+    untouched), the clip's frames as the scene end of each pair."""
+    from xenoform import own_media
+    from xenoform.cloud_morph import _local_clips
+
+    size = DRAFT_916 if opt["aspect"] == "9:16" else None
+    render = size or (512, 288)
+    folder = Path(work) / "own" / f"morph_{slot['start']:.2f}"
+    first_png, last_png = own_media.first_last(body, folder, render)
+    ends = []
+    if n_in:
+        ends.append(stills[int(shots[slot["first"] - 1].get("morph", slot["first"] - 1)) + 1])
+    if n_out:
+        ends.append(stills[int(shots[slot["last"] + 1].get("morph", slot["last"] + 1))])
+    if opt["aspect"] == "9:16" and not native_draft:  # a Final's stills are still square-on: lay them on the portrait canvas
+        from xenoform.portrait import portrait_stills
+
+        ends = portrait_stills(ends, folder, DRAFT_916[0], DRAFT_916[1], background=state.get("still_background"))
+    frame = lambda p: {"path": str(p), "noun": "your clip", "kind": "scene", "file": Path(p).name}  # noqa: E731
+    pairs: list[tuple[dict, dict]] = []
+    if n_in:
+        pairs.append((ends[0], frame(first_png)))
+    if n_out:
+        pairs.append((frame(last_png), ends[-1]))
+    made = []
+    for j, (a, b) in enumerate(pairs):  # one pair at a time: each is its own two-still chain
+        sub = folder / f"pair{j}"
+        sub.mkdir(parents=True, exist_ok=True)
+        made.append(_local_clips([{"seconds": 1.0, "render_s": 1.0}], [a, b], sub, cfg, seed + j, vibe, client=client, cancel=cancel,
+                                 state=state, size=size, styles=["melt"])[0])
+    morph_in = made[0] if n_in else None
+    morph_out = made[-1] if n_out else None
+    return own_media.splice(morph_in, body, morph_out, dest, n_in=n_in, n_out=n_out, size=own_media.size_for(opt["aspect"]), fps=fps)
+
+
 def apply_performer_slots(shots: list[dict], clips: list, slots: list[dict], rendered: dict, mark: str = "performer") -> tuple[list[dict], list]:
     """Merge each rendered slot's shots into one shot playing its clip 1:1 (marked ``mark``: a performer shot, or
     ``own`` for one of the user's own clips, which also carries its ``source`` file name); the rest unchanged."""
@@ -350,6 +392,7 @@ def options(state: dict) -> dict:
         "energy": energy if energy in ENERGY else "flow",
         "aspect": beatfx.norm_aspect(state.get("aspect")),
         "tier": tier if tier in TIERS else "draft",
+        "fast": tier == "fast",  # Fast Final: the Draft's morphs upscaled to full size (upscale_pass); a draft otherwise
         "vertical": vertical_mode(state),
         "fx": bool(state.get("beat_fx", True)),
         "overlay": bool(state.get("beat_overlay")) and not bool(state.get("clean")),
@@ -677,7 +720,7 @@ def plan_summary(duration: float, beats: list, energy: str = "dense", tier: str 
     cp = clip_plan(shots, duration, beats, pool=pool or None, tier=tier) if long_song else {"clip_s": 2, "morphs": len(shots), "assign": list(range(len(shots))), "reuse": False}
     fps = 24
     frames_total = int(round(duration * fps))
-    compose_s = frames_total * COMPOSE_S_PER_FRAME["final" if tier == "final" else "draft"] / beatfx.look_speedup(frames_total)
+    compose_s = frames_total * COMPOSE_S_PER_FRAME["final" if tier in ("final", "fast") else "draft"] / beatfx.look_speedup(frames_total)
     est = estimate(cp["morphs"], tier, aspect, vertical, clip_s=cp["clip_s"], compose_s=compose_s)
     n_perf = performer_choice({"performer": performer}) if long_song else 0
     if n_perf:
@@ -1229,6 +1272,15 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     else:
         clips = _draft_clips(render_shots, stills, work, cfg, seed, vibe, client, cancel, state, report=report,
                              size=DRAFT_916 if native_draft else None, styles=render_styles)
+        if opt["fast"] and engine == "ltx095":
+            from xenoform import upscale_pass
+
+            # portrait Draft clips go to 1080x1920, landscape ones to 1920x1080; the cut composes at the aspect's size
+            clips, fast_notes = upscale_pass.upscale_clips(clips, work, upscale_pass.OUT_916 if native_draft else upscale_pass.OUT_169,
+                                                           cfg, client=client, cancel=cancel, report=report, fps=fps)
+            size = upscale_pass.out_size(opt["aspect"])
+            notes.append({"fast_final": f"{len(clips)} Draft morphs upscaled to {size[0]}x{size[1]} ({upscale_pass.MODEL})"})
+            notes.extend(fast_notes)
     if long_song:
         clips = [clips[ci] for ci in chain["assign"]]  # one entry per shot, walking the loop
         shot_styles = [render_styles[int(ci)] for ci in chain["assign"]]  # what each shot's morph was rendered as
@@ -1282,16 +1334,38 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
 
         oslots = own_media.clip_slots(shots, own_clips, avoid=[(i, i) for i, s in enumerate(shots) if s.get("performer")])
         rendered_own: dict = {}
+        # clip morphs: the slot opens on a morph from the object before into the clip and closes on one into the object
+        # after (own_media.MORPH_S each), rendered on the Draft model; "clip_morph": "off" keeps plain cuts
+        clip_morph = engine in {"ltx095", "ltx23"} and opt["aspect"] in {"9:16", "16:9"} \
+            and str(state.get("clip_morph", "on")).strip().lower() not in {"off", "0", "false", "no"}
         for k, sl in enumerate(oslots):
             run = shots[sl["first"]:sl["last"] + 1]
             frames_needed = int(sum(int(s.get("frames") or 0) for s in run)) or int(round(float(sl["seconds"]) * fps))
             report("restyle", 0.58 + 0.02 * k / max(1, len(oslots)),
                    f"Your clip {k + 1} of {len(oslots)}: {Path(sl['clip']).name} ({sl['seconds']:.1f} s)")
+            n_in, n_out = own_media.morph_frames(frames_needed, fps, into=sl["first"] > 0, out_of=sl["last"] < len(shots) - 1) \
+                if clip_morph else (0, 0)
             try:
-                made_clip = own_media.render_clip(sl["clip"], own_media.window_start(sl["clip_seconds"], sl["seconds"]), frames_needed,
-                                                  own_media.size_for(opt["aspect"]), work / "own" / f"own_{sl['start']:.2f}.mp4", fps=fps)
+                start_s = own_media.window_start(sl["clip_seconds"], sl["seconds"])
+                dest = work / "own" / f"own_{sl['start']:.2f}.mp4"
+                made_clip = own_media.render_clip(sl["clip"], start_s, frames_needed - n_in - n_out, own_media.size_for(opt["aspect"]),
+                                                  dest.with_name(dest.stem + "_body.mp4") if (n_in or n_out) else dest, fps=fps)
+                if n_in or n_out:
+                    try:
+                        made_clip = _clip_morphs(made_clip, dest, sl, shots, stills, n_in, n_out, work, cfg, seed + 900 + 2 * k, vibe,
+                                                 client, cancel, state, opt, native_draft, fps)
+                        own_info.setdefault("morphs", 0)
+                        own_info["morphs"] += int(bool(n_in)) + int(bool(n_out))
+                    except Exception as exc:  # the clip still plays, cut in hard, when its morphs do not render
+                        from xenoform.turbo import JobCancelled
+
+                        if isinstance(exc, JobCancelled):
+                            raise
+                        log.warning("clip morphs for %s skipped: %s", sl.get("clip"), exc)
+                        own_info["notes"].append(f"the morphs into and out of {Path(str(sl.get('clip'))).name} were skipped: {exc}")
+                        made_clip = own_media.render_clip(sl["clip"], start_s, frames_needed, own_media.size_for(opt["aspect"]), dest, fps=fps)
                 rendered_own[sl["first"]] = {"clip": made_clip}
-                own_info["slots"].append({**sl, "frames": frames_needed, "file": str(made_clip)})
+                own_info["slots"].append({**sl, "frames": frames_needed, "file": str(made_clip), "morph_in": n_in, "morph_out": n_out})
             except Exception as exc:  # an unreadable clip must never break the cut
                 log.warning("own clip %s skipped: %s", sl.get("clip"), exc)
                 own_info["notes"].append(f"your clip {Path(str(sl.get('clip'))).name} at {sl['start']:.1f}s skipped: {exc}")
@@ -1364,8 +1438,10 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
         card = beatfx.end_card(tmp, opt["recipe"] or "(none)")
     report("assemble", 0.98, "Saving the video")
     shutil.copyfile(tmp, out_path)
-    info = {"engine": {"ltx23": "LTX-2.3 22B distilled fp8 + 4x upscale (Final)", "ltx095": "LTX 0.9.5 (Draft)",
+    info = {"engine": {"ltx23": "LTX-2.3 22B distilled fp8 + 4x upscale (Final)",
+                       "ltx095": "LTX 0.9.5 + 4x upscale (Fast Final)" if opt["fast"] else "LTX 0.9.5 (Draft)",
                        "mock": "mock cross-fades (test)"}[engine],
+            "fast": bool(opt["fast"]),
             "open_weights": True, "energy": opt["energy"], "aspect": opt["aspect"], "tier": opt["tier"],
             "vertical": ("native" if native else "crop") if opt["aspect"] == "9:16" else None,
             "fx": opt["fx"], "overlay": made["overlay"], "end_card": card, "vibe": vibe,

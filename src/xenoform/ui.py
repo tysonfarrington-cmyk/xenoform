@@ -253,7 +253,18 @@ def create_app(cfg: dict | None = None):
         log.exception("demo assets")
     static = Path(__file__).resolve().parent / "ui_static"
     app = FastAPI(title="Xenoform", docs_url=None, redoc_url=None)
-    app.mount("/static", StaticFiles(directory=static), name="static")
+
+    class _FreshCode(StaticFiles):
+        """The desk's own scripts and styles revalidate on every load (an ETag check, a 304 when unchanged), so a desk
+        restarted on new code is new in the browser without Ctrl+Shift+R; pictures keep the browser's usual cache."""
+
+        def file_response(self, full_path, *args, **kwargs):
+            response = super().file_response(full_path, *args, **kwargs)
+            if str(full_path).endswith((".js", ".css", ".html")):
+                response.headers["Cache-Control"] = "no-cache"
+            return response
+
+    app.mount("/static", _FreshCode(directory=static), name="static")
     from xenoform.stems_api import router as stems_router  # /api/stems, /api/midi/*, /ws/midi
 
     app.include_router(stems_router)
@@ -1576,7 +1587,7 @@ def create_app(cfg: dict | None = None):
 
         rates = batch.measured(work_dir() / "jobs", video_s)
         fin = rates.get("final") or {}
-        mine = rates.get("final" if tier == "final" else "draft") or {}
+        mine = rates.get(tier if tier in ("final", "fast") else "draft") or {}
         est = plan.get("estimate") or {}
         if mine.get("eta_s") and est.get("seconds"):
             ratio = float(mine["eta_s"]) / max(1.0, float(est["seconds"]))
@@ -1652,6 +1663,13 @@ def create_app(cfg: dict | None = None):
         except (TypeError, ValueError):
             length_s = 0.0
         dur = float(features.get("duration") or 0.0)
+        if str(state.get("morph_count") or "auto").strip().lower() not in {"", "auto", "0"}:
+            try:  # a count set by hand gets the clamp Make gives it, so the preview counts what renders (40 in 20 s: 15)
+                from xenoform import guardrails as _guard
+
+                state, _ = _guard.apply(state, duration=dur or None, beats=features.get("beats"))
+            except Exception:
+                pass
         if length_s > 0 and dur > length_s + 1.0:
             beats = [float(b) for b in (features.get("beats") or [])]
             try:
@@ -1823,6 +1841,30 @@ def create_app(cfg: dict | None = None):
             log.exception("edit pack for %s", video_id)
             raise HTTPException(500, f"The edit pack did not build: {exc}") from exc
         return {**{k: v for k, v in pack.items() if k != "signature"}, "url": f"/api/videos/{video_id}/edit.zip"}
+
+    @app.post("/api/videos/{video_id}/edit/reveal")
+    def video_edit_reveal(video_id: str) -> dict:
+        """Opens the unzipped edit pack in the file manager with the timeline file selected, so Edit in Resolve visibly
+        does something on this machine (it used to add one line of small print under Share). Windows Explorer, else
+        the platform's opener on the folder; ``opened`` is false where there is none (a desk reached from elsewhere)."""
+        import subprocess
+        import sys
+
+        from xenoform import edit_export
+
+        pack = edit_export.build(_video_dir(video_id), video_id)
+        folder = Path(pack["folder"])
+        target = folder / pack["timeline"]
+        try:
+            if sys.platform == "win32":
+                subprocess.Popen(["explorer", f"/select,{target if target.is_file() else folder}"])
+            elif sys.platform == "darwin":
+                subprocess.Popen(["open", "-R", str(target if target.is_file() else folder)])
+            else:
+                subprocess.Popen(["xdg-open", str(folder)])
+        except OSError:
+            return {"opened": False, "folder": str(folder), "timeline": pack["timeline"]}
+        return {"opened": True, "folder": str(folder), "timeline": pack["timeline"]}
 
     @app.get("/api/videos/{video_id}/edit.zip")
     def video_edit_zip(video_id: str) -> FileResponse:
