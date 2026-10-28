@@ -670,6 +670,16 @@ def long_song_chain(state: dict, directed: dict, audio_path: Path, shots: list[d
     return shots, plan, chain, notes
 
 
+def _cloud_fits(chain: dict) -> None:
+    """Refuse a Cloud Final chain of more morphs than Comfy Cloud takes (``cloud_final.MAX_MORPHS``)."""
+    from xenoform.cloud_final import MAX_MORPHS
+
+    n = int(chain.get("morphs") or 0)
+    if n > MAX_MORPHS:
+        raise RuntimeError(f"Cloud Final takes at most {MAX_MORPHS} morphs; this cut plans {n}. Choose Length 60 s or fewer "
+                           "Forms. Nothing was sent.")
+
+
 def wants_finishing(state: dict) -> bool:
     """True when the plain morph pass cannot do what was asked (anything beyond flow/draft/16:9), and always for a
     Simple-mode cut: Flow at 16:9 on a short song once went through the plain pass and came out as one morph held
@@ -1132,6 +1142,10 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
 
     from xenoform import clip_cut
 
+    if options(state)["cloud"] and not state.get("cloud_final_ok"):
+        # it spends the account's Comfy Cloud credits: only a Make that says so (the desk's tick) runs it; cloud_confirm is
+        # the paid partner path's token, a different thing. Checked before the clips cut too, so no tier slips past it.
+        raise RuntimeError("Cloud Final spends Comfy Cloud credits: tick \"Spend my Comfy Cloud credits\" to run it. Nothing was sent.")
     if clip_cut.wants(state):  # Clips mode: only the user's clips, each morphing into the next (Tys, 28 Oct)
         return clip_cut.run(directed, Path(audio_path), Path(out_path), Path(work), cfg, state, report, cancel=cancel,
                             client=client, engine=engine)
@@ -1144,10 +1158,6 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
             else _idea.read(str(state["idea"]), str(state.get("vibe") or ""))
         state = _idea.shape_state(state, reading)
     opt = options(state)
-    if opt["cloud"] and not state.get("cloud_final_ok"):
-        # it spends the account's Comfy Cloud credits: only a Make that says so (the desk's tick) runs it; cloud_confirm is
-        # the paid partner path's token, a different thing
-        raise RuntimeError("Cloud Final spends Comfy Cloud credits: tick \"Spend my Comfy Cloud credits\" to run it. Nothing was sent.")
     scene_choice = _mp.scenes_choice(state)  # off / mix / only: whether the chain morphs scenes as well as objects
     work = Path(work) / "simple"
     work.mkdir(parents=True, exist_ok=True)
@@ -1166,8 +1176,14 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     if long_song:
         # Music-video mode: one morph a shot, no object twice (see clip_plan); the pool and the tier cap it, and
         # a cut past the cap gets fewer, longer shots instead of a loop (long_song_chain, shared with the animatic)
+        if opt["cloud"]:
+            # a cut past 64 s plans more morphs than Cloud Final takes: say so now, before the family grows and the
+            # stills are picked, not after (cloud_clips refuses the same count late)
+            _cloud_fits(long_song_chain(state, directed, Path(audio_path), shots, plan, opt, grow=False)[2])
         shots, plan, chain, pre_notes = long_song_chain(state, directed, Path(audio_path), shots, plan, opt, cfg=cfg,
                                                         report=report, engine=engine)
+        if opt["cloud"]:
+            _cloud_fits(chain)  # the grown family may have let the chain afford more
         vibe, stills = stills_for({**state, "cut_plan": None}, chain["morphs"] + 1,  # n morphs need n + 1 distinct stills
                                   **_scene_kw(state, shots, chain["morphs"] + 1, chain["assign"]))
         for shot, ci in zip(shots, chain["assign"]):
@@ -1313,11 +1329,14 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
         clips, cloud_notes = cloud_final.cloud_clips(render_shots, stills, work, cfg, seed, vibe, cancel=cancel, report=report,
                                                      draft=draft, vertical=vertical, state=state, styles=render_styles)
         notes.extend(cloud_notes)
-        size = upscale_pass.out_size(opt["aspect"])
-        clips, up_notes = cloud_final.to_full_size(clips, work, size, cfg, fallbacks=[n["shot"] for n in cloud_notes],
+        # the clips go to full size at their own aspect (as Fast Final's do); the cut composes at the aspect's size, so a
+        # 1:1 cut is cropped around the object rather than squashed to a square
+        full = upscale_pass.OUT_916 if vertical else upscale_pass.OUT_169
+        clips, up_notes = cloud_final.to_full_size(clips, work, full, cfg, fallbacks=[n["shot"] for n in cloud_notes],
                                                    client=client, cancel=cancel, report=report, fps=fps)
+        size = upscale_pass.out_size(opt["aspect"])
         notes.append({"cloud_final": f"{len(clips) - len(cloud_notes)} of {len(clips)} morphs rendered with {cloud_final.label()} on "
-                                     f"Comfy Cloud (open weights), scaled here to {size[0]}x{size[1]}"})
+                                     f"Comfy Cloud (open weights), scaled here to {full[0]}x{full[1]}"})
         notes.extend(up_notes)
     else:
         clips = _draft_clips(render_shots, stills, work, cfg, seed, vibe, client, cancel, state, report=report,
@@ -2044,6 +2063,9 @@ def _load_cut(job_dir: Path, verb: str) -> tuple[Path, Path, dict]:
         raise FileNotFoundError("The cached morphs for this video are gone; render it again.")
     if str(rec.get("tier") or "draft") == "final":
         raise ValueError(f"A {verb} renders Draft morphs; this cut is Final. Make it again instead.")
+    if rec.get("fast") or rec.get("cloud"):  # the record's tier is "draft" for both; a Draft-size morph would be spliced in
+        raise ValueError(f"A {verb} renders Draft morphs; this cut is {'Fast Final' if rec.get('fast') else 'Cloud Final'}. "
+                         "Make it again instead.")
     return job_dir, work, rec
 
 
@@ -2360,6 +2382,9 @@ def swap_still(job_dir: Path, slot: int, file: str, *, cfg: dict | None = None,
         raise ValueError(f"This cut has {n} stills; slot {slot} is not one of them.")
     if str(rec.get("tier") or "draft") == "final":
         raise ValueError("A swap re-renders a Draft morph pair; this cut is Final. Make it again with the Chain row instead.")
+    if rec.get("fast") or rec.get("cloud"):
+        raise ValueError(f"A swap re-renders a Draft morph pair; this cut is {'Fast Final' if rec.get('fast') else 'Cloud Final'}. "
+                         "Make it again instead.")
     file = str(file or "").strip().replace("\\", "/")
     new = library_row(file)
     if new is None:

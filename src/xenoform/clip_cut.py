@@ -150,6 +150,10 @@ def run(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg: dict,
     if not clips_in:
         raise ValueError("Clips mode needs your clips: choose a folder of clips (or drop them on the desk), then Make.")
     opt = dense.options(state)
+    if opt["cloud"]:
+        # the clips cut has no Cloud path yet: it would render Draft morphs here and call the cut "cloud"
+        raise RuntimeError("Cloud Final morphs the library's objects, not your clips yet: pick Draft, Fast Final or Final "
+                           "for a clips cut. Nothing was sent.")
     work = Path(work) / "simple"
     work.mkdir(parents=True, exist_ok=True)
     shots, plan = dense.shots_for(state, directed, Path(audio_path))

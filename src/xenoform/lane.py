@@ -178,7 +178,8 @@ def build(info: dict, video_id: str = "") -> dict:
             sections[-1]["end"] = r["end"]
     chain_rows = [{"index": k, "file": f, "noun": stills[k], "kind": "scene" if f in scene_files else "object",
                    "pinned": k in pinned, "swapped": k in swapped} for k, f in enumerate(files)]
-    draft = str(info.get("tier") or "draft") != "final"
+    # only a Draft cut swaps and re-renders: a Fast Final or Cloud Final record says tier "draft" too, with its flag
+    draft = str(info.get("tier") or "draft") != "final" and not info.get("fast") and not info.get("cloud")
     return {"id": video_id, "duration": round(duration, 3), "shots": rows, "sections": sections, "overlays": overlays,
             "morphs": len(set(assign)) if assign else len(rows), "objects": len(set(stills)), "plan": str(info.get("plan_name") or ""),
             "pace": str(((info.get("recut_state") or {}).get("pace")) or ""), "engine": str(info.get("engine") or ""),
