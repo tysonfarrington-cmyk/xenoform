@@ -31,6 +31,9 @@ def test_recipe_roundtrip_is_short_and_keeps_every_choice():
 def test_recipe_clamps_unknown_values_and_rejects_junk():
     back = sr.decode(sr.encode({"vibe": "ocean", "aspect": "4:3", "energy_preset": "turbo", "quality_tier": "ultra"}))
     assert (back["aspect"], back["energy_preset"], back["quality_tier"]) == ("16:9", "flow", "draft")
+    # a Fast Final or Cloud Final cut's recipe keeps its tier, so Re-render and Paste a recipe remake it as sharp
+    for tier in ("fast", "cloud"):
+        assert sr.decode(sr.encode({"vibe": "black", "quality_tier": tier}))["quality_tier"] == tier
     for bad in ("", "hello", "xf1.!!!", "xf1." + "A" * 10):
         with pytest.raises(sr.RecipeError):
             sr.decode(bad)
@@ -65,7 +68,7 @@ def test_options_route_reports_final_files_and_an_honest_eta(client, monkeypatch
 
     monkeypatch.setattr(batch, "measured", lambda jobs, seconds=None: {})  # no Final measured on this machine yet
     body = client.get("/api/simple/options?duration=20&energy=dense").json()
-    assert body["aspects"] == ["16:9", "9:16", "1:1"] and body["tiers"] == ["draft", "final"]
+    assert body["aspects"] == ["16:9", "9:16", "1:1"] and body["tiers"] == ["draft", "fast", "final", "cloud"]
     assert 8 <= body["shots"] <= 15
     assert body["final"]["eta_measured"] is False and body["final"]["eta_s"] > 600  # the formula, said to be one
     assert body["final"]["output"] == "1280x720"
@@ -81,6 +84,23 @@ def test_options_route_reports_final_files_and_an_honest_eta(client, monkeypatch
     assert quick["plan"]["estimate"]["seconds"] == 180 and quick["plan"]["estimate"]["cuts"] == 9
     flow = client.get("/api/simple/options?duration=20&energy=flow").json()
     assert flow["shots"] < body["shots"]
+    # Cloud Final renders on Comfy Cloud: the Time row is the cloud estimate plus the look pass, not the Draft's minutes
+    cloud = client.get("/api/simple/options?duration=20&energy=dense&tier=cloud").json()
+    est, tick = cloud["plan"]["estimate"], cloud["cloud_final"]["estimate"]
+    assert est["gpu_seconds"] == tick["seconds"] and est["measured"] is False
+    assert est["seconds"] == tick["seconds"] + est["look_seconds"] and est["basis"] == tick["basis"]
+    assert est["seconds"] != 180
+
+
+def test_options_route_says_cloud_final_cannot_take_a_long_song(client, monkeypatch):
+    from xenoform import batch, cloud_final
+
+    monkeypatch.setattr(batch, "measured", lambda jobs, seconds=None: {})
+    monkeypatch.setattr(cloud_final, "ready", lambda: {"ready": True, "why": ""})
+    short = client.get("/api/simple/options?duration=20&energy=dense&tier=cloud").json()["cloud_final"]
+    assert short["ready"] is True
+    long = client.get("/api/simple/options?duration=180&energy=dense&tier=cloud").json()["cloud_final"]
+    assert long["ready"] is False and "at most 16 morphs" in long["why"] and long["max_morphs"] == 16
 
 
 def _fake_job(root: Path, job_id: str, meta: dict) -> Path:

@@ -15,7 +15,7 @@ import zlib
 PREFIX = "xf1."
 ENERGY = ("flow", "dense")
 ASPECTS = ("16:9", "9:16", "1:1")
-TIERS = ("draft", "final")
+TIERS = ("draft", "fast", "final", "cloud")
 FORESHADOW = ("auto", "off", "trace", "negative", "slices", "silhouette")
 MAX_LEN = 6000
 

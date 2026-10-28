@@ -1588,9 +1588,18 @@ def create_app(cfg: dict | None = None):
 
         rates = batch.measured(work_dir() / "jobs", video_s)
         fin = rates.get("final") or {}
-        mine = rates.get(tier if tier in ("final", "fast") else "draft") or {}
+        mine = (rates.get(tier) if tier in ("draft", "fast", "final", "cloud") else {}) or {}
         est = plan.get("estimate") or {}
-        if mine.get("eta_s") and est.get("seconds"):
+        n_morphs = int(est.get("morphs") or len(shots))
+        cloud_est = _cloud_final.estimate(n_morphs)
+        if tier == "cloud":
+            # Cloud Final renders on Comfy Cloud, not this GPU: its time is the cloud estimate plus the look pass here,
+            # the same figure the Cloud Final tick shows
+            gpu = int(cloud_est["seconds"])
+            secs = gpu + int(est.get("look_seconds") or 0) + int(est.get("performer_seconds") or 0)
+            est.update({"seconds": secs, "minutes": round(secs / 60, 1), "gpu_seconds": gpu, "measured": False,
+                        "basis": cloud_est["basis"]})
+        elif mine.get("eta_s") and est.get("seconds"):
             ratio = float(mine["eta_s"]) / max(1.0, float(est["seconds"]))
             est.update({"seconds": int(round(mine["eta_s"])), "minutes": round(float(mine["eta_s"]) / 60, 1),
                         "gpu_seconds": int(round(float(est.get("gpu_seconds") or 0) * ratio)), "measured": True,
@@ -1607,6 +1616,14 @@ def create_app(cfg: dict | None = None):
             detected = _detect()
         except Exception:
             detected = {"id": "cpu", "label": "CPU"}
+        # Cloud Final: LTX-2.5 open weights on Comfy Cloud (cloud_final); "ready" says whether the key is in this desk's
+        # environment, never the key. A plan with more morphs than the cap is not ready: cloud_clips would refuse it.
+        cloud = {**_cloud_final.ready(), "max_morphs": _cloud_final.MAX_MORPHS, "model": _cloud_final.label(),
+                 "render": "x".join(map(str, _cloud_final.RENDER_916 if aspect == "9:16" else _cloud_final.RENDER_169)),
+                 "estimate": cloud_est}
+        if n_morphs > _cloud_final.MAX_MORPHS:
+            cloud.update({"ready": False, "why": f"Cloud Final takes at most {_cloud_final.MAX_MORPHS} morphs; "
+                                                 "choose Length 60 s or fewer Forms."})
         return {
             "plan": plan,
             "lengths": [0, 60, 30, 15],
@@ -1615,13 +1632,9 @@ def create_app(cfg: dict | None = None):
                          "tiers": [{"id": t["id"], "label": t["label"]} for t in _tiers.values()]},
             "energies": ["flow", "dense"],
             "aspects": ["16:9", "9:16", "1:1"],
-            "tiers": ["draft", "final"],
+            "tiers": ["draft", "fast", "final", "cloud"],
             "shots": len(shots),
-            # Cloud Final: LTX-2.5 open weights on Comfy Cloud (cloud_final); "ready" says whether the key is in this desk's
-            # environment, never the key
-            "cloud_final": {**_cloud_final.ready(), "max_morphs": _cloud_final.MAX_MORPHS, "model": _cloud_final.label(),
-                            "render": "x".join(map(str, _cloud_final.RENDER_916 if aspect == "9:16" else _cloud_final.RENDER_169)),
-                            "estimate": _cloud_final.estimate(int((plan.get("estimate") or {}).get("morphs") or len(shots)))},
+            "cloud_final": cloud,
             "final": {"ready": files["ready"], "upscale": files["upscale"], "files": files["files"],
                       "eta_s": int(round(fin["eta_s"])) if fin.get("eta_s") else final_tier.eta_seconds(shots, upscale=files["upscale"]),
                       "eta_measured": bool(fin.get("eta_s")), "per_s": fin.get("per_s"), "cuts": int(fin.get("cuts") or 0),
@@ -2702,7 +2715,7 @@ def create_app(cfg: dict | None = None):
         from xenoform.hardware import detect_tier
         from xenoform.models_setup import inspect_setup
 
-        setup = inspect_setup()
+        setup = inspect_setup(comfy_url=str(cfg["comfy"].get("base_url") or ""))
         tier = detect_tier()
         text = diagnostics(
             extra={
