@@ -1,0 +1,11 @@
+{
+ "note": "The Under the hood chapter of the long walkthrough (Tys, 29 Oct: the demo 'is like a black box at the moment'): one line a panel of cards/underhood.html, built from the None underwater job ce8fe479. Numbers are that job's own.",
+ "lines": [
+  {"id": "u1", "chapter": "Under the hood", "text": "Under the hood. First the song: it is split into stems with Demucs, and every beat and the drop are found in the mix. This track: seventy beats in thirty seconds, the drop at thirteen point seven."},
+  {"id": "u2", "chapter": "Under the hood", "text": "Then the plan: a shot on every bar, a half bar on the drop. Here that is twenty-two shots, and the stems decide the effects on each: a punch on the downbeat, a stutter on the kick."},
+  {"id": "u3", "chapter": "Under the hood", "text": "Then the chain: twenty-three stills, one object leading to the next. Twelve came from the None library, three were drawn first for the line: a seashell, coral, a pearl oyster."},
+  {"id": "u4", "chapter": "Under the hood", "text": "Each shot is one morph: the still it starts on, the still it ends on, and a prompt that names them both and asks for the change across the whole clip. That graph goes to ComfyUI through the Comfy SDK, and LTX-2.5 renders it.", "say": "Each shot is one morph: the still it starts on, the still it ends on, and a prompt that names them both and asks for the change across the whole clip. That graph goes to ComfyUI through the Comfy SDK, and LTX 2.5 renders it."},
+  {"id": "u5", "chapter": "Under the hood", "text": "The morph comes back as a short clip. Xenoform re-times it so the change lands on the beat, runs the effects the knobs asked for on the stems, and cuts it all to the song."},
+  {"id": "u6", "chapter": "Under the hood", "text": "Every step leaves a file in the job folder: the beats, the plan, the chain, every morph. Nothing in it is a black box."}
+ ]
+}

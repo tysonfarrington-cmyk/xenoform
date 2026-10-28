@@ -52,8 +52,14 @@ the social post. Voice-over over the screen, the outputs played full frame, capt
 7. **Your clips** (0:40). Morph > Your clips; the busiest stretch of each clip; a morph from one clip into the next.
 8. **Share** (0:30). A 720p share cut, the 15 s hook, Edit in Resolve (the folder opens, File › Import › Timeline),
    the recipe code; Variations for the night.
-9. **How it's built: open weights, the Comfy SDK and MCP** (0:35). The models and their licences; every render through
-   the Comfy SDK; the MCP server; Setup & models.
+9. **Under the hood** (1:10; Tys, 29 Oct: the demo "is like a black box at the moment"). One Make's own files, the None
+   "underwater" cut: the song's waveform with its 70 beats and the drop (features.json); the plan of 22 shots with their
+   beat effects (simple.json); the chain of 23 stills, three drawn first for the line (chain.json); one morph from its two
+   stills through the prompt that names them to the clip, rendered by LTX-2.5 through ComfyUI and the Comfy SDK; the
+   re-timing, the effects and the cut; the job folder's files. `cards/underhood.html` is built from the job by
+   `underhood.py`, the lines are `underhood_voice.json` (u1-u6, merged into the long copy after Share).
+10. **How it's built: open weights, the Comfy SDK and MCP** (0:30). The models (LTX-2.5 for the Final, here or on Comfy
+    Cloud) and their licences; every render through the Comfy SDK; the MCP server; Setup & models.
 
 ## How it gets made
 
