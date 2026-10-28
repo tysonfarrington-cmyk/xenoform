@@ -170,3 +170,34 @@ def test_present_defaults_to_the_comfy_models_root(tmp_path, monkeypatch):
     (tmp_path / "upscale_models").mkdir()
     (tmp_path / "upscale_models" / ft.UPSCALER).write_bytes(b"x")
     assert ft.present()["upscale"] is True
+
+
+def test_the_final_is_ltx25_when_its_files_are_there_and_sends_the_loose_graph(tmp_path, stills, monkeypatch):
+    # 29 Oct: LTX-2.5 morphs with cloud_final's loose guides where LTX-2.3 makes a quick change, and renders 576x1024 in
+    # about half the time; the clips are scaled to the output size here, so the 4x upscaler stays out of its graph
+    from xenoform import cloud_final
+    from xenoform import morph_pass as mp
+
+    _no_wait(monkeypatch)
+    monkeypatch.delenv("XENO_FINAL_MODEL", raising=False)
+    monkeypatch.setattr(mp, "ltx25_present", lambda root=None: False)
+    assert ft.model() == "ltx23"
+    monkeypatch.setattr(mp, "ltx25_present", lambda root=None: True)
+    assert ft.model() == "ltx25" and ft.label() == "LTX-2.5"
+    assert ft.eta_seconds([{"render_s": 3, "seconds": 3}]) > ft.ETA25["per_shot_s"]
+    sent = []
+    scaled = []
+
+    class Client(_Client):
+        def submit(self, wf):
+            sent.append(wf.g)
+            return _Job(None)
+
+    monkeypatch.setattr(cloud_final, "to_full_size", lambda clips, work, out, cfg, **k: (scaled.append((list(clips), out)) or clips, []))
+    clips, notes = ft.final_clips([{"render_s": 3, "seconds": 2}], stills[:2], tmp_path, {}, 7, "none", client=Client(lambda i, up: None))
+    g = sent[0]
+    assert g["1"]["inputs"]["unet_name"].startswith("ltx-2.5") and "40" not in g and "19" in g
+    assert g["22"]["inputs"]["strength"] == cloud_final.LOOSE["end_strength"] and g["8"]["inputs"]["img_compression"] == 30
+    assert g["3"]["inputs"]["text"].startswith(cloud_final.LEAD) and g["9"]["inputs"]["width"] == 1024 and g["9"]["inputs"]["height"] == 576
+    assert g["19"]["inputs"]["filename_prefix"] == "xenoform/final00" and g["13"]["inputs"]["noise_seed"] == 7
+    assert [c.name for c in clips] == ["final00.mp4"] and notes == [] and scaled[0][1] == ft.sizes(False)["out"]

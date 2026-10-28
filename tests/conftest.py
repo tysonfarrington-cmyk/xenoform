@@ -10,6 +10,13 @@ def _empty_library(tmp_path_factory, monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _final_on_ltx23(monkeypatch):
+    """The Final tier's fakes were written for the LTX-2.3 graph (nodes 100/101/28); the default is LTX-2.5 where its
+    files are on disk, so every test pins LTX-2.3 unless it sets XENO_FINAL_MODEL itself."""
+    monkeypatch.setenv("XENO_FINAL_MODEL", "ltx23")
+
+
+@pytest.fixture(autouse=True)
 def _comfy_lists_no_models(monkeypatch):
     monkeypatch.setattr("xenoform.models_setup._fetch_listing", lambda base, folder: None)
     monkeypatch.setattr("xenoform.models_setup._LISTED", {})

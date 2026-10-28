@@ -1254,7 +1254,7 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
 
         label = f"Cloud Final ({_cf.label()} on Comfy Cloud)"
     else:
-        label = {"ltx23": "Final (LTX-2.3)"}.get(engine, "Draft (LTX 0.9.5)")
+        label = f"Final ({final_tier.label()})" if engine == "ltx23" else "Draft (LTX 0.9.5)"
     report("restyle", 0.1, f"{len(render_shots)} {label} morphs · "
                            f"{len(shots)} shots · {opt['energy']} · {opt['aspect']}")
     if native_draft:
@@ -1488,7 +1488,7 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
         card = beatfx.end_card(tmp, opt["recipe"] or "(none)")
     report("assemble", 0.98, "Saving the video")
     shutil.copyfile(tmp, out_path)
-    info = {"engine": {"ltx23": "LTX-2.3 22B distilled fp8 + 4x upscale (Final)",
+    info = {"engine": {"ltx23": f"{final_tier.label()} 22B distilled" + (" + 4x upscale" if final_tier.model() == "ltx23" else ", scaled to full size") + " (Final)",
                        "ltx095": "LTX 0.9.5 + 4x upscale (Fast Final)" if opt["fast"] else "LTX 0.9.5 (Draft)",
                        "ltx25cloud": "Cloud Final on Comfy Cloud (open weights), scaled to full size here",
                        "mock": "mock cross-fades (test)"}[engine],

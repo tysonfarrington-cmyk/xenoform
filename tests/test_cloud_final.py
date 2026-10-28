@@ -24,9 +24,11 @@ def test_the_graph_is_the_open_weights_ltx25_morph_at_the_shots_size():
         cloud_final.graph("x", length=73, seed=1, width=720, height=1280)  # LTX wants multiples of 32
 
 
-def test_the_default_is_ltx23_which_morphs_and_its_graph_keeps_the_upscaler_here():
-    # 29 Oct, the test pair on Comfy Cloud: LTX-2.5's first/last-frame graph held the shell and cut to the owl near the end
-    assert cloud_final.model() == "ltx23" and cloud_final.label() == "LTX-2.3"
+def test_the_default_is_ltx25_with_loose_guides_and_ltx23_stays_available():
+    # 29 Oct, nautilus -> owl: LTX-2.5 with its graph's guides (1.0, compression 18) cut near the end; with the end guide at
+    # 0.6, compression 30 and a prompt asking for the change across the clip it morphed, half and half mid-clip
+    assert cloud_final.model() == "ltx25" and cloud_final.label() == "LTX-2.5"
+    assert cloud_final.LOOSE == {"img_compression": 30, "end_strength": 0.6} and "never a cut" in cloud_final.LEAD
     g = cloud_final.graph_for("ltx23", "a morph", length=73, seed=5, width=576, height=1024)
     assert cloud_backend.guard(g) == []  # no upscale model and no partner node goes to Cloud
     assert g["100"]["class_type"] == "LoadImage" and g["101"]["class_type"] == "LoadImage"
@@ -50,6 +52,7 @@ class FakeCloud:
 
     def __init__(self, fail=()):
         self.fail = set(fail)
+        self.graphs = []
         self.prepared = 0
         self.live = 0
         self.peak = 0
@@ -63,6 +66,7 @@ class FakeCloud:
     def run(self, graph, out_dir, inputs=None, open_weights=True):
         with self.lock:
             self.live += 1
+            self.graphs.append(graph)
             self.peak = max(self.peak, self.live)
         try:
             save = next(n for n in graph.values() if n["class_type"] == "SaveVideo")
@@ -85,6 +89,7 @@ def test_every_shot_goes_to_cloud_three_at_a_time_and_a_failed_one_falls_back_to
     stills = [{"path": str(tmp_path / f"s{i}.png"), "kind": "object"} for i in range(6)]
     fake = FakeCloud(fail={2})
     drafted = []
+    monkeypatch.setattr(cloud_final, "MODEL", "ltx23")  # this run: the LTX-2.3 graph, named below for LTX-2.5
 
     def draft(indices):
         drafted.extend(indices)
@@ -96,10 +101,16 @@ def test_every_shot_goes_to_cloud_three_at_a_time_and_a_failed_one_falls_back_to
 
     seen = []
     clips, notes = cloud_final.cloud_clips(shots, stills, tmp_path, {}, 2727, "none", vertical=False, backend=fake,
-                                           draft=draft, report=lambda stage, frac, detail: seen.append(detail))
+                                           draft=draft, report=lambda stage, frac, detail: seen.append(detail), name="ltx23")
+    cloud25 = FakeCloud()
     clips25, _ = cloud_final.cloud_clips(shots[:1], stills[:2], tmp_path / "25", {}, 2727, "none", vertical=False,
-                                         backend=FakeCloud(), name="ltx25")
+                                         backend=cloud25, name="ltx25")
     assert clips25[0].name == "cloud00.mp4"
+    g25 = cloud25.graphs[0]  # the loose guides and the lead sentence, every time LTX-2.5 is sent
+    assert g25["22"]["inputs"]["strength"] == 0.6 and g25["8"]["inputs"]["img_compression"] == 30
+    assert g25["3"]["inputs"]["text"].startswith(cloud_final.LEAD)
+    g23 = fake.graphs[0]  # the LTX-2.3 graph keeps its own tune (the vibe's autotune, else the graph's defaults)
+    assert g23["102"]["inputs"]["img_compression"] == 18 and not g23["4"]["inputs"]["text"].startswith(cloud_final.LEAD)
     assert len(clips) == 5 and clips[2].name == "draft2.mp4" and clips[0].name == "cloud00.mp4" and drafted == [2]
     assert notes == [{"shot": 2, "fallback": "ltx095-draft", "why": "job ended error"}]
     assert fake.prepared == 5 and fake.peak <= 3 and "Comfy Cloud" in seen[-1]

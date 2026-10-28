@@ -6,8 +6,8 @@ Contest: [Open Source Higgsfield](https://comfy.org/open-source-higgsfield/), ru
 
 ## Categories claimed
 
-- **Open Weights Only.** Every default render uses open weights on the user's own GPU: LTX-Video 0.9.5, LTX-2.3 22B distilled fp8, Z-Image Turbo, Wan Animate 2, Real-ESRGAN x4plus and realesr-animevideov3. The paid paths (LTX-2.5 partner node, Comfy Cloud, the Add-ons switch) are off by default and collapsed into one section of the README. `tests/test_eligibility.py` fails the build if a default workflow names a partner or API node.
-- **LTX bonus.** LTX-2.3 is the core video model for Final, action shots and scene morphs; LTX-Video 0.9.5 renders every Draft morph. Prompts are encoded locally; no LTX API key.
+- **Open Weights Only.** Every default render uses open weights on the user's own GPU: LTX-Video 0.9.5, LTX-2.5 22B distilled int8, LTX-2.3 22B distilled fp8, Z-Image Turbo, Wan Animate 2, Real-ESRGAN x4plus and realesr-animevideov3. The paid paths (LTX-2.5 partner node, Comfy Cloud, the Add-ons switch) are off by default and collapsed into one section of the README. `tests/test_eligibility.py` fails the build if a default workflow names a partner or API node.
+- **LTX bonus.** LTX-2.5 is the core video model for Final and Cloud Final (LTX-2.3 where it is not installed, and for action shots and scene morphs); LTX-Video 0.9.5 renders every Draft morph. Prompts are encoded locally; no LTX API key.
 
 ## ComfyUI parts used
 
@@ -39,14 +39,14 @@ Contest: [Open Source Higgsfield](https://comfy.org/open-source-higgsfield/), ru
 | Social post URL | (the #OpenSourceHiggsfield post) |
 | Categories | Open Weights Only; LTX bonus |
 | ComfyUI parts used | Comfy Python SDK (comfy-sdk 0.5.0 + comfy-api-proxy); MCP server (45 tools); core nodes only in the shipped workflows |
-| Models | LTX-Video 0.9.5, LTX-2.3 22B distilled fp8, Z-Image Turbo, Wan Animate 2, Real-ESRGAN x4plus and realesr-animevideov3 (optional: FLUX.2 Klein 4B, ACE-Step 1.5) |
+| Models | LTX-Video 0.9.5, LTX-2.5 22B distilled int8, LTX-2.3 22B distilled fp8, Z-Image Turbo, Wan Animate 2, Real-ESRGAN x4plus and realesr-animevideov3 (optional: FLUX.2 Klein 4B, ACE-Step 1.5) |
 | Licence | MIT |
 | Runs on | Windows and Linux, Python 3.12, ComfyUI 0.33+, a 12 GB GPU for renders; the animatic and the judges page need no GPU |
 
 ## Social post (draft, under 280 characters)
 
 ```
-Xenoform: drop in a song, pick a vibe, and one object morphs into the next on every beat. Open weights (LTX-Video, LTX-2.3), all local, built on the Comfy SDK, with stems, MIDI and an MCP server. #OpenSourceHiggsfield
+Xenoform: drop in a song, pick a vibe, and one object morphs into the next on every beat. Open weights (LTX-Video, LTX-2.5), all local, built on the Comfy SDK, with stems, MIDI and an MCP server. #OpenSourceHiggsfield
 https://github.com/tysonfarrington-cmyk/xenoform
 DEMO_VIDEO_URL
 ```

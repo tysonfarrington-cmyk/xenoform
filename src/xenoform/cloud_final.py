@@ -5,12 +5,14 @@ at least be an option for that if the competition is by comfyui").
 Each shot is one first/last-frame morph run on Comfy Cloud by ``cloud_backend``, at most three at once (the Creator
 plan's API concurrency), at 576x1024 from the portrait stills (1024x576 for 16:9), on Comfy's 96 GB GPUs. Two graphs:
 
-* ``ltx23`` (the default): the local Final's two-stage LTX-2.3 graph (``final_tier.graph``) without its upscaler. It
-  morphs: on the 29 Oct test pair (nautilus -> owl, 3 s) the shell turns into the owl in mid-clip, and Comfy Cloud
-  gives it a size this card cannot (448x768 here).
-* ``ltx25`` (``XENO_CLOUD_MODEL=ltx25``): ``workflows/ltx25_morph_api.json``, the distilled 22B LTX-2.5. On the same pair,
-  locally and on Cloud alike, it held the shell for most of the clip and switched to the owl near the end: a late cut,
-  not a morph. It stays behind the switch until a setting or the layout-to-render IC-LoRA makes it morph.
+* ``ltx25`` (the default): ``workflows/ltx25_morph_api.json``, the distilled 22B LTX-2.5, with ``LOOSE`` guides and the
+  ``LEAD`` sentence on the prompt. With the graph's own guides (strength 1.0, img_compression 18) it held the first
+  object for most of the clip and switched to the second near the end, a cut and not a morph, on Comfy Cloud and on
+  this card alike (29 Oct, nautilus -> owl, 3 s). With the end guide at 0.6, img_compression 30 and a prompt that asks
+  for the change across the whole clip, the shell folds open and the owl grows out of it, half and half mid-clip: the
+  best morph of the four tried. A mid-clip guide (a 50/50 blend of the stills at frame 40) gave a double exposure.
+* ``ltx23`` (``XENO_CLOUD_MODEL=ltx23``): the local Final's two-stage LTX-2.3 graph (``final_tier.graph``) without its
+  upscaler; it turns one object into the other in mid-clip, more a quick change than a morph.
 
 This machine then scales each clip to the cut's full size (Comfy Cloud keeps upscalers local) and composes the cut as
 ever. It stays open weights: the same open models, only the hardware is Comfy's; ``cloud_backend.guard`` refuses a
@@ -30,8 +32,13 @@ from typing import Callable
 
 ROOT = Path(__file__).resolve().parents[2]
 GRAPH = ROOT / "workflows" / "ltx25_morph_api.json"
-MODEL = os.environ.get("XENO_CLOUD_MODEL", "").strip().lower() or "ltx23"
+MODEL = os.environ.get("XENO_CLOUD_MODEL", "").strip().lower() or "ltx25"
 MODELS = {"ltx23": "LTX-2.3", "ltx25": "LTX-2.5"}
+# LTX-2.5 morphs only with room to move: the end guide at 0.6 (1.0 pins the last frame so hard the model holds the first
+# object and cuts), the guide stills compressed to 30 (18 keeps them too exact), and the prompt opening on the change
+LOOSE = {"img_compression": 30, "end_strength": 0.6}
+LEAD = ("The first object slowly and continuously transforms into the second over the whole clip: by the middle of the "
+        "clip it is half one and half the other, every part of it changing, one continuous transformation, never a cut. ")
 INPUT_NODES = {"ltx23": ("100", "101"), "ltx25": ("6", "7")}  # where each graph takes its two stills
 RENDER_916 = (576, 1024)  # portrait 9:16; multiples of 64, so LTX-2.3's first stage (half size) still fits
 RENDER_169 = (1024, 576)
@@ -47,7 +54,7 @@ KEY_HINT = ("Cloud Final needs your Comfy Cloud API key as COMFY_ORG_API_KEY in 
 
 
 def model() -> str:
-    return MODEL if MODEL in MODELS else "ltx23"
+    return MODEL if MODEL in MODELS else "ltx25"
 
 
 def label() -> str:
@@ -175,8 +182,11 @@ def cloud_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
         style = styles[i] if styles and i < len(styles) else "melt"
         text = mp.prompt_for(vibe, "ltx25", mp.pair_kinds(stills[i], stills[i + 1]), style=style).rstrip() + PROMPT_SUFFIX
         length = final_tier.gen_length(float(shots[i].get("render_s") or shots[i]["seconds"]))
+        knobs = {**tune, **LOOSE} if name == "ltx25" else tune
+        if name == "ltx25":
+            text = LEAD + text
         g = graph_for(name, guard_prompt(text, state), negative=negative, length=length, seed=int(seed) + i, width=w,
-                      height=h, prefix=f"xenoform/cloud{i:02d}", **tune)
+                      height=h, prefix=f"xenoform/cloud{i:02d}", **knobs)
         return {"graph": g, "out_dir": work / "cloud" / f"{i:02d}",
                 "inputs": {a_node: Path(stills[i]["path"]), b_node: Path(stills[i + 1]["path"])}}
 
