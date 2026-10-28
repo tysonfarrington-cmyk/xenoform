@@ -62,8 +62,8 @@ def test_the_make_body_drops_your_clips_unless_they_are_switched_on(tmp_path):
 
 
 def test_the_idea_line_names_things_to_morph_and_leaves_polly_off():
-    note = APP.split('${ideaReadingLine(easy)}', 1)[1].split("</p>", 1)[0]
-    assert "brings Polly in" not in note and "Name things to morph between" in note
+    note = APP.split('${ideaReadingLine(easy)}', 1)[1].split("</details>", 1)[0]  # the folded "How the line works"
+    assert "brings Polly in" not in note and "Things become the objects the morphs travel between" in note
 
 
 def test_the_making_screen_shows_the_chain_the_render_made(tmp_path):

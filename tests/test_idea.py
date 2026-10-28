@@ -257,8 +257,10 @@ def test_the_desk_route_reads_the_line_and_says_what_make_grows(monkeypatch):
 def test_the_desk_shows_the_reading_under_the_line_and_on_the_making_screen():
     app = (ROOT / "src/xenoform/ui_static/app.js").read_text(encoding="utf-8")
     assert 'id="easy-idea-reading"' in app and "/api/simple/idea" in app and "function scheduleIdea" in app
-    assert 'placeholder="A place, an object, a dancer:' in app and "The line shapes the cut" in app
-    assert "Your line, read:" in app and "Read as: ${have.summary}" in app
+    # the reading is labelled chips since 28 Oct (Tys: "more intuitive without having to read a block of fine print")
+    assert 'placeholder="a rally car, a trophy, a chequered flag, a desert at dusk, fast and punchy"' in app
+    assert '<summary>How the line works</summary>' in app and "The line shapes the cut" not in app
+    assert "Your line, read:" in app and "function ideaReadingHtml(easy)" in app and "el.innerHTML = html;" in app
     handler = app.split('target.id === "easy-idea"')[1].split("} else if")[0]
     assert "scheduleIdea()" in handler
     css = (ROOT / "src/xenoform/ui_static/app.css").read_text(encoding="utf-8")
@@ -291,4 +293,4 @@ def test_the_desk_moves_the_knobs_once_for_a_feel():
     assert "state.easy.feelSig === sig" in apply and "window.XENO_MACRO_SET(k, Number(v))" in apply
     assert "render()" not in apply  # painted in place: a render would take the caret out of the line
     saved = app.split("const EASY_SAVED_KEYS = [", 1)[1].split("];", 1)[0]
-    assert '"feelSig"' in saved and "applyFeel(data);" in app and "Then how it should feel: slow and dreamy." in app
+    assert '"feelSig"' in saved and "applyFeel(data);" in app and "a desert at dusk, fast and punchy" in app  # a feel in the placeholder

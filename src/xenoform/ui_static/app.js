@@ -907,11 +907,13 @@ function renderEasy() {
         <div class="step-head"><h3>Vibe</h3><span>Pick one. You can try another after.</span></div>
         <div class="vibe-grid" role="radiogroup" aria-label="Vibe">${vibeCards(easy, false, "featured")}</div>
         ${moreVibes(easy)}
-        <label class="idea-field">Your idea in one line, if you have one.
-          <input id="easy-idea" type="text" maxlength="170" value="${esc(easy.idea || "")}" aria-label="One line, optional" placeholder="A place, an object, a dancer: a moth, a lantern, a wet street at night. Then how it should feel: slow and dreamy." autocomplete="off" />
+        <label class="idea-field">Your idea <small>optional</small>
+          <input id="easy-idea" type="text" maxlength="170" value="${esc(easy.idea || "")}" aria-label="Your idea, optional" placeholder="a rally car, a trophy, a chequered flag, a desert at dusk, fast and punchy" autocomplete="off" />
         </label>
         ${ideaReadingLine(easy)}
-        <p class="note">The line shapes the cut: a place becomes a scene the morphs pass through (rendered before Make, about 20 s), an object the library knows opens the cut and fills the chain with its family (moth, lantern, heron, sea creatures), a thing it lacks is rendered as your own shape. Name things to morph between: a rally car, a trophy, a chequered flag. Say how it should feel after a comma (slow and dreamy, hard and glitchy, warm and hazy) and the knobs and the Look move to it; move them after if you like. Empty, and the vibe decides. What the line was read as shows under it; the Scenes row still has the last word.</p>
+        <details class="idea-help"><summary>How the line works</summary>
+          <p class="note">Commas split it. Things become the objects the morphs travel between: one the library knows brings its family along, one it lacks is drawn new in this vibe's material before Make. A place becomes wide scenes the morphs pass through. A feel (slow and dreamy, hard and glitchy) moves the knobs and the Look. It never changes the vibe, and it cannot tell a story: every shot is still one thing becoming the next. Empty, and the vibe decides.</p>
+        </details>
       </section>
       <section class="panel span simple-knobs-panel" data-tour="easy-macros">
         <h3>Knobs</h3>
@@ -1328,32 +1330,69 @@ function ideaReading() {
   return state.ideaReading && state.ideaReading.key === ideaKey() && state.ideaReading.data && !state.ideaReading.data.error
     ? state.ideaReading.data : null;
 }
-function ideaReadingText(easy) {
-  if (!String(easy.idea || "").trim()) return "";
+// What the line became, as labelled chips a glance can read instead of a sentence (Tys, 28 Oct: "make that more
+// intuitive without having to read a block of fine print"): what the morphs travel between, what they pass through, how
+// it feels, who performs; "new" on what Make draws first. With the line empty, the same rows show what can go in it.
+const IDEA_ROWS = [["thing", "Morphs through"], ["place", "Passes through"], ["feel", "Feels"], ["who", "Performer"]];
+const IDEA_EXAMPLES = { thing: ["a rally car", "a trophy"], place: ["a desert at dusk"], feel: ["fast and punchy"] };
+function ideaChip(kind, text, tag) {
+  return `<span class="ir ${kind}">${esc(text)}${tag ? ` <i>${esc(tag)}</i>` : ""}</span>`;
+}
+function ideaRows(rows, extra) {
+  return IDEA_ROWS.filter(([kind]) => rows[kind] && rows[kind].length)
+    .map(([kind, label]) => `<div class="ir-row"><span class="ir-k ${kind}">${esc(label)}</span>${rows[kind].join("")}${(extra && extra[kind]) || ""}</div>`)
+    .join("");
+}
+function ideaReadingHtml(easy) {
+  if (!String(easy.idea || "").trim()) {
+    const rows = {};
+    Object.entries(IDEA_EXAMPLES).forEach(([kind, words]) => { rows[kind] = words.map((w) => ideaChip(`${kind} example`, w)); });
+    return `${ideaRows(rows)}<p class="note ir-foot">Any of these, split by commas. Empty, and the vibe decides.</p>`;
+  }
   const have = state.ideaReading && state.ideaReading.key === ideaKey() ? state.ideaReading.data : undefined;
-  if (have === undefined) return "Reading your line...";
+  if (have === undefined) return `<p class="note ir-foot">Reading your line...</p>`;
   if (!have) return "";
-  if (have.error) return have.error;
-  if (!have.summary) return "Nothing the cut can use yet: name a place (a neon city at night), an object (lanterns) or a dancer.";
+  if (have.error) return `<p class="note ir-foot">${esc(have.error)}</p>`;
   const grow = have.grow || {};
-  const bits = [];
-  if (grow.scenes && grow.scenes.length) bits.push(`${grow.scenes.length} scene${grow.scenes.length === 1 ? "" : "s"}`);
-  const shapes = (grow.own || []).length + (grow.nouns || []).length;
-  if (shapes) bits.push(`${shapes} shape${shapes === 1 ? "" : "s"}`);
-  const growing = bits.length ? ` Make renders ${bits.join(" and ")} for it first (about ${grow.seconds || 20} s).` : "";
-  return `Read as: ${have.summary}${growing}`;
+  const bare = (x) => String(x).toLowerCase().replace(/^(a|an|the)\s+/, "").trim();  // the grow plan drops the article
+  const fresh = new Set([].concat(grow.own || [], grow.nouns || [], grow.scenes || []).map(bare));
+  const isNew = (x) => fresh.has(bare(x)) ? "new" : "";
+  const rows = { thing: [], place: [], feel: [], who: [] };
+  (have.objects || []).forEach((o) => rows.thing.push(ideaChip("thing", o, isNew(o))));
+  (have.own || []).forEach((o) => rows.thing.push(ideaChip("thing", o, "new")));
+  if (have.family) rows.thing.push(ideaChip("thing", String(have.family).replace(/-/g, " "), "fills the rest"));
+  (have.scenes || []).forEach((s) => rows.place.push(ideaChip("place", s, isNew(s) || "scene")));
+  const extra = {};
+  if (have.feel) {
+    rows.feel.push(ideaChip("feel", (have.feel.words || []).join(", ")));
+    const knobs = Object.entries(have.feel.macros || {}).map(([k, v]) => `${k.charAt(0).toUpperCase()}${k.slice(1)} ${Math.round(Number(v) * 100)}`);
+    if (have.feel.look) knobs.push(`Look ${lookLabel(have.feel.look)}`);
+    if (knobs.length) extra.feel = `<span class="ir-note">${esc(knobs.join(" · "))}</span>`;
+  }
+  if (have.performer) {
+    rows.who.push(ideaChip("who", have.performer.cue || have.performer.style || "performing"));
+    extra.who = `<span class="ir-note">${Number(easy.performer || 0) > 0 ? "Polly performs it" : "Polly is off (Work in progress)"}</span>`;
+  }
+  const body = ideaRows(rows, extra);
+  if (!body) return `<p class="note ir-foot">Nothing to morph between yet: name things (a rally car, a trophy), a place or how it feels.</p>`;
+  const things = (grow.own || []).length + (grow.nouns || []).length;
+  const places = new Set((grow.scenes || []).map(bare)).size;
+  const stills = Number(grow.count) || things + (grow.scenes || []).length;
+  const parts = [things ? `${things} ${things === 1 ? "thing" : "things"}` : "", places ? `${places} ${places === 1 ? "place" : "places"}` : ""].filter(Boolean);
+  const foot = stills ? `<p class="note ir-foot">Make draws ${stills} new ${stills === 1 ? "still" : "stills"} first (${parts.join(", ")}), about ${grow.seconds || 20} s.</p>` : "";
+  return body + foot;
 }
 function ideaReadingLine(easy) {
   if (!state.ideaReading || state.ideaReading.key !== ideaKey()) scheduleIdea();
-  const text = ideaReadingText(easy);
-  return `<p class="note idea-reading" id="easy-idea-reading"${text ? "" : " hidden"}>${esc(text)}</p>`;
+  const html = ideaReadingHtml(easy);
+  return `<div class="idea-reading" id="easy-idea-reading" aria-live="polite"${html ? "" : " hidden"}>${html}</div>`;
 }
 function paintIdeaReading() {
   const el = document.getElementById("easy-idea-reading");
   if (!el) return;  // another screen: the next render draws it
-  const text = ideaReadingText(state.easy || {});
-  el.textContent = text;
-  el.hidden = !text;
+  const html = ideaReadingHtml(state.easy || {});
+  el.innerHTML = html;
+  el.hidden = !html;
 }
 let chainTimer = null;
 function chainKey() {
