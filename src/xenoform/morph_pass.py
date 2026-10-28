@@ -179,6 +179,7 @@ def chain_walk(pool: list[dict], count: int) -> list[dict]:
 
 SCENE_CHOICES = ("off", "mix", "only")
 SCENE_EVERY = 4  # "mix" on a cut with no passage changes to follow: a scene opens it and returns every fourth still
+THEME_CHAIN_MIN = 8  # a theme or named family with this many stills (or the whole chain) carries the chain alone
 
 
 def scenes_choice(state: dict | None) -> str:
@@ -311,18 +312,25 @@ def pick_stills(state: dict, count: int, record: bool = True, scene_at: list[int
     rows = [{**r, "_vibe": vibe} for r in stills.order_fresh(vibe, list(cat[vibe])) if str(r.get("file")) not in held_files]
     scene_rows = [r for r in rows if stills.kind_of(r) == "scene"]
     pool = [r for r in rows if stills.kind_of(r) == "object"]
-    # the user's own shapes lead whatever the story names; a vibe that borrows a pool (none or too few stills of its
-    # own) still leads with every still it does have, since those are in its own material
-    own = [r for r in pool if r.get("own")]
+    from xenoform import idea as _idea
+
+    reading = _idea.reading_for(state)  # what the idea line asked for (xenoform.idea): its scenes and shapes lead
+    # the user's own shapes lead when this cut asks for them: the line names them (its shapes, its theme's things) or
+    # Your own shapes lists them. Any other is an ordinary still of the pool: a trophy, a pearl and an icicle grown for
+    # one line used to open every neon-noir cut after it (Tys, 28 Oct: "this sequence doesnt make sense").
+    asked_own = {stills.clean_noun(n) for n in list(reading.get("own") or []) + list(reading.get("objects") or [])
+                 + list(reading.get("theme_things") or []) + stills.own_nouns(str(state.get("own_shapes") or ""))}
+    own_rows = [r for r in pool if r.get("own")]
     pool = [r for r in pool if not r.get("own")]
+    own = [r for r in own_rows if str(r.get("noun") or "").lower() in asked_own]
+    pool = pool + [r for r in own_rows if str(r.get("noun") or "").lower() not in asked_own]
+    # a vibe that borrows a pool (none or too few stills of its own) still leads with every still it does have, since
+    # those are in its own material
     if asked != vibe and asked in cat:
         asked_rows = [{**r, "_vibe": asked} for r in stills.order_fresh(asked, list(cat[asked])) if str(r.get("file")) not in held_files]
         scene_rows = [r for r in asked_rows if stills.kind_of(r) == "scene"] + scene_rows
         own = [r for r in asked_rows if stills.kind_of(r) == "object"] + own
     look_vibe = asked if asked in VIBE_LOOK else vibe
-    from xenoform import idea as _idea
-
-    reading = _idea.reading_for(state)  # what the idea line asked for (xenoform.idea): its scenes and shapes lead
     if reading.get("own") and own:
         wanted = {stills.clean_noun(o) for o in reading["own"]}
         own.sort(key=lambda r: 0 if str(r.get("noun") or "").lower() in wanted else 1)  # the line's shapes first among yours
@@ -361,6 +369,35 @@ def pick_stills(state: dict, count: int, record: bool = True, scene_at: list[int
         # just grown for the idea to the back of the pool, behind the lead, 26 Oct), unless the pool is a curated
         # shipped chain with no family sort, where the rotation keeps the chain's own pairings
         pool = [pool[lead]] + pool[:lead] + pool[lead + 1:] if (named or any(not r.get("shipped") for r in pool))             else pool[lead:] + pool[:lead]
+    # a theme or a family the line names keeps the chain on it: its things and the family's stills, walked again
+    # (chain_walk pairs them afresh) rather than topped up with whatever the vibe has (a wishing well, a peony and a
+    # snare drum after a rally car, 28 Oct). Too few of them to carry a chain, and the rest of the pool follows them.
+    if reading.get("theme") or named:
+        themed = {stills.clean_noun(n) for n in list(reading.get("theme_things") or []) + list(reading.get("objects") or [])}
+        named_here = [r for r in pool if set(str(r.get("noun") or "").split()) & typed]  # what the line names leads its family
+        core = named_here + [r for r in pool if r not in named_here and (str(r.get("noun") or "").lower() in themed
+                                                                          or (named and r.get("family") == family))]
+        if len(core) + len(own) >= min(int(count), THEME_CHAIN_MIN):  # the line's own shapes count: they are its things
+            pool = core
+        elif core:
+            pool = core + [r for r in pool if r not in core]
+    elif len(pool) >= stills.REALM_LIBRARY:
+        # no line: the cut stays in one realm (creatures, garden, cosmos, machines, dark fantasy, home and craft) with
+        # enough stills to carry it, the one this vibe has used least (the seed breaks a tie, so cuts take turns),
+        # family by family, so neighbours belong together
+        by_realm: dict[str, list[dict]] = {}
+        for r in pool:
+            name = stills.realm_of(str(r.get("family") or ""))
+            if name:
+                by_realm.setdefault(name, []).append(r)
+        fit = sorted(n for n, rows in by_realm.items() if len(rows) >= min(int(count), THEME_CHAIN_MIN))
+        if fit:
+            used = stills.usage().get(vibe) or {}
+            worn = {n: sum(int(used.get(str(r.get("file")), 0)) for r in by_realm[n]) / len(by_realm[n]) for n in fit}
+            fresh = [n for n in fit if worn[n] == min(worn.values())]
+            name = fresh[int(state.get("seed") or 0) % len(fresh)] if len(fresh) > 1 else fresh[0]
+            fams = stills.REALMS[name]
+            pool = sorted(by_realm[name], key=lambda r: fams.index(r.get("family")))
     pool = _drop_bad_pairs(pool, {tuple(p) for p in autotune().get("bad_pairs") or []})
     # A chain of ``count`` takes the first ``count`` objects when the pool is bigger, so the walk below only
     # repeats pairings when the whole pool is smaller than the cut (a 20 s clip over twelve stills never repeats one).

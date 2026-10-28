@@ -174,10 +174,12 @@ def test_the_pick_opens_on_the_typed_scene_and_leads_with_the_typed_shape(monkey
     assert state["scene_stills"] == "mix"
     _, picked = mp.pick_stills(state, 6, record=False)
     assert picked[0]["noun"] == CITY  # the typed place opens the cut
-    assert picked[1]["noun"] == "laser" and picked[2]["noun"] == "brass astrolabe"  # the typed shape leads your own shapes
-    # without the line the older scene opens and the astrolabe leads, as before
-    _, plain = mp.pick_stills({"vibe": "cosmic", "scene_stills": "mix", "mode": "simple"}, 6, record=False)
+    assert picked[1]["noun"] == "laser" and picked[2]["noun"] != "brass astrolabe"  # the typed shape leads; a shape the line never named does not
+    # without the line the older scene opens; the astrolabe leads only when Your own shapes lists it (28 Oct)
+    _, plain = mp.pick_stills({"vibe": "cosmic", "scene_stills": "mix", "mode": "simple", "own_shapes": "brass astrolabe"}, 6, record=False)
     assert plain[0]["noun"] == "dark shore under a star field" and plain[1]["noun"] == "brass astrolabe"
+    _, bare = mp.pick_stills({"vibe": "cosmic", "scene_stills": "mix", "mode": "simple"}, 6, record=False)
+    assert bare[1]["noun"] not in {"brass astrolabe", "laser"}
 
 
 def test_run_simple_on_the_short_demo_lets_polly_in_when_she_is_on_and_the_line_asks(monkeypatch, tmp_path):

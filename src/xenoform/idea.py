@@ -32,11 +32,11 @@ import re
 log = logging.getLogger("xenoform.idea")
 
 MAX_SCENES = 2          # scene subjects one line can ask for (a third place is noise)
-MAX_OBJECTS = 6         # catalogue nouns kept from one line
-MAX_OWN = 5             # typed shapes grown for one line (about six seconds each); a theme brings five
+MAX_OBJECTS = 15        # catalogue nouns kept from one line
+MAX_OWN = 15            # shapes grown for one line (about six seconds each): a theme brings fifteen
 SCENES_PER_SUBJECT = 3  # renders of one typed scene subject (one seed each; the duplicate check culls near copies)
 SCENES_MAX = 4          # scenes one Make grows for the line
-SHAPES_MAX = 5          # shapes (own and catalogue) one Make grows for the line
+SHAPES_MAX = 15         # shapes (own and catalogue) one Make grows for the line
 SUBJECT_LIMIT = 80      # a scene subject is a short sentence (stills.SCENE_NOUN_LIMIT)
 
 
@@ -147,75 +147,75 @@ CONNECTORS = frozenset("and or to with of".split())
 # plain ground; the catalogue's own nouns among them join the objects, the rest are grown as shapes.
 THEMES: dict[str, dict] = {
     "racing": {"words": "racing race races rally rallies rallying motorsport motorsports grandprix nascar f1 drifting karting",
-               "things": ["rally car", "racing helmet", "trophy", "chequered flag", "steering wheel"]},
+               "things": ["rally car", "racing helmet", "trophy", "chequered flag", "steering wheel", "racing tyre", "spark plug", "piston", "go-kart", "motorcycle", "champagne bottle", "laurel wreath", "turbocharger", "fuel can", "exhaust pipe"]},
     "space": {"words": "astronaut astronauts spaceflight cosmonaut nasa scifi spacefaring",
-              "things": ["astronaut helmet", "rocket", "satellite", "ringed planet", "lunar lander"]},
+              "things": ["astronaut helmet", "rocket", "satellite", "ringed planet", "lunar lander", "jetpack", "flying saucer", "meteorite", "lunar rover", "ray gun", "astronaut glove", "brass orrery", "oxygen tank", "radio telescope", "escape pod"]},
     "underwater": {"words": "undersea marine nautical diving scuba",
-                   "things": ["diving helmet", "anchor", "jellyfish", "ship's wheel", "seashell"]},
+                   "things": ["diving helmet", "anchor", "jellyfish", "ship's wheel", "seashell", "octopus", "seahorse", "submarine", "starfish", "pufferfish", "manta ray", "anglerfish", "porthole", "pearl oyster", "humpback whale"]},
     "pirates": {"words": "pirate pirates buccaneer buccaneers",
-                "things": ["treasure chest", "pirate hat", "cutlass", "ship in a bottle", "compass"]},
+                "things": ["treasure chest", "pirate hat", "cutlass", "ship in a bottle", "compass", "parrot", "flintlock pistol", "spyglass", "powder keg", "cannon", "galleon", "ship's bell", "skeleton key", "sextant", "pearl necklace"]},
     "halloween": {"words": "halloween spooky horror",
-                  "things": ["carved pumpkin", "skull", "witch hat", "black cat", "candelabra"]},
+                  "things": ["carved pumpkin", "skull", "witch hat", "black cat", "candelabra", "bat", "tarantula", "cauldron", "broomstick", "raven", "coffin", "skeleton", "ghost", "candy corn", "dripping candle"]},
     "christmas": {"words": "christmas xmas festive yuletide",
-                  "things": ["bauble", "reindeer", "snow globe", "gift box", "candy cane"]},
+                  "things": ["bauble", "reindeer", "snow globe", "gift box", "candy cane", "christmas tree", "snowman", "christmas stocking", "sleigh", "holly wreath", "gingerbread cookie", "poinsettia", "rocking horse", "jingle bell", "christmas pudding"]},
     "football": {"words": "football soccer",
-                 "things": ["football", "football boot", "trophy", "whistle", "goalkeeper glove"]},
+                 "things": ["football", "football boot", "trophy", "whistle", "goalkeeper glove", "corner flag", "goalpost", "vuvuzela", "red card", "gold medal", "training cone", "ball pump", "duffel bag", "floodlight", "striped scarf"]},
     "basketball": {"words": "basketball nba",
-                   "things": ["basketball", "basketball hoop", "sneaker", "trophy", "scoreboard"]},
+                   "things": ["basketball", "basketball hoop", "sneaker", "trophy", "scoreboard", "championship ring", "ball rack", "sweatband", "gym bag", "clipboard", "jump rope", "basketball shorts", "water cooler", "whistle", "snapback cap"]},
     "skateboarding": {"words": "skating skateboarding skater skaters",
-                      "things": ["skateboard", "sneaker", "spray can", "boombox", "traffic cone"]},
+                      "things": ["skateboard", "sneaker", "spray can", "boombox", "traffic cone", "half-pipe ramp", "skateboard wheel", "skateboard truck", "bmx bike", "roller skate", "beanie", "hoodie", "grind rail", "milk crate", "skate helmet"]},
     "surfing": {"words": "surf surfing surfer surfers",
-                "things": ["surfboard", "seashell", "palm tree", "sunglasses", "flip flop"]},
+                "things": ["surfboard", "seashell", "palm tree", "sunglasses", "flip flop", "coconut", "hibiscus flower", "ukulele", "tiki mug", "camper van", "pineapple", "board shorts", "shark", "parasol", "snorkel mask"]},
     "gaming": {"words": "gaming gamer gamers videogame videogames",
-               "things": ["arcade cabinet", "game controller", "joystick", "pixel heart", "cassette tape"]},
+               "things": ["arcade cabinet", "game controller", "joystick", "pixel heart", "cassette tape", "pinball machine", "portable game console", "crt television", "pixel sword", "computer mouse", "vr headset", "floppy disk", "game cartridge", "gaming chair", "gaming laptop"]},
     "coffee": {"words": "coffee espresso barista",
-               "things": ["coffee cup", "espresso machine", "coffee bean", "moka pot", "croissant"]},
+               "things": ["coffee cup", "espresso machine", "coffee bean", "moka pot", "croissant", "coffee plunger", "coffee grinder", "pour-over dripper", "milk jug", "portafilter", "gooseneck kettle", "sugar bowl", "coffee plant", "siphon coffee maker", "cinnamon roll"]},
     "cooking": {"words": "cooking baking chef chefs cookery",
-                "things": ["chef's knife", "cast iron pan", "whisk", "layer cake", "pepper grinder"]},
+                "things": ["chef's knife", "cast iron pan", "whisk", "layer cake", "pepper grinder", "rolling pin", "chef's hat", "stand mixer", "wooden spoon", "colander", "mortar and pestle", "sourdough loaf", "box grater", "garlic bulb", "oven mitt"]},
     "medieval": {"words": "medieval knight knights kingdom chivalry",
-                 "things": ["knight's helmet", "sword", "shield", "crown", "goblet"]},
+                 "things": ["knight's helmet", "sword", "shield", "crown", "goblet", "battle axe", "mace", "crossbow", "trebuchet", "throne", "sceptre", "dragon", "lute", "armoured horse", "quill"]},
     "samurai": {"words": "samurai ninja ninjas dojo",
-                "things": ["katana", "samurai helmet", "paper lantern", "bonsai tree", "folding fan"]},
+                "things": ["katana", "samurai helmet", "paper lantern", "bonsai tree", "folding fan", "shuriken", "kunai", "matcha bowl", "cast iron teapot", "cherry blossom branch", "koi fish", "geta sandal", "oni mask", "origami crane", "sake bottle"]},
     "egypt": {"words": "egypt egyptian pharaoh pharaohs",
-              "things": ["pharaoh mask", "scarab", "ankh", "sphinx", "canopic jar"]},
+              "things": ["pharaoh mask", "scarab", "ankh", "sphinx", "canopic jar", "sarcophagus", "crook and flail", "lotus flower", "cobra", "camel", "khopesh sword", "chariot", "cat statue", "jackal", "papyrus boat"]},
     "wild west": {"words": "western cowboy cowboys wildwest",
-                  "things": ["cowboy hat", "horseshoe", "sheriff badge", "cactus", "cowboy boot"]},
+                  "things": ["cowboy hat", "horseshoe", "sheriff badge", "cactus", "cowboy boot", "revolver", "lasso", "saddle", "covered wagon", "longhorn skull", "tumbleweed", "riding spur", "rattlesnake", "harmonica", "branding iron"]},
     "magic": {"words": "magic wizard wizards witch witches witchcraft sorcery sorcerer",
-              "things": ["wizard hat", "crystal ball", "spell book", "potion bottle", "magic wand"]},
+              "things": ["wizard hat", "crystal ball", "spell book", "potion bottle", "magic wand", "top hat", "snowy owl", "dragon egg", "amulet", "phoenix", "unicorn", "flying carpet", "genie lamp", "crystal cluster", "hourglass"]},
     "dinosaurs": {"words": "dinosaur dinosaurs prehistoric jurassic",
-                  "things": ["t-rex skull", "dinosaur egg", "ammonite", "amber", "fern"]},
+                  "things": ["t-rex skull", "dinosaur egg", "ammonite", "amber", "fern", "triceratops", "stegosaurus", "pteranodon", "brachiosaurus", "ankylosaurus", "velociraptor", "trilobite", "dinosaur bone", "woolly mammoth", "giant dragonfly"]},
     "robots": {"words": "robot robots robotics android androids cyborg cyborgs",
-               "things": ["robot head", "circuit board", "robotic arm", "gear", "microchip"]},
+               "things": ["robot head", "circuit board", "robotic arm", "gear", "microchip", "robot dog", "quadcopter", "servo motor", "vacuum tube", "wind-up robot", "giant mech", "spider robot", "soldering iron", "copper coil", "oil can"]},
     "casino": {"words": "casino casinos gambling poker vegas",
-               "things": ["dice", "poker chip", "playing card", "slot machine", "roulette wheel"]},
+               "things": ["dice", "poker chip", "playing card", "slot machine", "roulette wheel", "martini glass", "cigar", "gold ingot", "diamond ring", "bow tie", "dealer visor", "four-leaf clover", "chandelier", "cocktail shaker", "top hat"]},
     "circus": {"words": "circus funfair",
-               "things": ["circus tent", "carousel horse", "juggling pin", "ringmaster hat", "balloon animal"]},
+               "things": ["circus tent", "carousel horse", "juggling pin", "ringmaster hat", "balloon animal", "unicycle", "trapeze", "elephant", "candy floss", "flaming hoop", "clown shoe", "circus cannon", "penny-farthing", "circus dumbbell", "tiger"]},
     "fashion": {"words": "fashion couture catwalk",
-                "things": ["high heel", "handbag", "perfume bottle", "sunglasses", "lipstick"]},
+                "things": ["high heel", "handbag", "perfume bottle", "sunglasses", "lipstick", "sewing machine", "silk scarf", "fedora", "leather jacket", "evening gown", "powder compact", "tailor's scissors", "thread spool", "tiara", "coat hanger"]},
     "gardening": {"words": "gardening gardener botanical florist",
-                  "things": ["watering can", "rose", "tulip", "garden gnome", "flower pot"]},
+                  "things": ["watering can", "rose", "tulip", "garden gnome", "flower pot", "wheelbarrow", "trowel", "secateurs", "sunflower", "birdhouse", "ladybug", "bumblebee", "coiled hose", "lawn mower", "seedling"]},
     "aviation": {"words": "aviation airshow aeroplanes airplanes planes pilots",
-                 "things": ["propeller plane", "pilot goggles", "jet engine", "hot air balloon", "paper plane"]},
+                 "things": ["propeller plane", "pilot goggles", "jet engine", "hot air balloon", "paper plane", "airship", "helicopter", "glider", "fighter jet", "windsock", "parachute", "bomber jacket", "radial engine", "pilot wings", "leather flying cap"]},
     "trains": {"words": "train trains railway railways railroad",
-               "things": ["steam locomotive", "railway signal", "pocket watch", "train ticket", "lantern"]},
+               "things": ["steam locomotive", "railway signal", "pocket watch", "train ticket", "lantern", "conductor's cap", "train whistle", "rail spike", "caboose", "coal shovel", "bullet train", "monorail", "locomotive wheel", "toy train", "luggage trolley"]},
     "science": {"words": "science scientist scientists chemistry physics",
-                "things": ["microscope", "test tube", "atom model", "beaker", "telescope"]},
+                "things": ["microscope", "test tube", "atom model", "beaker", "telescope", "conical flask", "dna helix", "magnifying glass", "horseshoe magnet", "glass prism", "safety goggles", "plasma ball", "amethyst geode", "pendulum", "lightbulb"]},
     "camping": {"words": "camping hiking outdoors",
-                "things": ["tent", "lantern", "compass", "hiking boot", "campfire"]},
+                "things": ["tent", "lantern", "compass", "hiking boot", "campfire", "sleeping bag", "hiking backpack", "camp stove", "marshmallow skewer", "pocket knife", "binoculars", "hatchet", "canoe", "enamel mug", "pine cone"]},
     "sweets": {"words": "candy sweets dessert desserts confectionery",
-               "things": ["lollipop", "cupcake", "macaron", "doughnut", "gummy bear"]},
+               "things": ["lollipop", "cupcake", "macaron", "doughnut", "gummy bear", "ice cream cone", "chocolate truffle", "jelly bean", "toffee apple", "gumball machine", "ice lolly", "churro", "liquorice wheel", "eclair", "wrapped candy"]},
     "boxing": {"words": "boxing boxer boxers",
-               "things": ["boxing glove", "championship belt", "punching bag", "boxing bell", "trophy"]},
+               "things": ["boxing glove", "championship belt", "punching bag", "boxing bell", "trophy", "speed bag", "jump rope", "focus mitt", "boxing boot", "boxing robe", "corner stool", "dumbbell", "medicine ball", "kettlebell", "gold medal"]},
     "golf": {"words": "golf golfing golfer",
-             "things": ["golf ball", "golf club", "golf flag", "trophy", "golf cart"]},
+             "things": ["golf ball", "golf club", "golf flag", "trophy", "golf cart", "golf tee", "golf bag", "golf glove", "golf shoe", "flat cap", "golf umbrella", "bucket of balls", "mini golf windmill", "sand rake", "argyle sweater"]},
     "travel": {"words": "travel travelling traveling holiday vacation",
-               "things": ["suitcase", "passport", "globe", "camera", "postcard"]},
+               "things": ["suitcase", "passport", "globe", "camera", "postcard", "steamer trunk", "travel pillow", "cruise ship", "motor scooter", "rucksack", "straw hat", "double-decker bus", "binoculars", "jet plane", "cable car"]},
     "romance": {"words": "wedding romance valentine valentines",
-                "things": ["wedding ring", "rose", "heart locket", "champagne glass", "love letter"]},
+                "things": ["wedding ring", "rose", "heart locket", "champagne glass", "love letter", "chocolate box", "lily bouquet", "lovebird", "white swan", "chocolate strawberry", "violin", "jewellery box", "wedding cake", "horse-drawn carriage", "picnic basket"]},
 }
 THEME_OF = {w: name for name, t in THEMES.items() for w in t["words"].split()}
 THEME_TAIL = frozenset("theme themed vibe vibes style aesthetic stuff".split())  # "a racing theme" is the racing theme
-THEME_THINGS = 5  # what one theme grows at most (the shapes cap is the same)
+THEME_THINGS = 15  # a theme's things: enough for a whole cut on it (Tys, 28 Oct: "your generations should have a proper theme")
 
 EMPTY: dict = {"line": "", "scenes": [], "objects": [], "own": [], "family": "", "performer": None, "feel": None, "summary": "",
                "source": "rules", "theme": "", "theme_things": []}

@@ -65,8 +65,11 @@ MORPH_MAX = 120
 MIN_SLOT_S = 0.3            # a morph never gets less screen time than this
 # measured on an RTX 3080 Ti 12 GB (ComfyUI shared, 2 s renders): seconds per morph and peak VRAM
 # draft: measured 23 Oct 2026, 12 four-second morphs in 122 s warm on a 3080 Ti (about 10 s each); 12 s per 2 s morph keeps a margin
-COST = {"draft": {"s": 12.0, "vram_gb": 7.5}, "final": {"s": 110.0, "vram_gb": 11.2},
-        "final_916": {"s": 140.0, "vram_gb": 11.4}, "preview": {"s": 0.5, "vram_gb": 0.0},
+# final: 340 s a 2-3 s native 9:16 morph measured 28 Oct (ComfyUI's log of a 1:33:59 Final), less the text encoder read
+# once a prompt (about 45 s on most shots) and the quarter-size upscale (about 30 s); a cut that has its own measured
+# Finals uses those instead (batch.measured)
+COST = {"draft": {"s": 12.0, "vram_gb": 7.5}, "final": {"s": 230.0, "vram_gb": 11.2},
+        "final_916": {"s": 270.0, "vram_gb": 11.4}, "preview": {"s": 0.5, "vram_gb": 0.0},
         "fast": {"s": 12.0 + FAST_UPSCALE_S, "vram_gb": 7.5}}  # Fast Final: a Draft morph, then its upscale
 
 
@@ -1346,7 +1349,7 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
             n_in, n_out = own_media.morph_frames(frames_needed, fps, into=sl["first"] > 0, out_of=sl["last"] < len(shots) - 1) \
                 if clip_morph else (0, 0)
             try:
-                start_s = own_media.window_start(sl["clip_seconds"], sl["seconds"])
+                start_s = own_media.busiest_start(sl["clip"], sl["clip_seconds"], sl["seconds"])  # the stretch with the most picture
                 dest = work / "own" / f"own_{sl['start']:.2f}.mp4"
                 made_clip = own_media.render_clip(sl["clip"], start_s, frames_needed - n_in - n_out, own_media.size_for(opt["aspect"]),
                                                   dest.with_name(dest.stem + "_body.mp4") if (n_in or n_out) else dest, fps=fps)
@@ -1624,11 +1627,16 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
     so, bo = fold_handoffs(so, bo)
     transitions, boundary_fx, tl_notes = apply_timeline(shots, so, bo, vibe=vibe, house=hp, transitions=transitions,
                                                         boundary_fx=boundary_fx, beats=beats, fps=fps, drop=drop)
+    # the order edits: a slot playing another shot's morph, a moved cut, a dropped shot (arrange_shots)
+    laid = arrange_shots(shots, clips, so, bo, fps, transitions=transitions, boundary_fx=boundary_fx)
+    shots, clips, transitions, boundary_fx = laid["shots"], laid["clips"], laid["transitions"], laid["boundary_fx"]
+    kept = laid["kept"]  # plan index of each composed shot: the timeline's maps are keyed by plan index
+    so_laid = {k: so[i] for k, i in enumerate(kept) if i in so}
     # the morph timing (morph_timing) on the cached clips: the cut's setting, a shot's own from the timeline
     from xenoform import morph_timing as _mt
 
     timing_mode = _mt.normal(state.get("morph_timing"))
-    timed = _mt.plan(shots, timing_mode, beats, drop, so)
+    timed = _mt.plan(shots, timing_mode, beats, drop, so_laid)
     look_preset = beatfx.resolve_dance_preset(opt["dance_fx"], vibe, hp)
     if look_preset == "off" and not opt["stem_orbit"]:
         opt["stem_orbit"] = True  # as in run_simple: no look and no orbit would leave held stills dead
@@ -1653,7 +1661,10 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
     from xenoform.turbo import publish_file
 
     publish_file(tmp, job_dir / "xenoform.mp4")
-    rec.update({"shots": shots, "look": made.get("look"), "macros": m, "recut_state": state, "transitions": transitions,
+    record_shots = list(laid["record"])  # one a plan shot: the composed ones as they were cut, a dropped one at zero length
+    for k, i in enumerate(kept):
+        record_shots[i] = shots[k]
+    rec.update({"shots": record_shots, "look": made.get("look"), "macros": m, "recut_state": state, "transitions": transitions,
                 "boundary_fx": boundary_fx, "handoffs": made.get("boundary_fx"), "drop": drop,
                 "shot_overrides": {str(k): v for k, v in sorted(so.items())},
                 "boundary_overrides": {str(k): v for k, v in sorted(bo.items())},
@@ -1712,6 +1723,21 @@ def shot_overrides_of(raw, n: int) -> dict[int, dict]:
         timing = str(v.get("timing") or "").strip().lower()
         if timing in ("smooth", "beat", "snap"):  # the shot's own morph timing (morph_timing); Auto is the cut's
             o["timing"] = timing
+        from xenoform import effects as _E
+
+        g = _E.grade_of(v.get("grade"))  # the shot's own colour: hue, saturation, brightness, contrast, warmth
+        if g:
+            o["grade"] = g
+        if isinstance(v.get("effects"), (list, tuple)):  # the shot's own effects ([] is none on this shot)
+            o["effects"] = [n for n in _E.NAMES if n in {str(x).strip().lower() for x in v["effects"]}]
+        try:  # the slot plays another shot's morph (Move left / right, Duplicate)
+            src = int(v["source"]) if v.get("source") is not None else None
+        except (TypeError, ValueError):
+            src = None
+        if src is not None and 0 <= src < n and src != i:
+            o["source"] = src
+        if v.get("drop") is True:  # the shot goes; the one before plays on through its time
+            o["drop"] = True
         if o:
             out[i] = o
     return out
@@ -1743,9 +1769,67 @@ def boundary_overrides_of(raw, n: int) -> dict[int, dict]:
         fx = str(v.get("fx") or "").strip().lower()
         if fx == "none" or fx in premium or fx in _B.KINDS:
             o["fx"] = fx
+        try:  # the cut moves this many seconds (later is plus), a beat at a time on the desk
+            shift = round(max(-SHIFT_MAX_S, min(SHIFT_MAX_S, float(v.get("shift") or 0.0))), 3)
+        except (TypeError, ValueError):
+            shift = 0.0
+        if abs(shift) >= 0.01:
+            o["shift"] = shift
         if o:
             out[i] = o
     return out
+
+
+SHIFT_MAX_S = 4.0      # a cut moves at most this far either way
+MIN_SHOT_FRAMES = 6    # and never leaves a shot shorter than this
+
+
+def arrange_shots(shots: list[dict], clips: list, so: dict[int, dict], bo: dict[int, dict], fps: int,
+                  transitions: list | None = None, boundary_fx: list | None = None) -> dict:
+    """The timeline's order edits on a re-cut (Tys, 28 Oct: "trim and move cuts", "reorder, delete, duplicate"): a slot
+    that plays another shot's morph (``source``: Move left and right swap two, Duplicate gives the next slot this one's),
+    a cut moved by ``shift`` seconds (the shot before grows, the one after shrinks, neither under ``MIN_SHOT_FRAMES``),
+    and a dropped shot (``drop``: the nearest kept shot before it, else after, plays on through its time). Starts and ends
+    follow the frames. Returns the lists the compositor takes (``shots``, ``clips``, ``transitions``, ``boundary_fx``) and
+    ``record``, one entry a plan shot, a dropped one at zero length, so the timeline's indices hold through the edit."""
+    n = len(shots)
+    out_clips = list(clips)
+    morphs = [s.get("morph") for s in shots]
+    for i, o in sorted(so.items()):
+        j = o.get("source")
+        if j is not None and 0 <= i < n and 0 <= j < n:
+            out_clips[i] = clips[j]
+            shots[i]["morph"] = morphs[j] if morphs[j] is not None else j
+            shots[i]["plays"] = j  # not "source": an own clip slot names its file there
+    for i, o in sorted(bo.items()):
+        if o.get("shift") and 1 <= i < n:
+            d = int(round(float(o["shift"]) * fps))
+            d = max(-(int(shots[i - 1]["frames"]) - MIN_SHOT_FRAMES), min(int(shots[i]["frames"]) - MIN_SHOT_FRAMES, d))
+            shots[i - 1]["frames"] = int(shots[i - 1]["frames"]) + d
+            shots[i]["frames"] = int(shots[i]["frames"]) - d
+    keep = [True] * n
+    for i in sorted((i for i, o in so.items() if o.get("drop") and 0 <= i < n), reverse=True):
+        if sum(keep) <= 1:
+            break
+        k = next((j for j in range(i - 1, -1, -1) if keep[j]), None)
+        if k is None:
+            k = next(j for j in range(i + 1, n) if keep[j])
+        shots[k]["frames"] = int(shots[k]["frames"]) + int(shots[i]["frames"])
+        keep[i] = False
+    t = 0
+    for i, s in enumerate(shots):
+        frames = int(s["frames"]) if keep[i] else 0
+        s["start"], s["end"] = round(t / fps, 4), round((t + frames) / fps, 4)
+        s["seconds"] = round(frames / fps, 4)
+        if not keep[i]:
+            s["dropped"] = True
+        t += frames
+    pick = lambda xs: [x for x, k in zip(xs, keep) if k] if xs is not None else None  # noqa: E731
+    return {"shots": pick(shots), "clips": pick(out_clips), "transitions": pick(list(transitions) + [None] * (n - len(transitions)))
+            if transitions is not None else None,
+            "boundary_fx": pick(list(boundary_fx) + [None] * (n - len(boundary_fx))) if boundary_fx is not None else None,
+            "record": [dict(s, frames=int(s["frames"]) if keep[i] else 0) for i, s in enumerate(shots)],
+            "kept": [i for i in range(n) if keep[i]]}
 
 
 def fold_handoffs(so: dict[int, dict], bo: dict[int, dict]) -> tuple[dict[int, dict], dict[int, dict]]:
@@ -1800,6 +1884,10 @@ def apply_timeline(shots: list[dict], so: dict[int, dict], bo: dict[int, dict], 
                 notes.append(f"shot {i + 1}: no look called {o['look']!r}; the cut's look stays")
         if "fx_intensity" in o:
             s["fx_intensity"] = float(o["fx_intensity"])
+        if "grade" in o:
+            s["grade"] = dict(o["grade"])
+        if "effects" in o:
+            s["fx_names"] = list(o["effects"])  # not "effects": a shot carries its beat FX (punches, stutters) there
     bx = list(boundary_fx or [])[:n] + [None] * max(0, n - len(boundary_fx or []))
     tr = list(transitions)[:n] + [None] * max(0, n - len(transitions)) if transitions is not None else None
     premium = _premium_kinds()

@@ -214,6 +214,7 @@ function payload() {
     performer_style: (state.easy && state.easy.performerStyle) || "auto",
     // Your own clips and images (Simple): a folder on this machine, or the files dropped on the desk (own_id)
     own_folder: (state.easy && state.easy.ownFolder) || "",
+    own_shapes: (state.easy && state.easy.ownShapes) || "",  // the shapes typed in Your own shapes: they lead this cut (morph_pass.pick_stills)
     own_id: (state.easy && state.easy.ownId) || "",
     // the clips in that folder are cut in only with Work in progress > Your clips on; the images always lead the chain
     cut_in_clips: !!(state.easy && state.easy.clipsOn),
@@ -1381,7 +1382,11 @@ function ideaReadingHtml(easy) {
   const rows = { thing: [], place: [], feel: [], who: [] };
   (have.objects || []).forEach((o) => rows.thing.push(ideaChip("thing", o, isNew(o))));
   (have.own || []).forEach((o) => rows.thing.push(ideaChip("thing", o, "new")));
-  if (have.family) rows.thing.push(ideaChip("thing", String(have.family).replace(/-/g, " "), "fills the rest"));
+  if (have.theme && rows.thing.length > 6) {  // a theme's fifteen things: six chips and a count, the rest in its title
+    const names = [].concat(have.objects || [], have.own || []);
+    rows.thing = rows.thing.slice(0, 6).concat(`<span class="ir thing more" title="${esc(names.slice(6).join(", "))}">+${names.length - 6} more</span>`);
+  }
+  if (have.family) rows.thing.push(ideaChip("thing", String(have.family).replace(/-/g, " "), have.theme ? "joins in" : "fills the rest"));
   (have.scenes || []).forEach((s) => rows.place.push(ideaChip("place", s, isNew(s) || "scene")));
   const extra = {};
   if (have.theme) extra.thing = `<span class="ir-note">the ${esc(have.theme)} theme</span>`;  // idea.THEMES: a theme word grows its things
@@ -1618,13 +1623,32 @@ function simpleOptions(easy) {
 }
 
 // Morph count: Auto (from clip length + BPM) or a fixed number of forms, with a time/VRAM estimate.
-const MORPH_COST = {draft: {s: 35, vram_gb: 7.5}, fast: {s: 55, vram_gb: 7.5}, final: {s: 110, vram_gb: 11.2}, final_916: {s: 140, vram_gb: 11.4}};
+const MORPH_COST = {draft: {s: 35, vram_gb: 7.5}, fast: {s: 55, vram_gb: 7.5}, final: {s: 230, vram_gb: 11.2}, final_916: {s: 270, vram_gb: 11.4}};  // Final: 340 s a morph measured 28 Oct, less the encoder read once a prompt and the quarter-size upscale
 function autoMorphs(energy) {
   const m = state.simpleOptions && state.simpleOptions.morphs;
   if (m && m.auto) return m.auto;
   const secs = easySongSeconds() || 20;
   const bar = 4 * 60 / (Number(state.tempo) || 120);
   return Math.max(1, Math.round(secs / (energy === "dense" ? bar / 2 : Math.max(bar * 2, 4))));
+}
+// Where a render's time goes on this machine (12 GB RTX 3080 Ti, 32 GB RAM): measured 28 Oct from ComfyUI's log of a
+// 1:33:59 Final (15 morphs, 20 s, 9:16: 5,469 s of morphs, 152 s of cut) and the upscale benchmarks. The tooltip on the
+// estimate under Forms (Tys: "find out what parts of that took the longest so we can have that in a tool tip").
+const TIME_PARTS = {
+  draft: ["Draft: each morph about 20 s on LTX 0.9.5 (the first loads the model, about 45 s more).",
+    "The cut: about 60 s for 20 s at 540×960."],
+  fast: ["Fast Final: each morph about 40 s, the Draft's 20 s and about 20 s to upscale it to 1080×1920.",
+    "The cut: about 2½ minutes for 20 s at 1080×1920."],
+  final: ["Final: each morph about 4½ min on LTX-2.3, whose 24 GB of weights do not fit the 12 GB card and are read again every step:",
+    "• reading the prompt: 1 min, once for each different prompt (shots that share one go back to back)",
+    "• drawing it, 8 steps at 224×384: 2¼ min",
+    "• refining it, 3 steps at 448×768: 1 min",
+    "• the 4x upscale to 1080×1920: ½ min",
+    "The first morph loads the models: about 5 min more.",
+    "The cut: about 2½ minutes for 20 s at 1080×1920."],
+};
+function timeTip(tier) {
+  return (TIME_PARTS[tier] || TIME_PARTS.draft).join("\n");
 }
 function morphEstimate(count, tier, aspect, vertical) {
   const key = tier === "final" && aspect === "9:16" && vertical === "native" ? "final_916" : (tier === "final" || tier === "fast" ? tier : "draft");
@@ -1639,7 +1663,7 @@ function morphControl(easy, tier, aspect, vertical) {
       <button type="button" data-act="easy-morphs-auto" class="${auto ? "on" : ""}">Auto${auto ? ` (${n})` : ""}</button>
       <input type="range" min="1" max="40" step="1" value="${Math.min(40, n)}" data-act="easy-morphs" aria-label="Number of forms">
       <input type="number" min="1" max="120" step="1" value="${n}" data-act="easy-morphs" aria-label="Number of forms" style="width:4.5em">
-      <span class="note">${esc(`${n} form${n === 1 ? "" : "s"}: ${morphEstimate(n, tier, aspect, vertical)}`)}</span>
+      <span class="note time-tip" title="${esc(timeTip(tier))}">${esc(`${n} form${n === 1 ? "" : "s"}: ${morphEstimate(n, tier, aspect, vertical)}`)} ⓘ</span>
       <span class="note guard-live">${auto ? "" : esc(morphGuardText(n))}</span>
     </div>`;
 }
@@ -1748,7 +1772,7 @@ function canonOverride(o) {
   Object.keys(o || {}).sort().forEach((k) => {
     const v = o[k];
     if (v == null || v === "" || v === "auto" || v === "morph") return;
-    out[k] = typeof v === "number" ? Math.round(v * 1000) / 1000 : v;
+    out[k] = typeof v === "number" ? Math.round(v * 1000) / 1000 : (v && typeof v === "object" && !Array.isArray(v)) ? canonOverride(v) : v;
   });
   return out;
 }
@@ -1774,11 +1798,60 @@ function setShotOverride(easy, lane, index, key, value) {
   else delete tl.shots[k];
 }
 function setBoundOverride(easy, lane, index, fx) {
+  setBoundKey(easy, lane, index, "fx", !fx || fx === "auto" ? null : fx);
+}
+function setBoundKey(easy, lane, index, key, value) {
   if (!lane) return;
   const tl = timelineState(easy, lane);
   const k = String(index);
-  if (!fx || fx === "auto") delete tl.bounds[k];
-  else tl.bounds[k] = { fx };
+  const o = Object.assign({}, tl.bounds[k] || {});
+  if (value == null || value === 0) delete o[key];
+  else o[key] = value;
+  if (Object.keys(o).length) tl.bounds[k] = o;
+  else delete tl.bounds[k];
+}
+// The order edits (Tys, 28 Oct: "trim and move cuts", "reorder, delete, duplicate"), all for Apply, no GPU
+// (dense.arrange_shots): a slot plays another shot's morph (source), a shot goes (drop), a cut moves (shift).
+function sourceOf(tl, index) {
+  const o = tl.shots[String(index)] || {};
+  return o.source != null ? Number(o.source) : index;
+}
+function setSource(easy, lane, index, src) {
+  setShotOverride(easy, lane, index, "source", src === index ? null : src);
+}
+function beatPeriod(lane) {
+  const b = (lane && lane.beats) || [];
+  if (b.length > 2) {
+    const gaps = b.slice(1).map((t, i) => t - b[i]).filter((g) => g > 0).sort((x, y) => x - y);
+    if (gaps.length) return gaps[Math.floor(gaps.length / 2)];
+  }
+  return 60 / (Number(state.tempo) || 120);
+}
+function shotOrderRow(lane, tl, s) {
+  const n = lane.shots.length;
+  const o = tl.shots[String(s.index)] || {};
+  const src = sourceOf(tl, s.index);
+  const moved = src !== s.index ? `plays shot ${src + 1}'s morph` : "";
+  return `<div class="simple-seg tl-order"><span>Order</span><div class="toggle chips" role="group" aria-label="Order">
+      <button type="button" class="chip" data-act="easy-tl-move" data-index="${s.index}" data-value="-1"${s.index < 1 ? " disabled" : ""}>◀ Move left</button>
+      <button type="button" class="chip" data-act="easy-tl-move" data-index="${s.index}" data-value="1"${s.index >= n - 1 ? " disabled" : ""}>Move right ▶</button>
+      <button type="button" class="chip" data-act="easy-tl-dup" data-index="${s.index}"${s.index >= n - 1 ? " disabled" : ""}>Duplicate into the next</button>
+      <button type="button" class="chip${o.drop ? " on" : ""}" data-act="easy-tl-drop" data-index="${s.index}" aria-pressed="${o.drop ? "true" : "false"}">${o.drop ? "Deleted · restore" : "Delete"}</button>
+      ${src !== s.index ? `<button type="button" class="chip" data-act="easy-tl-source-clear" data-index="${s.index}">Its own morph</button>` : ""}</div></div>
+    <p class="note">${esc(o.drop ? "Deleted: the shot before plays on through its time. Restore brings it back." : moved ? `This slot ${moved}. The timing stays on the beat; the joins either side become cuts where the objects no longer meet.` : "Move swaps this morph with its neighbour's slot; Duplicate plays it again in the next slot; Delete lets the shot before play on. The beat timing stays where it is.")}</p>`;
+}
+function cutShiftRow(lane, tl, s) {
+  const o = tl.bounds[String(s.index)] || {};
+  const shift = Number(o.shift || 0);
+  const beat = beatPeriod(lane);
+  const step = (k) => Math.round((shift + k * beat) * 1000) / 1000;
+  return `<div class="simple-seg tl-shift"><span>Move the cut</span><div class="toggle chips" role="group" aria-label="Move this cut">
+      <button type="button" class="chip" data-act="easy-tl-shift" data-index="${s.index}" data-value="${step(-1)}">◀ a beat earlier</button>
+      <button type="button" class="chip" data-act="easy-tl-shift" data-index="${s.index}" data-value="${step(-0.5)}">◀ half</button>
+      <button type="button" class="chip" data-act="easy-tl-shift" data-index="${s.index}" data-value="${step(0.5)}">half ▶</button>
+      <button type="button" class="chip" data-act="easy-tl-shift" data-index="${s.index}" data-value="${step(1)}">a beat later ▶</button>
+      ${shift ? `<button type="button" class="chip" data-act="easy-tl-shift" data-index="${s.index}" data-value="0">Back</button>` : ""}</div></div>
+    <p class="note">${shift ? `Moved ${shift > 0 ? "later" : "earlier"} by ${Math.abs(shift).toFixed(2)} s (${(Math.abs(shift) / beat).toFixed(1)} beats): shot ${s.index} ${shift > 0 ? "grows" : "shrinks"}, shot ${s.index + 1} ${shift > 0 ? "shrinks" : "grows"}.` : "Trim: the cut moves a beat or half a beat at a time; the shot before and the one after share the change."}</p>`;
 }
 function kindLabel(lane, id) {
   const rows = (lane.choices && lane.choices.transition_kinds) || [];
@@ -1809,14 +1882,17 @@ function shotsLane(easy) {
     const hue = SECTION_HUES[s.section] != null ? SECTION_HUES[s.section] : 260;
     const o = tl.shots[String(s.index)] || {};
     const held = o.play === "hold";
-    const edited = held || !!o.look || o.fx_intensity != null || !!o.timing;
+    const edited = held || !!o.look || o.fx_intensity != null || !!o.timing || !!o.grade || Array.isArray(o.effects) || o.source != null || !!o.drop;
     const label = s.to ? `${s.from} → ${s.to}` : s.from;
-    const marks = `${s.style && s.style !== "melt" ? ` · ${morphStyleLabel(s.style)}` : ""}${o.timing ? ` · ${MORPH_TIMING_LABELS[o.timing] || o.timing}` : ""}${s.pinned ? " · pinned" : ""}${s.swapped ? " · swapped" : ""}${held ? " · held" : ""}${o.look ? ` · look ${o.look}` : ""}${o.fx_intensity != null ? ` · FX ${o.fx_intensity}` : ""}${s.rerendered ? " · re-rendered" : ""}${s.generated != null ? " · generated" : ""}${s.dream != null ? " · dream" : ""}${s.performer ? " · Polly" : ""}${s.own ? " · your clip" : ""}`;
+    const marks = `${s.style && s.style !== "melt" ? ` · ${morphStyleLabel(s.style)}` : ""}${o.timing ? ` · ${MORPH_TIMING_LABELS[o.timing] || o.timing}` : ""}${s.pinned ? " · pinned" : ""}${s.swapped ? " · swapped" : ""}${held ? " · held" : ""}${o.look ? ` · look ${o.look}` : ""}${o.fx_intensity != null ? ` · FX ${o.fx_intensity}` : ""}${o.grade ? " · colour" : ""}${Array.isArray(o.effects) ? ` · effects ${o.effects.length ? o.effects.join("+") : "none"}` : ""}${s.rerendered ? " · re-rendered" : ""}${s.generated != null ? " · generated" : ""}${s.dream != null ? " · dream" : ""}${s.performer ? " · Polly" : ""}${s.own ? " · your clip" : ""}`;
     const title = `Shot ${s.index + 1} · ${clockText(s.start)} · ${s.seconds} s${s.section ? ` · ${s.section}` : ""}${s.transition ? ` · ${s.transition}` : ""}${label ? ` · ${label}` : ""}${marks}`;
     const pick = swapping && s.still != null;
     const act = pick ? `data-act="easy-swap-pick" data-slot="${s.still}" data-at="${s.start}"` : `data-act="easy-tl-shot" data-index="${s.index}" data-at="${s.start}"`;
     const cls = `shot${s.boundary ? " boundary" : ""}${s.transition ? " has-transition" : ""}${s.pinned ? " pinned" : ""}${s.swapped ? " swapped" : ""}${pick ? " swap" : ""}${pick && easy.swapSlot === s.still ? " picked" : ""}${held ? " held" : ""}${edited ? " edited" : ""}${s.rerendered ? " rerendered" : ""}${s.generated != null ? " generated" : ""}${!swapping && picked && picked.kind === "shot" && picked.index === s.index ? " picked" : ""}`;
     const badge = s.style && s.style !== "melt" ? `<b class="tl-style">${esc(morphStyleLabel(s.style))}</b>` : "";  // how this morph changes
+    if (s.dropped || o.drop) {  // deleted: a sliver at its place, the drawer restores it
+      return `<button type="button" class="${cls} dropped" style="flex:0 0 7px;--hue:${hue}" data-act="easy-tl-shot" data-index="${s.index}" data-at="${s.start}" title="${esc(`Shot ${s.index + 1} deleted · click to restore`)}" aria-label="${esc(`Shot ${s.index + 1} deleted`)}"></button>`;
+    }
     return `<button type="button" class="${cls}" style="width:${w.toFixed(3)}%;--hue:${hue}" ${act} title="${esc(title)}" aria-label="${esc(title)}">${badge}<i>${esc(s.to || s.from || "")}</i></button>`;
   }).join("");
   // the boundaries: one handle at each join (into shot i, i from 1): Morph or Cut, and what dresses it (the pickers'
@@ -1909,6 +1985,28 @@ function shotsLane(easy) {
     </div>`;
 }
 
+// A shot's own colour (Tys, 28 Oct: "there should be some options you can play with effects, colours"): five sliders,
+// each 0 where it does nothing, written to the shot's override as {grade: {...}} (dense.shot_overrides_of, effects.grade).
+const GRADE_ROWS = [["hue", "Hue", -180, 180, 5, "°"], ["saturation", "Saturation", -1, 1, 0.05, ""], ["brightness", "Brightness", -1, 1, 0.05, ""],
+  ["contrast", "Contrast", -1, 1, 0.05, ""], ["warmth", "Warmth", -1, 1, 0.05, ""]];
+function shotColourRows(o, index) {
+  const g = o.grade || {};
+  const rows = GRADE_ROWS.map(([key, label, lo, hi, step, unit]) => {
+    const v = Number(g[key] || 0);
+    return `<label class="tl-grade"><span>${label}</span><input type="range" class="tl-grade-in" min="${lo}" max="${hi}" step="${step}" value="${v}" data-index="${index}" data-key="${key}" aria-label="${label} for this shot" /><b>${v ? `${v > 0 ? "+" : ""}${key === "hue" ? Math.round(v) : v.toFixed(2)}${unit}` : "0"}</b></label>`;
+  }).join("");
+  const any = Object.keys(g).length;
+  return `<div class="tl-colour"><div class="tl-colour-head"><span>Colour</span>${any ? `<button type="button" class="text" data-act="easy-tl-grade-clear" data-index="${index}">As shot</button>` : `<span class="note">as shot</span>`}</div>${rows}</div>`;
+}
+// A shot's own effects: As the cut, or its own set of the four (none is a set too).
+function shotEffectsRow(o, index) {
+  const own = Array.isArray(o.effects);
+  const on = new Set(own ? o.effects : []);
+  const chips = EFFECTS.filter((id) => id !== "smear").map((id) => `<button type="button" class="chip${own && on.has(id) ? " on" : ""}" data-act="easy-tl-effect" data-index="${index}" data-value="${id}" aria-pressed="${own && on.has(id) ? "true" : "false"}">${esc(EFFECT_LABELS[id] || id)}</button>`).join("");
+  return `<div class="simple-seg tl-effects"><span>Effects</span><div class="toggle chips" role="group" aria-label="Effects on this shot">
+      <button type="button" class="chip${own ? "" : " on"}" data-act="easy-tl-effect" data-index="${index}" data-value="cut" aria-pressed="${own ? "false" : "true"}">As the cut</button>${chips}</div></div>`;
+}
+
 // The drawer under the timeline for the clicked shot or boundary.
 function timelineDrawer(easy, lane, tl, picked) {
   if (!picked) return "";
@@ -1934,8 +2032,11 @@ function timelineDrawer(easy, lane, tl, picked) {
         <button type="button" class="chip${held ? "" : " on"}" data-act="easy-tl-play" data-index="${s.index}" data-value="morph" aria-pressed="${held ? "false" : "true"}">Morph</button>
         <button type="button" class="chip${held ? " on" : ""}" data-act="easy-tl-play" data-index="${s.index}" data-value="hold" aria-pressed="${held ? "true" : "false"}">Hold</button></div></div>
       <p class="note">${held ? "Held: the shot keeps its start object still (the orbit, the look and the beat FX still move it) and the join after it is a cut." : "Morph: the clip plays whole and lands on the next object; the join after it is continuous. Hold keeps the start object still and makes that join a cut."}</p>
+      ${shotOrderRow(lane, tl, s)}
       ${lookRow(o.look || "auto", "easy-tl-look", s.index)}
       <div class="simple-seg tl-fx-row"><span>FX intensity</span><input id="tl-fx" type="range" min="0" max="1" step="0.05" value="${fxVal != null ? fxVal : 0.8}" data-index="${s.index}" aria-label="Beat FX intensity for this shot" /><b id="tl-fx-readout">${fxVal != null ? fxVal.toFixed(2) : "as the knob"}</b>${fxVal != null ? `<button type="button" class="text" data-act="easy-tl-fx-clear" data-index="${s.index}">As the knob</button>` : ""}</div>
+      ${shotColourRows(o, s.index)}
+      ${shotEffectsRow(o, s.index)}
       ${under || held ? "" : `${timingRow(o.timing || "auto", "easy-tl-timing", s.index, lane.morph_timing || "smooth")}
       <p class="note">${esc(o.timing ? MORPH_TIMING_NOTES[o.timing] || "" : "When this morph's change happens: the cut's Timing until you pick one. Apply re-cuts it, no GPU.")}</p>`}
       ${canGpu ? `<div class="tl-gpu">
@@ -1976,6 +2077,7 @@ function timelineDrawer(easy, lane, tl, picked) {
       <button type="button" class="chip${prevHeld ? "" : " on"}" data-act="easy-tl-handoff" data-index="${s.index}" data-value="morph" aria-pressed="${prevHeld ? "false" : "true"}"${hardAnyway ? " disabled" : ""}>Morph</button>
       <button type="button" class="chip${prevHeld ? " on" : ""}" data-act="easy-tl-handoff" data-index="${s.index}" data-value="cut" aria-pressed="${prevHeld ? "true" : "false"}"${hardAnyway ? " disabled" : ""}>Cut</button></div></div>
     <p class="note">${hardAnyway ? "This join is a cut already: a clip arrives or leaves here." : prevHeld ? `Cut: shot ${s.index} holds its object and the picture jumps here on the beat.` : "Morph: the morph before lands on the object the next one leaves from, so nothing jumps. Cut holds the shot before on its object and jumps here."}</p>
+    ${cutShiftRow(lane, tl, s)}
     <div class="simple-seg tl-dress-row"><span>Dress it</span><select id="tl-dress" data-index="${s.index}" aria-label="Transition or boundary kind at this join">${options}</select></div>
     <p class="note">${esc(note)}</p>
   </div>`;
@@ -3715,6 +3817,51 @@ document.addEventListener("click", async (event) => {
   } else if (act === "easy-morph-timing") {
     state.easy.morphTiming = MORPH_TIMINGS.includes(el.dataset.value) ? el.dataset.value : "smooth";
     render();
+  } else if (act === "easy-tl-move") {
+    const lane = state.lane;
+    const tl = timelineState(state.easy, lane);
+    const i = Number(el.dataset.index);
+    const j = i + Number(el.dataset.value);
+    if (lane && j >= 0 && j < lane.shots.length) {
+      const a = sourceOf(tl, i);
+      const b = sourceOf(tl, j);
+      setSource(state.easy, lane, i, b);
+      setSource(state.easy, lane, j, a);
+      state.easy.tlPick = { kind: "shot", index: j };  // the drawer follows the morph to its new slot
+    }
+    render();
+  } else if (act === "easy-tl-dup") {
+    const tl = timelineState(state.easy, state.lane);
+    const i = Number(el.dataset.index);
+    setSource(state.easy, state.lane, i + 1, sourceOf(tl, i));
+    render();
+  } else if (act === "easy-tl-drop") {
+    const tl = timelineState(state.easy, state.lane);
+    const i = Number(el.dataset.index);
+    setShotOverride(state.easy, state.lane, i, "drop", (tl.shots[String(i)] || {}).drop ? null : true);
+    render();
+  } else if (act === "easy-tl-source-clear") {
+    setShotOverride(state.easy, state.lane, Number(el.dataset.index), "source", null);
+    render();
+  } else if (act === "easy-tl-shift") {
+    const v = Math.round(Number(el.dataset.value || 0) * 1000) / 1000;
+    setBoundKey(state.easy, state.lane, Number(el.dataset.index), "shift", Math.abs(v) < 0.01 ? null : Math.max(-4, Math.min(4, v)));
+    render();
+  } else if (act === "easy-tl-effect") {
+    // As the cut drops the shot's own set; a chip starts one (from the cut's) or toggles its effect in it
+    const lane = state.lane;
+    const i = Number(el.dataset.index);
+    const o = (timelineState(state.easy, lane).shots[String(i)] || {});
+    if (el.dataset.value === "cut") setShotOverride(state.easy, lane, i, "effects", null);
+    else {
+      const set = new Set(Array.isArray(o.effects) ? o.effects : (state.easy.effects || []).filter((x) => x !== "smear"));
+      if (set.has(el.dataset.value)) set.delete(el.dataset.value); else set.add(el.dataset.value);
+      setShotOverride(state.easy, lane, i, "effects", EFFECTS.filter((x) => set.has(x)));
+    }
+    render();
+  } else if (act === "easy-tl-grade-clear") {
+    setShotOverride(state.easy, state.lane, Number(el.dataset.index), "grade", null);
+    render();
   } else if (act === "easy-tl-timing") {
     // a shot's own timing: an edit for Apply like its look (no GPU); "auto" is the cut's
     setShotOverride(state.easy, state.lane, Number(el.dataset.index), "timing", el.dataset.value);
@@ -3985,6 +4132,16 @@ document.addEventListener("input", (event) => {
     setShotOverride(state.easy, state.lane, Number(target.dataset.index), "fx_intensity", Math.round(Number(target.value) * 1000) / 1000);
     const readout = document.getElementById("tl-fx-readout");
     if (readout) readout.textContent = Number(target.value).toFixed(2);
+  } else if (target.classList && target.classList.contains("tl-grade-in")) {
+    // a shot's Colour slider: the override follows the thumb (0 drops the key), the readout too; the lane redraws on change
+    const i = Number(target.dataset.index);
+    const o = timelineState(state.easy, state.lane).shots[String(i)] || {};
+    const g = Object.assign({}, o.grade || {});
+    const v = Math.round(Number(target.value) * 1000) / 1000;
+    if (Math.abs(v) < 1e-3) delete g[target.dataset.key]; else g[target.dataset.key] = v;
+    setShotOverride(state.easy, state.lane, i, "grade", Object.keys(g).length ? g : null);
+    const readout = target.parentElement && target.parentElement.querySelector("b");
+    if (readout) readout.textContent = v ? `${v > 0 ? "+" : ""}${target.dataset.key === "hue" ? Math.round(v) + "°" : v.toFixed(2)}` : "0";
   } else if (target.id === "easy-idea") {
     state.easy.idea = target.value;
     scheduleIdea();  // what the line was read as (scenes, objects, Polly) shows under it as it is typed
@@ -4005,7 +4162,7 @@ document.addEventListener("change", (event) => {
   if (target.id === "tl-dress") {  // the timeline: what dresses this boundary (a transition, a boundary kind, none, auto)
     setBoundOverride(state.easy, state.lane, Number(target.dataset.index), target.value);
     render();
-  } else if (target.id === "tl-fx") {
+  } else if (target.id === "tl-fx" || (target.classList && target.classList.contains("tl-grade-in"))) {
     render();
   } else if (target.dataset.act === "easy-cut-plan") {
     const file = target.files && target.files[0];

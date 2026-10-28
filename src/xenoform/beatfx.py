@@ -646,7 +646,12 @@ def _shot_frames(clip: Path, shot: dict, si: int, n0: int, total: int, *, aspect
     look.start_shot(si, len(idx), n0 / fps)
     from xenoform import effects as _E
 
+    if effects is not None and "fx_names" in shot:  # the timeline's per-shot Effects: this shot's set instead of the cut's
+        effects = {**effects, "names": [x for x in shot.get("fx_names") or [] if x in (effects.get("all") or effects.get("names") or [])]}
+    elif effects is not None and effects.get("cut") is not None:
+        effects = {**effects, "names": list(effects["cut"])}
     chain = _E.Chain(effects, beats, look.mode)  # the TouchDesigner-style effects, after the look (feedback and slit-scan keep this shot's frames)
+    shot_grade = _E.grade_of(shot.get("grade"))  # the timeline's per-shot Colour, on the finished frame
     out = np.empty((len(idx), h, w, 3), dtype=np.uint8)
     n = int(n0)
     fs_level = 0.0  # the foreshadow layer's eased stem level, carried frame to frame within the shot
@@ -723,6 +728,8 @@ def _shot_frames(clip: Path, shot: dict, si: int, n0: int, total: int, *, aspect
             kick = float(env["kick"][min(n, total - 1)]) if env is not None else 0.0
             loud = float(env["loud"][min(n, total - 1)]) if env is not None else 0.5
             frame = chain(frame, n / fps, kick=kick, loud=loud)
+        if shot_grade:
+            frame = _E.grade(frame if frame.dtype == np.uint8 else np.clip(frame, 0, 255).astype(np.uint8), shot_grade)
         out[k] = frame if frame.dtype == np.uint8 else np.clip(frame, 0, 255).astype(np.uint8)
         n += 1
     return {"frames": out, "centres": [a, b],
@@ -814,7 +821,12 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
     shot_looks = any(str(s.get("dance_fx") or "") not in ("", "off") for s in shots)
     from xenoform import effects as _E
 
-    fx_cfg = _E.plan(effects, macros, palette_image, size or out_size(aspect, quality), tones=tones)
+    # the effects any shot asks for (the cut's and the timeline's per-shot ones) are planned once; each shot runs its own
+    shot_fx = sorted({str(x) for s in shots for x in (s.get("fx_names") or [])})
+    fx_cfg = _E.plan(list(effects or []) + shot_fx, macros, palette_image, size or out_size(aspect, quality), tones=tones)
+    if fx_cfg is not None:
+        fx_cfg["all"] = list(fx_cfg["names"])
+        fx_cfg["cut"] = [n for n in fx_cfg["names"] if n in {str(x).strip().lower() for x in (effects or [])}]
     env = envelopes(audio_path, total, fps=fps) if (fx or look.active or shot_looks or fx_cfg) else None
     if (look.active or shot_looks) and not look.env:
         look.env = mix_stem_env(env, beats, fps)

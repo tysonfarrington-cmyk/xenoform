@@ -110,6 +110,35 @@ def window_start(clip_seconds: float, need_s: float) -> float:
     return round(max(0.0, (float(clip_seconds) - float(need_s)) / 2.0), 3)
 
 
+def busiest_start(src: str | Path, clip_seconds: float, need_s: float, *, rate: float = 2.0) -> float:
+    """Where the run has the most picture in it: the window of ``need_s`` whose frames carry the most detail (grey
+    spread plus edges, on a 64x36 copy two frames a second), the middle winning a tie. The middle of a Nosferatu reel is
+    tinted sky with the ship arriving at 12 s (28 Oct). Falls back to ``window_start`` when the clip will not read."""
+    import numpy as np
+
+    middle = window_start(clip_seconds, need_s)
+    if float(clip_seconds) <= float(need_s) + 0.5:
+        return middle
+    try:
+        raw = subprocess.run(["ffmpeg", "-v", "error", "-i", str(src), "-an", "-vf", f"fps={rate},scale=64:36,format=gray",
+                              "-f", "rawvideo", "-"], check=True, capture_output=True).stdout
+        g = np.frombuffer(raw, np.uint8).reshape(-1, 36, 64).astype(np.float32)
+    except Exception:
+        return middle
+    if len(g) < 2:
+        return middle
+    detail = g.std(axis=(1, 2)) + np.abs(np.diff(g, axis=2)).mean(axis=(1, 2)) + np.abs(np.diff(g, axis=1)).mean(axis=(1, 2))
+    span = max(1, int(round(float(need_s) * rate)))
+    if len(detail) <= span:
+        return middle
+    sums = np.convolve(detail, np.ones(span), mode="valid")  # sums[k]: the window starting at frame k
+    starts = np.arange(len(sums)) / rate
+    best = sums.max()
+    near = [s for s, v in zip(starts, sums) if v >= best * 0.97]  # within 3 % of the best, the one nearest the middle
+    pick = min(near, key=lambda s: abs(s - middle))
+    return round(float(min(max(0.0, pick), max(0.0, float(clip_seconds) - float(need_s)))), 3)
+
+
 def size_for(aspect: str) -> tuple[int, int]:
     """The frame size an own clip is rendered at: the Draft compose size of that aspect (Final upscales with the rest)."""
     return {"9:16": (540, 960), "1:1": (720, 720)}.get(str(aspect or "16:9"), (960, 540))

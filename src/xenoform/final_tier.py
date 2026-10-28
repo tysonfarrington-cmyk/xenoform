@@ -31,6 +31,9 @@ LATENT_UPSCALER = "ltx-2.3-spatial-upscaler-x2-1.1.safetensors"
 # XENO_FINAL_UPSCALER=4x-ClearRealityV1.safetensors opts back in to ClearReality (CC BY-NC-SA 4.0,
 # non-commercial); 4xNomos8kSC.pth (CC-BY-4.0) also works but peaked 11.8 GB. XENO_FINAL_UPSCALE=0 skips it.
 UPSCALER = os.environ.get("XENO_FINAL_UPSCALER", "").strip() or "RealESRGAN_x4plus.pth"
+# the upscaler works on a quarter of the output size (graph, node 43); XENO_FINAL_UPSCALE_PRESCALE=0 gives it the full
+# 448x768 decode again (and Lanczos down from 1792x3072)
+PRESCALE = os.environ.get("XENO_FINAL_UPSCALE_PRESCALE", "1").strip() not in {"0", "false", "off"}
 FILES = (("checkpoints", CKPT), ("text_encoders", TEXT_ENCODER), ("latent_upscale_models", LATENT_UPSCALER),
          ("upscale_models", UPSCALER))
 RENDER_W, RENDER_H = 768, 448  # multiples of 64, so stage 1 (half size) is still a multiple of 32
@@ -159,6 +162,11 @@ def graph(prompt: str, *, length: int, seed: int, upscale: bool = True, prefix: 
     n(25, "VAEDecodeTiled", samples=["32", 2], vae=["1", 2], tile_size=512, overlap=64, temporal_size=64, temporal_overlap=8)
     frames = ["25", 0]
     if upscale:
+        if PRESCALE and out_w % 4 == 0 and out_h % 4 == 0:
+            # the 4x model runs on a quarter of the output (270x480 for 1080x1920), so it lands on the size exactly:
+            # 52.7 s against 105.3 s for a 73-frame shot at 448x768, all but the same at 1:1 (28 Oct, docs/MORPH_ENGINE_PLAN.md)
+            n(43, "ImageScale", image=frames, upscale_method="area", width=out_w // 4, height=out_h // 4, crop="center")
+            frames = ["43", 0]
         n(40, "UpscaleModelLoader", model_name=UPSCALER)
         n(41, "ImageUpscaleWithModel", upscale_model=["40", 0], image=frames)
         frames = ["41", 0]

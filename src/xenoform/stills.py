@@ -269,6 +269,26 @@ def content_words(words) -> set[str]:
     return {str(w).lower() for w in (words or ()) if str(w).lower() not in STOP_WORDS and len(str(w)) > 1}
 
 
+# Realms: families that belong in one cut. A cut no line gives a theme stays in its family's realm (morph_pass.pick_stills)
+# instead of wandering the whole library: trilobite, sea fan, dragon shield, harpsichord read as a shuffle (28 Oct).
+REALMS = {
+    "creatures": ("sea-creatures", "shells-and-corals", "insects-and-small-creatures", "birds-and-beasts", "living-things"),
+    "garden": ("flowers", "pods-and-cones", "fruit-and-food"),
+    "cosmos": ("celestial-bodies", "solids-and-knots", "crystals-and-minerals", "weather-and-liquid"),
+    "machines": ("intricate-machines", "machine-parts", "time-and-navigation", "musical-instruments", "retro-tech",
+                 "vehicles-and-craft", "big-iconic", "toys-and-games"),
+    "dark fantasy": ("grimdark", "high-fantasy", "anatomy-and-bones", "strange-and-surreal", "keys-and-curios"),
+    "home and craft": ("vessels-and-tableware", "lamps-and-lanterns", "origami-and-paper", "knots-and-textiles",
+                       "architectural-fragments"),
+}
+REALM_LIBRARY = 40  # a vibe with this many object stills is cut within one realm; a smaller one keeps its curated chain
+
+
+def realm_of(family: str) -> str:
+    """The realm a family belongs to ("" for none)."""
+    return next((name for name, fams in REALMS.items() if family in fams), "")
+
+
 GENERIC_LABEL_WORDS = frozenset("things big living high strange intricate".split())  # "Big iconic things" names nothing by "things"
 NOUN_JOINS = re.compile(r"\s(?:with|holding|of|on|in|under|from|made|full|into|topped|carved|crowned|perched|curled|mid)\s")
 

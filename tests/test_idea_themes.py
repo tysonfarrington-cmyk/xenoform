@@ -10,7 +10,7 @@ APP = (Path(__file__).resolve().parents[1] / "src/xenoform/ui_static/app.js").re
 def test_the_theme_list_is_small_clean_and_never_steals_a_place_or_the_song():
     assert 30 <= len(idea.THEMES) <= 40
     for name, t in idea.THEMES.items():
-        assert len(t["things"]) == idea.THEME_THINGS == 5, name
+        assert len(t["things"]) == idea.THEME_THINGS == 15, name  # enough for a whole cut on the theme (28 Oct)
         assert all(thing == thing.lower() and not thing.startswith(("a ", "an ", "the ")) for thing in t["things"]), name
     words = [w for t in idea.THEMES.values() for w in t["words"].split()]
     assert len(words) == len(set(words))  # a word names one theme
@@ -21,9 +21,10 @@ def test_the_theme_list_is_small_clean_and_never_steals_a_place_or_the_song():
 
 def test_a_theme_word_grows_its_things_and_a_thing_stays_a_thing():
     r = idea.read("car rally racing", "neon-noir", llm=False)
-    assert r["theme"] == "racing" and r["own"] == ["rally car", "racing helmet", "trophy", "chequered flag", "steering wheel"]
+    assert r["theme"] == "racing" and r["own"][:5] == ["rally car", "racing helmet", "trophy", "chequered flag", "steering wheel"]
+    assert len(r["theme_things"]) == 15 and set(r["objects"]) | set(r["own"]) >= set(idea.THEMES["racing"]["things"])
     assert "car rally racing" not in r["own"] and "(the racing theme)" in r["summary"]
-    assert idea.grow_plan(r, "neon-noir")["count"] == 5
+    assert idea.grow_plan(r, "neon-noir")["count"] == 15
     thing = idea.read("a rally car", "neon-noir", llm=False)
     assert thing["theme"] == "" and thing["own"] == ["rally car"]  # it ends on the car: a thing, not the theme
     assert idea.read("a racing theme", "neon-noir", llm=False)["theme"] == "racing"  # a trailing "theme" is dropped
@@ -33,7 +34,7 @@ def test_a_theme_word_grows_its_things_and_a_thing_stays_a_thing():
 
 def test_themes_sit_beside_places_feels_and_the_library():
     r = idea.read("car rally racing in a desert at dusk", "neon-noir", llm=False)
-    assert r["scenes"] == ["a desert at dusk"] and r["theme"] == "racing" and len(r["own"]) == 5
+    assert r["scenes"] == ["a desert at dusk"] and r["theme"] == "racing" and len(r["theme_things"]) == 15
     felt = idea.read("halloween, slow and dreamy", "neon-noir", llm=False)
     assert felt["theme"] == "halloween" and felt["feel"]["words"] == ["slow", "dreamy"]
     nouns, _labels = idea._catalogue()

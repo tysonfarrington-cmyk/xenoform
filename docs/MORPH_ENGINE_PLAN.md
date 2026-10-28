@@ -192,6 +192,33 @@ at 12 fps, cut in like a generated run"). `xenoform.dream`, the shot drawer's Dr
 Made through desk 47324 on 9207df6b: 2 s from 7 s, light, 24 dreamed frames in 72 s, 110 s with the re-cut
 (`Desktop\xeno_morph_styles_28oct\dream_this_span_before_after.mp4` and `dream_this_span_strip.png`).
 
+**Where a Final's time goes** (Tys's aa1b7043, 28 Oct: 15 morphs, 20 s, 9:16, 1:33:59). `took.json`: morphs 5,469 s,
+cut 152 s, the rest 18 s. ComfyUI's log of one 2-3 s shot (340 s): reading the 11 GB Gemma text encoder 61 s, stage 1
+(8 steps at 224x384) 136 s, latent upsample 7 s, stage 2 (3 steps at 448x768) 63 s, decode 3 s, RealESRGAN 4x and
+save 65 s. The frames barely matter (2 s and 3 s shots took the same): LTX-2.3's 24 GB of fp8 weights do not fit the
+12 GB card, and with 32 GB of RAM (ComfyUI holding 21 GB, 7 GB in Windows' memory compression) they are read again on
+every step, which is why rendering smaller does not help. A shot that followed its own prompt took 296-302 s: the
+encoder's output was cached. Two changes: shots that share a prompt render back to back (`final_tier.final_clips`),
+and the 4x model works on a quarter of the output (270x480 to 1080x1920 exactly, node 43). On one real 73-frame shot at
+448x768, run alone: RealESRGAN_x4plus 105.3 s, quarter-size 52.7 s and all but the same at 1:1,
+realesr-animevideov3 26.6 s and a little flatter, Lanczos 9.3 s and visibly soft
+(`scratchpad bench_raw.png`). Expected Final morph about 270 s from 340. More than that needs a smaller LTX-2.3 file
+(a GGUF quantisation that fits RAM) or more RAM: both Tys's call.
+
+**Fast Final** (Tys: "render the videos maybe lower and then we can upscale them after"). The Draft's morphs (LTX
+0.9.5, 320x576) through `upscale_pass` to 1080x1920 and cut at that size. On a 97-frame Draft clip: animevideov3 19.6 s,
+RealESRGAN_x4plus 106.9 s, Lanczos 8.6 s; the default is animevideov3. First real cut, 7b031e0a on desk 47325
+(neon-noir, Morphing Wobble 20 s, the Caligari, Nosferatu and NASA clips as your own clips).
+
+**Themed chains** (Tys: "your generations should have a proper theme cause a lot of these dont flow together at
+all"). Own shapes lead only when asked for; themes carry fifteen things and a theme or named family carries the chain
+alone (`THEME_CHAIN_MIN` 8); a cut with no line keeps to one realm of related families (`stills.REALMS`).
+
+**Clip morphs** (Tys: "i want to see if you can morph clips ... as a transition type"). An own clip's slot opens on a
+Draft morph from the object before into its first frame and closes on one from its last frame into the object after
+(`dense._clip_morphs`, `own_media.splice`); the public-domain test clips are copied to `work/ui/own/pd_clips_test`
+(Caligari 1920, Nosferatu 1922, NASA). A 20 s song has few passages, so a clip-to-clip reel was made directly.
+
 ## 5. After the contest: the music video maker
 
 The split Tys described stays the direction: a music video maker (song plus footage, an audio-reactive auto-edit) with the morph

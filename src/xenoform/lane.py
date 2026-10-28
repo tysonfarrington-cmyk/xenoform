@@ -99,6 +99,10 @@ def build(info: dict, video_id: str = "") -> dict:
             row["performer"] = True
         elif s.get("own"):
             row["own"] = True
+        if s.get("dropped"):  # deleted on the timeline: zero length, the shot before plays on (dense.arrange_shots)
+            row["dropped"] = True
+        if s.get("plays") is not None:  # the slot plays another shot's morph (Move, Duplicate)
+            row["plays"] = int(s["plays"])
         if stills and not (s.get("performer") or s.get("own") or gen or s.get("dream")):
             # the chain slots the shot's morph leaves and lands on: a swap on the lane names the landing still
             row.update({"from_still": a, "still": b, "to_file": files[b], "to_kind": "scene" if files[b] in scene_files else "object",

@@ -356,7 +356,56 @@ def wants_tones(look: str, names, shots: list[dict] | None = None) -> bool:
     """Whether a cut dithers anywhere (the Dither look, the dither hits, a shot's own Dither look), so it is worth
     measuring its tones from its clips."""
     return str(look or "") == "dither" or "dither" in [str(x) for x in (names or [])] or \
-        any(str(s.get("dance_fx") or "") == "dither" for s in shots or [])
+        any(str(s.get("dance_fx") or "") == "dither" or "dither" in (s.get("fx_names") or []) for s in shots or [])
+
+
+# A shot's own colour (the timeline's Colour row): hue turn in degrees, saturation, brightness, contrast and warmth, each 0
+# where it does nothing. One 3x3 matrix and an offset a frame, so a graded shot costs a matrix multiply.
+GRADE_KEYS = {"hue": (-180.0, 180.0), "saturation": (-1.0, 1.0), "brightness": (-1.0, 1.0), "contrast": (-1.0, 1.0),
+              "warmth": (-1.0, 1.0)}
+
+
+def grade_of(raw) -> dict:
+    """The keys of ``raw`` that change something, clamped to their ranges ({} for none)."""
+    out = {}
+    for key, (lo, hi) in GRADE_KEYS.items():
+        try:
+            v = float((raw or {}).get(key) or 0.0)
+        except (TypeError, ValueError, AttributeError):
+            continue
+        v = max(lo, min(hi, v))
+        if abs(v) > 1e-3:
+            out[key] = round(v, 3)
+    return out
+
+
+def grade_matrix(g: dict) -> tuple[np.ndarray, np.ndarray]:
+    """The 3x3 matrix and offset for ``g`` on 0..255 RGB."""
+    lum = np.array([0.299, 0.587, 0.114], np.float32)
+    m = np.eye(3, dtype=np.float32)
+    turn = np.radians(float(g.get("hue", 0.0)))
+    if turn:  # a turn of the colour wheel about the grey axis (Rodrigues), luminance kept close
+        k = np.ones(3, np.float32) / np.sqrt(3.0)
+        kx = np.array([[0, -k[2], k[1]], [k[2], 0, -k[0]], [-k[1], k[0], 0]], np.float32)
+        m = (np.cos(turn) * np.eye(3) + np.sin(turn) * kx + (1 - np.cos(turn)) * np.outer(k, k)).astype(np.float32) @ m
+    sat = 1.0 + float(g.get("saturation", 0.0))
+    m = (sat * np.eye(3, dtype=np.float32) + (1.0 - sat) * np.outer(np.ones(3, np.float32), lum)) @ m
+    con = 1.0 + float(g.get("contrast", 0.0))
+    m = con * m
+    off = np.full(3, 128.0 * (1.0 - con) + 96.0 * float(g.get("brightness", 0.0)), np.float32)
+    warm = 28.0 * float(g.get("warmth", 0.0))
+    off = off + np.array([warm, 0.25 * warm, -warm], np.float32)
+    return m, off
+
+
+def grade(frame: np.ndarray, g: dict) -> np.ndarray:
+    """``frame`` with the shot's own colour; untouched when ``g`` changes nothing."""
+    g = grade_of(g)
+    if not g:
+        return frame
+    m, off = grade_matrix(g)
+    out = frame.astype(np.float32).reshape(-1, 3) @ m.T + off
+    return np.clip(out, 0, 255).astype(np.uint8).reshape(frame.shape)
 
 
 class Chain:

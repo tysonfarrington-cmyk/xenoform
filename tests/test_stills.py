@@ -81,8 +81,11 @@ def test_pick_stills_prefers_what_the_last_cut_left_alone_and_own_shapes_lead():
     files = {s["file"] for s in third}
     assert not files & {s["file"] for s in second} and len(files & {s["file"] for s in first}) == 3  # the 2 never used, then the 3 used longest ago
     _grown("cosmic", "000_astrolabe.jpg", "astrolabe", own=True)
-    _, own = mp.pick_stills({"vibe": "cosmic"}, 4, record=False)
+    _, own = mp.pick_stills({"vibe": "cosmic", "own_shapes": "an astrolabe"}, 4, record=False)  # typed in Your own shapes
     assert own[0]["noun"] == "astrolabe" and own[0].get("own") and Path(own[0]["path"]).is_file()
+    # a shape grown for another cut is an ordinary still of the pool, not the opener of every cut after it (28 Oct)
+    _, plain = mp.pick_stills({"vibe": "cosmic"}, 4, record=False)
+    assert plain[0]["noun"] != "astrolabe"
 
 
 # ---------------------------------------------------------------------------------------------- subjects
@@ -275,7 +278,7 @@ def test_grow_renders_checks_and_lists(tmp_path):
     own = L.grow("synthetic", nouns=["a brass astrolabe"], own=True, client=fake, seed=50, sheet=False)
     assert own["kept"] == 1 and L.grown()["synthetic"][-1]["own"] is True
     assert fake.prompts[-1].endswith("One single brass astrolabe.")
-    _, picked = mp.pick_stills({"vibe": "synthetic"}, 3, record=False)
+    _, picked = mp.pick_stills({"vibe": "synthetic", "own_shapes": "brass astrolabe"}, 3, record=False)
     assert picked[0]["noun"] == "brass astrolabe"
     assert L.grow("synthetic", nouns=[], own=True, client=fake)["note"].startswith("type a shape")
     assert L.plan("cosmic", 5, seed=1)["seconds"] == L.estimate_seconds(5) and len(L.plan("cosmic", 5)["prompts"]) == 5
@@ -382,7 +385,7 @@ def test_a_grown_only_vibe_borrows_until_it_has_three_and_leads_with_its_own():
 
 def test_own_shapes_lead_even_when_the_story_names_an_object():
     _grown("cosmic", "000_astrolabe.jpg", "astrolabe", own=True)
-    _, picked = mp.pick_stills({"vibe": "cosmic", "brief": "a mobius at dawn"}, 5, record=False)
+    _, picked = mp.pick_stills({"vibe": "cosmic", "brief": "a mobius at dawn", "own_shapes": "astrolabe"}, 5, record=False)
     assert picked[0]["noun"] == "astrolabe" and "mobius" in picked[1]["noun"]
 
 

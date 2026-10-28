@@ -302,3 +302,176 @@ def test_clip_morphs_are_on_for_your_clips_and_can_be_turned_off():
     block = src.split("clip_morph = engine in", 1)[1].split("notes.append({\"own\": own_info})", 1)[0]
     assert 'state.get("clip_morph", "on")' in block and "_clip_morphs(" in block
     assert "own_media.render_clip(sl[\"clip\"], start_s, frames_needed, " in block  # a failed morph falls back to the whole clip
+
+
+# ------------------------------------------------------------------------------------- colour and effects per shot
+
+
+def test_a_shot_takes_its_own_colour_and_effects_through_a_recut_override():
+    import numpy as np
+
+    from xenoform import dense
+    from xenoform import effects as E
+
+    f = np.full((2, 2, 3), [200, 100, 50], np.uint8)
+    assert np.array_equal(E.grade(f, {}), f) and E.grade_of({"hue": 400, "contrast": 0}) == {"hue": 180.0}
+    assert E.grade(f, {"saturation": -1})[0, 0].std() < 1  # no colour left
+    warm = E.grade(np.full((2, 2, 3), 120, np.uint8), {"warmth": 1})[0, 0]
+    assert warm[0] > 120 > warm[2]
+    so = dense.shot_overrides_of({"2": {"grade": {"hue": 30, "warmth": 0}, "effects": ["kaleido", "nope"]}, "3": {"effects": []}}, 5)
+    assert so == {2: {"grade": {"hue": 30.0}, "effects": ["kaleido"]}, 3: {"effects": []}}
+    shots = [{"frames": 24, "effects": [{"type": "punch", "at": 0.0}]} for _ in range(5)]  # a shot's beat FX live in "effects"
+    dense.apply_timeline(shots, so, {}, vibe="cosmic", house=None, transitions=None, boundary_fx=None, beats=[], fps=24, drop=None)
+    assert shots[2]["grade"] == {"hue": 30.0} and shots[2]["fx_names"] == ["kaleido"] and shots[3]["fx_names"] == []
+    assert shots[2]["effects"] == [{"type": "punch", "at": 0.0}]  # the beat FX untouched (28 Oct: they once clashed)
+    assert E.wants_tones("auto", [], [{"fx_names": ["dither"]}])
+
+
+def test_the_compositor_plans_every_shots_effects_and_runs_each_its_own():
+    import inspect
+
+    from xenoform import beatfx
+
+    comp = inspect.getsource(beatfx.compose)
+    assert 'shot_fx = sorted({str(x) for s in shots for x in (s.get("fx_names") or [])})' in comp and 'fx_cfg["cut"]' in comp
+    frames = inspect.getsource(beatfx._shot_frames)
+    assert '"fx_names" in shot' in frames and "_E.grade(" in frames
+
+
+def test_the_drawer_has_colour_sliders_and_effects_chips():
+    drawer = _fn("function timelineDrawer(easy, lane, tl, picked)", "// A shot's own colour")
+    assert "${shotColourRows(o, s.index)}" in APP and "${shotEffectsRow(o, s.index)}" in APP
+    rows = _fn("const GRADE_ROWS = ", "// The drawer under the timeline")
+    assert '"hue", "Hue"' in rows and '"warmth", "Warmth"' in rows and 'data-act="easy-tl-effect"' in rows and "As the cut" in rows
+    assert 'target.classList.contains("tl-grade-in")' in APP and 'act === "easy-tl-grade-clear"' in APP
+    assert drawer is not None
+
+
+# ------------------------------------------------------------------------------------------------ chains with a theme
+
+
+def _grown_row(vibe, name, noun, **extra):
+    from PIL import Image
+
+    from xenoform import stills as S
+
+    path = S.root() / vibe / name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    Image.new("RGB", (64, 36), (20, 20, 30)).save(path)
+    idx = S._read_json(S.index_path(), {})
+    idx.setdefault(vibe, []).append({"file": f"{vibe}/{name}", "noun": noun, **extra})
+    S._write_json(S.index_path(), idx)
+
+
+def test_a_theme_keeps_the_whole_chain_on_its_things(monkeypatch):
+    from xenoform import idea
+    from xenoform import morph_pass as mp
+
+    racing = idea.THEMES["racing"]["things"]
+    assert len(racing) == 15
+    monkeypatch.setattr(mp, "manifest", lambda: {"cosmic": [{"file": f"cosmic/{i:02d}.jpg", "noun": n} for i, n in
+                                                            enumerate(["orb", "comet", "heron", "moth", "pear", "swan", "peony", "kettle"])]})
+    monkeypatch.setattr(mp, "autotune", lambda: {})
+    for i, thing in enumerate(racing):
+        _grown_row("cosmic", f"1{i:02d}.jpg", thing, own=True)
+    _grown_row("cosmic", "200_pearl.jpg", "pearl", own=True)  # grown for another line: never the opener of this one
+    state = idea.shape_state({"vibe": "cosmic", "idea": "car rally racing", "mode": "simple"})
+    _, picked = mp.pick_stills(state, 16, record=False)
+    assert {p["noun"] for p in picked} <= set(racing)  # no peony, kettle or pearl among the racing things
+    _, plain = mp.pick_stills({"vibe": "cosmic", "mode": "simple"}, 6, record=False)
+    assert plain[0]["noun"] != "pearl"
+
+
+def test_a_cut_with_no_line_stays_in_one_realm_of_a_big_library(monkeypatch):
+    from xenoform import morph_pass as mp
+    from xenoform import stills as S
+
+    assert S.realm_of("grimdark") == "dark fantasy" and S.realm_of("flowers") == "garden" and S.realm_of("nope") == ""
+    fams = S.subjects()["families"]
+    monkeypatch.setattr(mp, "manifest", lambda: {"cosmic": []})
+    monkeypatch.setattr(mp, "autotune", lambda: {})
+    k = 0
+    for fam in ("grimdark", "high-fantasy", "flowers", "sea-creatures", "intricate-machines", "celestial-bodies"):
+        for noun in fams[fam]["nouns"][:9]:
+            _grown_row("cosmic", f"{k:03d}.jpg", noun)
+            k += 1
+    assert k >= S.REALM_LIBRARY
+    _, picked = mp.pick_stills({"vibe": "cosmic", "mode": "simple", "seed": 3}, 10, record=False)
+    realms = {S.realm_of(S.family_of(p["noun"])) for p in picked}
+    assert len(realms) == 1 and "" not in realms
+
+
+# ------------------------------------------------------------------------------------------------ order edits
+
+
+def test_order_edits_move_duplicate_drop_and_trim_on_the_recut():
+    from xenoform import dense
+
+    def plan():
+        return [{"frames": 24, "morph": i} for i in range(5)]
+
+    clips = [f"c{i}.mp4" for i in range(5)]
+    so = dense.shot_overrides_of({"1": {"source": 2}, "2": {"source": 1}, "4": {"drop": True}, "3": {"source": 3}}, 5)
+    assert so == {1: {"source": 2}, 2: {"source": 1}, 4: {"drop": True}}  # its own index is no source
+    bo = dense.boundary_overrides_of({"1": {"shift": 0.25}, "3": {"shift": 9}}, 5)
+    assert bo == {1: {"shift": 0.25}, 3: {"shift": dense.SHIFT_MAX_S}}
+    laid = dense.arrange_shots(plan(), clips, so, bo, 24, transitions=[None] * 5, boundary_fx=[None] * 5)
+    assert laid["clips"] == ["c0.mp4", "c2.mp4", "c1.mp4", "c3.mp4"] and laid["kept"] == [0, 1, 2, 3]
+    frames = [s["frames"] for s in laid["shots"]]
+    assert frames[0] == 30 and frames[1] == 18  # the cut into shot 2 moved a quarter second later
+    assert frames[2] == 24 + 18 and frames[3] == 6 + 24  # 4 s clamps at the shot's last 6 frames; shot 5's time went to 4
+    assert sum(frames) == 120 and laid["shots"][1]["morph"] == 2 and len(laid["transitions"]) == 4
+    rec = laid["record"]
+    assert len(rec) == 5 and rec[4]["dropped"] and rec[4]["frames"] == 0 and rec[4]["start"] == rec[4]["end"] == 5.0
+    dup = dense.arrange_shots(plan(), clips, {3: {"source": 2}}, {}, 24)
+    assert dup["clips"][2] == dup["clips"][3] == "c2.mp4"
+    first = dense.arrange_shots(plan(), clips, {0: {"drop": True}}, {}, 24)
+    assert first["kept"] == [1, 2, 3, 4] and first["shots"][0]["frames"] == 48  # the first shot's time goes to the next
+
+
+def test_the_drawer_offers_the_order_edits_and_the_lane_shows_a_deleted_shot():
+    assert "${shotOrderRow(lane, tl, s)}" in APP and "${cutShiftRow(lane, tl, s)}" in APP
+    for act in ("easy-tl-move", "easy-tl-dup", "easy-tl-drop", "easy-tl-shift", "easy-tl-source-clear"):
+        assert f'act === "{act}"' in APP, act
+    lane = (ROOT / "src" / "xenoform" / "lane.py").read_text(encoding="utf-8")
+    assert 'row["dropped"] = True' in lane and 'row["plays"]' in lane
+    assert "dropped" in _fn("function shotsLane(easy)", "async function loadLane")
+
+
+def test_the_final_upscales_from_a_quarter_and_the_estimate_says_where_the_time_goes():
+    from xenoform import dense
+    from xenoform import final_tier as ft
+
+    g = ft.graph("x", length=49, seed=1, width=448, height=768, out_w=1080, out_h=1920)
+    assert g["43"]["inputs"]["width"] == 270 and g["43"]["inputs"]["height"] == 480 and g["41"]["inputs"]["image"] == ["43", 0]
+    assert dense.COST["final_916"]["s"] == 270.0
+    tip = _fn("const TIME_PARTS = {", "function morphEstimate(")
+    assert "reading the prompt: 1 min" in tip and "the 4x upscale" in tip and "Fast Final" in tip
+    assert 'class="note time-tip" title="${esc(timeTip(tier))}"' in APP
+
+
+def test_the_lane_builds_for_a_cut_with_your_own_clip_and_a_moved_morph():
+    from xenoform import lane
+
+    info = {"stills": ["cosmic/00_orb.jpg", "cosmic/01_moth.jpg", "cosmic/02_pear.jpg"],
+            "shots": [{"start": 0.0, "end": 2.0, "own": True, "source": "01_caligari_cesare.mp4"},  # an own clip's file name
+                      {"start": 2.0, "end": 3.0, "morph": 0, "plays": 0},
+                      {"start": 3.0, "end": 3.0, "morph": 1, "dropped": True}]}
+    rows = lane.build(info)["shots"]
+    assert rows[0].get("own") and "plays" not in rows[0] and rows[1]["plays"] == 0 and rows[2]["dropped"]
+
+
+def test_your_clip_plays_its_busiest_stretch_not_blank_sky(tmp_path):
+    import numpy as np
+
+    from xenoform import own_media
+    from xenoform.video import write_mp4
+
+    rng = np.random.default_rng(0)
+    flat = [np.full((72, 128, 3), 90, np.uint8) for _ in range(24 * 6)]  # six seconds of sky
+    busy = [rng.integers(0, 255, (72, 128, 3)).astype(np.uint8) for _ in range(24 * 4)]  # then four of picture
+    clip = tmp_path / "reel.mp4"
+    write_mp4(clip, flat + busy, 24)
+    assert own_media.window_start(10.0, 3.0) == 3.5
+    assert own_media.busiest_start(clip, 10.0, 3.0) >= 6.0
+    assert own_media.busiest_start(tmp_path / "missing.mp4", 10.0, 3.0) == 3.5  # unreadable: the middle, as before
