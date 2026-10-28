@@ -256,11 +256,14 @@ def create_app(cfg: dict | None = None):
 
     class _FreshCode(StaticFiles):
         """The desk's own scripts and styles revalidate on every load (an ETag check, a 304 when unchanged), so a desk
-        restarted on new code is new in the browser without Ctrl+Shift+R; pictures keep the browser's usual cache."""
+        restarted on new code is new in the browser without Ctrl+Shift+R; so do the vibe tiles (their pictures change
+        with the library: 29 Oct, one frame of each vibe's Cloud Final cut); other pictures keep the browser's usual
+        cache."""
 
         def file_response(self, full_path, *args, **kwargs):
             response = super().file_response(full_path, *args, **kwargs)
-            if str(full_path).endswith((".js", ".css", ".html")):
+            path = str(full_path).replace("\\", "/")
+            if path.endswith((".js", ".css", ".html")) or "/vibes/" in path:
                 response.headers["Cache-Control"] = "no-cache"
             return response
 

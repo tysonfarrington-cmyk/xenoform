@@ -100,6 +100,7 @@ def test_the_desk_code_revalidates_so_a_restart_needs_no_hard_reload():
     client = TestClient(ui.create_app())
     assert client.get("/static/app.js").headers.get("cache-control") == "no-cache"
     assert client.get("/static/desk.css").headers.get("cache-control") == "no-cache"
+    assert client.get("/static/vibes/neon-noir.jpg").headers.get("cache-control") == "no-cache"  # the tiles change with the library
 
 
 def test_variations_queue_one_draft_and_say_so_in_plain_words():

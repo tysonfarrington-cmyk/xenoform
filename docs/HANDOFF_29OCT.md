@@ -58,6 +58,16 @@ out of date on the tiers (no Cloud Final, "all local") and must be rebuilt after
   `run_directed` runs the classic chunk render (the first three jobs abdf7a0d, b599647d, 8057c0c0 did; no credits
   spent); and the chain picker let two seahorse stills sit side by side in the None cut (a repeat inside a cut, a
   follow-up for after the contest, so the shots were placed past it).
+- 9 to 10:30 am, Tys's three asks: (1) **example cuts**, one 30 s Cloud Final cut for each of the other ten featured
+  vibes on his Suno instrumentals (`scratchpad/wt/examples.py`; `Desktop\xeno_examples_29oct`, a sheet and
+  `examples.json` beside them; 128 morphs, 464 credits, 11,325 left), so every vibe has a Cloud Final cut for the post
+  and the README once he uploads them; (2) **the demo says any card from 12 GB up**, not one 12 GB card: the short's
+  How it's built line, the long's l36, the diagram's LTX box and CONTEST.md's Runs on row; only those two lines were
+  re-read (`C:\Projects\kokoro-tts\reread_line.py`), the cards re-recorded, both cuts re-assembled to the Desktop
+  (short 1:43 / 1:48 / 1:47, long 6:52); (3) **new vibe thumbnails**, one frame from each vibe's Cloud Final cut
+  (`scratchpad/wt/make_thumbs.py`, `picks_thumbs.json`; the old files in `scratchpad/wt/thumbs_old`), and the README's
+  screenshots retaken on them. Not redone: the walkthroughs' desk shots still show the old vibe tiles (a re-record of
+  every desk shot is `shots.py` + `long_shots.py`, about half an hour with a Fast Final Make on camera).
 
 ## What is left, in order
 

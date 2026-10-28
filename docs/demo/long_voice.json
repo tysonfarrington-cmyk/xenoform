@@ -207,8 +207,8 @@
   {
    "id": "l36",
    "chapter": "How it's built",
-   "text": "The plan becomes ComfyUI graphs, sent through the Comfy SDK to your own ComfyUI. LTX-Video, LTX-2.5 and Z-Image Turbo do the work: all open weights, on one 12 GB card, or the same models on Comfy Cloud when you ask for Cloud Final.",
-   "say": "The plan becomes ComfyUI graphs, sent through the Comfy SDK to your own ComfyUI. LTX Video, LTX 2.5 and Z Image Turbo do the work: all open weights, on one twelve gigabyte card, or the same models on Comfy Cloud when you ask for Cloud Final."
+   "text": "The plan becomes ComfyUI graphs, sent through the Comfy SDK to your own ComfyUI. LTX-Video, LTX-2.5 and Z-Image Turbo do the work: all open weights, on any card from 12 GB up, or the same models on Comfy Cloud when you ask for Cloud Final.",
+   "say": "The plan becomes ComfyUI graphs, sent through the Comfy SDK to your own ComfyUI. LTX Video, LTX 2.5 and Z Image Turbo do the work: all open weights, on any card from twelve gigabytes up, or the same models on Comfy Cloud when you ask for Cloud Final."
   },
   {
    "id": "l37",

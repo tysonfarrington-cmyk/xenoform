@@ -41,7 +41,7 @@ Contest: [Open Source Higgsfield](https://comfy.org/open-source-higgsfield/), ru
 | ComfyUI parts used | Comfy Python SDK (comfy-sdk 0.5.0 + comfy-api-proxy); MCP server (45 tools); core nodes only in the shipped workflows |
 | Models | LTX-Video 0.9.5, LTX-2.5 22B distilled int8, LTX-2.3 22B distilled fp8, Z-Image Turbo, Wan Animate 2, Real-ESRGAN x4plus and realesr-animevideov3 (optional: FLUX.2 Klein 4B, ACE-Step 1.5, MiniMax H3 for Performer shots; Demucs htdemucs on the CPU for stems) |
 | Licence | MIT |
-| Runs on | Windows and Linux, Python 3.12, ComfyUI 0.33+, a 12 GB GPU for renders; the animatic and the judges page need no GPU |
+| Runs on | Windows and Linux, Python 3.12, ComfyUI 0.33+, a GPU from 12 GB up for renders; the animatic and the judges page need no GPU |
 
 ## Social post (draft, under 280 characters)
 

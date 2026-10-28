@@ -14,7 +14,7 @@ the social post. Voice-over over the screen, the outputs played full frame, capt
   and setup instructions, and the URL of a public post tagged #OpenSourceHiggsfield that carries the video and the repo
   link. Categories claimed: Open Weights Only, and the LTX bonus (LTX as the core video model).
 - So the short video must, inside 1:55: show the desk making and editing a cut, show real outputs, say how it is built
-  (song analysis, ComfyUI graphs through the Comfy SDK, LTX on one 12 GB card, all open weights) and say what is new.
+  (song analysis, ComfyUI graphs through the Comfy SDK, LTX on any card from 12 GB up, all open weights) and say what is new.
   It ends on the repo URL. The long one is for the README and the post's replies, with no limit.
 
 ## Short (about 1:52)
@@ -31,7 +31,7 @@ the social post. Voice-over over the screen, the outputs played full frame, capt
 | 0:54 | The timeline: picture tiles, the Look tab, a colour change, Apply | Then edit it like a timeline. Colour, effects, order and cuts, shot by shot, re-cut from the cached morphs with no GPU. |
 | 1:07 | Morph > Your clips: Caligari, Nosferatu, NASA | Or morph your own film clips into each other. |
 | 1:15 | Draft, Fast Final, Final, Cloud Final, with their times | A Draft in minutes, a Fast Final at 1080p, the full local Final, or Cloud Final, the same morphs on Comfy Cloud. |
-| 1:23 | How it's built: song → stems and bars → plan → ComfyUI graphs → LTX morphs → re-cut (a diagram over the desk) | How it's built: the song is split into stems and bars, the plan becomes ComfyUI graphs sent through the Comfy SDK, and LTX renders every morph on one 12 GB card. All open weights, local by default. |
+| 1:23 | How it's built: song → stems and bars → plan → ComfyUI graphs → LTX morphs → re-cut (a diagram over the desk) | How it's built: the song is split into stems and bars, the plan becomes ComfyUI graphs sent through the Comfy SDK, and LTX renders every morph on any card from 12 GB up. All open weights, local by default. |
 | 1:37 | What's new: the song's waveform under the timeline; the MCP panel | What's new: the edit comes from the music itself, every shot is generated, and you change it like an editor, not a prompt box. An MCP server lets any AI drive it. |
 | 1:48 | End card: github.com/tysonfarrington-cmyk/xenoform, #OpenSourceHiggsfield | Xenoform. Open source, on GitHub. |
 
@@ -88,9 +88,9 @@ the social post. Voice-over over the screen, the outputs played full frame, capt
   real (a None "underwater" cut; racing was the first example, dropped: "you want to see cars driving not
   morphing"). Recording found the desk blinking on every click (fixed in
   f9eaa7e).
-- **The short** (1:42 af_heart, 1:48 am_michael, 1:46 bm_george) and **the long** (6:52 in af_heart, ten chapters with
-  labels) were rebuilt on the frozen app on 29 Oct at 7 am and are in `Desktop\xeno_walkthrough_29oct`, with 720p review
-  copies. Every desk shot was re-recorded on the final commit (the Make on camera is a Fast Final of the None
+- **The short** (1:43 af_heart, 1:48 am_michael, 1:47 bm_george) and **the long** (6:52 in af_heart, ten chapters with
+  labels) were rebuilt on the frozen app on 29 Oct (last at 9 am) and are in `Desktop\xeno_walkthrough_29oct`, with 720p
+  review copies. Every desk shot was re-recorded on the final commit (the Make on camera is a Fast Final of the None
   "underwater" cut, b251df0c); captions are burned in from the voice copy; the music bed is Tys's Suno track
   XF_HipHop_BoomBap_01, ducked under the voice (looped under the long one); the mix is -16 LUFS.
 - **The long one's chapters** (for the YouTube description, af_heart timing): 0:00 What it is · 0:20 Song and vibe ·
@@ -106,6 +106,27 @@ the social post. Voice-over over the screen, the outputs played full frame, capt
   seahorse pair (two seahorse stills, 7 to 12 s), so its shots start past it. The first attempt through the API ran the
   classic chunk render instead (the Make body needs `quality: "turbo"`, as the desk sends it); those three jobs
   (abdf7a0d, b599647d, 8057c0c0) spent nothing on Cloud and sit in desk 47326's My videos.
+- **"Any card from 12 GB up"** (Tys, 29 Oct 9 am: the demo "can run on 12gb vram and up cards not just a 12gb"): the
+  short's How it's built line, the long's l36 and the diagram's LTX box said "one 12 GB card"; they now say any card
+  from 12 GB up (so does docs/CONTEST.md's Runs on row). Only those two lines were re-read (`kokoro-tts/reread_line.py`
+  replaces one line's wav in a read and its seconds; the measures held: no rising end, one sample at the peak), the
+  cards re-recorded with the cue moved from "card." to "gigabytes up.", and both cuts re-assembled.
+- **The example cuts** (Tys, 29 Oct 9 am: "we have heaps of credits left so we should make a few example videos"):
+  one 30 s Cloud Final cut for each of the other ten featured vibes, through the desk like any Make, on Tys's Suno
+  instrumentals (`scratchpad/wt/examples.py`), in `Desktop\xeno_examples_29oct` with a 16-frame sheet each and
+  `examples.json` (job, chain, time): Liquid chrome / Techno (dad92e3f), Porcelain & gold / Breakbeat (18dcd1a8),
+  Deep-sea glow "underwater" / DnB v2 (d2f19f7a), Risograph / Hip-hop (00ac3e00), Iridescent glass / Synthwave v2
+  (fbd103a4), Ink & paper / Riff Tool (d4ed04ab), Cyberspace 1995 / Psytrance (a56d1354), Wet paint / Bass (3991568a),
+  Shadow self / Riff Korn (b4fd5b3f), Bloom timelapse / Ambient (ec770cb9). 128 morphs in 63 minutes, 5:02 to 7:32 a
+  cut (a cut that grows fresh objects for its chain first is the slow end); the dashboard went 11,789 to 11,325
+  credits (464, about 3.6 a morph). With the three showcase cuts that is one Cloud Final cut per vibe, for the post
+  and the README once Tys uploads them. Seen on the sheets: bright vibes (porcelain, glass, ink, wet paint) show the
+  boundary wipes as pale bands across the ground for a few frames, which the dark vibes hide.
+- **The vibe thumbnails** (Tys: "update thumbnails for vibes") are now one frame from each vibe's Cloud Final cut
+  (`scratchpad/wt/make_thumbs.py` with `picks_thumbs.json`: the centre square of the frame on the same frame blurred,
+  1280x800 like before; the old files are in `scratchpad/wt/thumbs_old`). One judge a vibe picked the frame from the
+  sheet (a fully formed object, a strong silhouette at 150 px), checked by eye. The README's two screenshots were
+  retaken with them (`readme_shots.py`).
 
 ## Still to decide
 
