@@ -35,7 +35,7 @@ def test_the_rave_line_reads_as_a_scene_a_shape_and_polly_dancing():
     assert r["scenes"] == ["a " + CITY]
     assert r["own"] == ["laser"] and r["objects"] == [] and r["family"] == ""  # "rave music" names no music box
     assert r["performer"] == {"style": "dance", "cue": "girl dancing"}
-    assert r["summary"] == f"Scenes: a {CITY}. Objects: laser (new shape). Polly: dancing."
+    assert r["summary"] == f"Scenes: a {CITY}. Objects: laser (new shape). Polly: dancing (in Work in progress)."
     assert r["source"] == "rules" and r["line"] == RAVE
 
 
@@ -103,20 +103,23 @@ def test_the_model_refines_the_reading_when_asked(monkeypatch):
 # ---------------------------------------------------------------------------------------------- the make
 
 
-def test_shape_state_turns_scenes_and_polly_on_without_overriding_a_choice():
+def test_shape_state_turns_scenes_on_and_leaves_polly_to_work_in_progress():
     r = idea.read(RAVE, "cosmic", llm=False)
     base = {"vibe": "cosmic", "idea": RAVE, "mode": "simple"}
     got = idea.shape_state(base, r)
-    assert got["scene_stills"] == "mix" and got["performer"] == idea.PERFORMER_DEFAULT and got["performer_style"] == "dance"
+    # Polly is in Work in progress (docs/MORPH_ENGINE_PLAN.md): the line reads her cue but never switches her on
+    assert got["scene_stills"] == "mix" and "performer" not in got and "performer_style" not in got
     assert got["idea_reading"] == r and "scene_stills" not in base  # a copy
     chosen = idea.shape_state({**base, "scene_stills": "only", "performer": 4, "performer_style": "keys"}, r)
     assert chosen["scene_stills"] == "only" and chosen["performer"] == 4 and chosen["performer_style"] == "keys"
     auto = idea.shape_state({**base, "performer": 4}, r)
-    assert auto["performer"] == 4 and auto["performer_style"] == "dance"  # Auto takes the cue
+    assert auto["performer"] == 4 and auto["performer_style"] == "dance"  # switched on, Auto takes the cue
+    kept_off = idea.shape_state({**base, "scene_stills": "off", "scenes_chosen": True}, r)
+    assert kept_off["scene_stills"] == "off"  # Off picked by hand stays Off
     director = idea.shape_state({**base, "mode": "director"}, r)
     assert "idea_reading" not in director and "performer" not in director
     sung = idea.shape_state({"vibe": "cosmic", "idea": "singing in the rain on a rooftop"})
-    assert sung["performer_style"] == "sing" and sung["scene_stills"] == "mix" and sung["performer"] == idea.PERFORMER_DEFAULT
+    assert sung["scene_stills"] == "mix" and "performer" not in sung and "performer_style" not in sung
     plain = idea.shape_state({"vibe": "cosmic", "idea": "a chrome moth"})
     assert "performer" not in plain and "scene_stills" not in plain
     assert idea.reading_for({"vibe": "cosmic", "scenes": [{"action": "the rocket climbs"}]}) == idea.EMPTY  # no line, nothing read
@@ -177,7 +180,7 @@ def test_the_pick_opens_on_the_typed_scene_and_leads_with_the_typed_shape(monkey
     assert plain[0]["noun"] == "dark shore under a star field" and plain[1]["noun"] == "brass astrolabe"
 
 
-def test_run_simple_on_the_short_demo_lets_polly_in_when_the_line_asks(monkeypatch, tmp_path):
+def test_run_simple_on_the_short_demo_lets_polly_in_when_she_is_on_and_the_line_asks(monkeypatch, tmp_path):
     seen, calls = {}, []
     monkeypatch.delenv("XENO_LLM_URL", raising=False)
     monkeypatch.setattr(dense, "stills_for", lambda state, n, **kw: ("cosmic", [{"path": f"s{i}.png", "file": f"s{i}.png"} for i in range(n)]))
@@ -207,6 +210,9 @@ def test_run_simple_on_the_short_demo_lets_polly_in_when_the_line_asks(monkeypat
     step = 60.0 / 148.0
     directed = {"duration": 12.0, "beats": [round(i * step, 4) for i in range(int(12.0 / step))]}
     state = {"vibe": "cosmic", "aspect": "9:16", "quality_tier": "draft", "energy_preset": "dense", "mode": "simple", "idea": RAVE}
+    off = dense.run_simple(directed, DEMO, tmp_path / "w.mp4", tmp_path / "w", {}, state, lambda *a: None, engine="mock")
+    assert not calls and off["performer"]["shots"] == 0  # the line alone no longer brings her in (Work in progress)
+    state["performer"] = idea.PERFORMER_DEFAULT  # switched on in Work in progress
     info = dense.run_simple(directed, DEMO, tmp_path / "x.mp4", tmp_path, {}, state, lambda *a: None, engine="mock")
     assert len(calls) == 1 and calls[0][0] == "dance" and calls[0][2].startswith("polly")  # one slot, the first passage
     assert dense.PERFORMER_MIN_S <= calls[0][1] < 7.0  # about half the clip (whole shots): the morphs keep the other half

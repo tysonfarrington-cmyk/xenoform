@@ -118,6 +118,33 @@ Suggested days: Wed evening W, T and the E1 test sheet (Tys watches it overnight
 Tys's picks, then the new kinds, E5, E6's measurement in a GPU gap; Thu 9 pm freeze; Thu night the demo's Finals; Fri the demo
 video, README and CHANGELOG, and Tys pushes and submits.
 
+## 4a. Progress
+
+**28 Oct evening: W and T landed** (one Owly commit, `tests/test_wip_drawer.py`). The drawer is as section 3 says. Notes:
+- Paid cloud's opt-in moved into the drawer with Cloud quality; the Beat overlay row stays in Fine-tune (it is an effect).
+- The Final estimate is now the median of the Finals measured on this machine near the cut's length: 1:14:30 for the
+  12 s demo here (six Finals measured), where the formula said about 16 min.
+
+**E1 step 1: the style test sheet.** The 8 styles on two pairs at Draft, the same seed a pair, 3 s each, 21 s a morph
+(16 morphs in about 6 minutes). Files: `Desktop\xeno_morph_styles_28oct\` (the reel plays each pair's eight side by side,
+at speed and at half speed; a sheet a pair). "vs Melt" is the mean difference of the middle frames from Melt's (0 to
+255); "motion" the mean change frame to frame.
+
+| Style | soap orb > chameleon: vs Melt, motion | brain coral > dragonfly: vs Melt, motion | On film |
+|---|---|---|---|
+| Melt (today) | 0, 5.9 | 0, 5.9 | the liquid flow |
+| Shatter | 13.3, 8.8 | 16.0, 7.5 | a burst of shards at a third of the way, clearly its own |
+| Bloom | 9.0, 6.2 | 18.1, 5.6 | wings or petals unfolding (strong on the dragonfly, soft on the orb) |
+| Spin | 15.8, 9.0 | 16.0, 7.9 | the most motion: a swirl and strands |
+| Fold | 10.8, 8.3 | 16.4, 6.9 | flat planes and creases |
+| Ink | 10.4, 5.1 | 13.8, 3.9 | wisps and strands, calm |
+| Smoke | 13.0, 5.3 | 10.2, 5.8 | a haze under the object; reads close to Melt |
+| Pour | 5.4, 5.7 | 12.3, 6.2 | the closest to Melt |
+
+Recommendation: ship Shatter, Bloom, Spin and Fold beside Melt; Ink maybe; drop Smoke and Pour unless Final shows more.
+Next in E1: Tys's pick, then the 3 best at Final on one pair (the Finals measured here run about 5 min of GPU a second
+of video, so about 15 min each).
+
 ## 5. After the contest: the music video maker
 
 The split Tys described stays the direction: a music video maker (song plus footage, an audio-reactive auto-edit) with the morph

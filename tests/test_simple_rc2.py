@@ -60,12 +60,25 @@ def test_recipe_routes(client):
     assert client.post("/api/simple/recipe/decode", json={"recipe": "nope"}).status_code == 400
 
 
-def test_options_route_reports_final_files_and_an_honest_eta(client):
+def test_options_route_reports_final_files_and_an_honest_eta(client, monkeypatch):
+    from xenoform import batch
+
+    monkeypatch.setattr(batch, "measured", lambda jobs, seconds=None: {})  # no Final measured on this machine yet
     body = client.get("/api/simple/options?duration=20&energy=dense").json()
     assert body["aspects"] == ["16:9", "9:16", "1:1"] and body["tiers"] == ["draft", "final"]
     assert 8 <= body["shots"] <= 15
-    assert body["final"]["eta_measured"] is True and body["final"]["eta_s"] > 600
+    assert body["final"]["eta_measured"] is False and body["final"]["eta_s"] > 600  # the formula, said to be one
     assert body["final"]["output"] == "1280x720"
+    # once a Final has run here, its took.json is the estimate (the 12 s demo: 2:00:32 against the formula's ~16 min)
+    final = {"per_s": 602.7, "cuts": 1, "latest": {"seconds": 12.0, "took_s": 7232.0}, "eta_s": 7232.0}
+    draft = {"per_s": 10.5, "cuts": 9, "latest": {"seconds": 12.0, "took_s": 190.0}, "eta_s": 180.0}
+    monkeypatch.setattr(batch, "measured", lambda jobs, seconds=None: {"final": final, "draft": draft})
+    got = client.get("/api/simple/options?duration=20&energy=dense&tier=final").json()
+    assert got["final"]["eta_measured"] is True and got["final"]["eta_s"] == 7232
+    assert got["final"]["per_s"] == 602.7 and got["final"]["cuts"] == 1
+    assert got["plan"]["estimate"]["seconds"] == 7232 and got["plan"]["estimate"]["measured"] is True
+    quick = client.get("/api/simple/options?duration=20&energy=dense&tier=draft").json()
+    assert quick["plan"]["estimate"]["seconds"] == 180 and quick["plan"]["estimate"]["cuts"] == 9
     flow = client.get("/api/simple/options?duration=20&energy=flow").json()
     assert flow["shots"] < body["shots"]
 

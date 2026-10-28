@@ -24,8 +24,9 @@ def test_overview_tab_and_overflow_menu():
     assert 'class="views"' not in page and "Overview</a>" not in page  # one desk: no mode tabs (26 Oct)
     assert 'class="more-menu"' in page
     menu = page.split('class="more-menu"', 1)[1].split("</details>", 1)[0]
-    for item in ("Setup &amp; models", "Connect an AI", 'id="open-settings"', 'id="guard-expert"', "Judges page"):
+    for item in ("Setup &amp; models", 'id="open-settings"', 'id="guard-expert"', "Judges page"):
         assert item in menu
+    assert "Connect an AI" not in menu  # in the Work in progress drawer (28 Oct)
     assert "Copy diagnostics" in menu
     assert "About" in menu
     assert "Reset tutorial" in menu

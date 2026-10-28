@@ -487,6 +487,12 @@ button.easy-showcase { width: 100%; margin-top: 12px; }
   margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--x-line);
 }
 .cloud-toggle input[type="text"] { min-height: 28px; }
+/* Work in progress: the same drawer as Fine-tune, one block per item, each with a title and why it waits here */
+.wip-drawer > .wip-lede { margin-top: 14px; }
+.wip-item { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--x-line); }
+.wip-item > h4 { margin: 0 0 4px; font-size: 13px; font-weight: 600; color: var(--x-text); }
+.wip-item > .note:first-of-type { margin-top: 0; }
+.fine-tune .wip-item .cloud-opts, .fine-tune .wip-item .own-row { margin-top: 8px; padding-top: 0; border-top: 0; }
 /* Your footage, Library, Your own still: a title line, then the buttons inline; a text field takes the spare width */
 .own-row, .library-row, .fine-tune .own-row, .easy-side .own-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .own-row > span:first-child, .library-row .library-count { flex-basis: 100%; }

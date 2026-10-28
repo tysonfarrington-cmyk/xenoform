@@ -10,15 +10,15 @@ the line into three things the cut already knows how to make:
 - **objects**: the catalogue nouns the line names (``objects``: the pick opens on them and their family fills the
   chain, as before) and the things the catalogue lacks (``own``: grown as the user's own shapes, first in the chain):
   "laser";
-- **performer**: a person doing something ("girl dancing" → Polly on, dancing; "singing" → sing; a person with no
-  performance → Polly on, the auto mix).
+- **performer**: a person doing something ("girl dancing" → dancing; "singing" → sing; a person with no performance →
+  the auto mix). Polly is in the desk's Work in progress (28 Oct): the line cues her style, it no longer switches her on.
 
 ``read`` is a rule parser, no model: a few lexicons (places, skies and lights, people, performances, music words), a
 spelling map for the typos a line is typed with, comma groups split again at the prepositions that introduce a
 place. ``xenoform.llm`` refines it when ``XENO_LLM_URL`` is set (``refine``): the model gets the same three slots to
 fill and the rules keep what it cannot (an object it names is kept only when the catalogue knows it or it is short
 enough to grow as a shape). ``shape_state`` turns a reading into make-body choices (Scenes to Mix when the line gave a
-scene and the user left it Off; Polly on with the cued style when the user left her Off); ``grow_plan`` says what a
+scene and the user left it Off; the cued style when Polly is on); ``grow_plan`` says what a
 Make will grow first. The desk shows ``summary`` under the line (``POST /api/simple/idea``), the record keeps the
 whole reading, and ``morph_pass.pick_stills`` puts the typed scenes and shapes first through ``reading_for``.
 """
@@ -38,7 +38,7 @@ SCENES_PER_SUBJECT = 3  # renders of one typed scene subject (one seed each; the
 SCENES_MAX = 4          # scenes one Make grows for the line
 SHAPES_MAX = 4          # shapes (own and catalogue) one Make grows for the line
 SUBJECT_LIMIT = 80      # a scene subject is a short sentence (stills.SCENE_NOUN_LIMIT)
-PERFORMER_DEFAULT = 2   # the slots Polly gets when the line brings her in and the user left her Off
+PERFORMER_DEFAULT = 2   # Polly's slots when she is switched on (the line no longer switches her on; kept for callers)
 
 STOP = frozenset(("a an the and or of to in on by with for from at into over under as is are its it this that these those "
                   "my our your his her their some any one two three very really just while then there here where when "
@@ -525,8 +525,8 @@ def summary(reading: dict) -> str:
     if things or own:
         bits.append("Objects: " + ", ".join(things + own) + ".")
     perf = reading.get("performer")
-    if perf:
-        bits.append("Polly: " + PERFORMER_WORDS.get(str(perf.get("style") or "auto"), "performing") + ".")
+    if perf:  # read, but she renders only when switched on in Work in progress
+        bits.append("Polly: " + PERFORMER_WORDS.get(str(perf.get("style") or "auto"), "performing") + " (in Work in progress).")
     feel = reading.get("feel")
     if feel:
         knobs = [f"{k.capitalize()} {round(float(v) * 100)}" for k, v in (feel.get("macros") or {}).items()]
@@ -618,9 +618,9 @@ def applies(state: dict | None) -> bool:
 
 def shape_state(state: dict, reading: dict | None = None) -> dict:
     """A copy of ``state`` with the line's choices in it: Scenes to Mix when the line gave a scene and the user left
-    it Off (Only stays Only); Polly on with ``PERFORMER_DEFAULT`` slots and the cued style when the user left her Off
-    (a count the user chose is kept, and a style the user chose over Auto); ``idea_reading`` for the record and the
-    pick. A state that is not a Simple cut or has no line comes back as it was."""
+    it Off (Only stays Only; an Off picked by hand, ``scenes_chosen``, stays Off); the cued style for Polly when she is
+    on and her style is Auto (the line never switches her on: she is in Work in progress); ``idea_reading`` for the
+    record and the pick. A state that is not a Simple cut or has no line comes back as it was."""
     state = dict(state or {})
     if not applies(state) or not str(state.get("idea") or "").strip():
         return state
@@ -629,7 +629,7 @@ def shape_state(state: dict, reading: dict | None = None) -> dict:
     from xenoform import dense as _dense
     from xenoform import morph_pass as _mp
 
-    if reading.get("scenes") and _mp.scenes_choice(state) == "off":
+    if reading.get("scenes") and _mp.scenes_choice(state) == "off" and not state.get("scenes_chosen"):
         state["scene_stills"] = "mix"
         state.pop("scenes", None) if isinstance(state.get("scenes"), str) else None
     feel = reading.get("feel")
@@ -639,9 +639,9 @@ def shape_state(state: dict, reading: dict | None = None) -> dict:
         if feel.get("look") and str(state.get("dance_fx") or "auto") == "auto":
             state["dance_fx"] = feel["look"]
     perf = reading.get("performer")
-    if perf:
-        if _dense.performer_choice(state) == 0:
-            state["performer"] = PERFORMER_DEFAULT
+    # Polly is in the desk's Work in progress (docs/MORPH_ENGINE_PLAN.md §3): the line no longer switches her on, but
+    # when she is on, the performance it cues ("girl dancing") still sets her style over Auto
+    if perf and _dense.performer_choice(state) > 0:
         style = str(perf.get("style") or "auto")
         if style != "auto" and _dense.performer_style(state) == "auto":
             state["performer_style"] = style

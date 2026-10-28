@@ -66,8 +66,9 @@ def test_the_cut_screen_is_refine_and_share():
     assert 'id="energy"' not in result  # the Energy slider re-cut the Director storyboard, never the video
     assert 'data-act="easy-advanced"' not in APP
     share = _fn("function shareRow(easy) {", "function renderRow(easy)")
-    for item in ("Share cut · 720p", "15 s hook", "Copy recipe code", "/api/jobs/${job}/notes", "/api/jobs/${job}/seed", "vjUrl()"):
+    for item in ("Share cut · 720p", "15 s hook", "Copy recipe code", "/api/jobs/${job}/notes", "/api/jobs/${job}/seed"):
         assert item in share, item
+    assert "vjUrl()" not in share  # VJ mode is in Work in progress (docs/MORPH_ENGINE_PLAN.md, 28 Oct)
     render_row = _fn("function renderRow(easy) {", "function renderEasy()")
     assert 'data-act="easy-render-full"' in render_row and 'data-act="easy-render-final"' in render_row
     handler = APP.split('act === "easy-render-full" || act === "easy-render-final") {', 1)[1].split("} else if", 1)[0]
@@ -88,9 +89,10 @@ def test_the_make_body():
 
 def test_the_menu_and_settings():
     menu = INDEX.split('class="more-menu"', 1)[1].split("</details>", 1)[0]
-    for item in ('data-hash="setup"', 'data-hash="connect"', 'id="open-settings"', 'id="guard-expert"',
+    for item in ('data-hash="setup"', 'id="open-settings"', 'id="guard-expert"',
                  'id="copy-diagnostics"', 'href="/judges"', 'id="open-about"', 'id="reset-tutorial"'):
         assert item in menu, item
+    assert 'data-hash="connect"' not in menu  # Connect an AI is in Work in progress (28 Oct)
     assert "Dry run" not in INDEX.split('<dialog id="settings">', 1)[1].split("</dialog>", 1)[0]
 
 

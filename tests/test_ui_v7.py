@@ -69,10 +69,12 @@ def test_simple_first_screen_is_three_decisions_with_fine_tune_behind_a_drawer()
     easy = APP.split("function renderEasy()")[1].split("// ---------------------------------------------------------------- Simple finishing")[0]
     assert "A song and a vibe make a quick prototype" in easy
     assert '<details class="fine-tune" id="fine-tune"' in APP and "<summary>Fine-tune" in APP
-    # the drawer holds the finishing options, the cloud toggles and the recipe box; the first screen shows Make
-    tune = APP.split("function fineTune(easy)")[1].split("const LOOK_PRESETS")[0]
-    for part in ("${simpleOptions(easy)}", "${cloudToggles(easy)}", "${remixBox(easy)}"):
+    # the drawer holds the finishing options, the beat overlay and the recipe box; the first screen shows Make; paid
+    # cloud moved to the Work in progress drawer beside it (28 Oct)
+    tune = APP.split("function fineTune(easy)")[1].split("// Work in progress")[0]
+    for part in ("${simpleOptions(easy)}", "${beatOverlayRow(easy)}", "${remixBox(easy)}"):
         assert part in tune
+    assert "cloudRows(easy)" not in tune and "${wipDrawer(easy)}" in easy
     assert easy.count("${simpleOptions(easy)}") == 0 and "${fineTune(easy)}" in easy
     assert 'readDrawer("xeno-finetune")' in APP and '"fine-tune": "xeno-finetune"' in APP
     # ui_v6.js keeps mounting the macro strip (knobs, stem reactions, MIDI) into .simple-opts, now inside the drawer
@@ -112,8 +114,11 @@ def test_comfy_pill_shows_in_simple_and_links_to_vj_and_midi():
     assert 'body[data-desk] .comfy-status {' in CSS
     assert 'VJ mode: live visuals' in APP and 'href="${esc(vjUrl())}" target="_blank"' in APP and 'data-act="easy-midi"' in APP  # the link carries the song and stems, in a new tab
     assert "function openMidiDrawer()" in APP
+    # VJ mode and the MIDI controller live in the Work in progress drawer (28 Oct), not the side column or Share row
+    wip = APP.split("function wipDrawer(easy)")[1].split("const LOOK_PRESETS")[0]
+    assert 'VJ mode: live visuals' in wip and 'data-act="easy-midi"' in wip
     share = APP.split("function shareRow(easy)")[1].split("function renderRow(easy)")[0]
-    assert "Play it live in VJ mode" in share and "vjUrl()" in share  # the cut's Share row (one desk, 26 Oct)
+    assert "Play it live in VJ mode" not in share and "vjUrl()" not in share
 
 
 def test_about_text_is_honest_about_osc_vj_and_midi():

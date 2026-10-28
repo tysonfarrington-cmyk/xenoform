@@ -1040,6 +1040,23 @@ def _stretch(shots: list[dict], duration: float) -> list[dict]:
 DRAFT_916 = (320, 576)  # Draft 9:16 morphs render natively in portrait (same pixel budget as 512x288)
 
 
+CHAIN_FILE = "chain.json"
+
+
+def write_chain(work: Path, stills: list[dict]) -> Path | None:
+    """``<work>/chain.json``: the stills this render morphs through, in order (``noun``, ``kind``), written once the
+    line's stills are grown and picked, so the desk's making screen shows the chain Make made rather than the Chain
+    row's pre-Make preview (which never has the rally car "car rally race" grows, 28 Oct). Never breaks a render."""
+    rows = [{"noun": str(s.get("noun") or Path(str(s.get("file") or s.get("path") or "")).stem.split("_", 1)[-1].replace("_", " ")),
+             "kind": "scene" if str(s.get("kind") or "") == "scene" else "object"} for s in stills or []]
+    try:
+        path = Path(work) / CHAIN_FILE
+        path.write_text(json.dumps(rows), encoding="utf-8")
+        return path
+    except OSError:
+        return None
+
+
 def _draft_clips(shots, stills, work, cfg, seed, vibe, client, cancel, state=None, report=None, size=None):
     from xenoform.cloud_morph import _local_clips
 
@@ -1148,6 +1165,7 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
                                 f"(Fine-tune > Library > Grow scenes, or xenoform stills grow {vibe} --kind scene)"})
     elif scene_files:
         report("restyle", 0.08, f"{len(scene_files)} scene{'s' if len(scene_files) != 1 else ''} in the chain ({scene_choice})")
+    write_chain(work, stills)  # the making screen's "The chain:" line, now with what the line grew (ui._run_job)
     report("restyle", 0.1, f"{len(render_shots)} {'Final (LTX-2.3)' if engine == 'ltx23' else 'Draft (LTX 0.9.5)'} morphs · "
                            f"{len(shots)} shots · {opt['energy']} · {opt['aspect']}")
     if native_draft:

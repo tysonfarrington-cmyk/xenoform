@@ -1522,6 +1522,19 @@ def create_app(cfg: dict | None = None):
         files = final_tier.present()
         video_s = min(duration, float(length)) if length and float(length) > 0 else duration
         plan = _dense.plan_summary(video_s, [b for b in beats if b < video_s], energy, tier, aspect, vertical, performer=int(performer or 0))
+        # What a cut this long took on this machine (took.json beside every cut, batch.measured) beats the COST and
+        # final_tier.ETA constants: those said about 16 min for the 12 s demo's Final, which took 2:00:32 (27 Oct).
+        from xenoform import batch
+
+        rates = batch.measured(work_dir() / "jobs", video_s)
+        fin = rates.get("final") or {}
+        mine = rates.get("final" if tier == "final" else "draft") or {}
+        est = plan.get("estimate") or {}
+        if mine.get("eta_s") and est.get("seconds"):
+            ratio = float(mine["eta_s"]) / max(1.0, float(est["seconds"]))
+            est.update({"seconds": int(round(mine["eta_s"])), "minutes": round(float(mine["eta_s"]) / 60, 1),
+                        "gpu_seconds": int(round(float(est.get("gpu_seconds") or 0) * ratio)), "measured": True,
+                        "cuts": int(mine.get("cuts") or 0), "basis": "measured on this machine"})
         try:
             from xenoform import performer as _perf
 
@@ -1545,8 +1558,8 @@ def create_app(cfg: dict | None = None):
             "tiers": ["draft", "final"],
             "shots": len(shots),
             "final": {"ready": files["ready"], "upscale": files["upscale"], "files": files["files"],
-                      "eta_s": final_tier.eta_seconds(shots, upscale=files["upscale"]),
-                      "eta_measured": bool(final_tier.ETA["measured"]),
+                      "eta_s": int(round(fin["eta_s"])) if fin.get("eta_s") else final_tier.eta_seconds(shots, upscale=files["upscale"]),
+                      "eta_measured": bool(fin.get("eta_s")), "per_s": fin.get("per_s"), "cuts": int(fin.get("cuts") or 0),
                       "render": f"{final_tier.RENDER_W}x{final_tier.RENDER_H}",
                       "output": f"{final_tier.OUT_W}x{final_tier.OUT_H}",
                       "render_916": "x".join(map(str, final_tier.RENDER_916)),
@@ -2077,27 +2090,7 @@ def create_app(cfg: dict | None = None):
                 hero = _HEROES.get(hero_id)
             if hero is not None and Path(hero).exists():
                 body["hero_path"] = str(hero)
-        # Your own clips and images (Simple): a folder path typed in, or the files dropped on the desk (POST /api/own).
-        # The images lead the morph chain (morph_targets), the clips are cut in on the beat (own_clips, dense.run_simple).
-        own_folder = str(body.get("own_folder") or "").strip()
-        own_id = str(body.get("own_id") or "")
-        if own_id:
-            with _LOCK:
-                dropped = _OWN.get(own_id)
-            if dropped is not None and Path(dropped).is_dir():
-                own_folder = str(dropped)
-        if own_folder:
-            try:
-                from xenoform import own_media
-
-                found = own_media.scan(own_folder)
-                extra = [str(p) for p in (body.get("morph_targets") or []) if str(p) not in found["images"]]
-                body["morph_targets"] = list(found["images"]) + extra
-                body["own_clips"] = found["clips"]
-                body["own_folder"] = found["folder"]
-            except Exception as exc:
-                log.warning("own folder %s skipped: %s", own_folder, exc)
-                body["own_folder"] = ""
+        _apply_own(body)
         stills = work_dir() / "continuity"
         for scene in body.get("scenes") or []:
             if not isinstance(scene, dict):
@@ -2661,11 +2654,15 @@ def _run_job(job_id: str, audio_path: Path, body: dict, cfg: dict, out: Path, ca
             mtime = out.stat().st_mtime_ns  # outside the lock: a stat while ffmpeg may be writing
         except OSError:
             mtime = None
+        # the chain the render picked, once dense.write_chain has written it: the making screen shows it
+        chain = None if (_JOBS.get(job_id) or {}).get("chain") else _read_chain(work)
         with _LOCK:
             job = _JOBS[job_id]
             job["stage"] = stage
             job["progress"] = round(float(frac), 4)
             job["detail"] = detail
+            if chain:
+                job["chain"] = chain
             job_timing.tick(job, stage, frac, detail, job_timing.elapsed(job))
             # The draft stays up while the morphs render and the cut composes: the player is only re-pointed when the
             # file itself changed (every "Cutting shot k of N" used to bump the version and restart the preview).
@@ -2762,6 +2759,44 @@ def _run_job(job_id: str, audio_path: Path, body: dict, cfg: dict, out: Path, ca
             job["error"] = sentence
             job["detail"] = sentence
             job["diagnostics"] = diagnostics(exc, extra={"job": job_id})
+
+
+def _apply_own(body: dict) -> dict:
+    """Your own clips and images (Simple), into the make body in place: a folder path typed in, or the files dropped on
+    the desk (POST /api/own). The images lead the morph chain (``morph_targets``); the clips are cut in on the beat
+    (``own_clips``, dense.run_simple) unless the body says ``cut_in_clips: false`` (the desk's Work in progress > Your
+    clips, off by default; a caller that does not send it keeps the clips, as before)."""
+    own_folder = str(body.get("own_folder") or "").strip()
+    own_id = str(body.get("own_id") or "")
+    if own_id:
+        with _LOCK:
+            dropped = _OWN.get(own_id)
+        if dropped is not None and Path(dropped).is_dir():
+            own_folder = str(dropped)
+    if own_folder:
+        try:
+            from xenoform import own_media
+
+            found = own_media.scan(own_folder)
+            extra = [str(p) for p in (body.get("morph_targets") or []) if str(p) not in found["images"]]
+            body["morph_targets"] = list(found["images"]) + extra
+            body["own_clips"] = found["clips"] if body.get("cut_in_clips", True) is not False else []
+            body["own_folder"] = found["folder"]
+        except Exception as exc:
+            log.warning("own folder %s skipped: %s", own_folder, exc)
+            body["own_folder"] = ""
+    return body
+
+
+def _read_chain(folder: Path) -> list[dict] | None:
+    """The render's chain (``dense.write_chain``: ``simple/chain.json``, a ``noun`` and ``kind`` per still), or None
+    until the render has picked its stills."""
+    path = Path(folder) / "simple" / "chain.json"
+    try:
+        rows = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else None
+    except (OSError, ValueError):
+        return None
+    return [r for r in rows if isinstance(r, dict)] if isinstance(rows, list) and rows else None
 
 
 def _read_meta(folder: Path) -> dict:
