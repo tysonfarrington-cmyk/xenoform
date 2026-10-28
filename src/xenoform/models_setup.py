@@ -39,7 +39,7 @@ CATALOG: tuple[dict[str, Any], ...] = (
         "name": "LTX 0.9.5 fast",
         "required": True,
         "badge": "Morphs",
-        "detail": "Draft renders every morph with LTX 0.9.5, and Fast Final upscales that Draft. With the T5-XXL fp8 text encoder it is the required download. A dry run does not need the file.",
+        "detail": "Draft renders every morph with LTX 0.9.5, and Fast Final upscales that Draft. With the T5-XXL fp8 text encoder it is the required download. A dry run does not need the file. Cloud Final renders its morphs on Comfy Cloud (COMFY_ORG_API_KEY in the desk's environment) and falls back to this Draft model for a morph that fails there.",
         "files": (
             {
                 "path": "checkpoints/ltx-video-2b-v0.9.5.safetensors",
@@ -60,7 +60,7 @@ CATALOG: tuple[dict[str, Any], ...] = (
         "name": "LTX-2.3 distilled",
         "required": False,
         "badge": "Core",
-        "detail": "Final renders its morphs with LTX-2.3: the fp8 file on a 12 GB card, the full weights (about 43 GB) on 24 GB. Final also needs the Gemma 3 12B text encoder and the x2 spatial upscaler. Draft and Fast Final do not load it.",
+        "detail": "Final renders its morphs with LTX-2.5 when its files are installed, otherwise with LTX-2.3: the fp8 file on a 12 GB card, the full weights (about 43 GB) on 24 GB. Final also needs the Gemma 3 12B text encoder and the x2 spatial upscaler. Draft and Fast Final do not load it.",
         "files": (
             {
                 "path": "checkpoints/ltx-2.3-22b-distilled.safetensors",
@@ -142,7 +142,7 @@ CATALOG: tuple[dict[str, Any], ...] = (
         "name": "Wan 2.2 TI2V 5B",
         "required": False,
         "badge": "Optional",
-        "detail": "Optional alternative for first-frame action shots. About 18 GB with the VAE and text encoder. Turbo never loads it.",
+        "detail": "Optional alternative for first-frame action shots. About 18 GB with the VAE and text encoder. Only a recipe that asks for Wan loads it.",
         "files": (
             {
                 "path": "diffusion_models/wan2.2_ti2v_5B_fp16.safetensors",
@@ -169,7 +169,7 @@ CATALOG: tuple[dict[str, Any], ...] = (
         "name": "Wan 2.2 I2V 14B",
         "required": False,
         "badge": "Optional",
-        "detail": "Optional heavier image-to-video alternative. High-noise and low-noise 14B fp8. Turbo never loads it.",
+        "detail": "Optional heavier image-to-video alternative. High-noise and low-noise 14B fp8. Only a recipe that asks for Wan loads it.",
         "files": (
             {
                 "path": "diffusion_models/wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors",
@@ -210,6 +210,7 @@ def _comfy_model_dirs() -> list[Path]:
         home / "ComfyUI" / "models",
         home / "ComfyUI_windows_portable" / "ComfyUI" / "models",
         home / "Desktop" / "ComfyUI_windows_portable" / "ComfyUI" / "models",
+        home / "Documents" / "ComfyUI" / "models",  # ComfyUI Desktop's default
     ]
 
 
@@ -476,16 +477,16 @@ def llm_status() -> dict:
         model_name = lambda: "qwen2.5:7b-instruct"  # noqa: E731
     name = model_name()
     if up:
-        detail = f"Ollama is running. Director's notes can use {name}. The rule reader still works if you skip it."
+        detail = f"Ollama is running: the idea line can be read by {name} when XENO_LLM_URL is set; the built-in rules work without it."
     else:
-        detail = (
-            "Ollama is not running. Director's notes reads the note with its built-in rules. "
-            "No cloud key is required."
-        )
+        detail = "Ollama is not running: the idea line is read by the built-in rules. No cloud key is required."
     return {"id": "llm", "name": "Local LLM", "required": False, "present": up, "model": name, "detail": detail, "bytes": 0, "size_label": "optional"}
 
 
 def inspect_setup(root: Path | None = None, comfy_url: str = "") -> dict:
+    # no XENO_MODELS and no folder given: the desk guessed, and a guess that misses ComfyUI's folder
+    # (ComfyUI Desktop's lives in Documents) sends 11.5 GB of downloads where ComfyUI never looks
+    guessed = root is None and not os.environ.get("XENO_MODELS", "").strip()
     root = root or models_root()
     tier = detect_tier()
     models = []
@@ -516,9 +517,11 @@ def inspect_setup(root: Path | None = None, comfy_url: str = "") -> dict:
 
     missing = [item["name"] for item in models if item["required"] and not item["present"]]
     if comfy_listing("checkpoints", comfy_url) is not None:
-        checked = f"Checked against the files ComfyUI at {comfy_base(comfy_url)} can load."
+        checked = f"Checked against the files ComfyUI at {comfy_base(comfy_url)} can load. Downloads go to {root}."
     else:
         checked = f"ComfyUI is not answering, so the desk checked the files in {root}."
+    if guessed:
+        checked += " If ComfyUI's models folder is elsewhere, set XENO_MODELS to it and restart the desk."
     return {
         "tier": tier,
         "models_dir": str(root),
@@ -573,8 +576,8 @@ def _pull_llm() -> None:
 
         if not reachable():
             raise PlainError(
-                "Ollama is not running on this machine. Director's notes still works. "
-                "Its rule reader handles the note when no model is loaded."
+                "Ollama is not running on this machine. The idea line still works: "
+                "the built-in rules read it when no model is loaded."
             )
         _set("llm", status="running", progress=0.5, detail=f"Pulling {model_name()}", error=None)
         _ollama_pull(model_name())
