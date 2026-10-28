@@ -39,6 +39,16 @@ MODELS = {"ltx23": "LTX-2.3", "ltx25": "LTX-2.5"}
 LOOSE = {"img_compression": 30, "end_strength": 0.6}
 LEAD = ("The first object slowly and continuously transforms into the second over the whole clip: by the middle of the "
         "clip it is half one and half the other, every part of it changing, one continuous transformation, never a cut. ")
+
+
+def lead(a: str | None, b: str | None) -> str:
+    """The lead sentence with the two objects named. Naming them is what drives the change: with "the first object" and
+    "the second" (29 Oct, the same pair and guides) the shell only tumbled and switched to the owl at the end."""
+    a, b = (str(a or "").strip(), str(b or "").strip())
+    if not a or not b or a == b:
+        return LEAD
+    return (f"The {a} slowly and continuously transforms into the {b} over the whole clip: by the middle of the clip it is "
+            f"half {a} and half {b}, every part of it changing, one continuous transformation, never a cut. ")
 INPUT_NODES = {"ltx23": ("100", "101"), "ltx25": ("6", "7")}  # where each graph takes its two stills
 RENDER_916 = (576, 1024)  # portrait 9:16; multiples of 64, so LTX-2.3's first stage (half size) still fits
 RENDER_169 = (1024, 576)
@@ -184,7 +194,7 @@ def cloud_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
         length = final_tier.gen_length(float(shots[i].get("render_s") or shots[i]["seconds"]))
         knobs = {**tune, **LOOSE} if name == "ltx25" else tune
         if name == "ltx25":
-            text = LEAD + text
+            text = lead(stills[i].get("noun"), stills[i + 1].get("noun")) + text
         g = graph_for(name, guard_prompt(text, state), negative=negative, length=length, seed=int(seed) + i, width=w,
                       height=h, prefix=f"xenoform/cloud{i:02d}", **knobs)
         return {"graph": g, "out_dir": work / "cloud" / f"{i:02d}",

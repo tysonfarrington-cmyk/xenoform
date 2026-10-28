@@ -108,7 +108,8 @@ def test_every_shot_goes_to_cloud_three_at_a_time_and_a_failed_one_falls_back_to
     assert clips25[0].name == "cloud00.mp4"
     g25 = cloud25.graphs[0]  # the loose guides and the lead sentence, every time LTX-2.5 is sent
     assert g25["22"]["inputs"]["strength"] == 0.6 and g25["8"]["inputs"]["img_compression"] == 30
-    assert g25["3"]["inputs"]["text"].startswith(cloud_final.LEAD)
+    assert g25["3"]["inputs"]["text"].startswith(cloud_final.LEAD)  # these stills carry no noun: the generic lead
+    assert cloud_final.lead("shell", "owl").startswith("The shell slowly and continuously transforms into the owl") and cloud_final.lead("a", "a") == cloud_final.LEAD
     g23 = fake.graphs[0]  # the LTX-2.3 graph keeps its own tune (the vibe's autotune, else the graph's defaults)
     assert g23["102"]["inputs"]["img_compression"] == 18 and not g23["4"]["inputs"]["text"].startswith(cloud_final.LEAD)
     assert len(clips) == 5 and clips[2].name == "draft2.mp4" and clips[0].name == "cloud00.mp4" and drafted == [2]

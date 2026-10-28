@@ -198,6 +198,6 @@ def test_the_final_is_ltx25_when_its_files_are_there_and_sends_the_loose_graph(t
     g = sent[0]
     assert g["1"]["inputs"]["unet_name"].startswith("ltx-2.5") and "40" not in g and "19" in g
     assert g["22"]["inputs"]["strength"] == cloud_final.LOOSE["end_strength"] and g["8"]["inputs"]["img_compression"] == 30
-    assert g["3"]["inputs"]["text"].startswith(cloud_final.LEAD) and g["9"]["inputs"]["width"] == 1024 and g["9"]["inputs"]["height"] == 576
+    assert g["3"]["inputs"]["text"].startswith(cloud_final.lead("n0", "n1")) and "The n0 slowly" in g["3"]["inputs"]["text"] and g["9"]["inputs"]["width"] == 1024 and g["9"]["inputs"]["height"] == 576
     assert g["19"]["inputs"]["filename_prefix"] == "xenoform/final00" and g["13"]["inputs"]["noise_seed"] == 7
     assert [c.name for c in clips] == ["final00.mp4"] and notes == [] and scaled[0][1] == ft.sizes(False)["out"]

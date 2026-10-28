@@ -277,7 +277,8 @@ def final_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
         if name == "ltx25":
             # the loose LTX-2.5 morph (cloud_final: the end guide at 0.6, compression 30, the lead sentence) at 576x1024;
             # the clips are scaled to the output size after the loop, no model upscale
-            g = cloud_final.graph_for("ltx25", cloud_final.LEAD + prompt_for_pair(i), negative=negative, length=length,
+            g = cloud_final.graph_for("ltx25", cloud_final.lead(stills[i].get("noun"), stills[i + 1].get("noun")) + prompt_for_pair(i),
+                                      negative=negative, length=length,
                                       seed=int(seed) + i, width=render[0], height=render[1], prefix=f"xenoform/final{i:02d}",
                                       **{**tune, **cloud_final.LOOSE})
             a_node, b_node, out_node = "6", "7", "19"
