@@ -377,7 +377,7 @@ def test_animatic_follows_aspect_only_when_not_live():
 def test_draft_and_final_use_the_simple_turbo_path_not_legacy_restyle(app):
     """Regression for job 2e4717fe: quality 'draft' picked the Advanced restyle graph (LTX-2.3 ckpt + T5) and ComfyUI failed 4096 vs 2048."""
     app.create("x")
-    for tier, live, qt in (("preview", False, "draft"), ("draft", True, "draft"), ("final", True, "final")):
+    for tier, live, qt in (("preview", False, "draft"), ("draft", True, "draft"), ("fast", True, "fast"), ("final", True, "final")):
         app.update(tier=tier)
         b = app.body()
         assert (b["quality"], b["live"], b["quality_tier"], b["aspect"], b["vertical_mode"]) == ("turbo", live, qt, "9:16", "native")

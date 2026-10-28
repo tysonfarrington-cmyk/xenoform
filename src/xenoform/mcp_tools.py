@@ -29,8 +29,9 @@ VIBES = tuple(_vibes.ids())  # the 7 originals, then configs/vibes.json
 ASPECTS = ("9:16", "16:9", "1:1")
 VERTICAL = ("native", "crop", "auto")
 ENERGIES = ("flow", "dense")
-# preview: the CPU animatic (no GPU model). draft/final: open-weights LTX on ComfyUI.
-TIERS = ("preview", "draft", "final")
+# preview: the CPU animatic (no GPU model). draft/fast/final: open-weights LTX on ComfyUI. The desk's
+# paid Cloud Final is not a tier here: it stays out of MCP.
+TIERS = ("preview", "draft", "fast", "final")
 AUDIO_SUFFIXES = {".wav", ".mp3", ".flac", ".ogg", ".aiff", ".aif", ".m4a"}
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp"}
 MAX_UPLOAD = 200 * 1024 * 1024
@@ -294,7 +295,7 @@ class App:
         if vibe:
             vibe = _pick("vibe", vibe, VIBES)
             return {"vibe": vibe, "recipe": (data.get("vibes") or {}).get(vibe) or {},
-                    "note": "Applied automatically on draft and final renders."}
+                    "note": "Applied automatically on draft, fast and final renders."}
         return data
 
     def transitions(self) -> dict:
@@ -422,7 +423,7 @@ class App:
             self._save()
             count = len(self.project["images"])
         return {"role": role, "morph_targets": count,
-                "detail": "The object morphs through your images in order, then the vibe's own objects (draft and final)."}
+                "detail": "The object morphs through your images in order, then the vibe's own objects (draft, fast and final)."}
 
     # ---- renders -----------------------------------------------------
     def body(self) -> dict:
@@ -432,7 +433,7 @@ class App:
             "mode": "simple", "audio_id": p["audio_id"], "song": p["song"], "vibe": p["vibe"],
             "idea": p["prompt"], "brief": p["prompt"], "aspect": p["aspect"],
             "vertical_mode": p["vertical_mode"], "energy_preset": p["energy"],
-            "quality_tier": "final" if p["tier"] == "final" else "draft",
+            "quality_tier": p["tier"] if p["tier"] in ("draft", "fast", "final") else "draft",
             # Always "turbo", exactly like the desk's Simple Make: turbo runs the animatic and then,
             # with live on, the morph / final tier picked by quality_tier. quality "draft" or "final"
             # would select the legacy Advanced restyle graph instead (regression: job 2e4717fe).
@@ -845,7 +846,7 @@ class App:
             out = dict(self.project)
         return {"look": {k: out.get(k) for k in ("look_profile", "dance_fx", "stem_orbit", "macros")},
                 "payload_keys": {k: v for k, v in self.body().items() if k in ("look_profile", "dance_fx", "stem_orbit", "macros")},
-                "note": "Used by start_render on draft/final (the Simple finishing pass). stem_orbit needs OpenCV on the desk; "
+                "note": "Used by start_render on draft, fast and final (the Simple finishing pass). stem_orbit needs OpenCV on the desk; "
                         "without it the render notes say it was skipped."}
 
     def looks(self) -> dict:
@@ -914,9 +915,9 @@ class App:
 
 INSTRUCTIONS = """You are connected to Xenoform, a local music-video app: a song drives a liquid, audio-reactive object that morphs on the beat, restyled by open-weights LTX on the user's own GPU (ComfyUI).
 Workflow: get_status -> create_project (prompt, vibe) -> load_audio (optional; the demo track is used otherwise) -> update_settings -> start_render -> wait_for_render -> get_output.
-Defaults: native 9:16 vertical, black background vibe, tier 'preview' (fast CPU animatic, no GPU model). 'draft' and 'final' use the GPU and take minutes; final is about 90 s per shot on 12 GB.
+Defaults: native 9:16 vertical, black background vibe, tier 'preview' (fast CPU animatic, no GPU model). 'draft', 'fast' and 'final' use the GPU: draft is about 20 s a morph, fast (the draft morphs upscaled to full size) about 30 s, and final (LTX-2.5 when it is installed, LTX-2.3 otherwise) about 4 to 5 minutes a morph on 12 GB, so a 20 s cut takes about 1.5 hours.
 Spend rules: everything is open weights and free by default. Cloud quality is paid: never set cloud=true unless the user explicitly agreed to the cost, and then pass confirm_spend=true.
-Best practice: preview first, show the user the preview_url, then draft/final. One GPU render at a time. Use the vibe's recommended transitions (list_vibes). Read xenoform://guide for vibes, transitions, tiers and recipes.
+Best practice: preview first, show the user the preview_url, then draft, fast or final. One GPU render at a time. Use the vibe's recommended transitions (list_vibes). Read xenoform://guide for vibes, transitions, tiers and recipes.
 On first contact greet the user with "Connected to Xenoform, here's what you can do", offer 3-4 starters (e.g. "Make a 15 s neon-night morph to my track", "Show me the vibes and transitions", "Render a preview of the demo track in 9:16", "List my videos"), then ask what they want to make."""
 
 EXAMPLES = """# Xenoform example requests
@@ -966,7 +967,7 @@ def register(server, app: App) -> None:
     @server.tool()
     def create_project(prompt: str = "", vibe: str = "black", aspect: str = "9:16", tier: str = "preview",
                        energy: str = "flow", audio_path: str = "", image_paths: list[str] | None = None) -> dict:
-        """Start a new morph project from a one-line prompt and/or local images. vibe: liquid-gold, bloom, neon-night, ocean, cosmic, paper-summer, black. aspect: 9:16 (native, default), 16:9, 1:1. tier: preview (fast, no GPU), draft, final. energy: flow or dense. audio_path: optional local song; demo track otherwise."""
+        """Start a new morph project from a one-line prompt and/or local images. vibe: any id from list_vibes (black by default). aspect: 9:16 (native, default), 16:9, 1:1. tier: preview (CPU animatic, no GPU), draft, fast (draft morphs upscaled), final. energy: flow or dense. audio_path: optional local song; demo track otherwise."""
         return app.create(prompt, vibe, aspect, tier, energy, audio_path, image_paths)
 
     @server.tool()
@@ -986,7 +987,7 @@ def register(server, app: App) -> None:
 
     @server.tool()
     def attach_image(path: str, role: str = "morph_target") -> dict:
-        """Use a local image (png, jpg, webp). role morph_target (default): the object morphs through your images, in order, on draft/final. role first_frame: the picture opens every shot."""
+        """Use a local image (png, jpg, webp). role morph_target (default): the object morphs through your images, in order, on draft, fast and final. role first_frame: the picture opens every shot."""
         return app.attach_image(path, role)
 
     @server.tool()
