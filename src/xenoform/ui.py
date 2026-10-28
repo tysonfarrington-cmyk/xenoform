@@ -777,7 +777,8 @@ def create_app(cfg: dict | None = None):
     def rerender_job(job_id: str, body: dict | None = None) -> dict:
         """Re-render the morph one shot plays (``dense.rerender_morph``, docs/TIMELINE.md 1.5): another seed, length (2 to
         5 s of source) or prompt variant, one Draft morph on the GPU, then the re-compose with the timeline as it stands.
-        Body: ``shot``; optional ``seed``, ``render_s``, ``variant``."""
+        Body: ``shot``; optional ``seed``, ``render_s``, ``variant``, ``style`` (``morph_style``: melt, shatter, bloom, spin,
+        fold; the shot's own when not given)."""
         from xenoform.dense import RERENDER_VARIANTS, RENDER_S_RANGE, rerender_morph
 
         body = body or {}
@@ -807,6 +808,11 @@ def create_app(cfg: dict | None = None):
         variant = str(body.get("variant") or "auto").strip().lower()
         if variant not in RERENDER_VARIANTS:
             raise HTTPException(400, f"No prompt variant called {variant}; one of {', '.join(RERENDER_VARIANTS)}.")
+        from xenoform.morph_style import STYLES
+
+        style = str(body.get("style") or "").strip().lower() or None  # how the object changes; the shot's own when not given
+        if style is not None and style not in STYLES:
+            raise HTTPException(400, f"No morph style called {style}; one of {', '.join(STYLES)}.")
         try:  # the cheap refusals answer at once
             rec = json.loads((folder / "simple" / "simple.json").read_text(encoding="utf-8"))
         except ValueError:
@@ -824,8 +830,9 @@ def create_app(cfg: dict | None = None):
         with _LOCK:
             job.update({"status": "running", "stage": "restyle", "progress": 0.05, "detail": f"Re-rendering shot {shot + 1}'s morph", "error": None})
         _run_edit(job, job_id, "rerender", "Re-render ready", "The re-render did not run.",
-                  lambda report: rerender_morph(folder, shot, seed=seed, render_s=render_s, variant=variant, cfg=cfg, report=report))
-        return {"id": job_id, "status": "running", "shot": shot, "seed": seed, "render_s": render_s, "variant": variant}
+                  lambda report: rerender_morph(folder, shot, seed=seed, render_s=render_s, variant=variant, style=style, cfg=cfg,
+                                                report=report))
+        return {"id": job_id, "status": "running", "shot": shot, "seed": seed, "render_s": render_s, "variant": variant, "style": style}
 
     @app.post("/api/jobs/{job_id}/insert")
     def insert_job(job_id: str, body: dict | None = None) -> dict:

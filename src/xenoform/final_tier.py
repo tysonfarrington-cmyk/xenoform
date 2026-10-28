@@ -192,8 +192,10 @@ def is_oom(exc: BaseException) -> bool:
 def final_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, seed: int, vibe: str, *, client=None,
                 cancel: Callable[[], bool] | None = None, report: Callable[[str, float, str], None] | None = None,
                 draft: Callable[[list[int]], dict[int, Path]] | None = None,
-                vertical: bool = False, state: dict | None = None) -> tuple[list[Path], list[dict]]:
-    """Render every shot on LTX-2.3 (+ ClearReality). Returns clips and one note per fallback.
+                vertical: bool = False, state: dict | None = None,
+                styles: list[str] | None = None) -> tuple[list[Path], list[dict]]:
+    """Render every shot on LTX-2.3 (+ ClearReality). Returns clips and one note per fallback. ``styles`` is how each
+    shot's object changes (``morph_style``; Melt when not given).
 
     ``vertical`` renders native 9:16 (448x768 -> 1080x1920) from portrait stills. A shot
     that falls all the way back to Draft comes back 16:9 and the compositor crops it.
@@ -213,7 +215,8 @@ def final_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
     from xenoform.guardrails import guard_prompt, negative_for
 
     def prompt_for_pair(i: int) -> str:  # a pair that touches a scene gets the scene prompt (morph_pass.prompt_for)
-        text = mp.prompt_for(vibe, "ltx25", mp.pair_kinds(stills[i], stills[i + 1]))
+        style = styles[i] if styles and i < len(styles) else "melt"
+        text = mp.prompt_for(vibe, "ltx25", mp.pair_kinds(stills[i], stills[i + 1]), style=style)
         if vertical:
             text = text.rstrip() + PROMPT_SUFFIX
         return guard_prompt(text, state)

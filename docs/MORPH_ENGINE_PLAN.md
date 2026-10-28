@@ -142,8 +142,20 @@ at speed and at half speed; a sheet a pair). "vs Melt" is the mean difference of
 | Pour | 5.4, 5.7 | 12.3, 6.2 | the closest to Melt |
 
 Recommendation: ship Shatter, Bloom, Spin and Fold beside Melt; Ink maybe; drop Smoke and Pour unless Final shows more.
-Next in E1: Tys's pick, then the 3 best at Final on one pair (the Finals measured here run about 5 min of GPU a second
-of video, so about 15 min each).
+
+**E1 landed** (Tys: "Ship Shatter, Bloom, Spin and Fold beside Melt: wire the Morph row and the per-shot style on the
+timeline"). `xenoform.morph_style`; the Morph row under the knobs (Auto or one style); Auto by the drop and Chaos
+(Melt in the verses, Shatter on the drop; under Chaos 0.6 the opening Blooms, from 0.6 the builds Fold and every other
+loud shot after the drop Spins; at 0.15 or less all Melt); the timeline's per-shot chips re-render one morph in a style;
+Draft, Final, swaps, generated runs, Render at Final and recipe codes all carry it. Not yet seen at Final: the styles
+were judged at Draft; a Final morph follows a prompt better, so expect them stronger there.
+
+Proof on desk 47324: job 9207df6b, the bundled demo in neon-noir at Draft with Morph on Auto and Chaos at 0.96, took 3:54;
+Auto gave Fold on the bar into the drop, Shatter on the drop (5.5 s), Spin on every other shot after it, Melt elsewhere.
+Then the timeline's Bloom chip on shot 1 re-rendered that morph alone in 36 s (candelabra into deer skull, the antlers
+growing out of it). The cut and a sheet of its nine morphs are in `Desktop\xeno_morph_styles_28oct\`. Seen on the way:
+neon-noir's grown "pearl" and "icicle" are both keys, so the morph between them has nothing to change (the duplicate
+check compares pictures, not what they show): a library follow-up.
 
 ## 5. After the contest: the music video maker
 

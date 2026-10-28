@@ -1057,11 +1057,11 @@ def write_chain(work: Path, stills: list[dict]) -> Path | None:
         return None
 
 
-def _draft_clips(shots, stills, work, cfg, seed, vibe, client, cancel, state=None, report=None, size=None):
+def _draft_clips(shots, stills, work, cfg, seed, vibe, client, cancel, state=None, report=None, size=None, styles=None):
     from xenoform.cloud_morph import _local_clips
 
     return _local_clips(shots, stills, work, cfg, seed, vibe, client=client, cancel=cancel, state=state, report=report,
-                        size=size)
+                        size=size, styles=styles)
 
 
 def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg: dict, state: dict,
@@ -1165,6 +1165,21 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
                                 f"(Fine-tune > Library > Grow scenes, or xenoform stills grow {vibe} --kind scene)"})
     elif scene_files:
         report("restyle", 0.08, f"{len(scene_files)} scene{'s' if len(scene_files) != 1 else ''} in the chain ({scene_choice})")
+    # how each morph changes (morph_style): the shot list a Final carries over from its prototype, the setting, or Auto
+    # (Melt in the verses, Shatter on the drop, Bloom / Fold / Spin by the Chaos knob); a long song's chain morph takes
+    # the style of the first shot that plays it
+    from xenoform import morph_style as _ms
+
+    shot_styles = _ms.for_cut({**state, "macros": macros(state)}, shots, plan.get("drop"))
+    if long_song:
+        firsts: dict[int, str] = {}
+        for k, ci in enumerate(chain["assign"]):
+            firsts.setdefault(int(ci), shot_styles[k] if k < len(shot_styles) else "melt")
+        render_styles = [firsts.get(i, "melt") for i in range(len(render_shots))]
+    else:
+        render_styles = list(shot_styles)
+    if any(s != "melt" for s in render_styles):
+        notes.append({"morph_styles": _ms.info(render_styles)})
     write_chain(work, stills)  # the making screen's "The chain:" line, now with what the line grew (ui._run_job)
     report("restyle", 0.1, f"{len(render_shots)} {'Final (LTX-2.3)' if engine == 'ltx23' else 'Draft (LTX 0.9.5)'} morphs · "
                            f"{len(shots)} shots · {opt['energy']} · {opt['aspect']}")
@@ -1191,19 +1206,25 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
         def draft(indices: list[int]) -> dict[int, Path]:
             got = {}
             for k, i in enumerate(indices):
-                got[i] = _draft_clips([render_shots[i]], [stills[i], stills[i + 1]], work, cfg, seed + i, vibe, client, cancel, state)[0]
+                got[i] = _draft_clips([render_shots[i]], [stills[i], stills[i + 1]], work, cfg, seed + i, vibe, client, cancel, state,
+                                      styles=[render_styles[i]])[0]
                 renamed = work / f"draft_fallback{i:02d}.mp4"
                 shutil.move(str(got[i]), renamed)
                 got[i] = renamed
             return got
 
-        clips, notes = final_clips(render_shots, stills, work, cfg, seed, vibe, client=client, cancel=cancel, report=report,
-                                   draft=draft, vertical=native, state=state)
+        # its fallback notes join the cut's (they used to replace them: a Final lost its grown-for-the-line note)
+        clips, final_notes = final_clips(render_shots, stills, work, cfg, seed, vibe, client=client, cancel=cancel, report=report,
+                                         draft=draft, vertical=native, state=state, styles=render_styles)
+        notes.extend(final_notes)
     else:
         clips = _draft_clips(render_shots, stills, work, cfg, seed, vibe, client, cancel, state, report=report,
-                             size=DRAFT_916 if native_draft else None)
+                             size=DRAFT_916 if native_draft else None, styles=render_styles)
     if long_song:
         clips = [clips[ci] for ci in chain["assign"]]  # one entry per shot, walking the loop
+        shot_styles = [render_styles[int(ci)] for ci in chain["assign"]]  # what each shot's morph was rendered as
+    else:
+        shot_styles = list(render_styles)
     for i, s in enumerate(shots):  # which morph each shot plays: a swap after the cut finds the two that touch a still
         s["morph"] = int(s.get("clip", i))
     performer_info: dict = {"shots": 0, "slots": [], "notes": []}
@@ -1336,10 +1357,13 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
             "plan_shots": plan_shots, "clips": [str(c) for c in clips], "audio_path": str(audio_path),
             "transitions": transitions, "boundary_fx": boundary_fx, "drop": plan.get("drop"), "size": list(size) if size else None,
             "fps": fps, "seed": seed,
+            # how each shot's morph changes: the setting (auto or a style) and the style a shot was rendered in
+            "morph_style": _ms.normal(state.get("morph_style") or "auto"), "morph_styles": shot_styles,
             "palette_image": str(stills[0]["path"]) if stills else None, "vertical_house": vertical_house,
             "recut_state": {k: state.get(k) for k in ("vibe", "aspect", "quality_tier", "energy_preset", "dance_fx", "stem_orbit", "pace",
                                                       "beat_fx", "beat_overlay", "end_card", "stems_path", "macros", "still_background",
-                                                      "performer", "performer_style", "foreshadow", "scene_stills", "chain_pins")},
+                                                      "performer", "performer_style", "foreshadow", "scene_stills", "chain_pins",
+                                                      "morph_style")},
             "roles": plan.get("roles"), "performer": performer_info, "own": own_info,
             "handoffs_s": [s["start"] for s in shots] + [shots[-1]["end"]], "fallbacks": notes,
             "beats": [round(float(b), 4) for b in (directed.get("beats") or [])],
@@ -1733,14 +1757,24 @@ def _prepare_rows(rows: list[dict], prep: dict, work: Path) -> list[dict]:
 
 
 def _render_pairs(render_shots: list[dict], rows: list[dict], dest_dir: Path, prep: dict, *, seed: int, vibe: str, cfg: dict | None,
-                  state: dict, client=None, report=None) -> list[Path]:
-    """``len(render_shots)`` morphs over ``rows`` (one more still than shots) through the Draft path, the cut's engine."""
+                  state: dict, client=None, report=None, styles: list[str] | None = None) -> list[Path]:
+    """``len(render_shots)`` morphs over ``rows`` (one more still than shots) through the Draft path, the cut's engine,
+    each in its ``styles`` entry (``morph_style``; Melt when not given)."""
     if prep.get("mock"):
         from xenoform.cloud_morph import _mock_clips
 
         return _mock_clips(render_shots, rows, dest_dir, *(prep.get("draft_size") or (768, 432)))
     return _draft_clips(render_shots, rows, dest_dir, cfg or {}, seed, vibe, client, None, state, report=report,
-                        size=prep.get("draft_size"))
+                        size=prep.get("draft_size"), styles=styles)
+
+
+def _styles_of(rec: dict) -> list[str]:
+    """The record's style a shot (``morph_styles``), Melt for a record from before the styles."""
+    from xenoform.morph_style import normal
+
+    shots = list(rec.get("plan_shots") or rec.get("shots") or [])
+    got = [normal(s, allow_auto=False) for s in (rec.get("morph_styles") or [])]
+    return (got + ["melt"] * len(shots))[:len(shots)] if shots else got
 
 
 def _load_cut(job_dir: Path, verb: str) -> tuple[Path, Path, dict]:
@@ -1772,9 +1806,11 @@ def _under_insert(shot: dict) -> str:
 
 
 def rerender_morph(job_dir: Path, shot: int, *, seed: int | None = None, render_s: int | None = None, variant: str = "auto",
-                   cfg: dict | None = None, report: Callable[[str, float, str], None] | None = None, client=None) -> dict:
-    """Re-render the morph one shot of a finished Simple cut plays, with another seed, length or prompt variant
-    (docs/TIMELINE.md 1.5), and re-compose.
+                   style: str | None = None, cfg: dict | None = None, report: Callable[[str, float, str], None] | None = None,
+                   client=None) -> dict:
+    """Re-render the morph one shot of a finished Simple cut plays, with another seed, length, prompt variant or style
+    (docs/TIMELINE.md 1.5; ``style`` is how the object changes, ``morph_style``, the shot's own when not given), and
+    re-compose.
 
     The pair is the two chain stills the shot's morph runs between, prepared as the cut prepared them; the seed is the
     one given, else the next in the shot's own sequence (the cut's seed for that morph, then 1009 further each time);
@@ -1807,6 +1843,12 @@ def rerender_morph(job_dir: Path, shot: int, *, seed: int | None = None, render_
     variant = str(variant or "auto").strip().lower()
     if variant not in RERENDER_VARIANTS:
         raise ValueError(f"No prompt variant called {variant!r}; one of {', '.join(RERENDER_VARIANTS)}.")
+    from xenoform import morph_style as _ms
+
+    styles = _styles_of(rec)
+    if style is not None and str(style).strip().lower() not in _ms.STYLES:
+        raise ValueError(f"No morph style called {style!r}; one of {', '.join(_ms.STYLES)}.")
+    style = str(style).strip().lower() if style is not None else styles[j]
     scene_files = {str(f) for f in rec.get("scene_files") or []}
     rows = _still_rows(files, scene_files)
     pair = [dict(rows[m]), dict(rows[m + 1])]
@@ -1838,12 +1880,14 @@ def rerender_morph(job_dir: Path, shot: int, *, seed: int | None = None, render_
     render_shot = {"index": m, "seconds": float(render_s), "render_s": render_s, "frames": int(render_s * FPS), "effects": []}
     if report:
         report("restyle", 0.1, f"Re-rendering shot {j + 1}: {pair[0].get('noun') or '?'} -> {pair[1].get('noun') or '?'} "
-                               f"(seed {seed}, {render_s} s{'' if variant == 'auto' else ', ' + variant})")
+                               f"({_ms.LABELS[style]}, seed {seed}, {render_s} s{'' if variant == 'auto' else ', ' + variant})")
     started = time.perf_counter()
-    got = _render_pairs([render_shot], ready, dest_dir, prep, seed=seed, vibe=vibe, cfg=cfg, state=state, client=client)[0]
+    got = _render_pairs([render_shot], ready, dest_dir, prep, seed=seed, vibe=vibe, cfg=cfg, state=state, client=client,
+                        styles=[style])[0]
     dest = dest_dir / f"morph{m:02d}.mp4"
     shutil.move(str(got), dest)
     clips[j] = str(dest)
+    styles[j] = style
     if render_s != old_render_s:  # the shot keeps its frames on the beat; the source length and the play speed move
         for lst in (rec.get("plan_shots") or [], rec.get("shots") or []):
             if j < len(lst) and isinstance(lst[j], dict):
@@ -1851,9 +1895,10 @@ def rerender_morph(job_dir: Path, shot: int, *, seed: int | None = None, render_
                 lst[j]["speed"] = round(render_s / max(seconds, 0.1), 3)
     from datetime import datetime
 
-    rec.update({"clips": clips, "rerenders": rerenders + [{"shot": j, "morph": m, "seed": seed, "render_s": render_s, "variant": variant,
-                                                           "clip": str(dest), "seconds": round(time.perf_counter() - started, 2),
-                                                           "at": datetime.now().astimezone().isoformat(timespec="seconds")}]})
+    rec.update({"clips": clips, "morph_styles": styles,
+                "rerenders": rerenders + [{"shot": j, "morph": m, "seed": seed, "render_s": render_s, "variant": variant, "style": style,
+                                           "clip": str(dest), "seconds": round(time.perf_counter() - started, 2),
+                                           "at": datetime.now().astimezone().isoformat(timespec="seconds")}]})
     (work / "simple.json").write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
     if report:
         report("assemble", 0.55, "Re-cutting with the new morph (no GPU)")
@@ -1948,14 +1993,23 @@ def insert_generated(job_dir: Path, first: int, *, seconds: float = 10.0, pins: 
         if report:
             report(stage, frac, detail)
 
+    # the run's morphs take the cut's setting: one style for all, or Auto over the span's own shots (no drop in a span
+    # unless the cut's drop falls in it)
+    from xenoform import morph_style as _ms
+
+    run_styles = _ms.for_cut({**state, "morph_styles": None, "macros": macros(state)}, span, rec.get("drop"))
     started = time.perf_counter()
-    got = _render_pairs(render_shots, ready, dest_dir, prep, seed=seed, vibe=vibe, cfg=cfg, state=state, client=client, report=pair_report)
+    got = _render_pairs(render_shots, ready, dest_dir, prep, seed=seed, vibe=vibe, cfg=cfg, state=state, client=client, report=pair_report,
+                        styles=run_styles)
+    styles = _styles_of(rec)
     new_clips = []
     for q, path in enumerate(got):
         dest = dest_dir / f"morph{q:02d}.mp4"
         shutil.move(str(path), dest)
         new_clips.append(str(dest))
         clips[first + q] = str(dest)
+        if first + q < len(styles):
+            styles[first + q] = run_styles[q]
     idx = len(inserts)
     for lst in (rec.get("plan_shots") or [], rec.get("shots") or []):
         for q in range(k):
@@ -1969,9 +2023,9 @@ def insert_generated(job_dir: Path, first: int, *, seconds: float = 10.0, pins: 
     entry = {"first": first, "last": last, "start": float(span[0].get("start") or 0.0), "end": float(span[-1].get("end") or 0.0),
              "seconds": round(sum(float(s.get("seconds") or 0.0) for s in span), 4), "stills": [str(r.get("file")) for r in rows],
              "nouns": nouns, "kinds": [_stills.kind_of(r) for r in rows], "clips": new_clips, "pins": {str(a): b for a, b in pins_map.items()},
-             "seed": seed, "render_s": [r["render_s"] for r in render_shots], "took_s": round(time.perf_counter() - started, 2),
-             "at": datetime.now().astimezone().isoformat(timespec="seconds")}
-    rec.update({"clips": clips, "inserts": inserts + [entry]})
+             "seed": seed, "render_s": [r["render_s"] for r in render_shots], "styles": run_styles,
+             "took_s": round(time.perf_counter() - started, 2), "at": datetime.now().astimezone().isoformat(timespec="seconds")}
+    rec.update({"clips": clips, "inserts": inserts + [entry], "morph_styles": styles})
     (work / "simple.json").write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
     try:
         _stills.mark_used(vibe, [str(r.get("file")) for r in rows if not r.get("user")])
@@ -2063,6 +2117,7 @@ def swap_still(job_dir: Path, slot: int, file: str, *, cfg: dict | None = None,
     if not shots or not clips or len(clips) != len(shots):
         raise FileNotFoundError("The cached morphs for this video are gone; render it again.")
     scene_files = {str(f) for f in rec.get("scene_files") or []}
+    shot_styles = _styles_of(rec)
     old = files[slot]
     rows = _still_rows(files, scene_files)
     rows[slot] = dict(new)
@@ -2117,7 +2172,8 @@ def swap_still(job_dir: Path, slot: int, file: str, *, cfg: dict | None = None,
 
             got = _mock_clips([render_shot], pair, swap_dir, *(draft_size or (768, 432)))[0]
         else:
-            got = _draft_clips([render_shot], pair, swap_dir, cfg or {}, seed + m, vibe, client, None, state, size=draft_size)[0]
+            got = _draft_clips([render_shot], pair, swap_dir, cfg or {}, seed + m, vibe, client, None, state, size=draft_size,
+                               styles=[shot_styles[j] if j < len(shot_styles) else "melt"])[0]  # the shot keeps its style
         dest = swap_dir / f"morph{m:02d}.mp4"
         shutil.move(str(got), dest)
         new_clips[j] = str(dest)

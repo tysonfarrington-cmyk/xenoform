@@ -415,8 +415,8 @@ def test_the_rerender_route_runs_the_edit_and_refuses_plainly(tmp_path, monkeypa
     calls = []
     done = threading.Event()
 
-    def fake_rerender(job_dir, shot, *, seed=None, render_s=None, variant="auto", cfg=None, report=None, client=None):
-        calls.append(("rerender", Path(job_dir).name, shot, seed, render_s, variant))
+    def fake_rerender(job_dir, shot, *, seed=None, render_s=None, variant="auto", style=None, cfg=None, report=None, client=None):
+        calls.append(("rerender", Path(job_dir).name, shot, seed, render_s, variant) + ((style,) if style else ()))
         if report:
             report("restyle", 0.3, "Re-rendering shot 2")
         done.set()
@@ -431,8 +431,10 @@ def test_the_rerender_route_runs_the_edit_and_refuses_plainly(tmp_path, monkeypa
         assert client.post("/api/jobs/tl-edit/rerender", json={"shot": 1, "render_s": 9}).status_code == 400
         assert client.post("/api/jobs/tl-edit/rerender", json={"shot": 1, "variant": "wild"}).status_code == 400
         assert client.post("/api/jobs/tl-edit/rerender", json={"shot": 1, "seed": "abc"}).status_code == 400
+        assert "morph style" in client.post("/api/jobs/tl-edit/rerender", json={"shot": 1, "style": "smoke"}).json()["detail"]
         r = client.post("/api/jobs/tl-edit/rerender", json={"shot": 1, "seed": 7, "render_s": 3, "variant": "scene-object"})
-        assert r.status_code == 200 and r.json() == {"id": "tl-edit", "status": "running", "shot": 1, "seed": 7, "render_s": 3, "variant": "scene-object"}
+        assert r.status_code == 200 and r.json() == {"id": "tl-edit", "status": "running", "shot": 1, "seed": 7, "render_s": 3,
+                                                     "variant": "scene-object", "style": None}
         assert done.wait(10) and calls[-1] == ("rerender", "tl-edit", 1, 7, 3, "scene-object")
         for _ in range(50):
             job = client.get("/api/jobs/tl-edit").json()

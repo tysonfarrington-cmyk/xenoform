@@ -572,6 +572,11 @@ button.easy-showcase { width: 100%; margin-top: 12px; }
 @media (hover: hover) { .shots-lane .shot:hover { background: hsl(var(--hue, 260) 48% 40%); } }
 .shots-lane .shot:focus-visible { outline: 2px solid var(--x-accent); outline-offset: 1px; }
 .shots-lane .shot i { line-height: 40px; font-size: 10.5px; }
+/* a shot whose morph is not a Melt names its style in the tile's corner (morph_style) */
+.shots-lane .shot .tl-style {
+  position: absolute; top: 2px; left: 3px; font-size: 9px; font-weight: 600; line-height: 1; letter-spacing: 0.02em;
+  color: #fff; background: var(--x-accent); padding: 1px 3px; border-radius: 3px; pointer-events: none;
+}
 .shots-lane .shot.picked { outline: 2px solid #fff; outline-offset: -2px; }
 .shots-lane .overlay { border-radius: var(--x-r-xs); }
 .shots-lane .tl-drawer { padding: 12px; background: var(--x-surface-2); border: 1px solid var(--x-line-2); border-radius: 10px; }

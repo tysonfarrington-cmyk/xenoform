@@ -638,10 +638,12 @@ def _job_result(client, job):
 
 
 def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, client=None, cancel=None,
-                 state: dict | None = None, report=None, size: tuple[int, int] | None = None) -> list[Path]:
+                 state: dict | None = None, report=None, size: tuple[int, int] | None = None,
+                 styles: list[str] | None = None) -> list[Path]:
     """Free: one LTX 0.9.5 A->B morph per shot through the existing morph graph.
 
-    ``size`` overrides the render size (Draft 9:16 renders portrait 320x576 from re-laid stills)."""
+    ``size`` overrides the render size (Draft 9:16 renders portrait 320x576 from re-laid stills); ``styles`` is how
+    each shot's object changes (``morph_style``: melt, shatter, bloom, spin, fold; Melt when not given)."""
     from xenoform import morph_pass as mp
 
     render_w, render_h = (int(size[0]), int(size[1])) if size else (mp.WIDTH, mp.HEIGHT)
@@ -663,7 +665,8 @@ def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, cli
         from xenoform.guardrails import guard_prompt
 
         kinds = mp.pair_kinds(stills[i], stills[i + 1])  # a pair that touches a scene gets the scene prompt
-        wf.set_input("3", "text", guard_prompt(mp.prompt_for(vibe, kinds=kinds), state))
+        style = styles[i] if styles and i < len(styles) else "melt"
+        wf.set_input("3", "text", guard_prompt(mp.prompt_for(vibe, kinds=kinds, style=style), state))
         wf.set_input("4", "text", mp.NEGATIVE)
         wf.set_input("9", "width", render_w)
         wf.set_input("9", "height", render_h)

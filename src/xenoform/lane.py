@@ -38,9 +38,12 @@ def choices() -> dict:
              "wipe": "the next object enters as strips, or as an iris where the song is loud, on the bass over a bar",
              "rip": "the two pictures' colour channels offset and crossed on the other stem"}
     kinds += [{"id": k, "label": _B.LABELS.get(k, k), "note": notes.get(k, ""), "group": "boundary"} for k in _B.KINDS]
+    from xenoform import morph_style as _MS
+
     return {"transition_kinds": kinds, "plays": list(_D.PLAY), "fx_intensity": [0.0, 1.0],
             "rerender_variants": list(_D.RERENDER_VARIANTS), "render_s": list(_D.RENDER_S_RANGE),
-            "insert_seconds": [int(x) for x in _D.INSERT_SECONDS]}
+            "insert_seconds": [int(x) for x in _D.INSERT_SECONDS],
+            "morph_styles": [{"id": s, "label": _MS.LABELS[s], "note": _MS.NOTES[s]} for s in _MS.STYLES]}
 
 
 def build(info: dict, video_id: str = "") -> dict:
@@ -59,6 +62,7 @@ def build(info: dict, video_id: str = "") -> dict:
     perf_slots = {int(s["first"]): s for s in (perf.get("slots") or []) if isinstance(s, dict) and "first" in s}
     own_slots = {int(s["first"]): s for s in (own.get("slots") or []) if isinstance(s, dict) and "first" in s}
     inserts = [x for x in (info.get("inserts") or []) if isinstance(x, dict)]
+    styles = [str(s) for s in (info.get("morph_styles") or [])]  # how each shot's morph changes (morph_style)
     # the timeline's overrides as the record keeps them (string keys), and how often a shot's morph was re-rendered
     so = {int(k): v for k, v in (info.get("shot_overrides") or {}).items() if str(k).lstrip("-").isdigit() and isinstance(v, dict)}
     bo = {int(k): v for k, v in (info.get("boundary_overrides") or {}).items() if str(k).lstrip("-").isdigit() and isinstance(v, dict)}
@@ -94,6 +98,8 @@ def build(info: dict, video_id: str = "") -> dict:
             # the chain slots the shot's morph leaves and lands on: a swap on the lane names the landing still
             row.update({"from_still": a, "still": b, "to_file": files[b], "to_kind": "scene" if files[b] in scene_files else "object",
                         "pinned": b in pinned, "swapped": b in swapped, "morph": m})
+        if not (s.get("performer") or s.get("own")):
+            row["style"] = styles[i] if i < len(styles) and styles[i] else "melt"
         t = transitions[i] if i < len(transitions) else None
         if isinstance(t, dict) and t.get("kind"):
             row["transition"] = str(t["kind"])
@@ -160,4 +166,4 @@ def build(info: dict, video_id: str = "") -> dict:
             "shot_overrides": {str(k): v for k, v in sorted(so.items())}, "boundary_overrides": {str(k): v for k, v in sorted(bo.items())},
             "rerenders": sum(rerendered.values()), "inserts": len(inserts), "editable": bool(rows) and bool(info.get("clips")),
             "rerenderable": draft and bool(info.get("clips")), "beats": [round(float(b), 3) for b in (info.get("beats") or [])],
-            "drop": info.get("drop"), "choices": choices() if rows else {}}
+            "drop": info.get("drop"), "morph_style": str(info.get("morph_style") or "auto"), "choices": choices() if rows else {}}

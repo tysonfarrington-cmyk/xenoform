@@ -441,14 +441,16 @@ def pair_kinds(a: dict | None, b: dict | None) -> tuple[str, str]:
     return tuple("scene" if str((row or {}).get("kind") or "") == "scene" else "object" for row in (a, b))
 
 
-def prompt_for(vibe: str, engine: str = "ltx095", kinds: tuple[str, str] | None = None) -> str:
-    """One prompt per vibe, not per pair: the two guide stills carry the objects.
+def prompt_for(vibe: str, engine: str = "ltx095", kinds: tuple[str, str] | None = None, style: str = "melt") -> str:
+    """One prompt per vibe and style, not per pair: the two guide stills carry the objects.
 
     The text encoder runs on the CPU (it is what pushed the card past 11.5 GB),
-    so the prompt must stay identical across a run's morphs for ComfyUI to
-    encode it once and reuse it for every morph. A pair that touches a scene
+    so the prompt stays identical across a run's morphs of one style for
+    ComfyUI to encode it once and reuse it. A pair that touches a scene
     (``kinds``, see ``pair_kinds``) gets the scene variant, the same text for
-    every such pair in the run.
+    every such pair in the run, whatever the style (``morph_style``: a style is
+    how an object changes). Melt is the prompt every morph had before the
+    styles, word for word.
     """
     look = VIBE_LOOK.get(vibe, VIBE_LOOK["liquid-gold"])
     lead = "Use the provided start image as the first frame and the provided end image as the final frame anchor. " if engine == "ltx25" else ""
@@ -458,9 +460,10 @@ def prompt_for(vibe: str, engine: str = "ltx095", kinds: tuple[str, str] | None 
             f"{opening}, one continuous liquid transformation, the picture never cuts, the frame stays steady, "
             f"gentle slow camera drift, {look}, every feature appears once, cinematic, crisp, clean, high detail"
         )
+    from xenoform.morph_style import OPENINGS, normal
+
     return lead + (
-        "One single sculptural object slowly melts and flows into another, one continuous liquid "
-        f"transformation, the object stays centred, gentle slow camera drift, {look}, "
+        f"{OPENINGS[normal(style, allow_auto=False)]}, the object stays centred, gentle slow camera drift, {look}, "
         "one single object, every feature appears once, macro product photography, crisp, clean, high detail"
     )
 
