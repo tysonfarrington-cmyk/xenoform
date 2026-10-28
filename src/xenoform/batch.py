@@ -16,7 +16,7 @@ one JSON file under ``work/ui/batches``; an item a desk restart interrupted is `
 one at Final" queues that variation's own body at Final with its chain pinned, after the Drafts still waiting.
 
 ``measured(jobs)`` reads the ``took.json`` beside every cut on this machine: what a second of video takes here at
-Draft and at Final, which the desk and the page show instead of a guess.
+Draft, Fast Final, Final and Cloud Final, which the desk and the page show instead of a guess.
 """
 from __future__ import annotations
 
@@ -146,7 +146,8 @@ def comfy_busy(url: str, timeout: float = 3.0) -> str:
 def _cut_seconds(folder: Path) -> tuple[str, float]:
     rec = json.loads((folder / "simple" / "simple.json").read_text(encoding="utf-8"))
     shots = rec.get("shots") or []
-    tier = "fast" if rec.get("fast") else str(rec.get("tier") or "draft")  # a Fast Final is a Draft plus its upscale
+    # a Fast Final is a Draft plus its upscale and a Cloud Final renders on Comfy Cloud: both records say tier "draft"
+    tier = "fast" if rec.get("fast") else "cloud" if rec.get("cloud") else str(rec.get("tier") or "draft")
     return tier, float(shots[-1].get("end") or 0.0) if shots else 0.0
 
 
@@ -169,7 +170,7 @@ def measured(jobs: Path, seconds: float | None = None) -> dict:
 
 
 def _measure(jobs: Path, seconds: float | None) -> dict:
-    rows: dict[str, list[tuple[float, float, float]]] = {"draft": [], "fast": [], "final": []}
+    rows: dict[str, list[tuple[float, float, float]]] = {"draft": [], "fast": [], "final": [], "cloud": []}
     for folder in Path(jobs).glob("*") if Path(jobs).is_dir() else []:
         try:
             took = float(json.loads((folder / "took.json").read_text(encoding="utf-8")).get("took_s") or 0.0)

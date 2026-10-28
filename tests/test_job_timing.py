@@ -81,6 +81,10 @@ def test_stage_frac_normalises_each_phase_to_its_raw_range():
     assert jt.stage_frac("morphs", 0.325) == pytest.approx(0.5)
     assert jt.stage_frac("morphs", 0.495, "final") == pytest.approx(0.5)
     assert jt.stage_frac("morphs", 0.495, "draft", "Final: morph 3 of 6") == pytest.approx(0.5)
+    assert jt.stage_frac("morphs", 0.47, "cloud") == pytest.approx(0.5)  # Cloud Final reports 0.12-0.82
+    assert jt.stage_frac("morphs", 0.55, "cloud") < 1.0 and jt.stage_frac("morphs", 0.82, "cloud") == 1.0
+    assert jt.stage_frac("morphs", 0.34, "fast") == pytest.approx(0.5)  # Fast Final: the Draft morphs, then the upscale to 0.58
+    assert jt.stage_frac("morphs", 0.325, "odd-tier") == pytest.approx(0.5)  # an unknown tier reads as a Draft
     assert jt.stage_frac("performer", 0.55) == pytest.approx(0.5)
     assert jt.stage_frac("cut", 0.775) == pytest.approx(0.5)
     assert jt.stage_frac("cut", 1.0) == 1.0 and jt.stage_frac("morphs", 0.05) == 0.0  # clamped
@@ -138,6 +142,22 @@ def test_a_phase_fraction_never_decreases_and_a_late_report_cannot_pull_overall_
     assert [s["phase"] for s in job["stages"]] == ["morphs", "cut"]
 
 
+def test_a_cloud_or_fast_make_reads_its_own_morph_range():
+    # Cloud Final's morphs report 0.12-0.82: on the Draft range the bar said 100 % with a third of them still to come
+    job = _job(PLAN, {"quality_tier": "cloud"})
+    assert job["timing"]["tier"] == "cloud"
+    jt.tick(job, "restyle", 0.12 + 0.7 * 8 / 16, "Cloud Final: morph 8 of 16 back from Comfy Cloud (LTX-2.5, open weights)", 54.0)
+    assert job["timing"]["stage_frac"] == pytest.approx(0.5) and job["overall"] == pytest.approx(54.0 / TOTAL, abs=1e-3)
+    jt.tick(job, "restyle", 0.55, "Cloud Final: morph 10 of 16 back from Comfy Cloud (LTX-2.5, open weights)", 66.0)
+    assert job["timing"]["stage_frac"] == pytest.approx(0.43 / 0.7) and job["overall"] < 0.5
+    # Fast Final: the last Draft morph is not the end of the phase, the upscale (to 0.58) still follows
+    fast = _job(PLAN, {"quality_tier": "fast"})
+    jt.tick(fast, "restyle", 0.55, "Morph 6 of 6", 90.0)
+    assert fast["timing"]["stage_frac"] == pytest.approx(0.45 / 0.48)
+    jt.tick(fast, "restyle", 0.5 + 0.08 * 5 / 6, "Fast Final: upscaling morph 6 of 6 to 1080x1920", 95.0)
+    assert fast["timing"]["stage_frac"] == pytest.approx((0.4 + 0.08 * 5 / 6) / 0.48)
+
+
 def test_without_a_plan_the_fallback_weights_move_the_bar_and_the_eta_is_none():
     job = _job(None, {"quality_tier": "draft", "performer": 0})
     weights = job["timing"]["weights"]
@@ -160,12 +180,21 @@ def test_breakdown_gives_the_first_phase_the_run_up_and_the_last_the_rest():
     assert jt.breakdown([], 5.0) == {}
 
 
-def test_plan_for_uses_the_make_and_the_song():
+def test_plan_for_uses_the_make_and_the_song(monkeypatch):
+    from xenoform import dense
+
     feats = {"duration": 120.0, "beats": [i * 0.5 for i in range(240)]}
     plan = jt.plan_for(feats, {"energy_preset": "dense", "quality_tier": "draft", "aspect": "9:16", "end_card": True})
     assert set(plan) == set(jt.PHASES) - {"done"}
     assert plan["morphs"] > 0 and plan["cut"] > 0 and plan["card"] == 4.0 and plan["performer"] == 0.0
     assert plan["qa"] == pytest.approx(4.0 + 0.12 * 120.0)
+    # a Fast or Cloud Make is planned at its own tier (options() folds both into "draft" with a flag), not as a Draft
+    seen, real = [], dense.plan_summary
+    monkeypatch.setattr(dense, "plan_summary", lambda *a, **k: seen.append(a[3]) or real(*a, **k))
+    by_tier = {t: jt.plan_for(feats, {"energy_preset": "dense", "quality_tier": t, "aspect": "9:16"}) for t in ("draft", "fast", "final", "cloud")}
+    assert seen == ["draft", "fast", "final", "cloud"]
+    assert by_tier["fast"]["morphs"] == pytest.approx(plan["morphs"] * dense.COST["fast"]["s"] / dense.COST["draft"]["s"], rel=0.01)
+    assert by_tier["cloud"]["morphs"] > 0 and by_tier["cloud"]["morphs"] != plan["morphs"]  # its own cost and cap of 16
     with_performer = jt.plan_for(feats, {"energy_preset": "dense", "quality_tier": "draft", "aspect": "9:16", "performer": 2})
     assert with_performer["performer"] > 0 and with_performer["card"] == 0.0
     short = jt.plan_for(feats, {"energy_preset": "dense", "length_s": 30})  # the cut, not the whole song

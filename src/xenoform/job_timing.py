@@ -23,8 +23,10 @@ PHASES = ("analyze", "draft", "morphs", "performer", "cut", "card", "save", "qa"
 _ORDER = {p: i for i, p in enumerate(PHASES)}
 
 # The raw progress range each phase's reports span (cloud_morph._local_clips and final_tier.final_clips for the
-# morphs, dense.run_simple's performer slots, beatfx.compose for the cut); ``stage_frac`` normalises into it.
-RANGES: dict[str, Any] = {"morphs": {"draft": (0.1, 0.55), "final": (0.12, 0.87)}, "performer": (0.5, 0.6), "cut": (0.6, 0.95)}
+# morphs, upscale_pass after the Draft morphs for Fast Final, cloud_final.cloud_clips for Cloud Final, dense.run_simple's
+# performer slots, beatfx.compose for the cut); ``stage_frac`` normalises into it, picking the morphs range by the Make's tier.
+RANGES: dict[str, Any] = {"morphs": {"draft": (0.1, 0.55), "fast": (0.1, 0.58), "final": (0.12, 0.87), "cloud": (0.12, 0.82)},
+                          "performer": (0.5, 0.6), "cut": (0.6, 0.95)}
 # The end card burn and the save report once, as they start: each is 0 % done until the next phase begins.
 _SINGLE_SHOT = {"card", "save"}
 # The bar still moves on these shares when plan_summary could not run (no features yet, an odd body).
@@ -77,8 +79,9 @@ def stage_frac(phase: str, frac: float, tier: str = "draft", detail: str = "") -
     if phase in _SINGLE_SHOT:
         return 0.0
     rng = RANGES.get(phase)
-    if isinstance(rng, dict):
-        rng = rng["final" if str(tier).lower() == "final" or str(detail).lower().startswith("final") else "draft"]
+    if isinstance(rng, dict):  # the Make's tier picks the range; a "Final: ..." report is the Final's whatever the tier says
+        key = "final" if str(detail).lower().startswith("final") else str(tier or "draft").lower()
+        rng = rng.get(key, rng["draft"])
     value = float(frac or 0.0)
     if rng:
         lo, hi = rng
@@ -111,7 +114,9 @@ def plan_for(features: dict | None, body: dict | None) -> dict[str, float] | Non
             pool = len(cat.get(pool_vibe) or []) + (len(cat.get(asked) or []) if asked and asked != pool_vibe else 0)
         except Exception:
             pool = None
-        summary = dense.plan_summary(duration, beats, opt["energy"], opt["tier"], opt["aspect"], opt["vertical"],
+        # options() folds Fast and Cloud into tier "draft" with a flag; the plan wants the real tier (its cost and cap)
+        tier = "cloud" if opt["cloud"] else "fast" if opt["fast"] else opt["tier"]
+        summary = dense.plan_summary(duration, beats, opt["energy"], tier, opt["aspect"], opt["vertical"],
                                      performer=int(opt.get("performer") or 0), pool=pool)
         est = summary.get("estimate") or {}
         plan = {"analyze": FIXED_S["analyze"], "draft": FIXED_S["draft"],
