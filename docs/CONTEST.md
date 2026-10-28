@@ -22,7 +22,7 @@ Contest: [Open Source Higgsfield](https://comfy.org/open-source-higgsfield/), ru
 - [ ] README states "100% open weights by default, all local, built on the Comfy SDK" near the top, with the model and licence table.
 - [ ] README has setup instructions (Quick start, Python 3.12, `Xenoform.bat` / `install.sh`) and a judge path with no GPU.
 - [ ] `docs/REPRODUCE.md` reproduces the demo in about ten minutes.
-- [ ] Demo video under 2:00, 9:16, with the repo URL burned into the end card (the app does this when End card is on: `github.com/tysonfarrington-cmyk/xenoform` from `pyproject.toml`). Upload it, then replace `DEMO_VIDEO_URL` in README.md (top block), this page and the social post.
+- [ ] Demo video under 2:00, 16:9 (the desk's own screen, with a 9:16 cut for the post), with the repo URL and #OpenSourceHiggsfield on the end card the walkthrough edit adds (`github.com/tysonfarrington-cmyk/xenoform` from `pyproject.toml`). Upload it, then replace `DEMO_VIDEO_URL` in README.md (top block), this page and the social post.
 - [ ] Demo song: "Morph Engine v2", made by the author on Suno Pro inside the billing period (commercial rights per Suno's terms). Not shipped; the repo uses `examples/demo.wav`.
 - [ ] `pytest tests/test_docs.py tests/test_install.py tests/test_eligibility.py` passes on the pushed commit; CI (`.github/workflows/ci.yml`, Python 3.12) is green.
 - [ ] Public post with **#OpenSourceHiggsfield** on one of X, Reddit, Instagram, LinkedIn, YouTube or TikTok, with the video and the repo link (draft below). Keep the post URL for the form.
@@ -39,7 +39,7 @@ Contest: [Open Source Higgsfield](https://comfy.org/open-source-higgsfield/), ru
 | Social post URL | (the #OpenSourceHiggsfield post) |
 | Categories | Open Weights Only; LTX bonus |
 | ComfyUI parts used | Comfy Python SDK (comfy-sdk 0.5.0 + comfy-api-proxy); MCP server (45 tools); core nodes only in the shipped workflows |
-| Models | LTX-Video 0.9.5, LTX-2.5 22B distilled int8, LTX-2.3 22B distilled fp8, Z-Image Turbo, Wan Animate 2, Real-ESRGAN x4plus and realesr-animevideov3 (optional: FLUX.2 Klein 4B, ACE-Step 1.5) |
+| Models | LTX-Video 0.9.5, LTX-2.5 22B distilled int8, LTX-2.3 22B distilled fp8, Z-Image Turbo, Wan Animate 2, Real-ESRGAN x4plus and realesr-animevideov3 (optional: FLUX.2 Klein 4B, ACE-Step 1.5, MiniMax H3 for Performer shots; Demucs htdemucs on the CPU for stems) |
 | Licence | MIT |
 | Runs on | Windows and Linux, Python 3.12, ComfyUI 0.33+, a 12 GB GPU for renders; the animatic and the judges page need no GPU |
 
@@ -57,4 +57,4 @@ That is 265 characters with both links counted at X's 23 each; a shortened video
 
 - Keep the repo and the video public until judging ends.
 - Do not force-push over the submitted commit; add commits instead.
-- The demo video's end card already carries the repo URL, so a re-render is not needed if the README changes.
+- The demo video's end card already carries the repo URL, so a re-edit is not needed if the README changes.

@@ -18,19 +18,20 @@ Press **Watch a finished one** for a pre-rendered reel of LTX morphs cut to the 
 ## 3. Run the tests (1 minute)
 
 ```bash
+.venv/bin/python -m pip install -e .[dev]
 .venv/bin/python -m pytest tests/test_install.py tests/test_eligibility.py tests/test_docs.py -q
 ```
 
-`test_eligibility.py` is the open-weights check: it fails if any default workflow references a partner or API node, fills an LTX API key, or encodes prompts through an API.
+On Windows the same two commands are `.venv\Scripts\python.exe -m pip install -e .[dev]` and `.venv\Scripts\python.exe -m pytest ...`. `test_eligibility.py` is the open-weights check: it fails if any default workflow references a partner or API node, fills an LTX API key, or encodes prompts through an API.
 
 ## 4. Start ComfyUI and the models
 
 1. Start ComfyUI 0.33 or newer on port 8188. The shipped graphs use core nodes only.
 2. Open **Setup & models** from the … menu in the desk header (or the link under Make my video). It lists each model with its size and a Download button (downloads resume and are checksummed):
    - **LTX-Video 0.9.5** (6.3 GB) and **T5-XXL fp8** (5.2 GB): required for Draft morphs. At 100 Mbit/s that is about 15 minutes together; on a faster line, a few minutes.
-   - **LTX-2.3 22B distilled fp8** for Final, plus `ltx-2.3-spatial-upscaler-x2-1.1.safetensors` and the Gemma 3 12B text encoder. The full distilled file on the Setup page is 46 GB; the fp8 file the 12 GB path uses goes in `models/checkpoints` by hand.
-   - **Real-ESRGAN x4plus** (`models/upscale_models/RealESRGAN_x4plus.pth`, from the Real-ESRGAN v0.1.0 release on GitHub) for the Final upscale.
-   - Optional: **Z-Image Turbo** (18 GB) only if you want to make new vibe stills; the shipped stills already cover 29 vibes. **Wan Animate 2** (Comfy-Org `Wan2.2-Animate-2` repack: int8 model, lightx2v LoRA, UMT5-XXL fp8, CLIP vision H, Wan 2.1 VAE) only for Moves.
+   - The Final's files are not on that page: you place them by hand, each in its folder under ComfyUI's `models`, and Setup does not download or check them. For LTX-2.3 they are `ltx-2.3-22b-distilled-fp8.safetensors` in `checkpoints`, `gemma_3_12B_it_fp4_mixed.safetensors` in `text_encoders`, `ltx-2.3-spatial-upscaler-x2-1.1.safetensors` in `latent_upscale_models` and `RealESRGAN_x4plus.pth` in `upscale_models` (from the Real-ESRGAN v0.1.0 release on GitHub). When the LTX-2.5 files are installed instead (listed in [LICENCES.md](LICENCES.md) with the other models), the Final uses LTX-2.5.
+   - **realesr-animevideov3** (`models/upscale_models/realesr-animevideov3.pth`, from the Real-ESRGAN v0.2.5.0 release) only for Fast Final, the Draft upscaled to 1080p.
+   - Optional: **Z-Image Turbo** (18 GB) only if you want to make new vibe stills; the shipped stills already cover 28 vibes, every vibe on the desk. **Wan Animate 2** (Comfy-Org `Wan2.2-Animate-2` repack: int8 model, lightx2v LoRA, UMT5-XXL fp8, CLIP vision H, Wan 2.1 VAE) only for Moves.
 3. `Xenoform.bat` starts `comfy-api-proxy` on port 8189 for you. By hand: `.venv/bin/comfy-api-proxy run --comfyui http://127.0.0.1:8188 --port 8189`. The desk header shows **connected** when `/system_stats` answers.
 
 ## 5. The demo cut on the desk (about 4 minutes on a 12 GB card)
@@ -38,8 +39,8 @@ Press **Watch a finished one** for a pre-rendered reel of LTX morphs cut to the 
 The desk is a song, a vibe and Make. Leave everything in the **Fine-tune** drawer at its default: that is the `demo_house` profile from `configs/defaults_demo.json`, the look used in the demo video.
 
 1. Song: **Bundled demo** (or drop your own file).
-2. Vibe: **chrome-mercury** (the first featured vibe) gives the chrome-pour chain; any of the 12 featured vibes works the same way.
-3. **Make**. The stills cut plays within seconds, then the GPU pass replaces it with LTX 0.9.5 morphs from still to still. On an RTX 3080 Ti a 20 s clip with 7 morphs takes about a minute warm, about two minutes if ComfyUI has just had another model loaded. A full song keeps a shot every bar over a loop of 12 to 30 four-second morphs: a four-minute song is about 20 minutes, and the panel beside Make shows the shot count, morph count and estimate before you press it. For a quick result set **Length** to 60 s in the Fine-tune drawer: a one-minute cut centred on the drop, about six minutes.
+2. Vibe: **Liquid chrome** (`chrome-mercury`, the first featured card) gives the chrome-pour chain; any of the 12 featured vibes works the same way.
+3. **Make**. The stills cut plays within seconds, then the GPU pass replaces it with LTX 0.9.5 morphs from still to still. On an RTX 3080 Ti a 20 s clip with 7 morphs takes about a minute warm, about two minutes if ComfyUI has just had another model loaded. A full song keeps two bars a shot (a bar on the drop) with one morph per shot and no object twice; Draft affords 48 morphs, Final 12 and Cloud Final 16, and past that the song is re-planned with fewer, longer shots. A four-minute song on Draft is about 20 minutes, and the panel beside Make shows the shot count, morph count and estimate before you press it. For a quick result set **Length** to 60 s in the Fine-tune drawer: a one-minute cut centred on the drop, about six minutes.
 
 What the defaults give you, and where each one lives:
 
@@ -56,7 +57,7 @@ What the defaults give you, and where each one lives:
 | Audio | -14 LUFS, -2 dBTP | `audio` |
 | End card | off by default; switch it on for the demo's ending: recipe code plus `github.com/tysonfarrington-cmyk/xenoform` burned into the last two seconds, with the negative-rush ramp into it | Fine-tune → End card |
 
-To get the demo's Final quality instead of Draft, set Quality to **Final** in the drawer. That is LTX-2.3 fp8 in two stages at 448x768 native portrait and Real-ESRGAN to 1080x1920, about 90 to 240 seconds a shot, so the desk shows an estimate first.
+To get the demo's Final quality instead of Draft, set Model to **Final** in the Fine-tune drawer (LTX-2.5 when its files are installed, LTX-2.3 otherwise; Fast Final is the Draft upscaled to 1080p). LTX-2.3 runs in two stages at 448x768 native portrait and Real-ESRGAN to 1080x1920, about 90 to 240 seconds a shot; LTX-2.5 takes 5 to 7 minutes a 3 s shot at 576x1024. The desk shows an estimate first.
 
 ## 6. Stems (1 minute)
 
