@@ -142,4 +142,11 @@ the social post. Voice-over over the screen, the outputs played full frame, capt
 - **The voice is af_heart** (Tys, 29 Oct 10:30 am). The contest video is
   `Desktop\xeno_walkthrough_29oct\xenoform_demo_video.mp4` (the af_heart short, 1:43, under the form's 2:00); the long
   one for the README and the post's replies is `xenoform_long_walkthrough.mp4` (6:52). The am_michael and bm_george
-  shorts stay beside them. Still open: 16:9 as is, or a 9:16 cut for the post.
+  shorts stay beside them.
+- **A 9:16 cut for the post** (Tys, 29 Oct 10:40 am: "May as well do a 9:16 cut as well"):
+  `xenoform_demo_video_9x16.mp4`, 1080x1920, the same plan, read, bed and loudness, laid out for a phone by
+  `scratchpad/wt/assemble_v.py`: the 9:16 cuts play full frame (the three opening cuts one after another), the desk
+  recordings sit as a 1080x608 strip high in the frame over their own blur with the captions large beneath, grids go
+  two or three columns, and the two cards are recorded again for the phone (`cards/cards_v.html`, five steps as a
+  column; `record_cards_v.py`). While at it the cards' model chip, which still said LTX-2.3, says LTX-2.5 in both
+  layouts, so the 16:9 cuts were rebuilt once more.

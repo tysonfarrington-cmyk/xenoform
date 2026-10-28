@@ -100,7 +100,8 @@ out of date on the tiers (no Cloud Final, "all local") and must be rebuilt after
 5. **Tys's own steps** (docs/CONTEST.md checklist): push, upload the short, replace `DEMO_VIDEO_URL` in README.md
    and CONTEST.md, post with #OpenSourceHiggsfield, submit the Typeform. The voice is af_heart (Tys, 29 Oct 10:30 am): the
    file to upload is `Desktop\xeno_walkthrough_29oct\xenoform_demo_video.mp4` (1:43), the long one
-   `xenoform_long_walkthrough.mp4`. Still open: 16:9 as is, or a 9:16 cut for the post.
+   `xenoform_long_walkthrough.mp4`, and the post's 9:16 cut `xenoform_demo_video_9x16.mp4` (same voice and length,
+   laid out for a phone by `scratchpad/wt/assemble_v.py`; the cards' chip now says LTX-2.5).
 
 ## Facts a fixer may need
 
