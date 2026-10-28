@@ -24,14 +24,14 @@ the social post. Voice-over over the screen, the outputs played full frame, capt
 | 0:00 | Three cuts, fast: a liquid-gold Final, the Caligari to NASA clips cut, a None cut | Xenoform turns a song into a music video where every beat is a transformation. |
 | 0:07 | The Song step: drop a song; the vibe grid, None last | Drop in a song and pick a vibe: molten gold, neon noir, ink and paper, or None, the things just as they are. |
 | 0:15 | The idea line: "underwater" grows its chips | Then say what it morphs through. A theme like underwater brings fifteen things of its own. |
-| 0:22 | Make; the making screen, the chain, the steps | Make listens to the song, plans a shot for every bar, picks the objects and renders a morph for each one. |
+| 0:22 | Make; the making screen, the chain, the steps | Make listens to the song, plans the shots on its bars and beats, picks the objects, and renders a morph for every shot. |
 | 0:32 | The result playing | Every shot is one object turning into the next, cut to the song's own bars. |
 | 0:39 | Morph styles side by side: Melt, Shatter, Bloom, Spin, Fold | Five ways to change, and the change can land right on the beat. |
-| 0:47 | Effects: dither, feedback, kaleido, slit-scan | Effects ride the song's stems. |
-| 0:54 | The timeline: picture tiles, the Look tab, a colour change, Apply | Then edit it like a timeline. Colour, effects, order and cuts, shot by shot, re-cut in seconds without the GPU. |
+| 0:47 | Effects: dither, feedback, kaleido, slit-scan | Effects ride the kick and the loudness. |
+| 0:54 | The timeline: picture tiles, the Look tab, a colour change, Apply | Then edit it like a timeline. Colour, effects, order and cuts, shot by shot, re-cut from the cached morphs with no GPU. |
 | 1:07 | Morph > Your clips: Caligari, Nosferatu, NASA | Or morph your own film clips into each other. |
-| 1:15 | Draft, Fast Final, Final, with their times | A Draft in minutes, a Fast Final at 1080p, or the full LTX-2.3 Final. |
-| 1:23 | How it's built: song → stems and bars → plan → ComfyUI graphs → LTX morphs → re-cut (a diagram over the desk) | How it's built: the song is split into stems and bars, the plan becomes ComfyUI graphs sent through the Comfy SDK, and LTX renders every morph on one 12 GB card. All open weights, all local. |
+| 1:15 | Draft, Fast Final, Final, Cloud Final, with their times | A Draft in minutes, a Fast Final at 1080p, the full local Final, or Cloud Final, the same morphs on Comfy Cloud. |
+| 1:23 | How it's built: song → stems and bars → plan → ComfyUI graphs → LTX morphs → re-cut (a diagram over the desk) | How it's built: the song is split into stems and bars, the plan becomes ComfyUI graphs sent through the Comfy SDK, and LTX renders every morph on one 12 GB card. All open weights, local by default. |
 | 1:37 | What's new: the song's waveform under the timeline; the MCP panel | What's new: the edit comes from the music itself, every shot is generated, and you change it like an editor, not a prompt box. An MCP server lets any AI drive it. |
 | 1:48 | End card: github.com/tysonfarrington-cmyk/xenoform, #OpenSourceHiggsfield | Xenoform. Open source, on GitHub. |
 
@@ -44,7 +44,7 @@ the social post. Voice-over over the screen, the outputs played full frame, capt
 3. **What it morphs through** (1:00). Things, a theme, a place, a feel; the chips under the line; a theme's fifteen things;
    Make draws the new ones first. The library: grown on this GPU, checked, culled by eye.
 4. **Make and the making screen** (0:40). The chain, the steps, the draft playing while it renders; Draft, Fast Final,
-   Final and where the time goes (the tooltip).
+   Final, Cloud Final and where the time goes (the tooltip).
 5. **The engine** (1:20). Morph styles; Timing (Smooth, On the beat, Snap); Effects; the Look; Foreshadow; Scenes; the
    knobs (Intensity, Speed, Chaos, Glow); every change applied in one re-cut.
 6. **The timeline** (1:20). Picture tiles; the Shot, Look, Join and Regenerate tabs; move, duplicate, delete, move a cut;
@@ -57,8 +57,8 @@ the social post. Voice-over over the screen, the outputs played full frame, capt
 
 ## How it gets made
 
-1. **Lock the script** (this page): the short one's 223 words read in about 1:30 at 150 a minute, which leaves about
-   20 s for the outputs to play with no voice over them.
+1. **Lock the script** (this page): the short one's 238 words read in about 1:35 at 150 a minute, which leaves about
+   15 s for the outputs to play with no voice over them.
 2. **The voice**, from the locked script, one paragraph a row, timed; the picture is cut to the read.
 3. **The screen**: the desk in headless Edge at 1920x1080 driven over the DevTools protocol (Node's own WebSocket, no
    installs), each row a scripted action with its frames captured, on a desk with a quiet GPU so nothing stalls on
@@ -95,5 +95,5 @@ the social post. Voice-over over the screen, the outputs played full frame, capt
   re-assembly, about ten minutes.
 - The three opening cuts: which Finals to render overnight after the Thursday 9 pm freeze (the cut uses earlier Finals
   until then).
-- 16:9 for the contest video (the desk is a 16:9 screen; CONTEST.md still says 9:16 from when the demo was the app's
-  own output) with a 9:16 cut for the post.
+- Re-read after the app freeze: the short's tiers and built lines, and the long's l14, l36 and l38, were reworded for
+  Cloud Final and LTX-2.5 after the recorded voice; the videos in `Desktop\xeno_walkthrough_29oct` still carry the old read.

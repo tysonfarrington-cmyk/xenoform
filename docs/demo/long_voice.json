@@ -1,5 +1,5 @@
 {
- "note": "The long walkthrough's voice copy: one line a shot, chapter by chapter (docs/demo/walkthrough.md is the master). 'say' is what the voice reads when it differs from the caption.",
+ "note": "The long walkthrough's voice copy: one line a shot, chapter by chapter. This file is what the voice read; docs/demo/walkthrough.md has the chapter plan. 'say' is what the voice reads when it differs from the caption.",
  "lines": [
   {"id": "l01", "chapter": "What it is", "text": "Xenoform turns a song into a music video. One object turns into the next, on the beat, for the whole song."},
   {"id": "l02", "chapter": "What it is", "text": "It runs on your own computer, with open-weight models through ComfyUI. This is the whole tour: the song, the vibe, what it morphs through, the render, the edit, your own clips, and how it's built."},
@@ -14,7 +14,7 @@
   {"id": "l11", "chapter": "What it morphs through", "text": "The objects come from a library that grows on this machine. Every still is made with Z-Image Turbo and checked against the vibe's own pool before it's kept."},
   {"id": "l12", "chapter": "Make", "text": "Press Make. The making screen shows the chain it picked, the steps, and a rough cut of the song playing while the morphs render."},
   {"id": "l13", "chapter": "Make", "text": "You can leave it. The tab counts up and tells you when it's ready."},
-  {"id": "l14", "chapter": "Make", "text": "There are three models. A Draft renders small with LTX-Video, in minutes. A Fast Final upscales the Draft to 1080p. The Final renders every morph with LTX-2.3: sharp, and slow, a few minutes a morph on this card.", "say": "There are three models. A Draft renders small with LTX Video, in minutes. A Fast Final upscales the Draft to ten eighty p. The Final renders every morph with LTX 2.3: sharp, and slow, a few minutes a morph on this card."},
+  {"id": "l14", "chapter": "Make", "text": "There are four models. A Draft renders small with LTX-Video, in minutes. A Fast Final upscales the Draft to 1080p. The Final renders every morph with LTX-2.5: sharp, and slow, a few minutes a morph on this card. And Cloud Final sends the same open-weights morphs to Comfy Cloud, three at a time, if you tick the box and spend your credits.", "say": "There are four models. A Draft renders small with LTX Video, in minutes. A Fast Final upscales the Draft to ten eighty p. The Final renders every morph with LTX 2.5: sharp, and slow, a few minutes a morph on this card. And Cloud Final sends the same open-weights morphs to Comfy Cloud, three at a time, if you tick the box and spend your credits."},
   {"id": "l15", "chapter": "Make", "text": "The time row says how long it will take on this GPU, before you start."},
   {"id": "l16", "chapter": "The engine", "text": "Now the engine. Morph style is how one object becomes the next. Melt flows. Shatter cracks into shards that snap together. Bloom opens like a flower. Spin turns as it changes. Fold creases like paper. Auto melts the verses and shatters the drop."},
   {"id": "l17", "chapter": "The engine", "text": "Timing is when the change happens inside the shot. Smooth plays it evenly. On the beat moves it in steps, on every beat. Snap holds, then changes in about a beat, on the downbeat."},
@@ -36,9 +36,9 @@
   {"id": "l33", "chapter": "Share", "text": "Edit in Resolve opens a folder with a timeline: one file a shot, the song, and markers, ready to import."},
   {"id": "l34", "chapter": "Share", "text": "A recipe code remakes the same video anywhere. And Variations queues extra Drafts for later: new objects, other vibes, other feels."},
   {"id": "l35", "chapter": "How it's built", "text": "How it's built. The song is split into stems with Demucs, and analysed for beats, bars and the drop."},
-  {"id": "l36", "chapter": "How it's built", "text": "The plan becomes ComfyUI graphs, sent through the Comfy SDK to your own ComfyUI. LTX-Video, LTX-2.3 and Z-Image Turbo do the work: all open weights, on one 12 GB card.", "say": "The plan becomes ComfyUI graphs, sent through the Comfy SDK to your own ComfyUI. LTX Video, LTX 2.3 and Z Image Turbo do the work: all open weights, on one twelve gigabyte card."},
+  {"id": "l36", "chapter": "How it's built", "text": "The plan becomes ComfyUI graphs, sent through the Comfy SDK to your own ComfyUI. LTX-Video, LTX-2.5 and Z-Image Turbo do the work: all open weights, on one 12 GB card, or the same models on Comfy Cloud when you ask for Cloud Final.", "say": "The plan becomes ComfyUI graphs, sent through the Comfy SDK to your own ComfyUI. LTX Video, LTX 2.5 and Z Image Turbo do the work: all open weights, on one twelve gigabyte card, or the same models on Comfy Cloud when you ask for Cloud Final."},
   {"id": "l37", "chapter": "How it's built", "text": "And an MCP server lets any AI drive the desk: pick a vibe, render, review, and re-cut."},
-  {"id": "l38", "chapter": "How it's built", "text": "Setup and models checks your machine, and downloads any model it lacks."},
+  {"id": "l38", "chapter": "How it's built", "text": "Setup and models asks your ComfyUI which models it can load, and offers a download for any it lacks."},
   {"id": "l39", "chapter": "End", "text": "Xenoform. Open source, on GitHub."}
  ]
 }

@@ -1,5 +1,5 @@
 {
- "note": "The short walkthrough's voice copy: one line a shot, as said (docs/demo/walkthrough.md is the master). 'say' is what the voice reads when it differs from the caption.",
+ "note": "The short walkthrough's voice copy: one line a shot, as said. This file is what the voice read; the Voice column in docs/demo/walkthrough.md is copied from it. 'say' is what the voice reads when it differs from the caption.",
  "lines": [
   {"id": "open", "text": "Xenoform turns a song into a music video where every beat is a transformation."},
   {"id": "vibe", "text": "Drop in a song and pick a vibe: molten gold, neon noir, ink and paper, or None, the things just as they are."},
@@ -10,8 +10,8 @@
   {"id": "effects", "text": "Effects ride the kick and the loudness."},
   {"id": "timeline", "text": "Then edit it like a timeline. Colour, effects, order and cuts, shot by shot, re-cut from the cached morphs with no GPU."},
   {"id": "clips", "text": "Or morph your own film clips into each other."},
-  {"id": "tiers", "text": "A Draft in minutes, a Fast Final at 1080p, or the full LTX-2.3 Final.", "say": "A Draft in minutes, a Fast Final at ten eighty p, or the full LTX 2.3 Final."},
-  {"id": "built", "text": "How it's built: the song is split into stems and bars, the plan becomes ComfyUI graphs sent through the Comfy SDK, and LTX renders every morph on one 12 GB card. All open weights, all local.", "say": "How it's built: the song is split into stems and bars, the plan becomes ComfyUI graphs sent through the Comfy SDK, and LTX renders every morph on one twelve gigabyte card. All open weights, all local."},
+  {"id": "tiers", "text": "A Draft in minutes, a Fast Final at 1080p, the full local Final, or Cloud Final, the same morphs on Comfy Cloud.", "say": "A Draft in minutes, a Fast Final at ten eighty p, the full local Final, or Cloud Final, the same morphs on Comfy Cloud."},
+  {"id": "built", "text": "How it's built: the song is split into stems and bars, the plan becomes ComfyUI graphs sent through the Comfy SDK, and LTX renders every morph on one 12 GB card. All open weights, local by default.", "say": "How it's built: the song is split into stems and bars, the plan becomes ComfyUI graphs sent through the Comfy SDK, and LTX renders every morph on one twelve gigabyte card. All open weights, local by default."},
   {"id": "new", "text": "What's new: the edit comes from the music itself, every shot is generated, and you change it like an editor, not a prompt box. An MCP server lets any AI drive it."},
   {"id": "end", "text": "Xenoform. Open source, on GitHub."}
  ]
