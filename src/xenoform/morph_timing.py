@@ -53,7 +53,7 @@ def _period(beats: list[float]) -> float:
 
 
 def _skip(shot: dict) -> bool:
-    return bool(shot.get("hold") or shot.get("performer") or shot.get("own"))
+    return bool(shot.get("hold") or shot.get("performer") or shot.get("own") or shot.get("dream"))  # a dream is no morph
 
 
 def plan(shots: list[dict], mode: str, beats: list[float], drop: float | None = None,

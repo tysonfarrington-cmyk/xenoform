@@ -572,6 +572,8 @@ button.easy-showcase { width: 100%; margin-top: 12px; }
 @media (hover: hover) { .shots-lane .shot:hover { background: hsl(var(--hue, 260) 48% 40%); } }
 .shots-lane .shot:focus-visible { outline: 2px solid var(--x-accent); outline-offset: 1px; }
 .shots-lane .shot i { line-height: 40px; font-size: 10.5px; }
+/* a dreamed span (xenoform.dream): its bar over the lane */
+.shots-lane .overlay.dream { background: linear-gradient(90deg, #8a5cff, #ff5cc8); }
 /* a shot whose morph is not a Melt names its style in the tile's corner (morph_style) */
 .shots-lane .shot .tl-style {
   position: absolute; top: 2px; left: 3px; font-size: 9px; font-weight: 600; line-height: 1; letter-spacing: 0.02em;

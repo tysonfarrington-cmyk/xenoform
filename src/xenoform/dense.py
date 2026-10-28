@@ -1836,11 +1836,14 @@ def _load_cut(job_dir: Path, verb: str) -> tuple[Path, Path, dict]:
 
 
 def _under_insert(shot: dict) -> str:
-    """Why a shot has no morph of the chain: Polly, your clip or a generated run; "" when it plays a chain morph."""
+    """Why a shot has no morph of the chain: Polly, your clip, a dream or a generated run; "" when it plays a chain
+    morph."""
     if shot.get("performer"):
         return "Polly"
     if shot.get("own"):
         return "one of your clips"
+    if shot.get("dream"):
+        return "a dream"
     if shot.get("generated"):
         return "a generated run"
     return ""
@@ -2167,7 +2170,7 @@ def swap_still(job_dir: Path, slot: int, file: str, *, cfg: dict | None = None,
 
     def shot_for(m: int) -> int | None:
         for j, s in enumerate(shots):
-            if s.get("performer") or s.get("own") or s.get("generated"):
+            if s.get("performer") or s.get("own") or s.get("generated") or s.get("dream"):  # a dream keeps its picture
                 continue
             mm = s.get("morph", s.get("clip"))
             if mm is None and len(clips) == n - 1:  # a record from before the morph index: one morph a shot

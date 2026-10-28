@@ -875,6 +875,52 @@ def create_app(cfg: dict | None = None):
                   lambda report: insert_generated(folder, first, seconds=seconds, pins=pins, seed=seed, cfg=cfg, report=report))
         return {"id": job_id, "status": "running", "first": first, "last": last, "seconds": seconds}
 
+    @app.post("/api/jobs/{job_id}/dream")
+    def dream_job(job_id: str, body: dict | None = None) -> dict:
+        """"Dream this span" (``xenoform.dream``): Z-Image Turbo img2img over 1 to 3 s of the cut from shot ``first``,
+        12 dreamed frames a second, cut in like a generated run, the cut re-composed. Body: ``first``, ``seconds`` (1, 2
+        or 3), ``depth`` ("light" or "deep"), optional ``seed``. About 2.6 s of GPU a dreamed frame once warm."""
+        from xenoform import dream as _dream
+
+        body = body or {}
+        job, folder = _cut_job_for_edit(job_id, "dream over")
+        try:
+            first = int(body.get("first"))
+        except (TypeError, ValueError):
+            raise HTTPException(400, "Where? The dream starts on a shot of the cut, named by its index.")
+        try:
+            seconds = float(body.get("seconds") or _dream.SECONDS[1])
+        except (TypeError, ValueError):
+            raise HTTPException(400, "The dream's length is a number of seconds.")
+        if not _dream.RANGE[0] <= seconds <= _dream.RANGE[1]:
+            raise HTTPException(400, f"A dream is {int(_dream.RANGE[0])} to {int(_dream.RANGE[1])} s long.")
+        depth = str(body.get("depth") or "light").strip().lower()
+        if depth not in _dream.DEPTHS:
+            raise HTTPException(400, f"A dream is {' or '.join(_dream.DEPTHS)}.")
+        seed = body.get("seed")
+        if seed not in (None, ""):
+            try:
+                seed = int(seed)
+            except (TypeError, ValueError):
+                raise HTTPException(400, "The seed is a whole number.")
+        else:
+            seed = None
+        try:
+            rec = json.loads((folder / "simple" / "simple.json").read_text(encoding="utf-8"))
+        except ValueError:
+            raise HTTPException(400, "This cut's record did not read.")
+        shots = list(rec.get("plan_shots") or rec.get("shots") or [])
+        try:
+            first, last = _dream.span(shots, first, seconds)
+        except ValueError as exc:
+            raise HTTPException(400, str(exc))
+        with _LOCK:
+            job.update({"status": "running", "stage": "restyle", "progress": 0.05,
+                        "detail": f"Dreaming over shots {first + 1} to {last + 1}", "error": None})
+        _run_edit(job, job_id, "dream", "Dream ready", "The dream did not run.",
+                  lambda report: _dream.dream_span(folder, first, seconds=seconds, depth=depth, seed=seed, cfg=cfg, report=report))
+        return {"id": job_id, "status": "running", "first": first, "last": last, "seconds": seconds, "depth": depth}
+
     @app.post("/api/morph/board")
     def morph_board(body: dict) -> dict:
         from xenoform.morph import plan_board

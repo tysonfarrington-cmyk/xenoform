@@ -38,11 +38,14 @@ def choices() -> dict:
              "wipe": "the next object enters as strips, or as an iris where the song is loud, on the bass over a bar",
              "rip": "the two pictures' colour channels offset and crossed on the other stem"}
     kinds += [{"id": k, "label": _B.LABELS.get(k, k), "note": notes.get(k, ""), "group": "boundary"} for k in _B.KINDS]
+    from xenoform import dream as _DR
     from xenoform import morph_style as _MS
 
     return {"transition_kinds": kinds, "plays": list(_D.PLAY), "fx_intensity": [0.0, 1.0],
             "rerender_variants": list(_D.RERENDER_VARIANTS), "render_s": list(_D.RENDER_S_RANGE),
             "insert_seconds": [int(x) for x in _D.INSERT_SECONDS],
+            "dream_seconds": [int(x) for x in _DR.SECONDS], "dream_depths": list(_DR.DEPTHS),
+            "dream_s_per_frame": _DR.SECONDS_PER_FRAME,
             "morph_styles": [{"id": s, "label": _MS.LABELS[s], "note": _MS.NOTES[s]} for s in _MS.STYLES]}
 
 
@@ -88,13 +91,15 @@ def build(info: dict, video_id: str = "") -> dict:
             dst = run_nouns[q + 1] if q + 1 < len(run_nouns) else ""
         row = {"index": i, "start": round(start, 3), "end": round(end, 3), "seconds": round(end - start, 3),
                "section": str(s.get("section") or ""), "boundary": str(s.get("boundary") or ""), "from": src, "to": dst}
+        if isinstance(s.get("dream"), dict):  # dreamed over (xenoform.dream): its own pictures, cut in like a run
+            row["dream"] = int(s["dream"].get("run", 0))
         if gen is not None:
             row["generated"] = int(gen.get("insert", 0))
         elif s.get("performer"):
             row["performer"] = True
         elif s.get("own"):
             row["own"] = True
-        if stills and not (s.get("performer") or s.get("own") or gen):
+        if stills and not (s.get("performer") or s.get("own") or gen or s.get("dream")):
             # the chain slots the shot's morph leaves and lands on: a swap on the lane names the landing still
             row.update({"from_still": a, "still": b, "to_file": files[b], "to_kind": "scene" if files[b] in scene_files else "object",
                         "pinned": b in pinned, "swapped": b in swapped, "morph": m})
@@ -125,9 +130,12 @@ def build(info: dict, video_id: str = "") -> dict:
         if i > 0:
             prev = rows[i - 1]
             hard = any(prev.get(k) for k in ("hold", "performer", "own")) or prev.get("generated") is not None \
-                or any(row.get(k) for k in ("performer", "own")) or row.get("generated") is not None
+                or any(row.get(k) for k in ("performer", "own")) or row.get("generated") is not None \
+                or prev.get("dream") is not None or row.get("dream") is not None
             if row.get("generated") is not None and prev.get("generated") == row.get("generated"):
                 hard = bool(prev.get("hold"))  # inside one run the joins are morph landings
+            if row.get("dream") is not None and prev.get("dream") == row.get("dream"):
+                hard = bool(prev.get("hold"))  # inside one dream the joins flow on
             row["handoff"] = "cut" if hard else "morph"  # a visible cut into this shot: out of a hold or across an insert's edge
         rows.append(row)
     overlays = []
@@ -138,6 +146,11 @@ def build(info: dict, video_id: str = "") -> dict:
             overlays.append({"kind": "generated", "first": first, "last": last, "start": rows[first]["start"],
                              "end": rows[min(last, len(rows) - 1)]["end"], "label": f"Generated · {count} morph{'s' if count != 1 else ''}",
                              "insert": gi})
+    for di, dr in enumerate(x for x in (info.get("dreams") or []) if isinstance(x, dict)):
+        first, last = int(dr.get("first", 0)), int(dr.get("last", dr.get("first", 0)))
+        if first < len(rows) and all(rows[j].get("dream") == di for j in range(first, min(last, len(rows) - 1) + 1)):
+            overlays.append({"kind": "dream", "first": first, "last": last, "start": rows[first]["start"],
+                             "end": rows[min(last, len(rows) - 1)]["end"], "label": f"Dream · {dr.get('depth', 'light')}", "dream": di})
     for first, slot in sorted(perf_slots.items()):
         last = int(slot.get("last", first))
         if first < len(shots):
@@ -166,7 +179,8 @@ def build(info: dict, video_id: str = "") -> dict:
             "swaps": len(swapped), "swappable": draft and bool(files),
             # the timeline: the overrides as persisted, the GPU edits so far, what may be edited, and the choices
             "shot_overrides": {str(k): v for k, v in sorted(so.items())}, "boundary_overrides": {str(k): v for k, v in sorted(bo.items())},
-            "rerenders": sum(rerendered.values()), "inserts": len(inserts), "editable": bool(rows) and bool(info.get("clips")),
+            "rerenders": sum(rerendered.values()), "inserts": len(inserts), "dreams": len(info.get("dreams") or []),
+            "editable": bool(rows) and bool(info.get("clips")),
             "rerenderable": draft and bool(info.get("clips")), "beats": [round(float(b), 3) for b in (info.get("beats") or [])],
             "drop": info.get("drop"), "morph_style": str(info.get("morph_style") or "auto"),
             "morph_timing": str(info.get("morph_timing") or "smooth"), "choices": choices() if rows else {}}

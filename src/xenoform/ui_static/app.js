@@ -1750,7 +1750,7 @@ function shotsLane(easy) {
     const held = o.play === "hold";
     const edited = held || !!o.look || o.fx_intensity != null || !!o.timing;
     const label = s.to ? `${s.from} → ${s.to}` : s.from;
-    const marks = `${s.style && s.style !== "melt" ? ` · ${morphStyleLabel(s.style)}` : ""}${o.timing ? ` · ${MORPH_TIMING_LABELS[o.timing] || o.timing}` : ""}${s.pinned ? " · pinned" : ""}${s.swapped ? " · swapped" : ""}${held ? " · held" : ""}${o.look ? ` · look ${o.look}` : ""}${o.fx_intensity != null ? ` · FX ${o.fx_intensity}` : ""}${s.rerendered ? " · re-rendered" : ""}${s.generated != null ? " · generated" : ""}${s.performer ? " · Polly" : ""}${s.own ? " · your clip" : ""}`;
+    const marks = `${s.style && s.style !== "melt" ? ` · ${morphStyleLabel(s.style)}` : ""}${o.timing ? ` · ${MORPH_TIMING_LABELS[o.timing] || o.timing}` : ""}${s.pinned ? " · pinned" : ""}${s.swapped ? " · swapped" : ""}${held ? " · held" : ""}${o.look ? ` · look ${o.look}` : ""}${o.fx_intensity != null ? ` · FX ${o.fx_intensity}` : ""}${s.rerendered ? " · re-rendered" : ""}${s.generated != null ? " · generated" : ""}${s.dream != null ? " · dream" : ""}${s.performer ? " · Polly" : ""}${s.own ? " · your clip" : ""}`;
     const title = `Shot ${s.index + 1} · ${clockText(s.start)} · ${s.seconds} s${s.section ? ` · ${s.section}` : ""}${s.transition ? ` · ${s.transition}` : ""}${label ? ` · ${label}` : ""}${marks}`;
     const pick = swapping && s.still != null;
     const act = pick ? `data-act="easy-swap-pick" data-slot="${s.still}" data-at="${s.start}"` : `data-act="easy-tl-shot" data-index="${s.index}" data-at="${s.start}"`;
@@ -1790,7 +1790,7 @@ function shotsLane(easy) {
   const song = passages || dropMark ? `<div class="lane-song" aria-label="Song">${passages}${dropMark}</div>` : "";
   const facts = [`${lane.shots.length} shots`, lane.morphs ? `${lane.morphs} morphs over ${lane.objects} objects` : "", lane.pace ? `${lane.pace} pace` : "",
     (lane.sections || []).length > 1 ? `${lane.sections.length} passages` : "", lane.swaps ? `${lane.swaps} swap${lane.swaps === 1 ? "" : "s"}` : "",
-    lane.rerenders ? `${lane.rerenders} re-render${lane.rerenders === 1 ? "" : "s"}` : "", lane.inserts ? `${lane.inserts} generated run${lane.inserts === 1 ? "" : "s"}` : ""].filter(Boolean).join(" · ");
+    lane.rerenders ? `${lane.rerenders} re-render${lane.rerenders === 1 ? "" : "s"}` : "", lane.inserts ? `${lane.inserts} generated run${lane.inserts === 1 ? "" : "s"}` : "", lane.dreams ? `${lane.dreams} dream${lane.dreams === 1 ? "" : "s"}` : ""].filter(Boolean).join(" · ");
   const hint = swapping ? "click a shot to swap the object it lands on" : "click a shot or a boundary to change it";
   const toggle = canSwap
     ? `<button type="button" class="text lane-swap-toggle" data-act="easy-swap-mode" aria-pressed="${swapping ? "true" : "false"}">${swapping ? "Done swapping" : "Swap an object"}</button>`
@@ -1888,6 +1888,7 @@ function timelineDrawer(easy, lane, tl, picked) {
           <label>length <select id="tl-insert-s" aria-label="Seconds to generate">${insertS.map((v) => `<option value="${v}"${v === 10 ? " selected" : ""}>${v} s</option>`).join("")}</select></label>
           <span class="note">a fresh run of morphs over this shot and the next ones, new objects from the library (the Chain row's pins honoured), cut in like your own clip</span></div>
       </div>` : under ? `<p class="note">This shot is ${esc(under)}: it has no morph of the chain to swap or re-render; its look and FX are yours to set.</p>` : ""}
+      ${dreamRow(lane, s, choices)}
     </div>`;
   }
   if (s.index < 1) return "";
@@ -1915,6 +1916,32 @@ function timelineDrawer(easy, lane, tl, picked) {
     <div class="simple-seg tl-dress-row"><span>Dress it</span><select id="tl-dress" data-index="${s.index}" aria-label="Transition or boundary kind at this join">${options}</select></div>
     <p class="note">${esc(note)}</p>
   </div>`;
+}
+
+// Dream this span (xenoform.dream): Z-Image Turbo img2img over 1 to 3 s from this shot, every other frame (12 a second),
+// cut in like a generated run; on any cut, Draft or Final, over morphs, a generated run or an earlier dream.
+function dreamRow(lane, s, choices) {
+  if (lane.editable === false || s.performer || s.own) return "";
+  const lengths = choices.dream_seconds || [1, 2, 3];
+  const perFrame = Number(choices.dream_s_per_frame) || 2.6;
+  const est = (n) => clockText(46 + perFrame * n * 12);
+  return `<div class="tl-gpu tl-dream">
+        <div class="tl-gpu-row"><button type="button" class="ghost" data-act="easy-tl-dream" data-index="${s.index}">Dream here</button>
+          <label>length <select id="tl-dream-s" aria-label="Seconds to dream">${lengths.map((v) => `<option value="${v}"${v === 2 ? " selected" : ""}>${v} s · about ${esc(est(v))}</option>`).join("")}</select></label>
+          <label>depth <select id="tl-dream-depth" aria-label="How far the dream strays"><option value="light">light</option><option value="deep">deep</option></select></label></div>
+        <p class="note">${s.dream != null ? "This shot is dreamed already; dreaming again dreams over the dream. " : ""}Z-Image Turbo re-dreams every other frame of this shot and the next ones (12 a second, each held and blended into the next): the object keeps its place while its surface and its meaning drift, StreamDiffusion style. About ${esc(String(perFrame))} s of GPU a frame, cut in like a generated run.</p>
+      </div>`;
+}
+async function dreamRun(index) {
+  const id = easyVideoId();
+  const lane = state.lane && state.lane.id === id ? state.lane : null;
+  if (!id || !lane) return;
+  const lenEl = document.getElementById("tl-dream-s");
+  const depthEl = document.getElementById("tl-dream-depth");
+  const seconds = Number((lenEl && lenEl.value) || 2);
+  const depth = (depthEl && depthEl.value) || "light";
+  const shot = lane.shots.find((x) => x.index === Number(index)) || {};
+  await postCutEdit(id, "dream", { first: Number(index), seconds, depth }, `Dreaming ${seconds} s from shot ${Number(index) + 1} on the GPU (${depth})`, shot.start);
 }
 
 // A timeline edit that goes through the job (the re-cut with the overrides, a re-render, a generated run): the making
@@ -3373,6 +3400,8 @@ document.addEventListener("click", async (event) => {
     rerenderShot(Number(el.dataset.index));
   } else if (act === "easy-tl-insert") {
     insertRun(Number(el.dataset.index));
+  } else if (act === "easy-tl-dream") {
+    dreamRun(Number(el.dataset.index));
   } else if (act === "easy-overlay") {
     state.easy.overlay = !state.easy.overlay;
     render();

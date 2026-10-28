@@ -187,6 +187,11 @@ frames of the cut: 2.55 s a frame warm at 432x768, 46 s for the first; every fra
 a robot hand: `dream_check_zimage_img2img.png`). So an offline "Dream this span" on the timeline is feasible (about two
 minutes of GPU for two seconds at 24 fps, one at 12), with the flicker as its character; live is not.
 
+**Dream this span landed** (Tys: "Build Dream this span on the timeline: Z-Image Turbo img2img over a chosen 1 to 3 s,
+at 12 fps, cut in like a generated run"). `xenoform.dream`, the shot drawer's Dream here (1 to 3 s, light or deep).
+Made through desk 47324 on 9207df6b: 2 s from 7 s, light, 24 dreamed frames in 72 s, 110 s with the re-cut
+(`Desktop\xeno_morph_styles_28oct\dream_this_span_before_after.mp4` and `dream_this_span_strip.png`).
+
 ## 5. After the contest: the music video maker
 
 The split Tys described stays the direction: a music video maker (song plus footage, an audio-reactive auto-edit) with the morph
