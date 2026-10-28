@@ -2026,5 +2026,79 @@
    "finish": "living plant form, dewy",
    "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/featured_prompts.json"
   }
+ ],
+ "none": [
+  {
+   "file": "none/00_orb.jpg",
+   "noun": "orb",
+   "finish": "its own real materials and colours",
+   "source": "Z-Image Turbo (Apache 2.0), configs/still_prompts.json none"
+  },
+  {
+   "file": "none/01_nautilus.jpg",
+   "noun": "nautilus",
+   "finish": "its own real materials and colours",
+   "source": "Z-Image Turbo (Apache 2.0), configs/still_prompts.json none"
+  },
+  {
+   "file": "none/02_owl.jpg",
+   "noun": "owl",
+   "finish": "its own real materials and colours",
+   "source": "Z-Image Turbo (Apache 2.0), configs/still_prompts.json none"
+  },
+  {
+   "file": "none/03_jet_engine.jpg",
+   "noun": "jet engine",
+   "finish": "its own real materials and colours",
+   "source": "Z-Image Turbo (Apache 2.0), configs/still_prompts.json none"
+  },
+  {
+   "file": "none/04_lighthouse.jpg",
+   "noun": "lighthouse",
+   "finish": "its own real materials and colours",
+   "source": "Z-Image Turbo (Apache 2.0), configs/still_prompts.json none"
+  },
+  {
+   "file": "none/05_compass.jpg",
+   "noun": "compass",
+   "finish": "its own real materials and colours",
+   "source": "Z-Image Turbo (Apache 2.0), configs/still_prompts.json none"
+  },
+  {
+   "file": "none/06_lotus.jpg",
+   "noun": "lotus",
+   "finish": "its own real materials and colours",
+   "source": "Z-Image Turbo (Apache 2.0), configs/still_prompts.json none"
+  },
+  {
+   "file": "none/07_bismuth_crystal.jpg",
+   "noun": "bismuth crystal",
+   "finish": "its own real materials and colours",
+   "source": "Z-Image Turbo (Apache 2.0), configs/still_prompts.json none"
+  },
+  {
+   "file": "none/08_gyroscope.jpg",
+   "noun": "gyroscope",
+   "finish": "its own real materials and colours",
+   "source": "Z-Image Turbo (Apache 2.0), configs/still_prompts.json none"
+  },
+  {
+   "file": "none/09_seahorse.jpg",
+   "noun": "seahorse",
+   "finish": "its own real materials and colours",
+   "source": "Z-Image Turbo (Apache 2.0), configs/still_prompts.json none"
+  },
+  {
+   "file": "none/10_typewriter.jpg",
+   "noun": "typewriter",
+   "finish": "its own real materials and colours",
+   "source": "Z-Image Turbo (Apache 2.0), configs/still_prompts.json none"
+  },
+  {
+   "file": "none/11_snowflake.jpg",
+   "noun": "snowflake",
+   "finish": "its own real materials and colours",
+   "source": "Z-Image Turbo (Apache 2.0), configs/still_prompts.json none"
+  }
  ]
 }

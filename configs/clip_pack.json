@@ -307,6 +307,18 @@
    "source_morph": "00_jellyfish_iridescent -> 01_spiral_seashell_iridescent",
    "qa": true,
    "checked": "regenerated 2026-10-23 from the vibe's own stills, pending Tys review"
+  },
+  "none": {
+   "clips": [
+    "library/none/wide.mp4",
+    "library/none/medium.mp4",
+    "library/none/close.mp4",
+    "library/none/reveal.mp4"
+   ],
+   "source_morph": "00_orb -> 01_nautilus",
+   "autotune_score": 100.0,
+   "qa": true,
+   "checked": "generated 2026-10-29 (70.9 s, temporal QA 100), frames checked by eye"
   }
  }
 }

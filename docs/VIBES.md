@@ -29,6 +29,9 @@ Autotune results in `configs/autotune.json` win over a registry `ltx` block. Bac
 | `ice-crystal` | Ice crystal | Backlit frost crystals grow and fracture. | scene-morph / luma-wipe / chroma-split |
 | `origami-noir` | Origami noir | Black and gold-foil paper folds itself into new forms. | stutter-cut / zoom-through / stutter-cut |
 | `alien-botanical` | Alien botanical | Iridescent alien flora with glowing veins unfurls. | scene-morph / luma-wipe / liquid-melt |
+| `none` | None | No vibe: the things as they are, their own materials, plain light, no grade. | match-cut / depth-parallax / cut |
+
+**None** is the last featured card: each object in its own real materials and colours on a plain dark grey backdrop in soft studio light, photoreal, with a light glow and no dance look. Its stills (`configs/still_prompts.json` `none`) are grown from every subject family, so a None cut keeps to whatever realm or theme the line names.
 
 ## Assets per vibe
 

@@ -191,5 +191,11 @@
   "subject": "One single {noun} folded from translucent white paper, its folds turning soft and organic like wet porcelain.",
   "source": "written 25 Oct 2026 to match the regraded pool",
   "scene": "Bright airy wide photograph, a scene built from folded white paper and glazed porcelain, warm morning sunlight, soft cream and pale apricot haze at the horizon, soft contact shadows, the whole frame filled edge to edge, no single centred object, no people, no faces, no text, no letters, no watermark, crisp focus, high detail, clean."
+ },
+ "none": {
+  "prefix": "Studio photograph of one single real object in its own natural materials and colours, centred and filling most of the frame, plain seamless dark grey backdrop, soft natural studio light, crisp focus, high detail, photorealistic, no text, no letters, no logos, no people, no faces.",
+  "subject": "One single {noun}.",
+  "scene": "Photograph of a wide real place in its natural light and colours, filling the whole frame edge to edge, no single centred object, photorealistic, no people, no faces, no text.",
+  "source": "Tys, 29 Oct: a None vibe"
  }
 }

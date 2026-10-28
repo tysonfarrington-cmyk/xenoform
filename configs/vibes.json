@@ -1247,6 +1247,46 @@
    ],
    "ready": false,
    "featured": 0
+  },
+  {
+   "id": "none",
+   "name": "None",
+   "line": "No vibe: the things as they are, their own materials, plain light, no grade.",
+   "palette": "neutral",
+   "dark": true,
+   "tone": "dark",
+   "register": "pynchon",
+   "morph": true,
+   "look": "each object in its own real materials and natural colours, soft natural studio light, plain dark grey backdrop, photorealistic",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, illustration, painting, hands, deformed, people, faces",
+   "lighting": "soft natural studio light",
+   "material": "its own real materials",
+   "motion": "the object turns into the next as it is",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "transitions": {
+    "drop": "match-cut",
+    "switch": "depth-parallax",
+    "beat": "cut",
+    "silence": "black-hold"
+   },
+   "still_style": "Studio photograph of one single real object in its own natural materials and colours, centred and filling most of the frame, plain seamless dark grey backdrop, soft natural studio light, crisp focus, high detail, photorealistic, no text, no letters, no logos, no people, no faces.",
+   "tags": [
+    "plain",
+    "natural",
+    "none"
+   ],
+   "ready": true,
+   "fx_defaults": {
+    "glow": 0.2,
+    "chaos": 0.3,
+    "dance_fx": "off"
+   },
+   "featured": 13
   }
  ]
 }

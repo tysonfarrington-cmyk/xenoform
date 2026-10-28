@@ -108,7 +108,7 @@ def test_ui_lists_every_vibe():
         if listed:
             assert f"vibes/{vid}.jpg" in page
     featured = [v for v in REG["vibes"] if v.get("featured", 0) > 0]
-    assert len(featured) == 12 and all(f'"id": "{v["id"]}"' in app for v in featured)
+    assert len(featured) == 13 and all(f'"id": "{v["id"]}"' in app for v in featured)  # twelve vibes and None
 
 
 def test_morph_pass_uses_the_registry():
