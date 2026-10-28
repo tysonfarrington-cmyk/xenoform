@@ -29,8 +29,8 @@ a race, which is why the footage-first music video maker is the later project (s
 | Part | What it has | Where |
 |---|---|---|
 | Morph | One prompt for every morph of a run: "one single sculptural object slowly melts and flows into another" (or its scene variant). Every morph is a melt. | `morph_pass.prompt_for` (morph_pass.py:444), `SCENE_OPENINGS` |
-| Stills | 29 vibes, a shipped pool, Grow (Z-Image Turbo, about 6 s a still), your own shapes, scenes, your own images leading the chain | `stills.py`, the Library and Chain rows |
-| Models | Draft: LTX 0.9.5 at 320x576 (about 35 s a morph). Final: LTX-2.3 22B distilled fp8 plus a 4x upscale (about 12.7 min a morph measured). An LTX-2.5 22B distilled int8 transformer is installed and unused by the desk. | `dense.py`, `final_tier.py`, `morph_pass.LTX25_FILES` |
+| Stills | 28 vibes, a shipped pool, Grow (Z-Image Turbo, about 6 s a still), your own shapes, scenes, your own images leading the chain | `stills.py`, the Library and Chain rows |
+| Models | Draft: LTX 0.9.5 at 320x576 (about 35 s a morph). Final: LTX-2.3 22B distilled fp8 plus a 4x upscale (about 12.7 min a morph measured; see LTX-2.5 below). LTX-2.5 22B distilled int8 is the Final's model whenever its four files are installed. | `dense.py`, `final_tier.py`, `morph_pass.LTX25_FILES` |
 | Transitions | 17 kinds in `transitions_fx` (one GPU: scene-morph; 16 CPU: flow-morph, liquid-melt, luma-wipe, stutter-cut, tape-stop, datamosh, chroma-split, zoom-through, black-hold, cut, match-cut, flow-carry, depth-parallax, lens-breath, chrome-refract, echo-trail) and 4 boundary kinds (smear, strobe cut, strip/iris wipe, chromatic rip) | `transitions_fx.py`, `boundary_fx.py` |
 | Effects | 6 Looks (warm-leak, cool-echo, noir-glow, bloom-rush, negative-rush, cyan-flash); beat FX (kick pulse, edge flash, bloom, loudness lift); foreshadow; subject orbit; end card | `dance_fx.PRESETS`, `beatfx.py` |
 | Audio | Beat grid, drop, sections; the kick scales the frame, transients light the edges, loudness drives exposure; stems drive the orbit, the boundary kinds, the negative pulse and the Look's trails | `beatfx.envelopes`, `stem_orbit`, `boundary_fx.STEM` |
@@ -224,6 +224,8 @@ its just movie clips, and if we are doing objects just objects"). `xenoform.clip
 only the user's clips, a clip and a morph alternating on the song's shots, each morph from the last frame shown into the
 next first frame on the cut's tier; an object cut never takes a clip (the own-clip slots in object cuts are gone from the
 desk). E6, the middle tier, landed as the Fast Final.
+
+**LTX-2.5 and Cloud Final** (29 Oct). E6's measurement: LTX-2.5 takes 321-413 s a 3 s shot at 576x1024 on the 3080 Ti. It is the Final's model whenever its files are installed (LTX-2.3 otherwise, or `XENO_FINAL_MODEL=ltx23`) and Cloud Final's default, both with loose guides. The Draft engine's opt-in is `XENO_MORPH_ENGINE=ltx25`. Cloud Final (the Final graph on Comfy Cloud, three shots at a time), the None vibe and Setup asking ComfyUI which models it has landed the same day.
 
 ## 5. After the contest: the music video maker
 

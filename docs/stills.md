@@ -18,11 +18,11 @@ pool; the listing skips files that are gone.
 
 Fine-tune → **Library** shows the vibe's counts (shipped, grown here, your own) and two ways to add:
 
-- **Grow 36 more** renders 36 subjects the vibe has not rendered yet, picked from `configs/subjects.json`: 24 families of
+- **Grow 36 more** renders 36 subjects the vibe has not rendered yet, picked from `configs/subjects.json`: 30 families of
   nouns (celestial bodies, sea creatures, solids and knots, musical instruments, lamps, architectural fragments, bones,
   paper forms, and so on), each vibe weighting the families that suit its material and avoiding the ones that do not.
   Chrome draws on solids, instruments and machine parts; a risograph on creatures and plants; botanical on flowers and
-  pods. Weighted sampling without replacement, so a core family leads without crowding the rest out. The 395 nouns are
+  pods. Weighted sampling without replacement, so a core family leads without crowding the rest out. The 575 nouns are
   single sculptural subjects with no people, faces, text, brands or weapons.
 - **Your own shapes**: type subjects ("a brass astrolabe, a wolf skull"), press **Make them**, and they are rendered in
   the vibe's material and listed as yours. They go **first in the chain** of the next cut. Up to twelve a request.
