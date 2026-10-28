@@ -209,7 +209,11 @@ def test_installers_ship_demucs_by_default_with_an_opt_out():
     assert "--no-stems" in sh and "[stems]" in sh and "download.pytorch.org/whl/cpu" in sh and "--link-nodes" in sh
     assert sh.index("--no-deps -e") < sh.index("[stems]")
     assert "%*" in bat
-    extras = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))["project"]["optional-dependencies"]
+    project = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))["project"]
+    extras = project["optional-dependencies"]
     assert extras["stems"] == ["demucs>=4.0"]
+    # stills.py imports PIL at module level, so Pillow must be a plain dependency in both files.
+    assert any(dep.startswith("pillow") for dep in project["dependencies"])
+    assert "pillow" in (root / "requirements.txt").read_text(encoding="utf-8")
     ci = (root / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     assert "stems" not in ci and "demucs" not in ci

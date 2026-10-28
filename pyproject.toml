@@ -22,6 +22,7 @@ dependencies = [
     "python-multipart==0.0.32",
     "aiohttp==3.11.18",
     "opencv-python-headless==5.0.0.93",
+    "pillow>=10",
 ]
 
 [project.optional-dependencies]

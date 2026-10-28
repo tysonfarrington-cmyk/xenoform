@@ -7,6 +7,9 @@ on:
 jobs:
   install-and-smoke:
     runs-on: ubuntu-latest
+    env:
+      # No seed-clip download from NASA while the tests run.
+      XENO_OFFLINE: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -25,5 +28,5 @@ jobs:
         run: .venv/bin/pytest tests/test_install.py
       - name: Open-weights default workflows
         run: .venv/bin/pytest tests/test_eligibility.py
-      - name: Full suite
-        run: .venv/bin/pytest
+      - name: Full suite (the two steps above are not run again)
+        run: .venv/bin/pytest --ignore=tests/test_install.py --ignore=tests/test_eligibility.py
