@@ -1947,21 +1947,31 @@ def create_app(cfg: dict | None = None):
 
     @app.post("/api/batches/{batch_id}/cancel")
     def batch_cancel(batch_id: str) -> dict:
+        from xenoform import batch
+
         try:
             return _batch_view(_batches().cancel(batch_id))
         except KeyError as exc:
             raise HTTPException(404, "No such batch.") from exc
+        except batch.Elsewhere as exc:  # another desk on this work folder is running it
+            raise HTTPException(409, str(exc)) from exc
 
     @app.post("/api/batches/{batch_id}/resume")
     def batch_resume(batch_id: str) -> dict:
+        from xenoform import batch
+
         try:
             return _batch_view(_batches().resume(batch_id))
         except KeyError as exc:
             raise HTTPException(404, "No such batch.") from exc
+        except batch.Elsewhere as exc:
+            raise HTTPException(409, str(exc)) from exc
 
     @app.post("/api/batches/{batch_id}/items/{k}/final")
     def batch_final(batch_id: str, k: int) -> dict:
         """Render this one at Final: the variation's own body at Final, its chain pinned from the cut it made."""
+        from xenoform import batch
+
         runner = _batches()
         b = runner.get(batch_id)
         src = next((i for i in (b or {}).get("items") or [] if i.get("k") == k and i.get("kind") == "draft"), None)
@@ -1975,7 +1985,10 @@ def create_app(cfg: dict | None = None):
             pins = {str(i): str(f) for i, f in enumerate(rec.get("stills") or [])}
         except (OSError, ValueError):
             pass
-        runner.add_final(batch_id, k, pins)
+        try:
+            runner.add_final(batch_id, k, pins)
+        except batch.Elsewhere as exc:
+            raise HTTPException(409, str(exc)) from exc
         return _batch_view(runner.get(batch_id) or b)
 
     @app.get("/api/videos/{video_id}/video")

@@ -45,6 +45,15 @@ FEELS = ("slow and dreamy", "hard and glitchy", "warm and hazy", "cold and sharp
 KNOB_DEFAULTS = {"intensity": 0.5, "speed": 0.5, "chaos": 0.3, "glow": 0.4}  # dense.macros' neutral positions
 OPEN = ("queued", "waiting", "running")
 CLOSED = ("done", "error", "cancelled", "stopped")
+# Several desks share one work folder (Tys runs two, and a session runs its own): each batch belongs to the desk that
+# queued or resumed it (``owner``, a token a desk process draws at start), that desk alone runs it and touches its
+# ``beat`` while it is open, and an open batch whose beat is older than ``STALE_S`` has no desk alive running it.
+STALE_S = 60.0
+BEAT_S = 15.0
+
+
+class Elsewhere(ValueError):
+    """The batch is running on another desk: act on it there."""
 
 
 # ------------------------------------------------------------------ the variations
@@ -199,23 +208,44 @@ class Runner:
         self._wake = threading.Event()
         self._thread: threading.Thread | None = None
         self._batches: dict[str, dict] | None = None
+        self.token = uuid.uuid4().hex[:10]  # this desk process: the batches it owns are the ones it runs
 
     # -- the records
+    def mine(self, b: dict | None) -> bool:
+        return bool(b) and b.get("owner") == self.token
+
+    def _alive_elsewhere(self, b: dict) -> bool:
+        """Another desk owns ``b`` and has touched it lately while it has work open."""
+        return (not self.mine(b) and any(i.get("status") in OPEN for i in b.get("items") or [])
+                and time.time() - float(b.get("beat") or 0.0) <= STALE_S)
+
     def _all(self) -> dict[str, dict]:
+        """Every batch in the folder: this desk's from memory (the truth while it runs them), the rest read again from
+        disk each time, so a batch another desk queued shows up here too. An open batch whose desk stopped beating has
+        no desk running it: its open items are stopped until Resume."""
         if self._batches is None:
             self._batches = {}
-            for path in sorted(self.root.glob("*.json")) if self.root.is_dir() else []:
-                try:
-                    b = json.loads(path.read_text(encoding="utf-8"))
-                except (OSError, ValueError):
-                    continue
-                stale = [i for i in b.get("items") or [] if i.get("status") in OPEN]
-                for item in stale:  # a desk before this one was running it: its job died with it
-                    item.update({"status": "stopped", "detail": "The desk restarted before this one finished: Resume runs it again."})
-                self._batches[str(b.get("id"))] = b
-                if stale:
-                    self.save(b)
+        now = time.time()
+        for path in sorted(self.root.glob("*.json")) if self.root.is_dir() else []:
+            if self.mine(self._batches.get(path.stem)):
+                continue
+            try:
+                b = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            stale = [i for i in b.get("items") or [] if i.get("status") in OPEN] if now - float(b.get("beat") or 0.0) > STALE_S else []
+            for item in stale:  # the desk that was running it is gone (restarted or closed): its job died with it
+                item.update({"status": "stopped", "detail": "The desk restarted before this one finished: Resume runs it again."})
+            self._batches[str(b.get("id"))] = b
+            if stale:
+                self.save(b)
         return self._batches
+
+    def _claim(self, b: dict) -> None:
+        """This desk takes ``b`` over (it queued, resumed or extended it): it runs it from now on."""
+        if self._alive_elsewhere(b):
+            raise Elsewhere("These variations are running on another desk: act on them there.")
+        b["owner"], b["beat"] = self.token, time.time()
 
     def save(self, b: dict) -> None:
         self.root.mkdir(parents=True, exist_ok=True)
@@ -240,7 +270,8 @@ class Runner:
             item.update({"status": "queued", "detail": "", "job_id": "", "queued_at": now})
         b = {"id": uuid.uuid4().hex[:8], "created": datetime.now().astimezone().isoformat(timespec="seconds"),
              "vary": vary, "count": int(count), "song": str(body.get("song") or ""), "idea": str(body.get("idea") or ""),
-             "vibe": str(body.get("vibe") or ""), "length_s": float(body.get("length_s") or 0.0), **extra, "items": items}
+             "vibe": str(body.get("vibe") or ""), "length_s": float(body.get("length_s") or 0.0), **extra, "items": items,
+             "owner": self.token, "beat": now}
         with self._lock:
             self._all()[b["id"]] = b
             self.save(b)
@@ -254,6 +285,7 @@ class Runner:
             src = next((i for i in (b or {}).get("items") or [] if i.get("k") == int(k) and i.get("kind") == "draft"), None)
             if b is None or src is None:
                 raise KeyError("No such variation.")
+            self._claim(b)
             body = copy.deepcopy(src["body"])
             body["quality_tier"] = "final"
             if pins:
@@ -270,6 +302,8 @@ class Runner:
             b = self._all().get(bid)
             if b is None:
                 raise KeyError("No such batch.")
+            if self._alive_elsewhere(b):
+                raise Elsewhere("These variations are running on another desk: cancel them there.")
             for item in b["items"]:
                 if item["status"] in ("queued", "waiting", "stopped"):
                     item.update({"status": "cancelled", "detail": "Cancelled before it ran."})
@@ -283,6 +317,7 @@ class Runner:
             b = self._all().get(bid)
             if b is None:
                 raise KeyError("No such batch.")
+            self._claim(b)  # Resume makes this desk the one that runs them
             for item in b["items"]:
                 if item["status"] == "stopped":
                     item.update({"status": "queued", "detail": "", "job_id": "", "queued_at": time.time()})
@@ -292,14 +327,24 @@ class Runner:
 
     # -- the scheduler
     def _open(self) -> list[tuple[dict, dict]]:
-        out = [(b, i) for b in self._all().values() for i in b.get("items") or [] if i.get("status") in OPEN]
+        """This desk's open items (another desk's batches are its own to run)."""
+        out = [(b, i) for b in self._all().values() if self.mine(b) for i in b.get("items") or [] if i.get("status") in OPEN]
         return sorted(out, key=lambda bi: (bi[1].get("status") != "running", bi[1].get("queued_at") or 0, bi[1]["k"]))
+
+    def _heartbeat(self) -> None:
+        """Touch this desk's open batches now and then, so the other desks know someone is running them."""
+        now = time.time()
+        for b in list((self._batches or {}).values()):
+            if self.mine(b) and any(i.get("status") in OPEN for i in b.get("items") or []) and now - float(b.get("beat") or 0.0) >= BEAT_S:
+                b["beat"] = now
+                self.save(b)
 
     def step(self) -> str:
         """One pass: follow the running item, else start the next queued one if the GPU is free. Returns what
         happened: "running", "finished", "waiting", "started", "refused" or "idle"."""
         with self._lock:
             todo = self._open()
+            self._heartbeat()
             if not todo:
                 return "idle"
             b, item = todo[0]

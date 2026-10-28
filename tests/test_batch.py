@@ -159,12 +159,47 @@ def test_cancel_stops_the_rest_and_a_restart_leaves_the_batch_to_resume(tmp_path
     assert [i["status"] for i in r.get(b["id"])["items"]] == ["cancelled"] * 3
     b2 = r.add(_body(), 3, "vibe")
     r.step()  # one running when the desk goes down
+    path = tmp_path / "batches" / f"{b2['id']}.json"
+    gone = json.loads(path.read_text(encoding="utf-8"))
+    gone["beat"] -= batch.STALE_S + 5  # its desk stopped beating a minute ago
+    path.write_text(json.dumps(gone), encoding="utf-8")
     again = _runner(tmp_path, Fake())
     items = again.get(b2["id"])["items"]
     assert [i["status"] for i in items] == ["stopped"] * 3 and "Resume" in items[0]["detail"]
     assert again.step() == "idle"  # nothing runs on its own after a restart
     assert [i["status"] for i in again.resume(b2["id"])["items"]] == ["queued"] * 3
     assert again.step() == "started"
+
+
+def test_two_live_desks_on_one_work_folder_leave_each_others_batches_alone(tmp_path):
+    """Tys runs two desks (and a session its own) on one work folder: a desk runs only the batches it queued or
+    resumed, shows the others', and stops another's only when that desk has stopped beating."""
+    fa, fb = Fake(), Fake()
+    a, b = _runner(tmp_path, fa), _runner(tmp_path, fb)
+    mine = a.add(_body(), 3, "seed")
+    assert a.step() == "started" and len(fa.started) == 1
+    seen = b.get(mine["id"])
+    assert seen is not None and [i["status"] for i in seen["items"]][0] == "running"  # shown, not stopped
+    assert b.step() == "idle" and fb.started == []  # and never run twice
+    with pytest.raises(batch.Elsewhere):
+        b.cancel(mine["id"])
+    with pytest.raises(batch.Elsewhere):
+        b.resume(mine["id"])
+    late = b.add(_body(), 3, "vibe")  # queued after a's first: b's own
+    assert a.get(late["id"]) is not None and a.step() == "running"  # a sees it and keeps to its own
+    assert b.step() == "started" and len(fb.started) == 1
+    # a beats while it runs: its file stays fresh for b
+    on_disk = json.loads((tmp_path / "batches" / f"{mine['id']}.json").read_text(encoding="utf-8"))
+    on_disk["beat"] -= batch.BEAT_S + 1
+    a._batches[mine["id"]]["beat"] = on_disk["beat"]
+    a.step()
+    assert json.loads((tmp_path / "batches" / f"{mine['id']}.json").read_text(encoding="utf-8"))["beat"] > on_disk["beat"]
+    # a dies: once its beat is stale, b stops its open items and may resume them as its own
+    dead = json.loads((tmp_path / "batches" / f"{mine['id']}.json").read_text(encoding="utf-8"))
+    dead["beat"] -= batch.STALE_S + 5
+    (tmp_path / "batches" / f"{mine['id']}.json").write_text(json.dumps(dead), encoding="utf-8")
+    assert [i["status"] for i in b.get(mine["id"])["items"]] == ["stopped"] * 3
+    assert b.resume(mine["id"])["owner"] == b.token
 
 
 def _job(root, name, tier, seconds, took):
@@ -239,6 +274,7 @@ def test_the_desk_queues_lists_and_finals_variations(tmp_path, monkeypatch):
     runner = batch.Runner(tmp_path / "batches", start=None, job_of=None, busy=None)
     rec = runner._all()[b["id"]]
     rec["items"][0].update({"status": "done", "job_id": "aa11bb22"})
+    rec["beat"] = rec["beat"] - batch.STALE_S - 5  # the desk that queued it has gone (a restart): it stopped beating
     runner.save(rec)
     client = TestClient(_ui.create_app())  # a fresh desk reads the batch from disk
     got = client.post(f"/api/batches/{b['id']}/items/0/final")
