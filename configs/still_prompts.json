@@ -1,6 +1,6 @@
 {
  "neon-noir": {
-  "prefix": "Cinematic studio photograph, neon noir, a sculpture of glossy black glass and smoked chrome beaded with rain droplets, standing on black rain-slick asphalt, hard magenta key light from the left and cyan rim light from the right, light rain haze and volumetric mist, neon reflections in the wet ground, deep black background, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces.",
+  "prefix": "Cinematic studio photograph, neon noir, a sculpture of glossy black glass and smoked chrome beaded with rain droplets, standing on black rain-slick asphalt, hard magenta light from the left and cyan rim light from the right, light rain haze and volumetric mist, neon reflections in the wet ground, deep black background, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces.",
   "subject": "One single {noun} made of black wet lacquered glass, catching the neon.",
   "source": "scripts/vibe_objects/featured_prompts.json",
   "scene": "Cinematic wide shot, neon noir, a rain-slick city scene at night, glossy black asphalt and smoked chrome beaded with rain, hard magenta light from the left and cyan rim light from the right, volumetric mist and light rain, neon reflections across the wet ground, no signage, the whole frame filled edge to edge, no single centred object, no people, no faces, no text, no letters, no watermark, crisp focus, high detail, elegant."
@@ -42,10 +42,10 @@
   "scene": "1995 cyberspace computer graphics, a wide scene of glowing green and cyan wireframe geometry with low-poly gouraud shading, phosphor glow, faint scanlines, an infinite glowing grid floor receding into pure black, self-lit wireframe filling the whole frame, no single centred object, no people, no faces, no text, no letters."
  },
  "wet-paint": {
-  "prefix": "Studio macro photograph, a sculpture formed from thick glossy wet acrylic paint, swirling ribbons of cobalt blue, vermilion red and cream, heavy impasto ridges and glossy highlights, soft key light, cream seamless backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces.",
+  "prefix": "Studio macro photograph, a sculpture formed from thick glossy wet acrylic paint, swirling ribbons of cobalt blue, vermilion red and cream, heavy impasto ridges and glossy highlights, soft main light, cream seamless backdrop, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces.",
   "subject": "One single {noun} sculpted from thick wet swirling acrylic paint.",
   "source": "scripts/vibe_objects/featured_prompts.json",
-  "scene": "Cinematic wide shot, a landscape formed from thick glossy wet acrylic paint, swirling ribbons of cobalt blue, vermilion red and cream, heavy impasto ridges and glossy highlights across the whole frame, soft key light, the whole frame filled edge to edge, no single centred object, no people, no faces, no text, no letters, no watermark, crisp focus, high detail, elegant."
+  "scene": "Cinematic wide shot, a landscape formed from thick glossy wet acrylic paint, swirling ribbons of cobalt blue, vermilion red and cream, heavy impasto ridges and glossy highlights across the whole frame, soft main light, the whole frame filled edge to edge, no single centred object, no people, no faces, no text, no letters, no watermark, crisp focus, high detail, elegant."
  },
  "shadow-self": {
   "prefix": "High-contrast film noir photograph, a sculptural object seen as a strong backlit silhouette, a single hard shaft of white light from behind through curling smoke, a bright rim of light tracing its edge, deep black shadows, 35mm film grain, black void, no human figure, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people, no faces.",
@@ -141,7 +141,7 @@
   "source": "scripts/vibe_objects/extended_prompts.json"
  },
  "origami-noir": {
-  "prefix": "Studio macro photograph, crisp origami folded from black paper and gold foil paper, sharp creases, elegant geometric folds, low key light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
+  "prefix": "Studio macro photograph, crisp origami folded from black paper and gold foil paper, sharp creases, elegant geometric folds, dim moody light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
   "subject": "One single {noun} made of black paper, gold foil.",
   "source": "scripts/vibe_objects/extended_prompts.json"
  },

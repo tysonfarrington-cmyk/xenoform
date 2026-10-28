@@ -112,7 +112,7 @@
    "morph": true,
    "look": "cinematic neon noir, wet glossy surfaces with magenta and cyan rim light, light rain haze and reflections on black wet asphalt, volumetric mist",
    "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces",
-   "lighting": "hard magenta key from left, cyan rim from right, haze",
+   "lighting": "hard magenta light from left, cyan rim from right, haze",
    "material": "wet lacquer and glass",
    "motion": "slow rain drift, neon flicker on hits",
    "ltx": {
@@ -127,7 +127,7 @@
     "beat": "cut",
     "silence": "black-hold"
    },
-   "still_style": "cinematic neon noir, wet glossy surfaces with magenta and cyan rim light, light rain haze and reflections on black wet asphalt, volumetric mist, hard magenta key from left, cyan rim from right, haze, one single subject centred, filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, no text, no letters.",
+   "still_style": "cinematic neon noir, wet glossy surfaces with magenta and cyan rim light, light rain haze and reflections on black wet asphalt, volumetric mist, hard magenta light from left, cyan rim from right, haze, one single subject centred, filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, no text, no letters.",
    "tags": [
     "neon",
     "noir",
@@ -366,7 +366,7 @@
    "morph": true,
    "look": "molten 24k gold, glowing orange-hot edges cooling to polished gold, drips and splashes, dark forge smoke",
    "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces",
-   "lighting": "warm underglow, single hard key",
+   "lighting": "warm underglow, single hard light",
    "material": "molten and polished gold",
    "motion": "heavy pour, drips on the beat",
    "ltx": {
@@ -381,7 +381,7 @@
     "beat": "cut",
     "silence": "black-hold"
    },
-   "still_style": "molten 24k gold, glowing orange-hot edges cooling to polished gold, drips and splashes, dark forge smoke, warm underglow, single hard key, one single subject centred, filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, no text, no letters.",
+   "still_style": "molten 24k gold, glowing orange-hot edges cooling to polished gold, drips and splashes, dark forge smoke, warm underglow, single hard light, one single subject centred, filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, no text, no letters.",
    "tags": [
     "liquid",
     "metal",
@@ -516,7 +516,7 @@
    "morph": true,
    "look": "thick glossy wet acrylic paint, swirling ribbons of cobalt, vermilion and cream, impasto ridges, studio macro on cream backdrop",
    "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces",
-   "lighting": "soft key with glossy highlights",
+   "lighting": "soft main light with glossy highlights",
    "material": "wet oil and acrylic paint",
    "motion": "paint folds and swirls into the next form",
    "ltx": {
@@ -531,7 +531,7 @@
     "beat": "cut",
     "silence": "black-hold"
    },
-   "still_style": "thick glossy wet acrylic paint, swirling ribbons of cobalt, vermilion and cream, impasto ridges, studio macro on cream backdrop, soft key with glossy highlights, one single subject centred, filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, no text, no letters.",
+   "still_style": "thick glossy wet acrylic paint, swirling ribbons of cobalt, vermilion and cream, impasto ridges, studio macro on cream backdrop, soft main light with glossy highlights, one single subject centred, filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, no text, no letters.",
    "tags": [
     "paint",
     "liquid",
@@ -841,7 +841,7 @@
    "morph": true,
    "look": "glossy wet aqua teal and hot pink pearlescent surfaces, retro 1990s web 3D render, pastel ocean caustics, holographic sheen, deep teal backdrop",
    "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, grey, muted, gritty",
-   "lighting": "pink and aqua dual key, wet highlights, caustics",
+   "lighting": "pink and aqua dual lights, wet highlights, caustics",
    "material": "wet pearlescent plastic",
    "motion": "floating, bobbing, slow spin like a screensaver",
    "ltx": {
@@ -1188,9 +1188,9 @@
    "tone": "dark",
    "register": "pynchon",
    "morph": true,
-   "look": "crisp origami folded from black paper and gold foil paper, sharp creases, elegant geometric folds, low key light, pure black void",
+   "look": "crisp origami folded from black paper and gold foil paper, sharp creases, elegant geometric folds, dim moody light, pure black void",
    "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, white paper, crumpled, messy",
-   "lighting": "low raking key, gold edge glints",
+   "lighting": "low raking light, gold edge glints",
    "material": "black paper, gold foil",
    "motion": "precise folding and unfolding, crisp snaps",
    "ltx": {
@@ -1205,7 +1205,7 @@
     "beat": "cut",
     "silence": "black-hold"
    },
-   "still_style": "Studio macro photograph, crisp origami folded from black paper and gold foil paper, sharp creases, elegant geometric folds, low key light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
+   "still_style": "Studio macro photograph, crisp origami folded from black paper and gold foil paper, sharp creases, elegant geometric folds, dim moody light, pure black void, one single large object centred and filling most of the frame, seamless backdrop, no visible lamps or studio equipment, crisp focus, high detail, elegant, no text, no letters, no people.",
    "tags": [
     "paper",
     "dark"
