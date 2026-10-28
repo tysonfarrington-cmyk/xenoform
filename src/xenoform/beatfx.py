@@ -355,8 +355,10 @@ def resolve_dance_preset(choice, vibe: str | None = None, house: dict | None = N
             except Exception:
                 pass
         return "house"
-    if text not in D.PRESETS:
-        raise ValueError(f"unknown dance_fx preset {text!r}; one of auto, off, {', '.join(D.PRESETS)}")
+    from xenoform.effects import LOOKS as _EXTRA  # the Dither look lives in effects.py
+
+    if text not in D.PRESETS and text not in _EXTRA:
+        raise ValueError(f"unknown dance_fx preset {text!r}; one of auto, off, {', '.join(tuple(D.PRESETS) + _EXTRA)}")
     return text
 
 
@@ -410,7 +412,7 @@ class LookPass:
     def __init__(self, *, dance_fx: str | None = None, stem_orbit: bool | None = None, stem_env: dict | None = None,
                  macros: dict | None = None, house: dict | None = None, beats: Iterable[float] = (), fps: int | None = None,
                  shots: int = 1, end_card: bool = False, seed: int = 0, palette_image: str | None = None,
-                 adaptive: bool = False, quality: str = "draft"):
+                 adaptive: bool = False, quality: str = "draft", tones: list | None = None):
         self.house = house_profile(house)
         self.cap = LOOK_CAP.get(str(quality or "draft"), LOOK_CAP["draft"])
         # Auto: the preset's colours follow the vibe's own palette (palette_image is one of its stills).
@@ -425,6 +427,9 @@ class LookPass:
         self.env = stem_env or {}
         self.macros = macros or {}
         self.mode = str(dance_fx or "off")
+        self.palette_image = palette_image
+        # the Dither look's tones: the cut's own (effects.palette_from_clips) when given, else from the palette still
+        self._tones = np.asarray(tones, np.float32) if tones is not None and len(tones) else None
         self.orbit = bool(stem_orbit)
         self.shots = max(1, int(shots)); self.end_card = bool(end_card); self.seed = int(seed)
         self.notes: list[str] = []
@@ -458,7 +463,12 @@ class LookPass:
     def start_shot(self, si: int, n_frames: int, t0: float) -> None:
         """New dance_fx state (the echo is per shot) and the orbit plan for this shot."""
         self.fx = None; self.plan = None; self.n = int(n_frames); self.t0 = float(t0)
-        if self.mode != "off":
+        if self.mode == "dither":  # a Look of effects.py, not a dance_fx preset: the dither runs in frame()
+            from xenoform import effects as E
+
+            self._levels = E.Levels()  # the light range, eased within the shot
+            self.roles.append(f"{si}:{self.role_for(si)}:dither")
+        elif self.mode != "off":
             from xenoform import dance_fx as D
 
             role = self.role_for(si)
@@ -489,6 +499,21 @@ class LookPass:
 
     def frame(self, frame: np.ndarray, k: int, t: float) -> np.ndarray:
         """Output frame ``k`` of the current shot at song time ``t``."""
+        if self.mode == "dither":  # the Dither look: the vibe's palette in blue-noise dots, a new grain on each beat
+            from xenoform import effects as E
+
+            t_start = time.perf_counter()
+            if self.plan is not None and k < self.n:
+                from xenoform import stem_orbit as O
+
+                frame = O.apply(frame, float(self.plan["yaw"][k]), float(self.plan["pitch"][k]), float(self.plan["roll"][k]))
+            if self._tones is None:
+                self._tones = E.palette_from_image(self.palette_image)
+            levels = getattr(self, "_levels", None)
+            frame = E.dither(frame, self._tones, dot=E.dot_for(frame.shape[:2]), shift=E.shift_for(t, self.beats),
+                             levels=levels(frame) if levels is not None else None)
+            self.seconds += time.perf_counter() - t_start; self.frames += 1
+            return frame
         if self.fx is None and self.plan is None:
             return frame
         from xenoform import dance_fx as D
@@ -593,7 +618,7 @@ def _blend_at(frames: np.ndarray, pos: float) -> np.ndarray:
 
 def _shot_frames(clip: Path, shot: dict, si: int, n0: int, total: int, *, aspect: str, w: int, h: int, fx: bool,
                  env: dict | None, beats: list, punch, zoom_scale: float, glow_gain: float, fps: int, look_kwargs: dict,
-                 foreshadow: dict | None = None, boundary: dict | None = None) -> dict:
+                 foreshadow: dict | None = None, boundary: dict | None = None, effects: dict | None = None) -> dict:
     """One shot's finished frames: reframed around the subject, the beat FX, then the house look. This is the
     work the compose loop used to do inline, as plain data in and out so it can run in a worker process: the
     look state is rebuilt here from ``look_kwargs`` and seeded per shot (``LookPass.start_shot``), so the
@@ -619,6 +644,9 @@ def _shot_frames(clip: Path, shot: dict, si: int, n0: int, total: int, *, aspect
     if shot.get("dance_fx"):  # the timeline's per-shot Look: a resolved preset or "off" for this shot alone (docs/TIMELINE.md)
         look.mode = str(shot["dance_fx"])
     look.start_shot(si, len(idx), n0 / fps)
+    from xenoform import effects as _E
+
+    chain = _E.Chain(effects, beats, look.mode)  # the TouchDesigner-style effects, after the look (feedback and slit-scan keep this shot's frames)
     out = np.empty((len(idx), h, w, 3), dtype=np.uint8)
     n = int(n0)
     fs_level = 0.0  # the foreshadow layer's eased stem level, carried frame to frame within the shot
@@ -690,6 +718,11 @@ def _shot_frames(clip: Path, shot: dict, si: int, n0: int, total: int, *, aspect
         frame = look.frame(frame, k, n / fps)
         if frame.shape[0] != h or frame.shape[1] != w:
             frame = resize(frame, w, h)
+        if chain.active:
+            frame = frame if frame.dtype == np.uint8 else np.clip(frame, 0, 255).astype(np.uint8)
+            kick = float(env["kick"][min(n, total - 1)]) if env is not None else 0.0
+            loud = float(env["loud"][min(n, total - 1)]) if env is not None else 0.5
+            frame = chain(frame, n / fps, kick=kick, loud=loud)
         out[k] = frame if frame.dtype == np.uint8 else np.clip(frame, 0, 255).astype(np.uint8)
         n += 1
     return {"frames": out, "centres": [a, b],
@@ -742,7 +775,7 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
             stem_orbit: bool | None = None, stem_env: dict | None = None, macros: dict | None = None,
             house: dict | None = None, end_card: bool = False, seed: int = 0, palette_image: str | None = None,
             adaptive: bool = False, transitions: list | None = None, foreshadow: str | None = None,
-            boundary_fx: list | None = None) -> dict:
+            boundary_fx: list | None = None, effects: list | None = None, tones: list | None = None) -> dict:
     """Retime every clip to its shot (speed, ease, hold, stutter, skip, reverse), reframe, add beat FX, mux.
 
     ``transitions``: one entry per shot, ``{"kind", "frames"}`` or None; a premium transition (transitions_fx)
@@ -752,6 +785,10 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
     ``boundary_fx``: one entry per shot from ``boundary_fx.pick`` (a smear, strobe cut, wipe or chromatic rip at
     the boundary into that shot, with its window) or None. These run inside the look pass, before the house look,
     riding a stem; a boundary they take gets no premium window. ``foreshadow`` is the layer's mode ("" for off).
+
+    ``effects``: the TouchDesigner-style effects (``xenoform.effects``: dither hits, feedback, kaleido, slit-scan),
+    run per frame after the look, riding the kick and the loudness. ``tones``: the dither's tones, measured from the
+    cut's own clips (``effects.palette_from_clips``); without them the palette still gives them.
 
     ``size`` overrides the output frame size (native vertical Final: 1080x1920). Clips that
     already have the target aspect pass through whole; any other clip is cropped around its object.
@@ -773,9 +810,12 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
     look = LookPass(dance_fx=dance_fx, stem_orbit=stem_orbit, stem_env=stem_env, macros=macros, house=house,
                     beats=beats, fps=fps, shots=len(shots), end_card=end_card, seed=seed, palette_image=palette_image,
                     adaptive=adaptive, quality=quality)
-    # a shot with its own look (the timeline) needs the envelopes even when the cut's look is off
+    # a shot with its own look (the timeline) needs the envelopes even when the cut's look is off, and so do the effects
     shot_looks = any(str(s.get("dance_fx") or "") not in ("", "off") for s in shots)
-    env = envelopes(audio_path, total, fps=fps) if (fx or look.active or shot_looks) else None
+    from xenoform import effects as _E
+
+    fx_cfg = _E.plan(effects, macros, palette_image, size or out_size(aspect, quality), tones=tones)
+    env = envelopes(audio_path, total, fps=fps) if (fx or look.active or shot_looks or fx_cfg) else None
     if (look.active or shot_looks) and not look.env:
         look.env = mix_stem_env(env, beats, fps)
     glow_gain = bloom_gain((macros or {}).get("glow", 0.4))  # the beat FX bloom: none at Glow 0, 1.6 at 1
@@ -812,11 +852,11 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
     # The per-shot work runs in _shot_frames, here or in worker processes (look_workers): a full song's look pass
     # used to take 0.2 s a frame on one core, about nineteen minutes for four minutes of picture.
     common = dict(aspect=aspect, w=w, h=h, fx=fx, env=env, beats=beats, punch=punch, zoom_scale=zoom_scale,
-                  glow_gain=glow_gain, fps=fps,
+                  glow_gain=glow_gain, fps=fps, effects=fx_cfg,
                   look_kwargs=dict(dance_fx=dance_fx, stem_orbit=stem_orbit, stem_env=look.env, macros=macros, house=house,
                                    beats=beats, fps=fps, shots=len(shots), end_card=end_card, seed=seed,
-                                   palette_image=palette_image, adaptive=adaptive, quality=quality))
-    workers = look_workers(total, heavy=bool(fx or look.active or shot_looks))
+                                   palette_image=palette_image, adaptive=adaptive, quality=quality, tones=tones))
+    workers = look_workers(total, heavy=bool(fx or look.active or shot_looks or fx_cfg))
     if workers > 1:
         log.info("compose: %d shots over %d worker processes", len(shots), workers)
     # the foreshadow layer: the next object brought into each shot's tail (foreshadow.plan reads the edge frames here,
@@ -923,7 +963,7 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
     return {"frames": n, "seconds": round(n / fps, 3), "size": f"{w}x{h}", "aspect": aspect, "fx": bool(fx),
             "overlay": over is not None, "centres": centres, "fps": fps, "look": look.info(),
             "transitions": used_transitions, "workers": int(workers), "foreshadow": _F.info(fs_entries, fs_mode, fs_params, fps),
-            "boundary_fx": _B.info(bx_picks, bx_params)}
+            "boundary_fx": _B.info(bx_picks, bx_params), "effects": list((fx_cfg or {}).get("names") or [])}
 
 
 def reframe_file(src: Path, dest: Path, aspect: str, *, quality: str = "draft", shots: list[dict] | None = None) -> dict:

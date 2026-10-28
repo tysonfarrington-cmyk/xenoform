@@ -114,7 +114,7 @@ function shortcutLabel() {
 }
 
 // The last session's vibe and Fine-tune choices survive a reload or a desk restart (the song cannot: uploads live on the server).
-const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow", "scenes", "pins", "feelSig", "batchN", "batchVary", "clipsOn", "scenesChosen", "morphStyle", "morphTiming"];
+const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow", "scenes", "pins", "feelSig", "batchN", "batchVary", "clipsOn", "scenesChosen", "morphStyle", "morphTiming", "effects"];
 function saveEasy() {
   if (!state || !state.easy) return;
   try {
@@ -198,6 +198,8 @@ function payload() {
     morph_styles: (state.easy && state.easy.carryStyles) || null,
     // when the change happens inside each morph (xenoform.morph_timing): smooth, beat or snap; a re-cut changes it
     morph_timing: (state.easy && state.easy.morphTiming) || "smooth",
+    // the effects (xenoform.effects) and the blocky smear: a re-cut changes them too
+    effects: (state.easy && state.easy.effects) || [],
     // Scenes (stills.kind "scene"): "off" (objects only), "mix" (a scene at every passage change), "only" (scenes alone)
     scene_stills: (state.easy && state.easy.scenes) || "off",
     // a Scenes choice made by hand: Off then stays Off when the idea line names a place (idea.shape_state)
@@ -861,6 +863,7 @@ function renderEasy() {
         <div class="energy-head"><h3>Knobs</h3><span>Turn, then re-cut. No GPU.</span></div>
         <div class="simple-knobs"></div>
         ${timingRow(easy.morphTiming || "smooth", "easy-morph-timing")}
+        ${effectsRow(easy.effects, "easy-effect")}
         ${lookRow(easy.danceFx || "auto", "easy-look")}
         ${foreshadowRow(easy)}
         ${scenesRow(easy)}
@@ -912,12 +915,13 @@ function renderEasy() {
       </section>
       <section class="panel span simple-knobs-panel" data-tour="easy-macros">
         <h3>Knobs</h3>
-        <p class="note">Intensity is the beat pulse and flash. Speed is the cut density and the trail length. Chaos is the punches, stutters and how far the subject swings, and it wilds the cuts: smears, wipes and chromatic rips at the handoffs as it climbs, strobe cuts past 0.7 (never two in two seconds), plain cuts at 0. Glow is the bloom. The look rides the vibe's own colours unless you pick one.</p>
+        <p class="note">Intensity is the beat pulse and flash. Speed is the cut density and the trail length. Chaos is the punches, stutters and how far the subject swings, and it wilds the cuts: wipes and chromatic rips at the handoffs as it climbs (the blocky smear too, sparingly, when Effects asks for it), strobe cuts past 0.7 (never two in two seconds), plain cuts at 0. Glow is the bloom. The look rides the vibe's own colours unless you pick one.</p>
         <div class="simple-knobs"></div>
         ${morphStyleRow(easy.morphStyle || "auto", "easy-morph-style")}
         <p class="note morph-style-note">${esc(MORPH_STYLE_NOTES[easy.morphStyle || "auto"] || "")}</p>
         ${timingRow(easy.morphTiming || "smooth", "easy-morph-timing")}
         <p class="note morph-timing-note">${esc(MORPH_TIMING_NOTES[easy.morphTiming || "smooth"] || "")}</p>
+        ${effectsRow(easy.effects, "easy-effect")}
         ${lookRow(easy.danceFx || "auto", "easy-look")}
         ${foreshadowRow(easy)}
         ${scenesRow(easy)}
@@ -1134,8 +1138,31 @@ function timingRow(current, act, index, asCut) {
   return `<div class="simple-seg morph-timing-row"><span>Timing</span><div class="toggle chips" role="group" aria-label="When the change happens inside each morph">${chips}</div></div>`;
 }
 
-const LOOK_PRESETS = ["warm-leak", "cool-echo", "noir-glow", "bloom-rush", "negative-rush", "cyan-flash"];
+// TouchDesigner-style effects (xenoform.effects), any of them at once, after the Look and riding the kick and the
+// loudness; a re-cut changes them with no GPU. "smear" is the blocky datamosh smear at a few handoffs, off unless asked.
+const EFFECTS = ["dither", "feedback", "kaleido", "slitscan", "smear"];
+const EFFECT_LABELS = { dither: "Dither hits", feedback: "Feedback", kaleido: "Kaleido", slitscan: "Slit-scan", smear: "Blocky smear" };
+const EFFECT_NOTES = {
+  "dither": "On each kick the picture drops to a few tones of the vibe's palette in fine blue-noise dots, then lets go.",
+  "feedback": "The picture over a zoomed, turned copy of the frame before: bright objects leave a tunnel; it swells with the loudness.",
+  "kaleido": "The frame folded into mirrored wedges, mixed in with the loudness, turning a step on each beat.",
+  "slitscan": "Each row from a moment further back the lower it sits: motion bends into curves as the song gets loud.",
+  "smear": "The blocky datamosh smear at a few handoffs (one in six at most, never the drop); off, those handoffs wipe or rip instead.",
+};
+function effectsRow(current, act) {
+  const on = new Set(current || []);
+  const chips = EFFECTS
+    .map((id) => `<button type="button" class="chip${on.has(id) ? " on" : ""}" data-act="${act}" data-value="${esc(id)}" aria-pressed="${on.has(id) ? "true" : "false"}" title="${esc(EFFECT_NOTES[id] || "")}">${esc(EFFECT_LABELS[id])}</button>`)
+    .join("");
+  const picked = EFFECTS.filter((id) => on.has(id));
+  const note = picked.length ? picked.map((id) => `${EFFECT_LABELS[id]}: ${EFFECT_NOTES[id]}`).join(" ") : "None: the morphs, the beat FX and the Look alone. Any of these can go on together.";
+  return `<div class="simple-seg effects-row"><span>Effects</span><div class="toggle chips" role="group" aria-label="Effects">${chips}</div></div>
+      <p class="note effects-note">${esc(note)}</p>`;
+}
+
+const LOOK_PRESETS = ["warm-leak", "cool-echo", "noir-glow", "bloom-rush", "negative-rush", "cyan-flash", "dither"];
 const LOOK_NOTES = {
+  "dither": "the vibe's palette in a few tones, broken up by fine blue-noise dots that jump on the beat (a print, a screen, a 1-bit game)",
   "auto": "The vibe's own look when it has one, else the house VJ look (cool-echo).",
   "off": "No colour or light pass. The beat FX still cut on the beat.",
   "warm-leak": "warm split-tone grade, film halation on the bass and a corner light leak on the beat; no echo",
@@ -2027,6 +2054,7 @@ function applySimpleRecipe(recipe) {
   easy.foreshadow = recipe.foreshadow || "auto";
   easy.morphStyle = recipe.morph_style || "auto";
   easy.morphTiming = recipe.morph_timing || "smooth";
+  easy.effects = Array.isArray(recipe.effects) ? recipe.effects.filter((x) => EFFECTS.includes(x)) : [];
   easy.scenes = ["off", "mix", "only"].includes(recipe.scene_stills) ? recipe.scene_stills : "off";
   easy.lengthS = Number(recipe.length_s || 0);
   easy.performer = Number(recipe.performer || 0);
@@ -2401,6 +2429,7 @@ async function recutWithKnobs() {
     beat_fx: state.easy.fx !== false,
     end_card: !!state.easy.endCard,
     morph_timing: state.easy.morphTiming || "smooth",
+    effects: state.easy.effects || [],
   };
   if (state.easy.tl && state.easy.tl.id === id) {  // the timeline's edits waiting for Apply ride along with the knobs
     body.shot_overrides = state.easy.tl.shots;
@@ -3387,6 +3416,15 @@ document.addEventListener("click", async (event) => {
     render();
   } else if (act === "easy-tl-style") {
     rerenderShot(Number(el.dataset.index), el.dataset.value);
+  } else if (act === "easy-effect") {
+    // the Effects row is a set: a chip toggles its effect on or off
+    const on = new Set(state.easy.effects || []);
+    const id = el.dataset.value;
+    if (EFFECTS.includes(id)) {
+      if (on.has(id)) on.delete(id); else on.add(id);
+    }
+    state.easy.effects = EFFECTS.filter((x) => on.has(x));
+    render();
   } else if (act === "easy-morph-timing") {
     state.easy.morphTiming = MORPH_TIMINGS.includes(el.dataset.value) ? el.dataset.value : "smooth";
     render();

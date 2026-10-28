@@ -459,7 +459,7 @@ def create_app(cfg: dict | None = None):
             "vibes": _vibes.catalog(),
             "featured": [v["id"] for v in _vibes.featured()],
             "original": list(_vibes.ORIGINAL),
-            "looks": [{"id": k, "note": v} for k, v in _dance.PRESET_NOTES.items()],
+            "looks": [{"id": k, "note": v} for k, v in {**_dance.PRESET_NOTES, **_effects_looks()}.items()],
         }
 
     @app.post("/api/analyze")
@@ -622,7 +622,7 @@ def create_app(cfg: dict | None = None):
         # answer "No such video." to Re-cut with these knobs on any cut made before the restart, 28 Oct)
         job, folder = _cut_job_for_edit(job_id, "re-cut")
         overrides = {k: body.get(k) for k in ("macros", "dance_fx", "stem_orbit", "beat_fx", "end_card", "beat_overlay", "foreshadow",
-                                              "morph_timing") if k in body}
+                                              "morph_timing", "effects", "boundary_smear") if k in body}
         # the timeline's per-shot and per-boundary overrides (docs/TIMELINE.md): whole maps, each replacing the record's
         for key in ("shot_overrides", "boundary_overrides"):
             if key in body and isinstance(body.get(key), (dict, list)):
@@ -1569,7 +1569,7 @@ def create_app(cfg: dict | None = None):
             "vertical": ["native", "crop"],
             "morphs": {"slider": list(_dense.MORPH_SLIDER), "max": _dense.MORPH_MAX, "auto": auto, "count": count,
                        "estimate": _dense.estimate(count, tier, aspect, vertical), "cost": _dense.COST},
-            "looks": [{"id": k, "note": v} for k, v in _dance.PRESET_NOTES.items()],
+            "looks": [{"id": k, "note": v} for k, v in {**_dance.PRESET_NOTES, **_effects_looks()}.items()],
             "house": {"aspect": "9:16", "energy": "dense", "tier": "draft", "dance_fx": "auto", "stem_orbit": True,
                       "beat_fx": True, "end_card": False},
         }
@@ -2761,6 +2761,13 @@ def _run_job(job_id: str, audio_path: Path, body: dict, cfg: dict, out: Path, ca
             job["error"] = sentence
             job["detail"] = sentence
             job["diagnostics"] = diagnostics(exc, extra={"job": job_id})
+
+
+def _effects_looks() -> dict:
+    """The Looks that live in effects.py (the Dither look), with their notes, beside dance_fx's presets."""
+    from xenoform import effects
+
+    return dict(effects.LOOK_NOTES)
 
 
 def _apply_own(body: dict) -> dict:

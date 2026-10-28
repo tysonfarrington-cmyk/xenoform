@@ -131,10 +131,17 @@ def test_pick_is_plain_at_chaos_zero_and_wild_at_one():
     assert B.pick(shots, {"chaos": 0.0}, BEATS, 24) == [None] * len(shots)
     assert B.pick(shots, {"chaos": 0.15}, BEATS, 24) == [None] * len(shots)
     assert B.share(0.0) == 0.0 and B.share(1.0) == 1.0 and 0.15 < B.share(0.3) < 0.3
-    wild = B.pick(shots, {"chaos": 1.0, "intensity": 1.0}, BEATS, 24, seed=3)
+    wild = B.pick(shots, {"chaos": 1.0, "intensity": 1.0}, BEATS, 24, seed=3, smear="on")
     kinds = [e["kind"] for e in wild if e]
     assert wild[0] is None and len(kinds) == len(shots) - 1  # every boundary
     assert set(kinds) == set(B.KINDS)  # all four across the song
+    # the blocky smear is opt-in since 28 Oct: off by default, one handoff in six at most and never the drop when sparing
+    plain = [e["kind"] for e in B.pick(shots, {"chaos": 1.0, "intensity": 1.0}, BEATS, 24, seed=3) if e]
+    assert "smear" not in plain and set(plain) <= {"strobe", "wipe", "rip"} and len(plain) >= len(kinds) - 2
+    sparing = B.pick(shots, {"chaos": 1.0, "intensity": 1.0}, BEATS, 24, seed=3, smear="sparing")
+    smears = [i for i, e in enumerate(sparing) if e and e["kind"] == "smear"]
+    assert 1 <= len(smears) <= max(1, len(kinds) // B.SMEAR_SHARE)
+    assert all(shots[i].get("boundary") != "drop" for i in smears) and B.smear_of("wild") == "off"
     assert all(a != b for a, b in zip(kinds, kinds[1:]))  # never the same twice in a row
     drop = next(i for i, s in enumerate(shots) if s.get("boundary") == "drop")
     assert wild[drop]["kind"] == "strobe" and wild[drop]["boundary"] == "drop"  # the drop gets the loudest
@@ -150,7 +157,7 @@ def test_pick_is_plain_at_chaos_zero_and_wild_at_one():
     mild = B.pick(shots, {"chaos": 0.6}, BEATS, 24)
     assert "strobe" not in {e["kind"] for e in mild if e}  # strobes only past 0.7
     assert mild[drop]["kind"] == "rip"  # the loudest it may have under 0.7
-    other_seed = [e["kind"] for e in B.pick(shots, {"chaos": 1.0}, BEATS, 24, seed=4) if e]
+    other_seed = [e["kind"] for e in B.pick(shots, {"chaos": 1.0}, BEATS, 24, seed=4, smear="on") if e]
     assert other_seed != kinds and set(other_seed) == set(B.KINDS)  # the seed rotates the order, the rules hold
 
 
@@ -197,7 +204,7 @@ def test_pick_leaves_the_vibes_premium_picks_except_the_drop_past_point_seven():
     assert B.label({"kind": "wipe", "variant": "iris"}) == "iris wipe" and B.label({"kind": "wipe"}) == "strip wipe"
     assert B.label({"kind": "strobe"}) == "strobe cut" and B.label({"kind": "rip"}) == "chromatic rip" and B.label(None) == ""
     rep = B.info(wild, B.params({"chaos": 1.0}))
-    assert rep["boundaries"] == sum(1 for e in wild if e) and set(rep["kinds"]) == set(B.KINDS) and rep["params"]["chaos"] == 1.0
+    assert rep["boundaries"] == sum(1 for e in wild if e) and set(rep["kinds"]) == {"strobe", "wipe", "rip"} and rep["params"]["chaos"] == 1.0
     assert "strobe cut" in rep["labels"]
 
 
@@ -295,7 +302,7 @@ def test_run_simple_records_the_kinds_and_the_lane_names_them(tmp_path, monkeypa
     monkeypatch.setattr("xenoform.portrait.portrait_stills", lambda stills, work, w=720, h=1280, background=None: stills)
     beats = [i * 0.5 for i in range(16)]
     wild = dense.run_simple({"duration": 8.0, "beats": beats}, DEMO, tmp_path / "x.mp4", tmp_path, {},
-                            {"vibe": "black", "aspect": "16:9", "dance_fx": "off", "stem_orbit": False,
+                            {"vibe": "black", "aspect": "16:9", "dance_fx": "off", "stem_orbit": False, "boundary_smear": "on",
                              "macros": {"chaos": 1.0, "intensity": 1.0}}, lambda *a: None, engine="mock")
     kinds = [e["kind"] if e else None for e in seen["boundary_fx"]]
     assert kinds[0] is None and all(kinds[1:]) and set(kinds[1:]) == set(B.KINDS) and kinds[4] == "strobe"

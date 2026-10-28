@@ -172,6 +172,21 @@ much work". Goes with E4 (Looks): a high-quality dither (ordered Bayer and error
 an effect, the pixel effect made opt-in, a few TD-style effects, and a StreamDiffusion feasibility check before any
 promise.
 
+**Dither and the effects landed** (Tys: "Go: blue-noise dither as a Look and a beat effect, the blocky smear made
+opt-in, two or three TouchDesigner-style effects, and check StreamDiffusion before promising it"). `xenoform.effects`:
+the Dither look, Dither hits, Feedback, Kaleido, Slit-scan; the smear off unless the Effects row asks (then one handoff
+in six, never the drop), a vibe's datamosh a chromatic split while it is off. Re-cut through desk 47324 on 9207df6b:
+`Desktop\xeno_morph_styles_28oct\effects_dither_feedback_kaleido_slitscan.mp4` (Auto look, Dither look, Feedback +
+Kaleido, Slit-scan + Dither hits, side by side with the song); 28 to 64 s a re-cut. First pass looked grey (the first
+still's band means) and the slit-scan tore into bands; fixed with the cut's own saturated tones, eased levels and a
+blended lag.
+
+**StreamDiffusion, checked:** not installed (no SD-Turbo-class checkpoint, no StreamDiffusion nodes; both need
+downloads and a ComfyUI restart, Tys's call). With what is installed, Z-Image Turbo img2img at denoise 0.45 over eight
+frames of the cut: 2.55 s a frame warm at 432x768, 46 s for the first; every frame re-dreams the object (a camera, then
+a robot hand: `dream_check_zimage_img2img.png`). So an offline "Dream this span" on the timeline is feasible (about two
+minutes of GPU for two seconds at 24 fps, one at 12), with the flicker as its character; live is not.
+
 ## 5. After the contest: the music video maker
 
 The split Tys described stays the direction: a music video maker (song plus footage, an audio-reactive auto-edit) with the morph

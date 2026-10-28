@@ -168,7 +168,9 @@ def dance_fx_choice(state: dict | None) -> str:
         return "auto"
     if text in ("off", "none", "false", "0", "no"):
         return "off"
-    return text if text in D.PRESETS else DANCE_FX_DEFAULT
+    from xenoform.effects import LOOKS as _EXTRA  # the Dither look
+
+    return text if text in D.PRESETS or text in _EXTRA else DANCE_FX_DEFAULT
 
 
 def stem_orbit_choice(state: dict | None) -> bool:
@@ -930,9 +932,14 @@ def story_plan(duration: float, beats: list, sections: list[dict], drop: float |
             "roles": [(r["role"], round(float(r["start"]), 2), round(float(r["end"]), 2)) for r in roles]}
 
 
-def boundary_transitions(shots: list[dict], vibe: str, *, seed: int = 0) -> list[dict | None]:
+BLOCKY = {"datamosh": "chroma-split"}  # the blocky transitions and what stands in for them while the smear is off
+
+
+def boundary_transitions(shots: list[dict], vibe: str, *, seed: int = 0, smear: str = "off") -> list[dict | None]:
     """One premium transition per section boundary (the vibe's recommendation for drop / switch / silence),
-    capped at two uses per type by the guardrail; everything else is a clean handoff. One entry per shot."""
+    capped at two uses per type by the guardrail; everything else is a clean handoff. One entry per shot. With the
+    blocky smear off (``smear``, boundary_fx.SMEAR; the default), a vibe's datamosh is a chromatic split instead."""
+    from xenoform import boundary_fx as _B
     from xenoform import transitions_fx as T
 
     idx = [i for i, s in enumerate(shots) if i > 0 and s.get("boundary")]
@@ -941,6 +948,8 @@ def boundary_transitions(shots: list[dict], vibe: str, *, seed: int = 0) -> list
     kinds = [T.recommend(vibe, str(shots[i]["boundary"])) for i in idx]
     # the Simple cut renders no GPU scene morph, so a vibe's scene-morph drop was a plain handoff: match-cut instead
     kinds = ["match-cut" if k == "scene-morph" else k for k in kinds]
+    if _B.smear_of(smear) == "off":
+        kinds = [BLOCKY.get(k, k) for k in kinds]
     kinds, _msgs = T.guard(kinds, seed=seed)
     out: list[dict | None] = [None] * len(shots)
     for i, kind in zip(idx, kinds):
@@ -1306,12 +1315,18 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     timed = _mt.plan(shots, timing_mode, directed.get("beats") or [], plan.get("drop"))
     if timed:
         notes.append({"morph_timing": timed})
-    transitions = boundary_transitions(shots, vibe, seed=seed) if plan.get("name") == "story" else None
+    # the effects (xenoform.effects) and the blocky smear, off unless the effects ask for it
+    from xenoform import effects as _E
+
+    effect_names = _E.names_of(state)
+    smear = _E.smear_setting(state)
+    transitions = boundary_transitions(shots, vibe, seed=seed, smear=smear) if plan.get("name") == "story" else None
     # the boundary kinds (boundary_fx): Chaos decides how many handoffs smear, strobe, wipe or rip their colours apart;
     # the vibe's premium picks keep their boundaries, except the drop past Chaos 0.7, which the strobe takes
     from xenoform import boundary_fx as _B
 
-    boundary_fx = _B.pick(shots, m, directed.get("beats") or [], fps, seed=seed, premium=transitions, drop=plan.get("drop"))
+    boundary_fx = _B.pick(shots, m, directed.get("beats") or [], fps, seed=seed, premium=transitions, drop=plan.get("drop"),
+                          smear=smear)
     transitions = _B.clear_premium(transitions, boundary_fx)
     if any(boundary_fx):
         notes.append({"boundary_fx": _B.info(boundary_fx)})
@@ -1337,7 +1352,10 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
                           house=hp, end_card=opt["end_card"], seed=seed,
                           palette_image=str(stills[0]["path"]) if stills else None,
                           adaptive=str(opt.get("dance_fx") or "auto").strip().lower() == "auto",
-                          transitions=transitions, foreshadow=fs_mode, boundary_fx=boundary_fx)
+                          transitions=transitions, foreshadow=fs_mode, boundary_fx=boundary_fx, effects=effect_names,
+                          tones=_E.palette_from_clips(clips).tolist() if _E.wants_tones(look_preset, effect_names, shots) else None)
+    if made.get("effects"):
+        notes.append({"effects": made["effects"]})
     if made.get("look", {}).get("seconds"):
         log.info("house look took %.1fs for %d frames", made["look"]["seconds"], made["look"]["frames"])
     card = False
@@ -1366,12 +1384,12 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
             "fps": fps, "seed": seed,
             # how each shot's morph changes: the setting (auto or a style) and the style a shot was rendered in
             "morph_style": _ms.normal(state.get("morph_style") or "auto"), "morph_styles": shot_styles,
-            "morph_timing": timing_mode,
+            "morph_timing": timing_mode, "effects": effect_names, "smear": smear,
             "palette_image": str(stills[0]["path"]) if stills else None, "vertical_house": vertical_house,
             "recut_state": {k: state.get(k) for k in ("vibe", "aspect", "quality_tier", "energy_preset", "dance_fx", "stem_orbit", "pace",
                                                       "beat_fx", "beat_overlay", "end_card", "stems_path", "macros", "still_background",
                                                       "performer", "performer_style", "foreshadow", "scene_stills", "chain_pins",
-                                                      "morph_style", "morph_timing")},
+                                                      "morph_style", "morph_timing", "effects", "boundary_smear")},
             "roles": plan.get("roles"), "performer": performer_info, "own": own_info,
             "handoffs_s": [s["start"] for s in shots] + [shots[-1]["end"]], "fallbacks": notes,
             "beats": [round(float(b), 4) for b in (directed.get("beats") or [])],
@@ -1506,7 +1524,11 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
     m = macros(state)
     apply_macros(shots, m, hp if rec.get("vertical_house") else None)
     vibe = str(rec.get("vibe") or state.get("vibe") or "")
-    transitions = boundary_transitions(shots, vibe, seed=int(rec.get("seed") or 0)) if rec.get("plan_name") == "story" else None
+    from xenoform import effects as _E
+
+    effect_names = _E.names_of(state)
+    smear = _E.smear_setting(state)
+    transitions = boundary_transitions(shots, vibe, seed=int(rec.get("seed") or 0), smear=smear) if rec.get("plan_name") == "story" else None
     from xenoform import boundary_fx as _B
 
     drop = rec.get("drop")
@@ -1518,7 +1540,7 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
     fps = int(rec.get("fps") or 24)
     beats = list(rec.get("beats") or [])
     boundary_fx = _B.pick(shots, m, beats, fps, seed=int(rec.get("seed") or 0),
-                          premium=transitions, drop=drop)  # re-picked from the knobs as they are now: the same knobs give the same kinds
+                          premium=transitions, drop=drop, smear=smear)  # re-picked from the knobs as they are now: the same knobs give the same kinds
     transitions = _B.clear_premium(transitions, boundary_fx)
     # the timeline: the maps sent replace the record's, the record's hold otherwise; a Cut handoff is a hold on the shot before
     so = shot_overrides_of(so_raw if so_raw is not None else rec.get("shot_overrides"), n)
@@ -1548,7 +1570,8 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
                           dance_fx=look_preset, stem_orbit=opt["stem_orbit"], stem_env=stem_env, macros=m, house=hp,
                           end_card=opt["end_card"], seed=int(rec.get("seed") or 0), palette_image=rec.get("palette_image"),
                           adaptive=str(opt.get("dance_fx") or "auto").strip().lower() == "auto", transitions=transitions,
-                          foreshadow=fs_mode, boundary_fx=boundary_fx)
+                          foreshadow=fs_mode, boundary_fx=boundary_fx, effects=effect_names,
+                          tones=_E.palette_from_clips(clips).tolist() if _E.wants_tones(look_preset, effect_names, shots) else None)
     if opt["end_card"]:
         beatfx.end_card(tmp, str(opt.get("recipe") or "(none)"))
     from xenoform.turbo import publish_file
@@ -1559,7 +1582,7 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
                 "shot_overrides": {str(k): v for k, v in sorted(so.items())},
                 "boundary_overrides": {str(k): v for k, v in sorted(bo.items())},
                 "timeline": {"shots": len(so), "boundaries": len(bo), "notes": tl_notes},
-                "morph_timing": timing_mode, "timed": timed,
+                "morph_timing": timing_mode, "timed": timed, "effects": effect_names, "smear": smear,
                 "recuts": int(rec.get("recuts") or 0) + 1})
     rec_path.write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
     return rec

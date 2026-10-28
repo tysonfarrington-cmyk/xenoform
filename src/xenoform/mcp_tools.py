@@ -806,8 +806,10 @@ class App:
             clean["look_profile"] = prof
         if dance_fx is not None:
             text = str(dance_fx).strip().lower() or "auto"
-            if text not in ("auto", "off") and text not in D.PRESETS:
-                raise XenoformError(f"dance_fx is 'auto', 'off' or one of: {', '.join(D.PRESETS)}.")
+            from xenoform.effects import LOOKS as _EXTRA  # the Dither look
+
+            if text not in ("auto", "off") and text not in D.PRESETS and text not in _EXTRA:
+                raise XenoformError(f"dance_fx is 'auto', 'off' or one of: {', '.join(tuple(D.PRESETS) + _EXTRA)}.")
             clean["dance_fx"] = text
         if stem_orbit is not None:
             clean["stem_orbit"] = bool(stem_orbit)

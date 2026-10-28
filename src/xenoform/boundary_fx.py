@@ -82,8 +82,17 @@ def _beat_period(beats, fallback: float = 0.5) -> float:
 # ------------------------------------------------------------------------------------------------ the picker
 
 
+SMEAR = ("off", "sparing", "on")  # the blocky smear: off unless asked (Tys, 28 Oct: "optional or used sparingly")
+SMEAR_SHARE = 6                   # sparing: at most one handoff in this many takes the smear, never the drop
+
+
+def smear_of(value) -> str:
+    v = str(value or "").strip().lower()
+    return v if v in SMEAR else "off"
+
+
 def pick(shots: list[dict], macros: dict | None, beats, fps: int, *, seed: int = 0, premium: list | None = None,
-         drop: float | None = None) -> list[dict | None]:
+         drop: float | None = None, smear: str = "off") -> list[dict | None]:
     """One entry per shot (None for a plain handoff): the kind at the boundary into that shot and its window.
 
     Chaos decides how many boundaries take a kind (``share``): the drop first, then the section switches, then an
@@ -93,7 +102,10 @@ def pick(shots: list[dict], macros: dict | None, beats, fps: int, *, seed: int =
     vibe's premium transition (``premium``, from ``dense.boundary_transitions``) keeps it, except the drop past 0.7,
     where the strobe takes the loudest handoff of the song. Shots too short for a window are left plain. ``drop`` (the
     plan's drop time) marks the boundary nearest it as the drop when no shot carries a ``boundary`` key (the dense plan
-    of a short cut), and on such a plan the wipes from the drop on are irises."""
+    of a short cut), and on such a plan the wipes from the drop on are irises. ``smear`` (``SMEAR``) is the blocky smear:
+    "off" (the default since 28 Oct) leaves it to the timeline, "sparing" allows one handoff in ``SMEAR_SHARE`` and
+    never the drop, "on" lets it in like the other kinds."""
+    smear = smear_of(smear)
     n = len(shots)
     out: list[dict | None] = [None] * n
     if n < 2:
@@ -143,11 +155,14 @@ def pick(shots: list[dict], macros: dict | None, beats, fps: int, *, seed: int =
             return PREFER["drop"]
         return PREFER.get(str(shots[i].get("section") or ""), PREFER_DEFAULT)
 
+    smear_cap = 0 if smear == "off" else max(1, len(chosen) // SMEAR_SHARE) if smear == "sparing" else len(chosen)
+
     def allowed_for(i: int, exclude: set) -> list[str]:
         t = float(shots[i].get("start") or 0.0)
         prefer = prefer_for(i)
         return [k for k in prefer if k not in exclude
-                and (k != "strobe" or (chaos > STROBE_MIN_CHAOS and all(abs(t - ts) >= STROBE_GAP_S for ts in strobe_times)))]
+                and (k != "strobe" or (chaos > STROBE_MIN_CHAOS and all(abs(t - ts) >= STROBE_GAP_S for ts in strobe_times)))
+                and (k != "smear" or (uses["smear"] < smear_cap and not (smear == "sparing" and kind_of(i) == "drop")))]
 
     def take(i: int, kind: str) -> None:
         assigned[i] = kind
@@ -165,7 +180,7 @@ def pick(shots: list[dict], macros: dict | None, beats, fps: int, *, seed: int =
             continue
         neighbours = {assigned.get(chosen[pos - 1]) if pos > 0 else None, assigned.get(chosen[pos + 1]) if pos + 1 < len(chosen) else None}
         opts = allowed_for(i, {k for k in neighbours if k})
-        if not opts:  # cannot happen with three kinds that never need the strobe and two neighbours at most
+        if not opts:  # with the smear off, two neighbours can hold the only two kinds left: a plain handoff
             continue
         prefer = prefer_for(i)
         take(i, min(opts, key=lambda k: (uses[k], (prefer.index(k) + rot) % len(KINDS))))

@@ -44,7 +44,7 @@ def test_api_vibes_is_the_single_source_of_truth(client):
             assert row["library"] == row["id"]
         elif row["library"]:
             assert row["library"] == row["pool"] and vibes.has_library(row["pool"])
-    assert {l["id"] for l in body["looks"]} == {"warm-leak", "cool-echo", "noir-glow", "bloom-rush", "negative-rush", "cyan-flash"}
+    assert {l["id"] for l in body["looks"]} == {"warm-leak", "cool-echo", "noir-glow", "bloom-rush", "negative-rush", "cyan-flash", "dither"}
 
 
 def test_original_meta_matches_the_fallback_arrays_in_app_js():
@@ -144,7 +144,7 @@ def test_simple_options_route_serves_the_looks_and_the_house(client):
     body = client.get("/api/simple/options?duration=30&energy=dense&tier=draft&aspect=9:16").json()
     assert body["house"] == {"aspect": "9:16", "energy": "dense", "tier": "draft", "dance_fx": "auto",
                              "stem_orbit": True, "beat_fx": True, "end_card": False}
-    assert len(body["looks"]) == 6 and all(l["note"] for l in body["looks"])
+    assert len(body["looks"]) == 7 and all(l["note"] for l in body["looks"])  # the six dance_fx presets and the Dither look
 
 
 def test_download_on_a_reopened_video_shares_that_job(client, tmp_path, monkeypatch):
