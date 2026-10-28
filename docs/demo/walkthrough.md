@@ -137,7 +137,9 @@ the social post. Voice-over over the screen, the outputs played full frame, capt
   contact sheets looked over. The Model grid's Fast Final tile keeps the 7 am Fast Final (b251df0c) so the four
   tiles stay what their labels say. The previous recording is in `scratchpad/wt/rec_prev`.
 
-## Still to decide
+## Decided
 
-- Which Kokoro voice: af_heart (US female), am_michael (US male) or bm_george (UK male). Swapping is a re-read and a
-  re-assembly, about ten minutes.
+- **The voice is af_heart** (Tys, 29 Oct 10:30 am). The contest video is
+  `Desktop\xeno_walkthrough_29oct\xenoform_demo_video.mp4` (the af_heart short, 1:43, under the form's 2:00); the long
+  one for the README and the post's replies is `xenoform_long_walkthrough.mp4` (6:52). The am_michael and bm_george
+  shorts stay beside them. Still open: 16:9 as is, or a 9:16 cut for the post.

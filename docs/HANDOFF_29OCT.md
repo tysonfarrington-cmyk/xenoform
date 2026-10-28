@@ -98,8 +98,9 @@ out of date on the tiers (no Cloud Final, "all local") and must be rebuilt after
    under 60 credits. Songs: `Desktop\suno-demos\batch2\XF_HipHop_BoomBap_01.mp3`, `XF_Ambient_01.mp3`,
    `batch1\XF_DnB_Liquid_01_v1.mp3`; vibes None, neon-noir, liquid-gold.
 5. **Tys's own steps** (docs/CONTEST.md checklist): push, upload the short, replace `DEMO_VIDEO_URL` in README.md
-   and CONTEST.md, post with #OpenSourceHiggsfield, submit the Typeform. Open choices he still owes: the Kokoro
-   voice (af_heart, am_michael, bm_george), 16:9 or a 9:16 cut for the post.
+   and CONTEST.md, post with #OpenSourceHiggsfield, submit the Typeform. The voice is af_heart (Tys, 29 Oct 10:30 am): the
+   file to upload is `Desktop\xeno_walkthrough_29oct\xenoform_demo_video.mp4` (1:43), the long one
+   `xenoform_long_walkthrough.mp4`. Still open: 16:9 as is, or a 9:16 cut for the post.
 
 ## Facts a fixer may need
 
