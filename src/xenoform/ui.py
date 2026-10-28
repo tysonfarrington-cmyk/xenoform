@@ -2668,7 +2668,7 @@ def create_app(cfg: dict | None = None):
         from xenoform.live_mode import interpolator_name, live_ai_status, tensorrt_status
         from xenoform.models_setup import inspect_setup
 
-        payload = inspect_setup()
+        payload = inspect_setup(comfy_url=str(cfg["comfy"].get("base_url") or ""))
         payload["extras"] = [live_ai_status(), tensorrt_status()]
         payload["interpolate"] = interpolator_name()
         return payload

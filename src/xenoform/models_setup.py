@@ -1,5 +1,9 @@
 """First-run model check. Downloads are ungated Hugging Face files. No token.
 
+A model counts when ComfyUI's own ``GET /models/<folder>`` lists its files, so
+the legacy clip and unet folders and an ``extra_model_paths.yaml`` count too.
+When ComfyUI does not answer, the desk looks in the models folder instead.
+
 A quantised file counts. ``ltx-2.3-22b-distilled-fp8`` matches the LTX-2.3
 slot, and ``z_image_turbo_int8_convrot`` matches Z-Image Turbo. The desk
 remembers which file the user picked.
@@ -12,6 +16,7 @@ import json
 import os
 import re
 import threading
+import time
 from pathlib import Path
 from typing import Any, Callable
 from urllib.request import Request, urlopen
@@ -34,7 +39,7 @@ CATALOG: tuple[dict[str, Any], ...] = (
         "name": "LTX 0.9.5 fast",
         "required": True,
         "badge": "Morphs",
-        "detail": "LTX 0.9.5 covers morphs, Turbo, and 8 GB or 12 GB cards. It is the required download. Turbo never loads LTX-2.3. A dry run does not need the file.",
+        "detail": "Draft renders every morph with LTX 0.9.5, and Fast Final upscales that Draft. With the T5-XXL fp8 text encoder it is the required download. A dry run does not need the file.",
         "files": (
             {
                 "path": "checkpoints/ltx-video-2b-v0.9.5.safetensors",
@@ -55,7 +60,7 @@ CATALOG: tuple[dict[str, Any], ...] = (
         "name": "LTX-2.3 distilled",
         "required": False,
         "badge": "Core",
-        "detail": "Sole core video model. Draft and Final use it on a 24 GB card, and on a 12 GB card when an fp8 or int8 file is present. The full weights are about 43 GB. Morph restyles use the same file when it is present, fp8 on 12 GB. LTX 0.9.5 is the fast morph. Turbo never loads this file.",
+        "detail": "Final renders its morphs with LTX-2.3: the fp8 file on a 12 GB card, the full weights (about 43 GB) on 24 GB. Final also needs the Gemma 3 12B text encoder and the x2 spatial upscaler. Draft and Fast Final do not load it.",
         "files": (
             {
                 "path": "checkpoints/ltx-2.3-22b-distilled.safetensors",
@@ -209,7 +214,9 @@ def _comfy_model_dirs() -> list[Path]:
 
 
 def models_root() -> Path:
-    env = os.environ.get("XENO_MODELS")
+    # cmd's `set XENO_MODELS=C:\...\models && python ...` keeps the space before &&, and
+    # "models \checkpoints" is not a folder: every model read as missing on 29 Oct
+    env = os.environ.get("XENO_MODELS", "").strip().strip('"').strip()
     if env:
         return Path(env)
     try:
@@ -279,10 +286,59 @@ def _file_present(root: Path, file: dict) -> bool:
     return path.stat().st_size == expected
 
 
-def slot_variants(root: Path, file: dict) -> list[str]:
-    """Relative paths that satisfy one catalog slot, canonical name first."""
-    folder = root / Path(file["path"]).parent
+_LISTED: dict[tuple[str, str], tuple[float, list[str] | None]] = {}
+_LISTED_FOR = 5.0
+
+
+def comfy_base(url: str = "") -> str:
+    from xenoform.comfy_health import DEFAULT_COMFY
+
+    base = str(url or os.environ.get("XENO_COMFY_URL") or DEFAULT_COMFY).strip().rstrip("/")
+    return base or DEFAULT_COMFY
+
+
+def _fetch_listing(base: str, folder: str) -> list[str] | None:
+    try:
+        request = Request(f"{base}/models/{folder}", headers={"Accept": "application/json"})
+        with urlopen(request, timeout=1.5) as response:
+            data = json.loads(response.read().decode("utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(data, list):
+        return None
+    return [str(item) for item in data]
+
+
+def comfy_listing(folder: str, url: str = "") -> list[str] | None:
+    """The files ComfyUI lists for one model folder, or None when it does not answer.
+
+    Held a few seconds, so one Setup check asks once a folder, and a ComfyUI that
+    is down costs one timeout, not one a slot."""
+    base = comfy_base(url)
+    key = (base, folder)
+    now = time.monotonic()
+    held = _LISTED.get(key)
+    if held and now - held[0] < _LISTED_FOR:
+        return held[1]
+    names = _fetch_listing(base, folder)
+    _LISTED[key] = (now, names)
+    return names
+
+
+def slot_variants(root: Path, file: dict, *, comfy_url: str = "") -> list[str]:
+    """Relative paths that satisfy one catalog slot, canonical name first.
+
+    ComfyUI's list for the folder decides when ComfyUI answers. The models folder
+    on disk, with its size checks, is the fallback."""
     canonical = Path(file["path"]).name
+    listed = comfy_listing(Path(file["path"]).parent.as_posix(), comfy_url)
+    if listed is not None:
+        # top level only: the shipped graphs load a bare file name, never one in a subfolder
+        names = sorted(name for name in listed if "/" not in name and "\\" not in name and name.lower().endswith(".safetensors"))
+        hits = [name for name in names if same_family(name, canonical)]
+        hits.sort(key=lambda name: name.lower() != canonical.lower())
+        return [(Path(file["path"]).parent / name).as_posix() for name in hits]
+    folder = root / Path(file["path"]).parent
     found: list[str] = []
     if _file_present(root, file):
         found.append(file["path"].replace("\\", "/"))
@@ -343,12 +399,12 @@ def choose_file(model_id: str, relative: str, root: Path | None = None) -> dict[
     return {"id": model_id, "chosen": wanted, "filename": Path(wanted).name}
 
 
-def chosen_file(model_id: str, root: Path | None = None) -> str:
-    """Relative path of the weight in use. Empty when nothing is on disk."""
+def chosen_file(model_id: str, root: Path | None = None, *, comfy_url: str = "") -> str:
+    """Relative path of the weight in use. Empty when nothing is installed."""
     root = root or models_root()
     spec = by_id(model_id)
     primary = spec["files"][0]
-    variants = slot_variants(root, primary)
+    variants = slot_variants(root, primary, comfy_url=comfy_url)
     if not variants:
         return ""
     picked = load_picks(root).get(model_id) or ""
@@ -380,13 +436,13 @@ def quantised_file(model_id: str, root: Path | None = None) -> str:
     return Path(sorted(quant)[0]).name
 
 
-def model_present(model_id: str, root: Path | None = None) -> bool:
+def model_present(model_id: str, root: Path | None = None, *, comfy_url: str = "") -> bool:
     root = root or models_root()
     spec = by_id(model_id)
     files = list(spec["files"])
     if not files:
         return False
-    slots = [slot_variants(root, file) for file in files]
+    slots = [slot_variants(root, file, comfy_url=comfy_url) for file in files]
     if spec["required"]:
         return all(bool(found) for found in slots)
     return bool(slots[0])
@@ -429,15 +485,15 @@ def llm_status() -> dict:
     return {"id": "llm", "name": "Local LLM", "required": False, "present": up, "model": name, "detail": detail, "bytes": 0, "size_label": "optional"}
 
 
-def inspect_setup(root: Path | None = None) -> dict:
+def inspect_setup(root: Path | None = None, comfy_url: str = "") -> dict:
     root = root or models_root()
     tier = detect_tier()
     models = []
     for spec in CATALOG:
         total = sum(int(file["bytes"]) for file in spec["files"])
-        present = model_present(spec["id"], root)
-        variants = slot_variants(root, spec["files"][0]) if spec["files"] else []
-        chosen = chosen_file(spec["id"], root)
+        present = model_present(spec["id"], root, comfy_url=comfy_url)
+        variants = slot_variants(root, spec["files"][0], comfy_url=comfy_url) if spec["files"] else []
+        chosen = chosen_file(spec["id"], root, comfy_url=comfy_url)
         models.append(
             {
                 "id": spec["id"],
@@ -459,9 +515,14 @@ def inspect_setup(root: Path | None = None) -> dict:
     from xenoform.stems import stem_status
 
     missing = [item["name"] for item in models if item["required"] and not item["present"]]
+    if comfy_listing("checkpoints", comfy_url) is not None:
+        checked = f"Checked against the files ComfyUI at {comfy_base(comfy_url)} can load."
+    else:
+        checked = f"ComfyUI is not answering, so the desk checked the files in {root}."
     return {
         "tier": tier,
         "models_dir": str(root),
+        "checked": checked,
         "disk": {"free_bytes": free, "free_label": f"{size_label(free)} free"},
         "models": models,
         "llm": llm_status(),

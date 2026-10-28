@@ -29,9 +29,9 @@ _FINAL = {
 
 TIERS: dict[str, dict[str, Any]] = {
     "cpu": {"id": "cpu", "label": "CPU", "gb": None, "clamp": False, "detail": "No GPU was found. The draft still renders on the CPU."},
-    "8gb": {"id": "8gb", "label": "8 GB", "gb": 8, "clamp": True, "detail": "8 GB preset: 512×288, LTX 0.9.5, weights offloaded. LTX-2.3 needs a larger card."},
-    "12gb": {"id": "12gb", "label": "12 GB", "gb": 12, "clamp": True, "detail": "12 GB preset: Turbo at 384×224 in 4 steps on LTX 0.9.5. Draft and Final use LTX-2.3 when an fp8 or int8 file is present, about 210 seconds a 704×384 shot. Otherwise they stay on LTX 0.9.5. Turbo never loads LTX-2.3."},
-    "24gb": {"id": "24gb", "label": "24 GB+", "gb": 24, "clamp": True, "detail": "24 GB preset: Draft and Final action shots use LTX-2.3, the core model, when that file is installed. Morph restyles use it too. LTX 0.9.5 is the fast morph. Turbo stays on LTX 0.9.5."},
+    "8gb": {"id": "8gb", "label": "8 GB", "gb": 8, "clamp": True, "detail": "8 GB preset: Draft is LTX-Video 0.9.5 at 512×288, weights offloaded. Fast Final upscales the Draft 4x to 1080×1920. Final needs a larger card for LTX-2.3, so it falls back to the Draft."},
+    "12gb": {"id": "12gb", "label": "12 GB", "gb": 12, "clamp": True, "detail": "12 GB preset: Draft is LTX-Video 0.9.5 at 512×288. Fast Final is the Draft upscaled 4x to 1080×1920. Final is LTX-2.3 22B distilled fp8 at 448×768 plus a 4x upscale, about 90 to 290 seconds a shot. A shot Final cannot render falls back to the Draft."},
+    "24gb": {"id": "24gb", "label": "24 GB+", "gb": 24, "clamp": True, "detail": "24 GB preset: Draft is LTX-Video 0.9.5. Fast Final is the Draft upscaled 4x to 1080×1920. Final is LTX-2.3 22B distilled; the full weights fit."},
 }
 
 _LADDER = ("24gb", "12gb", "8gb")

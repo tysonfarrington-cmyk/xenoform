@@ -4674,6 +4674,7 @@ function renderSetup() {
       <p class="kicker">Setup check</p>
       <h2>${esc(tier.label || "This machine")}</h2>
       <p>${esc(tier.detail || "")}</p>
+      <p class="note">${esc(setup.checked || "")}</p>
       <p class="note">${esc(setup.disk ? setup.disk.free_label : "")} on the models drive. ${esc(setup.try_it || "")}</p>
       <p class="note">${esc((setup.stems || {}).detail || "")}</p>
     </section>
