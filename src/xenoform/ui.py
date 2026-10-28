@@ -1562,6 +1562,7 @@ def create_app(cfg: dict | None = None):
     def simple_options(duration: float = 20.0, energy: str = "flow", tier: str = "draft", bpm: float = 120.0,
                        aspect: str = "16:9", vertical: str = "native", morphs: str = "auto", length: float = 0.0,
                        performer: int = 0) -> dict:
+        from xenoform import cloud_final as _cloud_final
         from xenoform import dance_fx as _dance
         from xenoform import dense as _dense
         from xenoform import final_tier
@@ -1616,6 +1617,11 @@ def create_app(cfg: dict | None = None):
             "aspects": ["16:9", "9:16", "1:1"],
             "tiers": ["draft", "final"],
             "shots": len(shots),
+            # Cloud Final: LTX-2.5 open weights on Comfy Cloud (cloud_final); "ready" says whether the key is in this desk's
+            # environment, never the key
+            "cloud_final": {**_cloud_final.ready(), "max_morphs": _cloud_final.MAX_MORPHS,
+                            "render": "x".join(map(str, _cloud_final.RENDER_916 if aspect == "9:16" else _cloud_final.RENDER_169)),
+                            "estimate": _cloud_final.estimate(int((plan.get("estimate") or {}).get("morphs") or len(shots)))},
             "final": {"ready": files["ready"], "upscale": files["upscale"], "files": files["files"],
                       "eta_s": int(round(fin["eta_s"])) if fin.get("eta_s") else final_tier.eta_seconds(shots, upscale=files["upscale"]),
                       "eta_measured": bool(fin.get("eta_s")), "per_s": fin.get("per_s"), "cuts": int(fin.get("cuts") or 0),

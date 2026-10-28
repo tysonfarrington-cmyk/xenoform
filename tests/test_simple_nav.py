@@ -46,7 +46,7 @@ def test_fine_tune_in_the_main_column_and_rows_that_wrap():
     assert ".look-row .toggle .chip {" in CSS and ".simple-opts .look-row .toggle .chip" not in CSS
     assert ".easy-result-actions, .easy-make-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }" in CSS
     assert "@media (max-width: 1000px)" in CSS
-    assert '[["draft", "Draft"], ["fast", "Fast Final"], ["final", "Final"]]' in APP  # short tier chips; the model names live in the note
+    assert '[["draft", "Draft"], ["fast", "Fast Final"], ["final", "Final"], ["cloud", "Cloud Final"]]' in APP  # short tier chips; the model names live in the note
 
 
 def test_honest_clock_and_took():

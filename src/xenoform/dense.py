@@ -54,7 +54,7 @@ MAX_SHOT_S = 4.0              # a morph is rendered at 2 to 5 s; a shot much lon
 # No object repeats inside a cut (Tys, 25 Oct: "a rule we have to build in"): every shot gets its own morph, up to what
 # the tier can afford on a 3080 Ti (Draft about 11 s a morph, Final about 7 min); past the cap the cut gets fewer,
 # longer shots rather than a loop. The pool caps it too: a vibe with twelve stills gives eleven morphs.
-MORPH_CAP = {"draft": 48, "final": 12}
+MORPH_CAP = {"draft": 48, "final": 12, "cloud": 16}  # cloud: cloud_final.MAX_MORPHS, its credits
 LONG_SONG_S = 20.0            # above this the story plan, the chain reuse and performer slots apply (the demo clip stays on the demo1 plan)
 COMPOSE_S_PER_FRAME = {"draft": 0.2, "final": 0.3}
 FAST_UPSCALE_S = 20.0  # Fast Final: one Draft clip through its upscaler (upscale_pass.SECONDS_PER_CLIP, measured 28 Oct)  # measured: 1440 frames at 540x960 composed in 285 s (look pass 155 s)
@@ -70,7 +70,9 @@ MIN_SLOT_S = 0.3            # a morph never gets less screen time than this
 # Finals uses those instead (batch.measured)
 COST = {"draft": {"s": 12.0, "vram_gb": 7.5}, "final": {"s": 230.0, "vram_gb": 11.2},
         "final_916": {"s": 270.0, "vram_gb": 11.4}, "preview": {"s": 0.5, "vram_gb": 0.0},
-        "fast": {"s": 12.0 + FAST_UPSCALE_S, "vram_gb": 7.5}}  # Fast Final: a Draft morph, then its upscale
+        "fast": {"s": 12.0 + FAST_UPSCALE_S, "vram_gb": 7.5},  # Fast Final: a Draft morph, then its upscale
+        # Cloud Final: three LTX-2.5 morphs at once on Comfy Cloud (cloud_final.SECONDS_PER_MORPH each), then the upscale here
+        "cloud": {"s": 75.0 / 3 + FAST_UPSCALE_S, "vram_gb": 2.0}}
 
 
 def _period(beats: list) -> float:
@@ -396,6 +398,7 @@ def options(state: dict) -> dict:
         "aspect": beatfx.norm_aspect(state.get("aspect")),
         "tier": tier if tier in TIERS else "draft",
         "fast": tier == "fast",  # Fast Final: the Draft's morphs upscaled to full size (upscale_pass); a draft otherwise
+        "cloud": tier == "cloud",  # Cloud Final: LTX-2.5 morphs on Comfy Cloud (cloud_final), upscaled here
         "vertical": vertical_mode(state),
         "fx": bool(state.get("beat_fx", True)),
         "overlay": bool(state.get("beat_overlay")) and not bool(state.get("clean")),
@@ -647,19 +650,19 @@ def long_song_chain(state: dict, directed: dict, audio_path: Path, shots: list[d
         return len(_rows_of_kind(rows, choice)) or len(rows)
 
     pool_n = pool_count()
-    chain = clip_plan(shots, duration, beats_list, pool=pool_n or None, tier=opt["tier"])
+    chain = clip_plan(shots, duration, beats_list, pool=pool_n or None, tier="cloud" if opt["cloud"] else opt["tier"])
     if grow:
         grown = grow_family_for_cut(state, pool_vibe, chain["morphs"] + 1, cfg, report, engine=engine)
         if grown:  # the idea's family now in the pool: count again, the chain may afford more
             notes.append({"grown": grown})
             pool_n = pool_count()
-            chain = clip_plan(shots, duration, beats_list, pool=pool_n or None, tier=opt["tier"])
+            chain = clip_plan(shots, duration, beats_list, pool=pool_n or None, tier="cloud" if opt["cloud"] else opt["tier"])
     if not chain["fits"]:
         wanted = chain["wanted"]
         shots, plan = shots_for({**state, "max_shots": chain["morphs"]}, directed, Path(audio_path))
         if len(shots) > chain["morphs"]:
             shots = _merge_to(shots, chain["morphs"])
-        chain = clip_plan(shots, duration, beats_list, pool=pool_n or None, tier=opt["tier"])
+        chain = clip_plan(shots, duration, beats_list, pool=pool_n or None, tier="cloud" if opt["cloud"] else opt["tier"])
         notes.append({"capped": {"wanted": wanted, "shots": len(shots), "cap": chain.get("cap"), "pool": pool_n}})
         if report:
             report("restyle", 0.04, f"{wanted} shots re-planned as {len(shots)} longer ones: no object repeats, and {opt['tier']} "
@@ -723,7 +726,7 @@ def plan_summary(duration: float, beats: list, energy: str = "dense", tier: str 
     cp = clip_plan(shots, duration, beats, pool=pool or None, tier=tier) if long_song else {"clip_s": 2, "morphs": len(shots), "assign": list(range(len(shots))), "reuse": False}
     fps = 24
     frames_total = int(round(duration * fps))
-    compose_s = frames_total * COMPOSE_S_PER_FRAME["final" if tier in ("final", "fast") else "draft"] / beatfx.look_speedup(frames_total)
+    compose_s = frames_total * COMPOSE_S_PER_FRAME["final" if tier in ("final", "fast", "cloud") else "draft"] / beatfx.look_speedup(frames_total)
     est = estimate(cp["morphs"], tier, aspect, vertical, clip_s=cp["clip_s"], compose_s=compose_s)
     n_perf = performer_choice({"performer": performer}) if long_song else 0
     if n_perf:
@@ -1141,6 +1144,10 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
             else _idea.read(str(state["idea"]), str(state.get("vibe") or ""))
         state = _idea.shape_state(state, reading)
     opt = options(state)
+    if opt["cloud"] and not state.get("cloud_final_ok"):
+        # it spends the account's Comfy Cloud credits: only a Make that says so (the desk's tick) runs it; cloud_confirm is
+        # the paid partner path's token, a different thing
+        raise RuntimeError("Cloud Final spends Comfy Cloud credits: tick \"Spend my Comfy Cloud credits\" to run it. Nothing was sent.")
     scene_choice = _mp.scenes_choice(state)  # off / mix / only: whether the chain morphs scenes as well as objects
     work = Path(work) / "simple"
     work.mkdir(parents=True, exist_ok=True)
@@ -1205,7 +1212,7 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
         stills = black_stills(stills, work)
     shots = _guard.carry_block_fx(shots, state)
     seed = int(state.get("seed") or 2727)
-    engine = engine or ("ltx23" if opt["tier"] == "final" else "ltx095")
+    engine = engine or ("ltx23" if opt["tier"] == "final" else "ltx25cloud" if opt["cloud"] else "ltx095")
     native = opt["aspect"] == "9:16" and opt["vertical"] == "native" and engine in {"ltx23", "mock"} \
         and opt["tier"] == "final"
     # Draft 9:16: re-lay every still whole on a portrait canvas and render the morphs in portrait, so a wide object
@@ -1242,7 +1249,8 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     if any(s != "melt" for s in render_styles):
         notes.append({"morph_styles": _ms.info(render_styles)})
     write_chain(work, stills)  # the making screen's "The chain:" line, now with what the line grew (ui._run_job)
-    report("restyle", 0.1, f"{len(render_shots)} {'Final (LTX-2.3)' if engine == 'ltx23' else 'Draft (LTX 0.9.5)'} morphs · "
+    label = {"ltx23": "Final (LTX-2.3)", "ltx25cloud": "Cloud Final (LTX-2.5 on Comfy Cloud)"}.get(engine, "Draft (LTX 0.9.5)")
+    report("restyle", 0.1, f"{len(render_shots)} {label} morphs · "
                            f"{len(shots)} shots · {opt['energy']} · {opt['aspect']}")
     if native_draft:
         from xenoform.portrait import portrait_stills
@@ -1278,6 +1286,34 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
         clips, final_notes = final_clips(render_shots, stills, work, cfg, seed, vibe, client=client, cancel=cancel, report=report,
                                          draft=draft, vertical=native, state=state, styles=render_styles)
         notes.extend(final_notes)
+    elif engine == "ltx25cloud":
+        from xenoform import cloud_final, upscale_pass
+
+        vertical = opt["aspect"] == "9:16"
+
+        def draft(indices: list[int]) -> dict[int, Path]:  # a shot that fails on Cloud: its Draft morph, here
+            from xenoform.portrait import portrait_stills
+
+            got = {}
+            for i in indices:
+                pair = [stills[i], stills[i + 1]]
+                if vertical:
+                    pair = portrait_stills(pair, work, DRAFT_916[0], DRAFT_916[1], background=background)
+                clip = _draft_clips([render_shots[i]], pair, work, cfg, seed + i, vibe, client, cancel, state,
+                                    size=DRAFT_916 if vertical else None, styles=[render_styles[i]])[0]
+                got[i] = work / f"draft_fallback{i:02d}.mp4"
+                shutil.move(str(clip), got[i])
+            return got
+
+        clips, cloud_notes = cloud_final.cloud_clips(render_shots, stills, work, cfg, seed, vibe, cancel=cancel, report=report,
+                                                     draft=draft, vertical=vertical, state=state, styles=render_styles)
+        notes.extend(cloud_notes)
+        size = upscale_pass.out_size(opt["aspect"])
+        clips, up_notes = cloud_final.to_full_size(clips, work, size, cfg, fallbacks=[n["shot"] for n in cloud_notes],
+                                                   client=client, cancel=cancel, report=report, fps=fps)
+        notes.append({"cloud_final": f"{len(clips) - len(cloud_notes)} of {len(clips)} morphs rendered with LTX-2.5 on Comfy "
+                                     f"Cloud (open weights), scaled here to {size[0]}x{size[1]}"})
+        notes.extend(up_notes)
     else:
         clips = _draft_clips(render_shots, stills, work, cfg, seed, vibe, client, cancel, state, report=report,
                              size=DRAFT_916 if native_draft else None, styles=render_styles)
@@ -1449,8 +1485,9 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     shutil.copyfile(tmp, out_path)
     info = {"engine": {"ltx23": "LTX-2.3 22B distilled fp8 + 4x upscale (Final)",
                        "ltx095": "LTX 0.9.5 + 4x upscale (Fast Final)" if opt["fast"] else "LTX 0.9.5 (Draft)",
+                       "ltx25cloud": "LTX-2.5 22B distilled on Comfy Cloud + 4x upscale (Cloud Final)",
                        "mock": "mock cross-fades (test)"}[engine],
-            "fast": bool(opt["fast"]),
+            "fast": bool(opt["fast"]), "cloud": bool(opt["cloud"]),
             "open_weights": True, "energy": opt["energy"], "aspect": opt["aspect"], "tier": opt["tier"],
             "vertical": ("native" if native else "crop") if opt["aspect"] == "9:16" else None,
             "fx": opt["fx"], "overlay": made["overlay"], "end_card": card, "vibe": vibe,

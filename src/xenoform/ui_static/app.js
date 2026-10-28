@@ -185,6 +185,8 @@ function payload() {
     energy_preset: (state.easy && state.easy.energyPreset) || "dense",
     aspect: (state.easy && state.easy.aspect) || "9:16",
     quality_tier: (state.easy && state.easy.tier) || "draft",
+    // Cloud Final spends Comfy Cloud credits: only the tick under Model sends it (cloud_final)
+    cloud_final_ok: !!(state.easy && state.easy.tier === "cloud" && state.easy.cloudFinalOk),
     vertical_mode: (state.easy && state.easy.vertical) || "auto",
     morph_count: (state.easy && state.easy.morphs) || "auto",
     beat_fx: !(state.easy && state.easy.fx === false),
@@ -1634,7 +1636,8 @@ function simpleOptions(easy) {
       ${simpleSeg("easy-aspect", aspect, [["16:9", "16:9"], ["9:16", "9:16"], ["1:1", "1:1"]], "Aspect")}
       ${simpleSeg("easy-length", String(easyLength(easy)), [["0", "Full song"], ["60", "60 s"], ["30", "30 s"], ["15", "15 s"]], "Length")}
       <p class="note">${esc(lengthNote(easy))}</p>
-      ${simpleSeg("easy-tier", tier, [["draft", "Draft"], ["fast", "Fast Final"], ["final", "Final"]], "Model")}
+      ${simpleSeg("easy-tier", tier, [["draft", "Draft"], ["fast", "Fast Final"], ["final", "Final"], ["cloud", "Cloud Final"]], "Model")}
+      ${tier === "cloud" ? cloudFinalRow(easy) : ""}
       ${machineRows(easy)}
       ${aspect === "9:16" && tier === "final" ? simpleSeg("easy-vertical", vertical, [["native", "Native"], ["crop", "Crop"]], "Vertical") : ""}
       ${morphControl(easy, tier, aspect, vertical)}
@@ -2537,6 +2540,9 @@ function easyTimeFact() {
   const plan = state.simpleOptions && state.simpleOptions.plan;
   if (plan && plan.estimate && plan.estimate.seconds) {
     const e = plan.estimate;
+    if ((state.easy && state.easy.tier) === "cloud") {
+      return `About ${clockText(e.seconds)} (${clockText(e.gpu_seconds || 0)} of morphs on Comfy Cloud, ${clockText(e.look_seconds || 0)} look here)`;
+    }
     return `About ${clockText(e.seconds)} on this GPU (${clockText(e.gpu_seconds || 0)} morphs, ${clockText(e.look_seconds || 0)} look)`;
   }
   const guess = easyEtaGuess();
@@ -2704,9 +2710,27 @@ async function recutWithKnobs() {
   }
 }
 
+// Cloud Final: the same open-weights morphs (LTX-2.5) rendered on Comfy Cloud, three at a time, then scaled to full size
+// here (cloud_final). It spends the account's Comfy Cloud credits, so a Make sends it only with this tick.
+function cloudFinalRow(easy) {
+  const info = (state.simpleOptions && state.simpleOptions.cloud_final) || null;
+  if (!info) return `<p class="note">Cloud Final: checking whether this desk can reach Comfy Cloud.</p>`;
+  if (!info.ready) return `<p class="note cloud-final-note">${esc(info.why || "Cloud Final is not available on this desk.")}</p>`;
+  const est = info.estimate || {};
+  const about = est.seconds ? `, about ${clockText(Number(est.seconds))}` : "";
+  return `<label class="addon cloud-final-ok"><input type="checkbox" data-act="easy-cloud-final-ok"${easy.cloudFinalOk ? " checked" : ""}>
+      Spend my Comfy Cloud credits: ${esc(String(est.morphs || "the"))} LTX-2.5 morphs on Comfy Cloud, three at a time${esc(about)}.</label>
+    <p class="note">Open weights on Comfy's GPUs (LTX-2.5, ${esc(info.render || "576x1024")}), scaled to full size here. At most ${esc(String(info.max_morphs || 16))} morphs a cut; a morph that fails on Cloud falls back to its Draft.</p>`;
+}
+
 async function easyMake() {
   const vibe = vibeById(state.easy.vibe);
   if (!vibe) return;
+  if ((state.easy.tier || "draft") === "cloud" && !state.easy.cloudFinalOk) {
+    state.easy.note = "Cloud Final spends your Comfy Cloud credits: tick the box under Model to run it.";
+    render();
+    return;
+  }
   if (morphSource(state.easy) === "clips" && !state.easy.ownFolder && !state.easy.ownId) {
     state.easy.note = "Your clips first: choose a folder of clips, or drop them on the Your clips row.";
     render();
@@ -3860,6 +3884,9 @@ document.addEventListener("click", async (event) => {
   } else if (act === "easy-gpu") {
     state.easy.gpuTier = ["auto", "cpu", "8gb", "12gb", "24gb"].includes(el.dataset.value) ? el.dataset.value : "auto";
     render();
+  } else if (act === "easy-cloud-final-ok") {
+    state.easy.cloudFinalOk = !!el.checked;
+    render();
   } else if (act === "easy-paid-cloud") {
     state.paidCloud = !!el.checked;
     writePaidCloud(state.paidCloud);
@@ -3962,7 +3989,8 @@ document.addEventListener("click", async (event) => {
     state.easy.vertical = el.dataset.value === "crop" ? "crop" : "native";
     render();
   } else if (act === "easy-tier") {
-    state.easy.tier = ["final", "fast"].includes(el.dataset.value) ? el.dataset.value : "draft";
+    state.easy.tier = ["final", "fast", "cloud"].includes(el.dataset.value) ? el.dataset.value : "draft";
+    state.easy.cloudFinalOk = false;  // spending credits is confirmed afresh each time Cloud Final is picked
     render();
     loadSimpleOptions().then(render);
   } else if (act === "easy-fx") {
