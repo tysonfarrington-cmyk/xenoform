@@ -1299,6 +1299,13 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
 
     plan_shots = _copy.deepcopy(shots)  # before the macros: a re-cut starts from here
     apply_macros(shots, m, hp if vertical_house else None)
+    # when the change happens inside each morph (morph_timing): Smooth as the model made it, On the beat, or Snap
+    from xenoform import morph_timing as _mt
+
+    timing_mode = _mt.normal(state.get("morph_timing"))
+    timed = _mt.plan(shots, timing_mode, directed.get("beats") or [], plan.get("drop"))
+    if timed:
+        notes.append({"morph_timing": timed})
     transitions = boundary_transitions(shots, vibe, seed=seed) if plan.get("name") == "story" else None
     # the boundary kinds (boundary_fx): Chaos decides how many handoffs smear, strobe, wipe or rip their colours apart;
     # the vibe's premium picks keep their boundaries, except the drop past Chaos 0.7, which the strobe takes
@@ -1359,11 +1366,12 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
             "fps": fps, "seed": seed,
             # how each shot's morph changes: the setting (auto or a style) and the style a shot was rendered in
             "morph_style": _ms.normal(state.get("morph_style") or "auto"), "morph_styles": shot_styles,
+            "morph_timing": timing_mode,
             "palette_image": str(stills[0]["path"]) if stills else None, "vertical_house": vertical_house,
             "recut_state": {k: state.get(k) for k in ("vibe", "aspect", "quality_tier", "energy_preset", "dance_fx", "stem_orbit", "pace",
                                                       "beat_fx", "beat_overlay", "end_card", "stems_path", "macros", "still_background",
                                                       "performer", "performer_style", "foreshadow", "scene_stills", "chain_pins",
-                                                      "morph_style")},
+                                                      "morph_style", "morph_timing")},
             "roles": plan.get("roles"), "performer": performer_info, "own": own_info,
             "handoffs_s": [s["start"] for s in shots] + [shots[-1]["end"]], "fallbacks": notes,
             "beats": [round(float(b), 4) for b in (directed.get("beats") or [])],
@@ -1518,6 +1526,11 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
     so, bo = fold_handoffs(so, bo)
     transitions, boundary_fx, tl_notes = apply_timeline(shots, so, bo, vibe=vibe, house=hp, transitions=transitions,
                                                         boundary_fx=boundary_fx, beats=beats, fps=fps, drop=drop)
+    # the morph timing (morph_timing) on the cached clips: the cut's setting, a shot's own from the timeline
+    from xenoform import morph_timing as _mt
+
+    timing_mode = _mt.normal(state.get("morph_timing"))
+    timed = _mt.plan(shots, timing_mode, beats, drop, so)
     look_preset = beatfx.resolve_dance_preset(opt["dance_fx"], vibe, hp)
     if look_preset == "off" and not opt["stem_orbit"]:
         opt["stem_orbit"] = True  # as in run_simple: no look and no orbit would leave held stills dead
@@ -1546,6 +1559,7 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
                 "shot_overrides": {str(k): v for k, v in sorted(so.items())},
                 "boundary_overrides": {str(k): v for k, v in sorted(bo.items())},
                 "timeline": {"shots": len(so), "boundaries": len(bo), "notes": tl_notes},
+                "morph_timing": timing_mode, "timed": timed,
                 "recuts": int(rec.get("recuts") or 0) + 1})
     rec_path.write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
     return rec
@@ -1567,7 +1581,8 @@ def _premium_kinds() -> set[str]:
 
 def shot_overrides_of(raw, n: int) -> dict[int, dict]:
     """The timeline's per-shot overrides, normalised: ``{index: {"play": "hold", "look": preset | "off",
-    "fx_intensity": 0..1}}`` with only the keys that change something (Morph and Auto are the defaults and are dropped),
+    "fx_intensity": 0..1, "timing": "smooth" | "beat" | "snap"}}`` with only the keys that change something (Morph and
+    Auto are the defaults and are dropped),
     indices inside the cut. Accepts a dict keyed by index (``"3"``) or a list with one entry a shot."""
     pairs: list = []
     if isinstance(raw, dict):
@@ -1595,6 +1610,9 @@ def shot_overrides_of(raw, n: int) -> dict[int, dict]:
                 o["fx_intensity"] = round(max(0.0, min(1.0, float(v["fx_intensity"]))), 3)
             except (TypeError, ValueError):
                 pass
+        timing = str(v.get("timing") or "").strip().lower()
+        if timing in ("smooth", "beat", "snap"):  # the shot's own morph timing (morph_timing); Auto is the cut's
+            o["timing"] = timing
         if o:
             out[i] = o
     return out

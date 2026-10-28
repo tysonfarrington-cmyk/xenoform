@@ -43,6 +43,7 @@ inside a shot and what happens at its edges.
 | **Look** | Auto (the vibe's look), Off, or one preset (warm-leak, cool-echo, noir-glow, bloom-rush, negative-rush, cyan-flash, ...) | re-cut | `shot_overrides[i].look`; the composed shot carries `dance_fx` (the resolved preset or `"off"`), which `beatfx.LookPass` uses for that shot instead of the cut's mode |
 | **FX intensity** | 0 to 1 | re-cut | `shot_overrides[i].fx_intensity`; replaces the Intensity knob's value for that shot (`fx_intensity` on the composed shot, read by `guardrails.shot_fx` in `beatfx.beat_fx`) |
 | **Re-render this morph** | another seed, another length (2 to 5 s of source), a prompt variant | GPU, one morph | `rerenders` log, `clips[i]` replaced, the shot's `render_s` / `speed` updated; `POST /api/jobs/{id}/rerender` (1.5) |
+| **Timing** | As the cut, Smooth, On the beat or Snap: when this shot's change happens (`xenoform.morph_timing`, 28 Oct) | none (a re-cut) | `shot_overrides[i].timing`, applied with Apply like the look |
 | **Morph** (style) | Melt, Shatter, Bloom, Spin or Fold: how this shot's object becomes the next (`xenoform.morph_style`, 28 Oct) | GPU, one morph | the same re-render with `style`; `morph_styles[i]` in the record, the shot's `style` on the lane |
 | **Generate here** | a run of fresh morphs over this shot and the next ones, about 10 s | GPU, one morph a shot | `inserts` (1.6); `POST /api/jobs/{id}/insert` |
 

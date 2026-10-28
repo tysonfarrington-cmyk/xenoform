@@ -114,7 +114,7 @@ function shortcutLabel() {
 }
 
 // The last session's vibe and Fine-tune choices survive a reload or a desk restart (the song cannot: uploads live on the server).
-const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow", "scenes", "pins", "feelSig", "batchN", "batchVary", "clipsOn", "scenesChosen", "morphStyle"];
+const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow", "scenes", "pins", "feelSig", "batchN", "batchVary", "clipsOn", "scenesChosen", "morphStyle", "morphTiming"];
 function saveEasy() {
   if (!state || !state.easy) return;
   try {
@@ -196,6 +196,8 @@ function payload() {
     // style a shot (carryStyles, set by that button only)
     morph_style: (state.easy && state.easy.morphStyle) || "auto",
     morph_styles: (state.easy && state.easy.carryStyles) || null,
+    // when the change happens inside each morph (xenoform.morph_timing): smooth, beat or snap; a re-cut changes it
+    morph_timing: (state.easy && state.easy.morphTiming) || "smooth",
     // Scenes (stills.kind "scene"): "off" (objects only), "mix" (a scene at every passage change), "only" (scenes alone)
     scene_stills: (state.easy && state.easy.scenes) || "off",
     // a Scenes choice made by hand: Off then stays Off when the idea line names a place (idea.shape_state)
@@ -858,6 +860,7 @@ function renderEasy() {
       ${showcase ? showcaseAside() : `<aside class="panel easy-side" data-tour="easy-refine">
         <div class="energy-head"><h3>Knobs</h3><span>Turn, then re-cut. No GPU.</span></div>
         <div class="simple-knobs"></div>
+        ${timingRow(easy.morphTiming || "smooth", "easy-morph-timing")}
         ${lookRow(easy.danceFx || "auto", "easy-look")}
         ${foreshadowRow(easy)}
         ${scenesRow(easy)}
@@ -913,6 +916,8 @@ function renderEasy() {
         <div class="simple-knobs"></div>
         ${morphStyleRow(easy.morphStyle || "auto", "easy-morph-style")}
         <p class="note morph-style-note">${esc(MORPH_STYLE_NOTES[easy.morphStyle || "auto"] || "")}</p>
+        ${timingRow(easy.morphTiming || "smooth", "easy-morph-timing")}
+        <p class="note morph-timing-note">${esc(MORPH_TIMING_NOTES[easy.morphTiming || "smooth"] || "")}</p>
         ${lookRow(easy.danceFx || "auto", "easy-look")}
         ${foreshadowRow(easy)}
         ${scenesRow(easy)}
@@ -1107,6 +1112,26 @@ function morphStyleRow(current, act, index, auto = true) {
     .map((id) => `<button type="button" class="chip${id === current ? " on" : ""}" data-act="${act}" data-value="${esc(id)}"${index == null ? "" : ` data-index="${index}"`} aria-pressed="${id === current ? "true" : "false"}" title="${esc(MORPH_STYLE_NOTES[id] || "")}">${esc(morphStyleLabel(id))}</button>`)
     .join("");
   return `<div class="simple-seg morph-style-row"><span>Morph</span><div class="toggle chips" role="group" aria-label="How each morph changes">${chips}</div></div>`;
+}
+
+// When the change happens inside each morph (xenoform.morph_timing, docs/MORPH_ENGINE_PLAN.md E2): the cached clip
+// re-timed from its measured change, so a re-cut sets it with no GPU. The timeline gives a shot its own.
+const MORPH_TIMINGS = ["smooth", "beat", "snap"];
+const MORPH_TIMING_LABELS = { smooth: "Smooth", beat: "On the beat", snap: "Snap" };
+const MORPH_TIMING_NOTES = {
+  "smooth": "The morph plays at an even speed: the change happens wherever the model put it.",
+  "beat": "The change moves in steps, fastest on every beat inside the shot, nearly still between them.",
+  "snap": "The object holds, then changes in about a beat on the shot's downbeat; the drop snaps hardest.",
+};
+function timingRow(current, act, index, asCut) {
+  const ids = (asCut ? ["auto"] : []).concat(MORPH_TIMINGS);
+  const chips = ids
+    .map((id) => {
+      const label = id === "auto" ? `As the cut (${MORPH_TIMING_LABELS[asCut] || "Smooth"})` : MORPH_TIMING_LABELS[id];
+      return `<button type="button" class="chip${id === current ? " on" : ""}" data-act="${act}" data-value="${esc(id)}"${index == null ? "" : ` data-index="${index}"`} aria-pressed="${id === current ? "true" : "false"}" title="${esc(MORPH_TIMING_NOTES[id] || "the cut's own timing")}">${esc(label)}</button>`;
+    })
+    .join("");
+  return `<div class="simple-seg morph-timing-row"><span>Timing</span><div class="toggle chips" role="group" aria-label="When the change happens inside each morph">${chips}</div></div>`;
 }
 
 const LOOK_PRESETS = ["warm-leak", "cool-echo", "noir-glow", "bloom-rush", "negative-rush", "cyan-flash"];
@@ -1696,9 +1721,9 @@ function shotsLane(easy) {
     const hue = SECTION_HUES[s.section] != null ? SECTION_HUES[s.section] : 260;
     const o = tl.shots[String(s.index)] || {};
     const held = o.play === "hold";
-    const edited = held || !!o.look || o.fx_intensity != null;
+    const edited = held || !!o.look || o.fx_intensity != null || !!o.timing;
     const label = s.to ? `${s.from} → ${s.to}` : s.from;
-    const marks = `${s.style && s.style !== "melt" ? ` · ${morphStyleLabel(s.style)}` : ""}${s.pinned ? " · pinned" : ""}${s.swapped ? " · swapped" : ""}${held ? " · held" : ""}${o.look ? ` · look ${o.look}` : ""}${o.fx_intensity != null ? ` · FX ${o.fx_intensity}` : ""}${s.rerendered ? " · re-rendered" : ""}${s.generated != null ? " · generated" : ""}${s.performer ? " · Polly" : ""}${s.own ? " · your clip" : ""}`;
+    const marks = `${s.style && s.style !== "melt" ? ` · ${morphStyleLabel(s.style)}` : ""}${o.timing ? ` · ${MORPH_TIMING_LABELS[o.timing] || o.timing}` : ""}${s.pinned ? " · pinned" : ""}${s.swapped ? " · swapped" : ""}${held ? " · held" : ""}${o.look ? ` · look ${o.look}` : ""}${o.fx_intensity != null ? ` · FX ${o.fx_intensity}` : ""}${s.rerendered ? " · re-rendered" : ""}${s.generated != null ? " · generated" : ""}${s.performer ? " · Polly" : ""}${s.own ? " · your clip" : ""}`;
     const title = `Shot ${s.index + 1} · ${clockText(s.start)} · ${s.seconds} s${s.section ? ` · ${s.section}` : ""}${s.transition ? ` · ${s.transition}` : ""}${label ? ` · ${label}` : ""}${marks}`;
     const pick = swapping && s.still != null;
     const act = pick ? `data-act="easy-swap-pick" data-slot="${s.still}" data-at="${s.start}"` : `data-act="easy-tl-shot" data-index="${s.index}" data-at="${s.start}"`;
@@ -1821,6 +1846,8 @@ function timelineDrawer(easy, lane, tl, picked) {
       <p class="note">${held ? "Held: the shot keeps its start object still (the orbit, the look and the beat FX still move it) and the join after it is a cut." : "Morph: the clip plays whole and lands on the next object; the join after it is continuous. Hold keeps the start object still and makes that join a cut."}</p>
       ${lookRow(o.look || "auto", "easy-tl-look", s.index)}
       <div class="simple-seg tl-fx-row"><span>FX intensity</span><input id="tl-fx" type="range" min="0" max="1" step="0.05" value="${fxVal != null ? fxVal : 0.8}" data-index="${s.index}" aria-label="Beat FX intensity for this shot" /><b id="tl-fx-readout">${fxVal != null ? fxVal.toFixed(2) : "as the knob"}</b>${fxVal != null ? `<button type="button" class="text" data-act="easy-tl-fx-clear" data-index="${s.index}">As the knob</button>` : ""}</div>
+      ${under || held ? "" : `${timingRow(o.timing || "auto", "easy-tl-timing", s.index, lane.morph_timing || "smooth")}
+      <p class="note">${esc(o.timing ? MORPH_TIMING_NOTES[o.timing] || "" : "When this morph's change happens: the cut's Timing until you pick one. Apply re-cuts it, no GPU.")}</p>`}
       ${canGpu ? `<div class="tl-gpu">
         <p class="note">On the GPU (Draft; a morph takes about what one morph took above, then the re-cut):</p>
         ${morphStyleRow(s.style || "melt", "easy-tl-style", s.index, false)}
@@ -1999,6 +2026,7 @@ function applySimpleRecipe(recipe) {
   easy.danceFx = recipe.dance_fx || "auto";
   easy.foreshadow = recipe.foreshadow || "auto";
   easy.morphStyle = recipe.morph_style || "auto";
+  easy.morphTiming = recipe.morph_timing || "smooth";
   easy.scenes = ["off", "mix", "only"].includes(recipe.scene_stills) ? recipe.scene_stills : "off";
   easy.lengthS = Number(recipe.length_s || 0);
   easy.performer = Number(recipe.performer || 0);
@@ -2372,6 +2400,7 @@ async function recutWithKnobs() {
     stem_orbit: state.easy.stemOrbit !== false,
     beat_fx: state.easy.fx !== false,
     end_card: !!state.easy.endCard,
+    morph_timing: state.easy.morphTiming || "smooth",
   };
   if (state.easy.tl && state.easy.tl.id === id) {  // the timeline's edits waiting for Apply ride along with the knobs
     body.shot_overrides = state.easy.tl.shots;
@@ -3358,6 +3387,13 @@ document.addEventListener("click", async (event) => {
     render();
   } else if (act === "easy-tl-style") {
     rerenderShot(Number(el.dataset.index), el.dataset.value);
+  } else if (act === "easy-morph-timing") {
+    state.easy.morphTiming = MORPH_TIMINGS.includes(el.dataset.value) ? el.dataset.value : "smooth";
+    render();
+  } else if (act === "easy-tl-timing") {
+    // a shot's own timing: an edit for Apply like its look (no GPU); "auto" is the cut's
+    setShotOverride(state.easy, state.lane, Number(el.dataset.index), "timing", el.dataset.value);
+    render();
   } else if (act === "easy-foreshadow") {
     state.easy.foreshadow = el.dataset.value || "auto";
     render();

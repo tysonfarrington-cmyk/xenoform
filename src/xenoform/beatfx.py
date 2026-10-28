@@ -577,6 +577,20 @@ def look_speedup(total: int) -> float:
     return max(1.0, min(3.0, 0.5 * look_workers(int(total), heavy=True)))
 
 
+def _blend_at(frames: np.ndarray, pos: float) -> np.ndarray:
+    """The source picture at a fractional frame: the two frames either side mixed by the fraction, so a re-timed morph
+    (morph_timing) crawls through a hold instead of repeating a frame and jumping. Within a twentieth of a frame it is
+    the frame itself."""
+    lo = int(np.floor(pos))
+    frac = pos - lo
+    hi = min(lo + 1, len(frames) - 1)
+    if frac < 0.05 or hi == lo:
+        return frames[lo]
+    if frac > 0.95:
+        return frames[hi]
+    return (frames[lo].astype(np.float32) * (1.0 - frac) + frames[hi].astype(np.float32) * frac + 0.5).astype(np.uint8)
+
+
 def _shot_frames(clip: Path, shot: dict, si: int, n0: int, total: int, *, aspect: str, w: int, h: int, fx: bool,
                  env: dict | None, beats: list, punch, zoom_scale: float, glow_gain: float, fps: int, look_kwargs: dict,
                  foreshadow: dict | None = None, boundary: dict | None = None) -> dict:
@@ -593,7 +607,13 @@ def _shot_frames(clip: Path, shot: dict, si: int, n0: int, total: int, *, aspect
     a, b = shot_centres(frames) if aspect != "16:9" else ((0.5, 0.5), (0.5, 0.5))
     if shot.get("hold"):
         b = a  # a held shot never leaves its first frame, so the reframe does not drift either
-    idx = shot_indices(shot, len(frames))
+    prog = pos = None
+    if shot.get("timing"):  # morph_timing: the clip's measured change, so the change lands on the beat
+        from xenoform import morph_timing as _MT
+
+        prog = _MT.progress(frames)
+        pos = shot_indices(shot, len(frames), progress=prog, exact=True)  # blended below: a slow stretch never judders
+    idx = shot_indices(shot, len(frames), progress=prog)
     count = max(len(idx) - 1, 1)
     look = LookPass(**look_kwargs)
     if shot.get("dance_fx"):  # the timeline's per-shot Look: a resolved preset or "off" for this shot alone (docs/TIMELINE.md)
@@ -606,7 +626,7 @@ def _shot_frames(clip: Path, shot: dict, si: int, n0: int, total: int, *, aspect
         u = k / count
         u = u * u * (3 - 2 * u)
         c = (a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u)
-        frame = reframe(frames[j], aspect, c, w, h)
+        frame = reframe(_blend_at(frames, float(pos[k])) if pos is not None else frames[j], aspect, c, w, h)
         if fx and env is not None:
             bi = int(np.searchsorted(beats, n / fps)) if beats else 0
             s_int, s_wob = shot_fx(shot)

@@ -618,16 +618,11 @@ def create_app(cfg: dict | None = None):
         from xenoform.dense import recut_from_cache
 
         body = body or {}
-        with _LOCK:
-            job = _JOBS.get(job_id)
-        if job is None:
-            raise HTTPException(404, "No such video.")
-        if job.get("status") == "running":
-            raise HTTPException(409, "That video is still rendering.")
-        folder = work_dir() / "jobs" / job_id
-        if not (folder / "simple" / "simple.json").is_file():
-            raise HTTPException(400, "This video has no cached morphs to re-cut.")
-        overrides = {k: body.get(k) for k in ("macros", "dance_fx", "stem_orbit", "beat_fx", "end_card", "beat_overlay", "foreshadow") if k in body}
+        # a cut reopened after a desk restart is registered from its folder, as the timeline's edits are (it used to
+        # answer "No such video." to Re-cut with these knobs on any cut made before the restart, 28 Oct)
+        job, folder = _cut_job_for_edit(job_id, "re-cut")
+        overrides = {k: body.get(k) for k in ("macros", "dance_fx", "stem_orbit", "beat_fx", "end_card", "beat_overlay", "foreshadow",
+                                              "morph_timing") if k in body}
         # the timeline's per-shot and per-boundary overrides (docs/TIMELINE.md): whole maps, each replacing the record's
         for key in ("shot_overrides", "boundary_overrides"):
             if key in body and isinstance(body.get(key), (dict, list)):

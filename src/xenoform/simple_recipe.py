@@ -38,6 +38,12 @@ def _style(value) -> str:
     return normal(value or "auto")
 
 
+def _timing(value) -> str:
+    from xenoform.morph_timing import normal
+
+    return normal(value)
+
+
 def _clean(state: dict) -> dict:
     out = {
         "vibe": str(state.get("vibe") or "")[:40],
@@ -53,6 +59,7 @@ def _clean(state: dict) -> dict:
         "morphs": _morphs(state.get("morph_count")),
         "foreshadow": str(state.get("foreshadow") or "auto").lower() if str(state.get("foreshadow") or "auto").lower() in FORESHADOW else "auto",
         "style": _style(state.get("morph_style")),  # how the morphs change (morph_style)
+        "timing": _timing(state.get("morph_timing")),  # when the change happens inside each morph (morph_timing)
     }
     song = str(state.get("song") or "")[:80]
     if song:
@@ -65,9 +72,10 @@ def _clean(state: dict) -> dict:
 
 _SHORT = {"vibe": "v", "idea": "i", "seed": "s", "energy": "e", "aspect": "a", "tier": "t", "fx": "f",
           "overlay": "o", "card": "c", "song": "g", "plan": "p", "vertical": "vm", "morphs": "n", "foreshadow": "fs",
-          "style": "ms"}
+          "style": "ms", "timing": "mt"}
 _DEFAULTS = {"idea": "", "seed": 2727, "energy": "flow", "aspect": "16:9", "tier": "draft", "fx": True,
-             "overlay": False, "card": False, "vertical": "auto", "morphs": "auto", "foreshadow": "auto", "style": "auto"}
+             "overlay": False, "card": False, "vertical": "auto", "morphs": "auto", "foreshadow": "auto", "style": "auto",
+             "timing": "smooth"}
 
 
 def encode(state: dict) -> str:
@@ -96,7 +104,8 @@ def decode(code: str) -> dict:
                     "quality_tier": data.get("tier"), "beat_fx": data.get("fx", True),
                     "beat_overlay": data.get("overlay"), "end_card": data.get("card"), "song": data.get("song"),
                     "vertical_mode": data.get("vertical"), "cut_plan": data.get("plan"),
-                    "morph_count": data.get("morphs"), "foreshadow": data.get("foreshadow"), "morph_style": data.get("style")})
+                    "morph_count": data.get("morphs"), "foreshadow": data.get("foreshadow"), "morph_style": data.get("style"),
+                    "morph_timing": data.get("timing")})
     state = {"vibe": clean["vibe"], "idea": clean["idea"], "seed": clean["seed"], "energy_preset": clean["energy"],
              "aspect": clean["aspect"], "quality_tier": clean["tier"], "beat_fx": clean["fx"],
              "beat_overlay": clean["overlay"], "end_card": clean["card"], "song": clean.get("song", "")}
@@ -108,6 +117,8 @@ def decode(code: str) -> dict:
         state["foreshadow"] = clean["foreshadow"]
     if clean["style"] != "auto":
         state["morph_style"] = clean["style"]
+    if clean["timing"] != "smooth":
+        state["morph_timing"] = clean["timing"]
     if "plan" in clean:
         from xenoform.cloud_morph import CutPlanError, custom_shots
 

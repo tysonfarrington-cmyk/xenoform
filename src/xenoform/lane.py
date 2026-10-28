@@ -116,6 +116,8 @@ def build(info: dict, video_id: str = "") -> dict:
             row["look"] = str(o["look"])
         if o.get("fx_intensity") is not None:
             row["fx_intensity"] = float(o["fx_intensity"])
+        if o.get("timing"):
+            row["timing"] = str(o["timing"])
         if i in bo and bo[i].get("fx"):
             row["fx_override"] = str(bo[i]["fx"])
         if i in rerendered:
@@ -166,4 +168,5 @@ def build(info: dict, video_id: str = "") -> dict:
             "shot_overrides": {str(k): v for k, v in sorted(so.items())}, "boundary_overrides": {str(k): v for k, v in sorted(bo.items())},
             "rerenders": sum(rerendered.values()), "inserts": len(inserts), "editable": bool(rows) and bool(info.get("clips")),
             "rerenderable": draft and bool(info.get("clips")), "beats": [round(float(b), 3) for b in (info.get("beats") or [])],
-            "drop": info.get("drop"), "morph_style": str(info.get("morph_style") or "auto"), "choices": choices() if rows else {}}
+            "drop": info.get("drop"), "morph_style": str(info.get("morph_style") or "auto"),
+            "morph_timing": str(info.get("morph_timing") or "smooth"), "choices": choices() if rows else {}}

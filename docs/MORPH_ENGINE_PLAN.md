@@ -157,6 +157,21 @@ growing out of it). The cut and a sheet of its nine morphs are in `Desktop\xeno_
 neon-noir's grown "pearl" and "icicle" are both keys, so the morph between them has nothing to change (the duplicate
 check compares pictures, not what they show): a library follow-up.
 
+**E2 landed** (Tys: "time each morph so the change lands on the beat (Smooth, On the beat, Snap), on the cached
+morphs"). `xenoform.morph_timing`: the clip's measured change, a target per output frame, the inverse played (blended
+between frames on a slow stretch so a hold never judders). The Timing row on the desk and on the cut's screen (a re-cut,
+no GPU), a shot's own on the timeline. Proof on 9207df6b, re-cut three ways through the desk in about 40 s each: the
+median share of a morph's change within 1/8 s of its downbeat 31 % Smooth, 43 % On the beat, 47 % Snap
+(`Desktop\xeno_morph_styles_28oct\timing_smooth_beat_snap.mp4` side by side with the song, and the change curves in
+`timing_change_on_the_beat.png`). Found on the way: Re-cut with these knobs refused a cut reopened after a desk
+restart ("No such video."); fixed.
+
+**Next, from Tys (28 Oct, during E2):** "a proper dither effect ... high quality; the pixelated effect we have should be
+an option but something optional or used sparingly; more TouchDesigner type effects; stream diffusion, if it's not too
+much work". Goes with E4 (Looks): a high-quality dither (ordered Bayer and error diffusion, palette-aware) as a Look or
+an effect, the pixel effect made opt-in, a few TD-style effects, and a StreamDiffusion feasibility check before any
+promise.
+
 ## 5. After the contest: the music video maker
 
 The split Tys described stays the direction: a music video maker (song plus footage, an audio-reactive auto-edit) with the morph

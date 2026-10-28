@@ -207,22 +207,34 @@ def custom_shots(plan: dict, duration: float | None = None) -> list[dict]:
     return shots
 
 
-def shot_indices(shot: dict, n_src: int) -> np.ndarray:
+def shot_indices(shot: dict, n_src: int, progress: np.ndarray | None = None, exact: bool = False) -> np.ndarray:
     """Which source frame plays on each output frame: speed (linear), ease, then the in-shot effects.
 
     The shot always starts on frame 0 (still A) and ends on the last frame (still B), so the
-    chain stays continuous across handoffs whatever the effects do in between.
+    chain stays continuous across handoffs whatever the effects do in between. A shot with
+    ``timing`` (``morph_timing``: On the beat, Snap) and the clip's measured ``progress`` plays
+    the source frames so its change lands on the beat instead of at an even speed. ``exact``
+    returns the positions unrounded (floats), for a compose that blends the two frames either
+    side of a slow stretch instead of repeating one and jumping.
     """
     count = int(shot["frames"])
     last = max(n_src - 1, 0)
     if shot.get("hold"):  # the timeline's Hold: the start object held still for the whole shot (docs/TIMELINE.md)
         return np.zeros(count, dtype=int)
-    u = np.linspace(0.0, 1.0, count) if count > 1 else np.zeros(count)
-    if shot.get("ease") == "in":
-        u = u ** 1.6
-    elif shot.get("ease") == "out":
-        u = 1 - (1 - u) ** 1.6
-    idx = u * last
+    timed = None
+    if shot.get("timing") and progress is not None and len(progress) == n_src:
+        from xenoform import morph_timing as _MT
+
+        timed = _MT.indices(shot, count, progress, FPS)
+    if timed is not None:
+        idx = timed
+    else:
+        u = np.linspace(0.0, 1.0, count) if count > 1 else np.zeros(count)
+        if shot.get("ease") == "in":
+            u = u ** 1.6
+        elif shot.get("ease") == "out":
+            u = 1 - (1 - u) ** 1.6
+        idx = u * last
     step = last / max(count - 1, 1)
     for fx in shot.get("effects") or []:
         k0 = int(round((float(fx["t"]) - float(shot["start"])) * FPS))
@@ -249,6 +261,11 @@ def shot_indices(shot: dict, n_src: int) -> np.ndarray:
             back = idx[k0] - np.arange(half) * step
             fwd = np.linspace(back[-1], idx[min(count - 1, k0 + n)], n - half + 1)[:-1]
             idx[k0:k0 + n] = np.concatenate([back, fwd])
+    if exact:
+        idx = np.clip(np.asarray(idx, dtype=np.float64), 0, last)
+        if count:
+            idx[0], idx[-1] = 0.0, float(last)
+        return idx
     idx = np.clip(np.round(idx), 0, last).astype(int)
     if count:
         idx[0], idx[-1] = 0, last
