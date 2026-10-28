@@ -115,6 +115,8 @@ function shortcutLabel() {
 
 // The last session's vibe and Fine-tune choices survive a reload or a desk restart (the song cannot: uploads live on the server).
 const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow", "scenes", "pins", "feelSig", "batchN", "batchVary", "morphSource", "scenesChosen", "morphStyle", "morphTiming", "effects"];
+// The Model row's tiers as the desk names them (quality_tier: draft, fast, final, cloud)
+const TIER_LABEL = { draft: "Draft", fast: "Fast Final", final: "Final", cloud: "Cloud Final" };
 function saveEasy() {
   if (!state || !state.easy) return;
   try {
@@ -225,7 +227,7 @@ function payload() {
     idea:(state.easy && state.easy.idea) || "",
     song: (state.easy && state.easy.songLabel) || "",
     cut_plan: (state.easy && (state.easy.cloud || state.easy.remixPlan) && (state.easy.cutPlan || state.easy.remixPlan)) || null,
-    video_model: state.videoModel || "ltx-23",
+    // (no video_model: the tier picks the engine; the Final is LTX-2.5 wherever its files are installed, LTX-2.3 otherwise)
     brief: state.brief || "",
     mode: "simple",  // one desk, one engine: every Make is the Simple cut (dense.run_simple)
     scenes: (state.scenes || []).map((scene) => ({
@@ -336,14 +338,17 @@ function connectSnippets() {
 function renderConnect() {
   const snippets = connectSnippets();
   const status = state.mcp || { detail: "The desk API is up. The agent port is off until you start it.", running: false };
+  // the note and the button follow the status line: once the port answers there is nothing left to start
+  const portNote = status.running ? "The agent port is answering on this machine; paste a snippet below. It listens only on this machine and needs no token."
+    : "The agent port is off until you start it, listens only on this machine, and needs no token.";
   return `<section class="panel connect">
     <p class="kicker">Agent</p>
     <h2>Connect an AI</h2>
-    <p class="note">Grok, Claude, GPT, or Cursor can direct this desk. The agent port is off until you start it, listens only on this machine, and needs no token. The desk it talks to is ${esc(snippets.desk)}.</p>
+    <p class="note">Grok, Claude, GPT, or Cursor can direct this desk. ${esc(portNote)} The desk it talks to is ${esc(snippets.desk)}.</p>
     <p class="mcp-status" id="mcp-status" data-running="${status.running ? "yes" : "no"}">${esc(status.detail || "")}</p>
     <div class="review-actions">
       <button type="button" class="ghost" data-act="mcp-test">Test connection</button>
-      <button type="button" class="generate${state.mcpBusy ? " is-loading" : ""}" data-act="mcp-start"${state.mcpBusy ? " disabled" : ""}>Start on this machine</button>
+      <button type="button" class="generate${state.mcpBusy ? " is-loading" : ""}" data-act="mcp-start"${state.mcpBusy || status.running ? " disabled" : ""}>${status.running ? "Running" : "Start on this machine"}</button>
     </div>
     ${snippetBlock("Claude Desktop", "claude", snippets.stdio, "Paste into claude_desktop_config.json. This uses stdio, so the HTTP port can stay off.")}
     ${snippetBlock("Cursor", "cursor", snippets.stdio, "Paste into .cursor/mcp.json. Same command. XENO_DESK is this desk.")}
@@ -755,7 +760,8 @@ function renderRow(easy) {
   if (easy.showcase || (easy.playedHere && !easy.failed)) return "";
   const songSecs = easySongSeconds();
   const part = Number(easy.madeLength) > 0 && songSecs > Number(easy.madeLength) + 1;
-  const draft = (easy.madeTier || "draft") !== "final";
+  // a Final or a Cloud Final is already full size; a Draft or a Fast Final is offered the Final
+  const draft = !["final", "cloud"].includes(easy.madeTier || "draft");
   if (!part && !draft && !easy.failed) return "";
   const noSong = !easy.song;
   const off = noSong ? " disabled" : "";
@@ -772,7 +778,7 @@ function renderRow(easy) {
     : "minutes of GPU per second of video on a 12 GB card";
   const note = noSong
     ? "The song is not loaded in this window (uploads live on the desk until it restarts): choose it again on the first screen to render."
-    : `A new render with this vibe, your line and the knobs. Final keeps this cut's objects in the same order (its chain is pinned) and is LTX-2.3 at full size, ${cost}. Handoff edits on this timeline stay with this cut: make them again on the sharp one.`;
+    : `A new render with this vibe, your line and the knobs. Final keeps this cut's objects in the same order (its chain is pinned) and is LTX-2.5 (LTX-2.3 where its files are missing) at full size, ${cost}. Handoff edits on this timeline stay with this cut: make them again on the sharp one.${easy.madeTier === "cloud" ? " This cut was a Cloud Final: a new render spends credits again, so go Back to the song and tick the credits box under Model in Fine-tune first." : ""}`;
   return `<div class="energy-head render-head"><h3>Render</h3><span>${part ? "The prototype becomes the video" : "The sharp version"}</span></div>
       ${buttons}
       <p class="note">${esc(note)}</p>`;
@@ -806,7 +812,7 @@ function renderEasy() {
     return `<div class="easy easy-making">
       <div class="easy-make-head">
         <div>
-          <p class="eyebrow">${esc(chosen.name)} · ${esc(easy.songLabel || "Song")}${easy.madeLength ? ` · ${esc(String(easy.madeLength))} s prototype` : ""}${easy.madeTier === "final" ? " · Final" : easy.madeTier === "fast" ? " · Fast Final" : ""}</p>
+          <p class="eyebrow">${esc(chosen.name)} · ${esc(easy.songLabel || "Song")}${easy.madeLength ? ` · ${esc(String(easy.madeLength))} s prototype` : ""}${easy.madeTier && easy.madeTier !== "draft" ? ` · ${esc(TIER_LABEL[easy.madeTier] || easy.madeTier)}` : ""}</p>
           <h2>${easy.madeLength ? "Making the prototype." : "Making your video."}</h2>
         </div>
         <div class="easy-make-actions">
@@ -880,7 +886,7 @@ function renderEasy() {
         ${timingRow(easy.morphTiming || "smooth", "easy-morph-timing")}
         ${effectsRow(easy.effects, "easy-effect")}
         ${lookRow(easy.danceFx || "auto", "easy-look")}
-        ${(state.lane && state.lane.source === "clips") || morphSource(easy) === "clips" ? "" : `${foreshadowRow(easy)}${scenesRow(easy)}`}
+        ${(state.lane && state.lane.source === "clips") || morphSource(easy) === "clips" ? "" : `${foreshadowRow(easy)}${scenesRow(easy)}<p class="note">Scenes applies to the next render, not the re-cut: a re-cut keeps this cut's stills.</p>`}
         <button type="button" class="generate easy-row" data-act="easy-recut-knobs"${easy.showcase || !easyVideoId() ? " disabled" : ""}>${pendingCount(easy) ? `Apply ${pendingCount(easy)} change${pendingCount(easy) === 1 ? "" : "s"}` : "Re-cut with these knobs"}</button>
         <p class="note">Re-composes the same morphs with the knobs, the look and the orbit as they are now, and with the timeline's edits. No GPU, no new pictures: a fraction of the render time.</p>
         ${renderRow(easy)}
@@ -949,8 +955,8 @@ function renderEasy() {
       </dl>
       <button type="button" class="generate easy-make" data-act="easy-make"><span>${proto ? `Make a ${esc(String(easyLength(easy)))} s prototype` : "Make my video"}</span><kbd>${esc(shortcutLabel())}</kbd></button>
       <p class="note house-line">${proto
-        ? `A Draft of ${esc(String(easyLength(easy)))} s around the drop, in minutes. Then refine it, and render the whole song or Final from its screen. Fine-tune → Length makes the whole song now.`
-        : "9:16, Dense, Draft, Beat FX and the house look. Fine-tune below the vibes if you want to; Final is one press on the cut's screen."}</p>
+        ? `A ${esc(TIER_LABEL[easy.tier] || "Draft")} of ${esc(String(easyLength(easy)))} s around the drop, in minutes. Then refine it, and render the whole song or Final from its screen. Fine-tune → Length makes the whole song now.`
+        : `${esc(easy.aspect || "9:16")}, ${(easy.energyPreset || "dense") === "dense" ? "Dense" : "Flow"}, ${esc(TIER_LABEL[easy.tier] || "Draft")}, Beat FX and the house look. Fine-tune below the vibes if you want to; Final is one press on the cut's screen.`}</p>
       ${variationsRow(easy)}
       ${easy.cloudPlan ? cloudCard(easy.cloudPlan) : ""}
       <button type="button" class="ghost easy-showcase" data-act="easy-showcase">Watch a finished one · plays now</button>
@@ -1066,7 +1072,7 @@ function finalEtaText() {
   if (!info) return "Final takes longer: minutes, not seconds.";
   const ready = info.ready ? "" : " Some Final files are missing on this machine, so it falls back to Draft.";
   const measured = info.eta_measured ? ` (measured here, ${info.cuts} Final cut${info.cuts === 1 ? "" : "s"})` : " (estimate, not yet measured on this card)";
-  return `Final: LTX-2.3 at ${info.render}, upscaled to ${info.output}. About ${clockText(info.eta_s)}${measured}.${ready}`;
+  return `Final renders with LTX-2.5 when its files are installed, LTX-2.3 otherwise, at ${info.render}, upscaled to ${info.output}. About ${clockText(info.eta_s)}${measured}.${ready}`;
 }
 
 // Fine-tune: everything that is not song / vibe / Make, in one drawer that remembers whether it was open.
@@ -1076,7 +1082,7 @@ function fineTune(easy) {
     state.stillsLoading = true;
     setTimeout(() => { loadStills(true).finally(() => { state.stillsLoading = false; }); }, 0);
   }
-  const bits = [easy.aspect || "9:16", (easy.energyPreset || "dense") === "dense" ? "Dense" : "Flow", (easy.tier || "draft") === "final" ? "Final" : "Draft",
+  const bits = [easy.aspect || "9:16", (easy.energyPreset || "dense") === "dense" ? "Dense" : "Flow", TIER_LABEL[easy.tier] || "Draft",
     lookLabel(easy.danceFx || "auto"), easy.scenes && easy.scenes !== "off" ? `Scenes ${easy.scenes}` : ""].filter(Boolean);
   return `<details class="fine-tune" id="fine-tune"${open ? " open" : ""}>
       <summary>Fine-tune <small>${esc(bits.join(" · "))}</small></summary>
@@ -1622,21 +1628,29 @@ function machineRows(easy) {
 function simpleOptions(easy) {
   const energy = easy.energyPreset || "dense";
   const aspect = easy.aspect || "9:16";
+  // Cloud Final morphs object cuts only (cloud_final has no clips path): a clips cut leaves the chip out and renders here
+  const clips = morphSource(easy) === "clips";
+  if (clips && easy.tier === "cloud") easy.tier = "draft";
   const tier = easy.tier || "draft";
+  const tiers = [["draft", "Draft"], ["fast", "Fast Final"], ["final", "Final"], ["cloud", "Cloud Final"]].filter((t) => !(clips && t[0] === "cloud"));
   const orbit = easy.stemOrbit !== false;
   const fx = easy.fx !== false;
   const card = !!easy.endCard;
   const vertical = tier === "final" ? (easy.vertical === "crop" ? "crop" : "native") : "crop";
+  const cloudInfo = (state.simpleOptions && state.simpleOptions.cloud_final) || {};
   const vertNote = aspect !== "9:16" ? (aspect === "16:9" ? "" : " Each shot is reframed around the object as it changes.")
     : vertical === "native" ? " Native vertical: rendered in portrait (448×768), upscaled to 1080×1920, the object centred whole."
     : tier === "final" ? " Each shot is cropped from the 16:9 render around the object as it changes."
+    : tier === "cloud" ? ` Portrait: rendered at ${cloudInfo.render || "576x1024"} on Comfy Cloud, scaled to 1080×1920 here, the object centred whole.`
+    : tier === "fast" ? " Portrait: the Draft's portrait morphs (320×576), each upscaled to 1080×1920."
     : " Portrait Draft: every still re-laid whole on black, the morphs rendered in portrait (320×576) and composed at 540×960, so wide objects are never clipped.";
   return `<div class="simple-opts" data-tour="easy-options">
       ${simpleSeg("easy-energy", energy, [["flow", "Flow"], ["dense", "Dense"]], "Energy")}
       ${simpleSeg("easy-aspect", aspect, [["16:9", "16:9"], ["9:16", "9:16"], ["1:1", "1:1"]], "Aspect")}
       ${simpleSeg("easy-length", String(easyLength(easy)), [["0", "Full song"], ["60", "60 s"], ["30", "30 s"], ["15", "15 s"]], "Length")}
       <p class="note">${esc(lengthNote(easy))}</p>
-      ${simpleSeg("easy-tier", tier, [["draft", "Draft"], ["fast", "Fast Final"], ["final", "Final"], ["cloud", "Cloud Final"]], "Model")}
+      ${simpleSeg("easy-tier", tier, tiers, "Model")}
+      ${clips ? `<p class="note">Cloud Final morphs object cuts only; a clips cut renders here.</p>` : ""}
       ${tier === "cloud" ? cloudFinalRow(easy) : ""}
       ${machineRows(easy)}
       ${aspect === "9:16" && tier === "final" ? simpleSeg("easy-vertical", vertical, [["native", "Native"], ["crop", "Crop"]], "Vertical") : ""}
@@ -1646,13 +1660,15 @@ function simpleOptions(easy) {
       ${simpleSeg("easy-card", card ? "on" : "off", [["off", "Off"], ["on", "On"]], "End card")}
       <p class="note">${esc(energy === "dense" ? "Dense: a song cuts two bars a shot and a bar on the drop, light punches on the downbeats, and loops a chain of up to 30 morphs so every handoff stays one continuous transformation; a clip under 20 s cuts a shot a bar, then every half bar from the drop, with stutters, holds and punches." : "Flow: one morph per section, cut on the bar.")}
       ${esc(vertNote)}
-      ${esc(tier === "final" ? " " + finalEtaText() : tier === "fast" ? " Fast Final: the Draft's morphs (LTX 0.9.5), each upscaled 4x to 1080×1920 and cut at full size. The motion is the Draft's, the picture is full size, in a fraction of the Final's time." : " Draft: LTX 0.9.5, the quick pass.")}
+      ${esc(tier === "final" ? " " + finalEtaText() : tier === "fast" ? " Fast Final: the Draft's morphs (LTX 0.9.5), each upscaled 4x to 1080×1920 and cut at full size. The motion is the Draft's, the picture is full size, in a fraction of the Final's time."
+        : tier === "cloud" ? ` Cloud Final: ${cloudInfo.model || "LTX"} on Comfy Cloud, scaled to full size here.` : " Draft: LTX 0.9.5, the quick pass.")}
       ${esc(easy.overlay ? "" : " Clean export: no waveform or text on the picture.")}</p>
     </div>`;
 }
 
 // Morph count: Auto (from clip length + BPM) or a fixed number of forms, with a time/VRAM estimate.
-const MORPH_COST = {draft: {s: 35, vram_gb: 7.5}, fast: {s: 55, vram_gb: 7.5}, final: {s: 230, vram_gb: 11.2}, final_916: {s: 270, vram_gb: 11.4}};  // Final: 340 s a morph measured 28 Oct, less the encoder read once a prompt and the quarter-size upscale
+const MORPH_COST = {draft: {s: 35, vram_gb: 7.5}, fast: {s: 55, vram_gb: 7.5}, final: {s: 230, vram_gb: 11.2}, final_916: {s: 270, vram_gb: 11.4},
+  cloud: {s: 45, vram_gb: 2}};  // Final: 340 s a morph measured 28 Oct, less the encoder read once a prompt and the quarter-size upscale; cloud: three at once on Comfy Cloud, then the upscale here (dense.COST serves the live figure)
 function autoMorphs(energy) {
   const m = state.simpleOptions && state.simpleOptions.morphs;
   if (m && m.auto) return m.auto;
@@ -1668,20 +1684,24 @@ const TIME_PARTS = {
     "The cut: about 60 s for 20 s at 540×960."],
   fast: ["Fast Final: each morph about 40 s, the Draft's 20 s and about 20 s to upscale it to 1080×1920.",
     "The cut: about 2½ minutes for 20 s at 1080×1920."],
-  final: ["Final: each morph about 4½ min on LTX-2.3, whose 24 GB of weights do not fit the 12 GB card and are read again every step:",
+  final: ["Final: each morph about 4½ min (measured on LTX-2.3, whose 24 GB of weights do not fit the 12 GB card and are read again every step):",
     "• reading the prompt: 1 min, once for each different prompt (shots that share one go back to back)",
     "• drawing it, 8 steps at 224×384: 2¼ min",
     "• refining it, 3 steps at 448×768: 1 min",
     "• the 4x upscale to 1080×1920: ½ min",
     "The first morph loads the models: about 5 min more.",
     "The cut: about 2½ minutes for 20 s at 1080×1920."],
+  cloud: ["Cloud Final: each morph about 60 s on Comfy Cloud, three at once, then a few seconds to scale it to full size here.",
+    "The cut: about 2½ minutes for 20 s at 1080×1920."],
 };
 function timeTip(tier) {
   return (TIME_PARTS[tier] || TIME_PARTS.draft).join("\n");
 }
 function morphEstimate(count, tier, aspect, vertical) {
-  const key = tier === "final" && aspect === "9:16" && vertical === "native" ? "final_916" : (tier === "final" || tier === "fast" ? tier : "draft");
-  const c = MORPH_COST[key];
+  const key = tier === "final" && aspect === "9:16" && vertical === "native" ? "final_916" : (["final", "fast", "cloud"].includes(tier) ? tier : "draft");
+  // the desk's own figures are measured on this card; Cloud Final's comes from the server (dense.COST, cloud_final)
+  const served = (((state.simpleOptions || {}).morphs || {}).cost || {})[key];
+  const c = key === "cloud" && served && Number(served.s) > 0 ? served : MORPH_COST[key];
   const secs = c.s * count + 20;
   return `about ${clockText(secs)}, peak VRAM ~${c.vram_gb} GB`;
 }
@@ -1693,15 +1713,18 @@ function morphControl(easy, tier, aspect, vertical) {
       <input type="range" min="1" max="40" step="1" value="${Math.min(40, n)}" data-act="easy-morphs" aria-label="Number of forms">
       <input type="number" min="1" max="120" step="1" value="${n}" data-act="easy-morphs" aria-label="Number of forms" style="width:4.5em">
       <span class="note time-tip" title="${esc(timeTip(tier))}">${esc(`${n} form${n === 1 ? "" : "s"}: ${morphEstimate(n, tier, aspect, vertical)}`)} ⓘ</span>
-      <span class="note guard-live">${auto ? "" : esc(morphGuardText(n))}</span>
+      <span class="note guard-live">${auto ? "" : esc(morphGuardText(n, tier))}</span>
     </div>`;
 }
 // Live guardrail hint, mirroring configs/guardrails.json morph_density (15 sweet spot, 18 hard per 20 s).
-function morphGuardText(n) {
+function morphGuardText(n, tier) {
   const secs = easySongSeconds() || 20;
   const cap = Math.max(1, Math.round(secs / 20 * 15));
   const hard = Math.max(cap, Math.round(secs / 20 * 18));
   const expert = localStorage.getItem("xeno-guard-expert") === "1";
+  // Cloud Final's own cap (cloud_final.MAX_MORPHS): its credits, not the density guardrail
+  const cloudMax = Number(((state.simpleOptions || {}).cloud_final || {}).max_morphs) || 16;
+  if (tier === "cloud" && n > cloudMax) return `Cloud Final renders at most ${cloudMax} morphs a cut`;
   if (n > hard) return expert ? `Guardrail: ${n} forms in ${Math.round(secs)}s reads as laggy (Expert: kept)` : `Guardrail: ${n} forms in ${Math.round(secs)}s reads as laggy; renders as ${cap}`;
   if (n > cap) return `Guardrail: above the ~${cap}-form sweet spot for ${Math.round(secs)}s`;
   return "";
@@ -2282,6 +2305,7 @@ function applySimpleRecipe(recipe) {
   easy.energyPreset = recipe.energy_preset || "dense";
   easy.aspect = recipe.aspect || "9:16";
   easy.tier = recipe.quality_tier || "draft";
+  easy.cloudFinalOk = false;  // a recipe that says Cloud Final still needs the credits tick
   easy.vertical = recipe.vertical_mode || "";
   easy.morphs = recipe.morph_count || "auto";
   easy.fx = recipe.beat_fx !== false;
@@ -2726,8 +2750,18 @@ function cloudFinalRow(easy) {
 async function easyMake() {
   const vibe = vibeById(state.easy.vibe);
   if (!vibe) return;
+  if (morphSource(state.easy) === "clips" && state.easy.tier === "cloud") state.easy.tier = "draft";  // Cloud Final has no clips path
+  const cf = state.simpleOptions && state.simpleOptions.cloud_final;
+  if ((state.easy.tier || "draft") === "cloud" && cf && !cf.ready) {
+    // no key on this desk: there is no box to tick, so say why instead
+    state.easy.note = cf.why || "Cloud Final is not available on this desk.";
+    render();
+    return;
+  }
   if ((state.easy.tier || "draft") === "cloud" && !state.easy.cloudFinalOk) {
-    state.easy.note = "Cloud Final spends your Comfy Cloud credits: tick the box under Model to run it.";
+    state.easy.note = state.easy.phase === "result"
+      ? "Cloud Final spends your Comfy Cloud credits: go Back to the song, tick the box under Model in Fine-tune, then render."
+      : "Cloud Final spends your Comfy Cloud credits: tick the box under Model to run it.";
     render();
     return;
   }
@@ -2790,6 +2824,7 @@ async function easyMake() {
   const line = document.getElementById("easy-progress");
   if (line) line.textContent = state.easy.note;
   await generate();
+  if (state && state.easy) state.easy.cloudFinalOk = false;  // one tick, one Cloud Final: the next Make asks again
   loadVideos().then(() => {
     const id = easyVideoId();
     const row = (state.videos || []).find((item) => item.id === id);
@@ -3156,7 +3191,8 @@ function knobsFolded() {
 // Changes waiting on a cut: the knob rows turned since the last re-cut (a set of rows, so three clicks on Look are one
 // change) and the timeline's edits. One bar at the bottom of the window applies all of them in one re-cut from the
 // cached morphs; the lane's Apply and the knobs' Re-cut used to be two buttons for the same thing (28 Oct).
-const KNOB_ACTS = { "easy-look": "Look", "easy-effect": "Effects", "easy-morph-timing": "Timing", "easy-foreshadow": "Foreshadow", "easy-scenes": "Scenes" };
+// (Scenes is not here: a re-cut keeps the cut's stills, so a Scenes choice waits for the next render)
+const KNOB_ACTS = { "easy-look": "Look", "easy-effect": "Effects", "easy-morph-timing": "Timing", "easy-foreshadow": "Foreshadow" };
 function touchKnob(row) {
   if (!state.easy) return;
   state.easy.knobsTouched = Object.assign({}, state.easy.knobsTouched || {}, { [row]: 1 });
@@ -3479,7 +3515,6 @@ function adoptSession(data, options = {}) {
     libraryPick: previous ? previous.libraryPick : null,
     stillsNote: previous ? previous.stillsNote || "" : "",
     score: previous ? previous.score || null : null,
-    videoModel: previous && previous.videoModel ? previous.videoModel : readVideoModel(),
     live: previous ? previous.live : false,
     addons: previous && previous.addons != null ? !!previous.addons : readAddons(),
     paidCloudEnv: data.paid_cloud ? String(data.paid_cloud.env || "") : previous ? previous.paidCloudEnv || "" : "",
@@ -4524,8 +4559,6 @@ document.getElementById("open-settings").addEventListener("click", () => {
     const why = document.getElementById("paid-cloud-env");
     if (why) why.textContent = state.paidCloudEnv ? `Set by XENO_PAID_CLOUD=${state.paidCloudEnv === "on" ? "1" : "0"} when the desk started.` : "";
   }
-  const model = document.getElementById("video-model");
-  if (model) model.value = state.videoModel === "ltx-25" ? "ltx-25" : "ltx-23";
   const folder = document.getElementById("library-folder");
   if (folder) folder.value = state.libraryFolder || "";
   const faces = document.getElementById("exclude-faces");
@@ -4550,9 +4583,6 @@ document.getElementById("save-settings").addEventListener("click", () => {
     state.easy.cloudToken = "";
     state.easy.cloudPlan = null;
   }
-  const model = document.getElementById("video-model");
-  state.videoModel = model && model.value === "ltx-25" ? "ltx-25" : "ltx-23";
-  writeVideoModel(state.videoModel);
   const folder = document.getElementById("library-folder");
   state.libraryFolder = folder ? folder.value.trim() : state.libraryFolder || "";
   const faces = document.getElementById("exclude-faces");
@@ -4729,7 +4759,7 @@ function renderSetup() {
           </article>`,
         )
         .join("")}
-      <p class="note">Frame fill uses ${esc(setup.interpolate || "minterpolate")}. Turn it on beside Turbo, Draft, or Final. Live+AI and TensorRT stay off the base install.</p>
+      <p class="note">Frame fill (${esc(setup.interpolate || "minterpolate")}) runs on its own when the QA pass finds judder; there is nothing to switch on. Live+AI and TensorRT stay off the base install.</p>
       <button type="button" class="ghost" data-act="check-extra">Check again</button>
     </section>
   </div>`;
@@ -4952,20 +4982,6 @@ function readMorphHit() {
   }
 }
 
-function readVideoModel() {
-  try {
-    return localStorage.getItem("xeno-video-model") === "ltx-25" ? "ltx-25" : "ltx-23";
-  } catch (err) {
-    return "ltx-23";
-  }
-}
-
-function writeVideoModel(value) {
-  try {
-    localStorage.setItem("xeno-video-model", value === "ltx-25" ? "ltx-25" : "ltx-23");
-  } catch (err) {}
-}
-
 function readPaidCloud() {
   try {
     return localStorage.getItem("xeno-paid-cloud") === "1";
@@ -5082,7 +5098,7 @@ document.addEventListener("input", (ev) => {
   const box = el.closest(".morph-count");
   if (box) box.querySelectorAll("input").forEach((i) => { if (i !== el) i.value = String(Math.min(Number(i.max), n)); });
   const hint = box && box.querySelector(".guard-live");
-  if (hint) hint.textContent = morphGuardText(n);
+  if (hint) hint.textContent = morphGuardText(n, state.easy.tier || "draft");
 });
 document.addEventListener("change", (ev) => {
   const el = ev.target;

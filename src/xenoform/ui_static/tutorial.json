@@ -18,7 +18,7 @@
       "title": "Pick a vibe",
       "body": [
         "Choose a card, and type an idea in one line if you have one.",
-        "The line can name a place, an object or a dancer; the cut follows it."
+        "The line can name things, a theme, a place or a feel; the cut follows it."
       ],
       "target": "[data-tour=easy-vibe]",
       "view": "simple",
@@ -45,7 +45,7 @@
     "weights": {
       "title": "Open weights",
       "body": [
-        "The default path is local open weights: Z-Image Turbo for stills, LTX-2.3 for video, and LTX 0.9.5 for morphs.",
+        "The default path is local open weights: Z-Image Turbo for stills, LTX 0.9.5 for Draft morphs and LTX-2.5 (LTX-2.3 where it is not installed) for Final morphs.",
         "Add-ons stay off. The badge reads Open weights and links to the licence page."
       ],
       "target": "",
@@ -56,7 +56,7 @@
       "title": "Turn the knobs",
       "body": [
         "Intensity, Speed, Chaos and Glow set how hard the cut hits; the Look chips set its colour.",
-        "Fine-tune under them holds the rest: length, aspect, Final, Polly, your own footage and the chain."
+        "Fine-tune under them holds the rest: length, aspect, the Model (Draft, Fast Final, Final, Cloud Final), your images and the chain; Polly and the rest wait in Work in progress."
       ],
       "target": "[data-tour=easy-macros]",
       "view": "simple"

@@ -47,16 +47,18 @@
       <p class="tagline">Every drop is a transformation.</p>
       <p class="subhead">A music video director, not a visualiser.</p>
       <p class="pitch">Xenoform turns a song into a music video where one object keeps transforming into the next, every change landing on the beat. Free, local, open weights.</p>
-      <p class="note">One desk: a song and a vibe make a quick prototype (a Draft of 30 s around the drop for a long song: a stills draft in seconds, LTX morphs on your own GPU in minutes); refine it on its timeline (each shot's object, look and FX, each handoff, a morph re-rendered, a run generated), re-cut it with the knobs without the GPU, then render the whole song or Final and share it. 9:16, Dense, Draft and the house look by default, with Flow, 16:9 and 1:1, the Look presets, stem reactions, your own images and recipe codes under Fine-tune. The desk is the morph engine; what is not, yet, waits in the Work in progress drawer under Fine-tune: Polly, your clips, paid cloud, live visuals at <a href="/vj">/vj</a> with a MIDI controller, and Connect an AI (any AI can drive the same desk over MCP). TouchDesigner gets OSC from the <span class="mono">xenoform osc</span> command.</p>
+      <p class="note">One desk: a song and a vibe make a quick prototype (a Draft of 30 s around the drop for a long song: a stills draft in seconds, LTX morphs on your own GPU in minutes); refine it on its timeline (each shot's object, look and FX, each handoff, a morph re-rendered, a run generated), re-cut it with the knobs without the GPU, then render the whole song or Final and share it. 9:16, Dense, Draft and the house look by default, with Flow, 16:9 and 1:1, the Look presets, stem reactions, your own images and recipe codes under Fine-tune. The desk is the morph engine; what is not, yet, waits in the Work in progress drawer under Fine-tune: Polly, paid cloud, live visuals at <a href="/vj">/vj</a> with a MIDI controller, and Connect an AI (any AI can drive the same desk over MCP). Morph → Your clips cuts your own clips, each morphing into the next, with no objects. TouchDesigner gets OSC from the <span class="mono">xenoform osc</span> command.</p>
       <table class="licence-table">
         <thead><tr><th>Model</th><th>Used for</th><th>Licence</th></tr></thead>
         <tbody>
-          <tr><td>LTX-2.3 22B distilled fp8</td><td>Final tier</td><td>LTX-2 Community License; free under about US$10M revenue</td></tr>
-          <tr><td>LTX-Video 0.9.5</td><td>Draft tier (default)</td><td>Lightricks Open RAIL-M</td></tr>
+          <tr><td>LTX-2.5 22B distilled int8</td><td>Final when installed; Cloud Final on Comfy Cloud (open weights, your credits)</td><td>LTX-2 Community License; free under about US$10M revenue</td></tr>
+          <tr><td>LTX-2.3 22B distilled fp8</td><td>Final when LTX-2.5 is not installed</td><td>LTX-2 Community License; free under about US$10M revenue</td></tr>
+          <tr><td>LTX-Video 0.9.5</td><td>Draft and Fast Final morphs (default)</td><td>Lightricks Open RAIL-M</td></tr>
           <tr><td>Z-Image Turbo</td><td>Vibe stills</td><td>Apache 2.0</td></tr>
           <tr><td>FLUX.2 Klein 4B</td><td>Optional stills</td><td>Apache 2.0 (the 9B is non-commercial, not used)</td></tr>
           <tr><td>ACE-Step 1.5</td><td>Optional music</td><td>MIT</td></tr>
           <tr><td>Real-ESRGAN x4plus</td><td>Final upscale (default)</td><td>BSD-3-Clause</td></tr>
+          <tr><td>realesr-animevideov3</td><td>Fast Final upscale (default)</td><td>BSD-3-Clause</td></tr>
           <tr><td>4x-ClearReality V1</td><td>Final upscale, opt-in</td><td>CC BY-NC-SA 4.0, non-commercial</td></tr>
           <tr><td>Bundled demo track</td><td>Demo song</td><td>Synthesised here, MIT</td></tr>
         </tbody>
@@ -77,18 +79,11 @@
         <input id="endpoint" type="url" spellcheck="false" placeholder="http://127.0.0.1:8188" />
       </label>
       <p class="note" id="comfy-settings-status">The desk pings /system_stats on this address. ComfyUI on this machine is http://127.0.0.1:8188.</p>
-      <label class="field">Video model
-        <select id="video-model">
-          <option value="ltx-23">LTX-2.3</option>
-          <option value="ltx-25">LTX-2.5</option>
-        </select>
-      </label>
-      <p class="note">LTX-2.3 is the default core. LTX-2.5 is local open weights under the LTX-2.x Community License, free under $10M annual revenue. If that distilled file is missing, or the open-weights check fails, the cut stays on LTX-2.3. Turbo stays on LTX 0.9.5, and an 8 GB card stays on 0.9.5 unless you pick 2.5. Partner nodes stay out.</p>
       <p class="note">Make renders through ComfyUI at this address (the Comfy SDK, through the local proxy on port 8189) whenever it answers; when it does not, Make plays the vibe's pictures in the browser and says so.</p>
       <label class="addon"><input type="checkbox" id="addons" /> Add-ons</label>
       <p class="note">Off by default. This covers FLUX 3 API, H3 API, partner nodes, and cloud LLMs. The demo, the judges page, and setup never need it.</p>
       <label class="addon"><input type="checkbox" id="paid-cloud" /> Paid cloud renders (partner node, not open weights)</label>
-      <p class="note">Off by default. On, Fine-tune shows Cloud quality: LTX-2.5 morphs rendered by a paid Comfy partner node, billed to your Comfy account after a price card and a confirm click. The default path is 100% open weights and never needs this. <span id="paid-cloud-env"></span></p>
+      <p class="note">Off by default. On, Work in progress → Paid cloud shows Cloud quality: morphs through a paid Comfy partner node, billed after a price card and a confirm click. This is not Cloud Final under Model, which runs open weights on Comfy Cloud. The default path is 100% open weights and never needs this. <span id="paid-cloud-env"></span></p>
       <p class="kicker">Source library</p>
       <label class="field">Library folder
         <input id="library-folder" type="text" spellcheck="false" placeholder="./library" autocomplete="off" />
