@@ -127,6 +127,15 @@ the social post. Voice-over over the screen, the outputs played full frame, capt
   1280x800 like before; the old files are in `scratchpad/wt/thumbs_old`). One judge a vibe picked the frame from the
   sheet (a fully formed object, a strong silhouette at 150 px), checked by eye. The README's two screenshots were
   retaken with them (`readme_shots.py`).
+- **Every desk shot re-recorded** (Tys, 29 Oct 10 am: "Full re record, make sure it's high quality too and polished",
+  then "you may as well use our credits as well"): `rerecord_all.sh` ran both recorders on desk 47326 with the new
+  tiles, and the Make on camera is now a **Cloud Final** (job 566cc4c8, the None "underwater" cut, 16 morphs from
+  Comfy Cloud in 3:42, so the making screen shows the real thing coming back three morphs at a time); the Model shot
+  clicks through all four chips. Both cuts re-assembled (short 1:43 / 1:48 / 1:47, long 6:52), then checked
+  (`qa_cut.py`): no black frames in the short, one 0.5 s black at the Under the hood card's start in the long, no
+  frozen stretch beyond the held screens and the card's panels, -15.9 / -16.0 LUFS, true peak under -2.5 dBFS,
+  contact sheets looked over. The Model grid's Fast Final tile keeps the 7 am Fast Final (b251df0c) so the four
+  tiles stay what their labels say. The previous recording is in `scratchpad/wt/rec_prev`.
 
 ## Still to decide
 

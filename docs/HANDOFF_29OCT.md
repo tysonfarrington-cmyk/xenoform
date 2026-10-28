@@ -66,8 +66,12 @@ out of date on the tiers (no Cloud Final, "all local") and must be rebuilt after
   re-read (`C:\Projects\kokoro-tts\reread_line.py`), the cards re-recorded, both cuts re-assembled to the Desktop
   (short 1:43 / 1:48 / 1:47, long 6:52); (3) **new vibe thumbnails**, one frame from each vibe's Cloud Final cut
   (`scratchpad/wt/make_thumbs.py`, `picks_thumbs.json`; the old files in `scratchpad/wt/thumbs_old`), and the README's
-  screenshots retaken on them. Not redone: the walkthroughs' desk shots still show the old vibe tiles (a re-record of
-  every desk shot is `shots.py` + `long_shots.py`, about half an hour with a Fast Final Make on camera).
+  screenshots retaken on them.
+- 10 to 10:30 am, on Tys's word ("Full re record ... high quality too and polished"; "you may as well use our credits
+  as well"): every desk shot re-recorded on the new tiles (`scratchpad/wt/rerecord_all.sh`, 21 minutes end to end),
+  the Make on camera a Cloud Final (566cc4c8, 16 morphs, about 55 credits), the Model shot through all four chips,
+  both cuts re-assembled to the Desktop and QA'd (`qa_cut.py`: black, frozen, loudness, contact sheets). The
+  walkthroughs are final unless Tys changes the voice.
 
 ## What is left, in order
 
