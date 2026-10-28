@@ -66,6 +66,19 @@ def test_a_clips_cut_is_only_clips_and_the_morphs_between_them(tmp_path, monkeyp
     assert out["shots"][1]["clip_morph"] and (out["shots"][1]["from"], out["shots"][1]["to"]) == ("reel0", "reel1")
     chain = json.loads((tmp_path / "simple" / "chain.json").read_text(encoding="utf-8"))
     assert [c["noun"] for c in chain] == ["reel0", "reel1", "reel0"]
+    # the timeline's Apply on a clips cut re-composes from the cached clips and morphs: no render, and the morph re-render says no
+    composed = len(seen.setdefault("calls", []))
+    monkeypatch.setattr(beatfx, "compose", lambda *a, **kw: seen["calls"].append(1) or fake_compose(*a, **kw))
+    again = dense.recut_from_cache(tmp_path, {"shot_overrides": {"1": {"play": "hold"}}, "boundary_overrides": {"2": {"fx": "smear"}}})
+    assert len(seen["calls"]) == composed + 1
+    assert [s.get("own") for s in again["shots"]] == [s.get("own") for s in stored["shots"]]
+    assert [s.get("clip_morph") for s in again["shots"]] == [s.get("clip_morph") for s in stored["shots"]]
+    assert again["shots"][1]["hold"] is True and seen["shots"][1]["hold"] is True
+    assert (again["boundary_fx"][2] or {}).get("kind") == "smear" and again["recuts"] == 1
+    import pytest
+
+    with pytest.raises(ValueError, match="no morph of the chain"):
+        dense.rerender_morph(tmp_path, 1)
 
 
 def test_an_object_cut_never_takes_a_clip_and_a_clips_cut_takes_no_image(tmp_path):
