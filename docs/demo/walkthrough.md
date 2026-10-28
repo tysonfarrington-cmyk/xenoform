@@ -88,12 +88,14 @@ the social post. Voice-over over the screen, the outputs played full frame, capt
   real (a None "underwater" cut; racing was the first example, dropped: "you want to see cars driving not
   morphing"). Recording found the desk blinking on every click (fixed in
   f9eaa7e).
-- **The short** (1:40 to 1:44 by voice) and **the long** (5:36 in af_heart, nine chapters with labels) are in
-  `Desktop\xeno_walkthrough_29oct`, with 720p review copies. Captions are burned in from the voice copy; the music bed
-  is "Morphing Wobble", ducked under the voice (looped under the long one); the mix is -16 LUFS.
+- **The short** (1:42 af_heart, 1:48 am_michael, 1:46 bm_george) and **the long** (6:52 in af_heart, ten chapters with
+  labels) were rebuilt on the frozen app on 29 Oct at 7 am and are in `Desktop\xeno_walkthrough_29oct`, with 720p review
+  copies. Every desk shot was re-recorded on the final commit (the Make on camera is a Fast Final of the None
+  "underwater" cut, b251df0c); captions are burned in from the voice copy; the music bed is Tys's Suno track
+  XF_HipHop_BoomBap_01, ducked under the voice (looped under the long one); the mix is -16 LUFS.
 - **The long one's chapters** (for the YouTube description, af_heart timing): 0:00 What it is · 0:20 Song and vibe ·
-  0:54 What it morphs through · 1:37 Make · 2:10 The engine · 3:17 The timeline · 4:05 Your clips · 4:33 Share ·
-  4:56 How it's built.
+  0:54 What it morphs through · 1:37 Make · 2:17 The engine · 3:24 The timeline · 4:13 Your clips · 4:40 Share ·
+  5:03 Under the hood · 6:13 How it's built.
 
 ## Still to decide
 
@@ -101,5 +103,5 @@ the social post. Voice-over over the screen, the outputs played full frame, capt
   re-assembly, about ten minutes.
 - The three opening cuts: which Finals to render overnight after the Thursday 9 pm freeze (the cut uses earlier Finals
   until then).
-- Re-read after the app freeze: the short's tiers and built lines, and the long's l14, l36 and l38, were reworded for
-  Cloud Final and LTX-2.5 after the recorded voice; the videos in `Desktop\xeno_walkthrough_29oct` still carry the old read.
+- The opening and result shots still play Fast Final cuts and the earlier Finals; once showcase Finals are rendered on
+  Cloud Final (LTX-2.5), swap them into `plan_short.json` (open, result) and `make_plan_long.py` and re-assemble.

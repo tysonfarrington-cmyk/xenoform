@@ -41,6 +41,14 @@ environment. Scripts: `scratchpad/wt/cloud_test_25.py check|run` (free check / o
 `Desktop\xeno_walkthrough_29oct` (short in three Kokoro voices, long in af_heart, 720p review copies). They are
 out of date on the tiers (no Cloud Final, "all local") and must be rebuilt after the freeze.
 
+## Done since this page was written (29 Oct, 6 to 7 am)
+
+- The audit's clusters 2-11 are fixed, reviewed and committed one commit each (f10ec7c to 26e7fa0); the full suite
+  passed on the frozen commit: 1081 tests. The app is frozen; desks 47324, 47325 and 47326 run it.
+- Both walkthroughs are rebuilt on the frozen app (every desk shot re-recorded, voices re-read): the short in three
+  voices (1:42 to 1:48) and the long (6:52) with the Under the hood chapter at 5:03, all in
+  `Desktop\xeno_walkthrough_29oct` with 720p review copies. So steps 1 to 3 below are done; 4 and 5 remain.
+
 ## What is left, in order
 
 1. **The audit fixes.** `scratchpad/audit_plan.json` (the session's scratchpad: `C:\Users\tyson\AppData\Local\Temp\claude\C--Projects\7d414e75-aaf9-49cf-88fc-dcf26694d380\scratchpad\`) holds 89 confirmed findings in 11
