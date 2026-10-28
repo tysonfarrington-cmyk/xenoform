@@ -48,6 +48,16 @@ out of date on the tiers (no Cloud Final, "all local") and must be rebuilt after
 - Both walkthroughs are rebuilt on the frozen app (every desk shot re-recorded, voices re-read): the short in three
   voices (1:42 to 1:48) and the long (6:52) with the Under the hood chapter at 5:03, all in
   `Desktop\xeno_walkthrough_29oct` with 720p review copies. So steps 1 to 3 below are done; 4 and 5 remain.
+- 7:40 am, step 4 is done on Tys's word ("go ahead and render it"): three 30 s showcase cuts on Cloud Final through
+  desk 47326 (`scratchpad/wt/showcase.py`), every morph LTX-2.5 on Comfy Cloud, 1080x1920, no fallbacks: None
+  "underwater" on the hip-hop track (0c3864af, 16 morphs), neon noir on the DnB track (e649e412, 9), liquid gold on the
+  ambient track (7cdc5b35, 12); 37 morphs, and the dashboard went from 11,924 credits (4 am) to 11,789 (135 credits
+  with the morning's guide experiments, so under 4 a morph). Swapped into `plan_short.json` (open, result) and
+  `make_plan_long.py` (l01, l06, a Cloud Final tile in the l14 grid); both walkthroughs re-assembled to the Desktop.
+  Two things learnt: a Make posted to `/api/generate` needs `quality: "turbo"` as the desk sends it, or
+  `run_directed` runs the classic chunk render (the first three jobs abdf7a0d, b599647d, 8057c0c0 did; no credits
+  spent); and the chain picker let two seahorse stills sit side by side in the None cut (a repeat inside a cut, a
+  follow-up for after the contest, so the shots were placed past it).
 
 ## What is left, in order
 
@@ -70,10 +80,9 @@ out of date on the tiers (no Cloud Final, "all local") and must be rebuilt after
    morph from its two stills through the prompt to the clip, the re-timing and effects, the cut; one card like
    `cards/cards.html`, five or six voice lines, 45 to 60 s in the long, one line in the short. Then assemble
    the short (three voices) and the long, make 720p review copies, send them to Tys.
-4. **Showcase Finals on Cloud Final** (LTX-2.5): ask Tys for a credit budget first; a 30 s cut is about twelve
-   morphs, about 70 credits and six minutes. Songs: `Desktop\suno-demos\batch2\XF_HipHop_BoomBap_01.mp3` (in the
-   walkthrough now), `XF_Ambient_01.mp3`, `batch1\XF_DnB_Liquid_01_v1.mp3`; vibes None, neon-noir, liquid-gold.
-   Put the best into the walkthrough's opening and result shots.
+4. **Showcase Finals on Cloud Final** (LTX-2.5): done, see above. A 30 s cut was 9 to 16 morphs, 4:21 to 5:52 and
+   under 60 credits. Songs: `Desktop\suno-demos\batch2\XF_HipHop_BoomBap_01.mp3`, `XF_Ambient_01.mp3`,
+   `batch1\XF_DnB_Liquid_01_v1.mp3`; vibes None, neon-noir, liquid-gold.
 5. **Tys's own steps** (docs/CONTEST.md checklist): push, upload the short, replace `DEMO_VIDEO_URL` in README.md
    and CONTEST.md, post with #OpenSourceHiggsfield, submit the Typeform. Open choices he still owes: the Kokoro
    voice (af_heart, am_michael, bm_george), 16:9 or a 9:16 cut for the post.

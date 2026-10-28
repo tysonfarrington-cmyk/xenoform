@@ -21,11 +21,11 @@ the social post. Voice-over over the screen, the outputs played full frame, capt
 
 | Time | Picture | Voice |
 | --- | --- | --- |
-| 0:00 | Three cuts, fast: a liquid-gold Final, the Caligari to NASA clips cut, a None cut | Xenoform turns a song into a music video where every beat is a transformation. |
+| 0:00 | Three cuts, fast: a liquid-gold Cloud Final, the Caligari to NASA clips cut, a neon noir Cloud Final | Xenoform turns a song into a music video where every beat is a transformation. |
 | 0:07 | The Song step: drop a song; the vibe grid, None last | Drop in a song and pick a vibe: molten gold, neon noir, ink and paper, or None, the things just as they are. |
 | 0:15 | The idea line: "underwater" grows its chips | Then say what it morphs through. A theme like underwater brings fifteen things of its own. |
 | 0:22 | Make; the making screen, the chain, the steps | Make listens to the song, plans the shots on its bars and beats, picks the objects, and renders a morph for every shot. |
-| 0:32 | The result playing | Every shot is one object turning into the next, cut to the song's own bars. |
+| 0:32 | The result playing: the None "underwater" Cloud Final | Every shot is one object turning into the next, cut to the song's own bars. |
 | 0:39 | Morph styles side by side: Melt, Shatter, Bloom, Spin, Fold | Five ways to change, and the change can land right on the beat. |
 | 0:47 | Effects: dither, feedback, kaleido, slit-scan | Effects ride the kick and the loudness. |
 | 0:54 | The timeline: picture tiles, the Look tab, a colour change, Apply | Then edit it like a timeline. Colour, effects, order and cuts, shot by shot, re-cut from the cached morphs with no GPU. |
@@ -96,12 +96,18 @@ the social post. Voice-over over the screen, the outputs played full frame, capt
 - **The long one's chapters** (for the YouTube description, af_heart timing): 0:00 What it is · 0:20 Song and vibe ·
   0:54 What it morphs through · 1:37 Make · 2:17 The engine · 3:24 The timeline · 4:13 Your clips · 4:40 Share ·
   5:03 Under the hood · 6:13 How it's built.
+- **The showcase cuts** (29 Oct, 7:40 am, Tys: "go ahead and render it"): three 30 s cuts made on Cloud Final through
+  the desk like any Make, every morph LTX-2.5 on Comfy Cloud, 1080x1920, no Draft fallbacks: None "underwater" on
+  XF_HipHop_BoomBap_01 (job 0c3864af, 16 morphs, 4:21), neon noir on XF_DnB_Liquid_01_v1 (e649e412, 9 morphs, 5:52)
+  and liquid gold on XF_Ambient_01 (7cdc5b35, 12 morphs, 5:32); 37 morphs, and the Comfy Cloud dashboard went from
+  11,924 credits (4 am) to 11,789 after them (135 credits, with the morning's guide experiments). They open the short
+  (gold, the clips cut, neon) and the long, and the None cut is the short's result shot and the long's None example;
+  the Model grid in the long gets a Cloud Final tile beside Draft, Fast Final and Final. The None cut's chain holds a
+  seahorse pair (two seahorse stills, 7 to 12 s), so its shots start past it. The first attempt through the API ran the
+  classic chunk render instead (the Make body needs `quality: "turbo"`, as the desk sends it); those three jobs
+  (abdf7a0d, b599647d, 8057c0c0) spent nothing on Cloud and sit in desk 47326's My videos.
 
 ## Still to decide
 
 - Which Kokoro voice: af_heart (US female), am_michael (US male) or bm_george (UK male). Swapping is a re-read and a
   re-assembly, about ten minutes.
-- The three opening cuts: which Finals to render overnight after the Thursday 9 pm freeze (the cut uses earlier Finals
-  until then).
-- The opening and result shots still play Fast Final cuts and the earlier Finals; once showcase Finals are rendered on
-  Cloud Final (LTX-2.5), swap them into `plan_short.json` (open, result) and `make_plan_long.py` and re-assemble.
