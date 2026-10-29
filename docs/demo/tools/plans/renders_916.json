@@ -213,5 +213,253 @@
   "foreshadow": "silhouette",
   "scenes": "mix",
   "error": null
+ },
+ {
+  "label": "black_flowers_melt",
+  "aspect": "9:16",
+  "job": "f7009789",
+  "status": "done",
+  "seconds": 401.4,
+  "window": 170.0,
+  "vibe": "black",
+  "style": "bloom",
+  "timing": "smooth",
+  "effects": [],
+  "look": "auto",
+  "foreshadow": "off",
+  "scenes": "off",
+  "error": null
+ },
+ {
+  "label": "riso_fold_snap",
+  "aspect": "9:16",
+  "job": "e54dc114",
+  "status": "done",
+  "seconds": 321.5,
+  "window": 149.5,
+  "vibe": "risograph",
+  "style": "fold",
+  "timing": "snap",
+  "effects": [
+   "dither"
+  ],
+  "look": "auto",
+  "foreshadow": "slices",
+  "scenes": "off",
+  "error": null
+ },
+ {
+  "label": "kintsugi_shatter_snap",
+  "aspect": "9:16",
+  "job": "dc216080",
+  "status": "done",
+  "seconds": 290.9,
+  "window": 149.5,
+  "vibe": "porcelain-kintsugi",
+  "style": "shatter",
+  "timing": "snap",
+  "effects": [],
+  "look": "auto",
+  "foreshadow": "silhouette",
+  "scenes": "off",
+  "error": null
+ },
+ {
+  "label": "chrome_robots_spin",
+  "aspect": "9:16",
+  "job": "802d19fd",
+  "status": "done",
+  "seconds": 411.1,
+  "window": 178.5,
+  "vibe": "chrome-mercury",
+  "style": "spin",
+  "timing": "beat",
+  "effects": [
+   "feedback"
+  ],
+  "look": "auto",
+  "foreshadow": "trace",
+  "scenes": "off",
+  "error": null
+ },
+ {
+  "label": "ferro_bloom_beat",
+  "aspect": "9:16",
+  "job": "4473cc65",
+  "status": "done",
+  "seconds": 351.0,
+  "window": 196.5,
+  "vibe": "ferrofluid",
+  "style": "bloom",
+  "timing": "beat",
+  "effects": [
+   "feedback"
+  ],
+  "look": "auto",
+  "foreshadow": "negative",
+  "scenes": "off",
+  "error": null
+ },
+ {
+  "label": "none_pirates_beat",
+  "aspect": "9:16",
+  "job": "7abfe1f8",
+  "status": "done",
+  "seconds": 381.0,
+  "window": 196.5,
+  "vibe": "none",
+  "style": "auto",
+  "timing": "beat",
+  "effects": [
+   "smear"
+  ],
+  "look": "auto",
+  "foreshadow": "trace",
+  "scenes": "off",
+  "error": null
+ },
+ {
+  "label": "cosmic_bloom_beat",
+  "aspect": "9:16",
+  "job": "aa4dd3c6",
+  "status": "done",
+  "seconds": 321.0,
+  "window": 149.5,
+  "vibe": "cosmic",
+  "style": "bloom",
+  "timing": "beat",
+  "effects": [
+   "feedback"
+  ],
+  "look": "auto",
+  "foreshadow": "trace",
+  "scenes": "off",
+  "error": null
+ },
+ {
+  "label": "ice_melt_smooth",
+  "aspect": "9:16",
+  "job": "faa23ab9",
+  "status": "done",
+  "seconds": 421.0,
+  "window": 170.0,
+  "vibe": "ice-crystal",
+  "style": "melt",
+  "timing": "smooth",
+  "effects": [
+   "feedback"
+  ],
+  "look": "auto",
+  "foreshadow": "silhouette",
+  "scenes": "off",
+  "error": null
+ },
+ {
+  "label": "marble_spin_w6",
+  "aspect": "9:16",
+  "job": "d86d7586",
+  "status": "done",
+  "seconds": 330.9,
+  "window": 178.5,
+  "vibe": "porcelain-marble",
+  "style": "spin",
+  "timing": "snap",
+  "effects": [
+   "dither"
+  ],
+  "look": "auto",
+  "foreshadow": "negative",
+  "scenes": "off",
+  "error": null
+ },
+ {
+  "label": "glass_space_bloom",
+  "aspect": "9:16",
+  "job": "595f65b9",
+  "status": "done",
+  "seconds": 391.0,
+  "window": 208.8,
+  "vibe": "iridescent-glass",
+  "style": "bloom",
+  "timing": "beat",
+  "effects": [
+   "feedback"
+  ],
+  "look": "auto",
+  "foreshadow": "trace",
+  "scenes": "off",
+  "error": null
+ },
+ {
+  "label": "gold_finale_melt",
+  "aspect": "9:16",
+  "job": "db018a9c",
+  "status": "done",
+  "seconds": 340.9,
+  "window": 208.8,
+  "vibe": "liquid-gold",
+  "style": "melt",
+  "timing": "smooth",
+  "effects": [
+   "feedback"
+  ],
+  "look": "auto",
+  "foreshadow": "auto",
+  "scenes": "off",
+  "error": null
+ },
+ {
+  "label": "y2k_spin_beat",
+  "aspect": "9:16",
+  "job": "67f9b30f",
+  "status": "done",
+  "seconds": 320.8,
+  "window": 149.5,
+  "vibe": "y2k-chrome",
+  "style": "spin",
+  "timing": "beat",
+  "effects": [
+   "slitscan"
+  ],
+  "look": "auto",
+  "foreshadow": "trace",
+  "scenes": "off",
+  "error": null
+ },
+ {
+  "label": "brutalist_fold_snap",
+  "aspect": "9:16",
+  "job": "a05c239d",
+  "status": "done",
+  "seconds": 420.9,
+  "window": 208.8,
+  "vibe": "brutalist",
+  "style": "fold",
+  "timing": "snap",
+  "effects": [
+   "smear"
+  ],
+  "look": "auto",
+  "foreshadow": "slices",
+  "scenes": "off",
+  "error": null
+ },
+ {
+  "label": "neonnight_bloom_beat",
+  "aspect": "9:16",
+  "job": "96078abd",
+  "status": "done",
+  "seconds": 341.0,
+  "window": 208.8,
+  "vibe": "neon-night",
+  "style": "bloom",
+  "timing": "beat",
+  "effects": [
+   "feedback"
+  ],
+  "look": "auto",
+  "foreshadow": "trace",
+  "scenes": "off",
+  "error": null
  }
 ]

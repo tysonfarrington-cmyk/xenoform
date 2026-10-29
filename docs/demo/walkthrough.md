@@ -178,9 +178,9 @@ it, and Comfy Cloud is named in How it's built.
   ferrofluid, None with pirates, iridescent glass in space, brutalist and neon night, and liquid gold under the title.
   All five morph styles, the three timings, every effect (kaleido only on the fish), Foreshadow and Scenes are in it.
   Out after Tys's notes: wet paint ("pretty terrible"), the odd machine, the jug, the wheel and the guitar. Three vibes
-  without a still library (hologram, thermal, ink-water) came out gold on that desk and were left out. In all, 46
-  finished cuts and 709 morphs on Comfy Cloud, about 2,600 credits by the 3.6-a-morph measure (the dashboard was
-  not read). **The demo** (`xenoform_demo_video.mp4`, 1:59.0, and the 9:16) opens on the montage's first 24 s, the
+  without a still library (hologram, thermal, ink-water) came out gold on that desk and were left out. In all, 65
+  finished Cloud Final cuts (40 at 16:9, 25 at 9:16) and 1,007 morphs, about 3,700 credits by the 3.6-a-morph measure
+  with a few cancelled starts (the dashboard was not read), plus two local Final film-pack cuts. **The demo** (`xenoform_demo_video.mp4`, 1:59.0, and the 9:16) opens on the montage's first 24 s, the
   title landing on the drop. The walkthrough after it is re-paced. The desk shots play still and full frame, with no
   push-in. Every sentence is read on its own (`split_copy.py`), with a breath between sentences and around each scene;
   the copy is down to 73 s of voice, with the Model line moved to the long and Comfy Cloud named in How it's built.
