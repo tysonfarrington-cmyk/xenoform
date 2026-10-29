@@ -149,4 +149,5 @@ the social post. Voice-over over the screen, the outputs played full frame, capt
   recordings sit as a 1080x608 strip high in the frame over their own blur with the captions large beneath, grids go
   two or three columns, and the two cards are recorded again for the phone (`cards/cards_v.html`, five steps as a
   column; `record_cards_v.py`). While at it the cards' model chip, which still said LTX-2.3, says LTX-2.5 in both
-  layouts, so the 16:9 cuts were rebuilt once more.
+  layouts, and the captions no longer overlap in time (libass stacks a caption that starts while the last one shows a
+  line higher, for its whole life: into a grid or the card's chips on the phone), so every cut was rebuilt once more.
