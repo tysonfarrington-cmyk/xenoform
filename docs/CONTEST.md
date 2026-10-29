@@ -23,7 +23,7 @@ Contest: [Open Source Higgsfield](https://comfy.org/open-source-higgsfield/), ru
 - [ ] README has setup instructions (Quick start, Python 3.12, `Xenoform.bat` / `install.sh`) and a judge path with no GPU.
 - [ ] `docs/REPRODUCE.md` reproduces the demo in about ten minutes.
 - [ ] Demo video under 2:00, 16:9 (the desk's own screen, with a 9:16 cut for the post), with the repo URL and #OpenSourceHiggsfield on the end card the walkthrough edit adds (`github.com/tysonfarrington-cmyk/xenoform` from `pyproject.toml`). Upload it, then replace `DEMO_VIDEO_URL` in README.md (top block), this page and the social post.
-- [ ] Demo song: "Morph Engine v2", made by the author on Suno Pro inside the billing period (commercial rights per Suno's terms). Not shipped; the repo uses `examples/demo.wav`.
+- [ ] Demo song: "Morph Engine v2", made by the author on Suno Pro inside the billing period (commercial rights per Suno's terms). Not shipped; the repo uses `examples/demo.wav` and the six bundled songs in `examples/songs/` (the author's own Suno instrumentals).
 - [ ] `pytest tests/test_docs.py tests/test_install.py tests/test_eligibility.py` passes on the pushed commit; CI (`.github/workflows/ci.yml`, Python 3.12) is green.
 - [ ] Public post with **#OpenSourceHiggsfield** on one of X, Reddit, Instagram, LinkedIn, YouTube or TikTok, with the video and the repo link (draft below). Keep the post URL for the form.
 - [ ] Typeform submitted with the fields below.

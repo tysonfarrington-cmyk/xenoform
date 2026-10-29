@@ -61,7 +61,7 @@ To get the demo's Final quality instead of Draft, set Model to **Final** in the 
 
 ## 6. Stems (1 minute)
 
-Open **Stem reactions** (in the Fine-tune drawer) and split the song. `POST /api/stems` runs Demucs on the CPU when `pip install -e .[stems]` has been done, otherwise a librosa band split; a two-minute song takes about 20 s with Demucs on an 8-core CPU. One lane per stem appears (up to 32), and the next Make uses them: drums drive the cuts and the chroma kick, bass the scale and the orbit, the rest the colour and glow. From the command line: `xenoform stems examples/demo.wav`.
+The song was split when it loaded: the **Stems** line under the song says so, and **Stem reactions** under the knobs has its lanes (opening it asks `POST /api/stems` again on a desk without the background split). The split runs Demucs on the CPU when `pip install -e .[stems]` has been done, otherwise a librosa band split; a two-minute song takes about 20 s with Demucs on an 8-core CPU. One lane per stem appears (up to 32), and the next Make uses them: drums drive the cuts and the chroma kick, bass the scale and the orbit, the rest the colour and glow. From the command line: `xenoform stems examples/demo.wav`.
 
 ## 7. VJ page and MIDI (2 minutes)
 

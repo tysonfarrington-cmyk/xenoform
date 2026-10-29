@@ -1614,7 +1614,7 @@ def stills_animatic(directed: dict, state: dict, audio_path: Path, out_path: Pat
     for shot, still in zip(shots, picks):
         path = str(still["path"]).replace("\\", "/").replace("'", "'\\''")
         lines.append(f"file '{path}'\nduration {max(0.05, float(shot['end']) - float(shot['start'])):.4f}")
-    lines.append(f"file '{str(picks[-1]['path']).replace(chr(92), '/')}'")  # the concat demuxer needs the last file twice
+    lines.append("file '" + str(picks[-1]["path"]).replace(chr(92), "/").replace("'", "'\\''") + "'")  # the concat demuxer needs the last file twice
     listing = work / "animatic_stills.txt"
     listing.write_text("\n".join(lines) + "\n", encoding="utf-8")
     out_path = Path(out_path)

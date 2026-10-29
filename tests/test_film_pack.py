@@ -204,6 +204,28 @@ def test_a_clip_that_fails_is_named_and_the_rest_are_made(pack, monkeypatch, tin
     assert st2["present"] is False and st2["count"] == 2 and "2 of 3" in st2["detail"]
 
 
+def test_a_folder_of_your_own_keeps_your_files_through_a_download(pack, monkeypatch, tiny):
+    # the stress pass, 29 Oct: with XENO_FILM_PACK on a folder of your own, a run emptied its _src, replaced your
+    # labels.json and wrote over your CREDITS.md. Only the pack's own files are the pack's.
+    pack.mkdir(parents=True)
+    (pack / "_src").mkdir()
+    (pack / "_src" / "my_master.mov").write_bytes(b"mine")
+    (pack / "_src" / "edits").mkdir()
+    (pack / "beach.mp4").write_bytes(b"mine")
+    (pack / "labels.json").write_text(json.dumps({"beach.mp4": "the beach at dusk"}), encoding="utf-8")
+    (pack / "CREDITS.md").write_text("# My credits\n", encoding="utf-8")
+    clips = THREE + [{"id": "d_ghost", "source": "phantom", "start": 1.0, "seconds": 2.0, "title": "Phantom: the mask"}]
+    _use(monkeypatch, _manifest(clips), Runner(tiny))
+    film_pack.start()
+    st = film_pack.wait(60)
+    assert st["status"] == "done", st  # a folder in _src no longer ends the run on Access is denied
+    assert (pack / "_src" / "my_master.mov").read_bytes() == b"mine" and (pack / "_src" / "edits").is_dir()
+    assert not (pack / "_src" / "CEP147.mpg").exists()  # the whole film the pack fetched has served and goes
+    labels = json.loads((pack / "labels.json").read_text(encoding="utf-8"))
+    assert labels["beach.mp4"] == "the beach at dusk" and labels["01_a_train.mp4"] == "the train"
+    assert (pack / "CREDITS.md").read_text(encoding="utf-8") == "# My credits\n" and (pack / "beach.mp4").is_file()
+
+
 def test_a_second_run_skips_the_clips_already_there(pack, monkeypatch, tiny):
     _use(monkeypatch, _manifest(THREE), Runner(tiny))
     film_pack.start()

@@ -2,6 +2,19 @@
 
 ## 0.3.3 (unreleased, the week to the contest)
 
+- **The stress pass** (Tys, 29 Oct: "lets do a few polish passes and stress tests, make sure all the buttons are
+  working correctly and nothing is broken"). Every control on the desk was clicked in a headless browser, a Draft made
+  and edited, every route sent bad bodies, and the docs read against the code. Fixed: every chip under the knobs
+  (Morph, Timing, Effects, Look, Foreshadow, Scenes) moved the page 279 to 363 px, because the knob strip and the idea
+  row came in a moment after the desk had put your place back; they now go in with the redraw. A vibe picked from
+  More vibes moves into the grid and now stays under the pointer (it could land off the screen). The chip you click
+  keeps the focus (15 s, not the row's first chip). Back to the desk from Setup came back at the desk's foot; Setup
+  now opens at its top and the desk where you left it. Back to Demucs while your own stems were still saving was a
+  500; a stems.json that is not a record is no longer a 500 either. The Stems line gives a reason in plain words, not
+  a Python error or a file path. A malformed request gets one sentence instead of FastAPI's field list, and
+  `/openapi.json` (a 500) is off. A film pack that came down in part still cuts, the pack never touches your own
+  files in a folder `XENO_FILM_PACK` points at, Your images and Your clips each keep their own folder, and the note
+  after dropping files counts what the Morph row in use will take. `tests/test_stress_pass.py` pins it.
 - **Bundled songs** (Tys, 29 Oct: "the bundled songs, lets include ... the wobble morph, the hip hop beat, the liquid
   dubstep and ambient ... oh include the song glitch out as well", and "both long and short clips" of the Wobble). Six of
   the author's own Suno instrumentals ship in `examples/songs/`, a chip each under **Choose a song**: Morphing Wobble as
@@ -17,17 +30,17 @@
   button as a model: short clips from more than a dozen public-domain films (A Trip to the Moon, Nosferatu, The General,
   Metropolis, the Lumières' train and more), listed with their archive.org URLs and licence lines in
   `configs/film_pack.json`. Nothing from the films is in the repo: `xenoform.film_pack` has ffmpeg read each window
-  straight from its archive.org URL (`-ss` before `-i`, a byte-range read, so a 10 s window of a 1 GB film costs a few
-  MB), three tries a clip, into `work/ui/film_pack/` (`XENO_FILM_PACK` moves it), one `NN_<id>.mp4` a clip in the
-  manifest's order; a source marked `whole` (an MPEG program stream, which cannot be seeked over http) is downloaded in
-  full first, with resume, and cut from disk. A clip that fails is named and the rest continue; `CREDITS.md` (every
+  straight from its archive.org URL (ffmpeg reads only the window it needs, so a 10 s window of a 1 GB film costs a
+  few MB), three tries a clip, into `work/ui/film_pack/` (`XENO_FILM_PACK` moves it), one `NN_<id>.mp4` a clip in the
+  manifest's order; a source marked `whole` (an .mpg file, which ffmpeg cannot start in the middle of over the web) is
+  downloaded in full first, with resume, and cut from disk. A clip that fails is named and the rest continue; `CREDITS.md` (every
   film's title, year, maker, item URL and licence line, and the clips with their times), `pack.json` and `labels.json`
   are written beside the clips every run. Download again follows the list through `pack.json`: a clip whose times moved
   is made again, one the list reordered is moved to its new name rather than pulled again, a file the pack made for a
   clip that left the list is removed (never a file of the user's), and a whole source goes once its clips are in place.
-  The Setup row shows what is on disk once the clips are there, an estimate (300 KB a second, measured) before. The
-  button points the cut at the folder when the pack is there and at Setup
-  when it is not (`GET /api/film_pack`; `POST /api/setup/download {"id": "film-pack"}` and its status route serve the
+  The Setup row shows what is on disk once the clips are there, an estimate (300 KB a second, a little over what the
+  real pack measures) before. The **Free film pack** button points the cut at the folder when the pack is there and
+  at Setup when it is not (`GET /api/film_pack`; `POST /api/setup/download {"id": "film-pack"}` and its status route serve the
   row unchanged). `XENO_OFFLINE=1` refuses the download. A clips cut now takes up to 24 clips from a folder
   (`own_media.MAX_CLIPS`; images stay at 12) and cycles through them all, and a clip named in the folder's
   `labels.json` is called that on the chain and in the morph lines (`clip_cut.clip_names`) instead of by its file name.
@@ -35,9 +48,9 @@
 - **Your own stems** (Tys, 29 Oct: "it looks like demucs seperates the stems but there should also be a place where
   you can upload your own stems if you have them as well"). The Song step has a **Stems** line under the song, with
   the song's facts (before it, the only sign of the split was the Stem reactions summary inside the knob strip, which
-  still reads `4 stems (demucs)`): `Stems: splitting with Demucs… 12 s`, then `4 stems from Demucs: drums, bass,
+  reads `4 stems (Demucs)`): `Stems: splitting with Demucs… 12 s`, then `4 stems from Demucs: drums, bass,
   other, vocals`, polled every 2 s while the split runs and rewritten in place, never a redraw. The knob strip's summary
-  and the Fine-tune lanes now mirror that line instead of polling for themselves, and the lanes follow the stems in
+  and its Stem reactions lanes now mirror that line instead of polling for themselves, and the lanes follow the stems in
   use, one per stem, the split's or your own. **Use your own stems** on that line takes 1 to 32 audio files (wav, mp3,
   flac, ogg, aiff, m4a; a DAW or Suno export), each the song's length within 1.5 s, saves them under
   `work/ui/stems/<song hash>/own/` with a leading index dropped from the names ("1 Drums.wav" is Drums; letters of any
@@ -53,7 +66,7 @@
   it. `POST /api/stems/own`, `POST /api/stems/own/clear`; `GET /api/stems/for/<id>` carries `own`, `engine`, `stems`
   and `roles`; `xenoform stems song.wav --own a.wav b.wav` under the same rules. Checked with Suno's eleven stems of
   Morphing Wobble (102.6 s, 48 kHz, 217 MB): the envelopes took 3 s, and Lead Vocals read as vocals, Drums and
-  Percussion as drums, Bass as bass, the other eight as other. `tests/test_stems_own.py` pins it.
+  Percussion as drums, Bass as bass, the other seven as other. `tests/test_stems_own.py` pins it.
 - **The vibe tiles show the engine's own pictures** (Tys, 29 Oct: "update thumbnails for vibes"). Each of the thirteen
   featured tiles is one frame of that vibe's Cloud Final cut (LTX-2.5 on Comfy Cloud, the example cuts of 29 Oct), the
   centre of the frame on the frame's own blur, in place of the drawn stills. The tiles' pictures now revalidate on every
@@ -71,7 +84,7 @@
   tinted sky with the ship arriving at 12 s. `own_media.busiest_start` picks the window with the most picture in it
   (grey spread and edges on a tiny copy, two frames a second), the middle winning a tie.
 - **Colour and effects per shot** (Tys: "there should be some options you can play with effects, colours"). The timeline's shot drawer has Hue, Saturation, Brightness, Contrast and Warmth (`effects.grade`, one 3x3 matrix a frame) and its own Effects (As the cut, or its own set of Dither hits, Feedback, Kaleido, Slit-scan), for Apply with the rest.
-- **Move cuts, reorder, duplicate, delete** (Tys: "trim and move cuts", "reorder, delete, duplicate"). A boundary's **Move the cut** steps it a beat or half a beat either way (`shift`, at most 4 s, never leaving a shot under six frames); a shot's **Order** row moves its morph left or right (the slots stay on the beat, the morphs swap), duplicates it into the next slot, or deletes it (the shot before plays on through its time; a striped sliver marks the place and restores it). All on the cached morphs, no GPU (`dense.arrange_shots`); the timeline keeps one row a plan shot, so its indices hold through a delete.
+- **Move cuts, reorder, duplicate, delete** (Tys: "trim and move cuts", "reorder, delete, duplicate"). A boundary's **Move it** row steps it a beat or half a beat either way (`shift`, at most 4 s, never leaving a shot under six frames); a shot's **Order** row moves its morph left or right (the slots stay on the beat, the morphs swap), duplicates it into the next slot, or deletes it (the shot before plays on through its time; a striped sliver marks the place and restores it). All on the cached morphs, no GPU (`dense.arrange_shots`); the timeline keeps one row a plan shot, so its indices hold through a delete.
 
 - **Nothing on the desk moves under you** (Tys, 28 Oct: "when you click on fore shadow it auto scrolls back up ... make sure no buttons auto scroll like that", "when im growing more shapes its flicking and scrolling the screen around"). Every redraw puts each scrolled panel back (the knobs column used to jump to its top) and puts the control you clicked back where it was on the screen (`rememberPlace`/`restorePlace`: `rememberScrollers`, `rememberAnchor`). A running grow rewrites its own status line every few seconds instead of redrawing the desk, and the line keeps one height (`stillsStatus`, `#library-status`).
 - **The timeline fits beside the knobs, the knobs fold away, and a playhead.** The cut's column was 1,800 px wide on a wide screen, because the shot labels set the grid track's minimum, so the timeline ran under the knobs; it is `minmax(0, 1fr)` now. **Hide ›** folds the knobs to a slim tab, remembered. A white playhead crosses the timeline as the video plays.

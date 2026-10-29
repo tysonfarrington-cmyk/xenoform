@@ -7,7 +7,7 @@ cached under ``work/ui/stems/<song_hash>/`` so a second request, or a second des
 
     start_background_split(song)   -> {"id", "status": queued|running|done|error, "engine", "seconds", "path", "error"}
     split_status(song)             -> the same, or {"status": "none"} when nothing asked for this song yet
-    GET  /api/stems/for/<audio_id> that status for a desk song id (the "Stem reactions" line polls it)
+    GET  /api/stems/for/<audio_id> that status for a desk song id (the Stems line under the song polls it)
     POST /api/stems            {"audio_id": "demo"} | {"path": "song.wav"}  -> {"id", "status", ...} (starts it too)
     GET  /api/stems/<id>       status, stem names, engine, envelope URL
     GET  /api/stems/<id>/envelopes.json   stem_react.save_envelopes output (vj.html ``?stems=``)
@@ -32,6 +32,7 @@ import os
 import re
 import shutil
 import threading
+import unicodedata
 import time
 import uuid
 from collections import deque
@@ -193,8 +194,24 @@ def _snapshot(job: dict) -> dict:
     return j
 
 
+def _reason(exc: BaseException) -> str:
+    """The short reason the Stems line puts in its brackets ("Stems: not split (...)"): plain words, never a path or
+    a Python error's own text (a KeyError's 'vocals', a torch checkpoint's full path); the log keeps the exception."""
+    text = str(exc).strip()
+    if "out of memory" in text.lower():
+        return "it ran out of memory"
+    if isinstance(exc, OSError) and getattr(exc, "filename", None):
+        return f"{Path(str(exc.filename)).name} could not be read"
+    first = text.splitlines()[0] if text else ""
+    if type(exc) in (RuntimeError, ValueError) and first and len(first) <= 160 and not re.search(r"[\\/]|Error\b|Errno", first):
+        return first  # a sentence of our own ("Demucs is not installed")
+    return "it stopped on an error; the desk's log has it"
+
+
 def _done_from_file(sid: str, out: Path) -> dict:
     rec = json.loads(out.read_text(encoding="utf-8"))
+    if not isinstance(rec, dict):
+        raise ValueError("stems.json is not a record")
     return {"id": sid, "status": "done", "engine": rec.get("engine"), "stems": rec.get("stems") or [],
             "frames": rec.get("frames", 0), "fps": rec.get("fps", 24), "roles": rec.get("roles") or {},
             "seconds": rec.get("seconds"), "path": str(out), "error": None,
@@ -216,8 +233,9 @@ def status_for_id(sid: str) -> dict:
         try:
             done = _done_from_file(sid, out)
         except Exception as exc:  # a stale or half-written file from an older desk
+            log.warning("stems %s: stems.json could not be read: %s", sid, exc)
             return {"id": sid, "status": "error", "engine": None, "seconds": None, "path": str(out),
-                    "error": f"stems.json could not be read: {exc}"}
+                    "error": "its saved stems file could not be read"}
         with _LOCK:
             _JOBS[sid] = done
         return dict(done)
@@ -274,7 +292,7 @@ def _run_job(sid: str, song: Path, engine: str, fps: int) -> None:
             log.info("stems %s: %d stems (%s) for %s in %.1f s", sid, len(rec["stems"]), rec["engine"], song.name, seconds)
         except Exception as exc:
             log.exception("stems %s failed", sid)
-            _update_split(sid, status="error", error=str(exc) or exc.__class__.__name__, seconds=round(time.monotonic() - t0, 2))
+            _update_split(sid, status="error", error=_reason(exc), seconds=round(time.monotonic() - t0, 2))
         finally:
             _THREADS.pop(sid, None)
 
@@ -375,9 +393,9 @@ def stems_start(body: dict | None = None) -> dict:
 def stems_for_song(audio_id: str) -> dict:
     """The background split's status for a desk song id ("demo" or the id /api/analyze handed out) without
     starting one: {"status": none|queued|running|done|error, "id", "engine", "seconds", "error", ...} and, when
-    done, "stems", "count", "envelopes". The desk's "Stem reactions" line polls this every couple of seconds."""
+    done, "stems", "count", "envelopes". The desk's Stems line under the song polls this every 2 s while a split runs."""
     if not _SONG_ID_RE.fullmatch(audio_id):
-        raise HTTPException(400, "bad song id")
+        raise HTTPException(400, "That is not a song this desk loaded. Choose a song (or the bundled demo) first.")
     song = resolve_song({"audio_id": audio_id})
     st = split_status(song)
     return {**_public(st), "own": bool(st.get("own")), "audio_id": audio_id}
@@ -386,14 +404,14 @@ def stems_for_song(audio_id: str) -> dict:
 @router.get("/api/stems/{sid}")
 def stems_status(sid: str) -> dict:
     if not _ID_RE.fullmatch(sid):
-        raise HTTPException(400, "bad stems id")
+        raise HTTPException(400, "That is not a stems id this desk made.")
     return _job_public(sid)
 
 
 @router.get("/api/stems/{sid}/envelopes.json")
 def stems_envelopes(sid: str) -> FileResponse:
     if not _ID_RE.fullmatch(sid):
-        raise HTTPException(400, "bad stems id")
+        raise HTTPException(400, "That is not a stems id this desk made.")
     out = stems_root() / sid / "stems.json"
     if not out.is_file():
         raise HTTPException(404, "Those stems are not ready yet.")
@@ -404,12 +422,15 @@ def stems_envelopes(sid: str) -> FileResponse:
 def stems_wav(sid: str, name: str) -> FileResponse:
     """One separated stem, for listening or for the VJ page to play."""
     if not _ID_RE.fullmatch(sid) or not re.fullmatch(r"[\w .-]{1,64}", name):  # letters of any alphabet: the name is a key, not a path
-        raise HTTPException(400, "bad stems id")
+        raise HTTPException(400, "That is not a stems id this desk made.")
     out = stems_root() / sid / "stems.json"
     if not out.is_file():
         raise HTTPException(404, "Those stems are not ready yet.")
-    files = (json.loads(out.read_text(encoding="utf-8")) or {}).get("files") or {}
-    p = Path(files.get(name) or "")
+    try:
+        files = (json.loads(out.read_text(encoding="utf-8")) or {}).get("files") or {}
+        p = Path(files.get(name) or "")
+    except (OSError, ValueError, AttributeError, TypeError):  # half-written, or not a stems record
+        raise HTTPException(404, "Those stems are not ready yet.") from None
     if not p.is_file():
         raise HTTPException(404, "No stem with that name.")
     return FileResponse(p, media_type=mimetypes.guess_type(p.name)[0] or "audio/wav")  # your own stems may be mp3 or flac
@@ -427,6 +448,7 @@ _DEVICE_NAMES = {"con", "prn", "aux", "nul", *(f"com{i}" for i in range(1, 10)),
 _NAME_MAX = 64  # the wav route's rule, " 2" for a repeat included
 _OWN_THREADS: dict[str, threading.Thread] = {}  # the own build per song hash: the next build, and a clear, wait for it to let go of own/
 _OWN_WAIT_S = 120.0  # how long they wait at most (a build of 32 long stems takes seconds; a decoder that hangs is not waited on for ever)
+_OWN_PART_STALE_S = 600.0  # a pick's own.<token>.part folder this old was left by a desk that stopped (an upload takes seconds)
 
 
 def own_stem_name(filename: str) -> str:
@@ -434,7 +456,7 @@ def own_stem_name(filename: str) -> str:
     "Drums", "02_bass.wav" -> "bass"; "808 Bass.wav" keeps its 808), "Lead Vocals.wav" stays "Lead Vocals"; a name
     that is a key of stems.json, or a Windows device name, gets " stem" after it. Letters and digits of any alphabet,
     spaces, dots, dashes and underscores (the wav route's rule); anything else becomes a space."""
-    stem = Path(str(filename or "").replace("\\", "/")).stem
+    stem = unicodedata.normalize("NFC", Path(str(filename or "").replace("\\", "/")).stem)  # a Mac's "e" + accent is one é
     name = re.sub(r"[^\w .-]+", " ", stem)
     bare = re.sub(r"^\s*\d{1,2}(?![0-9])\s*[-_.)\s]*", "", name)
     if bare.strip(" .-_"):
@@ -511,6 +533,8 @@ def _keep_split_aside(folder: Path) -> str | None:
             rec = json.loads(stems_json.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             rec = {"own": True}  # unreadable: not worth keeping
+        if not isinstance(rec, dict):
+            rec = {"own": True}  # JSON, but not a stems record (a hand-edited or foreign file): not worth keeping either
         if rec.get("own"):
             engine = rec.get("split_engine")
             stems_json.unlink(missing_ok=True)
@@ -520,7 +544,7 @@ def _keep_split_aside(folder: Path) -> str | None:
     if not engine and kept.is_file():
         try:
             engine = json.loads(kept.read_text(encoding="utf-8")).get("engine")
-        except (OSError, ValueError):
+        except (OSError, ValueError, AttributeError):
             pass
     return engine or None
 
@@ -617,8 +641,7 @@ def _run_own(sid: str, song: Path, folder: Path, incoming: Path, paths: dict[str
         log.info("stems %s: %d of the user's own stems for %s in %.1f s", sid, len(env["stems"]), song.name, env["seconds"])
     except Exception as exc:
         log.exception("own stems %s failed", sid)
-        why = f"{Path(str(exc.filename)).name}: {exc.strerror or exc.__class__.__name__}" if isinstance(exc, OSError) and getattr(exc, "filename", None) else (str(exc) or exc.__class__.__name__)
-        _update_own(sid, token, status="error", error=why, seconds=round(time.perf_counter() - t0, 2))
+        _update_own(sid, token, status="error", error=_reason(exc), seconds=round(time.perf_counter() - t0, 2))
     finally:
         with _LOCK:
             if _OWN_THREADS.get(sid) is threading.current_thread():
@@ -662,7 +685,7 @@ async def stems_own(audio_id: str = Form(""), files: list[UploadFile] | None = F
 
     audio_id = str(audio_id or "").strip()
     if audio_id and not _SONG_ID_RE.fullmatch(audio_id):
-        raise HTTPException(400, "bad song id")
+        raise HTTPException(400, "That is not a song this desk loaded. Choose a song (or the bundled demo) first.")
     song = resolve_song({"audio_id": audio_id})
     fps = _fps(fps)
     files = [f for f in (files or []) if f is not None and (f.filename or "")]
@@ -724,13 +747,20 @@ def stems_own_clear(body: dict | None = None) -> dict:
     if stems_json.is_file():
         try:
             own_file = bool(json.loads(stems_json.read_text(encoding="utf-8")).get("own"))
-        except (OSError, ValueError):
+        except (OSError, ValueError, AttributeError):  # unreadable, or JSON that is not a stems record
             own_file = True
         if own_file:
             stems_json.unlink(missing_ok=True)
     shutil.rmtree(folder / "own", ignore_errors=True)
+    # only a pick's folder left by a desk that stopped mid-upload: a pick still saving its files has a fresh one, and
+    # taking it from under the request was a 500 (the stress pass, 29 Oct); a pick that arrives after this wins as usual
     for part in folder.glob("own.*.part"):
-        shutil.rmtree(part, ignore_errors=True)
+        try:
+            stale = time.time() - part.stat().st_mtime > _OWN_PART_STALE_S
+        except OSError:
+            continue
+        if stale:
+            shutil.rmtree(part, ignore_errors=True)
     if not stems_json.is_file() and kept.is_file():
         os.replace(kept, stems_json)
     if stems_json.is_file():

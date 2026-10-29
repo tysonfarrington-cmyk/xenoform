@@ -500,11 +500,21 @@ def _run() -> None:
         if src_dir.is_dir():  # a whole film has served once its clips are in place; one a clip still needs stays for the retry
             keep = {_whole_name(_url(sources, f), str(f.get("source"))) for f in failed
                     if (sources.get(str(f.get("source"))) or {}).get("whole")}
+            # only the whole films this list fetches: anything else in a _src of a folder of your own stays put
+            ours = {_whole_name(_url(sources, c), str(c.get("source"))) for c in clips
+                    if (sources.get(str(c.get("source"))) or {}).get("whole")}
             for path in list(src_dir.iterdir()):
-                if path.name not in keep and path.name.removesuffix(".part") not in keep:
-                    path.unlink(missing_ok=True)
-            if not any(src_dir.iterdir()):
-                src_dir.rmdir()
+                base = path.name.removesuffix(".part")
+                if path.is_file() and base in ours and base not in keep:
+                    try:
+                        path.unlink(missing_ok=True)
+                    except OSError as exc:  # held open by a player or a scanner: it goes on the next run
+                        log.warning("film pack: %s not removed: %s", path.name, exc)
+            try:
+                if not any(src_dir.iterdir()):
+                    src_dir.rmdir()
+            except OSError:
+                pass
         done = sum(1 for m in made if not m.get("stale"))
         gone = f" {len(removed)} that left the list {'was' if len(removed) == 1 else 'were'} removed." if removed else ""
         if failed:
@@ -560,12 +570,23 @@ def write_sidecars(manifest: dict, root: Path, made: list[dict], failed: list[di
     files on disk with the window each was cut from (``kept`` when a run found it there, ``was`` the name it moved from,
     ``stale`` when an older cut stays because the remake failed); ``removed`` names the files this run took away."""
     root = Path(root)
-    (root / "CREDITS.md").write_text(credits_text(manifest, made, failed), encoding="utf-8")
+    credits = root / "CREDITS.md"
+    try:  # a CREDITS.md of your own in a folder XENO_FILM_PACK points at is yours: only the pack's own is rewritten
+        ours = not credits.is_file() or credits.read_text(encoding="utf-8", errors="replace").startswith("# Free film pack")
+    except OSError:
+        ours = False
+    if ours:
+        credits.write_text(credits_text(manifest, made, failed), encoding="utf-8")
     pack = {"made_at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "manifest_version": manifest.get("version", 1),
             "name": manifest.get("name"), "folder": str(root), "clips": made, "failed": failed, "removed": list(removed or [])}
     (root / "pack.json").write_text(json.dumps(pack, indent=1), encoding="utf-8")
     labels = {clip_name(c, i): clip_label(c) for i, c in enumerate(manifest.get("clips") or [])}
-    (root / "labels.json").write_text(json.dumps(labels, indent=1, ensure_ascii=False), encoding="utf-8")
+    try:  # the labels you gave your own clips stay; the pack's names are the pack's, a moved or removed clip's goes
+        before = json.loads((root / "labels.json").read_text(encoding="utf-8"))
+        before = {str(k): v for k, v in before.items() if str(k) not in labels and (root / str(k)).is_file()} if isinstance(before, dict) else {}
+    except (OSError, ValueError):
+        before = {}
+    (root / "labels.json").write_text(json.dumps({**before, **labels}, indent=1, ensure_ascii=False), encoding="utf-8")
 
 
 # ---------------------------------------------------------------- the route

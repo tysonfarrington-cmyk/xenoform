@@ -5,7 +5,7 @@ Xenoform turns a song into a music video: a liquid object morphs on the beat, th
 ## Flow
 1. `get_status`: desk, ComfyUI, GPU tier, final-tier readiness, recent jobs.
 2. `create_project(prompt, vibe)`: a one-line idea and/or `image_paths`. These images become **morph targets**: the object morphs through them on draft, fast and final.
-3. `load_audio(path)` (optional; the built-in demo track otherwise).
+3. `load_audio(path)` (optional; the built-in demo track otherwise; the six bundled songs are files in `examples/songs/`).
 4. `update_settings(...)`: vibe, aspect, tier, energy, transitions, beat FX.
 5. `start_render` → `wait_for_render` / `get_render_progress` → `get_output`.
 6. `cancel_render(job_id)` to stop. `list_videos` for history.

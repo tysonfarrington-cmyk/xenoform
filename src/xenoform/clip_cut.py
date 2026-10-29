@@ -136,7 +136,8 @@ def animatic(directed: dict, state: dict, audio_path: Path, out_path: Path, work
         start = own_media.window_start(float(clips_in[k].get("seconds") or 0.0), frames / float(fps))
         parts.append(own_media.render_clip(clips_in[k]["path"], start, frames, (w, h), work / "animatic" / f"a{i:02d}.mp4", fps=fps))
     listing = work / "animatic_clips.txt"
-    listing.write_text("".join(f"file '{str(p).replace(chr(92), '/')}'\n" for p in parts), encoding="utf-8")
+    # an apostrophe in the path (a repo under C:\Users\O'Brien) is escaped for the concat list, as dense.py does
+    listing.write_text("".join("file '" + str(p).replace(chr(92), "/").replace("'", "'\\''") + "'\n" for p in parts), encoding="utf-8")
     out_path = Path(out_path)
     tmp = out_path.with_name(out_path.stem + ".part.mp4")
     subprocess.run([ffmpeg_bin(), "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(listing), "-i", str(audio_path),

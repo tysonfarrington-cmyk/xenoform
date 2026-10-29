@@ -202,7 +202,7 @@ class Registry(dict):
 
     def _heal(self, key: Any) -> Any:
         song_id = song_id_of(key) if isinstance(key, str) else None
-        if song_id is None:
+        if song_id is None or song_id != song_id.strip():  # "song-ambient " would fill a second copy under its own key
             return None
         try:
             value = self._fill(song_id)

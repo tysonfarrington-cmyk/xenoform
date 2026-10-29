@@ -252,7 +252,7 @@ def create_app(cfg: dict | None = None):
     except Exception:
         log.exception("demo assets")
     static = Path(__file__).resolve().parent / "ui_static"
-    app = FastAPI(title="Xenoform", docs_url=None, redoc_url=None)
+    app = FastAPI(title="Xenoform", docs_url=None, redoc_url=None, openapi_url=None)  # the schema route was a 500 (FileResponse is imported inside create_app)
 
     class _FreshCode(StaticFiles):
         """The desk's own scripts and styles revalidate on every load (an ETag check, a 304 when unchanged), so a desk
@@ -1220,9 +1220,16 @@ def create_app(cfg: dict | None = None):
         with _LOCK:
             _OWN[own_id] = dest
         n_img, n_clip = len(found["images"]), len(found["clips"])
-        return {"id": own_id, "folder": str(dest), "images": n_img, "clips": n_clip,
-                "detail": (f"{n_img} image{'s' if n_img != 1 else ''} lead{'' if n_img != 1 else 's'} the morphs, "
-                           f"{n_clip} clip{'s' if n_clip != 1 else ''} {'are' if n_clip != 1 else 'is'} cut in on the beat.")}
+        on_disk = [p.suffix.lower() for p in dest.iterdir() if p.is_file()]
+        img_left = max(0, sum(s in own_media.footage.IMAGE_EXT for s in on_disk) - n_img)
+        clip_left = max(0, sum(s in own_media.footage.VIDEO_EXT for s in on_disk) - n_clip)
+        # an object cut takes the images, a clips cut the clips, never both (Tys, 28 Oct): the desk words the note for
+        # the Morph row in use from these counts; the detail is for scripts and says the same without a mode
+        detail = (f"{n_img} image{'s' if n_img != 1 else ''} for an object cut, {n_clip} clip{'s' if n_clip != 1 else ''} for a clips cut."
+                  + (f" Left out: {img_left} image{'s' if img_left != 1 else ''} past {own_media.MAX_ITEMS}." if img_left else "")
+                  + (f" Left out: {clip_left} clip{'s' if clip_left != 1 else ''} past {own_media.MAX_CLIPS}." if clip_left else ""))
+        return {"id": own_id, "folder": str(dest), "images": n_img, "clips": n_clip, "images_left": img_left, "clips_left": clip_left,
+                "max_images": own_media.MAX_ITEMS, "max_clips": own_media.MAX_CLIPS, "detail": detail}
 
     @app.get("/api/stills")
     def stills_route(vibe: str = "") -> dict:
@@ -2009,7 +2016,11 @@ def create_app(cfg: dict | None = None):
         # the cut's length, for the measured estimate: the Length picked, else the whole song
         seconds = float(make.get("length_s") or 0.0) or float(features.get("duration") or 0.0)
         try:
-            b = _batches().add(make, int(body.get("count") or 0), str(body.get("vary") or ""), seconds=seconds)
+            count = int(body.get("count") or 0)
+        except (TypeError, ValueError):
+            raise HTTPException(400, "How many must be a whole number: 1, 3, 5 or 10.") from None
+        try:
+            b = _batches().add(make, count, str(body.get("vary") or ""), seconds=seconds)
         except ValueError as exc:
             raise HTTPException(400, str(exc)) from exc
         return _batch_view(b)
@@ -2403,7 +2414,7 @@ def create_app(cfg: dict | None = None):
         with _LOCK:
             job = _JOBS.get(job_id)
             if job is None:
-                raise HTTPException(404, "No such cut")
+                raise HTTPException(404, "No such cut. It may be from before the desk restarted.")
             return {key: value for key, value in job.items() if key != "path"}
 
     @app.post("/api/jobs/{job_id}/cancel")
@@ -2411,7 +2422,7 @@ def create_app(cfg: dict | None = None):
         with _LOCK:
             job = _JOBS.get(job_id)
             if job is None:
-                raise HTTPException(404, "No such cut")
+                raise HTTPException(404, "No such cut. It may be from before the desk restarted.")
             event = _CANCEL.get(job_id)
             if event is not None:
                 event.set()
@@ -2426,7 +2437,7 @@ def create_app(cfg: dict | None = None):
             job = _JOBS.get(job_id)
         path = Path(job["path"]) if job and job.get("path") else None
         if path is None or not path.exists():
-            raise HTTPException(404, "That cut is not ready")
+            raise HTTPException(404, "That cut is not ready yet.")
         return FileResponse(path, media_type="video/mp4", headers={"Cache-Control": "no-store"})
 
     def _job_dir(job_id: str) -> Path:
@@ -2434,7 +2445,7 @@ def create_app(cfg: dict | None = None):
             job = _JOBS.get(job_id)
         path = Path(job["path"]) if job and job.get("path") else None
         if path is None:
-            raise HTTPException(404, "No such cut")
+            raise HTTPException(404, "No such cut. It may be from before the desk restarted.")
         return path.parent
 
     @app.get("/api/jobs/{job_id}/notes")
@@ -2772,6 +2783,17 @@ def create_app(cfg: dict | None = None):
             status_code=500,
             content={"detail": plain_error(exc), "diagnostics": diagnostics(exc)},
         )
+
+    from fastapi.exceptions import RequestValidationError
+
+    @app.exception_handler(RequestValidationError)
+    async def bad_shape(request: Request, exc: RequestValidationError):
+        # a body that is a list, a string or nothing, or a missing upload: one sentence instead of FastAPI's field list
+        # (the stress pass found the list on thirty routes the desk calls); the list stays in the diagnostics
+        fields = ", ".join(str(err.get("loc", [""])[-1]) for err in exc.errors()[:4] if err.get("loc"))
+        return JSONResponse(status_code=422, content={
+            "detail": "That request was not in the shape the desk expects. Reload the page and try again.",
+            "diagnostics": f"{request.method} {request.url.path}: {fields or 'body'}"})
 
     return app
 

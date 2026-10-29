@@ -575,6 +575,10 @@ def start_download(model_id: str, root: Path | None = None) -> dict:
     spec = by_id(model_id)
     if spec.get("manual"):
         raise PlainError("Place the local file. Setup does not download FLUX Klein weights.")
+    from xenoform.film_pack import offline
+
+    if offline():  # the film pack already said no; a model is gigabytes from the web, so it says no too
+        raise PlainError("XENO_OFFLINE is set, so nothing is downloaded. Unset it and press Download again.")
     with _LOCK:
         current = _DOWNLOADS.get(model_id) or {}
         if current.get("status") == "running":
