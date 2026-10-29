@@ -136,6 +136,22 @@ the social post. Voice-over over the screen, the outputs played full frame, capt
   frozen stretch beyond the held screens and the card's panels, -15.9 / -16.0 LUFS, true peak under -2.5 dBFS,
   contact sheets looked over. The Model grid's Fast Final tile keeps the 7 am Fast Final (b251df0c) so the four
   tiles stay what their labels say. The previous recording is in `scratchpad/wt/rec_prev`.
+- **The clips segment, recut on the free film pack** (Tys, 29 Oct noon: "the nostufaru and the dr caligri clips arent
+  the most interesting in the demo, and the scene sort of ends abruptly"). The segment is now a clips cut made on the
+  pack as Setup & models makes it (`work/ui/film_pack`, 24 clips from 17 public-domain films, chosen from contact
+  sheets of the full films): job 1d376198 on desk 47326, the hip hop beat, None, 16:9, Fast Final, 20 s, so the Machine-Man
+  of Metropolis turns into the Moon's face from A Trip to the Moon, the Moon into Jekyll and Hyde, Steamboat Willie into
+  the Odessa steps, then Apollo 11, Nosferatu rising and Keaton's cannon. The short's line reads "Or morph film clips into
+  each other: a free pack of public-domain films, or your own" (re-read in all three voices), the desk shot clicks Your
+  clips and then the new Free film pack button (the folder fills, the note names the pack), the cut plays about 7 s from
+  its start and fades to black into the next screen (both assemblers have a `wide` picture with a `fade`; the old `one`
+  showed a 9:16 cut on a blur). The long's Your clips chapter (l29 to l31, two lines reworded and re-read) shows the
+  cut through, then replays its opening under the line that names those handoffs. Two of the pack's sources carry black
+  bars baked into their 16:9 uploads (the Méliès and the Apollo files): the manifest marks a `crop` and they were remade
+  before the Make. The short is 1:47 in af_heart (1:52 am_michael, 1:51 bm_george), the long 6:53, the 9:16 cut 1:47
+  (the clips segment as the strip, the fade included). Checked (`qa_cut.py`): no black frame in the short beyond the
+  9:16 end card's fade-in, the only frozen stretches the held screens and the Under the hood panels, -15.9 / -16.0 LUFS,
+  true peak under -3 dBFS, the contact sheets and the clips segment's frames looked over.
 
 ## Decided
 

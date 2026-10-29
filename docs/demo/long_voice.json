@@ -145,7 +145,7 @@
   {
    "id": "l29",
    "chapter": "Your clips",
-   "text": "Morph has a second mode: your clips. Point it at a folder of your own film, and the cut is only your footage, never mixed with objects."
+   "text": "Morph has a second mode: clips. Point it at a folder of your own footage, or the free film pack, and the cut is only clips, never mixed with objects."
   },
   {
    "id": "l30",
@@ -155,7 +155,7 @@
   {
    "id": "l31",
    "chapter": "Your clips",
-   "text": "Here, The Cabinet of Dr. Caligari turns into Nosferatu, and Nosferatu into NASA archive footage. All public domain.",
+   "text": "Here, Metropolis turns into A Trip to the Moon, the Moon into Jekyll and Hyde, and Steamboat Willie into the Odessa steps. All public domain, from the free film pack.",
    "say": "Here, The Cabinet of Doctor Caligari turns into Nosferatu, and Nosferatu into NASA archive footage. All public domain."
   },
   {

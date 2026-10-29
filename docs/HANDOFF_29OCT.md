@@ -73,6 +73,27 @@ out of date on the tiers (no Cloud Final, "all local") and must be rebuilt after
   both cuts re-assembled to the Desktop and QA'd (`qa_cut.py`: black, frozen, loudness, contact sheets). The
   walkthroughs are final unless Tys changes the voice.
 
+## Done since noon (29 Oct, 12 to 3 pm)
+
+- **Three features, one commit (46e63b4)**, built by three agents in parallel, each reviewed by two lenses and fixed,
+  then the whole suite (1151 passed): six bundled songs on the Song step (Morphing Wobble full and 20 s, Hip hop, boom
+  bap, Liquid drum and bass, Ambient, Glitch Out; `examples/songs`, `src/xenoform/songs_api.py`, shipped analyses so a
+  chip loads at once); **your own stems** (`POST /api/stems/own`, the Stems line under the song, Back to Demucs, the
+  Fine-tune lanes follow); the **free film pack** (`configs/film_pack.json`, `src/xenoform/film_pack.py`: 24 windows
+  from 17 public-domain films, pulled from archive.org by Setup & models with ffmpeg byte-range reads, a Free film pack
+  button on Morph: Your clips). The real pack came down in 291 s and is in `work/ui/film_pack`.
+- **The demo's clips segment recut** on that pack (Tys: the Nosferatu and Caligari clips "arent the most interesting"
+  and "the scene sort of ends abruptly"): job 1d376198 (Metropolis -> the Moon's face -> Jekyll -> Steamboat Willie ->
+  the Odessa steps -> Apollo 11 -> Nosferatu -> Keaton), the line reworded and re-read in all three voices, the desk
+  shot re-recorded with the pack button, a fade to black at the segment's end, the long's Your clips chapter redone;
+  every cut rebuilt (see `docs/demo/walkthrough.md`, Made).
+- **The polish and stress pass is delegated** (Tys: "delegate tasks for the remaining items, polish pass etc to opus
+  5.5") to the Opus 5.5 session "Polish pass and stress tests on the Xenoform desk", working in this checkout on desk
+  47324 from the brief in the orchestrator's scratchpad (`build/BRIEF_stress.md`): buttons in a headless browser, API
+  fuzz, docs truth, code review, then fixes, the whole suite and Owly commits of its own.
+- Desks 47324 and 47326 were restarted on 46e63b4 (`Start-Process` of the venv python from the repo; the COMFY key is a
+  user variable, so they inherit it). Tys's 47320/47321 still run the older code until he asks in words.
+
 ## What is left, in order
 
 1. **The audit fixes.** `scratchpad/audit_plan.json` (the session's scratchpad: `C:\Users\tyson\AppData\Local\Temp\claude\C--Projects\7d414e75-aaf9-49cf-88fc-dcf26694d380\scratchpad\`) holds 89 confirmed findings in 11
@@ -99,9 +120,11 @@ out of date on the tiers (no Cloud Final, "all local") and must be rebuilt after
    `batch1\XF_DnB_Liquid_01_v1.mp3`; vibes None, neon-noir, liquid-gold.
 5. **Tys's own steps** (docs/CONTEST.md checklist): push, upload the short, replace `DEMO_VIDEO_URL` in README.md
    and CONTEST.md, post with #OpenSourceHiggsfield, submit the Typeform. The voice is af_heart (Tys, 29 Oct 10:30 am): the
-   file to upload is `Desktop\xeno_walkthrough_29oct\xenoform_demo_video.mp4` (1:43), the long one
-   `xenoform_long_walkthrough.mp4`, and the post's 9:16 cut `xenoform_demo_video_9x16.mp4` (same voice and length,
-   laid out for a phone by `scratchpad/wt/assemble_v.py`; the cards' chip now says LTX-2.5).
+   file to upload is `Desktop\xeno_walkthrough_29oct\xenoform_demo_video.mp4` (1:47 since the clips recut), the long
+   one `xenoform_long_walkthrough.mp4` (6:53), and the post's 9:16 cut `xenoform_demo_video_9x16.mp4` (same voice
+   and length, laid out for a phone by `scratchpad/wt/assemble_v.py`; the cards' chip now says LTX-2.5).
+6. **After the Opus 5.5 polish session reports**: read its commits (`git log`), restart desks 47324 and 47326 if it
+   changed Python, run the whole suite once more, and update this page. Tys's desks only on his word.
 
 ## Facts a fixer may need
 
