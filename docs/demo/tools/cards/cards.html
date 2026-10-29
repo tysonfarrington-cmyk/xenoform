@@ -23,24 +23,24 @@
     -webkit-mask: radial-gradient(circle at 50% 50%, transparent 10.5px, #000 11.5px); mask: radial-gradient(circle at 50% 50%, transparent 10.5px, #000 11.5px); }
 
   /* how it's built */
-  #built .kicker { position: absolute; left: 72px; top: 64px; font: 500 18px/1 var(--display); letter-spacing: .14em; text-transform: uppercase; color: var(--accent-hi); }
-  #built h1 { position: absolute; left: 72px; top: 96px; font: 700 52px/1.05 var(--display); letter-spacing: -.03em; }
-  .flow { position: absolute; left: 72px; right: 72px; top: 262px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 34px; }
-  .node { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 26px 22px 24px; min-height: 236px;
+  #built .kicker { position: absolute; left: 72px; top: 56px; font: 500 20px/1 var(--display); letter-spacing: .14em; text-transform: uppercase; color: var(--accent-hi); }
+  #built h1 { position: absolute; left: 72px; top: 90px; font: 700 56px/1.05 var(--display); letter-spacing: -.03em; }
+  .flow { position: absolute; left: 56px; right: 56px; top: 220px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 26px; }
+  .node { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 24px 20px 22px; min-height: 330px;
     box-shadow: 0 24px 60px -24px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.05);
     opacity: 0; transform: translateY(18px) scale(.97); transition: opacity .5s cubic-bezier(.2,.8,.2,1), transform .5s cubic-bezier(.2,.8,.2,1), border-color .5s; }
   .node.on { opacity: 1; transform: none; border-color: rgba(124,108,255,.45); }
-  .node .n { font: 400 15px/1 var(--mono); color: var(--accent-hi); letter-spacing: .06em; }
-  .node h2 { margin-top: 18px; font: 700 27px/1.12 var(--display); letter-spacing: -.02em; }
-  .node p { margin-top: 12px; font: 400 17px/1.42 var(--ui); color: var(--muted); }
+  .node .n { font: 400 18px/1 var(--mono); color: var(--accent-hi); letter-spacing: .06em; }
+  .node h2 { margin-top: 16px; font: 700 33px/1.1 var(--display); letter-spacing: -.02em; }
+  .node p { margin-top: 12px; font: 500 22px/1.36 var(--ui); color: #c4c4d2; }
   .node b { color: var(--text); font-weight: 600; }
-  .node:not(:last-child)::after { content: ""; position: absolute; right: -27px; top: 50%; width: 20px; height: 20px; margin-top: -10px;
+  .node:not(:last-child)::after { content: ""; position: absolute; right: -23px; top: 50%; width: 20px; height: 20px; margin-top: -10px;
     border-top: 3px solid var(--accent); border-right: 3px solid var(--accent); transform: rotate(45deg) scale(.7); opacity: .9; }
   .chips { position: absolute; left: 72px; right: 72px; bottom: 82px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
     opacity: 0; transform: translateY(14px); transition: opacity .6s, transform .6s cubic-bezier(.2,.8,.2,1); }
   .chips.on { opacity: 1; transform: none; }
-  .chip { padding: 10px 16px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.04); font: 500 18px/1 var(--ui); }
-  .badge { padding: 10px 16px; border-radius: 999px; background: rgba(60,207,142,.14); border: 1px solid rgba(60,207,142,.5); color: var(--ok); font: 600 18px/1 var(--ui); }
+  .chip { padding: 11px 18px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.04); font: 500 21px/1 var(--ui); }
+  .badge { padding: 10px 16px; border-radius: 999px; background: rgba(60,207,142,.14); border: 1px solid rgba(60,207,142,.5); color: var(--ok); font: 600 21px/1 var(--ui); }
 
   /* end */
   #end { display: none; place-items: center; text-align: center; }
@@ -66,7 +66,7 @@
     <div class="node"><div class="n">04</div><h2>LTX morphs</h2><p>Every shot rendered on <b>any GPU from 12 GB up</b>, or on <b>Comfy Cloud</b>.</p></div>
     <div class="node"><div class="n">05</div><h2>The cut</h2><p>Re-cut, effects and the look from the <b>cached morphs</b>, no GPU.</p></div>
   </div>
-  <div class="chips"><span class="badge">Open weights · all local</span><span class="chip">LTX-Video 0.9.5</span><span class="chip">LTX-2.5</span><span class="chip">Z-Image Turbo</span><span class="chip">Real-ESRGAN</span><span class="chip">Demucs</span><span class="chip">MCP server</span></div>
+  <div class="chips"><span class="badge">Open weights · local by default</span><span class="chip">LTX-Video 0.9.5</span><span class="chip">LTX-2.5</span><span class="chip">Z-Image Turbo</span><span class="chip">Real-ESRGAN</span><span class="chip">Demucs</span><span class="chip">MCP server</span></div>
 </section>
 <section class="card" id="end">
   <div class="wrap">
@@ -74,7 +74,7 @@
     <div class="tag">Song in, music video out. Every beat a transformation.</div>
     <div class="url">github.com/tysonfarrington-cmyk/xenoform</div>
     <div class="hash">#OpenSourceHiggsfield</div>
-    <div class="foot"><span class="badge">Open weights · all local</span><span class="chip">ComfyUI · Comfy SDK</span><span class="chip">MIT licence</span></div>
+    <div class="foot"><span class="badge">Open weights · local by default</span><span class="chip">ComfyUI · Comfy SDK</span><span class="chip">MIT licence</span></div>
   </div>
 </section>
 <script>

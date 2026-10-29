@@ -461,5 +461,77 @@
   "foreshadow": "trace",
   "scenes": "off",
   "error": null
+ },
+ {
+  "label": "black_orchid_open",
+  "aspect": "9:16",
+  "job": "ee0f92c7",
+  "status": "done",
+  "seconds": 360.9,
+  "window": 111.9,
+  "vibe": "black",
+  "style": "bloom",
+  "timing": "smooth",
+  "effects": [],
+  "look": "cool-echo",
+  "foreshadow": "off",
+  "scenes": "off",
+  "error": null
+ },
+ {
+  "label": "deepsea_fish_clear",
+  "aspect": "9:16",
+  "job": "1d9c5314",
+  "status": "done",
+  "seconds": 280.8,
+  "window": 111.9,
+  "vibe": "bioluminescent",
+  "style": "bloom",
+  "timing": "beat",
+  "effects": [
+   "feedback"
+  ],
+  "look": "cool-echo",
+  "foreshadow": "trace",
+  "scenes": "off",
+  "error": null
+ },
+ {
+  "label": "body_fx_riso",
+  "aspect": "9:16",
+  "job": "6cc38597",
+  "status": "done",
+  "seconds": 411.0,
+  "window": 21.0,
+  "vibe": "risograph",
+  "style": "fold",
+  "timing": "beat",
+  "effects": [
+   "dither",
+   "slitscan",
+   "feedback"
+  ],
+  "look": "auto",
+  "foreshadow": "slices",
+  "scenes": "off",
+  "error": null
+ },
+ {
+  "label": "ocean_bloom_beat",
+  "aspect": "9:16",
+  "job": "3899769a",
+  "status": "done",
+  "seconds": 300.8,
+  "window": 208.8,
+  "vibe": "ocean",
+  "style": "bloom",
+  "timing": "beat",
+  "effects": [
+   "dither"
+  ],
+  "look": "auto",
+  "foreshadow": "trace",
+  "scenes": "off",
+  "error": null
  }
 ]

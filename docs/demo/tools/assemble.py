@@ -160,6 +160,8 @@ def pic_card(spec, dur, dest):
     src = work / f"{dest.stem}_src.mp4"
     run(["-ss", f"{t0:.3f}", "-i", path, "-vf", f"scale={W}:{H}:flags=lanczos,fps={FPS}", *ENC, str(src)])
     fit(src, dur, dest)
+    if spec.get("under"):  # a morph moving behind the card
+        cutlib.under(dest, spec["under"], dur, (W, H))
 
 
 def pic_chain(spec, dur, dest):

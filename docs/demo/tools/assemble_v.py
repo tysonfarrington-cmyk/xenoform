@@ -195,6 +195,8 @@ def pic_card(spec, dur, dest):
         src = work / f"{dest.stem}_src.mp4"
         run(["-ss", f"{t0:.3f}", "-i", str(vertical), "-vf", f"scale={W}:{H}:flags=lanczos,fps={FPS}", *ENC, str(src)])
         fit(src, dur, dest)
+        if spec.get("under_v") or spec.get("under"):  # a morph moving behind the card (its 9:16 render when there is one)
+            cutlib.under(dest, spec.get("under_v") or spec["under"], dur, (W, H))
         return
     wide = work / f"{dest.stem}_wide.mp4"
     run(["-ss", f"{t0:.3f}", "-i", path, "-vf", f"scale={SW}:{SH}:flags=lanczos,fps={FPS}", *ENC, str(wide)])

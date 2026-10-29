@@ -145,9 +145,14 @@ def measure(path, target=-16):
 
 
 def loudnorm(path, target=-16):
+    """The filter that levels a mix to ``target`` LUFS with its peaks under -2.5 dBFS: a fixed gain from the measured
+    loudness, then a peak limiter with its delay compensated. (It was loudnorm's second pass: when the gain the target
+    needs pushes the peaks past the ceiling, loudnorm leaves linear mode for its dynamic one, and that shifted the
+    demo's whole voice 5.9 s early and cut its last 2.5 s: Owly heard it, gauntlet round 1, 30 Oct.)"""
     m = measure(path, target)
-    return (f"loudnorm=I={target}:TP=-2.5:LRA=11:measured_I={m['input_i']}:measured_TP={m['input_tp']}:measured_LRA={m['input_lra']}:"
-            f"measured_thresh={m['input_thresh']}:offset={m['target_offset']}:linear=true,aresample=48000")
+    gain = target - float(m["input_i"])
+    return (f"volume={gain:.2f}dB,alimiter=limit={10 ** (-3.0 / 20):.4f}:attack=2:release=60:level=false:latency=true,"
+            f"aresample=48000")
 
 
 def finish(plan, picture, mix_wav, af, ass, out, work, size):
@@ -217,3 +222,21 @@ def join_exact(parts, durs, dest):
     lst = Path(dest).with_suffix(".txt")
     lst.write_text("".join(f"file '{p.as_posix()}'\n" for p in fixed), encoding="utf-8")
     run(["-f", "concat", "-safe", "0", "-i", str(lst), "-c", "copy", str(dest)])
+
+
+def under(card, spec, dur, size):
+    """A morph moving behind a card (Owly, round 1: the How it's built card "sits on near-black for about 18 s"): the
+    render dimmed to about a quarter and softened, blended under the card with lighten, so the card's text and boxes
+    stay as they are and its dark ground shows the morph. ``spec`` is [path, in point]. Replaces ``card``."""
+    path, t0 = spec
+    w, h = size
+    card = Path(card)
+    tmp = card.with_name(card.stem + "_under.mp4")
+    fc = (f"[1:v]scale={w}:{h}:force_original_aspect_ratio=increase:flags=lanczos,crop={w}:{h},fps={FPS},gblur=sigma=5,"
+          f"colorlevels=romax=0.30:gomax=0.30:bomax=0.30,tpad=stop_mode=clone:stop_duration={dur + 0.5:.3f},"
+          f"trim=duration={dur:.3f},setpts=PTS-STARTPTS[u];[0:v]fps={FPS},setpts=PTS-STARTPTS[c];"
+          f"[c][u]blend=all_mode=lighten,trim=duration={dur:.3f},format=yuv420p[out]")
+    run(["-i", str(card), "-ss", f"{float(t0):.3f}", "-i", str(path), "-filter_complex", fc, "-map", "[out]", "-an",
+         "-c:v", "libx264", "-crf", "17", "-preset", "medium", "-r", str(FPS), str(tmp)])
+    tmp.replace(card)
+

@@ -142,6 +142,23 @@ CUTS = [
      "look": "auto", "foreshadow": "trace", "macros": MAX},
     {"label": "glass_space_bloom", "vibe": "iridescent-glass", "idea": "space", "start": W8, "style": "bloom", "timing": "beat",
      "effects": ["feedback"], "look": "auto", "foreshadow": "trace", "macros": MAX},
+    # Tys, 30 Oct: the rose into the lotus is "a bit too similar to the demo we already did for our facebook page ... do
+    # something similar but not so identical": the same idea, other flowers and another light. The opener's two bars are
+    # shot 1 (5.58 to 8.33 in the cut): the orchid opening into the passion flower, under the cool-echo grade's teal
+    {"label": "black_orchid_open", "vibe": "black", "start": W1, "style": "bloom", "timing": "smooth", "effects": [], "look": "cool-echo",
+     "foreshadow": "off", "pins": {"0": "black/024_tulip.jpg", "1": "black/029_orchid.jpg", "2": "black/031_passion_flower.jpg",
+                                   "3": "black/030_protea.jpg"},
+     "macros": {"intensity": 0.5, "speed": 0.5, "chaos": 0.15, "glow": 0.6, "drums": 0.6, "bass": 0.6, "vocals": 0.4, "other": 0.4}},
+    # gauntlet round 1 (Owly, 30 Oct): the fish "read as a flat kaleidoscope, no fish are ever visible" (Tys wanted the fish
+    # to have airtime and burn in): feedback trails, no kaleido; neon night read as ferrofluid twice: ocean in its place;
+    # the demo's effects shot repeated the intro's kaleido: risograph with dither, slit-scan and feedback
+    {"label": "deepsea_fish_clear", "vibe": "bioluminescent", "idea": "underwater", "start": W1, "style": "bloom", "timing": "beat",
+     "effects": ["feedback"], "look": "cool-echo", "foreshadow": "trace", "macros": {**MAX, "chaos": 0.6}},
+    {"label": "ocean_bloom_beat", "vibe": "ocean", "start": W8, "style": "bloom", "timing": "beat",
+     "idea": "jellyfish, nautilus, manta ray, koi, anglerfish, crown splash, pearl, sea anemone", "effects": ["dither"],
+     "look": "auto", "foreshadow": "trace", "macros": MAX},
+    {"label": "body_fx_riso", "vibe": "risograph", "start": WB, "style": "fold", "timing": "beat",
+     "effects": ["dither", "slitscan", "feedback"], "look": "auto", "foreshadow": "slices", "macros": WILD},
     # the demo body's output scene, on the seconds of the bed it plays over (the body's bed is the song from 0)
     {"label": "body_none_underwater", "vibe": "none", "idea": "underwater", "start": WB, "style": "auto", "timing": "smooth",
      "effects": [], "look": "auto", "foreshadow": "auto", "macros": {**MAX, "chaos": 0.5, "glow": 0.6}},

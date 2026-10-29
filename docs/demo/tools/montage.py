@@ -102,9 +102,22 @@ def main():
     missing = [lab for lab, _ in slots if lab not in rows]
     if missing:
         raise SystemExit(f"not rendered yet: {missing}")
+    # a slot may take another stretch of its cut (a 4th entry: whole beats later, or earlier when negative): the
+    # cut's offset moves by whole beats, so its beat FX still land on the song's beats (Owly, round 1: the
+    # binoculars held too long, the lotus too samey, the vase-to-face smeared)
+    steps = sorted(b - a for a, b in zip(beats, beats[1:]))
+    period = steps[len(steps) // 2]
+    srows = []
+    for row in plan["slots"]:
+        r = dict(rows[row[0]])
+        shift = float(row[3]) * period if len(row) > 3 and row[3] else 0.0
+        r["offset"] -= shift
+        r["end"] -= shift
+        r["shift_beats"] = float(row[3]) if len(row) > 3 and row[3] else 0.0
+        srows.append(r)
     prev = float(plan["start"])
-    for lab, end in slots[:-1] + [(slots[-1][0], float(plan["title"]) + float(plan.get("tail", 3.0)))]:
-        r = rows[lab]
+    for k, (lab, end) in enumerate(slots[:-1] + [(slots[-1][0], float(plan["title"]) + float(plan.get("tail", 3.0)))]):
+        r = srows[k]
         if prev < r["offset"] - 0.01 or end > r["end"] + 0.01:
             raise SystemExit(f"{lab} runs {r['offset']:.2f} to {r['end']:.2f} in the song; its slot asks {prev:.2f} to {end:.2f}")
         prev = end
@@ -114,18 +127,18 @@ def main():
     # the cut times: the plan's start, each slot's end placed on a shared boundary, the last running to the end
     cuts = [start]
     for k, (lab, want) in enumerate(slots[:-1]):
-        cuts.append(place(rows[lab], rows[slots[k + 1][0]], want, beats, pins[k]))
+        cuts.append(place(srows[k], srows[k + 1], want, beats, pins[k]))
     cuts.append(end)
     if excerpt is not None:  # the demo's intro: from song time ``excerpt`` (inside whichever slot holds it) to the title
         k = max(i for i in range(len(slots)) if cuts[i] <= excerpt + 0.05)
-        cuts, slots = [excerpt] + cuts[k + 1:], slots[k:]
+        cuts, slots, srows = [excerpt] + cuts[k + 1:], slots[k:], srows[k:]
         start = excerpt
     frames = [round((c - start) * FPS) for c in cuts]
     work = M / ("build_" + out.stem)
     work.mkdir(exist_ok=True)
     parts, record = [], []
     for k, (lab, _) in enumerate(slots):
-        r = rows[lab]
+        r = srows[k]
         n = frames[k + 1] - frames[k]
         if n <= 0:
             continue
@@ -163,11 +176,11 @@ def main():
         a_fade = ""
     audio = work / "song.wav"
     run(["-ss", f"{start:.4f}", "-t", f"{total:.4f}", "-i", str(SONG), "-af", f"afade=t=in:d=0.03{a_fade}", "-ar", "48000", "-ac", "2", str(audio)])
-    probe = subprocess.run(["ffmpeg", "-hide_banner", "-i", str(audio), "-af", "loudnorm=I=-16:TP=-2.5:LRA=11:print_format=json", "-f", "null", "-"],
-                           capture_output=True, text=True).stderr
-    m = json.loads(probe[probe.rindex("{"):probe.rindex("}") + 1])
-    af = (f"loudnorm=I=-16:TP=-2.5:LRA=11:measured_I={m['input_i']}:measured_TP={m['input_tp']}:measured_LRA={m['input_lra']}:"
-          f"measured_thresh={m['input_thresh']}:offset={m['target_offset']}:linear=true,aresample=48000")
+    # a fixed gain to -16 LUFS and a delay-compensated peak limiter (cutlib.loudnorm: loudnorm's dynamic fallback shifts)
+    sys.path.insert(0, str(HERE))
+    import cutlib
+    m = cutlib.measure(audio)
+    af = cutlib.loudnorm(audio)
     run(["-i", str(picture), "-loop", "1", "-t", f"{total:.3f}", "-i", str(png), "-i", str(audio), "-filter_complex",
          f"{fc};[2:a]{af}[a]", "-map", "[v]", "-map", "[a]", "-c:v", "libx264", "-crf", "16", "-preset", "slow", "-pix_fmt", "yuv420p",
          "-r", str(FPS), "-c:a", "aac", "-b:a", "256k", "-movflags", "+faststart", "-t", f"{total:.3f}", str(out)])

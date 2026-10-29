@@ -116,7 +116,7 @@ for seg in segments:
     base = seg.get("ids") or [seg["id"]]
     seg["ids"] = [r["id"] for b in base for r in COPY if r["id"] == b or r["id"].startswith(b + "_")]
     seg["id"] = seg["ids"][0]
-INTRO = HERE / "montage" / "intro_169.mp4"  # the demo's 21 s intro (the montage's first bars); the whole montage stands alone
+INTRO = HERE / "montage" / "intro_long.mp4"  # the whole montage up to its title (Tys, 30 Oct: the short intro was "weak" for the long)
 plan = {"copy": "C:/Projects/xenoform-rc2/docs/demo/long_voice.json", "music": f"{S}/wt/montage/bed_long.wav", "music_start": 0.0,
         "music_gain_db": -9, "music_fade_in": 0.05, "lead": 0.5, "gap": 0.7, "tail": 0.8,
         "grid": {"features": f"{S}/wt/montage/bed_long.beats.json", "bar_phase": 0, "bar_slack": 1.0, "half_slack": 0.45},

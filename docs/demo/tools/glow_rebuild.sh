@@ -17,6 +17,8 @@ $PY -X utf8 -u montage.py "$M/plan_916.json" "$M/xenoform_montage_9x16.mp4"
 echo "== intros $(date +%H:%M:%S)"
 $PY -X utf8 -u montage.py "$M/plan_intro_169.json" "$M/intro_169.mp4" --excerpt "$($PY -c "import json;print(json.load(open('$M/plan_intro_169.json'))['start'])")"
 $PY -X utf8 -u montage.py "$M/plan_intro_916.json" "$M/intro_916.mp4" --excerpt "$($PY -c "import json;print(json.load(open('$M/plan_intro_916.json'))['start'])")"
+# the long opens on the whole montage up to its title (Tys, 30 Oct)
+$PY -X utf8 -u montage.py "$M/plan_169.json" "$M/intro_long.mp4" --excerpt "$($PY -c "import json;print(json.load(open('$M/plan_169.json'))['start'])")"
 echo "== short $(date +%H:%M:%S)"
 $PY -X utf8 -u glow_plan.py
 $PY -X utf8 -u assemble.py plan_short.json $READ_S "$W/short_af_heart_${V}.mp4" > "$W/glow_short_${V}.log" 2>&1

@@ -32,7 +32,8 @@ lines = {r["id"]: r for r in json.loads(Path(r"C:\Projects\kokoro-tts\reads\shor
 segs, _ = cutlib.timeline(plan, lines)
 song_at = {s["id"]: music_start + s["start"] for s in segs}
 
-SCENES = {"result": "body_none_underwater", "styles": "body_spin_snap", "effects": "body_fx_kaleido"}
+# the effects scene: risograph (Owly, round 1: the green kaleido repeated the intro's)
+SCENES = {"result": "body_none_underwater", "styles": "body_spin_snap", "effects": "body_fx_riso"}
 
 
 def in_point(job, song_t, window):
@@ -58,7 +59,9 @@ for seg in plan["segments"]:
         r = clips["clips_demo"]
         part = seg["pic"]["parts"][1][1]
         screen_s = seg["pic"]["parts"][0][0]
-        part["video"] = [f"{J}/{r['job']}/xenoform.mp4", in_point(r["job"], song_at[sid] + screen_s, r["window"])]
+        # whole beats later when the plan asks (the Moon is in the intro; from the Lost World on)
+        later = float(part.get("shift_beats") or 0) * 0.6667
+        part["video"] = [f"{J}/{r['job']}/xenoform.mp4", round(in_point(r["job"], song_at[sid] + screen_s, r["window"]) + later, 3)]
     if sid == "open":
         seg["pic"]["image_v"] = (HERE / "cards" / "title_still_916.png").as_posix()
 for aspect, key in (("169", "intro"), ("916", "intro_v")):

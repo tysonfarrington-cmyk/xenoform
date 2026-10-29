@@ -120,14 +120,14 @@
    "pic": {
     "pic": "wide",
     "land": true,
-    "label": "Kaleido · Feedback · Slit-scan",
+    "label": "Dither · Slit-scan · Feedback",
     "video": [
-     "C:/Projects/xenoform-rc2/work/ui/jobs/aa027d30/xenoform.mp4",
+     "C:/Projects/xenoform-rc2/work/ui/jobs/a5391604/xenoform.mp4",
      13.916
     ],
     "period": 0.6667,
     "video_v": [
-     "C:/Projects/xenoform-rc2/work/ui/jobs/1fc57b2e/xenoform.mp4",
+     "C:/Projects/xenoform-rc2/work/ui/jobs/6cc38597/xenoform.mp4",
      13.916
     ]
    }
@@ -188,9 +188,10 @@
        "land": true,
        "video": [
         "C:/Projects/xenoform-rc2/work/ui/jobs/66da0461/xenoform.mp4",
-        2.516
+        6.516
        ],
-       "period": 0.6667
+       "period": 0.6667,
+       "shift_beats": 6
       }
      ]
     ]
@@ -208,6 +209,14 @@
     "video": [
      "C:/Users/tyson/AppData/Local/Temp/claude/C--Projects/7d414e75-aaf9-49cf-88fc-dcf26694d380/scratchpad/wt/rec/built.mp4",
      0.0
+    ],
+    "under": [
+     "C:/Projects/xenoform-rc2/work/ui/jobs/82bf58a6/xenoform.mp4",
+     5.0
+    ],
+    "under_v": [
+     "C:/Projects/xenoform-rc2/work/ui/jobs/db018a9c/xenoform.mp4",
+     5.0
     ]
    }
   },

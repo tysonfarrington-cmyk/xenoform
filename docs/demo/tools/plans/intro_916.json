@@ -5,7 +5,7 @@
  "tail": 0,
  "slots": [
   [
-   "black_rose_open",
+   "black_orchid_open",
    119.79,
    "pin"
   ],
@@ -14,17 +14,19 @@
    122.42
   ],
   [
-   "deepsea_fish_open",
+   "deepsea_fish_clear",
    126.33,
    "pin"
   ],
   [
    "shadow_magic_melt",
-   128.96
+   128.96,
+   "",
+   18
   ],
   [
    "clips_montage",
-   132.92,
+   131.62,
    "pin"
   ],
   [
@@ -37,7 +39,8 @@
   ],
   [
    "neon_shatter_snap",
-   141.0
+   141.0,
+   "pin"
   ]
  ]
 }
