@@ -3,227 +3,432 @@
  "lines": [
   {
    "id": "l01",
-   "chapter": "What it is",
-   "text": "Xenoform turns a song into a music video. One object turns into the next, on the beat, for the whole song."
+   "text": "Xenoform turns a song into a music video.",
+   "chapter": "What it is"
+  },
+  {
+   "id": "l01_2",
+   "text": "One object turns into the next, on the beat, for the whole song."
   },
   {
    "id": "l02",
-   "chapter": "What it is",
-   "text": "It runs on your own computer, with open-weight models through ComfyUI. This is the whole tour: the song, the vibe, what it morphs through, the render, the edit, your own clips, and how it's built."
+   "text": "It runs on your own computer, with open-weight models through ComfyUI.",
+   "chapter": "What it is"
+  },
+  {
+   "id": "l02_2",
+   "text": "This is the whole tour: the song, the vibe, what it morphs through, the render, the edit, your own clips, and how it's built."
   },
   {
    "id": "l03",
-   "chapter": "Song and vibe",
-   "text": "Start with a song. Drop a file on the page, or use the bundled demo."
+   "text": "Start with a song.",
+   "chapter": "Song and vibe"
+  },
+  {
+   "id": "l03_2",
+   "text": "Drop a file on the page, or use the bundled demo."
   },
   {
    "id": "l04",
-   "chapter": "Song and vibe",
-   "text": "The desk listens first. It finds the beats, the bars and the drop, and tells you where the big moment is. That's where the biggest change will land."
+   "text": "The desk listens first.",
+   "chapter": "Song and vibe"
+  },
+  {
+   "id": "l04_2",
+   "text": "It finds the beats, the bars and the drop, and tells you where the big moment is."
+  },
+  {
+   "id": "l04_3",
+   "text": "That's where the biggest change will land."
   },
   {
    "id": "l05",
-   "chapter": "Song and vibe",
-   "text": "Then pick a vibe. A vibe is what everything is made of and how it's lit: molten gold, neon noir, ink and paper, deep-sea glow, and more."
+   "text": "Then pick a vibe.",
+   "chapter": "Song and vibe"
+  },
+  {
+   "id": "l05_2",
+   "text": "A vibe is what everything is made of and how it's lit: molten gold, neon noir, ink and paper, deep-sea glow, and more."
   },
   {
    "id": "l06",
-   "chapter": "Song and vibe",
-   "text": "Each vibe brings its own objects, its own colour and its own transitions. Pick None for the things as they really are, in their own materials and plain light."
+   "text": "Each vibe brings its own objects, colour and transitions with it.",
+   "chapter": "Song and vibe"
+  },
+  {
+   "id": "l06_2",
+   "text": "Pick None for the things as they really are, in their own materials and plain light."
   },
   {
    "id": "l07",
-   "chapter": "What it morphs through",
-   "text": "Under the vibes is one line: what it morphs through. It isn't a story prompt. It names the things you want to see."
+   "text": "Under the vibes is one line: what it morphs through.",
+   "chapter": "What it morphs through"
+  },
+  {
+   "id": "l07_2",
+   "text": "It isn't a story prompt."
+  },
+  {
+   "id": "l07_3",
+   "text": "It names the things you want to see."
   },
   {
    "id": "l08",
-   "chapter": "What it morphs through",
-   "text": "Type a few things, a theme, a place, or a feel. A theme like underwater brings fifteen things of its own: a jellyfish, an octopus, a seahorse, a manta ray."
+   "text": "Type a few things, a theme, a place, or a feel.",
+   "chapter": "What it morphs through"
+  },
+  {
+   "id": "l08_2",
+   "text": "A theme like underwater brings fifteen things of its own: a jellyfish, an octopus, a seahorse, a manta ray."
   },
   {
    "id": "l09",
-   "chapter": "What it morphs through",
-   "text": "A place becomes a scene the morphs pass through. A feel, like moody and punchy, moves the knobs and the look."
+   "text": "Name a place, and the morphs pass through it as a scene.",
+   "chapter": "What it morphs through"
+  },
+  {
+   "id": "l09_2",
+   "text": "A feel, like moody and punchy, moves the knobs and the look."
   },
   {
    "id": "l10",
-   "chapter": "What it morphs through",
-   "text": "The chips under the line show how it was read. New means Make draws that still first, on your GPU, before it renders."
+   "text": "The chips under the line show how it was read.",
+   "chapter": "What it morphs through"
+  },
+  {
+   "id": "l10_2",
+   "text": "New means the still is drawn first, on your GPU, before the render."
   },
   {
    "id": "l11",
-   "chapter": "What it morphs through",
-   "text": "The objects come from a library that grows on this machine. Every still is made with Z-Image Turbo and checked against the vibe's own pool before it's kept."
+   "text": "The objects come from a library that grows on this machine.",
+   "chapter": "What it morphs through"
+  },
+  {
+   "id": "l11_2",
+   "text": "Every still is made with Z-Image Turbo and checked against the vibe's own pool before it's kept."
   },
   {
    "id": "l12",
-   "chapter": "Make",
-   "text": "Press Make. The making screen shows the chain it picked, the steps, and a rough cut of the song playing while the morphs render."
+   "text": "Press Make.",
+   "chapter": "Make"
+  },
+  {
+   "id": "l12_2",
+   "text": "The making screen shows the chain it picked, the steps, and a rough cut of the song playing while the morphs render."
   },
   {
    "id": "l13",
-   "chapter": "Make",
-   "text": "You can leave it. The tab counts up and tells you when it's ready."
+   "text": "You can leave it.",
+   "chapter": "Make"
+  },
+  {
+   "id": "l13_2",
+   "text": "The tab counts up and tells you when it's ready."
   },
   {
    "id": "l14",
-   "chapter": "Make",
-   "text": "There are four models. A Draft renders small with LTX-Video, in minutes. A Fast Final upscales the Draft to 1080p. The Final renders every morph with LTX-2.5: sharp, and slow, a few minutes a morph on this card. And Cloud Final sends the same open-weights morphs to Comfy Cloud, three at a time, if you tick the box and spend your credits.",
-   "say": "There are four models. A Draft renders small with LTX Video, in minutes. A Fast Final upscales the Draft to ten eighty p. The Final renders every morph with LTX 2.5: sharp, and slow, a few minutes a morph on this card. And Cloud Final sends the same open-weights morphs to Comfy Cloud, three at a time, if you tick the box and spend your credits."
+   "text": "There are four models.",
+   "chapter": "Make"
+  },
+  {
+   "id": "l14_2",
+   "text": "A Draft renders small with LTX-Video, in minutes.",
+   "say": "A Draft renders small with LTX Video, in minutes."
+  },
+  {
+   "id": "l14_3",
+   "text": "A Fast Final upscales the Draft to 1080p.",
+   "say": "A Fast Final upscales the Draft to ten eighty p."
+  },
+  {
+   "id": "l14_4",
+   "text": "The Final renders every morph with LTX-2.5: sharp, and slow, a few minutes a morph on this card.",
+   "say": "The Final renders every morph with LTX 2.5: sharp, and slow, a few minutes a morph on this card."
+  },
+  {
+   "id": "l14_5",
+   "text": "Cloud Final sends the same open-weights morphs to Comfy Cloud, three at a time, on your credits, when you tick the box."
   },
   {
    "id": "l15",
-   "chapter": "Make",
-   "text": "The time row says how long it will take on this GPU, before you start."
+   "text": "The time row says how long it will take on this GPU, before you start.",
+   "chapter": "Make"
   },
   {
    "id": "l16",
-   "chapter": "The engine",
-   "text": "Now the engine. Morph style is how one object becomes the next. Melt flows. Shatter cracks into shards that snap together. Bloom opens like a flower. Spin turns as it changes. Fold creases like paper. Auto melts the verses and shatters the drop."
+   "text": "Now the engine.",
+   "chapter": "The engine"
+  },
+  {
+   "id": "l16_2",
+   "text": "Morph style is how one object turns into the next."
+  },
+  {
+   "id": "l16_3",
+   "text": "Melt flows."
+  },
+  {
+   "id": "l16_4",
+   "text": "Shatter cracks into shards that snap together."
+  },
+  {
+   "id": "l16_5",
+   "text": "Bloom opens like a flower."
+  },
+  {
+   "id": "l16_6",
+   "text": "Spin turns as it changes."
+  },
+  {
+   "id": "l16_7",
+   "text": "Fold creases like paper."
+  },
+  {
+   "id": "l16_8",
+   "text": "Auto melts the verses and shatters the drop."
   },
   {
    "id": "l17",
-   "chapter": "The engine",
-   "text": "Timing is when the change happens inside the shot. Smooth plays it evenly. On the beat moves it in steps, on every beat. Snap holds, then changes in about a beat, on the downbeat."
+   "text": "Timing is when the change happens inside the shot.",
+   "chapter": "The engine"
+  },
+  {
+   "id": "l17_2",
+   "text": "Smooth plays it evenly."
+  },
+  {
+   "id": "l17_3",
+   "text": "On the beat moves it in steps, on every beat."
+  },
+  {
+   "id": "l17_4",
+   "text": "Snap holds, then changes in about a beat, on the downbeat."
   },
   {
    "id": "l18",
-   "chapter": "The engine",
-   "text": "Effects ride the kick and the loudness: dither hits, a feedback tunnel, a kaleidoscope, slit-scan. Any of them together."
+   "text": "Effects ride the kick and the loudness: dither hits, a feedback tunnel, a kaleidoscope, slit-scan.",
+   "chapter": "The engine"
+  },
+  {
+   "id": "l18_2",
+   "text": "Any of them together."
   },
   {
    "id": "l19",
-   "chapter": "The engine",
-   "text": "Foreshadow lets the next object arrive early: its edges glow in, or strips of it flicker toward the cut. Scenes mixes wide places in at each new section."
+   "text": "Foreshadow lets the next object arrive early: its edges glow in, or strips of it flicker toward the cut.",
+   "chapter": "The engine"
+  },
+  {
+   "id": "l19_2",
+   "text": "Scenes mixes wide places in at each new section."
   },
   {
    "id": "l20",
-   "chapter": "The engine",
-   "text": "And four knobs. Intensity for the pulse and the flash, Speed for how often it cuts, Chaos for the punches, Glow for the bloom."
+   "text": "And four knobs.",
+   "chapter": "The engine"
+  },
+  {
+   "id": "l20_2",
+   "text": "Intensity for the pulse and the flash, Speed for how often it cuts, Chaos for the punches, Glow for the bloom."
   },
   {
    "id": "l21",
-   "chapter": "The engine",
-   "text": "None of this needs the GPU again. Every change waits in one bar at the bottom, and Apply re-cuts the video from the morphs it already made."
+   "text": "None of this needs the GPU again.",
+   "chapter": "The engine"
+  },
+  {
+   "id": "l21_2",
+   "text": "Every change waits in one bar at the bottom, and Apply re-cuts the video from the morphs it already made."
   },
   {
    "id": "l22",
-   "chapter": "The timeline",
-   "text": "Under the video is the timeline. Every tile is a shot, with its own frame, and a playhead crosses it as the video plays."
+   "text": "Under the video is the timeline.",
+   "chapter": "The timeline"
+  },
+  {
+   "id": "l22_2",
+   "text": "Every tile is a shot, with its own frame, and a playhead crosses it as the video plays."
   },
   {
    "id": "l23",
-   "chapter": "The timeline",
-   "text": "Click a shot to open it. The drawer has four tabs."
+   "text": "Click a shot to open it.",
+   "chapter": "The timeline"
+  },
+  {
+   "id": "l23_2",
+   "text": "The drawer has four tabs."
   },
   {
    "id": "l24",
-   "chapter": "The timeline",
-   "text": "Shot: play it, move it left or right, duplicate it, or delete it. The shot before plays on through the gap."
+   "text": "Shot: play it, move it left or right, duplicate it, or delete it.",
+   "chapter": "The timeline"
+  },
+  {
+   "id": "l24_2",
+   "text": "The shot before plays on through the gap."
   },
   {
    "id": "l25",
-   "chapter": "The timeline",
-   "text": "Look: colour for this shot alone, hue, saturation, brightness, contrast and warmth, and its own effects."
+   "text": "Look: colour for this shot alone, hue, saturation, brightness, contrast and warmth, and its own effects.",
+   "chapter": "The timeline"
   },
   {
    "id": "l26",
-   "chapter": "The timeline",
-   "text": "Join: the seam between two shots. Flow or cut, the transition, and move the cut a beat or half a beat either way."
+   "text": "Join: the seam between two shots.",
+   "chapter": "The timeline"
+  },
+  {
+   "id": "l26_2",
+   "text": "Flow or cut, the transition, and move the cut a beat or half a beat either way."
   },
   {
    "id": "l27",
-   "chapter": "The timeline",
-   "text": "Regenerate: swap the object, change its morph style, render just this one morph again, or generate a new one here."
+   "text": "Regenerate: swap the object, change its morph style, render just this one morph again, or generate a new one here.",
+   "chapter": "The timeline"
   },
   {
    "id": "l28",
-   "chapter": "The timeline",
-   "text": "Edit as many shots as you like, then apply once. It re-cuts from the cached morphs, without the GPU."
+   "text": "Edit as many shots as you like, then apply once.",
+   "chapter": "The timeline"
+  },
+  {
+   "id": "l28_2",
+   "text": "It re-cuts from the cached morphs, without the GPU."
   },
   {
    "id": "l29",
-   "chapter": "Your clips",
-   "text": "Morph has a second mode: clips. Point it at a folder of your own footage, or the free film pack, and the cut is only clips, never mixed with objects."
+   "text": "Morph has a second mode: clips.",
+   "chapter": "Your clips"
+  },
+  {
+   "id": "l29_2",
+   "text": "Point it at a folder of your own footage, or the free film pack, and the cut is only clips, never mixed with objects."
   },
   {
    "id": "l30",
-   "chapter": "Your clips",
-   "text": "Each clip plays its busiest stretch, at full speed. Between clips, LTX generates a morph from the last frame of one into the first frame of the next."
+   "text": "Each clip plays its busiest stretch, at full speed.",
+   "chapter": "Your clips"
+  },
+  {
+   "id": "l30_2",
+   "text": "Between clips, LTX generates a morph from the last frame of one into the first frame of the next."
   },
   {
    "id": "l31",
-   "chapter": "Your clips",
-   "text": "Here, Metropolis turns into A Trip to the Moon, the Moon into Jekyll and Hyde, and Steamboat Willie into the Odessa steps. All public domain, from the free film pack.",
-   "say": "Here, The Cabinet of Doctor Caligari turns into Nosferatu, and Nosferatu into NASA archive footage. All public domain."
+   "text": "Here, the Metropolis robot turns into A Trip to the Moon, the Moon into the dinosaurs of The Lost World, and the Odessa steps into Keaton's bridge.",
+   "chapter": "Your clips"
+  },
+  {
+   "id": "l31_2",
+   "text": "All public domain, from the free film pack."
   },
   {
    "id": "l32",
-   "chapter": "Share",
-   "text": "When it's done, share it: a small share cut, a fifteen-second hook for social, or the whole thing."
+   "text": "When it's done, share it: a small share cut, a fifteen-second hook for social, or the whole thing.",
+   "chapter": "Share"
   },
   {
    "id": "l33",
-   "chapter": "Share",
-   "text": "Edit in Resolve opens a folder with a timeline: one file a shot, the song, and markers, ready to import."
+   "text": "Edit in Resolve opens a folder with a timeline: one file a shot, the song, and markers, ready to import.",
+   "chapter": "Share"
   },
   {
    "id": "l34",
-   "chapter": "Share",
-   "text": "A recipe code remakes the same video anywhere. And Variations queues extra Drafts for later: new objects, other vibes, other feels."
+   "text": "A recipe code remakes the same video anywhere.",
+   "chapter": "Share"
+  },
+  {
+   "id": "l34_2",
+   "text": "And Variations queues extra Drafts for later: new objects, other vibes, other feels."
   },
   {
    "id": "u1",
-   "chapter": "Under the hood",
-   "text": "Under the hood. First the song: it is split into stems with Demucs, and every beat and the drop are found in the mix. This track: seventy beats in thirty seconds, the drop at thirteen point seven."
+   "text": "Under the hood.",
+   "chapter": "Under the hood"
+  },
+  {
+   "id": "u1_2",
+   "text": "First the song: it is split into stems with Demucs, and every beat and the drop are found in the mix."
+  },
+  {
+   "id": "u1_3",
+   "text": "This track: seventy beats in thirty seconds, the drop at thirteen point seven."
   },
   {
    "id": "u2",
-   "chapter": "Under the hood",
-   "text": "Then the plan: a shot on every bar, a half bar on the drop. Here that is twenty-two shots, and the stems decide the effects on each: a punch on the downbeat, a stutter on the kick."
+   "text": "Then the plan: a shot on every bar, a half bar on the drop.",
+   "chapter": "Under the hood"
+  },
+  {
+   "id": "u2_2",
+   "text": "Here that is twenty-two shots, and the stems decide the effects on each: a punch on the downbeat, a stutter on the kick."
   },
   {
    "id": "u3",
-   "chapter": "Under the hood",
-   "text": "Then the chain: twenty-three stills, one object leading to the next. Twelve came from the None library, three were drawn first for the line: a seashell, coral, a pearl oyster."
+   "text": "Then the chain: twenty-three stills, one object leading to the next.",
+   "chapter": "Under the hood"
+  },
+  {
+   "id": "u3_2",
+   "text": "Twelve came from the None library, three were drawn first for the line: a seashell, coral, a pearl oyster."
   },
   {
    "id": "u4",
-   "chapter": "Under the hood",
-   "text": "Each shot is one morph: the still it starts on, the still it ends on, and a prompt that names them both and asks for the change across the whole clip. That graph goes to ComfyUI through the Comfy SDK, and LTX-2.5 renders it.",
-   "say": "Each shot is one morph: the still it starts on, the still it ends on, and a prompt that names them both and asks for the change across the whole clip. That graph goes to ComfyUI through the Comfy SDK, and LTX 2.5 renders it."
+   "text": "Each shot is one morph: the still it starts on, the still it ends on, and a prompt naming them both, asking for the change across the whole clip.",
+   "chapter": "Under the hood"
+  },
+  {
+   "id": "u4_2",
+   "text": "That graph goes to ComfyUI through the Comfy SDK, and LTX-2.5 renders it.",
+   "say": "That graph goes to ComfyUI through the Comfy SDK, and LTX 2.5 renders it."
   },
   {
    "id": "u5",
-   "chapter": "Under the hood",
-   "text": "The morph comes back as a short clip. Xenoform re-times it so the change lands on the beat, runs the effects the knobs asked for on the stems, and cuts it all to the song."
+   "text": "The morph comes back as a short video clip.",
+   "chapter": "Under the hood"
+  },
+  {
+   "id": "u5_2",
+   "text": "Xenoform re-times it so the change lands on the beat, runs the effects the knobs asked for on the stems, and cuts it all to the song."
   },
   {
    "id": "u6",
-   "chapter": "Under the hood",
-   "text": "Every step leaves a file in the job folder: the beats, the plan, the chain, every morph. Nothing in it is a black box."
+   "text": "Every step leaves a file in the job folder: the beats, the plan, the chain, every morph.",
+   "chapter": "Under the hood"
+  },
+  {
+   "id": "u6_2",
+   "text": "Nothing in it is a black box."
   },
   {
    "id": "l36",
-   "chapter": "How it's built",
-   "text": "The plan becomes ComfyUI graphs, sent through the Comfy SDK to your own ComfyUI. LTX-Video, LTX-2.5 and Z-Image Turbo do the work: all open weights, on any card from 12 GB up, or the same models on Comfy Cloud when you ask for Cloud Final.",
-   "say": "The plan becomes ComfyUI graphs, sent through the Comfy SDK to your own ComfyUI. LTX Video, LTX 2.5 and Z Image Turbo do the work: all open weights, on any card from twelve gigabytes up, or the same models on Comfy Cloud when you ask for Cloud Final."
+   "text": "The plan becomes ComfyUI graphs, sent through the Comfy SDK to your own ComfyUI.",
+   "chapter": "How it's built"
+  },
+  {
+   "id": "l36_2",
+   "text": "LTX-Video, LTX-2.5 and Z-Image Turbo do the work: all open weights, on any card from 12 GB up, or the same models on Comfy Cloud when you ask for Cloud Final.",
+   "say": "LTX Video, LTX 2.5 and Z Image Turbo do the work: all open weights, on any card from twelve gigabytes up, or the same models on Comfy Cloud when you ask for Cloud Final."
   },
   {
    "id": "l37",
-   "chapter": "How it's built",
-   "text": "And an MCP server lets any AI drive the desk: pick a vibe, render, review, and re-cut."
+   "text": "And an MCP server lets any AI drive the desk: pick a vibe, render, review, and re-cut.",
+   "chapter": "How it's built"
   },
   {
    "id": "l38",
-   "chapter": "How it's built",
-   "text": "Setup and models asks your ComfyUI which models it can load, and offers a download for any it lacks."
+   "text": "Setup and models asks your ComfyUI which models it can load, and offers a download for any it lacks.",
+   "chapter": "How it's built"
   },
   {
    "id": "l39",
-   "chapter": "End",
-   "text": "Xenoform. Open source, on GitHub."
+   "text": "Xenoform.",
+   "chapter": "End"
+  },
+  {
+   "id": "l39_2",
+   "text": "Open source, on GitHub."
   }
  ]
 }

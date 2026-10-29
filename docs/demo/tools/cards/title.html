@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Xenoform title</title>
+<!-- The montage's one title: the end card's mark and word, on a transparent page, captured as a PNG by title_png.py and laid
+     over the montage's last shot. ?v for the 9:16 layout. -->
+<style>
+  @font-face { font-family: "Space Grotesk"; font-weight: 700; src: url("file:///C:/Projects/xenoform-rc2/src/xenoform/ui_static/fonts/space-grotesk-700.woff2") format("woff2"); }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: transparent; color: #f4f2ff; }
+  body.v { width: 1080px; height: 1920px; }
+  .row { position: absolute; inset: 0; display: flex; gap: 30px; align-items: center; justify-content: center; }
+  .mark { width: 92px; height: 92px; border-radius: 27px; flex: none;
+    background: conic-gradient(from 210deg, #ff6a45, #d9418f, #7c6cff, #3fb6ff, #ff6a45);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.22), 0 10px 44px -6px rgba(124,108,255,.8);
+    -webkit-mask: radial-gradient(circle at 50% 50%, transparent 18px, #000 19.5px); mask: radial-gradient(circle at 50% 50%, transparent 18px, #000 19.5px); }
+  h1 { font: 700 156px/1 "Space Grotesk", sans-serif; letter-spacing: -.045em;
+    text-shadow: 0 0 40px rgba(124,108,255,.55), 0 4px 24px rgba(0,0,0,.6); }
+  body.v .mark { width: 76px; height: 76px; border-radius: 22px;
+    -webkit-mask: radial-gradient(circle at 50% 50%, transparent 15px, #000 16.5px); mask: radial-gradient(circle at 50% 50%, transparent 15px, #000 16.5px); }
+  body.v h1 { font-size: 132px; }
+</style>
+</head>
+<body>
+<div class="row"><div class="mark"></div><h1>Xenoform</h1></div>
+<script>if (location.search.includes("v")) document.body.classList.add("v");</script>
+</body>
+</html>

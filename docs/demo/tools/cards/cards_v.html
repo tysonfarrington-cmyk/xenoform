@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Xenoform cards, 9:16</title>
+<style>
+  /* the same two cards as cards.html, laid out for a phone: a 540x960 CSS page recorded at 2x (1080x1920) */
+  @font-face { font-family: "Space Grotesk"; font-weight: 500; src: url("file:///C:/Projects/xenoform-rc2/src/xenoform/ui_static/fonts/space-grotesk-500.woff2") format("woff2"); }
+  @font-face { font-family: "Space Grotesk"; font-weight: 700; src: url("file:///C:/Projects/xenoform-rc2/src/xenoform/ui_static/fonts/space-grotesk-700.woff2") format("woff2"); }
+  @font-face { font-family: "Share Tech Mono"; src: url("file:///C:/Projects/xenoform-rc2/src/xenoform/ui_static/fonts/share-tech-mono-400.woff2") format("woff2"); }
+  :root {
+    --bg: #0b0b0f; --surface: #141419; --line: rgba(255,255,255,.08); --text: #ececf1; --muted: #9a9aab;
+    --accent: #7c6cff; --accent-hi: #9488ff; --ok: #3ccf8e;
+    --ui: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; --display: "Space Grotesk", var(--ui); --mono: "Share Tech Mono", Consolas, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  /* the page is 1080x1920 and each card is laid out at 540x960 and zoomed 2x (crisp text; the screencast gives frames at
+     the page's own size, not the emulated scale) */
+  html, body { width: 1080px; height: 1920px; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--ui); }
+  body { background: radial-gradient(1400px 1000px at 50% 110%, rgba(124,108,255,.16), transparent 60%), var(--bg); }
+  .card { position: absolute; inset: 0; display: none; zoom: 2; }
+  .card.on { display: block; }
+  .mark { width: 44px; height: 44px; border-radius: 13px; flex: none;
+    background: conic-gradient(from 210deg, #ff6a45, #d9418f, #7c6cff, #3fb6ff, #ff6a45);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.18), 0 6px 26px -4px rgba(124,108,255,.65);
+    -webkit-mask: radial-gradient(circle at 50% 50%, transparent 8.5px, #000 9.5px); mask: radial-gradient(circle at 50% 50%, transparent 8.5px, #000 9.5px); }
+
+  /* how it's built: the five steps as a column */
+  #built .kicker { position: absolute; left: 36px; top: 54px; font: 500 15px/1 var(--display); letter-spacing: .14em; text-transform: uppercase; color: var(--accent-hi); }
+  #built h1 { position: absolute; left: 36px; top: 80px; font: 700 40px/1.05 var(--display); letter-spacing: -.03em; }
+  .flow { position: absolute; left: 36px; right: 36px; top: 160px; display: grid; grid-template-columns: 1fr; gap: 14px; }
+  .node { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px 15px 64px; min-height: 0;
+    box-shadow: 0 18px 44px -20px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.05);
+    opacity: 0; transform: translateY(14px) scale(.98); transition: opacity .5s cubic-bezier(.2,.8,.2,1), transform .5s cubic-bezier(.2,.8,.2,1), border-color .5s; }
+  .node.on { opacity: 1; transform: none; border-color: rgba(124,108,255,.45); }
+  .node .n { position: absolute; left: 18px; top: 19px; font: 400 15px/1 var(--mono); color: var(--accent-hi); letter-spacing: .06em; }
+  .node h2 { font: 700 22px/1.12 var(--display); letter-spacing: -.02em; }
+  .node p { margin-top: 6px; font: 400 15px/1.4 var(--ui); color: var(--muted); }
+  .node b { color: var(--text); font-weight: 600; }
+  .chips { position: absolute; left: 36px; right: 36px; bottom: 150px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;  /* the captions sit in the bottom 150 */
+    opacity: 0; transform: translateY(12px); transition: opacity .6s, transform .6s cubic-bezier(.2,.8,.2,1); }
+  .chips.on { opacity: 1; transform: none; }
+  .chip { padding: 8px 13px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255,255,255,.04); font: 500 14px/1 var(--ui); }
+  .badge { padding: 8px 13px; border-radius: 999px; background: rgba(60,207,142,.14); border: 1px solid rgba(60,207,142,.5); color: var(--ok); font: 600 14px/1 var(--ui); }
+
+  /* end */
+  #end { display: none; place-items: center; text-align: center; padding: 0 30px; }
+  #end.on { display: grid; }
+  #end .wrap { opacity: 0; transform: translateY(14px); transition: opacity .8s, transform .8s cubic-bezier(.2,.8,.2,1); }
+  #end.go .wrap { opacity: 1; transform: none; }
+  #end .row { display: flex; gap: 16px; align-items: center; justify-content: center; }
+  #end h1 { font: 700 68px/1 var(--display); letter-spacing: -.04em; }
+  #end .tag { margin-top: 20px; font: 500 22px/1.35 var(--display); color: var(--muted); }
+  #end .url { margin-top: 44px; font: 400 19px/1 var(--mono); color: var(--text); padding: 15px 18px; border-radius: 12px; border: 1px solid rgba(124,108,255,.5); background: rgba(124,108,255,.1); display: inline-block; }
+  #end .hash { margin-top: 22px; font: 700 24px/1 var(--display); color: var(--accent-hi); letter-spacing: -.01em; }
+  #end .foot { margin-top: 40px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<section class="card" id="built">
+  <div class="kicker">How it's built</div>
+  <h1>Song in, music video out.</h1>
+  <div class="flow">
+    <div class="node"><div class="n">01</div><h2>The song</h2><p>Split into <b>stems</b> (Demucs), then <b>beats, bars</b> and <b>the drop</b>.</p></div>
+    <div class="node"><div class="n">02</div><h2>The plan</h2><p>A shot on the bar, the objects in a <b>chain</b>, a morph style for each.</p></div>
+    <div class="node"><div class="n">03</div><h2>ComfyUI graphs</h2><p>Sent through the <b>Comfy SDK</b> to your own ComfyUI.</p></div>
+    <div class="node"><div class="n">04</div><h2>LTX morphs</h2><p>Every shot rendered on <b>any GPU from 12 GB up</b>, or on <b>Comfy Cloud</b>.</p></div>
+    <div class="node"><div class="n">05</div><h2>The cut</h2><p>Re-cut, effects and the look from the <b>cached morphs</b>, no GPU.</p></div>
+  </div>
+  <div class="chips"><span class="badge">Open weights · all local</span><span class="chip">LTX-Video 0.9.5</span><span class="chip">LTX-2.5</span><span class="chip">Z-Image Turbo</span><span class="chip">Real-ESRGAN</span><span class="chip">Demucs</span><span class="chip">MCP server</span></div>
+</section>
+<section class="card" id="end">
+  <div class="wrap">
+    <div class="row"><div class="mark"></div><h1>Xenoform</h1></div>
+    <div class="tag">Song in, music video out.<br>Every beat a transformation.</div>
+    <div class="url">github.com/tysonfarrington-cmyk/xenoform</div>
+    <div class="hash">#OpenSourceHiggsfield</div>
+    <div class="foot"><span class="badge">Open weights · all local</span><span class="chip">ComfyUI · Comfy SDK</span><span class="chip">MIT licence</span></div>
+  </div>
+</section>
+<script>
+  const [name, query] = (location.hash.slice(1) || "built").split("?");
+  const card = document.getElementById(name);
+  card.classList.add("on");
+  window.go = () => {
+    if (name === "end") { card.classList.add("go"); return 1; }
+    const d = (new URLSearchParams(query || "").get("d") || "1,3,5,7,9,11").split(",").map(Number);
+    const els = [...card.querySelectorAll(".node"), card.querySelector(".chips")];
+    els.forEach((el, i) => setTimeout(() => el.classList.add("on"), (d[i] || 0) * 1000));
+    return 1;
+  };
+</script>
+</body>
+</html>

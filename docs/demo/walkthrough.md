@@ -17,23 +17,29 @@ the social post. Voice-over over the screen, the outputs played full frame, capt
   (song analysis, ComfyUI graphs through the Comfy SDK, LTX on any card from 12 GB up, all open weights) and say what is new.
   It ends on the repo URL. The long one is for the README and the post's replies, with no limit.
 
-## Short (about 1:52)
+## Short (1:59.0: the montage's first 24 s, then the walkthrough)
+
+Every cut lands on a beat of Glitch Out (Tys's own track, the montage's song too); the voice reads one sentence at a
+time with a breath between, and the screens play still and full frame. Rows with two sentences are read apart.
 
 | Time | Picture | Voice |
 | --- | --- | --- |
-| 0:00 | Three cuts, fast: a liquid-gold Cloud Final, the Caligari to NASA clips cut, a neon noir Cloud Final | Xenoform turns a song into a music video where every beat is a transformation. |
-| 0:07 | The Song step: drop a song; the vibe grid, None last | Drop in a song and pick a vibe: molten gold, neon noir, ink and paper, or None, the things just as they are. |
-| 0:15 | The idea line: "underwater" grows its chips | Then say what it morphs through. A theme like underwater brings fifteen things of its own. |
-| 0:22 | Make; the making screen, the chain, the steps | Make listens to the song, plans the shots on its bars and beats, picks the objects, and renders a morph for every shot. |
-| 0:32 | The result playing: the None "underwater" Cloud Final | Every shot is one object turning into the next, cut to the song's own bars. |
-| 0:39 | Morph styles side by side: Melt, Shatter, Bloom, Spin, Fold | Five ways to change, and the change can land right on the beat. |
-| 0:47 | Effects: dither, feedback, kaleido, slit-scan | Effects ride the kick and the loudness. |
-| 0:54 | The timeline: picture tiles, the Look tab, a colour change, Apply | Then edit it like a timeline. Colour, effects, order and cuts, shot by shot, re-cut from the cached morphs with no GPU. |
-| 1:07 | Morph > Your clips: Caligari, Nosferatu, NASA | Or morph your own film clips into each other. |
-| 1:15 | Draft, Fast Final, Final, Cloud Final, with their times | A Draft in minutes, a Fast Final at 1080p, the full local Final, or Cloud Final, the same morphs on Comfy Cloud. |
-| 1:23 | How it's built: song → stems and bars → plan → ComfyUI graphs → LTX morphs → re-cut (a diagram over the desk) | How it's built: the song is split into stems and bars, the plan becomes ComfyUI graphs sent through the Comfy SDK, and LTX renders every morph on any card from 12 GB up. All open weights, local by default. |
-| 1:37 | What's new: the song's waveform under the timeline; the MCP panel | What's new: the edit comes from the music itself, every shot is generated, and you change it like an editor, not a prompt box. An MCP server lets any AI drive it. |
-| 1:48 | End card: github.com/tysonfarrington-cmyk/xenoform, #OpenSourceHiggsfield | Xenoform. Open source, on GitHub. |
+| 0:00 | The montage's opening: the black glass rose blooming into the lotus, then on the drop lava-obsidian dinosaurs, the deep-sea fish in their feedback trails, shadow-self magic, the free film pack, origami noir, Cyberspace 1995, neon noir; the title lands on the next drop | (the song alone) |
+| 0:24 | The title | Xenoform turns a song into a music video where every beat is a transformation. |
+| 0:30 | The Song step: the vibe grid, None picked | Drop in a song and pick a vibe, or None, the things just as they are. |
+| 0:35 | The idea line: "underwater" grows its chips | Then say what it morphs through. A theme like underwater brings fifteen things of its own. |
+| 0:42 | Make; the making screen, the chain, Cloud Final coming back three morphs at a time | Make plans the shots on the song's bars and beats, and renders a morph for every shot. |
+| 0:48 | The result, full frame: None "underwater" on Cloud Final, made on the very seconds of the song under it | Every shot is one object turning into the next, cut to the song's own bars. |
+| 0:54 | Neon noir, Spin on Snap (labelled) | Five ways to change, and the change can land right on the beat. |
+| 0:59 | Cyberspace 1995, Kaleido, Feedback and Slit-scan (labelled) | Effects ride the kick and the loudness. |
+| 1:03 | The timeline: picture tiles, the Look tab, a colour change, Apply, the re-cut | Then edit it like a timeline, shot by shot. Colour, effects, order and cuts, re-cut from the cached morphs with no GPU. |
+| 1:13 | Morph > Your clips > Free film pack, then the clips cut: Metropolis, the Moon, The Lost World, the Odessa steps | Or morph film clips into each other: a free pack of public-domain films, or your own. |
+| 1:23 | How it's built: song, plan, ComfyUI graphs, LTX morphs, the cut (each box on its sentence) | How it's built: the song is split into stems and bars. The plan becomes ComfyUI graphs, sent through the Comfy SDK. LTX renders every morph, on any card from 12 GB up, or on Comfy Cloud. All open weights, local by default. |
+| 1:41 | What's new: the playhead over the timeline; the MCP panel | What's new: the edit comes from the music itself. Every shot is generated, and you change it like an editor, not a prompt box. An MCP server lets any AI drive it. |
+| 1:55 | End card: github.com/tysonfarrington-cmyk/xenoform, #OpenSourceHiggsfield | Xenoform. Open source, on GitHub. |
+
+The Model line (Draft, Fast Final, Final, Cloud Final) left the short for the intro's room under 2:00; the long keeps
+it, and Comfy Cloud is named in How it's built.
 
 ## Long (about 7 minutes), chapters
 
@@ -65,14 +71,17 @@ the social post. Voice-over over the screen, the outputs played full frame, capt
 
 1. **Lock the script** (this page): the short one's 238 words read in about 1:35 at 150 a minute, which leaves about
    15 s for the outputs to play with no voice over them.
-2. **The voice**, from the locked script, one paragraph a row, timed; the picture is cut to the read.
+2. **The voice**, from the locked script, one sentence a row (`scratchpad/wt/split_copy.py`), each read on its own so
+   the voice stops between sentences, timed; the picture is cut to the read.
 3. **The screen**: the desk in headless Edge at 1920x1080 driven over the DevTools protocol (Node's own WebSocket, no
    installs), each row a scripted action with its frames captured, on a desk with a quiet GPU so nothing stalls on
    camera. A finished cut is opened from its record rather than rendered on camera.
 4. **The outputs**: the overnight Finals (after the Thursday 9 pm freeze), the clips cut and a None cut, played full
    frame where the voice talks about the result.
-5. **The edit** with ffmpeg: picture to the read, captions from the voice's timing, the demo song under the voice and
-   ducked, the end card; then a check of the length (under 1:55), black frames and loudness.
+5. **The edit** with ffmpeg (`scratchpad/wt/cutlib.py`, `assemble.py`, `assemble_v.py`, `montage.py`): picture to the
+   read, a breath before and after each scene and between its sentences, every scene ending on a beat of the bed,
+   captions from the voice's timing, the bed under the voice and ducked, the end card; the montage cut by song time
+   from renders made on the same song; then a check of the length (under 2:00), black frames and loudness.
 6. **Tys uploads and posts** (YouTube, public or unlisted), puts the link in README.md, CONTEST.md and the post, and
    submits the form. Nothing is uploaded or posted by an agent.
 
@@ -152,16 +161,49 @@ the social post. Voice-over over the screen, the outputs played full frame, capt
   (the clips segment as the strip, the fade included). Checked (`qa_cut.py`): no black frame in the short beyond the
   9:16 end card's fade-in, the only frozen stretches the held screens and the Under the hood panels, -15.9 / -16.0 LUFS,
   true peak under -3 dBFS, the contact sheets and the clips segment's frames looked over.
+- **The glow-up and the montage** (Tys, 29 Oct 3 pm: "a bit of a shake and zoom on the app parts which we shouldnt
+  do", "the script doesnt seem to stop for pauses", "a 1 min montage intro of different styles and themes ... push it
+  to the limit max it out, and use the best quality we can", "it should pretty much be on beat ... but let scenes finish
+  properly"; on its first cut, "bump the time up to 2 mins", "dont do the same ones twice", "the first 20 seconds
+  should be the really superlative"). **The montage** (`xenoform_montage.mp4`, 2:02, 16:9, and
+  `xenoform_montage_9x16.mp4`) is Glitch Out from 1:56 to its own end, 23 looks with none twice. Each is a Cloud Final
+  cut made through the desk like any Make on a 30 s window of the same song, so every picture plays over the seconds it
+  was made on and its beat FX land on the song's hits (`scratchpad/wt/montage_renders.py`, `montage.py`). Every cut
+  falls on a beat of the song's own grid, moved to the beat where the outgoing morph has finished. It opens on the
+  black glass rose of the posted morph reel opening into the lotus (the chain pinned so they fall on the two bars
+  before the drop). Then come lava-obsidian dinosaurs, the deep-sea fish in their feedback trails, shadow-self magic, and
+  a local Final clips cut on the free film pack's most striking windows (Moloch, the Moon, the Phantom, the Kitchen of
+  Tomorrow, Apollo 11, Maria). After them origami noir, Cyberspace 1995, neon noir, Bloom timelapse with scenes, cosmic,
+  risograph, porcelain kintsugi, Y2K chrome, ice, the reel's black glass creatures, chrome robots, porcelain marble,
+  ferrofluid, None with pirates, iridescent glass in space, brutalist and neon night, and liquid gold under the title.
+  All five morph styles, the three timings, every effect (kaleido only on the fish), Foreshadow and Scenes are in it.
+  Out after Tys's notes: wet paint ("pretty terrible"), the odd machine, the jug, the wheel and the guitar. Three vibes
+  without a still library (hologram, thermal, ink-water) came out gold on that desk and were left out. In all, 46
+  finished cuts and 709 morphs on Comfy Cloud, about 2,600 credits by the 3.6-a-morph measure (the dashboard was
+  not read). **The demo** (`xenoform_demo_video.mp4`, 1:59.0, and the 9:16) opens on the montage's first 24 s, the
+  title landing on the drop. The walkthrough after it is re-paced. The desk shots play still and full frame, with no
+  push-in. Every sentence is read on its own (`split_copy.py`), with a breath between sentences and around each scene;
+  the copy is down to 73 s of voice, with the Model line moved to the long and Comfy Cloud named in How it's built.
+  Every scene ends on a beat of Glitch Out (`cutlib.py`). The outputs play full frame from Cloud Finals made on the
+  bed's own seconds, each ending on a shot boundary. **The long** (`xenoform_long_walkthrough.mp4`, 8:13) has the same
+  intro and pauses, the knob-panel shots re-recorded on the polished desk (the page no longer jumps under a chip), and
+  l31 naming the new clips cut (its `say` had still read the old Caligari line). Chapters: 0:00 intro · 0:23 What it
+  is · 0:45 Song and vibe · 1:24 What it morphs through · 2:14 Make · 3:01 The engine · 4:18 The timeline ·
+  5:15 Your clips · 5:51 Share · 6:17 Under the hood · 7:30 How it's built. Checked with `qa_cut.py`: no black frame
+  beyond the dark card grounds, the only frozen stretches the title under its line and the cards' held panels, -16 LUFS,
+  true peak -2.4 to -3.5 dBFS.
 
 ## Decided
 
 - **The voice is af_heart** (Tys, 29 Oct 10:30 am). The contest video is
-  `Desktop\xeno_walkthrough_29oct\xenoform_demo_video.mp4` (the af_heart short, 1:43, under the form's 2:00); the long
-  one for the README and the post's replies is `xenoform_long_walkthrough.mp4` (6:52). The am_michael and bm_george
-  shorts stay beside them.
+  `Desktop\xeno_walkthrough_29oct\xenoform_demo_video.mp4` (the af_heart short, 1:59.0 since the glow-up, under the
+  form's 2:00); the long one for the README and the post's replies is `xenoform_long_walkthrough.mp4` (8:13); the
+  montage stands on its own as `xenoform_montage.mp4` (2:02). The am_michael and bm_george shorts of the morning stay
+  beside them, unchanged.
 - **A 9:16 cut for the post** (Tys, 29 Oct 10:40 am: "May as well do a 9:16 cut as well"):
   `xenoform_demo_video_9x16.mp4`, 1080x1920, the same plan, read, bed and loudness, laid out for a phone by
-  `scratchpad/wt/assemble_v.py`: the 9:16 cuts play full frame (the three opening cuts one after another), the desk
+  `scratchpad/wt/assemble_v.py`: the 9:16 cuts play full frame (since the glow-up, the intro and the outputs are Cloud
+  Finals made at 9:16), the desk
   recordings sit as a 1080x608 strip high in the frame over their own blur with the captions large beneath, grids go
   two or three columns, and the two cards are recorded again for the phone (`cards/cards_v.html`, five steps as a
   column; `record_cards_v.py`). While at it the cards' model chip, which still said LTX-2.3, says LTX-2.5 in both

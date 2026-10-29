@@ -131,9 +131,11 @@ out of date on the tiers (no Cloud Final, "all local") and must be rebuilt after
    `batch1\XF_DnB_Liquid_01_v1.mp3`; vibes None, neon-noir, liquid-gold.
 5. **Tys's own steps** (docs/CONTEST.md checklist): push, upload the short, replace `DEMO_VIDEO_URL` in README.md
    and CONTEST.md, post with #OpenSourceHiggsfield, submit the Typeform. The voice is af_heart (Tys, 29 Oct 10:30 am): the
-   file to upload is `Desktop\xeno_walkthrough_29oct\xenoform_demo_video.mp4` (1:47 since the clips recut), the long
-   one `xenoform_long_walkthrough.mp4` (6:53), and the post's 9:16 cut `xenoform_demo_video_9x16.mp4` (same voice
-   and length, laid out for a phone by `scratchpad/wt/assemble_v.py`; the cards' chip now says LTX-2.5).
+   file to upload is `Desktop\xeno_walkthrough_29oct\xenoform_demo_video.mp4` (1:59.0 since the glow-up: the montage's
+   first 24 s, then the walkthrough re-paced on Glitch Out), the long one `xenoform_long_walkthrough.mp4` (8:13), the
+   post's 9:16 cut `xenoform_demo_video_9x16.mp4` (same voice and length, laid out for a phone), and the montage on its
+   own, `xenoform_montage.mp4` (2:02) and `xenoform_montage_9x16.mp4`. How they were made: docs/demo/walkthrough.md
+   (Made, "The glow-up and the montage") and docs/demo/tools/.
 6. **After the Opus 5.5 polish session reports**: read its commits (`git log`), restart desks 47324 and 47326 if it
    changed Python, run the whole suite once more, and update this page. Tys's desks only on his word.
 

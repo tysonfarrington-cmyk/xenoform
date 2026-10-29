@@ -1,0 +1,279 @@
+{
+ "note": "The short demo, glow-up (29 Oct pm): one scene a segment, sentences read apart, lead/gap/tail to breathe, every segment ending on a beat of Glitch Out (cutlib), the screens still (no zoom), the outputs full frame and landing on their own shot boundaries; the montage intro in front.",
+ "copy": "C:/Projects/xenoform-rc2/docs/demo/short_voice.json",
+ "music": "C:/Projects/xenoform-rc2/examples/songs/glitch_out.mp3",
+ "music_start": 0.0,
+ "music_gain_db": -8,
+ "music_fade_in": 0.05,
+ "grid": {
+  "features": "C:/Projects/xenoform-rc2/examples/songs/glitch-out.features.json",
+  "bar_phase": 0,
+  "bar_slack": 0.7,
+  "half_slack": 0.35
+ },
+ "lead": 0.4,
+ "gap": 0.7,
+ "tail": 0.6,
+ "segments": [
+  {
+   "id": "open",
+   "lead": 0.4,
+   "min": 5.2,
+   "pic": {
+    "pic": "still",
+    "full": true,
+    "image": "C:/Users/tyson/AppData/Local/Temp/claude/C--Projects/7d414e75-aaf9-49cf-88fc-dcf26694d380/scratchpad/wt/cards/title_still_169.png",
+    "image_v": "C:/Users/tyson/AppData/Local/Temp/claude/C--Projects/7d414e75-aaf9-49cf-88fc-dcf26694d380/scratchpad/wt/cards/title_still_916.png"
+   }
+  },
+  {
+   "id": "vibe",
+   "min": 5.0,
+   "pic": {
+    "pic": "screen",
+    "shot": "vibe",
+    "pieces": [
+     [
+      0.3,
+      "none_click+1.6",
+      1.4
+     ]
+    ]
+   }
+  },
+  {
+   "ids": [
+    "idea",
+    "idea_2"
+   ],
+   "pic": {
+    "pic": "screen",
+    "shot": "idea",
+    "pieces": [
+     [
+      0.6,
+      "idea_end",
+      1.1
+     ]
+    ]
+   }
+  },
+  {
+   "id": "make",
+   "min": 6.0,
+   "pic": {
+    "pic": "screen",
+    "shot": "make",
+    "pieces": [
+     [
+      "make_click-0.6",
+      "make_end",
+      2.6
+     ]
+    ]
+   }
+  },
+  {
+   "id": "result",
+   "lead": 0.3,
+   "tail": 0.5,
+   "min": 5.4,
+   "pic": {
+    "pic": "wide",
+    "land": true,
+    "video": [
+     "C:/Projects/xenoform-rc2/work/ui/jobs/690d9b97/xenoform.mp4",
+     3.383
+    ],
+    "period": 0.6667,
+    "video_v": [
+     "C:/Projects/xenoform-rc2/work/ui/jobs/6131b3cd/xenoform.mp4",
+     3.383
+    ]
+   }
+  },
+  {
+   "id": "styles",
+   "lead": 0.3,
+   "tail": 0.4,
+   "min": 4.4,
+   "pic": {
+    "pic": "wide",
+    "land": true,
+    "label": "Spin · Snap",
+    "video": [
+     "C:/Projects/xenoform-rc2/work/ui/jobs/d9f05ee7/xenoform.mp4",
+     9.283
+    ],
+    "period": 0.6667,
+    "video_v": [
+     "C:/Projects/xenoform-rc2/work/ui/jobs/3adaf7d5/xenoform.mp4",
+     9.283
+    ]
+   }
+  },
+  {
+   "id": "effects",
+   "lead": 0.3,
+   "tail": 0.6,
+   "min": 3.6,
+   "pic": {
+    "pic": "wide",
+    "land": true,
+    "label": "Kaleido · Feedback · Slit-scan",
+    "video": [
+     "C:/Projects/xenoform-rc2/work/ui/jobs/aa027d30/xenoform.mp4",
+     13.916
+    ],
+    "period": 0.6667,
+    "video_v": [
+     "C:/Projects/xenoform-rc2/work/ui/jobs/1fc57b2e/xenoform.mp4",
+     13.916
+    ]
+   }
+  },
+  {
+   "ids": [
+    "timeline",
+    "timeline_2"
+   ],
+   "min": 9.5,
+   "pic": {
+    "pic": "screen",
+    "shot": "timeline",
+    "pieces": [
+     [
+      0.3,
+      "apply_click+0.6",
+      2.0
+     ],
+     [
+      "apply_click+0.6",
+      "recut_done",
+      20.0,
+      "Sped up"
+     ],
+     [
+      "recut_done",
+      "timeline_end",
+      1.2
+     ]
+    ]
+   }
+  },
+  {
+   "id": "clips",
+   "min": 9.8,
+   "pic": {
+    "pic": "chain",
+    "parts": [
+     [
+      3.6,
+      {
+       "pic": "screen",
+       "shot": "clips",
+       "pieces": [
+        [
+         0.5,
+         "clips_end",
+         1.35
+        ]
+       ]
+      }
+     ],
+     [
+      null,
+      {
+       "pic": "wide",
+       "land": true,
+       "video": [
+        "C:/Projects/xenoform-rc2/work/ui/jobs/66da0461/xenoform.mp4",
+        2.516
+       ],
+       "period": 0.6667
+      }
+     ]
+    ]
+   }
+  },
+  {
+   "ids": [
+    "built",
+    "built_2",
+    "built_3",
+    "built_4"
+   ],
+   "pic": {
+    "pic": "card",
+    "video": [
+     "C:/Users/tyson/AppData/Local/Temp/claude/C--Projects/7d414e75-aaf9-49cf-88fc-dcf26694d380/scratchpad/wt/rec/built.mp4",
+     0.0
+    ]
+   }
+  },
+  {
+   "ids": [
+    "new",
+    "new_2",
+    "new_3"
+   ],
+   "pic": {
+    "pic": "chain",
+    "parts": [
+     [
+      5.4,
+      {
+       "pic": "screen",
+       "shot": "playhead",
+       "pieces": [
+        [
+         0.3,
+         "playhead_end",
+         1.0
+        ]
+       ]
+      }
+     ],
+     [
+      null,
+      {
+       "pic": "screen",
+       "shot": "connect",
+       "pieces": [
+        [
+         0.3,
+         "connect_end",
+         1.0
+        ]
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  {
+   "ids": [
+    "end",
+    "end_2"
+   ],
+   "lead": 0.6,
+   "min": 4.4,
+   "snap": false,
+   "pic": {
+    "pic": "card",
+    "video": [
+     "C:/Users/tyson/AppData/Local/Temp/claude/C--Projects/7d414e75-aaf9-49cf-88fc-dcf26694d380/scratchpad/wt/rec/end.mp4",
+     0.0
+    ]
+   }
+  }
+ ],
+ "intro": "C:/Users/tyson/AppData/Local/Temp/claude/C--Projects/7d414e75-aaf9-49cf-88fc-dcf26694d380/scratchpad/wt/montage/intro_169.mp4",
+ "intro_tail": {
+  "song": "C:/Projects/xenoform-rc2/examples/songs/glitch_out.mp3",
+  "start": 141.0,
+  "seconds": 1.6,
+  "gain_db": -1.63
+ },
+ "intro_v": "C:/Users/tyson/AppData/Local/Temp/claude/C--Projects/7d414e75-aaf9-49cf-88fc-dcf26694d380/scratchpad/wt/montage/intro_916.mp4"
+}

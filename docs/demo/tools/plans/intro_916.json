@@ -1,0 +1,43 @@
+{
+ "aspect": "9:16",
+ "start": 117.17,
+ "title": 141.0,
+ "tail": 0,
+ "slots": [
+  [
+   "black_rose_open",
+   119.79,
+   "pin"
+  ],
+  [
+   "lava_dinos_shatter",
+   122.42
+  ],
+  [
+   "deepsea_fish_open",
+   126.33,
+   "pin"
+  ],
+  [
+   "shadow_magic_melt",
+   128.96
+  ],
+  [
+   "clips_montage",
+   132.92,
+   "pin"
+  ],
+  [
+   "origami_fold_smooth",
+   135.54
+  ],
+  [
+   "cyber_fold_beat",
+   138.29
+  ],
+  [
+   "neon_shatter_snap",
+   141.0
+  ]
+ ]
+}

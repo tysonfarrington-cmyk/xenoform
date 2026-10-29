@@ -1,0 +1,40 @@
+[
+ {
+  "label": "clips_montage",
+  "tier": "final",
+  "job": "ed2796a2",
+  "status": "done",
+  "seconds": 2043.0,
+  "window": 124.0,
+  "clips": [
+   "13_metropolis_moloch",
+   "02_trip_moon_face",
+   "15_phantom_unmask",
+   "12_atomic_blast",
+   "10_design_dreaming_dance",
+   "06_apollo11_launch",
+   "18_metropolis_face",
+   "14_haxan_sabbath"
+  ],
+  "error": null
+ },
+ {
+  "label": "clips_demo",
+  "tier": "final",
+  "job": "66da0461",
+  "status": "done",
+  "seconds": 1817.7,
+  "window": 50.0,
+  "clips": [
+   "01_metropolis_robot",
+   "02_trip_moon_face",
+   "11_lost_world_fight",
+   "05_potemkin_steps",
+   "19_general_bridge",
+   "04_steamboat_whistle",
+   "06_apollo11_launch",
+   "16_chien_andalou_pianos"
+  ],
+  "error": null
+ }
+]
