@@ -93,6 +93,17 @@ out of date on the tiers (no Cloud Final, "all local") and must be rebuilt after
   fuzz, docs truth, code review, then fixes, the whole suite and Owly commits of its own.
 - Desks 47324 and 47326 were restarted on 46e63b4 (`Start-Process` of the venv python from the repo; the COMFY key is a
   user variable, so they inherit it). Tys's 47320/47321 still run the older code until he asks in words.
+- **The polish and stress pass landed** (Opus 5.5, two commits): 8ce4a07 the desk holds still under every chip, More
+  vibes and Setup (the knob strip and the idea row mounted after the place was restored, so every chip moved the page;
+  the anchor names a vibe card by id; a failed Share cut says why; Your images and Your clips keep their own folder
+  and note; a partial film pack still cuts); d178d92 the stress pass (2,545 bad-body requests: the own-stems race on
+  Back to Demucs, a foreign stems.json, plain reasons on the Stems line, one-sentence 422s, XENO_OFFLINE refusing model
+  downloads too, the pack never touching your own files, docs made true; tests/test_stress_pass.py).
+- **The demo glow-up is delegated** (Tys, 3 pm: the shake and zoom, the pauses, a one-minute montage intro on Glitch
+  Out at Cloud Final, longer outputs, on-beat pacing, better clips, no skull-into-crown): `docs/demo/HANDOFF_GLOWUP.md`
+  (bc510c1) and the Opus 5.5 session "Demo glow-up: the montage intro and the re-paced walkthrough", which owns
+  docs/demo, the wt toolchain and desk 47326. **Tys, 3:40 pm: the push, the upload, DEMO_VIDEO_URL, the post and the
+  Typeform are now the orchestrating session's to do, after he has seen the final cut and said yes in chat.**
 
 ## What is left, in order
 
