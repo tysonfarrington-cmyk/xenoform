@@ -2,6 +2,58 @@
 
 ## 0.3.3 (unreleased, the week to the contest)
 
+- **Bundled songs** (Tys, 29 Oct: "the bundled songs, lets include ... the wobble morph, the hip hop beat, the liquid
+  dubstep and ambient ... oh include the song glitch out as well", and "both long and short clips" of the Wobble). Six of
+  the author's own Suno instrumentals ship in `examples/songs/`, a chip each under **Choose a song**: Morphing Wobble as
+  a 20 s cut (the quick prototype song) and whole, Hip hop, boom bap (the walkthrough's bed), Liquid drum and bass,
+  Ambient and Glitch Out. Each ships with its analysis (`<id>.features.json`, made the way `/api/analyze` makes an
+  upload's by `scripts/analyse_bundled_songs.py`), so a chip loads the song at once with no librosa pass, and the stems
+  split in the background as they do for an upload. `GET /api/songs` lists them with the Bundled demo;
+  `POST /api/songs/load {"id"}` registers one under the audio id `song-<id>` and answers the upload's session payload
+  (`xenoform.songs_api`). The desk's song registries find a bundled song on first sight, so `/media/audio/song-<id>`,
+  the stems line and a recipe that names one still work after a desk restart. The Bundled demo stays as it was.
+- **The free film pack** (Tys, 29 Oct: "lets include a bunch of those free domain clips in the app as an optional download").
+  Morph: Your clips has a **Free film pack** button, and Setup & models a **Free film pack** row with the same Download
+  button as a model: short clips from more than a dozen public-domain films (A Trip to the Moon, Nosferatu, The General,
+  Metropolis, the Lumières' train and more), listed with their archive.org URLs and licence lines in
+  `configs/film_pack.json`. Nothing from the films is in the repo: `xenoform.film_pack` has ffmpeg read each window
+  straight from its archive.org URL (`-ss` before `-i`, a byte-range read, so a 10 s window of a 1 GB film costs a few
+  MB), three tries a clip, into `work/ui/film_pack/` (`XENO_FILM_PACK` moves it), one `NN_<id>.mp4` a clip in the
+  manifest's order; a source marked `whole` (an MPEG program stream, which cannot be seeked over http) is downloaded in
+  full first, with resume, and cut from disk. A clip that fails is named and the rest continue; `CREDITS.md` (every
+  film's title, year, maker, item URL and licence line, and the clips with their times), `pack.json` and `labels.json`
+  are written beside the clips every run. Download again follows the list through `pack.json`: a clip whose times moved
+  is made again, one the list reordered is moved to its new name rather than pulled again, a file the pack made for a
+  clip that left the list is removed (never a file of the user's), and a whole source goes once its clips are in place.
+  The Setup row shows what is on disk once the clips are there, an estimate (300 KB a second, measured) before. The
+  button points the cut at the folder when the pack is there and at Setup
+  when it is not (`GET /api/film_pack`; `POST /api/setup/download {"id": "film-pack"}` and its status route serve the
+  row unchanged). `XENO_OFFLINE=1` refuses the download. A clips cut now takes up to 24 clips from a folder
+  (`own_media.MAX_CLIPS`; images stay at 12) and cycles through them all, and a clip named in the folder's
+  `labels.json` is called that on the chain and in the morph lines (`clip_cut.clip_names`) instead of by its file name.
+  `tests/test_film_pack.py` pins it.
+- **Your own stems** (Tys, 29 Oct: "it looks like demucs seperates the stems but there should also be a place where
+  you can upload your own stems if you have them as well"). The Song step has a **Stems** line under the song, with
+  the song's facts (before it, the only sign of the split was the Stem reactions summary inside the knob strip, which
+  still reads `4 stems (demucs)`): `Stems: splitting with Demucs… 12 s`, then `4 stems from Demucs: drums, bass,
+  other, vocals`, polled every 2 s while the split runs and rewritten in place, never a redraw. The knob strip's summary
+  and the Fine-tune lanes now mirror that line instead of polling for themselves, and the lanes follow the stems in
+  use, one per stem, the split's or your own. **Use your own stems** on that line takes 1 to 32 audio files (wav, mp3,
+  flac, ogg, aiff, m4a; a DAW or Suno export), each the song's length within 1.5 s, saves them under
+  `work/ui/stems/<song hash>/own/` with a leading index dropped from the names ("1 Drums.wav" is Drums; letters of any
+  alphabet stay), reads each one's role from its name (drum, kick, snare, perc are drums; bass, sub, 808 are bass;
+  vocal, vox, voice are vocals; the rest other) and builds the envelopes on a background thread through the split
+  registry (`engine: "user"`, `own: true`), so the next Make, a re-cut and the VJ page read them where the split's
+  were. The line then says `11 stems of your own: Drums, Bass, Guitar…` and **Back to Demucs** (Back to the split
+  without Demucs) returns to the split: the Demucs `stems.json` is kept as `stems.split.json` and restored at once, or
+  the split runs again; a split still running when your stems arrive finishes on its thread and is kept aside the same
+  way, never written over your file. A second pick while the first set is still being read, or two picks at once, take
+  turns and the newer set wins. A refusal names the file in a plain sentence (not audio, will not decode, the wrong
+  length with both lengths, over 32, over the upload cap) and stays on the line while the split's poll goes on under
+  it. `POST /api/stems/own`, `POST /api/stems/own/clear`; `GET /api/stems/for/<id>` carries `own`, `engine`, `stems`
+  and `roles`; `xenoform stems song.wav --own a.wav b.wav` under the same rules. Checked with Suno's eleven stems of
+  Morphing Wobble (102.6 s, 48 kHz, 217 MB): the envelopes took 3 s, and Lead Vocals read as vocals, Drums and
+  Percussion as drums, Bass as bass, the other eight as other. `tests/test_stems_own.py` pins it.
 - **The vibe tiles show the engine's own pictures** (Tys, 29 Oct: "update thumbnails for vibes"). Each of the thirteen
   featured tiles is one frame of that vibe's Cloud Final cut (LTX-2.5 on Comfy Cloud, the example cuts of 29 Oct), the
   centre of the frame on the frame's own blur, in place of the drawn stills. The tiles' pictures now revalidate on every

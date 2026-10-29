@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "note": "The bundled songs: six instrumentals made by the author with Suno, included for use with Xenoform. Each ships with its analysis, <id>.features.json, made by scripts/analyse_bundled_songs.py exactly as /api/analyze makes one; that script also measures seconds (ffprobe) and bpm (the analysis). The desk loads a song under the audio id song-<id>.",
+  "songs": [
+    {
+      "id": "morphing-wobble-20s",
+      "file": "morphing_wobble_20s.mp3",
+      "title": "Morphing Wobble (20 s)",
+      "seconds": 20.0,
+      "bpm": 144,
+      "feel": "A wobbling bass line, 20 seconds; the quick prototype song",
+      "credit": "Made by the author with Suno; included for use with Xenoform."
+    },
+    {
+      "id": "morphing-wobble",
+      "file": "morphing_wobble.mp3",
+      "title": "Morphing Wobble",
+      "seconds": 102.6,
+      "bpm": 144,
+      "feel": "The whole wobble; the song the first demos were cut to",
+      "credit": "Made by the author with Suno; included for use with Xenoform."
+    },
+    {
+      "id": "hip-hop-boom-bap",
+      "file": "hip_hop_boom_bap.mp3",
+      "title": "Hip hop, boom bap",
+      "seconds": 142.8,
+      "bpm": 180,
+      "feel": "A heavy boom bap beat; the walkthrough's bed",
+      "credit": "Made by the author with Suno; included for use with Xenoform."
+    },
+    {
+      "id": "liquid-dnb",
+      "file": "liquid_dnb.mp3",
+      "title": "Liquid drum and bass",
+      "seconds": 222.8,
+      "bpm": 120,
+      "feel": "Smooth and rolling; long shots, quick cuts on the breaks",
+      "credit": "Made by the author with Suno; included for use with Xenoform."
+    },
+    {
+      "id": "ambient",
+      "file": "ambient.mp3",
+      "title": "Ambient",
+      "seconds": 225.0,
+      "bpm": 131,
+      "feel": "Slow and open; long melts, few cuts",
+      "credit": "Made by the author with Suno; included for use with Xenoform."
+    },
+    {
+      "id": "glitch-out",
+      "file": "glitch_out.mp3",
+      "title": "Glitch Out",
+      "seconds": 238.8,
+      "bpm": 90,
+      "feel": "Glitchy and broken up; shatters and snaps, hardest on the drop",
+      "credit": "Made by the author with Suno; included for use with Xenoform."
+    }
+  ]
+}

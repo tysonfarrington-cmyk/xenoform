@@ -483,6 +483,20 @@ def llm_status() -> dict:
     return {"id": "llm", "name": "Local LLM", "required": False, "present": up, "model": name, "detail": detail, "bytes": 0, "size_label": "optional"}
 
 
+def film_pack_status() -> dict:
+    """The free film pack's Setup row (xenoform.film_pack): the keys of a model row, drawn by the same page code. The
+    check never fails on the pack: a row that says why stands in when it cannot be read."""
+    try:
+        from xenoform import film_pack
+
+        return film_pack.status()
+    except Exception as exc:
+        from xenoform.errors import plain_error
+
+        return {"id": "film-pack", "name": "Free film pack", "required": False, "badge": "Clips", "manual": False, "present": False,
+                "count": 0, "total": 0, "films": 0, "folder": "", "bytes": 0, "size_label": "0 B", "files": [], "detail": plain_error(exc)}
+
+
 def inspect_setup(root: Path | None = None, comfy_url: str = "") -> dict:
     # no XENO_MODELS and no folder given: the desk guessed, and a guess that misses ComfyUI's folder
     # (ComfyUI Desktop's lives in Documents) sends 11.5 GB of downloads where ComfyUI never looks
@@ -530,6 +544,7 @@ def inspect_setup(root: Path | None = None, comfy_url: str = "") -> dict:
         "models": models,
         "llm": llm_status(),
         "stems": stem_status(),
+        "film_pack": film_pack_status(),
         "ableton": False,
         "missing_required": missing,
         "try_it": "The bundled demo and the Pynchon register need no model download.",
@@ -541,6 +556,10 @@ _LOCK = threading.Lock()
 
 
 def download_status(model_id: str) -> dict:
+    if model_id == "film-pack":  # the free film pack keeps its own job (xenoform.film_pack)
+        from xenoform import film_pack
+
+        return film_pack.download_status()
     with _LOCK:
         row = dict(_DOWNLOADS.get(model_id) or {"status": "idle", "progress": 0, "detail": "", "error": None})
     return row
@@ -549,6 +568,10 @@ def download_status(model_id: str) -> dict:
 def start_download(model_id: str, root: Path | None = None) -> dict:
     if model_id == "llm":
         return _start_llm()
+    if model_id == "film-pack":  # the same Download button and status route as a model; the pack runs its own thread
+        from xenoform import film_pack
+
+        return film_pack.start()
     spec = by_id(model_id)
     if spec.get("manual"):
         raise PlainError("Place the local file. Setup does not download FLUX Klein weights.")
@@ -682,7 +705,7 @@ def download_file(
                 on_progress(min(0.99, done / expected_bytes), f"{dest.name} · {size_label(done)} of {size_label(expected_bytes)}")
     if not file_ready(part, sha256=sha256, expected_bytes=expected_bytes):
         part.unlink(missing_ok=True)
-        raise PlainError(f"{dest.name} did not match its checksum. Nothing was kept. Run the download again.")
+        raise PlainError(f"{dest.name} did not match its {'checksum' if sha256 else 'size'}. Nothing was kept. Run the download again.")
     part.replace(dest)
     if on_progress:
         note = "checksum matches" if sha256 else "size matches"

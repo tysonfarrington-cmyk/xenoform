@@ -54,6 +54,10 @@ Public domain. NASA media are generally not subject to copyright in the United S
 
 Fifteen dance clips, ten from Pexels and five from Mixkit, used only as motion sources for Wan Animate 2; the dancer's face never appears in the output. Their licences allow free use but forbid redistributing the unaltered files, so the mp4s are not shipped. `python scripts/fetch_moves.py` downloads them into `library/moves/` (git-ignored). Every clip's title, author, source URL, licence and attribution line is in `configs/moves.json`.
 
+## Free film pack (`configs/film_pack.json`)
+
+Not in the repo. Short clips from public-domain films on archive.org (Méliès, the Lumières, Murnau, Lang, Keaton and more), pulled on request: Setup & models has ffmpeg read each window straight from its archive.org URL into `work/ui/film_pack/` (under `work/`, which git ignores). Every source's title, year, maker, archive.org item, URL and licence line is in `configs/film_pack.json`, and each download writes them, with the clips and their times, to `work/ui/film_pack/CREDITS.md` beside the clips. Where a source is NASA footage, no NASA endorsement is implied and no NASA insignia is used.
+
 ## Fonts
 
 Both families are under the SIL Open Font License 1.1; the copyright lines and licence text are in `src/xenoform/ui_static/fonts/OFL.txt`.
@@ -69,6 +73,19 @@ Both families are under the SIL Open Font License 1.1; the copyright lines and l
 | --- | --- |
 | `examples/demo.wav` | Synthesised by `xenoform synth` in this repository. No third-party recording. |
 | "Morph Engine v2" (the song in the contest demo video) | Made by the author on Suno Pro on 20 October 2026, inside the Pro billing period, so the author owns it with commercial-use rights under Suno's terms. Not shipped. |
+
+## Bundled songs (`examples/songs/`)
+
+Six instrumentals made by the author with Suno, added on 29 October 2026 and included for use with Xenoform. The manifest is `examples/songs/songs.json`; each song ships with its analysis (`<id>.features.json`, made by `scripts/analyse_bundled_songs.py`). No third-party recording.
+
+| File | Title | Credit |
+| --- | --- | --- |
+| `morphing_wobble_20s.mp3` | Morphing Wobble (20 s) | Made by the author with Suno; included for use with Xenoform. |
+| `morphing_wobble.mp3` | Morphing Wobble | Made by the author with Suno; included for use with Xenoform. |
+| `hip_hop_boom_bap.mp3` | Hip hop, boom bap | Made by the author with Suno; included for use with Xenoform. |
+| `liquid_dnb.mp3` | Liquid drum and bass | Made by the author with Suno; included for use with Xenoform. |
+| `ambient.mp3` | Ambient | Made by the author with Suno; included for use with Xenoform. |
+| `glitch_out.mp3` | Glitch Out | Made by the author with Suno; included for use with Xenoform. |
 
 ## Models
 

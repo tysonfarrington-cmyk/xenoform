@@ -89,7 +89,7 @@ function easyCrumbs(easy) {
   const order = ["song", "vibe", "make", "refine", "share"];
   const labels = { song: "Song", vibe: "Vibe", make: "Prototype", refine: phase === "showcase" ? "Showcase" : "Refine", share: "Share" };
   const hints = {
-    song: "Drop a track or use the bundled demo. The desk finds the beats, the sections and the drop.",
+    song: "Drop a track, use the bundled demo or pick a bundled song. The desk finds the beats, the sections and the drop.",
     vibe: "What everything is made of and how it is lit. Then one line: what you want to see, and how it should feel.",
     make: "A quick Draft of the cut, in minutes: the objects morph on every beat, lit by the song.",
     refine: "Fix what you do not like on the timeline (swap an object, hold a shot, change a handoff), re-cut without the GPU, then render at Final.",
@@ -903,13 +903,14 @@ function renderEasy() {
   const songBlock = songSet
     ? `<div class="songrow">
         <span class="play-dot" aria-hidden="true">▶</span>
-        <div><strong>${esc(easy.songLabel || "Chosen")}</strong><span>${esc(songFacts() || "Ready")}</span></div>
+        <div><strong>${esc(easy.songLabel || "Chosen")}</strong><span>${esc(songFacts() || "Ready")}</span>${stemsLine()}</div>
         ${waveBars()}
       </div>`
     : `<div class="easy-actions">
         <label class="upload solid">Choose a song<input id="easy-file" type="file" accept="audio/*,.wav,.mp3,.flac,.ogg" aria-label="Choose a song" /></label>
         <button type="button" class="ghost${easy.song === "demo" ? " on" : ""}" data-act="easy-demo">Bundled demo</button>
-      </div>`;
+      </div>
+      <div id="bundled-songs">${songsRow(easy)}</div>`;
   const proto = easyLengthIsProto(easy);
   return `<div class="easy easy-desk">
     <header class="easy-intro">
@@ -920,7 +921,7 @@ function renderEasy() {
       <section class="easy-step" data-tour="easy-song" data-song-drop="1">
         <div class="step-head"><h3>Song</h3>${songSet ? '<button type="button" class="text" data-act="easy-step" data-step="song">Change</button>' : ""}</div>
         ${songBlock}
-        ${songSet ? "" : `<p class="note">${esc(easy.songLabel || "Drop a file here, or use the bundled demo.")}</p>`}
+        ${songSet ? "" : `<p class="note">${esc(easy.songLabel || "Drop a file here, use the bundled demo, or pick one of the bundled songs.")}</p>`}
         ${dropCard()}
       </section>
       <section class="easy-step" data-tour="easy-vibe">
@@ -1320,14 +1321,16 @@ function sourceRow(easy) {
   if (src !== "clips") return `${seg}<p class="note">The vibe's objects, or the things your line names, each turning into the next.</p>`;
   const has = !!(easy.ownFolder || easy.ownId);
   const note = easy.ownNote || (has ? "Your clips play in turn on the beat, each its busiest stretch, and every one morphs into the next. No objects, no stills."
-    : "Choose a folder of clips or drop them here (mp4, mov or webm, 2 s or more each). They play in turn, each morphing into the next.");
+    : "Choose a folder of clips, drop them here (mp4, mov or webm, 2 s or more each), or take the free film pack. They play in turn, each morphing into the next.");
+  const askSetup = !!note && note === easy.ownNoteSetup;  // the free film pack is not downloaded yet: the note points at Setup
   return `${seg}
     <div class="simple-seg own-row clips-row" data-own-drop><span>Your clips</span>
       <label class="ghost cloud-toggle">Folder <input type="text" id="easy-own-folder" value="${esc(easy.ownFolder || "")}" spellcheck="false" aria-label="Folder of your clips" placeholder="a folder of clips"></label>
       <label class="ghost cloud-toggle">Drop or pick files <input type="file" multiple accept="video/*" data-act="easy-own-files" hidden></label>
+      <button type="button" class="ghost" data-act="easy-film-pack" title="Public-domain film clips from archive.org, downloaded in Setup &amp; models">Free film pack</button>
       ${easy.ownId ? `<button type="button" class="ghost" data-act="easy-own-clear">Clear files</button>` : ""}
     </div>
-    <p class="note">${esc(note)}</p>`;
+    <p class="note">${esc(note)}${askSetup ? ` <button type="button" class="text" data-act="go" data-hash="setup">Setup &amp; models</button>` : ""}</p>`;
 }
 
 // The Chain row: the stills this Make will morph through, in order, as the stills draft previews them
@@ -3003,6 +3006,7 @@ function renderTool(view) {
 
 function mountLive() {
   window.XENO_STATE = () => state;
+  window.XENO_STEMS_FOR = (id) => stemsFor(id);  // the knob strip's Stem reactions summary mirrors the Stems line instead of polling for itself
   if (state && state.easy && state.easy.playedHere && document.getElementById("easy-screen")) {
     requestAnimationFrame(() => startLibraryCut());
   }
@@ -3360,6 +3364,84 @@ async function planStory(extra = {}) {
 
 let ignoreJob = null;
 
+// The bundled songs (GET /api/songs): six of the author's own Suno instrumentals in examples/songs/, shipped with their
+// analyses, so a chip under Choose a song loads one at once. The list is fetched once, lazily, the way loadSetup fills
+// state.setup; a failed fetch shows nothing. The row lands in its own slot (#bundled-songs), so nothing else redraws.
+let songsAsking = false;
+async function loadSongs() {
+  if (!state || state.songs || songsAsking) return;
+  songsAsking = true;
+  try {
+    const response = await api("/api/songs");
+    const data = response.ok ? await response.json() : null;
+    if (state) state.songs = (data && data.songs) || [];
+  } catch (err) {
+    if (state) state.songs = [];
+  }
+  songsAsking = false;
+  const slot = document.getElementById("bundled-songs");
+  if (slot && state && state.easy && !state.easy.song) slot.innerHTML = songsRow(state.easy);
+}
+
+function songClock(seconds) {
+  const safe = Math.max(0, Number(seconds) || 0);
+  return `${Math.floor(safe / 60)}:${String(Math.floor(safe % 60)).padStart(2, "0")}`;
+}
+
+function songsRow(easy) {
+  const songs = state && state.songs;
+  if (!songs) {
+    loadSongs();
+    return "";
+  }
+  if (!songs.length) return "";
+  // The on class matches the Bundled demo button's; both rows are drawn only while no song is chosen, so neither shows.
+  const chips = songs.map((song) => `<button type="button" class="chip${easy.song === song.id ? " on" : ""}" data-act="easy-song" data-id="${esc(song.id)}" title="${esc(song.feel || "")}">${esc(song.title)}<small>${songClock(song.seconds)}</small></button>`).join("");
+  return `<div class="song-shelf"><span class="shelf-label">Bundled songs</span><div class="toggle chips song-chips" role="group" aria-label="Bundled songs">${chips}</div></div>`;
+}
+
+// A chip: the song's shipped analysis comes back at once (POST /api/songs/load) and the desk adopts it as it adopts the
+// demo. The chip says Loading… in its own text until the payload is in; nothing redraws before that.
+async function useBundledSong(id) {
+  const song = ((state && state.songs) || []).find((row) => row.id === id);
+  if (!song || !state.easy) return;
+  const safeId = window.CSS && CSS.escape ? CSS.escape(id) : id;
+  const chip = document.querySelector(`[data-act="easy-song"][data-id="${safeId}"]`);
+  if (chip) {
+    chip.textContent = "Loading…";
+    chip.disabled = true;
+  }
+  state.easy.song = song.id;
+  state.easy.songLabel = song.title;
+  state.easy.note = "";
+  if (!state.easy.phase || state.easy.phase === "song" || state.easy.phase === "choose") setEasyPhase("vibe");
+  if (state.audioId === `song-${song.id}`) {
+    render();
+    return;
+  }
+  let data = null;
+  try {
+    const response = await api("/api/songs/load", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: song.id }) });
+    if (response.ok) data = await response.json();
+  } catch (err) {
+    data = null;
+  }
+  // Another chip, the demo or a file chosen while this one loaded: that choice owns the desk now, and this answer is
+  // dropped, so the desk never names one song and holds another.
+  if (!state || !state.easy || state.easy.song !== song.id) return;
+  if (!data) {  // back to the song step, cleanly: no half-loaded song
+    state.easy.song = "";
+    state.easy.songLabel = "";
+    state.easy.note = "That song did not load. Try again, or choose a file.";
+    setEasyPhase("choose");
+    render();
+    return;
+  }
+  adoptSession(data);
+  await settleCut({ full: true });
+  loadSimpleOptions().then(() => render());
+}
+
 async function useDemoSong() {
   const note = document.getElementById("song-note");
   if (note) note.textContent = "Using the bundled demo, examples/demo.wav.";
@@ -3375,6 +3457,7 @@ async function useDemoSong() {
   }
   const response = await api("/api/demo");
   if (!response.ok) return;
+  if (!state || !state.easy || state.easy.song !== "demo") return;  // a bundled song or a file was chosen meanwhile: it owns the desk
   adoptSession(await response.json());
   await settleCut({ full: true });
   loadSimpleOptions().then(() => render());
@@ -3434,6 +3517,7 @@ function adoptSession(data, options = {}) {
     // the machine check and any model download outlive a new song: Setup & models read "Checking this machine…"
     // for good after an upload, because the fresh state had dropped them and nothing asked again
     setup: previous ? previous.setup || null : null,
+    songs: previous ? previous.songs || null : null,  // the bundled songs (GET /api/songs), fetched once a session
     downloads: previous ? previous.downloads || {} : {},
     interpolate: previous ? !!previous.interpolate : false,
     guideId: previous ? previous.guideId || "" : "",
@@ -3735,6 +3819,10 @@ document.addEventListener("click", async (event) => {
     runPalette(paletteRows[Number(el.dataset.index)]);
   } else if (act === "use-demo" || act === "easy-demo") {
     useDemoSong();
+  } else if (act === "easy-song") {
+    useBundledSong(el.dataset.id || "");
+  } else if (act === "easy-own-stems-clear") {
+    clearOwnStems();
   } else if (act === "easy-vibe") {
     if ((el.dataset.vibe || "") !== (state.easy.vibe || "")) {  // the pins name one vibe's stills: another vibe starts unpinned
       state.easy.pins = {};
@@ -3780,6 +3868,8 @@ document.addEventListener("click", async (event) => {
     state.easy.ownId = "";
     state.easy.ownNote = "";
     render();
+  } else if (act === "easy-film-pack") {
+    pickFilmPack();
   } else if (act === "easy-seek") {
     const player = document.getElementById("player");
     if (player) {
@@ -4316,6 +4406,9 @@ document.addEventListener("change", (event) => {
     }).catch(() => { state.easy.note = "That file is not a cut plan (needs a shots list)."; }).finally(render);
   } else if (target.dataset.act === "easy-own-files") {
     uploadOwn(Array.from(target.files || []));
+  } else if (target.dataset.act === "easy-own-stems") {
+    uploadOwnStems(Array.from(target.files || []));
+    target.value = "";  // the same files can be picked again after an error
   } else if (target.id === "hero-file" && target.files && target.files[0]) {
     uploadHero(target.files[0]);
   } else if ((target.id === "song-file" || target.id === "easy-file") && target.files[0]) {
@@ -4675,6 +4768,39 @@ window.addEventListener("hashchange", () => {
   render();
 });
 
+// The free film pack on the Setup page (xenoform.film_pack, state.setup.film_pack): a card like a model's. Its Download
+// goes through the same route as a model's (POST /api/setup/download {id: "film-pack"}), so downloadModel and pollDownload
+// drive it unchanged; the folder path stays in the detail. Download again fetches only what a grown list still lacks, a
+// clip whose times moved (pack.stale) or a broken file, so it carries no size. An empty or unreadable list has no button.
+// The status line and the bar carry ids (dl-status-<id>, dl-track-<id>) so pollDownload rewrites them in place while it runs.
+function filmPackCard(pack) {
+  if (!pack || !pack.id) return "";
+  const job = (state.downloads || {})[pack.id] || {};
+  const running = job.status === "running";
+  const width = Math.round((job.progress || 0) * 100);
+  const stale = Number(pack.stale || 0);
+  const status = running
+    ? job.detail || "Downloading"
+    : job.status === "error"
+      ? job.detail || job.error
+      : pack.present
+        ? `${pack.count} clips in place${stale ? `, ${stale} cut with older times (Download again remakes ${stale === 1 ? "it" : "them"})` : ""}`
+        : pack.count
+          ? `${pack.count} of ${pack.total} clips here`
+          : "Optional";
+  const label = running ? "Downloading" : pack.present ? "Download again" : `Download · ${esc(pack.size_label)}`;
+  const button = pack.total
+    ? `<button type="button" class="${pack.present ? "ghost" : "generate"}${running ? " is-loading" : ""}" data-act="download-model" data-id="${esc(pack.id)}" ${running ? "disabled" : ""}>${label}</button>`
+    : "";
+  return `<article class="model-card film-pack">
+    <header><strong>${esc(pack.name)}</strong><span>${esc(pack.badge || "Clips")}</span></header>
+    <p>${esc(pack.detail)}</p>
+    <p class="status" id="dl-status-${esc(pack.id)}">${esc(status)}</p>
+    ${running ? `<div class="track" id="dl-track-${esc(pack.id)}"><span style="width:${width}%"></span></div>` : ""}
+    ${button}
+  </article>`;
+}
+
 function renderSetup() {
   const setup = state.setup;
   if (!setup) {
@@ -4718,9 +4844,9 @@ function renderSetup() {
       return `<article class="model-card">
         <header><strong>${esc(model.name)}</strong><span>${esc(model.badge || (model.required ? "Fast fallback" : "Optional"))}</span></header>
         <p>${esc(model.detail)}</p>
-        <p class="status">${esc(status)}${model.filename ? ` · ${esc(model.filename)}` : ""}</p>
+        <p class="status"><span id="dl-status-${esc(model.id)}">${esc(status)}</span>${model.filename ? ` · ${esc(model.filename)}` : ""}</p>
         ${picker}
-        ${running ? `<div class="track"><span style="width:${width}%"></span></div>` : ""}
+        ${running ? `<div class="track" id="dl-track-${esc(model.id)}"><span style="width:${width}%"></span></div>` : ""}
         ${button}
       </article>`;
     })
@@ -4737,6 +4863,7 @@ function renderSetup() {
       <p class="note">${esc((setup.stems || {}).detail || "")}</p>
     </section>
     <section class="panel models">${cards}</section>
+    ${setup.film_pack ? `<section class="panel models">${filmPackCard(setup.film_pack)}</section>` : ""}
     <section class="panel">
       <p class="kicker">Optional</p>
       <h2>Local notes model</h2>
@@ -4796,6 +4923,214 @@ async function uploadOwn(files) {
   state.easy.ownId = data.id;
   state.easy.ownFolder = "";
   state.easy.ownNote = data.detail || `${data.images} images, ${data.clips} clips.`;
+  render();
+}
+
+// The Stems line under the song. Every song is split in the background (GET /api/stems/for/<id>), and stems you
+// already have go in through the same line (POST /api/stems/own; Back to Demucs is POST /api/stems/own/clear). While
+// the split runs the line is polled every 2 s and rewrites its own text by id; the desk is redrawn only when the
+// status changes shape (done, error, your own stems in use), so nothing flickers or scrolls. The poll stops when the
+// song changes or the line leaves the screen, and never runs without a song.
+let stemsTimer = null;
+let stemsAsking = false;
+let stemsSeq = 0;      // each ask is numbered: an answer to an older ask (the song changed, your stems were just posted) is dropped
+let stemsPending = 0;  // the ask in flight, so a redraw meanwhile does not start a second poll chain
+const STEMS_NOTE_MS = 10000;  // a refusal stays on the line this long; the split's poll goes on under it
+
+// The Fine-tune Stem reactions lanes (ui_v6.js) follow this line: one lane per stem in use, the split's or your own.
+function tellKnobsStems(st) {
+  try { if (window.XENO_STEMS_UPDATE) window.XENO_STEMS_UPDATE(st.audioId, st); } catch (err) { /* no knob strip on this page */ }
+}
+
+function stemsFor(id) {
+  return state && state.stems && state.stems.audioId === id ? state.stems : null;
+}
+
+function stemsBusy(st) {
+  return !!st && (st.status === "queued" || st.status === "running");
+}
+
+function stemsShape(st) {
+  return st ? `${stemsBusy(st) ? "busy" : st.status}|${st.own ? "own" : ""}|${(st.stems || []).join(",")}|${st.note || ""}` : "";
+}
+
+// Whether Back goes to Demucs or to the band split: what the split used before your stems (split_engine), else Setup.
+function splitIsDemucs(st) {
+  const was = String((st && st.split_engine) || "");
+  if (was.startsWith("demucs")) return true;
+  if (was === "librosa" || was === "bands") return false;
+  return !!(state && state.setup && state.setup.stems && state.setup.stems.engine === "demucs");
+}
+
+function stemsText(st) {
+  if (!st) return "Stems: looking…";
+  if (st.note) return st.note;
+  const names = st.stems || [];
+  const engine = String(st.engine || "");
+  const plural = names.length === 1 ? "" : "s";
+  if (stemsBusy(st)) {
+    const secs = st.seconds != null ? ` ${Math.round(Number(st.seconds) || 0)} s` : "";
+    if (st.own) return `Stems: reading your ${names.length} stem${plural}…${secs}`;
+    if (engine.startsWith("demucs") || (engine === "auto" && splitIsDemucs(st))) return `Stems: splitting with Demucs…${secs}`;
+    return `Stems: splitting (band split)…${secs}`;
+  }
+  if (st.status === "done") {
+    if (st.own) return `${names.length} stem${plural} of your own: ${names.slice(0, 3).join(", ")}${names.length > 3 ? "…" : ""}`;
+    return `${names.length} stem${plural} from ${engine.startsWith("demucs") ? "Demucs" : "the band split"}: ${names.join(", ")}`;
+  }
+  if (st.status === "error") {
+    if (st.own) return `Stems: your stems could not be read (${st.error || "the build failed"})`;
+    return `Stems: not split (${st.error || "the split failed"})`;
+  }
+  return "Stems: not split";
+}
+
+function stemsLine() {
+  if (!state || !state.audioId) return "";
+  const st = stemsFor(state.audioId);
+  // ask once after a load, and pick the poll up again when the line comes back on screen mid-split
+  if ((!st || (stemsBusy(st) && !stemsTimer && !stemsPending)) && !stemsAsking) {
+    stemsAsking = true;
+    setTimeout(() => { stemsAsking = false; loadStems(true); }, 0);
+  }
+  const back = st && st.own
+    ? ` <button type="button" class="text" data-act="easy-own-stems-clear">${splitIsDemucs(st) ? "Back to Demucs" : "Back to the split"}</button>`
+    : "";
+  return `<p class="note stems-line" id="stems-line"><span class="stems-text">${esc(stemsText(st))}</span> <label class="text">Use your own stems<input type="file" multiple accept="audio/*,.wav,.mp3,.flac,.ogg,.aiff,.m4a" data-act="easy-own-stems" hidden></label>${back}</p>`;
+}
+
+function paintStemsText(text) {
+  const line = document.getElementById("stems-line");
+  const span = line && line.querySelector(".stems-text");
+  if (span) span.textContent = text;
+  return !!span;
+}
+
+async function loadStems(force) {
+  if (stemsTimer) { clearTimeout(stemsTimer); stemsTimer = null; }
+  if (!state || !state.audioId || !state.easy || !state.easy.song) return;
+  const id = state.audioId;
+  const before = stemsFor(id);
+  if (!force && before && !stemsBusy(before)) return;
+  const seq = ++stemsSeq;
+  stemsPending = seq;
+  let st;
+  try {
+    const res = await api(`/api/stems/for/${encodeURIComponent(id)}`);
+    const data = await res.json().catch(() => ({}));
+    st = res.ok ? data : { status: "error", error: data.detail || "the desk did not answer" };
+  } catch (err) {
+    st = { status: "error", error: "the desk did not answer" };
+  } finally {
+    if (stemsPending === seq) stemsPending = 0;
+  }
+  if (!state || state.audioId !== id) return;  // the song changed while we asked
+  if (seq !== stemsSeq) return;  // a newer ask, a pick or a clear took over while we asked
+  st.audioId = id;
+  if (before && before.note && Date.now() - (before.noteAt || 0) < STEMS_NOTE_MS) {  // a refusal stays readable while the split goes on under it
+    st.note = before.note;
+    st.noteAt = before.noteAt;
+  }
+  state.stems = st;
+  tellKnobsStems(st);
+  const line = document.getElementById("stems-line");
+  if (stemsBusy(st) && line) stemsTimer = setTimeout(() => { stemsTimer = null; loadStems(true); }, 2000);
+  else if (line && st.note && st.noteAt) stemsTimer = setTimeout(() => { stemsTimer = null; loadStems(true); }, Math.max(500, STEMS_NOTE_MS - (Date.now() - st.noteAt)));  // then the status comes back
+  if (line && stemsShape(before) === stemsShape(st)) {
+    paintStemsText(stemsText(st));  // in flight: only the seconds move, so the line is rewritten where it is
+    return;
+  }
+  if (line && !before && !st.own) {
+    paintStemsText(stemsText(st));  // the first look after a load: the same controls, only the text
+    return;
+  }
+  if (line) render();
+}
+
+async function uploadOwnStems(files) {
+  if (!files.length || !state || !state.audioId) return;
+  const id = state.audioId;
+  if (stemsTimer) { clearTimeout(stemsTimer); stemsTimer = null; }
+  stemsSeq += 1;  // an answer on its way is about the stems before this pick
+  stemsPending = 0;
+  paintStemsText(`Stems: reading your ${files.length} file${files.length === 1 ? "" : "s"}…`);
+  const body = new FormData();
+  body.append("audio_id", id);
+  files.forEach((file) => body.append("files", file));
+  let data = {};
+  let ok = false;
+  try {
+    const response = await api("/api/stems/own", { method: "POST", body });
+    data = await response.json().catch(() => ({}));
+    ok = response.ok;
+  } catch (err) {
+    data = { detail: "The desk did not answer." };
+  }
+  if (!state || state.audioId !== id) return;
+  if (!ok) {
+    const was = stemsFor(id) || { status: "none" };
+    state.stems = { ...was, audioId: id, note: data.detail || "Those stems did not load.", noteAt: Date.now() };
+    paintStemsText(state.stems.note);
+    // the split's poll goes on under the refusal, and the line comes back to the status once the words have been read
+    stemsTimer = setTimeout(() => { stemsTimer = null; loadStems(true); }, stemsBusy(was) ? 2000 : STEMS_NOTE_MS);
+    return;
+  }
+  state.stems = { ...data, audioId: id };
+  tellKnobsStems(state.stems);
+  render();  // the line's controls change; stemsLine() then starts the one poll chain
+}
+
+async function clearOwnStems() {
+  if (!state || !state.audioId) return;
+  const id = state.audioId;
+  if (stemsTimer) { clearTimeout(stemsTimer); stemsTimer = null; }
+  stemsSeq += 1;
+  stemsPending = 0;
+  paintStemsText("Stems: back to the split…");
+  let data = {};
+  let ok = false;
+  try {
+    const response = await api("/api/stems/own/clear", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ audio_id: id }) });
+    data = await response.json().catch(() => ({}));
+    ok = response.ok;
+  } catch (err) {
+    data = { detail: "The desk did not answer." };
+  }
+  if (!state || state.audioId !== id) return;
+  state.stems = ok ? { ...data, audioId: id } : { ...(stemsFor(id) || { status: "none" }), audioId: id, note: data.detail || "The split did not come back.", noteAt: Date.now() };
+  tellKnobsStems(state.stems);
+  render();  // stemsLine() starts the poll when the split was queued again
+  if (!ok) stemsTimer = setTimeout(() => { stemsTimer = null; loadStems(true); }, STEMS_NOTE_MS);
+}
+
+// The free film pack as this cut's clips (xenoform.film_pack): the folder Setup & models filled from archive.org. Whether
+// it is there comes from the Setup check when the page has it, else from GET /api/film_pack, asked once and again after a
+// download. Present: the pack's folder is the clips folder (remembered like any folder). Not there: the note points at Setup.
+async function pickFilmPack() {
+  if (!state.easy) return;
+  let pack = state.setup && state.setup.film_pack;
+  if (!pack) {
+    if (!state.filmPack) {
+      try {
+        const response = await api("/api/film_pack");
+        if (response.ok) state.filmPack = await response.json();
+      } catch (err) {}
+    }
+    pack = state.filmPack;
+  }
+  if (!pack) {
+    state.easy.ownNote = "The desk did not answer about the free film pack. Try again in a moment.";
+    render();
+    return;
+  }
+  if (!pack.present) {
+    state.easy.ownNote = state.easy.ownNoteSetup = `Download the free film pack in Setup & models first (about ${pack.size_label || "100 MB"}).`;
+    render();
+    return;
+  }
+  state.easy.ownFolder = pack.folder;
+  state.easy.ownId = "";
+  state.easy.ownNote = `The free film pack: ${pack.count} clips from ${pack.films} public-domain films. They play in turn, each morphing into the next.`;
   render();
 }
 
@@ -4886,13 +5221,26 @@ async function pollDownload(id) {
   if (!response.ok) return;
   const data = await response.json();
   state.downloads = state.downloads || {};
+  const before = state.downloads[id] || {};
   state.downloads[id] = data;
-  if (state.view === "setup") render();
   if (data.status === "running") {
+    // while it runs only its status line and its bar change: rewrite them where they are (dl-status-<id>, dl-track-<id>),
+    // so Setup is not redrawn twice a second under the user; the page is drawn again only when the job changes shape
+    const line = document.getElementById(`dl-status-${id}`);
+    const track = document.getElementById(`dl-track-${id}`);
+    const bar = track && track.querySelector("span");
+    if (before.status === "running" && line && bar) {
+      line.textContent = data.detail || "Downloading";
+      bar.style.width = `${Math.round((data.progress || 0) * 100)}%`;
+    } else if (state.view === "setup") {
+      render();
+    }
     setTimeout(() => pollDownload(id), 500);
     return;
   }
+  if (state.view === "setup") render();
   await loadSetup();
+  if (id === "film-pack") state.filmPack = null;  // the Your clips row asks about the pack again
   if (state.view === "setup") render();
 }
 

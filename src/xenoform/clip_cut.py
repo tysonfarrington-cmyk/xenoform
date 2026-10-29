@@ -66,6 +66,17 @@ def merge_first(shots: list[dict]) -> list[dict]:
     return [merged] + shots[2:]
 
 
+def clip_names(clips: list[dict]) -> list[str]:
+    """What the chain and the morph lines call each clip: its ``label`` (``own_media.scan`` reads the folder's
+    labels.json, which the free film pack writes), else the file's stem after its first underscore ("03_trip_moon_eye"
+    reads "trip moon eye"), else the stem."""
+    out: list[str] = []
+    for c in clips:
+        stem = Path(c["path"]).stem
+        out.append(str(c.get("label") or (stem.split("_", 1)[-1].replace("_", " ") if "_" in stem else stem)))
+    return out
+
+
 def window(clip: dict, need_s: float, turn: int) -> float:
     """Where a clip's stretch starts: its busiest window the first time, the next busiest that does not overlap on each
     return (``own_media.ranked_starts``)."""
@@ -168,8 +179,7 @@ def run(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg: dict,
     vibe = str(state.get("vibe") or "")
     seed = int(state.get("seed") or 2727)
     plan_slots = slots(len(shots), len(clips_in))
-    names = [Path(c["path"]).stem.split("_", 1)[-1].replace("_", " ") if "_" in Path(c["path"]).stem else Path(c["path"]).stem
-             for c in clips_in]
+    names = clip_names(clips_in)
     dense.write_chain(work, [{"noun": names[sl["clip"]], "kind": "clip"} for sl in plan_slots if sl["kind"] == "clip"])
     n_morphs = sum(1 for sl in plan_slots if sl["kind"] == "morph")
     report("restyle", 0.05, f"{len(shots)} shots on the beat: {len(shots) - n_morphs} stretches of your {len(clips_in)} clips, "

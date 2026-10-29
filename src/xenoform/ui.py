@@ -16,7 +16,7 @@ from urllib.parse import quote
 
 from fastapi import File, HTTPException, Request, UploadFile
 
-from xenoform import job_timing
+from xenoform import job_timing, songs_api
 from xenoform.analyze import read_features
 from xenoform.config import load_config
 from xenoform.director import (
@@ -43,8 +43,8 @@ log = logging.getLogger("xenoform")
 _JOBS: dict[str, dict[str, Any]] = {}
 _ANIMATICS: dict[str, Path] = {}
 _CANCEL: dict[str, threading.Event] = {}
-_AUDIO: dict[str, Path] = {}
-_FEATURES: dict[str, dict] = {}
+_AUDIO: dict[str, Path] = songs_api.audio_registry()  # a bundled song ("song-<id>") is found on first sight, after a restart too
+_FEATURES: dict[str, dict] = songs_api.features_registry()
 _FORMS: dict[str, Path] = {}
 _NOTES: dict[str, dict[str, Any]] = {}
 _GUIDES: dict[str, Path] = {}
@@ -271,6 +271,11 @@ def create_app(cfg: dict | None = None):
     from xenoform.stems_api import router as stems_router  # /api/stems, /api/midi/*, /ws/midi
 
     app.include_router(stems_router)
+    from xenoform.film_pack import router as film_pack_router  # /api/film_pack (the free film pack's status)
+
+    app.include_router(film_pack_router)
+    app.include_router(songs_api.router)  # /api/songs, /api/songs/load: the bundled songs
+    app.state.cfg = cfg  # the desk's config for the routers (songs_api answers its comfy.base_url, as /api/analyze does)
 
     def _desk_html(base: str) -> str:
         html = (static / "index.html").read_text(encoding="utf-8")

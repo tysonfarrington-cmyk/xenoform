@@ -16,32 +16,37 @@
   window.XENO_MACROS=()=>{const o={},st={};for(const k in M){if(k.startsWith("stem:"))st[k.slice(5)]=M[k];else o[k]=M[k];}
     if(Object.keys(st).length)o.stems=st;if(STEMS.id)o.stems_id=STEMS.id;return o;};
   // Stems by default: the desk splits every loaded song in the background (Demucs on the CPU when installed, the
-  // librosa band split otherwise) as soon as /api/analyze or /api/demo hands out its id. This status line polls
-  // GET /api/stems/for/<audio id> every 2 s and shows "splitting stems (demucs)… 40 s", then "4 stems (demucs)",
-  // and the lanes become one per real stem (XENO_SET_STEMS) without anyone opening the drawer. The song id comes
+  // librosa band split otherwise) as soon as /api/analyze or /api/demo hands out its id. This status line mirrors the
+  // desk's Stems line (window.XENO_STEMS_FOR, app.js) every 2 s, or polls GET /api/stems/for/<audio id> itself on a
+  // page without that line, and shows "splitting stems (demucs)… 40 s", then "4 stems (demucs)" or "11 stems (your
+  // own)", and the lanes become one per real stem (XENO_SET_STEMS) without anyone opening the drawer. The song id comes
   // from app.js: window.XENO_STATE().audioId (set by /api/analyze or "demo"), or window.XENO_CURRENT_SONG(), or
   // #easy-file[data-song]; else the bundled demo. Opening "Stem reactions" still POSTs /api/stems (cached by song
   // hash) for a desk without the background hook.
-  const STEMS={id:"",song:"",status:"",engine:"",names:[],seconds:0,error:"",open:false};
+  const STEMS={id:"",key:"",song:"",status:"",engine:"",names:[],seconds:0,error:"",own:false,open:false};
   const songId=()=>{try{const s=window.XENO_STATE&&window.XENO_STATE();if(s&&s.audioId)return s.audioId;}catch(e){}
     try{const c=window.XENO_CURRENT_SONG&&window.XENO_CURRENT_SONG();if(c)return typeof c==="string"?c:c.audioId||c.id||"demo";}catch(e){}
     const f=document.querySelector("#easy-file");return (f&&f.dataset.song)||"demo";};
   const api=p=>(window.XENO_BASE||"")+p;
-  const engineLabel=e=>{e=String(e||"");return e==="bands"?"librosa":(e.split(":")[0]||"auto");};
+  const engineLabel=e=>{e=String(e||"");return e==="bands"?"librosa":e==="user"?"your own":(e.split(":")[0]||"auto");};
   const statusText=()=>STEMS.status==="done"?`${STEMS.names.length} stems (${engineLabel(STEMS.engine)})`:
-    (STEMS.status==="running"||STEMS.status==="queued")?`splitting stems (${engineLabel(STEMS.engine)})… ${Math.round(STEMS.seconds||0)} s`:
+    (STEMS.status==="running"||STEMS.status==="queued")?(STEMS.own?`reading your stems… ${Math.round(STEMS.seconds||0)} s`:`splitting stems (${engineLabel(STEMS.engine)})… ${Math.round(STEMS.seconds||0)} s`):
     STEMS.status==="error"?"stems: "+(STEMS.error||"failed"):"";
   const stemsStatus=t=>{const el=document.querySelector(".xf-stems-status");if(el)el.textContent=t;};
-  // One status answer (from the poll or the POST) for the song `id`: remember it, repaint the line, and when the
-  // split is done hand the stem names to the lanes once.
+  // One status answer (from the poll, the POST, or the desk's Stems line) for the song `id`: remember it, repaint the
+  // line, and hand the stem names to the lanes whenever the set in use changes: the split's four when it is done, your
+  // own stems when they arrive (POST /api/stems/own, the same song id), the split's again after Back to Demucs.
   const applyStatus=(id,j)=>{if(STEMS.song!==id||!j)return;const s=j.status||"";
-    Object.assign(STEMS,{status:s,engine:j.engine||STEMS.engine,seconds:j.seconds||0,error:j.error||""});
-    if(s==="done"){const fresh=STEMS.id!==(j.id||"");Object.assign(STEMS,{id:j.id||"",names:j.stems||[]});
+    Object.assign(STEMS,{status:s,engine:j.engine||STEMS.engine,seconds:j.seconds||0,error:j.error||"",own:!!j.own});
+    if(s==="done"){const key=(j.id||"")+"|"+(j.stems||[]).join("\n");const fresh=STEMS.key!==key;Object.assign(STEMS,{id:j.id||"",key,names:j.stems||[]});
       if(STEMS.names.length&&fresh)window.XENO_SET_STEMS(STEMS.names);}
     stemsStatus(statusText());};
+  const forget=id=>{Object.assign(STEMS,{id:"",key:"",song:id,status:"",engine:"",names:[],seconds:0,error:"",own:false});idle=0;stemsStatus("");};
   let idle=0;
   async function pollStems(){const id=songId();
-    if(id!==STEMS.song){Object.assign(STEMS,{id:"",song:id,status:"",engine:"",names:[],seconds:0,error:""});idle=0;stemsStatus("");}
+    if(id!==STEMS.song)forget(id);
+    const fed=window.XENO_STEMS_FOR&&window.XENO_STEMS_FOR(id);  // the Stems line under the song (app.js) polls this song already: mirror it, no second request
+    if(fed&&fed.status){idle=0;applyStatus(id,fed);return;}
     if(STEMS.status==="done"||STEMS.status==="error"||STEMS.status==="idle")return;
     try{const r=await fetch(api("/api/stems/for/"+encodeURIComponent(id)));if(STEMS.song!==id)return;
       const j=r.ok?await r.json():null;
@@ -55,6 +60,9 @@
       const j=await r.json();if(!r.ok)throw new Error(j.detail||"stems failed");applyStatus(id,j);}  // pollStems carries on from here
     catch(e){if(STEMS.song===id){STEMS.status="error";STEMS.error=e.message;stemsStatus("stems: "+e.message);}}}
   window.XENO_STEMS=()=>Object.assign({},STEMS);window.XENO_REQUEST_STEMS=requestStems;window.XENO_POLL_STEMS=pollStems;
+  // app.js calls this with every answer its Stems line gets (and with the POST's answer after Use your own stems or
+  // Back to Demucs), so the lanes change the moment the stems in use do, not at the next tick.
+  window.XENO_STEMS_UPDATE=(id,j)=>{if(id!==STEMS.song)forget(id);applyStatus(id,j);};
   document.addEventListener("toggle",e=>{const d=e.target;if(!(d&&d.classList&&d.classList.contains("xf-adv")))return;
     if(d.querySelector(".xf-lanes"))STEMS.open=d.open;if(d.open)requestStems();},true);
   setInterval(pollStems,2000);pollStems();

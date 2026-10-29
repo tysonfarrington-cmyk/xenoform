@@ -2,7 +2,7 @@
 
 This page is for a judge. It goes from a clean checkout to the same kind of film as the demo video, on open weights, on your own GPU. Steps 1 to 3 need no GPU and take about two minutes; the rest need ComfyUI and a 12 GB card.
 
-The song in the demo video ("Morph Engine v2") was made by the author on Suno and is not in the repo. Use `examples/demo.wav`, the bundled synthesised track, or any song of your own. The cut, the look and the transitions are the same; only the music changes.
+The song in the demo video ("Morph Engine v2") was made by the author on Suno and is not in the repo. Use `examples/demo.wav`, the bundled synthesised track, one of the six bundled songs (the author's own Suno instrumentals in `examples/songs/`, a chip each under Choose a song) or any song of your own. The cut, the look and the transitions are the same; only the music changes.
 
 ## 1. Install (2 minutes plus the pip download)
 
@@ -38,7 +38,7 @@ On Windows the same two commands are `.venv\Scripts\python.exe -m pip install -e
 
 The desk is a song, a vibe and Make. Leave everything in the **Fine-tune** drawer at its default: that is the `demo_house` profile from `configs/defaults_demo.json`, the look used in the demo video.
 
-1. Song: **Bundled demo** (or drop your own file).
+1. Song: **Bundled demo** (or one of the bundled songs' chips, or drop your own file).
 2. Vibe: **Liquid chrome** (`chrome-mercury`, the first featured card) gives the chrome-pour chain; any of the 12 featured vibes works the same way.
 3. **Make**. The stills cut plays within seconds, then the GPU pass replaces it with LTX 0.9.5 morphs from still to still. On an RTX 3080 Ti a 20 s clip with 7 morphs takes about a minute warm, about two minutes if ComfyUI has just had another model loaded. A full song keeps two bars a shot (a bar on the drop) with one morph per shot and no object twice; Draft affords 48 morphs, Final 12 and Cloud Final 16, and past that the song is re-planned with fewer, longer shots. A four-minute song on Draft is about 20 minutes, and the panel beside Make shows the shot count, morph count and estimate before you press it. For a quick result set **Length** to 60 s in the Fine-tune drawer: a one-minute cut centred on the drop, about six minutes.
 

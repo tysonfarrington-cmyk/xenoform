@@ -121,6 +121,8 @@ def build_parser() -> argparse.ArgumentParser:
     stems.add_argument("--engine", default="auto", choices=["auto", "demucs", "bands"],
                        help="auto = Demucs when installed, else the band split; bands never needs Demucs.")
     stems.add_argument("--fps", type=int, default=24)
+    stems.add_argument("--own", nargs="+", default=[], metavar="STEM",
+                       help="Use these stems (wav, mp3, ...) instead of splitting: the envelopes are built from them where they are.")
     _add_config(stems)
 
     lib = sub.add_parser("stills", help="The stills library: grow a vibe's objects on this GPU, import a folder, or show the counts.")
@@ -309,7 +311,11 @@ def _dispatch(args, cfg: dict) -> None:
         audio = Path(args.audio)
         if not audio.is_file():
             raise RuntimeError(f"{audio} is not a file")
-        if args.out:
+        if args.own:  # the user's own stems, named by their files (a leading index dropped), no split: the route's rules
+            from xenoform.stems_api import own_stems_from_files
+
+            rec = own_stems_from_files(audio, args.own, fps=int(args.fps), out_dir=Path(args.out) if args.out else None)
+        elif args.out:
             out = Path(args.out)
             stems = stem_react.split(audio, out, engine=args.engine)
             env = stem_react.envelopes(stems, fps=int(args.fps))

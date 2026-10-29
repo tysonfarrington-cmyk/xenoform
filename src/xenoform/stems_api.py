@@ -11,6 +11,8 @@ cached under ``work/ui/stems/<song_hash>/`` so a second request, or a second des
     POST /api/stems            {"audio_id": "demo"} | {"path": "song.wav"}  -> {"id", "status", ...} (starts it too)
     GET  /api/stems/<id>       status, stem names, engine, envelope URL
     GET  /api/stems/<id>/envelopes.json   stem_react.save_envelopes output (vj.html ``?stems=``)
+    POST /api/stems/own        multipart audio_id + files: the user's own stems take the split's place (own: true)
+    POST /api/stems/own/clear  {"audio_id"}: back to the split (restored from stems.split.json, or run again)
 
 ``stems_path_for(song)`` gives other code (dense.run_simple via ``state["stems_path"]``) the
 cached ``stems.json`` for an audio file, or None when that song has not been split.
@@ -25,14 +27,17 @@ import asyncio
 import hashlib
 import json
 import logging
+import mimetypes
 import os
 import re
+import shutil
 import threading
 import time
+import uuid
 from collections import deque
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, StreamingResponse
 
 from xenoform import stem_react
@@ -54,7 +59,7 @@ _LOCK = threading.Lock()
 # One split at a time: Demucs on the CPU already uses every core, so two at once only thrash; the second waits "queued".
 _SLOT = threading.Semaphore(1)
 _HASHES: dict[str, tuple[int, int, str]] = {}  # path -> (size, mtime_ns, hash): status polls do not re-read the song
-_PRIVATE = ("dir", "path", "song_path", "started", "running_since")  # registry keys the routes do not send
+_PRIVATE = ("dir", "path", "song_path", "started", "running_since", "own_token")  # registry keys the routes do not send
 
 
 # ---------------------------------------------------------------- stems
@@ -155,9 +160,13 @@ def run_split(song: Path, *, engine: str = "auto", fps: int = 24) -> dict:
     env["seconds"] = round(time.monotonic() - t0, 2)
     tmp = out.with_suffix(".json.part")  # written whole, then moved into place, so a status poll never reads half a file
     stem_react.save_envelopes(env, tmp)
-    os.replace(tmp, out)
+    with _LOCK:  # the same lock the own-stems take-over holds while it moves a split's file aside: never over the user's file
+        if (_JOBS.get(sid) or {}).get("own"):  # the user's own stems arrived while this ran: the split is kept aside for Back to Demucs
+            out = folder / "stems.split.json"
+        os.replace(tmp, out)
     return {"id": sid, "status": "done", "cached": False, "path": str(out), "engine": env.get("engine"),
-            "stems": env.get("stems") or [], "frames": env.get("frames", 0), "fps": fps, "seconds": env["seconds"]}
+            "stems": env.get("stems") or [], "frames": env.get("frames", 0), "fps": fps, "seconds": env["seconds"],
+            "kept_aside": out.name != "stems.json"}
 
 
 def _engine(value) -> str:
@@ -189,7 +198,8 @@ def _done_from_file(sid: str, out: Path) -> dict:
     return {"id": sid, "status": "done", "engine": rec.get("engine"), "stems": rec.get("stems") or [],
             "frames": rec.get("frames", 0), "fps": rec.get("fps", 24), "roles": rec.get("roles") or {},
             "seconds": rec.get("seconds"), "path": str(out), "error": None,
-            "song": Path(str(rec.get("song") or "")).name}
+            "song": Path(str(rec.get("song") or "")).name,
+            "own": bool(rec.get("own")), "split_engine": rec.get("split_engine")}
 
 
 def status_for_id(sid: str) -> dict:
@@ -235,22 +245,36 @@ def _update(sid: str, **fields) -> bool:
         return True
 
 
+def _update_split(sid: str, **fields) -> bool:
+    """``_update`` for the split thread: it leaves the entry alone once the user's own stems hold it (their
+    ``stems.json`` is the one in use; the split's result is kept aside by ``run_split``)."""
+    with _LOCK:
+        job = _JOBS.get(sid)
+        if job is None or job.get("own"):
+            return False
+        job.update(fields)
+        return True
+
+
 def _run_job(sid: str, song: Path, engine: str, fps: int) -> None:
     with _SLOT:  # "queued" until the slot is free
         resolved = engine if engine != "auto" else ("demucs" if stem_react.demucs_available() else "bands")
-        if not _update(sid, status="running", engine=resolved, running_since=time.time()):
+        if not _update_split(sid, status="running", engine=resolved, running_since=time.time()):
             return
         t0 = time.monotonic()
         try:
             rec = run_split(song, engine=engine, fps=fps)
             env = json.loads(Path(rec["path"]).read_text(encoding="utf-8"))
             seconds = rec.get("seconds") or round(time.monotonic() - t0, 2)
-            _update(sid, status="done", engine=rec["engine"], stems=rec["stems"], frames=rec["frames"], fps=rec["fps"],
-                    roles=env.get("roles") or {}, seconds=seconds, path=rec["path"], error=None)
+            if rec.get("kept_aside"):
+                log.info("stems %s: the split finished after the user's own stems arrived; kept as %s", sid, Path(rec["path"]).name)
+            else:
+                _update_split(sid, status="done", engine=rec["engine"], stems=rec["stems"], frames=rec["frames"], fps=rec["fps"],
+                              roles=env.get("roles") or {}, seconds=seconds, path=rec["path"], error=None)
             log.info("stems %s: %d stems (%s) for %s in %.1f s", sid, len(rec["stems"]), rec["engine"], song.name, seconds)
         except Exception as exc:
             log.exception("stems %s failed", sid)
-            _update(sid, status="error", error=str(exc) or exc.__class__.__name__, seconds=round(time.monotonic() - t0, 2))
+            _update_split(sid, status="error", error=str(exc) or exc.__class__.__name__, seconds=round(time.monotonic() - t0, 2))
         finally:
             _THREADS.pop(sid, None)
 
@@ -355,7 +379,8 @@ def stems_for_song(audio_id: str) -> dict:
     if not _SONG_ID_RE.fullmatch(audio_id):
         raise HTTPException(400, "bad song id")
     song = resolve_song({"audio_id": audio_id})
-    return {**_public(split_status(song)), "audio_id": audio_id}
+    st = split_status(song)
+    return {**_public(st), "own": bool(st.get("own")), "audio_id": audio_id}
 
 
 @router.get("/api/stems/{sid}")
@@ -378,7 +403,7 @@ def stems_envelopes(sid: str) -> FileResponse:
 @router.get("/api/stems/{sid}/{name}.wav")
 def stems_wav(sid: str, name: str) -> FileResponse:
     """One separated stem, for listening or for the VJ page to play."""
-    if not _ID_RE.fullmatch(sid) or not re.fullmatch(r"[A-Za-z0-9 _.-]{1,64}", name):
+    if not _ID_RE.fullmatch(sid) or not re.fullmatch(r"[\w .-]{1,64}", name):  # letters of any alphabet: the name is a key, not a path
         raise HTTPException(400, "bad stems id")
     out = stems_root() / sid / "stems.json"
     if not out.is_file():
@@ -387,7 +412,332 @@ def stems_wav(sid: str, name: str) -> FileResponse:
     p = Path(files.get(name) or "")
     if not p.is_file():
         raise HTTPException(404, "No stem with that name.")
-    return FileResponse(p, media_type="audio/wav")
+    return FileResponse(p, media_type=mimetypes.guess_type(p.name)[0] or "audio/wav")  # your own stems may be mp3 or flac
+
+
+# ---------------------------------------------------------------- your own stems
+# Stems the user already has (a DAW or Suno export) take the place of the split: POST /api/stems/own saves them under
+# work/ui/stems/<song hash>/own/ and builds the envelopes on a background thread through the same registry (engine
+# "user", own: true), so the status routes, the desk's Stems line, the Make and the VJ page need nothing new. A Demucs
+# stems.json already there is kept as stems.split.json, and POST /api/stems/own/clear brings it back.
+OWN_LENGTH_TOLERANCE_S = 1.5  # a stem may differ from the song by this much (a DAW's tail, an mp3's padding)
+_RESERVED_NAMES = {"engine", "fps", "frames", "drum_hits", "drum_strong", "stems", "roles", "song", "files", "seconds",
+                   "own", "split_engine", "sliced_from"}  # keys of stems.json a stem may not be called
+_DEVICE_NAMES = {"con", "prn", "aux", "nul", *(f"com{i}" for i in range(1, 10)), *(f"lpt{i}" for i in range(1, 10))}  # Windows device names
+_NAME_MAX = 64  # the wav route's rule, " 2" for a repeat included
+_OWN_THREADS: dict[str, threading.Thread] = {}  # the own build per song hash: the next build, and a clear, wait for it to let go of own/
+_OWN_WAIT_S = 120.0  # how long they wait at most (a build of 32 long stems takes seconds; a decoder that hangs is not waited on for ever)
+
+
+def own_stem_name(filename: str) -> str:
+    """The stem name a file gives: a leading index (one or two digits) and its separators dropped ("1 Drums.wav" ->
+    "Drums", "02_bass.wav" -> "bass"; "808 Bass.wav" keeps its 808), "Lead Vocals.wav" stays "Lead Vocals"; a name
+    that is a key of stems.json, or a Windows device name, gets " stem" after it. Letters and digits of any alphabet,
+    spaces, dots, dashes and underscores (the wav route's rule); anything else becomes a space."""
+    stem = Path(str(filename or "").replace("\\", "/")).stem
+    name = re.sub(r"[^\w .-]+", " ", stem)
+    bare = re.sub(r"^\s*\d{1,2}(?![0-9])\s*[-_.)\s]*", "", name)
+    if bare.strip(" .-_"):
+        name = bare
+    name = re.sub(r"\s+", " ", name).strip(" .-_")[:_NAME_MAX].strip() or "stem"
+    if name.lower() in _RESERVED_NAMES or name.lower() in _DEVICE_NAMES:
+        name += " stem"
+    return name
+
+
+def _unique_name(name: str, taken) -> str:
+    out, k = name, 2
+    while out.lower() in {t.lower() for t in taken}:
+        tail = f" {k}"
+        out, k = f"{name[:_NAME_MAX - len(tail)].rstrip()}{tail}", k + 1  # still within the wav route's 64
+    return out
+
+
+def own_names(filenames) -> list[str]:
+    """The stem names a list of file names gives, in their order: ``own_stem_name`` of each, a number on a repeat."""
+    names: list[str] = []
+    for raw in filenames:
+        names.append(_unique_name(own_stem_name(str(raw)), names))
+    return names
+
+
+def check_own_stems(song: Path, paths: dict[str, Path]) -> None:
+    """The rules a set of own stems passes before anything changes hands, each a ValueError in a plain sentence
+    naming the file: 1 to MAX_STEMS audio files (wav, mp3, flac, ogg, aiff, m4a) that decode, each the song's
+    length within OWN_LENGTH_TOLERANCE_S. The route and the command line share it."""
+    if not paths:
+        raise ValueError("No audio files came with the request. Pick the stems (wav, mp3, flac, ogg, aiff or m4a) and try again.")
+    if len(paths) > stem_react.MAX_STEMS:
+        raise ValueError(f"{len(paths)} files is more than the {stem_react.MAX_STEMS} stems Xenoform handles. Pick at most {stem_react.MAX_STEMS}.")
+    for p in paths.values():
+        if p.suffix.lower() not in _AUDIO_SUFFIXES:
+            raise ValueError(f"{p.name} is not an audio file. Stems can be wav, mp3, flac, ogg, aiff or m4a.")
+    try:
+        song_s = _seconds_of(song)
+    except Exception as exc:
+        raise ValueError(f"The song {song.name} will not decode, so its stems cannot be checked against it.") from exc
+    for p in paths.values():
+        try:
+            stem_s = _seconds_of(p)
+        except Exception as exc:
+            raise ValueError(f"{p.name} will not decode as audio.") from exc
+        if abs(stem_s - song_s) > OWN_LENGTH_TOLERANCE_S:
+            raise ValueError(f"{p.name} is {stem_s:.1f} s but the song is {song_s:.1f} s. A stem must be the song's length (within {OWN_LENGTH_TOLERANCE_S:g} s).")
+
+
+def _own_envelopes(song: Path, paths: dict[str, Path], fps: int, *, split_engine: str | None = None, t0: float | None = None) -> dict:
+    """The stems.json record for a set of own stems: ``stem_react.envelopes`` of the files, plus the song, the files,
+    the time it took, ``own: true`` and the split's engine when known (the desk's Back button reads it)."""
+    t0 = time.perf_counter() if t0 is None else t0  # not monotonic: on Windows it ticks every 15.6 ms, and a warm build of short stems is quicker
+    stems = stem_react.from_files({k: str(v) for k, v in paths.items()}, engine="user")
+    env = stem_react.envelopes(stems, fps=fps)
+    env["song"] = str(song)
+    env["files"] = {k: str(v) for k, v in paths.items()}
+    env["seconds"] = round(time.perf_counter() - t0, 2)
+    env["own"] = True
+    if split_engine:
+        env["split_engine"] = split_engine
+    return env
+
+
+def _keep_split_aside(folder: Path) -> str | None:
+    """Before own stems take a song's stems.json: a split's file moves to stems.split.json (for Back to Demucs), an
+    earlier set of own stems is removed. Returns the split's engine when a file knows it. Call it with ``_LOCK``
+    held when the registry is live, so a split finishing in the same instant takes its turn (``run_split``)."""
+    stems_json, kept = folder / "stems.json", folder / "stems.split.json"
+    engine = None
+    if stems_json.is_file():
+        try:
+            rec = json.loads(stems_json.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            rec = {"own": True}  # unreadable: not worth keeping
+        if rec.get("own"):
+            engine = rec.get("split_engine")
+            stems_json.unlink(missing_ok=True)
+        else:
+            engine = rec.get("engine")
+            os.replace(stems_json, kept)
+    if not engine and kept.is_file():
+        try:
+            engine = json.loads(kept.read_text(encoding="utf-8")).get("engine")
+        except (OSError, ValueError):
+            pass
+    return engine or None
+
+
+def own_stems_from_files(song: str | Path, files, *, fps: int = 24, out_dir: str | Path | None = None) -> dict:
+    """``xenoform stems song.wav --own a.wav b.wav``: the stems.json the route builds, from the files where they are,
+    now (blocking), under the same rules (``check_own_stems``: a ValueError in plain words) and names (``own_names``).
+    Without ``out_dir`` it goes into the song's cache folder, a split's file kept aside as the route keeps it, so the
+    desk's Back to Demucs finds it."""
+    song = Path(song)
+    files = [Path(p) for p in files]
+    missing = [p for p in files if not p.is_file()]
+    if missing:
+        raise FileNotFoundError(f"{missing[0]} is not a file")
+    paths = dict(zip(own_names([p.name for p in files]), files))
+    check_own_stems(song, paths)
+    split_engine = None
+    if out_dir is None:
+        out_dir = stems_root() / song_hash(song)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        with _LOCK:
+            split_engine = _keep_split_aside(out_dir)
+    env = _own_envelopes(song, paths, _fps(fps), split_engine=split_engine)
+    out = Path(out_dir) / "stems.json"
+    tmp = out.parent / "stems.own.json.part"
+    stem_react.save_envelopes(env, tmp)
+    os.replace(tmp, out)
+    return {"id": song_hash(song), "status": "done", "cached": False, "own": True, "path": str(out), "engine": env["engine"],
+            "stems": env["stems"], "roles": env["roles"], "frames": env["frames"], "fps": _fps(fps), "seconds": env["seconds"]}
+
+
+def _seconds_of(path: Path) -> float:
+    """How long an audio file is, from its header (soundfile) or a decode (librosa, for m4a). Raises when
+    the file will not decode."""
+    try:
+        import soundfile as sf
+
+        return float(sf.info(str(path)).duration)
+    except Exception:
+        import librosa
+
+        return float(librosa.get_duration(path=str(path)))
+
+
+def _update_own(sid: str, token: str, **fields) -> bool:
+    """Merge ``fields`` into the own-stems entry that still carries ``token``; False once it was cleared or
+    a newer set of stems replaced it (then the thread writes nothing)."""
+    with _LOCK:
+        job = _JOBS.get(sid)
+        if job is None or job.get("own_token") != token:
+            return False
+        job.update(fields)
+        return True
+
+
+def _own_current(sid: str, token: str) -> bool:
+    with _LOCK:
+        return (_JOBS.get(sid) or {}).get("own_token") == token
+
+
+def _run_own(sid: str, song: Path, folder: Path, incoming: Path, paths: dict[str, Path], fps: int, token: str,
+             previous: threading.Thread | None) -> None:
+    """The background thread behind POST /api/stems/own: once the build before it (if any) has let go of own/, the
+    saved files move in and the envelopes are built from them, written whole as stems.json. It does not take the
+    split's slot: the user's stems should not wait behind another song's Demucs. A newer set, or a clear, takes the
+    registry entry (the token); this thread then removes its files and writes nothing."""
+    t0 = time.perf_counter()  # the clock _own_envelopes reads too
+    try:
+        if previous is not None and previous.is_alive():
+            previous.join(_OWN_WAIT_S)  # it may hold a file under own/ open while it decodes, which Windows will not let go
+        own_dir = folder / "own"
+        if not _own_current(sid, token):
+            shutil.rmtree(incoming, ignore_errors=True)
+            return
+        shutil.rmtree(own_dir, ignore_errors=True)
+        os.replace(incoming, own_dir)
+        paths = {name: own_dir / p.name for name, p in paths.items()}
+        if not _update_own(sid, token, status="running", running_since=time.time()):
+            return
+        with _LOCK:
+            split_engine = (_JOBS.get(sid) or {}).get("split_engine")
+        env = _own_envelopes(song, paths, fps, split_engine=split_engine, t0=t0)
+        out = folder / "stems.json"
+        tmp = folder / "stems.own.json.part"  # not the split thread's stems.json.part: the two may finish in the same instant
+        stem_react.save_envelopes(env, tmp)
+        with _LOCK:
+            job = _JOBS.get(sid)
+            if job is None or job.get("own_token") != token:  # cleared, or newer stems arrived, while we read
+                tmp.unlink(missing_ok=True)
+                return
+            os.replace(tmp, out)
+            job.update(status="done", stems=env["stems"], roles=env["roles"], frames=env["frames"], fps=fps,
+                       seconds=env["seconds"], path=str(out), error=None)
+        log.info("stems %s: %d of the user's own stems for %s in %.1f s", sid, len(env["stems"]), song.name, env["seconds"])
+    except Exception as exc:
+        log.exception("own stems %s failed", sid)
+        why = f"{Path(str(exc.filename)).name}: {exc.strerror or exc.__class__.__name__}" if isinstance(exc, OSError) and getattr(exc, "filename", None) else (str(exc) or exc.__class__.__name__)
+        _update_own(sid, token, status="error", error=why, seconds=round(time.perf_counter() - t0, 2))
+    finally:
+        with _LOCK:
+            if _OWN_THREADS.get(sid) is threading.current_thread():
+                _OWN_THREADS.pop(sid, None)
+
+
+def _own_take_over(sid: str, song: Path, folder: Path, incoming: Path, paths: dict[str, Path], fps: int, token: str, audio_id: str) -> dict:
+    """The saved files become the song's stems: under the registry lock (so two picks at once, and a split finishing
+    now, take turns) the split's stems.json is kept aside, the registry entry becomes the user's (a split that
+    finishes after this writes stems.split.json; the build before gives up at its next look) and the build thread
+    starts, told to wait for the one before it. Returns the status the route answers."""
+    previous = status_for_id(sid)
+    split_engine = (previous.get("split_engine") if previous.get("own") else previous.get("engine")) or None
+    with _LOCK:
+        kept_engine = _keep_split_aside(folder)
+        split_engine = split_engine or kept_engine
+        before = _OWN_THREADS.get(sid)
+        _JOBS[sid] = job = {"id": sid, "status": "queued", "engine": "user", "own": True, "own_token": token,
+                            "split_engine": split_engine, "seconds": 0.0, "path": None, "error": None,
+                            "song": song.name, "song_path": str(song), "fps": fps, "stems": list(paths),
+                            "roles": {n: stem_react.role(n) for n in paths}, "started": time.time()}
+        _OWN_THREADS[sid] = t = threading.Thread(target=_run_own, args=(sid, song, folder, incoming, paths, fps, token, before),
+                                                 daemon=True, name=f"stems-own-{sid}")
+        snap = _snapshot(job)
+    t.start()
+    return {**_public(snap), "own": True, "audio_id": audio_id or "demo"}
+
+
+@router.post("/api/stems/own")
+async def stems_own(audio_id: str = Form(""), files: list[UploadFile] | None = File(None), fps: str = Form("24")) -> dict:
+    """Use stems the user already has for a loaded song. Multipart: ``audio_id`` (``demo``, an upload id or a bundled
+    ``song-<id>``) and ``files`` (1 to 32 audio files: wav, mp3, flac, ogg, aiff, m4a, each the song's length within
+    1.5 s). Saves them under work/ui/stems/<song hash>/own/<clean name><ext>, builds the envelopes on a background
+    thread (status ``queued`` -> ``running`` -> ``done``, ``engine: "user"``, ``own: true``) and returns the status at
+    once with the stem names and their roles. A Demucs split already there is kept as stems.split.json. Two picks at
+    once, or a pick while the set before is still being read, take turns: each request saves into a folder of its
+    own and the newer set wins (the build before it gives up and is waited for, never deleted under)."""
+    from starlette.concurrency import run_in_threadpool
+
+    from xenoform import ui
+
+    audio_id = str(audio_id or "").strip()
+    if audio_id and not _SONG_ID_RE.fullmatch(audio_id):
+        raise HTTPException(400, "bad song id")
+    song = resolve_song({"audio_id": audio_id})
+    fps = _fps(fps)
+    files = [f for f in (files or []) if f is not None and (f.filename or "")]
+    if not files:
+        raise HTTPException(400, "No audio files came with the request. Pick the stems (wav, mp3, flac, ogg, aiff or m4a) and try again.")
+    if len(files) > stem_react.MAX_STEMS:
+        raise HTTPException(400, f"{len(files)} files is more than the {stem_react.MAX_STEMS} stems Xenoform handles. Pick at most {stem_react.MAX_STEMS}.")
+    sid = song_hash(song)
+    folder = stems_root() / sid
+    folder.mkdir(parents=True, exist_ok=True)
+    token = uuid.uuid4().hex
+    incoming = folder / f"own.{token[:8]}.part"  # this request's own folder: another pick at the same moment has its own
+    incoming.mkdir()
+    paths: dict[str, Path] = {}
+    try:
+        for f in files:
+            raw = f.filename or ""
+            suffix = Path(raw).suffix.lower()
+            if suffix not in _AUDIO_SUFFIXES:
+                raise HTTPException(400, f"{raw} is not an audio file. Stems can be wav, mp3, flac, ogg, aiff or m4a.")
+            try:
+                data = await ui.read_upload(f)
+            except HTTPException as exc:
+                if exc.status_code == 413:
+                    cap = int(ui._MAX_UPLOAD_BYTES) // (1024 * 1024)
+                    raise HTTPException(413, f"{raw} is larger than this desk will store (a file can be up to {cap} MB).") from exc
+                raise
+            name = _unique_name(own_stem_name(raw), paths)
+            dest = incoming / f"{name}{suffix}"
+            dest.write_bytes(data)
+            paths[name] = dest
+        try:
+            await run_in_threadpool(check_own_stems, song, paths)  # decodes headers (a whole m4a): off the event loop
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+    except Exception:
+        shutil.rmtree(incoming, ignore_errors=True)
+        raise
+    return _own_take_over(sid, song, folder, incoming, paths, fps, token, audio_id)
+
+
+@router.post("/api/stems/own/clear")
+def stems_own_clear(body: dict | None = None) -> dict:
+    """Back to the split: removes the user's own stems for ``{"audio_id"}`` and restores the Demucs stems.json kept
+    aside (status ``done``, engine as it was), or queues the background split again. Returns the status."""
+    body = body or {}
+    song = resolve_song(body)
+    sid = song_hash(song)
+    folder = stems_root() / sid
+    stems_json = folder / "stems.json"
+    kept = folder / "stems.split.json"
+    with _LOCK:
+        job = _JOBS.get(sid)
+        if job and job.get("own"):
+            _JOBS.pop(sid, None)  # an own build still running sees its token gone and writes nothing
+        building = _OWN_THREADS.pop(sid, None)
+    if building is not None and building.is_alive():
+        building.join(_OWN_WAIT_S)  # until it has let go of the files under own/ (it writes nothing: its entry is gone)
+    if stems_json.is_file():
+        try:
+            own_file = bool(json.loads(stems_json.read_text(encoding="utf-8")).get("own"))
+        except (OSError, ValueError):
+            own_file = True
+        if own_file:
+            stems_json.unlink(missing_ok=True)
+    shutil.rmtree(folder / "own", ignore_errors=True)
+    for part in folder.glob("own.*.part"):
+        shutil.rmtree(part, ignore_errors=True)
+    if not stems_json.is_file() and kept.is_file():
+        os.replace(kept, stems_json)
+    if stems_json.is_file():
+        st = status_for_id(sid)  # reads the restored file: done, engine as it was
+    else:
+        st = start_background_split(song, fps=_fps(body.get("fps")))
+    return {**_public(st), "own": bool(st.get("own")), "audio_id": str(body.get("audio_id") or "demo")}
 
 
 # ---------------------------------------------------------------- MIDI hub

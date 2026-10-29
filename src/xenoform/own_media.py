@@ -16,6 +16,7 @@ any other shot (``dense.apply_performer_slots`` does the merge, marking the shot
 """
 from __future__ import annotations
 
+import json
 import logging
 import subprocess
 from pathlib import Path
@@ -27,14 +28,29 @@ log = logging.getLogger("xenoform.own_media")
 MIN_S = 2.0        # a clip's run is at least two seconds, so the clip is seen
 MAX_S = 8.0        # and at most eight, so the morphs keep the cut moving
 MIN_CLIP_S = 2.0   # clips shorter than this are skipped
-MAX_ITEMS = 12     # images and clips each (twelve morph targets is the pool size)
+MAX_ITEMS = 12     # images (twelve morph targets is the pool size)
+MAX_CLIPS = 24     # clips: a clips cut cycles through every one (clip_cut.slots), and the free film pack is about twenty
+LABELS = "labels.json"  # an optional sidecar in the folder, {file name: label}: what the chain calls a clip (the film pack writes one)
+
+
+def _labels(folder: Path) -> dict:
+    """The folder's ``labels.json`` ({file name: label}), or {} when there is none or it will not read."""
+    path = folder / LABELS
+    if not path.is_file():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
 
 
 def scan(folder: str | Path) -> dict:
-    """The images and clips in ``folder`` (not recursive, sorted by name), each list capped at ``MAX_ITEMS``.
+    """The images and clips in ``folder`` (not recursive, sorted by name), the images capped at ``MAX_ITEMS`` and the
+    clips at ``MAX_CLIPS``.
 
     ``{"folder", "images": [paths], "clips": [{"path", "seconds"}]}``; a clip shorter than ``MIN_CLIP_S``
-    or one ffprobe cannot read is left out.
+    or one ffprobe cannot read is left out. A clip named in the folder's ``labels.json`` carries its ``label``.
     """
     folder = Path(str(folder)).expanduser()
     if not folder.is_dir():
@@ -42,8 +58,9 @@ def scan(folder: str | Path) -> dict:
     items = footage.scan_folder(folder)
     images = [str(i["path"]) for i in items if i["kind"] == "image"][:MAX_ITEMS]
     clips: list[dict] = []
+    labels = _labels(folder)
     for item in items:
-        if item["kind"] != "video" or len(clips) >= MAX_ITEMS:
+        if item["kind"] != "video" or len(clips) >= MAX_CLIPS:
             continue
         try:
             seconds = float(footage.probe_duration(str(item["path"])))
@@ -51,7 +68,11 @@ def scan(folder: str | Path) -> dict:
             log.warning("own clip %s unreadable: %s", item["path"], exc)
             continue
         if seconds >= MIN_CLIP_S:
-            clips.append({"path": str(item["path"]), "seconds": round(seconds, 3)})
+            clip = {"path": str(item["path"]), "seconds": round(seconds, 3)}
+            label = labels.get(Path(item["path"]).name)
+            if isinstance(label, str) and label.strip():  # only words go on the chain: a number or an object is ignored
+                clip["label"] = label.strip()
+            clips.append(clip)
     return {"folder": str(folder), "images": images, "clips": clips}
 
 
@@ -244,6 +265,6 @@ def splice(morph_in: str | Path | None, clip: str | Path, morph_out: str | Path 
     return Path(out)
 
 
-__all__ = ["MIN_S", "MAX_S", "MIN_CLIP_S", "MAX_ITEMS", "MORPH_S", "scan", "clip_slots", "window_start", "busiest_start",
+__all__ = ["MIN_S", "MAX_S", "MIN_CLIP_S", "MAX_ITEMS", "MAX_CLIPS", "MORPH_S", "scan", "clip_slots", "window_start", "busiest_start",
            "ranked_starts", "size_for",
            "render_clip", "morph_frames", "first_last", "splice"]
