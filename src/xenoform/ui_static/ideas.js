@@ -205,17 +205,22 @@
     paint(row, input, field);
   }
 
-  function mount() {
-    catalogReady().then(() => {
-      if (!catalog) return;
-      document.querySelectorAll("[data-ideas-bound]").forEach((input) => {
-        delete input.dataset.ideasBound;
-      });
-      document.querySelectorAll(".idea-row").forEach((row) => row.remove());
-      BIND.forEach((binding) => {
-        document.querySelectorAll(binding.sel).forEach((input) => attach(input, binding.field, binding.tour));
-      });
+  function bindAll() {
+    if (!catalog) return;
+    document.querySelectorAll("[data-ideas-bound]").forEach((input) => {
+      delete input.dataset.ideasBound;
     });
+    document.querySelectorAll(".idea-row").forEach((row) => row.remove());
+    BIND.forEach((binding) => {
+      document.querySelectorAll(binding.sel).forEach((input) => attach(input, binding.field, binding.tour));
+    });
+  }
+
+  // Once the catalog is in, the row goes in at once, inside the desk's redraw: a row added a tick later came in after
+  // the desk had put your place back, and pushed everything under it down 84 px.
+  function mount() {
+    if (catalog) bindAll();
+    else catalogReady().then(bindAll);
   }
 
   function rowInput(row) {

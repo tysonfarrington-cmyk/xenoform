@@ -28,7 +28,7 @@
     try{const c=window.XENO_CURRENT_SONG&&window.XENO_CURRENT_SONG();if(c)return typeof c==="string"?c:c.audioId||c.id||"demo";}catch(e){}
     const f=document.querySelector("#easy-file");return (f&&f.dataset.song)||"demo";};
   const api=p=>(window.XENO_BASE||"")+p;
-  const engineLabel=e=>{e=String(e||"");return e==="bands"?"librosa":e==="user"?"your own":(e.split(":")[0]||"auto");};
+  const engineLabel=e=>{e=String(e||"");return e==="bands"?"librosa":e==="user"?"your own":/^demucs/i.test(e)?"Demucs":(e.split(":")[0]||"auto");};  // "Demucs", as the Stems line says it
   const statusText=()=>STEMS.status==="done"?`${STEMS.names.length} stems (${engineLabel(STEMS.engine)})`:
     (STEMS.status==="running"||STEMS.status==="queued")?(STEMS.own?`reading your stems… ${Math.round(STEMS.seconds||0)} s`:`splitting stems (${engineLabel(STEMS.engine)})… ${Math.round(STEMS.seconds||0)} s`):
     STEMS.status==="error"?"stems: "+(STEMS.error||"failed"):"";
@@ -125,4 +125,7 @@
   new MutationObserver(()=>requestAnimationFrame(strips)).observe(document.getElementById("app")||document.body,{childList:true,subtree:true});
   new MutationObserver(()=>requestAnimationFrame(mount)).observe(document.getElementById("app")||document.body,{childList:true,subtree:true});
   window.addEventListener("load",mount);
+  // app.js's render() calls this before it puts your place back, so the page is its full height then (mounted a frame
+  // later, the strip came in under a chip you had just clicked and pushed it 279 px down).
+  window.XENO_KNOBS_MOUNT=mount;
 })();

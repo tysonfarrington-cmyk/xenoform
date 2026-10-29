@@ -452,6 +452,8 @@ button.easy-showcase { width: 100%; margin-top: 12px; }
 }
 .xf-macros-head { display: flex; justify-content: space-between; align-items: center; margin: 0 2px 10px; }
 .xf-macros-head span { font-size: 12px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--x-text-2); }
+/* the desk's panel and the cut's side already say Knobs right above the strip; the strip's own label said it twice */
+.simple-knobs .xf-macros-head span { visibility: hidden; }
 .xf-macros-head button { min-height: 26px; padding: 0 10px; font-size: 12px; }
 .xf-knobs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 .xf-knob { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 6px 0; border-radius: var(--x-r-md); user-select: none; touch-action: none; cursor: ns-resize; outline: none; }

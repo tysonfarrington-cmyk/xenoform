@@ -2846,7 +2846,7 @@ function placeKey(node) {
   if (!node || node === document.body || node === document.documentElement) return "";
   if (node.id) return `#${node.id}`;
   if (!node.dataset || !node.dataset.act) return "";
-  return ["act", node.dataset.act, node.dataset.vibe || "", node.dataset.index || "", node.dataset.quality || "", node.dataset.method || "", node.dataset.step || ""].join(":");
+  return ["act", node.dataset.act, node.dataset.vibe || "", node.dataset.index || "", node.dataset.quality || "", node.dataset.method || "", node.dataset.step || "", node.dataset.value || ""].join(":");
 }
 
 // Nothing moves under you when the desk redraws. render() builds the desk anew from innerHTML, so without this a click
@@ -2861,8 +2861,9 @@ function anchorKey(node) {
   const d = node.dataset || {};
   if (d.tour) return `[data-tour="${CSS.escape(d.tour)}"]`;
   if (!d.act) return "";
-  // a control: the very button clicked (Foreshadow's Trace, not the column it sits in)
-  return `[data-act="${CSS.escape(d.act)}"]${d.value != null ? `[data-value="${CSS.escape(d.value)}"]` : ""}${d.index != null ? `[data-index="${CSS.escape(d.index)}"]` : ""}`;
+  // a control: the very button clicked (Foreshadow's Trace, not the column it sits in; the vibe card picked, which moves
+  // from More vibes into the grid, not whichever card takes its old place in the list)
+  return `[data-act="${CSS.escape(d.act)}"]${d.value != null ? `[data-value="${CSS.escape(d.value)}"]` : ""}${d.vibe != null ? `[data-vibe="${CSS.escape(d.vibe)}"]` : ""}${d.index != null ? `[data-index="${CSS.escape(d.index)}"]` : ""}`;
 }
 function scrollerKey(node, seen) {
   const base = anchorKey(node) || `${node.tagName}.${node.className && node.className.baseVal == null ? node.className : ""}`;
@@ -2939,7 +2940,8 @@ function restorePlace(place) {
   else {
     const parts = place.key.split(":");
     const act = parts[1];
-    node = [...document.querySelectorAll(`[data-act="${act}"]`)].find((item) => {
+    const value = parts.slice(7).join(":");  // a value may hold a colon (an aspect, 9:16)
+    const same = [...document.querySelectorAll(`[data-act="${act}"]`)].filter((item) => {
       if (parts[2] && item.dataset.vibe !== parts[2]) return false;
       if (parts[3] && String(item.dataset.index || "") !== parts[3]) return false;
       if (parts[4] && item.dataset.quality !== parts[4]) return false;
@@ -2947,6 +2949,8 @@ function restorePlace(place) {
       if (parts[6] && item.dataset.step !== parts[6]) return false;
       return true;
     });
+    // the chip clicked keeps the focus (15 s, not the row's first chip, Full song), else the row's first as before
+    node = same.find((item) => value && item.dataset.value === value) || same[0] || null;
   }
   if (!node || !node.focus) return;
   node.focus({ preventScroll: true });
@@ -2962,6 +2966,10 @@ function restorePlace(place) {
 // The screen render() last drew (view and phase). A click redraws the whole desk, and the fade-in on #app's children
 // blanked it and slid it 4 px on every click; now it plays only when the screen changes.
 let lastScreen = "";
+// Where each page was scrolled when you left it. A tool page (Setup & models, Connect an AI) opens at its top and the
+// desk comes back where you left it: the place kept across that switch named a control of the other page, so "Back to
+// the desk" was put where the Setup link sits, at the desk's foot.
+const pageScroll = {};
 
 function render() {
   const place = rememberPlace();
@@ -2971,6 +2979,9 @@ function render() {
   const screen = `${state.view}:${["making", "result", "showcase"].includes(phase) ? phase : "desk"}`;
   if (screen !== lastScreen) app.dataset.enter = "1";
   else delete app.dataset.enter;
+  const pageBefore = lastScreen.split(":")[0];
+  const pageSwitch = !!lastScreen && pageBefore !== state.view;
+  if (pageSwitch) pageScroll[pageBefore] = place.y;
   lastScreen = screen;
   // One desk: the stages (Song, Vibe, Prototype, Refine, Share) or a tool page. There is no second desk to switch to.
   app.innerHTML = (state.view === "setup" || state.view === "connect") ? renderTool(state.view) : renderEasy();
@@ -2985,9 +2996,11 @@ function render() {
   scheduleSession();
   document.body.dataset.ready = "1";
   if (window.XENO_IDEAS) window.XENO_IDEAS.mount();
+  if (window.XENO_KNOBS_MOUNT) window.XENO_KNOBS_MOUNT();  // the knob strip (ui_v6.js) in now, not a frame after the place is put back
   if (window.XENO_TUTORIAL) window.XENO_TUTORIAL.sync();
   scheduleOpener();
-  restorePlace(place);
+  if (pageSwitch) { if (document.body.dataset.tour !== "1") window.scrollTo(0, pageScroll[state.view] || 0); }  // the tour places itself
+  else restorePlace(place);
   paintPlayhead();
   paintPending();
 }
@@ -3711,7 +3724,12 @@ async function shareCut(button) {
   if (button) button.classList.add("is-loading");
   try {
     const response = await api(`/api/share${job}`);
-    if (!response.ok) return;
+    if (!response.ok) {  // say why in words; a failed share used to leave the button as if nothing was pressed
+      const body = await response.json().catch(() => ({}));
+      state.easy.note = typeof body.detail === "string" ? body.detail : "The 720p cut did not build. Try Download instead.";
+      render();
+      return;
+    }
     const blob = await response.blob();
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -4100,7 +4118,19 @@ document.addEventListener("click", async (event) => {
     state.easy.scenesChosen = true;  // picked by hand: the idea line no longer turns Off into Mix
     render();
   } else if (act === "easy-source") {
-    state.easy.morphSource = el.dataset.value === "clips" ? "clips" : "objects";
+    const from = morphSource(state.easy);
+    const to = el.dataset.value === "clips" ? "clips" : "objects";
+    if (from !== to) {
+      // Your images and Your clips each keep their own folder and note: the film pack picked for clips used to show
+      // under Your images ("The free film pack: 24 clips ...") once the row went back to Objects
+      const kept = state.easy.ownBySource || (state.easy.ownBySource = {});
+      kept[from] = { folder: state.easy.ownFolder || "", id: state.easy.ownId || "", note: state.easy.ownNote || "" };
+      const back = kept[to] || {};
+      state.easy.ownFolder = back.folder || "";
+      state.easy.ownId = back.id || "";
+      state.easy.ownNote = back.note || "";
+    }
+    state.easy.morphSource = to;
     render();
   } else if (act === "easy-orbit") {
     state.easy.stemOrbit = el.dataset.value !== "off";
@@ -4922,7 +4952,14 @@ async function uploadOwn(files) {
   }
   state.easy.ownId = data.id;
   state.easy.ownFolder = "";
-  state.easy.ownNote = data.detail || `${data.images} images, ${data.clips} clips.`;
+  // worded for the Morph row in use: an object cut takes the images, a clips cut the clips, never both
+  const clipsCut = morphSource(state.easy) === "clips";
+  const n = Number(clipsCut ? data.clips : data.images) || 0;
+  const left = Number(clipsCut ? data.clips_left : data.images_left) || 0;
+  state.easy.ownNote = clipsCut
+    ? (n ? `${n} clip${n === 1 ? "" : "s"} here. They play in turn, each morphing into the next.` : "No clips came with those files (mp4, mov or webm).")
+    : (n ? `${n} image${n === 1 ? "" : "s"} here. They lead the morphs, in name order.` : "No images came with those files. Clips go under Morph > Your clips.");
+  if (left) state.easy.ownNote += ` ${left} left out: a cut takes ${clipsCut ? data.max_clips : data.max_images} at most.`;
   render();
 }
 
@@ -5123,14 +5160,17 @@ async function pickFilmPack() {
     render();
     return;
   }
-  if (!pack.present) {
+  const count = Number(pack.count || 0);
+  if (!pack.present && count < 2) {  // a pack that came down in part still cuts (an archive.org window that failed is no dead end)
     state.easy.ownNote = state.easy.ownNoteSetup = `Download the free film pack in Setup & models first (about ${pack.size_label || "100 MB"}).`;
     render();
     return;
   }
   state.easy.ownFolder = pack.folder;
   state.easy.ownId = "";
-  state.easy.ownNote = `The free film pack: ${pack.count} clips from ${pack.films} public-domain films. They play in turn, each morphing into the next.`;
+  state.easy.ownNote = pack.present
+    ? `The free film pack: ${pack.count} clips from ${pack.films} public-domain films. They play in turn, each morphing into the next.`
+    : `The free film pack: ${count} of its ${pack.total} clips are here, and they play in turn, each morphing into the next. Download again in Setup & models fetches the rest.`;
   render();
 }
 

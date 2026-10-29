@@ -26,6 +26,28 @@ def test_a_redraw_keeps_every_scrolled_panel_and_the_row_you_are_on():
     assert "if (box === node) return;" in _fn("function restoreAnchor(app, anchor)", "function rememberPlace()")
 
 
+def test_a_chip_under_the_knobs_stays_put_when_the_desk_redraws():
+    # the stress pass, 29 Oct: every Morph, Timing, Effects, Look and Foreshadow chip moved the page 279 to 363 px. The
+    # knob strip (ui_v6.js) mounted a frame after render() and the idea row a tick after, so the place was put back on a
+    # page that short, then they came in above the chip you had clicked and pushed it down.
+    draw = _fn("function render()", "function renderTool(")
+    assert "window.XENO_KNOBS_MOUNT()" in draw and draw.index("XENO_KNOBS_MOUNT()") < draw.index("restorePlace(place)")
+    assert draw.index("XENO_IDEAS.mount()") < draw.index("restorePlace(place)")
+    v6 = (STATIC / "ui_v6.js").read_text(encoding="utf-8")
+    assert "window.XENO_KNOBS_MOUNT=mount;" in v6 and "if(!host||host.querySelector(\".xf-macros\"))return;" in v6
+    ideas = (STATIC / "ideas.js").read_text(encoding="utf-8")
+    mount = ideas.split("function mount() {", 1)[1].split("\n  }\n", 1)[0]
+    assert "if (catalog) bindAll();" in mount  # at once when the catalog is in, not after a promise tick
+    # a vibe card picked from More vibes moves into the grid: the anchor is that card, not the nth card of the list
+    assert "data-vibe" in _fn("function anchorKey(node)", "function scrollerKey(")
+    # the chip clicked keeps the focus (15 s), not the first chip of its row (Full song)
+    assert "node.dataset.value" in _fn("function placeKey(node)", "// Nothing moves under you")
+    assert "item.dataset.value === value" in _fn("function restorePlace(place)", "function render()")
+    # Back to the desk from Setup came back at the desk's foot (the kept place named the Setup link): a page switch opens
+    # the tool page at its top and the desk where you left it
+    assert "window.scrollTo(0, pageScroll[state.view] || 0)" in draw and "else restorePlace(place);" in draw
+
+
 def test_a_redraw_never_fades_the_desk_only_a_new_screen_does():
     # found recording the walkthrough, 29 Oct: every click blanked the desk and slid it 4 px (the fade-in on #app's children)
     css = (STATIC / "desk.css").read_text(encoding="utf-8")
