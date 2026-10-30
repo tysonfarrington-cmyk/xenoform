@@ -1,22 +1,119 @@
 {
  "aspect": "9:16",
- "start": 115.83,
+ "start": 0.0,
  "title": 231.33,
  "tail": 6.86,
  "slots": [
   [
-   "black_orchid_open",
-   119.79,
+   "a01_black_orchid_intro",
+   16.42,
    "pin"
   ],
   [
-   "lava_dinos_shatter",
-   122.42
+   "a02_shadow_animals",
+   28.46,
+   ""
+  ],
+  [
+   "a03_glow_spirits",
+   33.8,
+   ""
+  ],
+  [
+   "a04_marble_statues",
+   39.13,
+   "",
+   -10
+  ],
+  [
+   "a05_cyber_egypt",
+   44.46,
+   "",
+   -7
+  ],
+  [
+   "a06_chrome_relics",
+   49.6,
+   "pin",
+   -9
+  ],
+  [
+   "a07_ice_norse",
+   57.27,
+   "pin",
+   5
+  ],
+  [
+   "clips_flash",
+   62.6,
+   "",
+   9
+  ],
+  [
+   "a09_riso_aztec",
+   67.96,
+   "",
+   -8
+  ],
+  [
+   "a10_brutalist_wonders",
+   71.29,
+   "",
+   -9
+  ],
+  [
+   "a11_glass_chess",
+   78.63,
+   "",
+   8
+  ],
+  [
+   "a12_botanical_myth",
+   83.96,
+   "",
+   -7
+  ],
+  [
+   "a13_cosmic_clear",
+   91.98,
+   "pin",
+   -9
+  ],
+  [
+   "a14_neon_beasts",
+   97.06,
+   "",
+   -9
+  ],
+  [
+   "a15_ferro_symbols",
+   106.69,
+   "pin",
+   -9
+  ],
+  [
+   "a16_kintsugi_masks",
+   112.19,
+   "",
+   -2
+  ],
+  [
+   "a17_ocean_clear",
+   119.79,
+   "pin",
+   -12
+  ],
+  [
+   "chrome_beasts_shatter",
+   122.42,
+   "",
+   0
   ],
   [
    "deepsea_fish_clear",
    126.33,
-   "pin"
+   "pin",
+   0
   ],
   [
    "shadow_magic_melt",
@@ -27,48 +124,56 @@
   [
    "clips_montage",
    131.62,
-   "pin"
+   "pin",
+   0
   ],
   [
    "origami_fold_smooth",
-   135.54
+   135.54,
+   "",
+   0
   ],
   [
-   "cyber_fold_beat",
-   138.29
-  ],
-  [
-   "neon_shatter_snap",
+   "b_neon_tarot",
    141.0,
-   "pin"
+   "pin",
+   -16
   ],
   [
-   "botanical_scenes_bloom",
+   "botanical_clear_bloom",
    149.12,
    "pin",
-   20
+   15
   ],
   [
-   "cosmic_bloom_beat",
-   154.38
+   "cosmic_bloom_beat@169",
+   151.79,
+   "",
+   0
   ],
   [
-   "riso_fold_snap",
-   159.62
+   "riso_fold_snap@169",
+   159.62,
+   "",
+   -4
   ],
   [
-   "kintsugi_shatter_snap",
-   164.88
+   "b_kintsugi_symbols",
+   164.88,
+   "",
+   -15
   ],
   [
-   "y2k_spin_beat",
+   "b_y2k_symbols",
    170.33,
-   "pin"
+   "pin",
+   -23
   ],
   [
-   "ice_melt_smooth",
+   "b_cyber_beasts",
    174.29,
-   "pin"
+   "pin",
+   0
   ],
   [
    "black_flowers_melt",
@@ -77,23 +182,22 @@
    16
   ],
   [
-   "chrome_robots_spin",
-   186.33,
+   "b_shadow_mythic",
+   191.79,
    "",
-   8
+   -5
   ],
   [
-   "marble_spin_w6",
-   191.79
-  ],
-  [
-   "thermal_aviation_spin",
+   "ink_samurai_spin",
    197.04,
-   "pin"
+   "pin",
+   -17
   ],
   [
-   "ferro_bloom_beat",
-   202.42
+   "b_marble_icons",
+   202.42,
+   "",
+   16
   ],
   [
    "none_pirates_beat",
@@ -102,21 +206,22 @@
    -8
   ],
   [
-   "glass_space_bloom",
-   214.96
-  ],
-  [
-   "brutalist_fold_snap",
-   217.58
+   "glass_space_bloom@169",
+   217.58,
+   "",
+   -3
   ],
   [
    "ocean_bloom_beat",
    226.08,
-   "pin"
+   "pin",
+   0
   ],
   [
-   "gold_finale_melt",
-   238.19
+   "gold_finale_clear",
+   238.19,
+   "",
+   -23
   ]
  ]
 }

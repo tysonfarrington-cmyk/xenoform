@@ -2,7 +2,7 @@
 
 This page is for a judge. It goes from a clean checkout to the same kind of film as the demo video, on open weights, on your own GPU. Steps 1 to 3 need no GPU and take about two minutes; the rest need ComfyUI and a 12 GB card.
 
-The song in the demo video ("Morph Engine v2") was made by the author on Suno and is not in the repo. Use `examples/demo.wav`, the bundled synthesised track, one of the six bundled songs (the author's own Suno instrumentals in `examples/songs/`, a chip each under Choose a song) or any song of your own. The cut, the look and the transitions are the same; only the music changes.
+The song in the demo video is "Glitch Out", the author's own Suno instrumental and one of the six bundled songs (`examples/songs/glitch_out.mp3`, the Glitch Out chip under Choose a song). Use it, `examples/demo.wav` (the bundled synthesised track), another bundled song or any song of your own. The demo's outputs were rendered with Cloud Final, the same open-weights LTX-2.5 model on Comfy Cloud's GPUs; Final renders it on your own GPU, more slowly.
 
 ## 1. Install (2 minutes plus the pip download)
 

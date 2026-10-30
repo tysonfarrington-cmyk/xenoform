@@ -36,5 +36,25 @@
    "16_chien_andalou_pianos"
   ],
   "error": null
+ },
+ {
+  "label": "clips_flash",
+  "tier": "final",
+  "job": "c11d5c0f",
+  "status": "done",
+  "seconds": 0,
+  "window": 50.0,
+  "clips": [
+   "01_metropolis_robot",
+   "02_trip_moon_face",
+   "11_lost_world_fight",
+   "05_potemkin_steps",
+   "19_general_bridge",
+   "04_steamboat_whistle",
+   "06_apollo11_launch",
+   "16_chien_andalou_pianos"
+  ],
+  "error": null,
+  "note": "clips_demo (66da0461) copied and re-cut on desk 47326 with the cyan-flash look and dither (30 Oct, Tys: the film pack 'black and white ... not much audio reaction'); the demo keeps 66da0461"
  }
 ]

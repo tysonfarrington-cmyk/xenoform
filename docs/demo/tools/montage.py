@@ -41,6 +41,13 @@ def sources(aspect):
         for r in json.loads(p.read_text(encoding="utf-8")):
             if r.get("status") == "done" and r["label"] not in rows:
                 rows[r["label"]] = {"job": r["job"], "window": float(r["window"]), "aspect": r.get("aspect", "16:9")}
+    # "<label>@169" in a 9:16 plan: the 16:9 render as a strip over its blur even when a 9:16 one exists (30 Oct: some
+    # 9:16 renders came out smeared or on plain objects where the 16:9 stretch is good)
+    p = M / "renders_169.json"
+    if p.exists():
+        for r in json.loads(p.read_text(encoding="utf-8")):
+            if r.get("status") == "done":
+                rows.setdefault(r["label"] + "@169", {"job": r["job"], "window": float(r["window"]), "aspect": "16:9"})
     return rows
 
 

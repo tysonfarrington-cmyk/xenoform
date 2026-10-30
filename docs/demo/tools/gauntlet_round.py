@@ -26,12 +26,32 @@ def mmss(t):
     return f"{int(t // 60)}:{t % 60:04.1f}"
 
 
+def ideas():
+    """label -> the idea line its cut was made with (montage_renders.py's CUTS, read as text)."""
+    import re
+    text = (HERE / "montage_renders.py").read_text(encoding="utf-8")
+    marks = [(m.start(), m.group(1)) for m in re.finditer(r'"label": "(\w+)"', text)] + [(len(text), "")]
+    out = {}
+    for (a, lab), (b, _) in zip(marks, marks[1:]):
+        m = re.search(r'"idea": "([^"]*)"', text[a:b])
+        if m:
+            out[lab] = m.group(1)
+    return out
+
+
+IDEAS = ideas()
+
+
 def describe(label):
+    label = label.replace("@169", "")  # a 9:16 plan's 16:9 strip
+    if label == "clips_flash":
+        return "free film pack clips cut (Apollo 11, Un Chien Andalou's pianos, Metropolis's robot), re-cut with the cyan-flash look and dither"
     if label.startswith("clips"):
         return "free film pack clips cut (public-domain films morphing into each other), Final on this GPU, re-cut with the bloom-rush look"
     r = LOOKS.get(label) or {}
     fx = ", ".join(r.get("effects") or []) or "no effects"
-    return f"{r.get('vibe', '?')} vibe, {r.get('style', '?')} morphs on {r.get('timing', '?')} timing, {fx}, look {r.get('look', '?')}"
+    idea = f"; objects: {IDEAS[label]}" if IDEAS.get(label) else ""
+    return f"{r.get('vibe', '?')} vibe, {r.get('style', '?')} morphs on {r.get('timing', '?')} timing, {fx}, look {r.get('look', '?')}{idea}"
 
 
 def montage_list(js):
@@ -78,10 +98,11 @@ def main():
            "and as Tys would: he wants it slick, on the beat, every morph clear and on interesting objects, no look shown",
            "twice in the montage, the first 20 seconds the strongest, the outputs on screen long enough to see, the voice",
            "natural with pauses, nothing boring, unclear or repeated, nothing that shakes or zooms on the app screens.", "",
+           "Tys, 30 Oct: the montage is its own standalone music video now; objects should be symbolic or iconic, not generic.", "",
            "## Files in this folder",
-           "- `montage_16x9.mp4`, `montage_9x16.mp4`: the standalone montage on Tys's Glitch Out (no voice).",
+           "- `montage_16x9.mp4`, `montage_9x16.mp4`: the montage, now its own music video on the whole of Tys's Glitch Out (no voice).",
            "- `demo_16x9.mp4`, `demo_9x16.mp4`: the contest demo (must stay under 2:00).",
-           "- `long_16x9.mp4`: the long walkthrough (opens on the whole montage).",
+           "- `long_16x9.mp4`: the long walkthrough (opens on the montage's two minutes from 1:56 to its title).",
            "- `*_sheet_NN.jpg`: contact sheets, the time on every frame (montage 1 s apart, demo 2 s, long 6 s).", "",
            "## How to answer",
            "Write `OWLY_NOTES.md` in this folder, one line an issue, most important first:",

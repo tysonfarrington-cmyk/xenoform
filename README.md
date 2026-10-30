@@ -79,7 +79,7 @@ Open weights only, on your own GPU. Checked against each model card or licence t
 | `examples/demo.wav` | The bundled demo song | Made by `xenoform synth`; part of this MIT repo |
 | `examples/songs/` (six mp3s with their analyses) | The bundled songs: Morphing Wobble (a 20 s cut and the whole song), Hip hop, boom bap, Liquid drum and bass, Ambient, Glitch Out | Made by the author with Suno; included for use with Xenoform |
 
-The song in the contest demo video ("Morph Engine v2") was made by the author on Suno and is not shipped. Use `examples/demo.wav`, one of the six bundled songs in `examples/songs/` (the author's own Suno instrumentals) or your own track.
+The song in the contest demo video is "Glitch Out", the author's own Suno instrumental, bundled as `examples/songs/glitch_out.mp3`; use it, `examples/demo.wav`, another of the six bundled songs or your own track. The demo video's outputs were rendered with Cloud Final: the same open-weights LTX-2.5 22B distilled model, run on Comfy Cloud's GPUs so the 4-minute montage could be made in an afternoon. Cloud Final is an opt-in path, off by default; Final renders the same model on your own GPU.
 
 This entry claims the **LTX bonus**: LTX-2.5 is the core video model for Final and Cloud Final (LTX-2.3 where it is not installed, and for action shots and scene morphs), and LTX-Video 0.9.5 renders every Draft morph. Prompts are encoded locally. No LTX API key is used. CI (`tests/test_eligibility.py`) fails if a default workflow references a partner or API node, fills an LTX API key, or encodes prompts through an API.
 

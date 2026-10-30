@@ -17,30 +17,29 @@ the social post. Voice-over over the screen, the outputs played full frame, capt
   (song analysis, ComfyUI graphs through the Comfy SDK, LTX on any card from 12 GB up, all open weights) and say what is new.
   It ends on the repo URL. The long one is for the README and the post's replies, with no limit.
 
-## Short (1:59.0: the montage's first 24 s, then the walkthrough)
+## Short (1:44: the montage's gold outro, then the walkthrough)
 
 Every cut lands on a beat of Glitch Out (Tys's own track, the montage's song too); the voice reads one sentence at a
 time with a breath between, and the screens play still and full frame. Rows with two sentences are read apart.
 
 | Time | Picture | Voice |
 | --- | --- | --- |
-| 0:00 | The montage's opening: a black glass orchid unfolding into a passion flower, then on the drop lava-obsidian dinosaurs, the deep-sea creatures in feedback trails, the shadow-self phoenix, the free film pack in colour (the Moon, the Phantom), origami noir, Cyberspace 1995, neon noir; the title lands on the next drop | (the song alone) |
-| 0:24 | The title | Xenoform turns a song into a music video where every beat is a transformation. |
-| 0:30 | The Song step: the vibe grid, None picked | Drop in a song and pick a vibe, or None, the things just as they are. |
-| 0:35 | The idea line: "underwater" grows its chips | Then say what it morphs through. A theme like underwater brings fifteen things of its own. |
-| 0:42 | Make; the making screen, the chain, Cloud Final coming back three morphs at a time | “Make” plans the shots on the song's bars and beats, and renders a morph for every shot. |
-| 0:48 | The result, full frame: None "underwater" on Cloud Final, made on the very seconds of the song under it | Every shot is one object turning into the next, cut to the song's own bars. |
-| 0:54 | Neon noir, Spin on Snap (labelled) | Five ways to change, and the change can land right on the beat. |
-| 0:59 | Risograph, Dither, Slit-scan and Feedback (labelled) | Effects ride the kick and the loudness. |
-| 1:03 | The timeline: picture tiles, the Look tab, a colour change, Apply, the re-cut | Then edit it like a timeline, shot by shot. Colour, effects, order and cuts, re-cut from the cached morphs with no GPU. |
-| 1:13 | Morph > Your clips > Free film pack, then the clips cut: Metropolis, the Moon, The Lost World, the Odessa steps | Or morph film clips into each other: a free pack of public-domain films, or your own. |
-| 1:23 | How it's built: song, plan, ComfyUI graphs, LTX morphs, the cut (each box on its sentence) | How it's built: the song is split into stems and bars. The plan becomes ComfyUI graphs, sent through the Comfy SDK. LTX renders every morph, on any card from 12 GB up, or on Comfy Cloud. All open weights, local by default. |
-| 1:41 | What's new: the playhead over the timeline; the MCP panel | What's new: the edit comes from the music itself. Every shot is generated, and you change it like an editor, not a prompt box. An MCP server lets any AI drive it. |
-| 1:55 | End card: github.com/tysonfarrington-cmyk/xenoform, #OpenSourceHiggsfield | Xenoform. Open source, on GitHub. |
+| 0:00 | The montage's gold outro (Tys, 30 Oct: the 24 s montage intro dropped for it): the gold eagle folding into the infinity knot under the title, the song played out to its fade | (the song alone) |
+| 0:09 | The title | Xenoform turns a song into a music video where every beat is a transformation. |
+| 0:15 | The Song step: the vibe grid, None picked | Drop in a song and pick a vibe, or None, the things just as they are. |
+| 0:20 | The idea line: "underwater" grows its chips | Then say what it morphs through. A theme like underwater brings fifteen things of its own. |
+| 0:27 | Make; the making screen, the chain, Cloud Final coming back three morphs at a time | “Make” plans the shots on the song's bars and beats, and renders a morph for every shot. |
+| 0:33 | The result, full frame: None "underwater" on Cloud Final, made on the very seconds of the song under it | Every shot is one object turning into the next, cut to the song's own bars. |
+| 0:39 | Neon noir, Spin on Snap (labelled) | Five ways to change, and the change can land right on the beat. |
+| 0:44 | Risograph, Dither, Slit-scan and Feedback (labelled) | Effects ride the kick and the loudness. |
+| 0:48 | The timeline: picture tiles, the Look tab, a colour change, Apply, the re-cut | Then edit it like a timeline, shot by shot. Colour, effects, order and cuts, re-cut from the cached morphs with no GPU. |
+| 0:58 | Morph > Your clips > Free film pack, then the clips cut: Metropolis, the Moon, The Lost World, the Odessa steps | Or morph film clips into each other: a free pack of public-domain films, or your own. |
+| 1:08 | How it's built: song, plan, ComfyUI graphs, LTX morphs, the cut (each box on its sentence) | How it's built: the song is split into stems and bars. The plan becomes ComfyUI graphs, sent through the Comfy SDK. LTX renders every morph, on any card from 12 GB up, or on Comfy Cloud. All open weights, local by default. |
+| 1:26 | What's new: the playhead over the timeline; the MCP panel | What's new: the edit comes from the music itself. Every shot is generated, and you change it like an editor, not a prompt box. An MCP server lets any AI drive it. |
+| 1:40 | End card: github.com/tysonfarrington-cmyk/xenoform, #OpenSourceHiggsfield | Xenoform. Open source, on GitHub. |
 
 The Model line (Draft, Fast Final, Final, Cloud Final) left the short for the intro's room under 2:00; the long keeps
 it, and Comfy Cloud is named in How it's built.
-
 ## Long (about 7 minutes), chapters
 
 1. **What it is** (0:30). The three cuts again; song in, music video out; the morph engine at its heart; what is new
@@ -200,13 +199,33 @@ it, and Comfy Cloud is named in How it's built.
   4:33 The engine · 5:50 The timeline · 6:47 Your clips · 7:23 Share · 7:48 Under the hood · 9:02 How it's built. Checked with `qa_cut.py`: no black frame
   beyond the dark card grounds, the only frozen stretches the title under its line and the cards' held panels, -16 LUFS,
   true peak -2.4 to -3.5 dBFS.
+- **The montage on the whole song** (Tys, 30 Oct 8 am: "we may as well do the whole entire song ... it sort of drops you
+  right to the middle of the track, and it doesn't feel like it has a story"; "the object should have some sort of
+  symbolic element, like the hand ... the dragon with the smoke, kind of iconic and cool"; "make this its own standalone
+  music video"). `xenoform_montage.mp4` (3:58, 16:9) and the 9:16 now run the whole of Glitch Out. The song's first half
+  has its own Cloud Final cuts, each made on the seconds it plays over: calm and smooth in the quiet intro, on the beat
+  in the grooves, snap and shatter on the drops. It opens on the black glass orchid unfolding into a passion flower.
+  Every subject is a symbol or an icon: shadow animals in smoke, glowing spirits, Greek statues, Egypt in wireframe, the
+  gods' relics in chrome, Norse ice, an Aztec serpent, the moai, glass chess, laurel and olive, Saturn and an astronaut,
+  a neon robotic hand, the eye, heart and moth in ferrofluid, kintsugi masks and hands, sea monsters, chrome beasts,
+  tarot in neon, Y2K foil icons, wireframe beasts, dragons and unicorns in smoke, ink-wash samurai, marble icons, and
+  the gold finale. The free film pack's stretch (the Apollo launch, the pianos, Metropolis's robot) is a copy of its cut
+  re-cut on the desk with the cyan-flash look, so the black and white flashes on the beat. Out on Tys's word: the lava
+  dinosaurs, a first try at the relics on None (a wig, a helmet, hay), the Taj Mahal, the General's bridge and Steamboat
+  Willie. Three renders were made again because feedback over smooth morphs smeared them or a look washed them out
+  (`scratchpad/wt/montage_renders.py`; plans `montage/plan_169.json`, `make_plan_916.py`, checked against the measured
+  offsets by `montage_check.py`). The 9:16 pass renders only each slot's own seconds plus a margin (about a third of
+  the morphs: the Creator plan runs three at a time and a cut already uses all three). The demo's intro and the long's
+  opening are cut from the same plan (`glow_derive.py`): since 30 Oct 1:50 pm both open on the montage's gold outro from the
+  beat three beats before its title, title and song played out (Tys dropped the 24 s montage intro; the
+  long lost its first 1:35 first). Demo 1:44, long 7:58, both voices measured in sync.
 
 ## Decided
 
 - **The voice is af_heart** (Tys, 29 Oct 10:30 am). The contest video is
-  `Desktop\xeno_walkthrough_29oct\xenoform_demo_video.mp4` (the af_heart short, 1:59.0 since the glow-up, under the
+  `Desktop\xeno_walkthrough_29oct\xenoform_demo_video.mp4` (the af_heart short, 1:44 since 30 Oct with the gold outro as its intro, under the
   form's 2:00); the long one for the README and the post's replies is `xenoform_long_walkthrough.mp4` (9:44); the
-  montage stands on its own as `xenoform_montage.mp4` (2:02). The am_michael and bm_george shorts of the morning stay
+  montage stands on its own as `xenoform_montage.mp4` (3:58, the whole song since 30 Oct; the long opens on its two minutes from 1:56). The am_michael and bm_george shorts of the morning stay
   beside them, unchanged.
 - **A 9:16 cut for the post** (Tys, 29 Oct 10:40 am: "May as well do a 9:16 cut as well"):
   `xenoform_demo_video_9x16.mp4`, 1080x1920, the same plan, read, bed and loudness, laid out for a phone by

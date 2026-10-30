@@ -10,7 +10,7 @@
    "pin"
   ],
   [
-   "lava_dinos_shatter",
+   "chrome_beasts_shatter",
    122.42
   ],
   [
@@ -34,13 +34,10 @@
    135.54
   ],
   [
-   "cyber_fold_beat",
-   138.29
-  ],
-  [
-   "neon_shatter_snap",
+   "b_neon_tarot",
    141.0,
-   "pin"
+   "pin",
+   -16
   ]
  ]
 }

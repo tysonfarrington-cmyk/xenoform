@@ -1,16 +1,100 @@
 {
  "aspect": "16:9",
- "start": 115.83,
+ "start": 0.0,
  "title": 231.33,
  "tail": 6.86,
  "slots": [
   [
-   "black_orchid_open",
-   119.79,
+   "a01_black_orchid_intro",
+   16.42,
    "pin"
   ],
   [
-   "lava_dinos_shatter",
+   "s1_shadow_dragon",
+   28.46
+  ],
+  [
+   "s2_black_symbols",
+   33.8,
+   "",
+   -6
+  ],
+  [
+   "s3_neon_egypt",
+   39.13
+  ],
+  [
+   "a06_chrome_relics",
+   49.6,
+   "pin",
+   -2
+  ],
+  [
+   "a07_ice_norse",
+   57.27,
+   "pin",
+   5
+  ],
+  [
+   "n1_origami_icons",
+   62.6
+  ],
+  [
+   "n2_deepsea_glow",
+   67.96,
+   "",
+   5
+  ],
+  [
+   "a10_brutalist_wonders",
+   71.29,
+   "pin",
+   -9
+  ],
+  [
+   "c1_marble_chess",
+   78.63,
+   "",
+   3
+  ],
+  [
+   "a12_botanical_myth",
+   83.96,
+   "",
+   -7
+  ],
+  [
+   "a13_cosmic_clear",
+   91.98,
+   "pin",
+   -9
+  ],
+  [
+   "a14_neon_beasts",
+   97.06,
+   "",
+   -9
+  ],
+  [
+   "a15_ferro_symbols",
+   106.69,
+   "pin",
+   -9
+  ],
+  [
+   "a16_kintsugi_masks",
+   112.19,
+   "",
+   -2
+  ],
+  [
+   "a17_ocean_clear",
+   119.79,
+   "pin",
+   -12
+  ],
+  [
+   "chrome_beasts_shatter",
    122.42
   ],
   [
@@ -34,39 +118,41 @@
    135.54
   ],
   [
-   "cyber_fold_beat",
-   138.29
-  ],
-  [
-   "neon_shatter_snap",
+   "b_neon_tarot",
    141.0,
-   "pin"
+   "pin",
+   -16
   ],
   [
-   "botanical_scenes_bloom",
+   "botanical_clear_bloom",
    149.12,
    "pin",
-   20
+   15
   ],
   [
    "cosmic_bloom_beat",
-   154.38
+   151.79
   ],
   [
    "riso_fold_snap",
-   159.62
+   159.62,
+   "",
+   -4
   ],
   [
-   "kintsugi_shatter_snap",
-   164.88
+   "b_kintsugi_symbols",
+   164.88,
+   "",
+   -15
   ],
   [
-   "y2k_spin_beat",
+   "b_y2k_symbols",
    170.33,
-   "pin"
+   "pin",
+   -23
   ],
   [
-   "ice_melt_smooth",
+   "b_cyber_beasts",
    174.29,
    "pin"
   ],
@@ -77,46 +163,44 @@
    16
   ],
   [
-   "chrome_robots_spin",
-   186.33,
+   "b_shadow_mythic",
+   191.79,
    "",
-   8
+   -5
   ],
   [
-   "marble_spin_w6",
-   191.79
-  ],
-  [
-   "thermal_aviation_spin",
+   "b2_cosmic_more",
    197.04,
    "pin"
   ],
   [
-   "ferro_bloom_beat",
-   202.42
+   "b_marble_icons",
+   202.42,
+   "",
+   16
   ],
   [
-   "none_pirates_beat",
+   "b3_ferro_beasts",
    210.42,
-   "pin",
-   -8
-  ],
-  [
-   "glass_space_bloom",
-   214.96
-  ],
-  [
-   "brutalist_fold_snap",
-   217.58
-  ],
-  [
-   "ocean_bloom_beat",
-   226.08,
    "pin"
   ],
   [
-   "gold_finale_melt",
-   238.19
+   "glass_space_bloom",
+   217.58,
+   "",
+   -3
+  ],
+  [
+   "ocean_bloom_beat",
+   224.08,
+   "pin",
+   18
+  ],
+  [
+   "gold_finale_clear",
+   238.19,
+   "",
+   -23
   ]
  ]
 }

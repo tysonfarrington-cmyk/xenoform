@@ -69,8 +69,14 @@ for aspect, key in (("169", "intro"), ("916", "intro_v")):
     if intro.exists():
         meta = json.loads(intro.with_suffix(".json").read_text(encoding="utf-8"))
         plan[key] = intro.as_posix()
+        # Tys, 30 Oct 1:50 pm: the demo opens on the montage's gold outro, title and song played out, like the long ("you can
+        # remove the 30 intro it currently has"): an intro past its title needs no ring-out
+        full = float(meta["seconds"]) > float(meta["title"]) - float(meta["song_start"]) + 0.5
         if aspect == "169":
-            plan["intro_tail"] = {"song": SONG, "start": meta["title"], "seconds": 1.6, "gain_db": meta["gain_db"]}
+            if full:
+                plan.pop("intro_tail", None)
+            else:
+                plan["intro_tail"] = {"song": SONG, "start": meta["title"], "seconds": 1.6, "gain_db": meta["gain_db"]}
 (M / "offsets.json").write_text(json.dumps(offsets, indent=1), encoding="utf-8")
 (HERE / "plan_short.json").write_text(json.dumps(plan, indent=1, ensure_ascii=False), encoding="utf-8")
 for seg in plan["segments"]:

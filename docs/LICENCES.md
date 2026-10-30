@@ -63,7 +63,8 @@ Both families are SIL Open Font License 1.1. The copyright lines and the licence
 | --- | --- |
 | `examples/demo.wav` | Synthesized by `xenoform synth`. No third-party recording. |
 | `examples/songs/*.mp3` (the six bundled songs, with their `.features.json` analyses) | Made by the author with Suno; included for use with Xenoform. Listed by title in [CREDITS.md](../CREDITS.md). No third-party recording. |
-| Demo video track ("Morph Engine v2") | The contest demo video and transitions reel only, not shipped | Made by the author on Suno Pro on 20 Oct 2026 (inside the Pro billing period), so the author owns it with commercial-use rights under Suno's terms. |
+| Demo video track ("Glitch Out") | The contest demo video, the long walkthrough and the montage; bundled as `examples/songs/glitch_out.mp3` | One of the six bundled songs above: made by the author with Suno, no third-party recording. |
+| Earlier demo track ("Morph Engine v2") | The transitions reel only, not shipped | Made by the author on Suno Pro on 20 Oct 2026 (inside the Pro billing period), so the author owns it with commercial-use rights under Suno's terms. |
 | Vibe stills and default clip packs | The 20 extended vibes and paper-summer were generated locally by the author with Z-Image Turbo (stills) and LTX-Video 0.9.5 (clips); the six original vibes' thumbnails and clips, and the regrade sources of their stills, have no generation record in the repo (origin unrecorded). Row by row in [CREDITS.md](../CREDITS.md). No CC BY credit is needed. |
 | NASA clips and anchor stills (`assets/library/manifest.json`) | Public domain, source URL per item in the manifest and in [CREDITS.md](../CREDITS.md). No NASA endorsement implied. |
 | Moves driving clips (`configs/moves.json`) | Pexels and Mixkit licences: free use, no redistribution of the unaltered files, so they are fetched by `scripts/fetch_moves.py` and not shipped. |

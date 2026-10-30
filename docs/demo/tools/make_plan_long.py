@@ -124,6 +124,10 @@ plan = {"copy": "C:/Projects/xenoform-rc2/docs/demo/long_voice.json", "music": f
 if INTRO.exists():  # the intro up to its title on the hit, then l01 over the title
     meta = json.loads(INTRO.with_suffix(".json").read_text(encoding="utf-8"))
     plan["intro"] = INTRO.as_posix()
+# Tys, 30 Oct 1 pm: "i want the full outro from the montage with the music and everything ... like a mini intro": an
+# intro that runs past its title (the montage's gold ending with the title and the song played out) needs no ring-out
+full_outro = INTRO.exists() and float(meta["seconds"]) > float(meta["title"]) - float(meta["song_start"]) + 0.5
+if INTRO.exists() and not full_outro:
     plan["intro_tail"] = {"song": "C:/Projects/xenoform-rc2/examples/songs/glitch_out.mp3", "start": meta["title"], "seconds": 1.6,
                           "gain_db": meta["gain_db"]}
 (HERE / "plan_long.json").write_text(json.dumps(plan, indent=1), encoding="utf-8")
