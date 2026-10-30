@@ -5,7 +5,7 @@
  "tail": 6.86,
  "slots": [
   [
-   "a01_black_orchid_intro",
+   "o1_glow_sea_intro",
    16.42,
    "pin"
   ],
@@ -14,20 +14,15 @@
    28.46
   ],
   [
-   "s2_black_symbols",
-   33.8,
+   "o2_botanical_wild",
+   39.13,
    "",
-   -6
+   21
   ],
   [
-   "s3_neon_egypt",
-   39.13
-  ],
-  [
-   "a06_chrome_relics",
+   "o3_ocean_reef",
    49.6,
-   "pin",
-   -2
+   "pin"
   ],
   [
    "a07_ice_norse",
@@ -52,10 +47,10 @@
    -9
   ],
   [
-   "c1_marble_chess",
+   "o5_gold_insects",
    78.63,
    "",
-   3
+   13
   ],
   [
    "a12_botanical_myth",
@@ -104,14 +99,9 @@
   ],
   [
    "shadow_magic_melt",
-   128.96,
+   131.62,
    "",
    18
-  ],
-  [
-   "clips_montage",
-   131.62,
-   "pin"
   ],
   [
    "origami_fold_smooth",
@@ -182,7 +172,8 @@
   [
    "b3_ferro_beasts",
    210.42,
-   "pin"
+   "pin",
+   -6
   ],
   [
    "glass_space_bloom",

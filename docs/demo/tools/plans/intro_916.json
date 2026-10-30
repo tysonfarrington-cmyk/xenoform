@@ -10,13 +10,15 @@
    "pin"
   ],
   [
-   "lava_dinos_shatter",
-   122.42
+   "chrome_beasts_shatter",
+   122.42,
+   ""
   ],
   [
    "deepsea_fish_clear",
    126.33,
-   "pin"
+   "pin",
+   0
   ],
   [
    "shadow_magic_melt",
@@ -27,18 +29,17 @@
   [
    "clips_montage",
    131.62,
-   "pin"
+   "pin",
+   0
   ],
   [
    "origami_fold_smooth",
-   135.54
+   135.54,
+   "",
+   0
   ],
   [
-   "cyber_fold_beat",
-   138.29
-  ],
-  [
-   "neon_shatter_snap",
+   "b_neon_tarot",
    141.0,
    "pin"
   ]

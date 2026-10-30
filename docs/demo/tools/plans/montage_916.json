@@ -5,103 +5,81 @@
  "tail": 6.86,
  "slots": [
   [
-   "a01_black_orchid_intro",
+   "o1_glow_sea_intro",
    16.42,
    "pin"
   ],
   [
-   "a02_shadow_animals",
+   "s1_shadow_dragon",
    28.46,
    ""
   ],
   [
-   "a03_glow_spirits",
-   33.8,
+   "o2_botanical_wild",
+   39.13,
    ""
   ],
   [
-   "a04_marble_statues",
-   39.13,
-   "",
-   -10
-  ],
-  [
-   "a05_cyber_egypt",
-   44.46,
-   "",
-   -7
-  ],
-  [
-   "a06_chrome_relics",
+   "o3_ocean_reef",
    49.6,
-   "pin",
-   -9
+   "pin"
   ],
   [
-   "a07_ice_norse",
+   "a07_ice_norse@169",
    57.27,
    "pin",
    5
   ],
   [
-   "clips_flash",
+   "n1_origami_icons@169",
    62.6,
    "",
-   9
+   0
   ],
   [
-   "a09_riso_aztec",
+   "n2_deepsea_glow",
    67.96,
-   "",
-   -8
+   ""
   ],
   [
    "a10_brutalist_wonders",
    71.29,
-   "",
-   -9
+   "pin"
   ],
   [
-   "a11_glass_chess",
+   "o5_gold_insects",
    78.63,
-   "",
-   8
+   ""
   ],
   [
    "a12_botanical_myth",
    83.96,
-   "",
-   -7
+   ""
   ],
   [
    "a13_cosmic_clear",
    91.98,
-   "pin",
-   -9
+   "pin"
   ],
   [
    "a14_neon_beasts",
    97.06,
-   "",
-   -9
+   ""
   ],
   [
    "a15_ferro_symbols",
    106.69,
-   "pin",
-   -9
+   "pin"
   ],
   [
    "a16_kintsugi_masks",
    112.19,
-   "",
-   -2
+   ""
   ],
   [
    "a17_ocean_clear",
    119.79,
-   "pin",
-   -12
+   "pin"
   ],
   [
    "chrome_beasts_shatter",
@@ -117,15 +95,9 @@
   ],
   [
    "shadow_magic_melt",
-   128.96,
-   "",
-   18
-  ],
-  [
-   "clips_montage",
    131.62,
-   "pin",
-   0
+   "",
+   15
   ],
   [
    "origami_fold_smooth",
@@ -137,13 +109,12 @@
    "b_neon_tarot",
    141.0,
    "pin",
-   -16
+   -10
   ],
   [
    "botanical_clear_bloom",
    149.12,
-   "pin",
-   15
+   "pin"
   ],
   [
    "cosmic_bloom_beat@169",
@@ -160,20 +131,17 @@
   [
    "b_kintsugi_symbols",
    164.88,
-   "",
-   -15
+   ""
   ],
   [
    "b_y2k_symbols",
    170.33,
-   "pin",
-   -23
+   "pin"
   ],
   [
    "b_cyber_beasts",
    174.29,
-   "pin",
-   0
+   "pin"
   ],
   [
    "black_flowers_melt",
@@ -184,26 +152,22 @@
   [
    "b_shadow_mythic",
    191.79,
-   "",
-   -5
+   ""
   ],
   [
-   "ink_samurai_spin",
+   "b2_cosmic_more",
    197.04,
-   "pin",
-   -17
+   "pin"
   ],
   [
    "b_marble_icons",
    202.42,
-   "",
-   16
+   ""
   ],
   [
-   "none_pirates_beat",
+   "b3_ferro_beasts",
    210.42,
-   "pin",
-   -8
+   "pin"
   ],
   [
    "glass_space_bloom@169",
@@ -213,12 +177,12 @@
   ],
   [
    "ocean_bloom_beat",
-   226.08,
+   224.08,
    "pin",
    0
   ],
   [
-   "gold_finale_clear",
+   "gold_finale_clear@169",
    238.19,
    "",
    -23

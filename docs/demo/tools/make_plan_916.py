@@ -10,10 +10,16 @@ import json
 from pathlib import Path
 
 M = Path(__file__).parent / "montage"
-OLD_916 = {"deepsea_fish_clear": 0, "shadow_magic_melt": 18, "origami_fold_smooth": 0, "black_flowers_melt": 16,
+OLD_916 = {"deepsea_fish_clear": 0, "shadow_magic_melt": 15, "origami_fold_smooth": 0, "black_flowers_melt": 16,
            "none_pirates_beat": -8, "ocean_bloom_beat": 0}
 # the 9:16 render is worse than the 16:9 stretch: cosmic smeared, risograph on a pretzel and seed pods, glass washed out
-STRIP = {"cosmic_bloom_beat", "riso_fold_snap", "glass_space_bloom"}
+STRIP = {"cosmic_bloom_beat", "riso_fold_snap", "glass_space_bloom",
+         # 30 Oct pm, from the 9:16 sheets: black glass goes near black for 1.5 s, the 9:16 ice brings a helmet and a
+         # frog (Tys: helmets are boring), the 9:16 origami is a clutter of gold folds
+         "s2_black_symbols", "a07_ice_norse", "n1_origami_icons"}
+# 9:16 renders made on the full 30 s window (they went through priority.txt, so montage_renders gave them no slot
+# window): their own stretch in whole beats, chosen from the 9:16 sheets
+SHIFT_916 = {"chrome_beasts_shatter": 0, "b_neon_tarot": -10, "gold_finale_clear": -23}
 STRIP |= set((M / "strip_916.txt").read_text(encoding="utf-8").split()) if (M / "strip_916.txt").exists() else set()
 
 plan = json.loads((M / "plan_169.json").read_text(encoding="utf-8"))
@@ -26,6 +32,8 @@ for row in plan["slots"]:
     shift = row[3] if len(row) > 3 else 0
     if lab in STRIP:
         slots.append([lab + "@169", end, pin, shift])
+    elif lab in SHIFT_916:
+        slots.append([lab, end, pin, SHIFT_916[lab]])
     elif lab in short:
         slots.append([lab, end, pin])
     elif lab in OLD_916:

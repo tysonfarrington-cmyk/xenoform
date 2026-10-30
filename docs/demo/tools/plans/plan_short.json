@@ -20,10 +20,17 @@
    "lead": 0.4,
    "min": 5.2,
    "pic": {
-    "pic": "still",
-    "full": true,
-    "image": "C:/Users/tyson/AppData/Local/Temp/claude/C--Projects/7d414e75-aaf9-49cf-88fc-dcf26694d380/scratchpad/wt/cards/title_still_169.png",
-    "image_v": "C:/Users/tyson/AppData/Local/Temp/claude/C--Projects/7d414e75-aaf9-49cf-88fc-dcf26694d380/scratchpad/wt/cards/title_still_916.png"
+    "pic": "wide",
+    "land": true,
+    "period": 0.6667,
+    "video": [
+     "C:/Projects/xenoform-rc2/work/ui/jobs/d367e503/xenoform.mp4",
+     0.0
+    ],
+    "video_v": [
+     "C:/Projects/xenoform-rc2/work/ui/jobs/28f7148d/xenoform.mp4",
+     0.0
+    ]
    }
   },
   {

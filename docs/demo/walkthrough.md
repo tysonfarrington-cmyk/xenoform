@@ -219,6 +219,17 @@ it, and Comfy Cloud is named in How it's built.
   opening are cut from the same plan (`glow_derive.py`): since 30 Oct 1:50 pm both open on the montage's gold outro from the
   beat three beats before its title, title and song played out (Tys dropped the 24 s montage intro; the
   long lost its first 1:35 first). Demo 1:44, long 7:58, both voices measured in sync.
+- **The montage's first half to A+, and calmer** (Tys, 30 Oct 3:15 pm: "its the intro that needs work"; "the more
+  natural stuff seems to work better"; "tone down the white flashing light ... sparingly and subtly"). It now opens on
+  four new natural cuts made on their own seconds: glowing jellyfish and sea creatures (bioluminescent, calm), wild
+  botanicals, a glass reef and gold insects. Out: the orchid open, the black heart, neon Egypt, the chrome relics and
+  the marble chess. The white flashes are tamed after the build by `deflash.py` (a frame brighter than the darker of
+  the five before and the five after reads as a white veil; the veil is lifted and a third of it laid back, so the
+  beat still pulses), Chaos is capped at 0.5 (less handheld shake, fewer strip wipes) and the kept cuts were re-cut
+  calmer (`recut_calm.py`). Then, on Tys's word, the film pack's last black-and-white bar (2:09) went too: the
+  shadow-self melt runs over it. The 16:9 is up as its own music video ("Glitch Out | an AI Music Video Where Every
+  Beat Transforms", https://youtu.be/w6CTnHRR8U0); the 9:16 (every slot with a 9:16 render on its own seconds,
+  `montage916_build.sh`) is in the X thread, and the gold outro is a clip of its own at both shapes.
 
 ## Decided
 

@@ -62,7 +62,7 @@ for seg in plan["segments"]:
         # whole beats later when the plan asks (the Moon is in the intro; from the Lost World on)
         later = float(part.get("shift_beats") or 0) * 0.6667
         part["video"] = [f"{J}/{r['job']}/xenoform.mp4", round(in_point(r["job"], song_at[sid] + screen_s, r["window"]) + later, 3)]
-    if sid == "open":
+    if sid == "open" and seg["pic"].get("pic") == "still":  # since 30 Oct 2 pm the open line plays over the orchid opening, not a card
         seg["pic"]["image_v"] = (HERE / "cards" / "title_still_916.png").as_posix()
 for aspect, key in (("169", "intro"), ("916", "intro_v")):
     intro = M / f"intro_{aspect}.mp4"

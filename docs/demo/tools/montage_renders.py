@@ -293,6 +293,23 @@ CUTS = [
      "start": 186.0, "style": "melt", "timing": "beat", "effects": [], "look": "auto", "foreshadow": "trace", "macros": {**MAX, "chaos": 0.4, "glow": 0.5}},
     {"label": "b3_ferro_beasts", "vibe": "ferrofluid", "idea": "ferrofluid dragon, ferrofluid phoenix, ferrofluid scorpion, ferrofluid octopus, ferrofluid raven, ferrofluid wolf, ferrofluid serpent, ferrofluid spider",
      "start": 198.0, "style": "shatter", "timing": "snap", "effects": ["dither"], "look": "cyan-flash", "foreshadow": "trace", "macros": {**WILD, "chaos": 0.5}},
+    # Tys, 30 Oct 3:15 pm, on the full-song v17: the first 1:19 needs to be A+ ("the more natural stuff seems to work
+    # better"): the black glass opener ("the pink rose coming out then going black again ruins the consistency"), the
+    # black heart and DNA, the neon Egypt ("really dont like"), the plain chrome relics and the marble chess are out.
+    # Natural subjects, one palette a cut, less white flash ("already pretty intense so ... sparingly and subtly"):
+    # Intensity (the beat pulse and flash) at 0.6 or under, no flash looks
+    {"label": "o1_glow_sea_intro", "vibe": "bioluminescent", "idea": "moon jellyfish, comb jelly, manta ray, sea angel, nautilus, siphonophore, glass squid, box jellyfish",
+     "start": 0.0, "style": "bloom", "timing": "smooth", "effects": ["feedback"], "look": "cool-echo", "foreshadow": "trace",
+     "macros": {**CALM, "intensity": 0.4, "glow": 0.55}},
+    {"label": "o2_botanical_wild", "vibe": "botanical", "idea": "fern frond unfurling, venus flytrap, dandelion seed head, pinecone, sundew, lotus seed pod, acorn, toadstool mushroom",
+     "start": 26.46, "style": "bloom", "timing": "beat", "effects": [], "look": "auto", "foreshadow": "silhouette",
+     "macros": {**MAX, "intensity": 0.6, "chaos": 0.4, "glow": 0.5}},
+    {"label": "o3_ocean_reef", "vibe": "ocean", "idea": "sea turtle, manta ray, brain coral, clownfish, leafy sea dragon, starfish, sea anemone, cuttlefish",
+     "start": 37.13, "style": "melt", "timing": "beat", "effects": [], "look": "auto", "foreshadow": "trace",
+     "macros": {**MAX, "intensity": 0.6, "chaos": 0.4, "glow": 0.5}},
+    {"label": "o5_gold_insects", "vibe": "liquid-gold", "idea": "scarab beetle, stag beetle, honeybee, dragonfly, monarch butterfly, praying mantis, hummingbird, luna moth",
+     "start": 69.29, "style": "melt", "timing": "beat", "effects": [], "look": "auto", "foreshadow": "trace",
+     "macros": {**MAX, "intensity": 0.6, "chaos": 0.4, "glow": 0.45}},
 ]
 
 
