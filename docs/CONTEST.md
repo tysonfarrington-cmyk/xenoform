@@ -37,8 +37,8 @@ Contest: [Open Source Higgsfield](https://comfy.org/open-source-higgsfield/), ru
 | One-line description (100 characters) | `Song in, music video out: open-weights LTX morphs on every beat, stems, MIDI, MCP. Comfy SDK.` (93 characters) |
 | Repo URL | https://github.com/tysonfarrington-cmyk/xenoform |
 | Demo video URL | https://youtu.be/x_zMu29HfDA (the full walkthrough: https://youtu.be/xpUb5XcHtlQ) |
-| Social post URL | (the #OpenSourceHiggsfield post) |
-| Categories | Open Weights Only; LTX bonus |
+| Social post URL | https://x.com/tysostudio/status/2116015118178009491 |
+| Categories | Most Innovative; Most Viral; Open Weights Only; VFX Built with LTX Bonus |
 | ComfyUI parts used | Comfy Python SDK (comfy-sdk 0.5.0 + comfy-api-proxy); MCP server (45 tools); core nodes only in the shipped workflows |
 | Models | LTX-Video 0.9.5, LTX-2.5 22B distilled int8, LTX-2.3 22B distilled fp8, Z-Image Turbo, Wan Animate 2, Real-ESRGAN x4plus and realesr-animevideov3 (optional: FLUX.2 Klein 4B, ACE-Step 1.5, MiniMax H3 for Performer shots; Demucs htdemucs on the CPU for stems) |
 | Licence | MIT |
@@ -53,6 +53,12 @@ https://youtu.be/x_zMu29HfDA
 ```
 
 That is 265 characters with both links counted at X's 23 each. If it runs long, drop "with stems, MIDI and an MCP server".
+
+## Submitted
+
+Fri 30 Oct 2026, about 3 pm AEDT: the repo pushed public (af31b31), the demo on YouTube (https://youtu.be/x_zMu29HfDA,
+1:44, and the full walkthrough https://youtu.be/xpUb5XcHtlQ, 7:58, both on @TysoStudio), the post on X with the 9:16 cut
+(https://x.com/tysostudio/status/2116015118178009491), and the Typeform sent with the answers above.
 
 ## After submitting
 
