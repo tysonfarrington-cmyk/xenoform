@@ -23,7 +23,7 @@ Contest: [Open Source Higgsfield](https://comfy.org/open-source-higgsfield/), ru
 - [ ] README has setup instructions (Quick start, Python 3.12, `Xenoform.bat` / `install.sh`) and a judge path with no GPU.
 - [ ] `docs/REPRODUCE.md` reproduces the demo in about ten minutes.
 - [ ] Demo video under 2:00, 16:9 (the desk's own screen, with a 9:16 cut for the post), with the repo URL and #OpenSourceHiggsfield on the end card the walkthrough edit adds (`github.com/tysonfarrington-cmyk/xenoform` from `pyproject.toml`). Upload it, then replace `DEMO_VIDEO_URL` in README.md (top block), this page and the social post.
-- [ ] Demo song: "Glitch Out", the author's own Suno instrumental, bundled as `examples/songs/glitch_out.mp3` with the other five songs and `examples/demo.wav` (licence row in `docs/LICENCES.md`).
+- [ ] Demo song: "Glitch Out", the author's own Suno instrumental, bundled as `examples/songs/glitch_out.mp3`, one of the six bundled songs, beside `examples/demo.wav` (licence row in `docs/LICENCES.md`).
 - [ ] Say how the demo was rendered: its outputs are Cloud Final, the same open-weights LTX-2.5 22B distilled model run on Comfy Cloud's GPUs (opt-in, off by default; Final renders it locally). README, under the model table.
 - [ ] `pytest tests/test_docs.py tests/test_install.py tests/test_eligibility.py` passes on the pushed commit; CI (`.github/workflows/ci.yml`, Python 3.12) is green.
 - [ ] Public post with **#OpenSourceHiggsfield** on one of X, Reddit, Instagram, LinkedIn, YouTube or TikTok, with the video and the repo link (draft below). Keep the post URL for the form.
@@ -36,7 +36,7 @@ Contest: [Open Source Higgsfield](https://comfy.org/open-source-higgsfield/), ru
 | Project name | Xenoform |
 | One-line description (100 characters) | `Song in, music video out: open-weights LTX morphs on every beat, stems, MIDI, MCP. Comfy SDK.` (93 characters) |
 | Repo URL | https://github.com/tysonfarrington-cmyk/xenoform |
-| Demo video URL | DEMO_VIDEO_URL |
+| Demo video URL | https://youtu.be/x_zMu29HfDA (the full walkthrough: https://youtu.be/xpUb5XcHtlQ) |
 | Social post URL | (the #OpenSourceHiggsfield post) |
 | Categories | Open Weights Only; LTX bonus |
 | ComfyUI parts used | Comfy Python SDK (comfy-sdk 0.5.0 + comfy-api-proxy); MCP server (45 tools); core nodes only in the shipped workflows |
@@ -49,10 +49,10 @@ Contest: [Open Source Higgsfield](https://comfy.org/open-source-higgsfield/), ru
 ```
 Xenoform: drop in a song, pick a vibe, and one object morphs into the next on every beat. Open weights (LTX-Video, LTX-2.5), all local, built on the Comfy SDK, with stems, MIDI and an MCP server. #OpenSourceHiggsfield
 https://github.com/tysonfarrington-cmyk/xenoform
-DEMO_VIDEO_URL
+https://youtu.be/x_zMu29HfDA
 ```
 
-That is 265 characters with both links counted at X's 23 each; a shortened video link in place of `DEMO_VIDEO_URL` keeps it there. If it runs long, drop "with stems, MIDI and an MCP server".
+That is 265 characters with both links counted at X's 23 each. If it runs long, drop "with stems, MIDI and an MCP server".
 
 ## After submitting
 

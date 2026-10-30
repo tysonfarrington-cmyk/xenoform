@@ -4,7 +4,8 @@
 
 Xenoform turns a song into a music video: one object keeps transforming into the next, and every change lands on the beat. Stems drive the light, a MIDI controller rides the picture, and any AI can direct it over MCP.
 
-- **Demo video (under 2:00):** DEMO_VIDEO_URL
+- **Demo video (under 2:00):** https://youtu.be/x_zMu29HfDA
+- **Full walkthrough (8 min):** https://youtu.be/xpUb5XcHtlQ
 - **Repo:** https://github.com/tysonfarrington-cmyk/xenoform
 - **100% open weights by default, all local, built on the Comfy SDK.** Every render goes through the official Comfy Python SDK (`comfy-sdk` 0.5.0) and `comfy-api-proxy` in front of your own ComfyUI. Nothing is uploaded and no paid API is called unless you switch one on.
 - **Try it with no GPU in 60 seconds:** double-click `Xenoform.bat`, press **Watch a finished one**, then **Bundled demo** and **Make**. The animatic plays in about 3 seconds.

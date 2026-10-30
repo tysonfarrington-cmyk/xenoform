@@ -254,9 +254,34 @@ def pins_of(state: dict | None) -> dict[int, str]:
     return out
 
 
+PIN_EXTS = (".jpg", ".jpeg", ".png", ".webp")
+
+
+def _pin_on_disk(f: str, vibe: str) -> dict | None:
+    """A pinned file the catalogue does not list but the stills folder has (a still dropped in by hand, or pinned
+    from another vibe's folder): a row for it, so the pin holds. Only an image inside the local or the shipped stills
+    folder counts; anything else (a missing file, a path out of the folder) is None.
+
+    Tys, 30 Oct: a Make over the API with two pinned stills that were on disk but not in ``stills.json`` rendered the
+    None pool's shaker, kettle and lamp instead, with nothing but an info line in the log to say why."""
+    from xenoform import stills
+
+    for base, shipped in ((stills.root(), False), (stills.SHIPPED, True)):
+        try:
+            base = Path(base).resolve()
+            path = (base / f).resolve()
+        except (OSError, ValueError):
+            continue
+        if path.suffix.lower() in PIN_EXTS and path.is_file() and path.is_relative_to(base):
+            noun = re.sub(r"^\d+_", "", path.stem).replace("_", " ").strip() or path.stem
+            return {"file": f, "noun": noun, "path": str(path), "shipped": shipped, "_vibe": vibe}
+    return None
+
+
 def _pinned_rows(pins: dict[int, str], cat: dict, vibe: str, asked: str, count: int) -> dict[int, dict]:
-    """The pinned slots resolved to catalogue rows (the vibe's pool, then the asked vibe's own): a slot past the
-    chain's end, a file the library does not have, or a file pinned twice (the lower slot keeps it) is dropped."""
+    """The pinned slots resolved to catalogue rows (the vibe's pool, then the asked vibe's own, then any image in the
+    stills folders the catalogue does not list: ``_pin_on_disk``): a slot past the chain's end, a file that is nowhere,
+    or a file pinned twice (the lower slot keeps it) is dropped, with a warning."""
     by_file: dict[str, dict] = {}
     for under in ([vibe] + ([asked] if asked and asked != vibe else [])):
         for r in cat.get(under) or []:
@@ -265,12 +290,16 @@ def _pinned_rows(pins: dict[int, str], cat: dict, vibe: str, asked: str, count: 
     seen: set[str] = set()
     for k in sorted(pins):
         f = pins[k]
-        if k >= count or f in seen or f not in by_file:
-            if f not in by_file and k < count:
-                log.info("chain pin %s: %s is not in the %s library; the slot is picked as usual", k, f, vibe)
+        if k >= count or f in seen:
+            log.warning("chain pin %s: %s %s; the slot is picked as usual", k, f,
+                        "is past the chain's end" if k >= count else "is pinned twice")
+            continue
+        row = by_file.get(f) or _pin_on_disk(f, vibe)
+        if row is None:
+            log.warning("chain pin %s: %s is not in the %s library or the stills folder; the slot is picked as usual", k, f, vibe)
             continue
         seen.add(f)
-        out[k] = {**by_file[f], "pinned": True}
+        out[k] = {**row, "pinned": True}
     return out
 
 

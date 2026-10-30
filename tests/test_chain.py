@@ -67,6 +67,21 @@ def test_pins_past_the_chain_unknown_files_and_doubles_are_dropped(monkeypatch):
     assert not picked[1].get("pinned") and not picked[3].get("pinned") and len({p["file"] for p in picked}) == 5
 
 
+def test_a_pin_on_a_still_the_folder_has_but_the_catalogue_does_not_list_holds(monkeypatch, tmp_path):
+    # Tys, 30 Oct: two stills pinned over the API were on disk but not in stills.json, and the Make rendered the pool's
+    # own objects instead; a file in the stills folder holds its slot, a path out of the folder never does
+    objects, _ = _mock_pool(monkeypatch)
+    monkeypatch.setenv("XENO_STILLS", str(tmp_path))
+    (tmp_path / "none").mkdir()
+    (tmp_path / "none" / "990_xf_protea_frame.jpg").write_bytes(b"\xff\xd8\xff")
+    (tmp_path.parent / "outside.jpg").write_bytes(b"\xff\xd8\xff")
+    pins = {"0": "none/990_xf_protea_frame.jpg", "1": "../outside.jpg"}
+    _, picked = mp.pick_stills({"vibe": "cosmic", "chain_pins": pins}, 4, record=False)
+    assert picked[0]["file"] == "none/990_xf_protea_frame.jpg" and picked[0]["pinned"]
+    assert picked[0]["noun"] == "xf protea frame" and Path(picked[0]["path"]).is_file()
+    assert not picked[1].get("pinned") and picked[1]["file"] != "../outside.jpg" and len({p["file"] for p in picked}) == 4
+
+
 def test_a_pinned_scene_slot_takes_the_pin_and_the_scenes_move_on(monkeypatch):
     objects, scenes = _mock_pool(monkeypatch)
     state = {"vibe": "cosmic", "scene_stills": "mix"}
