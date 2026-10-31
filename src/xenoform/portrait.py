@@ -4,9 +4,10 @@ The vibe stills are 16:9: one object on a plain (mostly black) ground. For a nat
 vertical render each still is re-laid on a portrait canvas of its own background with
 the whole object centred, scaled to fit (wide shapes fit the width, tall ones the
 height), edges feathered into the ground. A scene (``kind`` "scene", a full frame with no
-centred object) is centre-cropped instead, by its kind; an object still whose subject
-fills the frame anyway is cropped the same way. The black crush (``black_stills``) is for
-an object's ground and leaves a scene as it is. numpy + ffmpeg only, CPU, free.
+centred object) is centre-cropped instead, by its kind, and a setting (an object standing in
+a place) is cropped around its object; an object still whose subject fills the frame anyway
+is cropped the same way. The black crush (``black_stills``) is for an object's ground and
+leaves a scene or a setting as it is. numpy + ffmpeg only, CPU, free.
 """
 
 from __future__ import annotations
@@ -20,7 +21,9 @@ PROMPT_SUFFIX = (" Vertical 9:16 portrait framing: one object centred in the fra
                  "empty background above and below it, locked-off camera.")
 FILL_W, FILL_H = 0.95, 0.72  # the padded object box fills at most this share; min() of the two keeps it whole
 STILL_W, STILL_H = 720, 1280
-FRAME_KINDS = ("scene",)  # kinds whose whole frame is the picture: cropped for portrait, never re-laid or crushed
+FRAME_KINDS = ("scene", "setting")  # kinds whose whole frame is the picture: cropped for portrait, never re-laid or crushed
+SETTING_SUFFIX = (" Vertical 9:16 portrait framing: the object whole and large in the middle of the frame, its place around it, "
+                  "locked-off camera.")
 
 
 def kind_of(row: dict | None) -> str:
@@ -33,10 +36,13 @@ def kind_of(row: dict | None) -> str:
 def suffix_for(kinds: tuple[str, str] | None) -> str:
     """The portrait sentence a vertical Final or Cloud morph of a pair with these kinds ends on: ``PROMPT_SUFFIX`` for
     two objects; nothing for a pair that touches a scene, whose wide frame "one object centred, empty background above
-    and below it" contradicts (31 Oct: the scene pairs of the five Cloud scene cuts were sent with it)."""
+    and below it" contradicts (31 Oct: the scene pairs of the five Cloud scene cuts were sent with it); for a pair in a
+    place (a setting), the object whole in the middle with its place around it (``SETTING_SUFFIX``)."""
     kinds = tuple(kinds) if kinds else ("object", "object")
     if any(k == "scene" for k in kinds):
         return ""
+    if any(k == "setting" for k in kinds):
+        return SETTING_SUFFIX
     return PROMPT_SUFFIX
 
 
@@ -95,14 +101,23 @@ def subject_box(img: np.ndarray, bg: np.ndarray, thresh: float = 28.0) -> tuple[
 
 def frame_portrait(img: np.ndarray, w: int = STILL_W, h: int = STILL_H, kind: str = "object") -> np.ndarray:
     """The still laid out for a portrait render. A scene (``kind``) is centre-cropped: its whole frame is the picture,
-    and cutting a "subject" out of it and pasting it on its border colour would leave a box on a flat ground. An object
-    is re-laid whole on a canvas of its own ground; one whose subject box covers over 92 % of both axes anyway (rain or
-    smoke to every edge, or a kindless full frame) is cropped like a scene."""
+    and cutting a "subject" out of it and pasting it on its border colour would leave a box on a flat ground. A setting
+    is cropped too, its place left as it is, the window centred on its hero (``stills.hero_box``). An object is re-laid
+    whole on a canvas of its own ground; one whose subject box covers over 92 % of both axes anyway (rain or smoke to
+    every edge, or a kindless full frame) is cropped like a scene."""
     from xenoform.beatfx import crop_box, resize
 
     sh, sw = img.shape[:2]
     if kind in FRAME_KINDS:
-        x, y, cw, ch = crop_box(sw, sh, "9:16", 0.5, 0.5)
+        cx = 0.5
+        if kind == "setting":
+            from PIL import Image
+
+            from xenoform.stills import hero_box
+
+            hero = hero_box(Image.fromarray(np.ascontiguousarray(img, dtype=np.uint8)))
+            cx = (hero[0] + hero[2]) / 2 if hero else 0.5
+        x, y, cw, ch = crop_box(sw, sh, "9:16", cx, 0.5)
         return resize(img[y:y + ch, x:x + cw], w, h)
     bg = background(img)
     box = subject_box(img, bg)

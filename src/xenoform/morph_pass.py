@@ -193,14 +193,54 @@ def scenes_choice(state: dict | None) -> str:
     return text if text in SCENE_CHOICES else "off"
 
 
-def rows_of_kind(rows: list[dict], choice: str) -> list[dict]:
-    """The rows a cut may draw on under ``choice``: objects alone ("off"), scenes alone ("only"), both ("mix")."""
+BACKDROPS = ("plain", "places", "scenes")
+# a vibe with this many settings cuts in its places unless the Backdrop row says otherwise: one shipped pool's worth, so
+# the default 30 s cut does not fall to five long morphs over a first grow of six (a pool that small asks for places)
+PLACES_DEFAULT_MIN = 12
+
+
+def _vibe_rows(state: dict | None) -> list[dict]:
+    """The catalogue rows a cut of ``state`` draws on: the pool vibe's, and the asked vibe's when it borrows."""
+    pools = catalogue()
+    vibe = vibe_for(state or {})
+    asked = str((state or {}).get("vibe") or "")
+    return list(pools.get(vibe) or []) + (list(pools.get(asked) or []) if asked and asked != vibe else [])
+
+
+def backdrop_choice(state: dict | None, rows: list[dict] | None = None) -> str:
+    """The Simple make body's ``backdrop``: what the morphs stand on. "plain" is an object on the vibe's studio ground (as
+    every cut was), "places" an object standing in a place (``stills`` kind "setting"), "scenes" wide frames alone (the
+    Scenes row's "only"). Not given (or "auto"): "scenes" when the old ``scene_stills`` says "only", else "places" when the
+    vibe has ``PLACES_DEFAULT_MIN`` settings, else "plain". ``rows`` are the cut's catalogue rows when the caller has them."""
+    raw = str((state or {}).get("backdrop") or "").strip().lower()
+    if raw in BACKDROPS:
+        return raw
+    if scenes_choice(state) == "only":
+        return "scenes"
     from xenoform import stills
 
-    if choice == "mix":
-        return list(rows)
-    want = "scene" if choice == "only" else "object"
-    return [r for r in rows if stills.kind_of(r) == want]
+    rows = _vibe_rows(state) if rows is None else rows
+    n = sum(1 for r in rows if stills.kind_of(r) == "setting")
+    return "places" if n >= PLACES_DEFAULT_MIN else "plain"
+
+
+def scene_mode(state: dict | None, rows: list[dict] | None = None) -> str:
+    """The Scenes choice the pick runs on: "only" when the Backdrop is "scenes", else ``scenes_choice`` (off, mix, only).
+    The Scenes row's Mix still lands a scene on each passage change whatever the Backdrop puts between."""
+    return "only" if backdrop_choice(state, rows) == "scenes" else scenes_choice(state)
+
+
+def rows_of_kind(rows: list[dict], choice: str, backdrop: str = "plain") -> list[dict]:
+    """The rows a cut may draw on under ``choice`` and ``backdrop``: scenes alone ("only", or the Backdrop "scenes"); else
+    the stills the Backdrop stands the morphs on (objects for "plain", settings for "places", objects again when the vibe
+    has no settings), with the scenes as well under "mix"."""
+    from xenoform import stills
+
+    if choice == "only" or backdrop == "scenes":
+        return [r for r in rows if stills.kind_of(r) == "scene"]
+    between = "setting" if backdrop == "places" and any(stills.kind_of(r) == "setting" for r in rows) else "object"
+    want = {between, "scene"} if choice == "mix" else {between}
+    return [r for r in rows if stills.kind_of(r) in want]
 
 
 def scene_slots(shots: list[dict] | None, count: int, choice: str = "mix", assign: list | None = None) -> list[int]:
@@ -312,6 +352,10 @@ def pick_stills(state: dict, count: int, record: bool = True, scene_at: list[int
     each index in ``scene_at`` (``scene_slots``: the passage changes, else every fourth) and objects between, no
     still twice; past the scene rows the pool has, a slot is an object, and a pool with no scenes is objects only.
 
+    Backdrop (``backdrop_choice``): "places" puts settings (an object standing in a place) where the objects would go,
+    the family, theme and lead rules running on them as on objects; a vibe with no settings stays on its objects.
+    "scenes" is "only". The user's own shapes and images lead as before, whatever the Backdrop.
+
     Pins (``pins``, else the body's ``chain_pins`` through ``pins_of``): a mapping of chain index to still file the
     user chose on the Chain row. A pinned slot holds that still whatever the order or the scene slots would have put
     there; the other slots are filled as they always were, from the pool without the pinned stills, so no still
@@ -325,8 +369,9 @@ def pick_stills(state: dict, count: int, record: bool = True, scene_at: list[int
 
     vibe = vibe_for(state)
     asked = str(state.get("vibe") or "")
-    choice = scenes_choice(state)
     cat = catalogue()
+    backdrop = backdrop_choice(state, list(cat.get(vibe) or []) + (list(cat.get(asked) or []) if asked and asked != vibe else []))
+    choice = "only" if backdrop == "scenes" else scenes_choice(state)
     count = int(count)
     pins = pins_of({"chain_pins": pins}) if pins is not None else pins_of(state)
     held = _pinned_rows(pins, cat, vibe, asked, count)
@@ -340,6 +385,7 @@ def pick_stills(state: dict, count: int, record: bool = True, scene_at: list[int
     # opens on objects the last one left alone), shipped order within; rows remember the vibe they are used under
     rows = [{**r, "_vibe": vibe} for r in stills.order_fresh(vibe, list(cat[vibe])) if str(r.get("file")) not in held_files]
     scene_rows = [r for r in rows if stills.kind_of(r) == "scene"]
+    setting_rows = [r for r in rows if stills.kind_of(r) == "setting"]
     pool = [r for r in rows if stills.kind_of(r) == "object"]
     from xenoform import idea as _idea
 
@@ -358,7 +404,12 @@ def pick_stills(state: dict, count: int, record: bool = True, scene_at: list[int
     if asked != vibe and asked in cat:
         asked_rows = [{**r, "_vibe": asked} for r in stills.order_fresh(asked, list(cat[asked])) if str(r.get("file")) not in held_files]
         scene_rows = [r for r in asked_rows if stills.kind_of(r) == "scene"] + scene_rows
+        setting_rows = [r for r in asked_rows if stills.kind_of(r) == "setting"] + setting_rows
         own = [r for r in asked_rows if stills.kind_of(r) == "object"] + own
+    if backdrop == "places" and setting_rows:
+        # the morphs stand in places: the settings take the objects' part, and only the shapes the user asked for lead
+        pool = setting_rows
+        own = [r for r in own if r.get("own")]
     look_vibe = asked if asked in VIBE_LOOK else vibe
     if reading.get("own") and own:
         wanted = {stills.clean_noun(o) for o in reading["own"]}
@@ -499,12 +550,35 @@ SCENE_OPENINGS = {
     ("scene", "object"): "A wide landscape scene slowly melts and flows into one single sculptural object that forms at its centre",
     ("object", "scene"): "One single sculptural object slowly melts and spreads out into a wide landscape scene",
     ("scene", "scene"): "A wide landscape scene slowly melts and flows into another wide landscape scene",
+    ("scene", "setting"): "A wide landscape scene slowly melts and gathers into one object standing in a place at its centre",
+    ("setting", "scene"): "The object standing in its place slowly melts and spreads out into a wide landscape scene",
 }
+# A pair that touches a setting (``stills`` kind "setting": an object standing in a place, 31 Oct): the object prompt's
+# "the object stays centred ... macro product photography" is a studio, and the vibe's look names a backdrop or a void
+# the place has replaced. Setting to setting keeps the morph style (it is how the object changes) and lets the place
+# shift with it; a setting next to a plain object has the place grow in or fade out.
+SETTING_OPENINGS = {
+    ("object", "setting"): "One single sculptural object slowly transforms into another while a place slowly grows around it",
+    ("setting", "object"): "The object standing in its place slowly transforms into another while the place slowly fades away around it",
+}
+SETTING_TAIL = ("the object stays large and whole in the middle of the frame, the camera steady, {look}, one single object, every "
+                "feature appears once, cinematic photograph, crisp, clean, high detail")
 
 
 def pair_kinds(a: dict | None, b: dict | None) -> tuple[str, str]:
-    """The kinds of a morph's two stills, ``("object", "object")`` for the plain chain."""
-    return tuple("scene" if str((row or {}).get("kind") or "") == "scene" else "object" for row in (a, b))
+    """The kinds of a morph's two stills (scene, setting or object), ``("object", "object")`` for the plain chain."""
+    out = []
+    for row in (a, b):
+        kind = str((row or {}).get("kind") or "")
+        out.append(kind if kind in ("scene", "setting") else "object")
+    return tuple(out)
+
+
+def place_look(vibe: str) -> str:
+    """The vibe's look for a pair in a place: its material and light without the backdrop or void words."""
+    from xenoform import stills
+
+    return stills.place_look(VIBE_LOOK.get(vibe, VIBE_LOOK["liquid-gold"])) or "its own materials and light"
 
 
 def guide_compression(kinds: tuple[str, str] | None, value) -> tuple[int, int]:
@@ -525,10 +599,16 @@ def prompt_for(vibe: str, engine: str = "ltx095", kinds: tuple[str, str] | None 
     every such pair in the run, whatever the style (``morph_style``: a style is
     how an object changes). Melt is the prompt every morph had before the
     styles, word for word.
+
+    A pair in a place (a setting at either end, no scene): two settings take the
+    style's opening and "the place slowly shifts with it", the camera steady; a
+    setting beside a plain object has the place grow in or fade out
+    (``SETTING_OPENINGS``). Its look drops the vibe's backdrop words.
     """
     look = VIBE_LOOK.get(vibe, VIBE_LOOK["liquid-gold"])
     lead = "Use the provided start image as the first frame and the provided end image as the final frame anchor. " if engine == "ltx25" else ""
-    opening = SCENE_OPENINGS.get(tuple(kinds) if kinds else ("object", "object"))
+    kinds = tuple(kinds) if kinds else ("object", "object")
+    opening = SCENE_OPENINGS.get(kinds)
     if opening:
         return lead + (
             f"{opening}, one continuous liquid transformation, the picture never cuts, the frame stays steady, "
@@ -536,6 +616,11 @@ def prompt_for(vibe: str, engine: str = "ltx095", kinds: tuple[str, str] | None 
         )
     from xenoform.morph_style import OPENINGS, normal
 
+    if "setting" in kinds:
+        tail = SETTING_TAIL.format(look=place_look(vibe))
+        if kinds == ("setting", "setting"):
+            return lead + f"{OPENINGS[normal(style, allow_auto=False)]}, while the place around it slowly shifts with it, {tail}"
+        return lead + f"{SETTING_OPENINGS[kinds]}, one continuous transformation, the picture never cuts, {tail}"
     return lead + (
         f"{OPENINGS[normal(style, allow_auto=False)]}, the object stays centred, gentle slow camera drift, {look}, "
         "one single object, every feature appears once, macro product photography, crisp, clean, high detail"
@@ -708,6 +793,8 @@ def _qa_reroll(client, graph, asset, a, b, vibe, engine, count, seed, dest, tune
     from xenoform import shot_qa
 
     good = f"a clean single sculptural object, {VIBE_LOOK.get(vibe, VIBE_LOOK['liquid-gold'])}"
+    if "setting" in pair_kinds(a, b):  # the object stands in a place: the studio words would mark it down
+        good = f"one single object standing large in a place, {place_look(vibe)}"
     try:
         from xenoform.anchors import subject_in
 

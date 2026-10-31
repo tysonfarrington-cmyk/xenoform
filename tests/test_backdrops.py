@@ -421,8 +421,15 @@ def test_a_settings_plan_places_each_object_and_moves_on_round_the_places():
     assert all(pr.startswith(f"One single {n} cast in solid polished gold, {pl}.") for n, pl, pr in zip(p["nouns"], p["places"], p["prompts"]))
     assert S.plan("liquid-gold", kind="setting", seed=4)["places"] == p["places"]  # the desk plans, then grows the same
     typed = S.plan("neon-noir", 3, nouns=["lantern", "the rose", "koi fish"], kind="setting")
-    assert typed["nouns"] == ["lantern", "rose", "koi fish"] and typed["places"] == S.place_list("neon-noir")[:3] and not typed["own"]
+    assert typed["nouns"] == ["lantern", "rose", "koi fish"] and not typed["own"]
+    assert len(set(typed["places"])) == 3 and set(typed["places"]) <= set(S.place_list("neon-noir"))
+    assert "water" in typed["places"][2] or "pier" in typed["places"][2]  # the koi fish to the water, not to a car bonnet
     assert S.places_for("neon-noir", 2, start=7) == [S.place_list("neon-noir")[7 % 8], S.place_list("neon-noir")[0]]
+    shore = S.places_for("none", 3, nouns=["seahorse", "compass", "owl"])
+    assert ("pool" in shore[0] or "beach" in shore[0]) and ("table" in shore[1] or "library" in shore[1] or "workshop" in shore[1])
+    assert S.place_fit("nautilus", "in a rock pool on a sunny shore") > S.place_fit("nautilus", "on a workbench in a dusty workshop")
+    many = S.places_for("none", 10, nouns=["owl"] * 10)
+    assert len(set(many[:8])) == 8 and set(many[8:]) <= set(many[:8])  # every place once before any twice
 
 
 class _GrowClient:
@@ -480,7 +487,7 @@ def test_grow_with_kind_setting_renders_each_object_in_its_place_and_lists_setti
     assert [r["kind"] for r in rows] == ["setting"] * 3 and [r["place"] for r in rows] == res["places"]
     assert Path(res["sheet"]).name == "settings.jpg" and S.counts("neon-noir")["settings"] == 3
     nxt = S.plan("neon-noir", 2, kind="setting")  # the next grow moves on to the places not reached yet
-    assert nxt["places"] == S.places_for("neon-noir", 2, start=3)
+    assert nxt["places"] == S.places_for("neon-noir", 2, start=3, nouns=nxt["nouns"])
 
 
 def test_the_desk_grows_settings_and_counts_them(monkeypatch):
@@ -505,7 +512,8 @@ def test_the_desk_grows_settings_and_counts_them(monkeypatch):
     try:
         started = client.post("/api/stills/grow", json={"vibe": "liquid-gold", "kind": "setting", "nouns": "scarab, owl"}).json()
         assert started["ok"] and started["kind"] == "setting" and started["nouns"] == ["scarab", "owl"]
-        assert started["places"] == S.place_list("liquid-gold")[:2]
+        assert started["places"] == S.plan("liquid-gold", 2, nouns=["scarab", "owl"], kind="setting")["places"]
+        assert started["places"][1] == "on wind-rippled sand dunes at dusk"  # the owl to the dunes; the scarab takes what is left
         import time as _t
 
         for _ in range(50):
@@ -526,3 +534,291 @@ def test_the_cli_grows_settings(capsys):
     cli.main(["stills", "grow", "liquid-gold", "--kind", "setting", "--nouns", "scarab", "--plan", "--seed", "1"])
     out = capsys.readouterr().out
     assert "scarab: One single scarab cast in solid polished gold, " in out and "1 settings" in out
+
+
+# ---------------------------------------------------------------------------------------------- the Backdrop choice and the pick
+
+
+def _pool(monkeypatch, n_objects=12, n_settings=14, n_scenes=4, vibe="cosmic"):
+    """A catalogue of objects, settings and scenes for one vibe, nothing on disk (the pick reads rows only)."""
+    objects = [{"file": f"{vibe}/{i:02d}_thing{i}.jpg", "noun": f"thing{i}"} for i in range(n_objects)]
+    settings = [{"file": f"{vibe}/{200 + i:03d}_place{i}.jpg", "noun": f"thing{i}", "kind": "setting", "place": f"on ground {i}"}
+                for i in range(n_settings)]
+    scenes = [{"file": f"{vibe}/{100 + i:03d}_scene{i}.jpg", "noun": f"scene {i}", "kind": "scene"} for i in range(n_scenes)]
+    monkeypatch.setattr(mp, "manifest", lambda: {vibe: objects})
+    monkeypatch.setattr(S, "grown", lambda: {vibe: settings + scenes} if (settings or scenes) else {})
+    monkeypatch.setattr(S, "usage", lambda: {})
+    monkeypatch.setattr(mp, "autotune", lambda: {})
+    return objects, settings, scenes
+
+
+def test_the_backdrop_choice_reads_the_body_else_the_vibe(monkeypatch):
+    _pool(monkeypatch, n_settings=14)
+    assert mp.BACKDROPS == ("plain", "places", "scenes")
+    assert mp.backdrop_choice({"vibe": "cosmic"}) == "places"  # fourteen places: a vibe with them cuts in them
+    assert mp.backdrop_choice({"vibe": "cosmic", "backdrop": "PLAIN"}) == "plain" and mp.backdrop_choice({"vibe": "cosmic", "backdrop": "auto"}) == "places"
+    assert mp.backdrop_choice({"vibe": "cosmic", "scene_stills": "only"}) == "scenes"  # the old Scenes value still reads
+    assert mp.scene_mode({"vibe": "cosmic", "backdrop": "scenes"}) == "only" and mp.scene_mode({"vibe": "cosmic", "scene_stills": "mix"}) == "mix"
+    _pool(monkeypatch, n_settings=mp.PLACES_DEFAULT_MIN - 1)
+    assert mp.backdrop_choice({"vibe": "cosmic"}) == "plain"  # too few to carry a cut: the studio ground, unless asked
+    assert mp.backdrop_choice({"vibe": "cosmic", "backdrop": "places"}) == "places"
+    rows = list(S.grown()["cosmic"]) + [{"file": "x", "noun": "x"}]
+    assert {S.kind_of(r) for r in mp.rows_of_kind(rows, "off", "places")} == {"setting"}
+    assert {S.kind_of(r) for r in mp.rows_of_kind(rows, "mix", "places")} == {"setting", "scene"}
+    assert {S.kind_of(r) for r in mp.rows_of_kind(rows, "mix", "plain")} == {"object", "scene"}
+    assert {S.kind_of(r) for r in mp.rows_of_kind(rows, "off", "scenes")} == {"scene"}
+    objects_only = [{"file": "o", "noun": "o"}]
+    assert mp.rows_of_kind(objects_only, "off", "places") == objects_only  # no settings: the objects, as the pick does
+
+
+def test_places_draws_on_settings_mix_lands_scenes_between_and_plain_keeps_them_out(monkeypatch):
+    _pool(monkeypatch)
+    _, placed = mp.pick_stills({"vibe": "cosmic", "backdrop": "places"}, 9, record=False)
+    assert all(S.kind_of(p) == "setting" for p in placed) and len({p["file"] for p in placed}) == 9
+    _, mixed = mp.pick_stills({"vibe": "cosmic", "backdrop": "places", "scene_stills": "mix"}, 9, record=False, scene_at=[0, 4, 8])
+    assert [S.kind_of(p) for p in mixed] == ["scene", "setting", "setting", "setting", "scene", "setting", "setting", "setting", "scene"]
+    _, plain = mp.pick_stills({"vibe": "cosmic", "backdrop": "plain"}, 9, record=False)
+    assert all(S.kind_of(p) == "object" for p in plain)
+    _, scenes = mp.pick_stills({"vibe": "cosmic", "backdrop": "scenes"}, 4, record=False)
+    assert all(S.kind_of(p) == "scene" for p in scenes)
+    _, auto = mp.pick_stills({"vibe": "cosmic"}, 6, record=False)  # fourteen places and no word: places
+    assert all(S.kind_of(p) == "setting" for p in auto)
+    _pool(monkeypatch, n_settings=0)
+    _, bare = mp.pick_stills({"vibe": "cosmic", "backdrop": "places"}, 6, record=False)
+    assert all(S.kind_of(p) == "object" for p in bare)  # no places yet: the objects, never an empty cut
+
+
+def test_a_typed_object_leads_its_places_cut(monkeypatch):
+    _, settings, _ = _pool(monkeypatch)
+    for row, noun in zip(settings, ("owl", "rose", "kettle", "scarab", "lantern", "anchor", "comet", "tulip", "harp", "kite",
+                                    "acorn", "bell", "drum", "fern")):
+        row["noun"] = noun
+    _, picked = mp.pick_stills({"vibe": "cosmic", "backdrop": "places", "idea": "a scarab at dusk"}, 5, record=False)
+    assert picked[0]["noun"] == "scarab" and S.kind_of(picked[0]) == "setting"  # the line's object opens, in its place
+
+
+def test_a_pair_in_a_place_gets_its_own_prompt_on_draft_final_and_cloud():
+    from xenoform.morph_style import OPENINGS
+
+    look = mp.VIBE_LOOK["none"]
+    assert "backdrop" in look  # the plain look names its studio ground ...
+    two = mp.prompt_for("none", kinds=("setting", "setting"))
+    assert two.startswith(OPENINGS["melt"])
+    assert "the place around it slowly shifts with it" in two and "the camera steady" in two
+    assert "backdrop" not in two and "macro product photography" not in two and "the object stays centred" not in two  # ... a place has none
+    shatter = mp.prompt_for("none", kinds=("setting", "setting"), style="shatter")
+    assert "shatters" in shatter and "slowly shifts with it" in shatter  # the style is how the object changes, in its place too
+    grow_in = mp.prompt_for("liquid-gold", kinds=("object", "setting"))
+    assert "a place slowly grows around it" in grow_in and "the picture never cuts" in grow_in
+    assert "fades away around it" in mp.prompt_for("liquid-gold", kinds=("setting", "object"))
+    wide = mp.prompt_for("cosmic", kinds=("scene", "setting"))
+    assert "wide landscape scene" in wide and "one object standing in a place" in wide
+    assert mp.prompt_for("cosmic", "ltx25", ("setting", "setting")).startswith("Use the provided start image")
+    assert mp.pair_kinds({"kind": "setting"}, {"kind": "scene"}) == ("setting", "scene") and mp.pair_kinds({}, {"kind": "x"}) == ("object", "object")
+    assert mp.prompt_for("cosmic") == mp.prompt_for("cosmic", kinds=("object", "object"))  # the plain chain, word for word
+    assert portrait.suffix_for(("setting", "setting")) == portrait.SETTING_SUFFIX and portrait.suffix_for(("setting", "scene")) == ""
+    assert mp.guide_compression(("setting", "object"), 30) == (30, 30)  # a setting's object morphs: its guide keeps the freedom
+
+
+def test_cloud_final_sends_a_setting_pair_with_the_place_sentence(tmp_path, monkeypatch):
+    _no_relay(monkeypatch)
+    monkeypatch.setenv(cloud_backend.KEY_ENV, "sk-test-not-a-key")
+    rows = [{"path": str(tmp_path / f"s{i}.png"), "noun": n, "kind": "setting"} for i, n in enumerate(("scarab", "owl"))]
+    fake = _Cloud()
+    cloud_final.cloud_clips([{"seconds": 2.0}], rows, tmp_path, {}, 5, "liquid-gold", vertical=True, backend=fake, name="ltx25")
+    text = fake.graphs[0]["3"]["inputs"]["text"]
+    assert text.startswith(cloud_final.lead("scarab", "owl")) and text.endswith(portrait.SETTING_SUFFIX.strip())
+    assert "slowly shifts with it" in text and PROMPT_SUFFIX.strip() not in text
+    assert fake.graphs[0]["8"]["inputs"]["img_compression"] == cloud_final.LOOSE["img_compression"]
+
+
+def test_the_portrait_pass_leaves_a_setting_alone_and_crops_around_its_object(tmp_path):
+    from xenoform.beatfx import crop_box, resize
+
+    big = np.asarray(Image.open(_setting(tmp_path / "s.png", r=0.3, cx=0.3)).convert("RGB").resize((1280, 720)))
+    out = portrait.frame_portrait(big, 360, 640, kind="setting")
+    hero = S.hero_box(Image.fromarray(big))
+    x, y, cw, ch = crop_box(1280, 720, "9:16", (hero[0] + hero[2]) / 2, 0.5)
+    assert x < crop_box(1280, 720, "9:16", 0.5, 0.5)[0]  # the window moved toward the object on the left
+    assert np.array_equal(out, resize(big[y:y + ch, x:x + cw], 360, 640))
+    src = portrait.save_png(big, tmp_path / "place.png")
+    passed = portrait.black_stills([{"path": str(src), "kind": "setting"}], tmp_path)
+    assert passed[0]["path"] == str(src) and not passed[0].get("black_ground")  # its place is never crushed to black
+    assert not dense.ground_is_black([{"path": str(src), "kind": "setting"}])
+
+
+def test_the_long_song_pool_counts_the_settings_a_places_cut_draws_on(monkeypatch, tmp_path):
+    _pool(monkeypatch, n_objects=30, n_settings=6, n_scenes=0)
+    labels = ["intro", "calm", "build", "drop", "calm", "build", "drop", "outro"]
+    duration, period = 238.8, 0.4
+    step = duration / len(labels)
+    sections = [{"label": lab, "start": round(i * step, 3), "end": round((i + 1) * step, 3)} for i, lab in enumerate(labels)]
+    directed = {"duration": duration, "beats": [round(i * period, 4) for i in range(int(duration / period))], "sections": sections,
+                "drop": 119.6}
+    state = {"vibe": "cosmic", "energy_preset": "dense", "quality_tier": "draft", "aspect": "9:16", "backdrop": "places"}
+    shots, plan = dense.shots_for(state, directed, tmp_path / "song.wav")
+    _, _, chain, _ = dense.long_song_chain(state, directed, tmp_path / "song.wav", shots, plan, dense.options(state), engine="mock")
+    assert chain["morphs"] == 5  # six places: five morphs, no place twice
+    plain = {**state, "backdrop": "plain"}
+    shots_p, plan_p = dense.shots_for(plain, directed, tmp_path / "song.wav")
+    _, _, chain_p, _ = dense.long_song_chain(plain, directed, tmp_path / "song.wav", shots_p, plan_p, dense.options(plain), engine="mock")
+    assert chain_p["morphs"] > 5  # the thirty objects
+
+
+def _run_mock(tmp_path, monkeypatch, state, out_name):
+    from xenoform import beatfx
+    import xenoform.cloud_morph as cm
+
+    rendered: dict = {}
+
+    def fake_mock(shots, stills, work, w, h):
+        rendered["stills"] = stills
+        return [tmp_path / f"m{i:02d}.mp4" for i in range(len(shots))]
+
+    def fake_compose(clips, shots, audio, out, **kw):
+        rendered["shots"] = shots
+        rendered["transitions"] = kw.get("transitions")
+        Path(out).write_bytes(b"mp4")
+        return {"frames": 1, "seconds": 1.0, "size": "540x960", "aspect": kw["aspect"], "fx": True, "overlay": False,
+                "centres": [], "fps": 24, "look": {}}
+
+    monkeypatch.setattr(cm, "_mock_clips", fake_mock)
+    monkeypatch.setattr(beatfx, "compose", fake_compose)
+    demo = Path(__file__).resolve().parents[1] / "examples" / "demo.wav"
+    info = dense.run_simple({"duration": 20.0, "beats": [i * 0.5 for i in range(40)]}, demo, tmp_path / f"{out_name}.mp4",
+                            tmp_path / out_name, {}, state, lambda *a: None, engine="mock")
+    return info, rendered
+
+
+def test_a_places_cut_records_its_backdrop_its_settings_and_the_kinds_each_shot_morphs_between(tmp_path, monkeypatch):
+    from xenoform import lane
+
+    for i in range(14):
+        _grown_setting("ocean", f"{200 + i:03d}_thing{i}.jpg", f"thing{i}", f"on ground {i}", seed=40 + i)
+    info, rendered = _run_mock(tmp_path, monkeypatch, {"vibe": "ocean", "aspect": "9:16", "quality_tier": "draft",
+                                                       "energy_preset": "dense"}, "auto")
+    assert info["backdrop"] == "places" and info["recut_state"]["backdrop"] == "places"  # fourteen places: the default
+    assert info["setting_files"] == info["stills"] and info["scene_files"] == [] and info["scene_mode"] == "off"
+    assert all(s.get("still_kinds") == ["setting", "setting"] for s in rendered["shots"])
+    rec = json.loads((tmp_path / "auto" / "simple" / "simple.json").read_text(encoding="utf-8"))
+    assert rec["backdrop"] == "places" and rec["setting_files"] == info["setting_files"]
+    assert all(s.get("still_kinds") == ["setting", "setting"] for s in rec["plan_shots"])  # a re-cut reads them too
+    built = lane.build(rec, "job")
+    assert all(r.get("to_kind") == "setting" for r in built["shots"] if "to_kind" in r)
+    assert {c["kind"] for c in built["stills"]} == {"setting"}
+    chain = json.loads((tmp_path / "auto" / "simple" / "chain.json").read_text(encoding="utf-8"))
+    assert {c["kind"] for c in chain} == {"setting"}  # the making screen's chain names them
+    plain, _ = _run_mock(tmp_path, monkeypatch, {"vibe": "ocean", "aspect": "9:16", "quality_tier": "draft", "energy_preset": "dense",
+                                                 "backdrop": "plain"}, "plain")
+    assert plain["backdrop"] == "plain" and plain["setting_files"] == [] and not set(info["setting_files"]) & set(plain["stills"])
+    bare, _ = _run_mock(tmp_path, monkeypatch, {"vibe": "cosmic", "aspect": "9:16", "quality_tier": "draft", "energy_preset": "dense",
+                                                "backdrop": "places"}, "bare")
+    assert bare["setting_files"] == [] and any("backdrop" in n for n in bare["fallbacks"])  # asked with none: a note, objects
+
+
+def test_the_record_rows_and_the_rerender_variants_know_settings(tmp_path):
+    from xenoform import lane
+
+    for i in range(2):
+        _grown_setting("ocean", f"{200 + i:03d}_thing{i}.jpg", f"thing{i}", f"on ground {i}", seed=60 + i)
+    files = ["ocean/200_thing0.jpg", "ocean/201_thing1.jpg"]
+    rows = dense._still_rows(files, set(), set(files))
+    assert [r["kind"] for r in rows] == ["setting", "setting"]
+    shots = [{"morph": 0}, {"clip": 0}, {"morph": 5}]
+    dense.stamp_still_kinds(shots, [{"kind": "scene"}, rows[0]])
+    assert shots[0]["still_kinds"] == ["scene", "setting"] and shots[1]["still_kinds"] == ["scene", "setting"] and "still_kinds" not in shots[2]
+    assert dense.RERENDER_VARIANTS["setting"] == ("setting", "setting") and dense.RERENDER_VARIANTS["scene-setting"] == ("scene", "setting")
+    assert {"setting", "setting-scene", "scene-setting"} <= set(lane.choices()["rerender_variants"])
+
+
+# ---------------------------------------------------------------------------------------------- the layers that want a plain ground
+
+
+def test_the_foreshadow_trace_steps_aside_for_a_landing_in_a_place():
+    from xenoform import foreshadow as F
+
+    shots = [{"frames": 48, "still_kinds": ["object", "object"]}, {"frames": 48, "still_kinds": ["object", "setting"]},
+             {"frames": 48, "still_kinds": ["setting", "object"]}]
+    clips = ["c0.mp4", "c1.mp4", "c2.mp4"]
+    frame = np.zeros((72, 128, 3), np.uint8)
+    beats = [i * 0.5 for i in range(40)]
+    traced = F.plan(shots, clips, beats, 24, "trace", F.params(None), read_edge=lambda clip, which: frame)
+    assert traced[0] is None or traced[0]["target"] is None  # shot 1 lands in a place: no outline of the place leads it in
+    assert traced[1]["target"] is not None and traced[1]["prev"] is None  # shot 2 lands on an object; nothing of the place fades
+    sliced = F.plan(shots, clips, beats, 24, "slices", F.params(None), read_edge=lambda clip, which: frame)
+    assert sliced[0]["target"] is not None and sliced[1]["prev"] is not None  # slices of any picture work: they stay
+    plain = [dict(s) for s in shots]
+    for s in plain:
+        s.pop("still_kinds")
+    old = F.plan(plain, clips, beats, 24, "silhouette", F.params(None), read_edge=lambda clip, which: frame)
+    assert old[0]["target"] is not None  # a record from before the kinds: as it was cut
+
+
+def test_the_match_cut_and_parallax_hand_off_plainly_into_a_place():
+    from xenoform import transitions_fx as T
+
+    shots = [{"still_kinds": ["object", "object"]}, {"still_kinds": ["object", "setting"]}, {"still_kinds": ["setting", "setting"]},
+             {"still_kinds": ["setting", "object"]}, {"still_kinds": ["object", "object"]}]
+    tr = [None, {"kind": "match-cut", "frames": 8}, {"kind": "depth-parallax", "frames": 8}, {"kind": "flow-carry", "frames": 8},
+          {"kind": "match-cut", "frames": 8, "user": True}]
+    out = T.kind_guard(tr, shots)
+    assert out[1] == tr[1]  # object -> object at that boundary: kept
+    assert out[2] is None  # into a place from a place: a plain handoff
+    assert out[3] == tr[3]  # flow-carry reads motion, not a ground: kept
+    assert out[4] == tr[4]  # a timeline pick is the user's
+    assert T.kind_guard(None, shots) is None and T.kind_guard([None, {"kind": "match-cut"}], [{}, {}]) == [None, {"kind": "match-cut"}]
+    assert set(T.NEEDS_PLAIN_GROUND) <= set(T.TRANSITIONS)
+
+
+def test_a_cropped_cut_keeps_a_setting_shot_centred(tmp_path):
+    import shutil
+    import subprocess
+
+    from xenoform import beatfx
+
+    if shutil.which("ffmpeg") is None:
+        return
+
+    def clip(path: Path) -> Path:  # a bright sky patch to the left: the brightness centre is not the object
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=c=black:size=192x108:rate=24:duration=1",
+                        "-vf", "drawbox=x=4:y=8:w=40:h=40:color=white:t=fill", "-pix_fmt", "yuv420p", str(path)], check=True)
+        return path
+
+    audio = tmp_path / "a.wav"
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "sine=frequency=110:sample_rate=44100:duration=2", str(audio)], check=True)
+    clips = [clip(tmp_path / f"c{i}.mp4") for i in range(2)]
+    shots = [{"index": 0, "start": 0.0, "end": 1.0, "seconds": 1.0, "frames": 24, "speed": 1.0, "ease": "", "effects": []},
+             {"index": 1, "start": 1.0, "end": 2.0, "seconds": 1.0, "frames": 24, "speed": 1.0, "ease": "", "effects": [],
+              "still_kinds": ["setting", "setting"]}]
+    kw = dict(aspect="9:16", quality="draft", fx=False, overlay=False, beats=[0.5, 1.0, 1.5], size=(54, 96), fps=24, dance_fx="off",
+              stem_orbit=False, seed=1)
+    made = beatfx.compose(clips, shots, audio, tmp_path / "out.mp4", **kw)
+    first, second = made["centres"]
+    assert first[0][0] < 0.4  # an object shot follows its brightness, as before
+    assert tuple(second[0]) == (0.5, 0.5) and tuple(second[1]) == (0.5, 0.5)  # a setting shot stays centred
+
+
+def test_the_desk_has_the_backdrop_row_next_to_scenes_and_sends_it():
+    js = (Path(mp.OBJECTS).parents[0] / "app.js").read_text(encoding="utf-8")
+    assert "function backdropRow(easy)" in js and js.count("${scenesRow(easy)}${backdropRow(easy)}") == 2  # both knob blocks
+    assert 'simpleSeg("easy-backdrop", current, [["plain", "Plain"], ["places", "Places"], ["scenes", "Scenes"]], "Backdrop")' in js
+    assert 'act === "easy-backdrop"' in js and 'act === "easy-grow-settings"' in js and "Grow ${growPlaces} places" in js
+    payload = js.split("function payload()")[1].split("function renderSetup")[0]
+    assert 'backdrop: (state.easy && state.easy.backdrop) || "auto"' in payload
+    assert '"backdrop"' in js.split("const EASY_SAVED_KEYS")[1].split("\n")[0]
+    assert "const PLACES_DEFAULT_MIN = 12;" in js and mp.PLACES_DEFAULT_MIN == 12  # the row's default says what the pick does
+    assert 'kind: "setting"' in js and "default_grow_settings" in js
+
+
+def test_the_chain_preview_says_the_backdrop_and_names_settings(monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from xenoform import ui as _ui
+
+    for i in range(3):
+        _grown_setting("cosmic", f"{200 + i:03d}_thing{i}.jpg", f"thing{i}", f"on ground {i}", seed=70 + i)
+    client = TestClient(_ui.create_app())
+    got = client.post("/api/simple/chain", json={"audio_id": "demo", "vibe": "cosmic", "backdrop": "places", "length_s": 8}).json()
+    assert got["backdrop"] == "places" and {r["kind"] for r in got["stills"]} == {"setting"}
+    plain = client.get("/api/simple/chain?vibe=cosmic&backdrop=plain").json()
+    assert plain["backdrop"] == "plain" and {r["kind"] for r in plain["stills"]} == {"object"}

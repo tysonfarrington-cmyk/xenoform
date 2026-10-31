@@ -1764,21 +1764,24 @@ def create_app(cfg: dict | None = None):
         except CutPlanError as exc:
             raise HTTPException(400, str(exc)) from exc
         pins = _mp.pins_of(state)
+        from xenoform import stills as _stills
+
         rows = [{"index": k, "file": str(s.get("file") or ""), "noun": str(s.get("noun") or ""),
-                 "kind": "scene" if str(s.get("kind") or "") == "scene" else "object", "own": bool(s.get("own")),
+                 "kind": _stills.kind_of(s), "own": bool(s.get("own")),
                  "user": bool(s.get("user")), "pinned": bool(s.get("pinned")),
                  "thumb": "/api/stills/thumb?file=" + quote(str(s.get("file") or ""), safe="/") if not s.get("user") else ""}
                 for k, s in enumerate(pre["stills"])]
         dropped_pins = sorted(k for k in pins if k < len(rows) and not rows[k]["pinned"])
         return {"vibe": pre["vibe"], "pool_vibe": _mp.vibe_for(state), "count": len(rows), "morphs": max(0, len(rows) - 1),
-                "shots": len(pre["shots"]), "long_song": bool(pre["long_song"]), "scene_mode": _mp.scenes_choice(state),
+                "shots": len(pre["shots"]), "long_song": bool(pre["long_song"]), "scene_mode": _mp.scene_mode(state),
+                "backdrop": _mp.backdrop_choice(state),  # what the morphs stand on: plain, places, scenes
                 "stills": rows, "pinned": [r["index"] for r in rows if r["pinned"]], "dropped_pins": dropped_pins,
                 "length_s": length_s if length_s > 0 and dur > length_s + 1.0 else 0}
 
     @app.get("/api/simple/chain")
     def simple_chain_get(audio_id: str = "demo", vibe: str = "", idea: str = "", scene_stills: str = "off", energy_preset: str = "dense",
                          quality_tier: str = "draft", aspect: str = "9:16", length_s: float = 0.0, morph_count: str = "auto",
-                         chain_pins: str = "", seed: int = 0) -> dict:
+                         chain_pins: str = "", seed: int = 0, backdrop: str = "auto") -> dict:
         """The chain a Make with these choices will morph through (``chain_pins``: a JSON object of slot to file)."""
         pins = {}
         if chain_pins:
@@ -1788,7 +1791,7 @@ def create_app(cfg: dict | None = None):
                 raise HTTPException(400, "chain_pins is a JSON object of slot to still file.")
         return _chain_for({"audio_id": audio_id, "vibe": vibe, "idea": idea, "scene_stills": scene_stills, "energy_preset": energy_preset,
                            "quality_tier": quality_tier, "aspect": aspect, "length_s": length_s, "morph_count": morph_count,
-                           "chain_pins": pins, "seed": seed, "mode": "simple"})
+                           "chain_pins": pins, "seed": seed, "mode": "simple", "backdrop": backdrop})
 
     @app.post("/api/simple/chain")
     def simple_chain(body: dict) -> dict:

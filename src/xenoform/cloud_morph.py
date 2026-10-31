@@ -398,8 +398,8 @@ def chain_stills(state: dict, count: int, record: bool = True, scene_at: list[in
     if vibe_for(state) == "black":
         # The black chain is curated (rose -> jellyfish -> butterfly -> swallow -> drops), so a
         # story word must not rotate it. Every paid shot then starts from a still Tys has seen.
-        return pick_stills({key: state.get(key) for key in ("vibe", "palette", "preset", "scene_stills", "chain_pins")}, count,
-                           record=record, scene_at=scene_at)
+        return pick_stills({key: state.get(key) for key in ("vibe", "palette", "preset", "scene_stills", "backdrop", "chain_pins")},
+                           count, record=record, scene_at=scene_at)
     return pick_stills(state, count, record=record, scene_at=scene_at)
 
 

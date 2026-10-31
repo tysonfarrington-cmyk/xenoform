@@ -463,16 +463,59 @@ def place_list(vibe: str) -> list[str]:
     return out
 
 
-def places_for(vibe: str, count: int, *, start: int = 0, seed: int | None = None) -> list[str]:
+# Which places suit which things, by the words a place is made of: a seahorse belongs in the rock pool and a typewriter in
+# the library, not the other way round (a random pairing reads as a random object, the complaint that never stopped).
+_WATER = ("shore", "beach", "pool", "lake", "sea", "water", "pier", "river", "kelp", "coral", "ocean", "underwater", "trench",
+          "abyss", "anemones", "flooded")
+_GREEN = ("meadow", "forest", "garden", "moss", "greenhouse", "ferns", "dew", "grass", "rainforest", "leaves", "flowers", "stream")
+_WORK = ("workshop", "workbench", "table", "library", "gallery", "hangar", "steel", "platform", "windowsill", "window", "ledge")
+_WILD = ("rocks", "hillside", "dunes", "desert", "cave", "stones", "basalt", "obsidian", "earth", "snowy", "sand", "salt flat", "valley")
+_STREET = ("street", "alley", "rooftop", "subway", "bridge", "car", "city", "skyline")
+_ANCIENT = ("temple", "ruin", "chapel", "corridor", "staircase", "steps", "arched", "plinth", "candlelit", "hall", "terrace")
+PLACE_WORDS = {
+    "sea-creatures": _WATER, "shells-and-corals": _WATER, "weather-and-liquid": _WATER + _WILD,
+    "insects-and-small-creatures": _GREEN + _WILD, "birds-and-beasts": _WILD + _GREEN, "living-things": _WILD + _GREEN,
+    "flowers": _GREEN, "pods-and-cones": _GREEN, "fruit-and-food": _GREEN + _WORK,
+    "celestial-bodies": _WILD, "crystals-and-minerals": _WILD, "solids-and-knots": _WILD + _WORK,
+    "intricate-machines": _WORK + _STREET, "machine-parts": _WORK + _STREET, "time-and-navigation": _WORK,
+    "musical-instruments": _WORK + _ANCIENT, "retro-tech": _WORK, "vehicles-and-craft": _STREET + _WILD, "toys-and-games": _WORK,
+    "big-iconic": _WILD + _STREET, "grimdark": _ANCIENT, "high-fantasy": _ANCIENT + _WILD, "anatomy-and-bones": _ANCIENT,
+    "strange-and-surreal": _ANCIENT + _WILD, "keys-and-curios": _ANCIENT + _WORK, "vessels-and-tableware": _WORK,
+    "lamps-and-lanterns": _STREET + _WORK, "origami-and-paper": _WORK, "knots-and-textiles": _WORK, "architectural-fragments": _ANCIENT,
+}
+
+
+def place_fit(noun: str, place: str) -> int:
+    """How well ``place`` suits ``noun``: the place words of the noun's family (``PLACE_WORDS``) found in the place."""
+    words = PLACE_WORDS.get(family_of(noun)) or ()
+    low = f" {str(place).lower()} "
+    return sum(1 for w in words if w in low)
+
+
+def places_for(vibe: str, count: int, *, start: int = 0, seed: int | None = None, nouns: list[str] | None = None) -> list[str]:
     """``count`` places for ``vibe``'s next settings: the list in order (shuffled by ``seed``), from ``start`` (how many
     settings the vibe has, so a second grow moves on to the places the first did not reach), round again when the list
-    runs out. Deterministic for the same arguments: the desk plans a grow and then grows it, and both must agree."""
+    runs out. With the ``nouns`` they are for, each takes the free place that suits it best (``place_fit``: the shell
+    to the shore, the compass to the table), the order breaking a tie, every place used once before any twice.
+    Deterministic for the same arguments: the desk plans a grow and then grows it, and both must agree."""
     rows = place_list(vibe)
     if not rows or count <= 0:
         return []
     if seed is not None:
         random.Random(seed).shuffle(rows)
-    return [rows[(int(start) + i) % len(rows)] for i in range(int(count))]
+    order = [rows[(int(start) + i) % len(rows)] for i in range(len(rows))]
+    if not nouns:
+        return [order[i % len(order)] for i in range(int(count))]
+    out: list[str] = [""] * int(count)
+    for lo in range(0, int(count), len(order)):  # a lap of the list at a time: every place once before any twice
+        lap = list(range(lo, min(int(count), lo + len(order))))
+        free = list(order)
+        noun = lambda i: nouns[i] if i < len(nouns) else ""  # noqa: E731
+        fits = [i for i in lap if any(place_fit(noun(i), p) for p in free)]
+        for i in fits + [i for i in lap if i not in fits]:  # the things a place suits choose first, the rest take what is left
+            best = max(range(len(free)), key=lambda k: (place_fit(noun(i), free[k]), -k))
+            out[i] = free.pop(best)
+    return out
 
 
 # the words that put an object on a studio ground: a setting's prompt and its morph keep the vibe's material and light but
@@ -1044,7 +1087,7 @@ def plan(vibe: str, count: int | None = None, *, nouns: list[str] | None = None,
         picked = [clean_noun(n) for n in (nouns or []) if clean_noun(n)] \
             or nouns_for(vibe, count, have=setting_nouns_in(vibe), seed=seed)
         picked = picked[:MAX_GROW]
-        places = places_for(vibe, len(picked), start=counts(vibe).get("settings", 0), seed=seed)
+        places = places_for(vibe, len(picked), start=counts(vibe).get("settings", 0), seed=seed, nouns=picked)
     else:
         picked = [clean_noun(n) for n in (nouns or []) if clean_noun(n)] or nouns_for(vibe, count, have=nouns_in(vibe), seed=seed)
         picked = picked[:MAX_GROW]
