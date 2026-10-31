@@ -498,15 +498,16 @@ def test_the_drive_folds_silence_halves_quiet_and_keeps_the_drop_where_the_stem_
 
 def test_the_drive_cuts_a_long_shot_where_its_stem_goes_out_and_comes_back():
     shots = _plan_shots([0, 10, 12], ["release", "release"], [0, 0], {0: {"effects": [{"type": "punch", "t": 0.0}, {"type": "punch", "t": 9.0}],
-                                                                         "boundary": "switch", "rest": 4, "rest_s": 2.0}})
+                                                                         "boundary": "switch", "rest": 2, "rest_s": 1.0}})
     act = [1.0] * 72 + [0.0] * 120 + [1.0] * 96  # in for 3 s, out for 5 s (ten beats), back at 8 s
     out, plan = stems_mode.drive((shots, {}), {"stem_drive": {"stem": "drums", "fps": 24, "period": 0.5, "activity": act}},
                                  {"beats": [i * 0.5 for i in range(24)]})
     assert [(s["start"], s["end"]) for s in out] == [(0.0, 3.0), (3.0, 8.0), (8.0, 10.0), (10.0, 12.0)]
     assert not out[0].get("stem_silent") and out[0]["boundary"] == "switch" and [fx["t"] for fx in out[0]["effects"]] == [0.0]
     assert out[1]["stem_silent"] and out[1]["effects"] == [] and out[1]["stem_cut"]
-    assert out[2]["stem_cut"] and "boundary" not in out[2] and out[2]["rest"] == 4  # the return: a fresh morph
+    assert out[2]["stem_cut"] and "boundary" not in out[2] and out[2]["rest"] == 2  # the return: a fresh morph, its rest kept
     assert all(s["speed"] == round(s["render_s"] / (s["end"] - s["start"]), 3) for s in out[:3])
+    assert out[2]["render_s"] == dense._render_s(2.0 - 1.0, 1.25)  # the morph renders for the piece less its rest
     assert plan["stem_drive"]["cuts"] == [3.0, 8.0] and plan["stem_drive"]["shots_in"] == 2
     assert stems_mode.silences(np.asarray(act, float), 24, 0.5) == [(3.0, 8.0)]
     assert stems_mode.silences(np.asarray([1.0] * 24 + [0.0] * 36 + [1.0] * 24, float), 24, 0.5) == []  # three beats: not a bar
@@ -515,6 +516,36 @@ def test_the_drive_cuts_a_long_shot_where_its_stem_goes_out_and_comes_back():
     _, plan2 = stems_mode.drive((_plan_shots([0, 10, 12], ["release", "release"], [0, 0]), {}),
                                 {"stem_drive": {"stem": "drums", "fps": 24, "period": 0.5, "activity": odd}}, {"beats": [i * 0.5 for i in range(24)]})
     assert plan2["stem_drive"]["cuts"] == [3.0, 8.0]
+
+
+def test_under_full_breathe_a_layer_keeps_its_scenes_and_its_stem_still_cuts_them():
+    """Breathe round two: a calm passage is a scene (holds of three to four bars, a morph then a rest). A layer whose stem
+    plays it keeps the scene as planned; a stem that goes out for a bar inside a scene still cuts it there and on its
+    return, and a piece with no room for a morph before its rest gives the rest up."""
+    directed = {"duration": 48.0, "beats": [i * 0.5 for i in range(96)], "tempo": 120,
+                "sections": [{"label": "calm", "start": 0.0, "end": 20.0, "level": 0.4, "role": "calm"},
+                             {"label": "build", "start": 20.0, "end": 28.0, "level": 0.7, "role": "build"},
+                             {"label": "drop", "start": 28.0, "end": 40.0, "level": 0.95, "role": "drop"},
+                             {"label": "calm", "start": 40.0, "end": 48.0, "level": 0.5, "role": "calm"}]}
+    state = {"energy_preset": "dense", "quality_tier": "draft", "aspect": "16:9", "drop_mode": "auto", "breathe": 1.0}
+    plain, _ = dense.shots_for(state, directed, None, drop=28.0)
+    scenes = [s for s in plain if s["section"] == "calm"]
+    assert scenes and all(s.get("rest") for s in scenes)  # the planner's scenes rest
+    full = {"stem": "other", "fps": 24, "period": 0.5, "activity": [1.0] * (24 * 48)}
+    kept, _ = dense.shots_for({**state, "stem_drive": full}, directed, None, drop=28.0)
+    assert [(s["start"], s["end"], s.get("rest"), s.get("rest_s")) for s in kept] == \
+        [(s["start"], s["end"], s.get("rest"), s.get("rest_s")) for s in plain]  # a stem that plays: the cut as planned
+    out_act = [1.0] * (24 * 48)
+    for k in range(6 * 24, 10 * 24):  # out for two bars inside the second scene's run-up
+        out_act[k] = 0.0
+    cut, plan = dense.shots_for({**state, "stem_drive": {**full, "activity": out_act}}, directed, None, drop=28.0)
+    assert plan["stem_drive"]["cuts"] == [6.0, 10.0]
+    silent = next(s for s in cut if s.get("stem_silent"))
+    back = next(s for s in cut if s.get("stem_cut") and not s.get("stem_silent"))
+    assert (silent["start"], silent["end"]) == (6.0, 10.0) and "rest" not in silent
+    assert back["start"] == 10.0 and "rest" not in back  # four beats with a four-beat rest: no room for the morph
+    assert back["render_s"] >= 2 and back["speed"] == round(back["render_s"] / (back["end"] - back["start"]), 3)
+    assert [s.get("rest") for s in cut if s["start"] in (0.0, 12.0, 40.0)] == [4, 8, 8]  # the other scenes keep theirs
 
 
 def test_the_drive_never_merges_across_a_passage_and_leaves_a_plan_without_a_drive_alone():

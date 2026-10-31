@@ -323,11 +323,13 @@ def split_at_silences(shots: list[dict], cuts: list[float], period: float) -> li
                 for key in ("event", "boundary", "ease"):
                     piece.pop(key, None)
                 piece["stem_cut"] = True  # a cut the stem made: where it went out or came back
-            if k < len(edges) - 2:
+            # a rest is the end of a shot (Breathe: the arrived object dwells): only the last piece keeps it, and only
+            # with room for a morph before it, as the planner rules (pacing.song_plan)
+            if k < len(edges) - 2 or (piece.get("rest_s") and y - x - float(piece["rest_s"]) < least * 0.9):
                 for key in ("rest", "rest_s"):
                     piece.pop(key, None)
-                if piece.get("ease") == "out":
-                    piece.pop("ease", None)
+            if k < len(edges) - 2 and piece.get("ease") == "out":
+                piece.pop("ease", None)
             out.append(piece)
     return out
 
@@ -438,8 +440,8 @@ def drive(got: tuple[list[dict], dict], state: dict, directed: dict | None = Non
                         s["boundary"] = "switch"
             elif s.get("event") in ("style", "kind") and act < QUIET:
                 s.pop("event", None)
-        if len(g) > 1 or any(shots[x].get("_piece") for x in g):
-            render_s = dense._render_s(end - start, _pc.SPEED.get(str(s.get("section") or ""), 1.25))
+        if len(g) > 1 or any(shots[x].get("_piece") for x in g):  # the morph renders for the shot less its rest
+            render_s = dense._render_s(end - start - float(s.get("rest_s") or 0.0), _pc.SPEED.get(str(s.get("section") or ""), 1.25))
             s["render_s"] = int(render_s)
             s["speed"] = round(render_s / max(end - start, 1e-3), 3)
         s.pop("_piece", None)

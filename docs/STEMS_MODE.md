@@ -54,7 +54,9 @@ layers that are on (and so do Cloud's credits).
   layer, the passages are the mix's split where the lead stem goes out for two bars or more (that stretch is a release,
   a breakdown, for every layer).
 - **One Shape for all.** The knobs, Breathe and Drops, the Look, Timing and Effects are one setting for every layer; a
-  re-cut with new knobs re-cuts every layer.
+  re-cut with new knobs re-cuts every layer. Under Breathe a layer's calm passage is a scene like any cut's (one look
+  from one family, holds of three to four bars, a morph then a rest); its stem's exits and returns still cut it where
+  the stem goes out for a bar and comes back, and a piece with no room for a morph before its rest gives the rest up.
 - **Every body passes the guardrails.** The Make's body is checked once (`guardrails.apply`, which validates the layers
   and writes a `[stems]` line), and every layer's own body passes `guardrails.apply` again before it renders, so the
   taste file, the kind guards and the rest apply per layer; each layer's report lines are kept in the record.
