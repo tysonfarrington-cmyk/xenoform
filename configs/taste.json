@@ -97,7 +97,7 @@
    "reason": "No image repeats in a cut: two stills of the same object (a second seahorse) count as a repeat too."},
   {"id": "no-vibe-twice", "kind": "limit", "since": "2026-10-29", "vibes": "once",
    "reason": "Nothing shown twice in a montage: a song plan or a batch of variations never uses one vibe twice."},
-  {"id": "clips-or-objects", "kind": "limit", "since": "2026-10-28", "mix": false,
+  {"id": "clips-or-objects", "kind": "limit", "since": "2026-10-28", "mix": false, "stems": "within a layer",
    "reason": "A Make is clips or objects, never both: a film clip dissolving into a still read as two videos stitched together."},
   {"id": "one-palette", "kind": "limit", "since": "2026-10-30", "palette": "one", "min_overlap": 0.3,
    "skip": ["neutral", "natural", "primary", "pearl-rainbow", "spectral", "pink-blue"],

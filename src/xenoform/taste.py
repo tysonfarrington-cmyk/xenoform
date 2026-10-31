@@ -895,8 +895,11 @@ def guard_body(body: dict, rep, *, expert: bool = False) -> None:
         return say(rule_id, sentence)[len("[taste] "):]
 
     clips = str(body.get("morph_source") or "").strip().lower() == "clips"
-    # clips or objects: a clips cut takes only clips, an object cut only objects (hard: the two never share a cut)
-    if no_mix():
+    # clips or objects: a clips cut takes only clips, an object cut only objects (hard: the two never share a cut). In
+    # Stems mode the rule holds within a layer and an objects layer may overlap a clips layer (decision 10 of the plan,
+    # 31 Oct): the layers are their own Makes, so the body as a whole is not clamped
+    stems_mode = str(body.get("mode") or "").strip().lower() == "stems"
+    if no_mix() and not stems_mode:
         if clips and (body.get("morph_targets") or body.get("chain_pins")):
             rep.clamp(rid, text("clips-or-objects", "a clips cut takes only your clips: its images and pinned stills were left out"),
                       hard=True)

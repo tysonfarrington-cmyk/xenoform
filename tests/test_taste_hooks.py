@@ -58,6 +58,16 @@ def test_clips_and_objects_never_share_a_make_even_under_expert(shipped):
     assert any("clips-or-objects" in m for m in lines) and any("no-film-clips" in m for m in lines)
 
 
+def test_in_stems_mode_the_rule_holds_within_a_layer(shipped):
+    # decision 10 (31 Oct): an objects layer and a clips layer may overlap; the layers are their own Makes
+    body = {"mode": "stems", "own_clips": [{"path": "a.mp4"}], "chain_pins": {"0": "none/00_orb.jpg"},
+            "layers": [{"stem": "drums", "kind": "objects"}, {"stem": "other", "kind": "clips"}]}
+    clean, lines = _messages(body)
+    assert clean["own_clips"] == [{"path": "a.mp4"}] and clean["chain_pins"] == {"0": "none/00_orb.jpg"}
+    assert not any("clips-or-objects" in m for m in lines)
+    assert taste.rule("clips-or-objects")["stems"] == "within a layer"
+
+
 def test_the_guardrail_notes_what_the_make_will_do(shipped):
     _, lines = _messages({"vibe": "wet-paint", "macros": {"intensity": 0.9}, "dance_fx": "cyan-flash",
                           "effects": ["dither", "kaleido"], "idea": "a teacup and a ship wheel"})

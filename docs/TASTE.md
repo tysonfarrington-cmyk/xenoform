@@ -96,7 +96,7 @@ Limits (`kind: limit`):
 | `one-effect` | the cut's effects take turns, one a passage (or one a stretch on a cut with no passages), never two on one shot | Effects are optional and sparing; the montage never stacked two. | 28 Oct |
 | `no-object-twice` | two stills of one object count as a repeat: the second goes to the back, the pool is counted without it, and a realm too small for the cut walks on into the next | No image repeats in a cut. | 25 Oct |
 | `no-vibe-twice` | a batch of variations (and the song plan, when it comes) never uses one vibe twice | Nothing shown twice in a montage. | 29 Oct |
-| `clips-or-objects` | an object cut takes no clips and a clips cut no stills, under Expert too | A film clip dissolving into a still read as two videos stitched together. | 28 Oct |
+| `clips-or-objects` | an object cut takes no clips and a clips cut no stills, under Expert too; in Stems mode the rule holds within a layer, and an objects layer may overlap a clips layer (the plan's decision 10, 31 Oct) | A film clip dissolving into a still read as two videos stitched together. | 28 Oct |
 | `one-palette` | a still off the vibe's palette goes to the back of the pool: on a neutral vibe (black glass) a colourful still, else a still whose hues do not overlap the vibe's own stills by 30 percent; vibes of many colours (None, botanical, the primaries, the rainbows) are left alone | A pink rose blooming among black glass flowers made the opener uneven. | 30 Oct |
 
 The family weight (`kind: weight`): `natural-first` weighs each family of `configs/subjects.json` (sea creatures,
