@@ -244,7 +244,7 @@ video, and it is built last because it stands on all the others.
 8. Assets questions: (a) wet-paint keeps its old strip, though a Cloud morph is ready for it (c7b83789 shot 1);
    lava-obsidian and odd-machine still show orb to nautilus; re-cut those three? (b) neon-night.jpg and poster.jpg
    stay origin unrecorded. (c) Nine stills held back for a look: cosmic rocket and ringed planet fail the banned
-   noun test; Taj Mahal, two helmets, lightning bolt, piano puddle, hermit crab want a look. (d) Comfy Cloud output
+   noun test; Taj Mahal, three helmets, lightning bolt, piano puddle, hermit crab want a look (sheet: Desktop/xeno_assets_31oct/held_back_stills_sheet.jpg). (d) Comfy Cloud output
    terms are unchecked, and CREDITS and LICENCES say so. (e) The Loved chains chips are their own row under the
    idea line, not entries in ideas.json.
 
