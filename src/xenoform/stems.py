@@ -388,24 +388,46 @@ def activity_for(stems_json: str | Path, *, fps: int = 24, period: float = 0.5, 
     names = _names(rec)
     cut = rec.get("sliced_from") if isinstance(rec.get("sliced_from"), dict) else None
     path = stems_json.with_name(ACTIVITY_FILE)
-    if not refresh:
-        hit = cached_activity(stems_json, fps=fps, period=period)
-        if hit is not None:
-            return hit
-    t0 = time.perf_counter()
-    if cut:  # a window whose song's own stems are gone: its stretch of the stem files, read where they are
-        got = activity({n: files[n] for n in names}, fps=fps, period=period, offset=float(cut.get("start") or 0.0),
-                       duration=float(cut.get("length") or 0.0) or None)
-    else:
-        got = activity({n: files[n] for n in names}, fps=fps, period=period)
-    got["split_engine"] = rec.get("engine")
-    got["source"] = str(stems_json)
-    got["seconds"] = round(time.perf_counter() - t0, 2)
-    tmp = path.with_suffix(".json.part")
-    tmp.write_text(json.dumps(got), encoding="utf-8")
-    os.replace(tmp, path)
+    with _path_lock(path):  # one worker a split: the Stems step's thread and a Make that starts the same moment take turns
+        if not refresh:
+            hit = cached_activity(stems_json, fps=fps, period=period)
+            if hit is not None:
+                return hit
+        t0 = time.perf_counter()
+        if cut:  # a window whose song's own stems are gone: its stretch of the stem files, read where they are
+            got = activity({n: files[n] for n in names}, fps=fps, period=period, offset=float(cut.get("start") or 0.0),
+                           duration=float(cut.get("length") or 0.0) or None)
+        else:
+            got = activity({n: files[n] for n in names}, fps=fps, period=period)
+        got["split_engine"] = rec.get("engine")
+        got["source"] = str(stems_json)
+        got["seconds"] = round(time.perf_counter() - t0, 2)
+        tmp = path.with_name(f"{ACTIVITY_FILE}.{threading.get_ident()}.part")
+        tmp.write_text(json.dumps(got), encoding="utf-8")
+        _replace(tmp, path)
     log.info("stem activity for %s: %d stems, %d frames in %.1f s", stems_json.parent.name, len(names), got["frames"], got["seconds"])
     return got
+
+
+_PATH_LOCKS: dict[str, threading.Lock] = {}
+
+
+def _path_lock(path: Path) -> threading.Lock:
+    with _ACT_LOCK:
+        return _PATH_LOCKS.setdefault(str(Path(path).resolve()), threading.Lock())
+
+
+def _replace(tmp: Path, dest: Path, tries: int = 8) -> None:
+    """``os.replace`` that waits out a reader holding ``dest`` open (Windows will not rename over an open file); the
+    curves are worked out again next time if it never lets go."""
+    for attempt in range(tries):
+        try:
+            os.replace(tmp, dest)
+            return
+        except PermissionError:
+            time.sleep(0.25)
+    tmp.unlink(missing_ok=True)
+    log.warning("activity cache %s is held open; not written this time", dest)
 
 
 def envelope(curve, points: int = ENVELOPE_POINTS) -> list[float]:
@@ -493,9 +515,10 @@ def status(song: str | Path, *, fps: int = 24, period: float | None = None, buil
             "frames": int(act.get("frames") or 0), "stems": summary(act, roles), "names": list(act.get("stems") or [])}
 
 
-def start(song: str | Path, *, engine: str | None = None, fps: int = 24, period: float | None = None) -> dict:
-    """Split ``song`` (or find its split) and start its envelopes; returns ``status``. Demucs and the band split run on
-    ``stems_api``'s background thread (one at a time, cached by song hash); the test engine runs here, in a moment."""
+def start(song: str | Path, *, engine: str | None = None, fps: int = 24, period: float | None = None,
+          build: bool = True) -> dict:
+    """Split ``song`` (or find its split) and start its envelopes (``build``); returns ``status``. Demucs and the band
+    split run on ``stems_api``'s background thread (one at a time, cached by song hash); the test engine runs here."""
     from xenoform import stems_api
 
     engine = engine_of(engine)
@@ -503,7 +526,7 @@ def start(song: str | Path, *, engine: str | None = None, fps: int = 24, period:
         ensure_split(song, engine="fake", fps=fps)
     else:
         stems_api.start_background_split(song, engine=engine, fps=fps)
-    return status(song, fps=fps, period=period)
+    return status(song, fps=fps, period=period, build=build)
 
 
 def period_of(beats, default: float = 0.5) -> float:

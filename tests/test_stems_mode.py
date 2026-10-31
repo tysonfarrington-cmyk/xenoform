@@ -496,6 +496,27 @@ def test_the_drive_folds_silence_halves_quiet_and_keeps_the_drop_where_the_stem_
     assert plan2["stem_drive"]["drops_left"] == 1
 
 
+def test_the_drive_cuts_a_long_shot_where_its_stem_goes_out_and_comes_back():
+    shots = _plan_shots([0, 10, 12], ["release", "release"], [0, 0], {0: {"effects": [{"type": "punch", "t": 0.0}, {"type": "punch", "t": 9.0}],
+                                                                         "boundary": "switch", "rest": 4, "rest_s": 2.0}})
+    act = [1.0] * 72 + [0.0] * 120 + [1.0] * 96  # in for 3 s, out for 5 s (ten beats), back at 8 s
+    out, plan = stems_mode.drive((shots, {}), {"stem_drive": {"stem": "drums", "fps": 24, "period": 0.5, "activity": act}},
+                                 {"beats": [i * 0.5 for i in range(24)]})
+    assert [(s["start"], s["end"]) for s in out] == [(0.0, 3.0), (3.0, 8.0), (8.0, 10.0), (10.0, 12.0)]
+    assert not out[0].get("stem_silent") and out[0]["boundary"] == "switch" and [fx["t"] for fx in out[0]["effects"]] == [0.0]
+    assert out[1]["stem_silent"] and out[1]["effects"] == [] and out[1]["stem_cut"]
+    assert out[2]["stem_cut"] and "boundary" not in out[2] and out[2]["rest"] == 4  # the return: a fresh morph
+    assert all(s["speed"] == round(s["render_s"] / (s["end"] - s["start"]), 3) for s in out[:3])
+    assert plan["stem_drive"]["cuts"] == [3.0, 8.0] and plan["stem_drive"]["shots_in"] == 2
+    assert stems_mode.silences(np.asarray(act, float), 24, 0.5) == [(3.0, 8.0)]
+    assert stems_mode.silences(np.asarray([1.0] * 24 + [0.0] * 36 + [1.0] * 24, float), 24, 0.5) == []  # three beats: not a bar
+    # the cuts fall on the beat inside the silence: the first beat after it starts, the last before it ends
+    odd = [1.0] * 70 + [0.0] * 124 + [1.0] * 94  # out from 2.92 s to 8.08 s
+    _, plan2 = stems_mode.drive((_plan_shots([0, 10, 12], ["release", "release"], [0, 0]), {}),
+                                {"stem_drive": {"stem": "drums", "fps": 24, "period": 0.5, "activity": odd}}, {"beats": [i * 0.5 for i in range(24)]})
+    assert plan2["stem_drive"]["cuts"] == [3.0, 8.0]
+
+
 def test_the_drive_never_merges_across_a_passage_and_leaves_a_plan_without_a_drive_alone():
     edges = [0, 2, 4, 6, 8]
     shots = _plan_shots(edges, ["calm", "calm", "build", "build"], [0, 0, 1, 1], {2: {"boundary": "switch"}})

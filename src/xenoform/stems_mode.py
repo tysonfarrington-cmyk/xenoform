@@ -30,6 +30,7 @@ from __future__ import annotations
 import copy
 import json
 import logging
+import math
 import shutil
 import threading
 import time
@@ -63,6 +64,8 @@ SILENT = 0.12
 SILENT_PEAK = 0.3
 QUIET = 0.4
 QUIET_MAX_BEATS = 16
+SPLIT_MIN_BEATS = 4          # the stem out this long (a bar, after its two-beat release) inside a shot: the layer cuts
+                             # where it goes and where it comes back
 CARRY = 0.35
 HEAT_FULL = 0.8
 HEAT_FLOOR = 0.2
@@ -279,6 +282,56 @@ def _starts_passage(shots: list[dict], i: int) -> bool:
         or shots[i].get("section") != shots[i - 1].get("section")
 
 
+def silences(curve: np.ndarray, fps: int, period: float, *, min_beats: float = SPLIT_MIN_BEATS) -> list[tuple[float, float]]:
+    """The stretches (seconds) where the stem is out (activity under ``SILENT``) for ``min_beats`` beats or more."""
+    out: list[tuple[float, float]] = []
+    quiet = np.asarray(curve) < SILENT
+    need = max(1, int(round(min_beats * period * fps)))
+    k = 0
+    while k < len(quiet):
+        if not quiet[k]:
+            k += 1
+            continue
+        j = k
+        while j < len(quiet) and quiet[j]:
+            j += 1
+        if j - k >= need:
+            out.append((k / fps, j / fps))
+        k = j
+    return out
+
+
+def split_at_silences(shots: list[dict], cuts: list[float], period: float) -> list[dict]:
+    """Shots cut where the stem goes out and where it comes back (``cuts``, on the beat): a piece under two beats folds
+    back into its neighbour. A piece keeps the shot's passage and role; the first keeps its event and boundary and the
+    effects before the next cut, the last its rest."""
+    out: list[dict] = []
+    least = 2.0 * period - 1e-6
+    for s in shots:
+        a, b = float(s["start"]), float(s["end"])
+        inner = [c for c in cuts if a + least < c < b - least]
+        if not inner:
+            out.append(s)
+            continue
+        edges = [a] + inner + [b]
+        for k, (x, y) in enumerate(zip(edges, edges[1:])):
+            piece = copy.deepcopy(s)
+            piece["start"], piece["end"], piece["seconds"] = round(x, 4), round(y, 4), round(y - x, 4)
+            piece["_piece"] = True  # its render length is worked out again (drive)
+            piece["effects"] = [fx for fx in (s.get("effects") or []) if x - 1e-6 <= float(fx.get("t", a)) < y - 1e-6]
+            if k:
+                for key in ("event", "boundary", "ease"):
+                    piece.pop(key, None)
+                piece["stem_cut"] = True  # a cut the stem made: where it went out or came back
+            if k < len(edges) - 2:
+                for key in ("rest", "rest_s"):
+                    piece.pop(key, None)
+                if piece.get("ease") == "out":
+                    piece.pop("ease", None)
+            out.append(piece)
+    return out
+
+
 def drive(got: tuple[list[dict], dict], state: dict, directed: dict | None = None) -> tuple[list[dict], dict]:
     """The planner's shots for a layer, reshaped by its stem's drive (``state["stem_drive"]``: the stem's activity a
     frame at ``fps`` and its onsets) inside the shared passages: silent stretches fold into one shot each
@@ -297,6 +350,22 @@ def drive(got: tuple[list[dict], dict], state: dict, directed: dict | None = Non
     fps = int(d.get("fps") or 24)
     period = float(d.get("period") or 0.5)
     onsets = sorted(float(t) for t in d.get("onsets") or [])
+    # where the stem goes out and comes back, on the song's beats: the layer cuts there (the silence becomes a shot
+    # of its own, the return a fresh morph) whatever the planner's shots were
+    beats = sorted(float(b) for b in ((directed or {}).get("beats") or []))
+    out_runs = silences(curve, fps, period)
+
+    def up(t: float) -> float:  # the first beat at or after t: the silent piece holds nothing but silence
+        later = [x for x in beats if x >= t - 1e-6]
+        return later[0] if later else math.ceil(t / period - 1e-9) * period
+
+    def down(t: float) -> float:  # the last beat at or before t: the return starts on its beat
+        earlier = [x for x in beats if x <= t + 1e-6]
+        return earlier[-1] if earlier else math.floor(t / period + 1e-9) * period
+
+    cuts = sorted({round(x, 4) for a, b in out_runs for x in (up(a), down(b)) if up(a) < down(b) - 1e-6})
+    n_planned = len(shots)
+    shots = split_at_silences(shots, cuts, period)
     n = len(shots)
     mean = [float(_span(curve, float(s["start"]), float(s["end"]), fps).mean()) for s in shots]
     peak = [float(_span(curve, float(s["start"]), float(s["end"]), fps).max()) for s in shots]
@@ -315,6 +384,7 @@ def drive(got: tuple[list[dict], dict], state: dict, directed: dict | None = Non
             i = j + 1
             continue
         if (quiet[i] and i + 1 < n and quiet[i + 1] and not _starts_passage(shots, i + 1) and not carries[i + 1]
+                and not shots[i + 1].get("stem_cut")  # never across a cut the stem made (where it came back)
                 and (float(shots[i + 1]["end"]) - float(shots[i]["start"])) <= QUIET_MAX_BEATS * period + 1e-6):
             groups.append([i, i + 1])
             i += 2
@@ -368,17 +438,18 @@ def drive(got: tuple[list[dict], dict], state: dict, directed: dict | None = Non
                         s["boundary"] = "switch"
             elif s.get("event") in ("style", "kind") and act < QUIET:
                 s.pop("event", None)
-        if len(g) > 1:
+        if len(g) > 1 or any(shots[x].get("_piece") for x in g):
             render_s = dense._render_s(end - start, _pc.SPEED.get(str(s.get("section") or ""), 1.25))
             s["render_s"] = int(render_s)
             s["speed"] = round(render_s / max(end - start, 1e-3), 3)
+        s.pop("_piece", None)
         out.append(s)
     edges = [int(round(float(s["start"]) * FPS)) for s in out] + [int(round(float(out[-1]["end"]) * FPS))]
     for k, s in enumerate(out):
         s["index"] = k
         s["frames"] = max(1, edges[k + 1] - edges[k])
-    summary = {"stem": str(d.get("stem") or ""), "shots_in": n, "shots_out": len(out), "silent_s": round(silent_s, 3),
-               "drops_kept": kept, "drops_left": dropped,
+    summary = {"stem": str(d.get("stem") or ""), "shots_in": n_planned, "shots_out": len(out), "silent_s": round(silent_s, 3),
+               "drops_kept": kept, "drops_left": dropped, "cuts": cuts,
                "active": round(float((curve >= 0.25).mean()), 3)}
     plan = {**plan, "shots": [{k: v for k, v in s.items() if k not in ("index", "frames", "seconds")} for s in out],
             "stem_drive": summary}
@@ -489,7 +560,7 @@ def _stems_json(state: dict, audio_path: Path, report: Callable, cancel: Callabl
         return found
     engine = _stems.engine_of(state.get("stems_engine"))
     report("restyle", 0.0, "Splitting the stems first (on the CPU; no GPU, no queue)")
-    st = _stems.start(audio_path, engine=engine)
+    st = _stems.start(audio_path, engine=engine, build=False)  # the Make works the curves out itself, next
     while st.get("status") in ("queued", "running") and st.get("stage") == "split":
         if cancel and cancel():
             from xenoform.turbo import JobCancelled
