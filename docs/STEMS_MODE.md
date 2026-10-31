@@ -28,6 +28,8 @@ exists, and on Windows the two names are one file.)
    `<job>/layers/<stem>/`): the whole Make's knobs, Shape (Breathe, Drops), Look, Timing and Effects, on the song's
    shared passages, with the layer's vibe and pins or its clips, its own seed, and the stem's drive. The planner's shots
    are reshaped by the drive (`stems_mode.drive`, hooked into `dense.shots_for` by the `stem_drive` key):
+   - where the stem goes out for a bar or more, the layer cuts: on the first beat inside the silence and on the last beat
+     before the stem comes back (`stem_cut`), whatever the planner's shots were, so the return is a fresh morph;
    - a stretch where the stem is silent (mean activity under 0.12, peak under 0.3) folds into **one** shot, marked
      `stem_silent`, with no effects and no event: no morphs are spent where nothing shows, and the layer fades out there;
    - two **quiet** shots of a passage (mean under 0.4) become one, at most 16 beats long: a quiet stem cuts half as often;
