@@ -230,7 +230,10 @@ def test_a_paced_window_plans_on_the_songs_own_beats(tmp_path, monkeypatch):
         f["tempo"] = 240.0
         return f
 
-    monkeypatch.setattr(analyze, "analyze_audio", doubled)
+    from xenoform import pipeline
+
+    monkeypatch.setattr(analyze, "analyze_audio", doubled)  # the desk's analysis of a cut
+    monkeypatch.setattr(pipeline, "analyze_audio", doubled)  # and the Make's own (turbo._analyze, pipeline.analyze_file)
     seen = {}
 
     def fake_run_job(job_id, audio_path, body, cfg, out, cancel_event=None):
@@ -245,8 +248,16 @@ def test_a_paced_window_plans_on_the_songs_own_beats(tmp_path, monkeypatch):
         assert r.status_code == 200, r.text
         cut = ui_mod._FEATURES[seen["body"]["audio_id"]]
         assert cut["trimmed_from"]["start"] == 6.0 and abs(float(cut["duration"]) - 8.0) < 0.3
+        # what the Make itself plans on: turbo analyses the cut file again, and takes the sidecar over its analysis
+        from xenoform import turbo
+
+        wav = ui_mod._AUDIO[seen["body"]["audio_id"]]
+        made, _hit = turbo._analyze(Path(wav), {"fps": 12, "analyze": ui_mod.load_config(None)["analyze"]},
+                                    tmp_path / f"features_{paced}.json", tmp_path / "cache")
         if paced:
             assert cut["beats"][:4] == [0.0, 0.5, 1.0, 1.5] and len(cut["beats"]) == 16 and cut["tempo"] == 120.0
             assert [(s["label"], s["start"], s["end"]) for s in cut["sections"]] == [("calm", 0.0, 6.0), ("drop", 6.0, 8.0)]
+            assert made["beats"] == cut["beats"] and made["tempo"] == 120.0 and made["sections"] == cut["sections"]
         else:
             assert cut["beats"][:3] == [0.0, 0.25, 0.5] and cut["tempo"] == 240.0  # the old cut: its own analysis
+            assert not turbo.window_path(Path(wav)).exists() and made["tempo"] == 240.0

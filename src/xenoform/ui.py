@@ -2264,6 +2264,11 @@ def create_app(cfg: dict | None = None):
                 if song.get("tempo"):
                     features["tempo"] = song["tempo"]
                 features.pop("analysis_sections", None)
+                from xenoform.turbo import window_path  # the Make analyses the cut file again: this rides beside it
+
+                window_path(dest).write_text(json.dumps({"beats": features["beats"], "sections": features["sections"],
+                                                         "tempo": features.get("tempo"), "from": audio_id,
+                                                         "start": round(start, 3)}), encoding="utf-8")
             except Exception:
                 log.exception("the song's beats for the cut")
         features["trimmed_from"] = {"audio_id": audio_id, "start": round(start, 3), "length_s": float(length_s),

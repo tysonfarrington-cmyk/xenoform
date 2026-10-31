@@ -482,6 +482,33 @@ def _scenes_for(directed: dict, state: dict) -> list[dict]:
     return built
 
 
+WINDOW_SUFFIX = ".window.json"
+
+
+def window_path(audio: Path) -> Path:
+    """The sidecar a paced Length cut carries beside its audio (``ui._trim_audio``): the song's own beats, tempo and
+    sections where the window sits in them, so the Make plans what the desk previewed rather than 30 s heard alone."""
+    audio = Path(audio)
+    return audio.with_name(audio.stem + WINDOW_SUFFIX)
+
+
+def _with_window(audio: Path, features: dict) -> dict:
+    """``features`` with the cut's sidecar laid over them (beats, tempo, sections), or as they are when it has none."""
+    side = window_path(audio)
+    if not side.is_file():
+        return features
+    try:
+        win = json.loads(side.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return features
+    out = dict(features)
+    for key in ("beats", "sections", "tempo"):
+        if win.get(key) is not None:
+            out[key] = win[key]
+    out.pop("analysis_sections", None)
+    return out
+
+
 def _analyze(audio: Path, cfg: dict, dest: Path, cache: Path) -> tuple[dict, bool]:
     from xenoform.analyze import read_features, write_features
     from xenoform.pipeline import analyze_file
@@ -489,13 +516,16 @@ def _analyze(audio: Path, cfg: dict, dest: Path, cache: Path) -> tuple[dict, boo
     key = _track_key(audio, int(round(float(cfg["fps"]))))
     cached = cache / "analysis" / f"{key}.json"
     if cached.exists():
-        features = read_features(cached)
+        features = _with_window(audio, read_features(cached))
         write_features(dest, features)
         return features, True
     features = analyze_file(audio, cfg, dest)
     cached.parent.mkdir(parents=True, exist_ok=True)
     write_features(cached, features)
-    return features, False
+    windowed = _with_window(audio, features)
+    if windowed is not features:
+        write_features(dest, windowed)
+    return windowed, False
 
 
 def keyframe_backend() -> str:
