@@ -1,6 +1,6 @@
 """A library strip from a finished morph clip: wide / medium / close / reveal at 768x432 with a jpg poster each, the format
 ``make_library.py`` writes, cut from a clip that already exists (a Cloud Final morph of the vibe's own stills) instead of a
-new LTX 0.9.5 render of orb -> nautilus. No GPU, no ComfyUI: ffmpeg only (31 Oct 2026: 23 strips were re-cut this way).
+new LTX 0.9.5 render of orb -> nautilus. No GPU, no ComfyUI: ffmpeg only (31 Oct 2026: 22 strips were re-cut this way).
 
     python scripts/vibe_objects/strip_from_clip.py <vibe> <clip.mp4> [--from A --to B] [--source JSON] [--pack] [--out DIR]
 
