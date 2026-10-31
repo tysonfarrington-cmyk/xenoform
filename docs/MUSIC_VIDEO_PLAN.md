@@ -328,7 +328,7 @@ same composite byte for byte; the suite green with the fake split.
     (0:30 to 2:00), 71 to 0 (0:00 to 0:30). Left: the camera orbit follows the cut's Chaos, not the shot's; one
     place per passage is one family only (settings not yet held); a round-one record re-cuts with the new looks but
     its old shot lengths. Proof: Desktop/xeno_pacing_31oct/round2 (stacked plain over Breathe with a rhythm strip).
-11. Stems mode: built 31 Oct on its branch (1340 passed on 1c86c88; it merges aac4ec2 before it lands). Decided by
+11. Stems mode: landed 31 Oct as f226c5e (1352 passed on its tree, with Breathe round two merged in first). Decided by
     the orchestrator: a layer playing alone is opaque and prominence matters only where two stems play; defaults
     drums and other on, drums 0.8, the rest 0.6, screen; drive thresholds: silent under 0.12 mean and 0.3 peak,
     quiet under 0.4 (two quiet shots become one, at most 16 beats), a cut where the stem is out for a bar, the drop
