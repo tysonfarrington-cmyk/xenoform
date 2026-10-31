@@ -221,20 +221,28 @@ def shot_indices(shot: dict, n_src: int, progress: np.ndarray | None = None, exa
     last = max(n_src - 1, 0)
     if shot.get("hold"):  # the timeline's Hold: the start object held still for the whole shot (docs/TIMELINE.md)
         return np.zeros(count, dtype=int)
+    # Breathe's rest (pacing): the morph plays over the first part of the shot, then the object it arrived at dwells on
+    # its last frame for ``rest_s`` (the beat FX still on it), and the next shot morphs on from that same object
+    rest_n = int(round(float(shot.get("rest_s") or 0.0) * FPS)) if shot.get("rest_s") else 0
+    rest_n = max(0, min(rest_n, count - 2))
+    play = count - rest_n
+    morph = shot if not rest_n else {**shot, "frames": play, "end": float(shot.get("start") or 0.0) + play / FPS}
     timed = None
     if shot.get("timing") and progress is not None and len(progress) == n_src:
         from xenoform import morph_timing as _MT
 
-        timed = _MT.indices(shot, count, progress, FPS)
+        timed = _MT.indices(morph, play, progress, FPS)
     if timed is not None:
         idx = timed
     else:
-        u = np.linspace(0.0, 1.0, count) if count > 1 else np.zeros(count)
+        u = np.linspace(0.0, 1.0, play) if play > 1 else np.zeros(play)
         if shot.get("ease") == "in":
             u = u ** 1.6
         elif shot.get("ease") == "out":
             u = 1 - (1 - u) ** 1.6
         idx = u * last
+    if rest_n:
+        idx = np.concatenate([np.asarray(idx, dtype=np.float64), np.full(rest_n, float(last))])
     step = last / max(count - 1, 1)
     for fx in shot.get("effects") or []:
         k0 = int(round((float(fx["t"]) - float(shot["start"])) * FPS))

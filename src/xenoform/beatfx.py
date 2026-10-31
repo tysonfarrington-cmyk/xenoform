@@ -616,6 +616,11 @@ def _blend_at(frames: np.ndarray, pos: float) -> np.ndarray:
     return (frames[lo].astype(np.float32) * (1.0 - frac) + frames[hi].astype(np.float32) * frac + 0.5).astype(np.uint8)
 
 
+REST_TRAIL_ROLES = ("intro", "calm", "sustain")  # where a rest burns in with a feedback trail
+REST_TRAIL = 0.75       # the trail's amount over a rest
+REST_TRAIL_LEAD = 6     # frames before the rest the trail fades in over
+
+
 def _shot_frames(clip: Path, shot: dict, si: int, n0: int, total: int, *, aspect: str, w: int, h: int, fx: bool,
                  env: dict | None, beats: list, punch, zoom_scale: float, glow_gain: float, fps: int, look_kwargs: dict,
                  foreshadow: dict | None = None, boundary: dict | None = None, effects: dict | None = None) -> dict:
@@ -651,6 +656,11 @@ def _shot_frames(clip: Path, shot: dict, si: int, n0: int, total: int, *, aspect
     elif effects is not None and effects.get("cut") is not None:
         effects = {**effects, "names": list(effects["cut"])}
     chain = _E.Chain(effects, beats, look.mode)  # the TouchDesigner-style effects, after the look (feedback and slit-scan keep this shot's frames)
+    # Breathe's rest in the intro and the grooves: the arrived object lingers with a feedback trail, burning in (Tys, 29 Oct:
+    # "maybe have it linger with the effects a bit more like burn in"); the trail fades in over the morph's last frames
+    rest_n = max(0, min(int(round(float(shot.get("rest_s") or 0.0) * fps)), len(idx) - 2)) if shot.get("rest_s") else 0
+    trail = _E.Feedback() if rest_n and str(shot.get("section") or "") in REST_TRAIL_ROLES and "feedback" not in chain.names else None
+    trail_from = len(idx) - rest_n - REST_TRAIL_LEAD
     shot_grade = _E.grade_of(shot.get("grade"))  # the timeline's per-shot Colour, on the finished frame
     out = np.empty((len(idx), h, w, 3), dtype=np.uint8)
     n = int(n0)
@@ -728,6 +738,10 @@ def _shot_frames(clip: Path, shot: dict, si: int, n0: int, total: int, *, aspect
             kick = float(env["kick"][min(n, total - 1)]) if env is not None else 0.0
             loud = float(env["loud"][min(n, total - 1)]) if env is not None else 0.5
             frame = chain(frame, n / fps, kick=kick, loud=loud)
+        if trail is not None and k >= trail_from:
+            frame = frame if frame.dtype == np.uint8 else np.clip(frame, 0, 255).astype(np.uint8)
+            amt = REST_TRAIL * min(1.0, (k - trail_from) / float(REST_TRAIL_LEAD))
+            frame = trail(frame, amount=amt, loud=float(env["loud"][min(n, total - 1)]) if env is not None else 0.5, t=n / fps)
         if shot_grade:
             frame = _E.grade(frame if frame.dtype == np.uint8 else np.clip(frame, 0, 255).astype(np.uint8), shot_grade)
         out[k] = frame if frame.dtype == np.uint8 else np.clip(frame, 0, 255).astype(np.uint8)

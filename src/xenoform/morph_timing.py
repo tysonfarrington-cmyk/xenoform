@@ -74,6 +74,8 @@ def plan(shots: list[dict], mode: str, beats: list[float], drop: float | None = 
         if m == "smooth" or _skip(s):
             continue
         a, b = float(s.get("start") or 0.0), float(s.get("end") or 0.0)
+        if s.get("rest_s"):  # Breathe's rest: the change happens in the morph's part of the shot, before the dwell
+            b = max(a + 0.25, b - float(s["rest_s"]))
         dur = b - a
         if dur <= 0.2:
             continue

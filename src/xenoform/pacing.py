@@ -383,7 +383,7 @@ def song_plan(duration: float, beats: list, sections: list[dict], drop: float | 
         q = passages[pi + 1] if pi + 1 < len(passages) else None
         if per_run and q is not None and "drop_run" in q:
             return 0
-        return REST_BEATS if p["i1"] - p["i0"] >= REST_BEATS + MIN_BEATS else 0
+        return REST_BEATS if p["i1"] - p["i0"] >= REST_BEATS + 4 else 0  # a bar of morph before the rest, at least
 
     def cut(steps: dict) -> list[tuple[int, str, bool, int, int]]:
         """(grid index, role, starts a passage, passage index, rest beats) for every shot."""
@@ -417,8 +417,9 @@ def song_plan(duration: float, beats: list, sections: list[dict], drop: float | 
                 change = next((j for j in range(k + 1, min(nxt, end)) if zone(p, j) != (role, part)), None)
                 if change is not None and change - k >= MIN_BEATS:
                     nxt = change
-                if nxt < end and end - nxt < MIN_BEATS:
-                    nxt = end  # a sliver at the passage end folds into the shot before it
+                # a sliver at the passage end folds into the shot before it (before a rest, the morph keeps a bar)
+                if nxt < end and end - nxt < (4 if rest else MIN_BEATS):
+                    nxt = end
                 k, first = nxt, False
             if mine and rest:
                 mine[-1][4] = rest  # the last shot runs on over the rest
@@ -728,6 +729,8 @@ def shape(shots: list[dict], macros: dict, *, breathe: bool, drop_mode: str, hou
                 if calm:
                     s["dance_fx"] = calm
                     counts["looks"] += 1
+            if role not in ("drop", "drop_late") and _fit_rest(s, period):
+                counts["long_rests"] = counts.get("long_rests", 0) + 1
         if drops:  # the drop treatment, over the profile: the entries and the ramps into them
             _treat(s, timing=timing, user_effects=user_effects, intensity=intensity, breathe=prof is not None, counts=counts,
                    period=period)
@@ -760,6 +763,30 @@ def _treat(s: dict, *, timing: str, user_effects: list, intensity: float, breath
     if breathe and timing == "smooth" and r >= 0.75:
         s["timing"] = {"mode": "snap"}
     counts["ramp"] = counts.get("ramp", 0) + 1
+
+
+MIN_PLAY = 0.6   # Breathe never plays a morph slower than this; a longer shot is the morph and then a rest
+CLIP_MAX_S = 5.0  # a morph clip is at most 5 s (cloud_morph._local_clips)
+
+
+def _fit_rest(s: dict, period: float) -> bool:
+    """Breathe: a shot longer than its morph can fill at ``MIN_PLAY`` plays the morph at that speed and rests on the
+    object for the rest (at most ``REST_MAX`` beats; past that the morph slows, as before). True when it set one."""
+    try:
+        clip = min(CLIP_MAX_S, float(s.get("render_s") or 0.0))
+        seconds = float(s.get("seconds") or (float(s.get("end") or 0.0) - float(s.get("start") or 0.0)))
+    except (TypeError, ValueError):
+        return False
+    if clip <= 0 or seconds <= 0:
+        return False
+    need = seconds - clip / MIN_PLAY
+    have = float(s.get("rest_s") or 0.0)
+    if need <= have + 1e-3:
+        return False
+    rest_s = min(need, REST_MAX * float(period))
+    s["rest_s"] = round(rest_s, 4)
+    s["rest"] = max(1, int(round(rest_s / float(period))))
+    return True
 
 
 def _period_of(shots: list[dict]) -> float:
