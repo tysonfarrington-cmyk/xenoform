@@ -404,7 +404,14 @@ same composite byte for byte; the suite green with the fake split.
     the demo's 55 s; flash frames 0 against 259 plain. For Tys: no clip twice against a 24-clip pack means long
     holds (a 15 s build on one clip, drops holding one film 9 to 11 s after their opening bars): keep it, let clips
     return in drops and builds after a gap, or a bigger or curated pack of about 40. Follow-up: Edit in Resolve
-    names clip shots your clip, not the film. The estimate test reads the checkout's jobs; being isolated.
+    names clip shots your clip, not the film. The estimate test now sees no measured cuts (d9644f2).
+16. The curated film pack (Tys, 1 Nov: build a bigger curated clip pack, about 40 clips, colour and action first,
+    so every cut the plan wants shows a clip once): version 2 of configs/film_pack.json from archive.org, NASA and
+    other public-domain or CC0 sources only, each with its licence basis, at least 28 colour clips with six to
+    eight quiet ones for calm passages and the strongest black-and-white kept for the drops, new fields colour,
+    motion, living and mood that the cutter and the kaleido rule read; nothing of the footage in the repository.
+    An Opus builder started 1 Nov from d9644f2 (desk 47336; proof in Desktop/xeno_pack_1nov: the pack contact
+    sheet and ZedsDead v2 on the new pack stacked against the 24-pack cut).
 
 ## 9. Working rules for every session
 
