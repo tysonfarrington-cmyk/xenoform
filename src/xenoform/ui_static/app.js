@@ -598,6 +598,20 @@ async function loadVibes() {
   }
 }
 
+// The loved chains (configs/chain_presets.json) as one click beside the idea line: GET /api/presets, applied by applyPreset.
+let PRESETS = [];
+async function loadPresets() {
+  try {
+    const res = await api("/api/presets");
+    if (!res.ok) return false;
+    const body = await res.json();
+    PRESETS = (body.presets || []).filter((p) => p && p.id && p.name && p.body && vibeById(p.vibe));
+    return PRESETS.length > 0;
+  } catch (err) {
+    return false;
+  }
+}
+
 function libraryFolder(vibe) {
   return VIBE_LIBRARY[vibe] || vibe;
 }
@@ -1399,6 +1413,7 @@ function ideaBlock(easy) {
           <input id="easy-idea" type="text" maxlength="170" value="${esc(easy.idea || "")}" aria-label="What it morphs through, optional" placeholder="a nautilus, a jellyfish, an orchid, a moonlit shore, slow and dreamy" autocomplete="off" />
         </label>
         ${ideaReadingLine(easy)}
+        ${presetChips(easy)}
         <details class="idea-help"><summary>How the line works</summary>
           <p class="note">Commas split it. Things become the objects the morphs travel between: one the library knows brings its family along, one it lacks is drawn new in this vibe's material before Make. A theme (underwater, magic, dinosaurs, space, halloween and about thirty more) brings fifteen things of its own and keeps the chain on them. A place becomes wide scenes the morphs pass through. A feel (slow and dreamy, hard and glitchy) moves the knobs and the Look. It never changes the vibe, and it cannot tell a story: every shot is still one thing becoming the next. Empty, and the vibe decides.</p>
         </details>`;
@@ -1540,6 +1555,55 @@ function ideaReadingHtml(easy) {
   const parts = [things ? `${things} ${things === 1 ? "thing" : "things"}` : "", places ? `${places} ${places === 1 ? "place" : "places"}` : ""].filter(Boolean);
   const foot = stills ? `<p class="note ir-foot">Make draws ${stills} new ${stills === 1 ? "still" : "stills"} first (${parts.join(", ")}), about ${grow.seconds || 20} s.</p>` : "";
   return body + foot;
+}
+// Loved chains: one chip each, a click sets what the chain was loved with (the Make body's keys, as the desk holds them):
+// the vibe, the idea line, the pinned stills slot by slot, the morph style, timing, effects, look, foreshadow and the four
+// knobs. Never the tier and never a render: a preset made on Cloud Final spends nothing until you tick the credits and Make.
+function presetApplied(easy) {  // the preset last applied, while the vibe and the pins are still its own
+  const p = PRESETS.find((item) => item.id === easy.presetId);
+  const same = p && easy.vibe === p.vibe && JSON.stringify(easy.pins || {}) === JSON.stringify(p.body.chain_pins || {});
+  return same ? p : null;
+}
+function presetChips(easy) {
+  if (!PRESETS.length) return "";
+  const applied = presetApplied(easy);
+  const chips = PRESETS.map((p) => {
+    const vibe = vibeById(p.vibe);
+    const on = !!applied && applied.id === p.id;
+    const title = `${p.name}${vibe ? ` · ${vibe.name}` : ""} · ${p.morph_style}, ${p.morph_timing}${p.line ? `. ${p.line}` : ""}`;
+    const thumb = p.thumb ? `<img src="${esc(media(p.thumb))}" alt="" loading="lazy" decoding="async">` : "";
+    return `<button type="button" class="chip preset-chip${on ? " on" : ""}" data-act="easy-preset" data-id="${esc(p.id)}" aria-pressed="${on ? "true" : "false"}" title="${esc(title)}">${thumb}<span>${esc(p.name)}</span></button>`;
+  }).join("");
+  const pinned = applied ? Object.keys(applied.body.chain_pins || {}).length : 0;
+  const note = applied
+    ? `${applied.name}: ${applied.line || "a chain of objects"}${pinned ? ` ${pinned} ${pinned === 1 ? "still" : "stills"} pinned in their slots.` : ""} ${easy.song ? "Make it when you are ready" : "Pick a song and Make"}; nothing is rendered yet.`
+    : "One click sets the vibe, the line, the stills in their slots and the knobs a chain was loved with. It starts no render and spends no credits.";
+  return `<div class="preset-row" data-tour="easy-presets"><span class="shelf-label">Loved chains</span><div class="toggle chips preset-chips" role="group" aria-label="Loved chains">${chips}</div></div>
+        <p class="note preset-note" id="preset-note">${esc(note)}</p>`;
+}
+function applyPreset(id) {
+  const preset = PRESETS.find((p) => p.id === id);
+  if (!preset || !state || !state.easy) return;
+  const easy = state.easy;
+  const body = preset.body || {};
+  if (body.vibe && vibeById(body.vibe)) easy.vibe = body.vibe;
+  easy.morphSource = "objects";  // a preset is a chain of objects: clips and objects are never mixed in one cut
+  easy.idea = body.idea || "";
+  easy.pins = Object.assign({}, body.chain_pins || {});
+  easy.chainPick = null;
+  easy.morphStyle = body.morph_style || "auto";
+  easy.morphTiming = body.morph_timing || "smooth";
+  easy.effects = Array.isArray(body.effects) ? body.effects.filter((x) => EFFECTS.includes(x)) : [];
+  easy.danceFx = body.dance_fx || "auto";
+  easy.foreshadow = body.foreshadow || "auto";
+  Object.entries(body.macros || {}).forEach(([key, value]) => { if (window.XENO_MACRO_SET) window.XENO_MACRO_SET(key, Number(value)); });
+  easy.presetId = preset.id;  // the chip stays lit, and the note under the chips speaks, while the vibe and the pins are still the preset's
+  easy.note = "";
+  saveEasy();
+  render();
+  if (easy.song && easy.vibe) scheduleChain(chainKey());  // the pins move the picks: the Chain row follows
+  const chip = document.querySelector(`[data-act=easy-preset][data-id="${id}"]`);
+  if (chip) chip.focus();
 }
 function ideaReadingLine(easy) {
   if (!state.ideaReading || state.ideaReading.key !== ideaKey()) scheduleIdea();
@@ -4424,6 +4488,8 @@ document.addEventListener("click", async (event) => {
     setEasyPhase("choose");
     state.easy.note = "Stopped. Anything still queued on the GPU was cancelled.";
     render();
+  } else if (act === "easy-preset") {
+    applyPreset(el.dataset.id || "");
   } else if (act === "vibe-example") {
     openExample(el.dataset.vibe || "");
   } else if (act === "example-close") {
@@ -5582,7 +5648,7 @@ async function boot() {
     await settleCut({ full: true });
     refreshComfy();
     setInterval(refreshComfy, 8000);
-    Promise.all([loadVideos(), loadVibes(), loadSimpleOptions()]).then(() => render());
+    Promise.all([loadVideos(), loadVibes().then(() => loadPresets()), loadSimpleOptions()]).then(() => render());
     if (window.XENO_TUTORIAL) window.XENO_TUTORIAL.ready();
   } catch (error) {
     document.getElementById("app").innerHTML = `<div class="error-panel"><h2>The desk could not open the demo.</h2><p>${esc(error.message)}. The reference cut is examples/demo_base.mp4.</p></div>`;

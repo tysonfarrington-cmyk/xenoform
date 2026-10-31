@@ -1,0 +1,402 @@
+{
+  "version": 1,
+  "note": "The loved chains as presets (31 Oct 2026): a vibe, an idea line, the stills pinned slot by slot (the Make body's chain_pins), and the settings the chain was loved with. A chip beside the idea line applies one in a click: vibe, line, pins, style, timing, effects, look, foreshadow and knobs, never the tier (they were made on Cloud Final; applying one spends nothing). `pins` slots start at 0; the slots a preset does not pin are picked as usual. `idea` is the line the job was made with (it steers the unpinned slots); `line` says what the chain is. `look` is what was asked for ('auto' resolves per vibe). `morphs` are the loved clips of its pairs (examples/morphs/morphs.json). `source` is the job it was taken from and the recipe code of that job (a recipe has no pins). No rules or bans here: those come with the taste file.",
+  "presets": [
+    {
+      "id": "black-rose",
+      "name": "Black glass rose",
+      "vibe": "black",
+      "line": "A glass droplet becomes the rose, the rose opens into the lotus, the lotus into a jellyfish.",
+      "idea": "",
+      "pins": {
+        "0": "black/11_droplet_black_glass.jpg",
+        "1": "black/00_rose_black_glass.jpg",
+        "2": "black/05_lotus_black_glass.jpg",
+        "3": "black/01_jellyfish_black_glass.jpg"
+      },
+      "morph_style": "bloom",
+      "morph_timing": "smooth",
+      "effects": [],
+      "look": "auto",
+      "foreshadow": "off",
+      "knobs": {
+        "intensity": 0.5,
+        "speed": 0.5,
+        "chaos": 0.15,
+        "glow": 0.6
+      },
+      "seed": 2727,
+      "engine": "ltx25",
+      "tys": [
+        "29 Oct 6:26 pm: \"the rose i mean at 0:09 it sort of opens up\"",
+        "29 Oct 6:26 pm: \"lets use the liquid black opener and possibily that lotus flower or a variation on how that was done ... its kind of unique compared to the other objects we have? can we have more of them?\""
+      ],
+      "note": "The rose that opens into the lotus: Bloom, smooth, no effects, Chaos 0.15, foreshadow off. In no published video; the Cloud clip is examples/morphs/black-rose-to-lotus.mp4.",
+      "morphs": [
+        "black-droplet-to-rose",
+        "black-rose-to-lotus",
+        "black-lotus-to-jellyfish"
+      ],
+      "source": {
+        "job": "4ab7c8ca",
+        "aspect": "16:9",
+        "tier": "cloud",
+        "morphs": 9,
+        "recipe": "xf1.eNqrVkpVslJKSc0rTlXSUUorBnLy09KAzHQgyz0nsyQ5Q8G_tERBw9hAoVghubREEyiXC1KWlJOfnwvklADZyTn5pSlAdhlYPDE5W6kWAHuRGc0"
+      }
+    },
+    {
+      "id": "black-flowers",
+      "name": "Black glass flowers",
+      "vibe": "black",
+      "line": "Orchid, passion flower, protea, magnolia, peony, dahlia, all in black glass.",
+      "idea": "",
+      "pins": {
+        "0": "black/029_orchid.jpg",
+        "1": "black/031_passion_flower.jpg",
+        "2": "black/030_protea.jpg",
+        "3": "black/032_magnolia.jpg",
+        "4": "black/025_peony.jpg",
+        "5": "black/026_dahlia.jpg"
+      },
+      "morph_style": "bloom",
+      "morph_timing": "smooth",
+      "effects": [],
+      "look": "cool-echo",
+      "foreshadow": "off",
+      "knobs": {
+        "intensity": 0.5,
+        "speed": 0.5,
+        "chaos": 0.15,
+        "glow": 0.6
+      },
+      "seed": 2727,
+      "engine": "ltx25",
+      "tys": [],
+      "note": "The orchid run the published montage ships: Bloom, smooth, the cool-echo look, Chaos 0.15. Pairs with the rose chain.",
+      "morphs": [],
+      "source": {
+        "job": "d367e503",
+        "aspect": "16:9",
+        "tier": "cloud",
+        "morphs": 16,
+        "recipe": "xf1.eNqrVkpVslJKSc0rTlXSUUorBnLy09KAzHQgyz0nsyQ5Q8G_tERBw9hAoVghubREEyiXC1KWlJOfnwvklADZyTn5pSlAdhlYPDE5W6kWAHuRGc0"
+      }
+    },
+    {
+      "id": "glow-sea",
+      "name": "Glow sea",
+      "vibe": "bioluminescent",
+      "line": "Comb jelly, siphonophore, jellyfish, sea turtle, manta ray, sea anemone, squid: the glowing sea that opens Glitch Out.",
+      "idea": "moon jellyfish, comb jelly, manta ray, sea angel, nautilus, siphonophore, glass squid, box jellyfish",
+      "pins": {
+        "0": "bioluminescent/145_comb_jelly.jpg",
+        "1": "bioluminescent/146_siphonophore.jpg",
+        "2": "bioluminescent/04_jellyfish.jpg",
+        "3": "bioluminescent/034_sea_turtle.jpg",
+        "4": "bioluminescent/119_manta_ray.jpg",
+        "5": "bioluminescent/125_sea_anemone.jpg",
+        "6": "bioluminescent/148_squid.jpg"
+      },
+      "morph_style": "bloom",
+      "morph_timing": "smooth",
+      "effects": [
+        "feedback"
+      ],
+      "look": "cool-echo",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 0.4,
+        "speed": 0.5,
+        "chaos": 0.15,
+        "glow": 0.55
+      },
+      "seed": 2727,
+      "engine": "ltx25",
+      "tys": [
+        "30 Oct 4:23 pm: \"Yes, upload it public on Tyso with the jellyfish thumbnail and title 2, but first swap out the black and white film clip at 2:09.\""
+      ],
+      "note": "The opener of Glitch Out, 0:00 to 0:16: Bloom, smooth, Feedback, the cool-echo look, Intensity 0.4, Chaos 0.15.",
+      "morphs": [
+        "bioluminescent-comb-jelly-to-siphonophore",
+        "bioluminescent-siphonophore-to-jellyfish",
+        "bioluminescent-jellyfish-to-sea-turtle"
+      ],
+      "source": {
+        "job": "07105596",
+        "aspect": "16:9",
+        "tier": "cloud",
+        "morphs": 16,
+        "recipe": "xf1.eNpFjjEOwjAMRa9ieQIpAxJbL8DIARCDm7ptwImhThAIcXdcMbBY7_8n2X4jY4cDF2MMyCN2JxyZh57iFc8BR3NdF4qrnpwPkmqc4dgqbPY7MIitbt0ld1m1wIVFXmOyOUDU3P9ygEylEizkaExAZWIJUKjVJM28TLdZi_pYOMAkZAZ2b2kI0Ovzv9VP5fWnXlSzh-ocRdvg_Fj7pNJyKmyRS8XPF7EGSg0"
+      }
+    },
+    {
+      "id": "deep-sea-fish",
+      "name": "Deep-sea fish",
+      "vibe": "bioluminescent",
+      "line": "Jellyfish, seahorse, koi fish, octopus, sea turtle in the dark water.",
+      "idea": "underwater",
+      "pins": {
+        "0": "bioluminescent/04_jellyfish.jpg",
+        "1": "bioluminescent/010_seahorse.jpg",
+        "2": "bioluminescent/012_koi_fish.jpg",
+        "3": "bioluminescent/013_octopus.jpg",
+        "4": "bioluminescent/034_sea_turtle.jpg"
+      },
+      "morph_style": "bloom",
+      "morph_timing": "beat",
+      "effects": [
+        "feedback"
+      ],
+      "look": "cool-echo",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 1.0,
+        "speed": 0.9,
+        "chaos": 0.45,
+        "glow": 0.85
+      },
+      "seed": 2727,
+      "engine": "ltx25",
+      "tys": [
+        "29 Oct 5:24 pm: \"those effects youure doing with the fish is cool but maybe give the fish a bit more airtime ... again at 0:44 give the fish a little bit more time, maybe have it linger with the effects a bit more like burn in\""
+      ],
+      "note": "The published fish (Feedback, no kaleido, Chaos 0.45). The kaleido and feedback render he first saw read as a flat kaleidoscope with no fish visible; he asked for the fish to linger and burn in.",
+      "morphs": [
+        "bioluminescent-jellyfish-to-seahorse",
+        "bioluminescent-seahorse-to-koi-fish",
+        "bioluminescent-koi-fish-to-octopus"
+      ],
+      "source": {
+        "job": "879f04fb",
+        "aspect": "16:9",
+        "tier": "cloud",
+        "morphs": 16,
+        "recipe": "xf1.eNoVizsOAjEMBa8SuQJpCyS6vcCWHABRZJ0XiMhHShy2QNwdu5t5o_cl0EoBdYAWQqT1ThEIu-c3PRaKQ7N0z5afyltOwi93m-JO14sbjqectSVtswb0wwu6DsWee26tmIgJvCgbcm4zKH9sTi3PkioGowr9_rbtLR4"
+      }
+    },
+    {
+      "id": "smoke-dragon",
+      "name": "Smoke dragon",
+      "vibe": "shadow-self",
+      "line": "Dragon, griffin, serpent, hydra, wyvern, cerberus: backlit silhouettes in a shaft of smoke.",
+      "idea": "dragon, griffin, serpent, hydra, wyvern, cerberus",
+      "pins": {
+        "0": "shadow-self/156_dragon.jpg",
+        "1": "shadow-self/157_griffin.jpg",
+        "2": "shadow-self/155_serpent.jpg",
+        "3": "shadow-self/158_hydra.jpg",
+        "4": "shadow-self/163_wyvern.jpg",
+        "5": "shadow-self/159_cerberus.jpg"
+      },
+      "morph_style": "melt",
+      "morph_timing": "smooth",
+      "effects": [],
+      "look": "noir-glow",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 0.7,
+        "speed": 0.5,
+        "chaos": 0.15,
+        "glow": 0.7
+      },
+      "seed": 2727,
+      "engine": "ltx25",
+      "tys": [
+        "30 Oct 7:53 am: \"The dragon with the smoke, kind of iconic and cool as well.\"",
+        "30 Oct 12:16 pm: the smoke section opener must be \"clearly discernable\" (the bird that read as a bear), so the opener was rebuilt as the pinned dragon chain"
+      ],
+      "note": "The smoke section of Glitch Out, rebuilt as a pinned chain so its opener reads clearly: Melt, smooth, the noir-glow look, Intensity 0.7, Chaos 0.15.",
+      "morphs": [
+        "shadow-self-dragon-to-griffin",
+        "shadow-self-griffin-to-serpent"
+      ],
+      "source": {
+        "job": "b90b9735",
+        "aspect": "16:9",
+        "tier": "cloud",
+        "morphs": 10,
+        "recipe": "xf1.eNoVzU0KAjEMBeCrhKwUKgjuvIBLz1A76Q90WknSGYbBu5vuvpfHIycSPnGhJoQOo1hQ9mGGZH7VoiHDeyhcHncQCEOv1pU5Yp96c5C4xFgMQvylpg7yYZ2D_diI7R6IP8RDbLfOBytVNasx1D4W82aW7Je-34RqxN8f-Acv7A"
+      }
+    },
+    {
+      "id": "gold-finale",
+      "name": "Gold finale",
+      "vibe": "liquid-gold",
+      "line": "Phoenix, lion head, dragon, eagle, infinity knot, scarab beetle, koi, gargoyle head, in molten gold.",
+      "idea": "phoenix, lion head, dragon, scarab beetle, eagle, sun mask, koi, infinity knot",
+      "pins": {
+        "0": "liquid-gold/172_phoenix.jpg",
+        "1": "liquid-gold/173_lion_head.jpg",
+        "2": "liquid-gold/174_dragon.jpg",
+        "3": "liquid-gold/175_eagle.jpg",
+        "4": "liquid-gold/176_infinity_knot.jpg",
+        "5": "liquid-gold/177_scarab_beetle.jpg",
+        "6": "liquid-gold/178_koi.jpg",
+        "7": "liquid-gold/077_gargoyle_head.jpg"
+      },
+      "morph_style": "melt",
+      "morph_timing": "smooth",
+      "effects": [],
+      "look": "auto",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 1.0,
+        "speed": 0.9,
+        "chaos": 0.4,
+        "glow": 0.45
+      },
+      "seed": 2727,
+      "engine": "ltx25",
+      "tys": [
+        "30 Oct 12:16 pm: \"the gold outro part i love, from around 3:46ish - i think we can also use that as a clip as well so make that a little standalone clip for me with the music as well\"",
+        "30 Oct 2:21 pm: \"different thumbnails. for one use the beetle i like that one\"",
+        "30 Oct 2:43 pm (X cover): \"is it possible to change that thumbnail it lands on to the beatle\""
+      ],
+      "note": "The gold outro of Glitch Out (the title lands on the infinity knot): Melt, smooth, no effects, Chaos 0.4.",
+      "morphs": [
+        "liquid-gold-phoenix-to-lion-head",
+        "liquid-gold-lion-head-to-dragon",
+        "liquid-gold-dragon-to-eagle",
+        "liquid-gold-eagle-to-infinity-knot",
+        "liquid-gold-infinity-knot-to-scarab-beetle",
+        "liquid-gold-scarab-beetle-to-koi",
+        "liquid-gold-koi-to-gargoyle-head"
+      ],
+      "source": {
+        "job": "45b4eb51",
+        "aspect": "16:9",
+        "tier": "cloud",
+        "morphs": 16,
+        "recipe": "xf1.eNoVzEEKAjEMheGrhK4UIgjuvIBLz9BpYydMJlGbiiLe3czqffDg_yZK51RJOyVMLXwR9jLDdTjsTkfoUIbv4-P47rOR8htB2BRmyhWhPnMzReglP_MEE5ELIVBu2_ShsOa-ICzGCKw3VvYPLGoe0bVHdSXZ7MEiNmr4FRZ-DK6HZlLT7w9g9DWt"
+      }
+    },
+    {
+      "id": "origami-noir",
+      "name": "Origami noir",
+      "vibe": "origami-noir",
+      "line": "Praying mantis, luna moth, cicada, feather, penguin, folded from black paper and gold foil.",
+      "idea": "",
+      "pins": {
+        "0": "origami-noir/001_praying_mantis.jpg",
+        "1": "origami-noir/005_luna_moth.jpg",
+        "2": "origami-noir/012_cicada.jpg",
+        "3": "origami-noir/06_feather.jpg",
+        "4": "origami-noir/024_penguin.jpg"
+      },
+      "morph_style": "fold",
+      "morph_timing": "smooth",
+      "effects": [],
+      "look": "auto",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 1.0,
+        "speed": 0.9,
+        "chaos": 0.45,
+        "glow": 0.85
+      },
+      "seed": 2727,
+      "engine": "ltx25",
+      "tys": [
+        "memory note: loved in the 29 Oct montage (Fold style, black paper and gold foil)"
+      ],
+      "note": "The fold run in the published cut (luna moth into the cicada): Fold, smooth, no effects.",
+      "morphs": [
+        "origami-noir-praying-mantis-to-luna-moth",
+        "origami-noir-luna-moth-to-cicada",
+        "origami-noir-cicada-to-feather",
+        "origami-noir-feather-to-penguin"
+      ],
+      "source": {
+        "job": "7103fca3",
+        "aspect": "16:9",
+        "tier": "cloud",
+        "morphs": 16,
+        "recipe": "xf1.eNqrVkpVslJKSc0rTlXSUUorBnJKihKTQZx0INs9J7MkOUPBv7REQcPYQKFYIbm0RBMolwtSmJafkwJklwCZyTn5pSB2GZCdX5SZnpibqZuXn1mkVAsAZtwc_Q"
+      }
+    },
+    {
+      "id": "origami-icons",
+      "name": "Origami icons",
+      "vibe": "origami-noir",
+      "line": "Tiger, crane, wolf, dragon: origami animals as icons.",
+      "idea": "origami dragon, origami phoenix, origami koi, origami tiger, origami crane, origami stag, origami wolf, origami peacock",
+      "pins": {
+        "0": "origami-noir/056_origami_tiger.jpg",
+        "1": "origami-noir/057_origami_crane.jpg",
+        "2": "origami-noir/058_origami_wolf.jpg",
+        "3": "origami-noir/009_origami_dragon.jpg"
+      },
+      "morph_style": "fold",
+      "morph_timing": "beat",
+      "effects": [],
+      "look": "auto",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 1.0,
+        "speed": 0.9,
+        "chaos": 0.4,
+        "glow": 0.85
+      },
+      "seed": 2727,
+      "engine": "ltx25",
+      "tys": [],
+      "note": "The icons run of the published cut: Fold, on the beat, Chaos 0.4.",
+      "morphs": [
+        "origami-noir-tiger-to-crane",
+        "origami-noir-crane-to-wolf",
+        "origami-noir-wolf-to-dragon"
+      ],
+      "source": {
+        "job": "b289bdb5",
+        "aspect": "16:9",
+        "tier": "cloud",
+        "morphs": 16,
+        "recipe": "xf1.eNpNjkEKAjEMRa9SulIYQXDnBVx6hphJO2E6jbSpCuLdTRdSd-_9D8l_e_JnP1Ou5CcfqokWwC7R-JJYcXHXpm53OrrqsOneOrZOCkfY2M0FouTJ_fy-CGV-jWAVHqIcqQzFApmGVoU47Ckp_N0lQMHVvm99ZpA0d1bjG4Ead8QkreePsfCQhYv_fAEioE0t"
+      }
+    },
+    {
+      "id": "glass-hand",
+      "name": "Glass hand",
+      "vibe": "iridescent-glass",
+      "line": "Jetpack, lunar rover, astronaut glove, brass orrery in iridescent glass.",
+      "idea": "space",
+      "pins": {
+        "0": "iridescent-glass/115_jetpack.jpg",
+        "1": "iridescent-glass/116_lunar_rover.jpg",
+        "2": "iridescent-glass/117_astronaut_glove.jpg",
+        "3": "iridescent-glass/118_brass_orrery.jpg"
+      },
+      "morph_style": "bloom",
+      "morph_timing": "beat",
+      "effects": [
+        "feedback"
+      ],
+      "look": "auto",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 1.0,
+        "speed": 0.9,
+        "chaos": 0.45,
+        "glow": 0.85
+      },
+      "seed": 2727,
+      "engine": "ltx25",
+      "tys": [
+        "30 Oct 7:53 am: \"The object should have some sort of symbolic element, like the hand. I quite like how you've done that.\""
+      ],
+      "note": "The hand: a symbolic object, a glass glove with a rainbow film (he named the hand, not a file). Bloom, on the beat, Feedback, Chaos 0.45. The chain's first still, an astronaut helmet, is left out (a taste flag).",
+      "morphs": [
+        "iridescent-glass-lunar-rover-to-astronaut-glove",
+        "iridescent-glass-astronaut-glove-to-brass-orrery"
+      ],
+      "source": {
+        "job": "4b735507",
+        "aspect": "16:9",
+        "tier": "cloud",
+        "morphs": 16,
+        "recipe": "xf1.eNolyzEOwjAMheGrRG8CqUhIbL0AIwdADKnjlIi0QbXTBXF3bLF9T7_9AWNE4lUYAzhjvCMzpynSC48BWSzrFsnzbL7WovQMt67hcDkHCdT1aK1Yk_f_bvGnqba2-FAfHNXspNp6Mu_mspXEQrzqaa5RBN8fB4sreQ"
+      }
+    }
+  ]
+}

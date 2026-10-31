@@ -129,6 +129,14 @@ slot) reaches `pick_stills(pins=)`, which holds every pinned slot and fills the 
 without the pinned stills, so nothing appears twice; the scene slots of a Mix cut move around the pins. A pin past the
 chain's end, a file the library no longer has, or a file pinned twice is dropped. The record lists `pins` and `pinned`.
 
+**Loved chains.** `configs/chain_presets.json` (`xenoform.presets`, `GET /api/presets`) keeps the chains the author loved
+as presets: a vibe, the idea line they were made with, the stills pinned slot by slot (they are among the shipped
+stills, under the file names a recipe or a pin uses) and the settings they were loved with: morph style, timing, effects,
+look, foreshadow and the four knobs. The chips under the idea line (Vibe step) apply one in a click: the vibe, the line,
+the pins and the Fine-tune rows. It never sets the tier and never starts a Make, so a preset made on Cloud Final spends
+nothing until you tick the credits and Make yourself. A missing or bad file means no chips; a pin whose still is
+nowhere is dropped and the others hold. A recipe code carries none of this (it has no pins); the preset does.
+
 **Changing it after the cut.** The shots lane's *Swap an object* (`POST /api/jobs/<id>/swap` with `slot` and `file`,
 `dense.swap_still`) replaces one still of a finished Draft cut: the two morphs that touch it are rendered again through
 the same Draft path with the cut's own seed for those morphs and the still prepared as the cut prepared its stills, every

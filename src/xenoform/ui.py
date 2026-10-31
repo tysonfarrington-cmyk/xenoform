@@ -499,6 +499,16 @@ def create_app(cfg: dict | None = None):
             raise HTTPException(404, "No such example cut")
         return FileResponse(_vibes.cuts_dir() / name, media_type="video/mp4")
 
+    @app.get("/api/presets")
+    def presets_route() -> dict:
+        """The chain presets (``configs/chain_presets.json``), the loved chains as one click: each a vibe, an idea line, the
+        stills pinned slot by slot and the settings the chain was loved with, with a ``thumb`` for its chip and its Make
+        ``body`` (``chain_pins``, ``morph_style``, ``morph_timing``, ``effects``, ``dance_fx``, ``foreshadow``, ``macros``,
+        ``seed``: never the tier, so applying one spends nothing). A missing or bad file means none."""
+        from xenoform import presets as _presets
+
+        return {"presets": [_presets.public(p) for p in _presets.load()]}
+
     @app.post("/api/analyze")
     async def analyze(file: UploadFile = File(...)) -> dict:
         import librosa

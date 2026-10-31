@@ -917,6 +917,42 @@
    "noun": "ammonite",
    "finish": "iridescent liquid metal",
    "source": "Z-Image Turbo (Apache 2.0), seed 4022, 1024x576, prompt configs/still_prompts.json black prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "black/029_orchid.jpg",
+   "noun": "orchid",
+   "finish": "iridescent liquid metal",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1404786578, 1024x576, prompt configs/still_prompts.json black prefix and subject sentence, grown 2026-10-29"
+  },
+  {
+   "file": "black/031_passion_flower.jpg",
+   "noun": "passion flower",
+   "finish": "iridescent liquid metal",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1404786580, 1024x576, prompt configs/still_prompts.json black prefix and subject sentence, grown 2026-10-29"
+  },
+  {
+   "file": "black/030_protea.jpg",
+   "noun": "protea",
+   "finish": "iridescent liquid metal",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1404786579, 1024x576, prompt configs/still_prompts.json black prefix and subject sentence, grown 2026-10-29"
+  },
+  {
+   "file": "black/032_magnolia.jpg",
+   "noun": "magnolia",
+   "finish": "iridescent liquid metal",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1404786582, 1024x576, prompt configs/still_prompts.json black prefix and subject sentence, grown 2026-10-29"
+  },
+  {
+   "file": "black/025_peony.jpg",
+   "noun": "peony",
+   "finish": "iridescent liquid metal",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1714304429, 1024x576, prompt configs/still_prompts.json black prefix and subject sentence, grown 2026-10-29"
+  },
+  {
+   "file": "black/026_dahlia.jpg",
+   "noun": "dahlia",
+   "finish": "iridescent liquid metal",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1714304431, 1024x576, prompt configs/still_prompts.json black prefix and subject sentence, grown 2026-10-29"
   }
  ],
  "chrome-mercury": [

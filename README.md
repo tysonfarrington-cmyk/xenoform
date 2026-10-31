@@ -252,7 +252,7 @@ src/xenoform/
   media_qa.py, post_qa.py, shot_qa.py, guardrails.py, demo_house.py   QA and the house profile
   restyle.py, cloud_backend.py, cloud_morph.py, eligibility.py   SDK runner, optional cloud, open-weights audit
 configs/                               vibes.json, autotune.json, guardrails.json, defaults_demo.json,
-                                       transitions.json, clip_pack.json, anchors.json, moves.json, example.json
+                                       transitions.json, clip_pack.json, chain_presets.json, anchors.json, moves.json, example.json
 workflows/                             xenoform_morph.json (LTX 0.9.5), xenoform_draft/final, moves_wan_animate2.json,
                                        ltx_v2v*.json, ltx25_*.json (optional, not default)
 assets/library/                        manifest.json and the NASA anchor stills; clips are fetched on first run

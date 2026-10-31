@@ -1,0 +1,8 @@
+# The six black glass flowers the "Black glass flowers" chain preset (configs/chain_presets.json) pins, slot by slot:
+# python scripts/vibe_objects/ship_grown.py --list scripts/vibe_objects/shipped_31oct_presets.txt --grown work/ui/objects
+black/029_orchid.jpg
+black/031_passion_flower.jpg
+black/030_protea.jpg
+black/032_magnolia.jpg
+black/025_peony.jpg
+black/026_dahlia.jpg
