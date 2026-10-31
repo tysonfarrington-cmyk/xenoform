@@ -595,15 +595,35 @@ def _scene_kw(state: dict, shots: list[dict], count: int, assign: list | None = 
     return {"scene_at": _mp.scene_slots(shots, count, choice, assign=assign)} if choice != "off" else {}
 
 
-def _merge_to(shots: list[dict], n: int) -> list[dict]:
+MERGE_RANK = {"calm": 0, "sustain": 0, "intro": 1, "outro": 1, "release": 1, "drop_late": 2, "build": 3, "drop": 4}
+
+
+def _merge_to(shots: list[dict], n: int, protected: bool = False) -> list[dict]:
     """``shots`` folded into ``n`` by merging the shortest into its shorter neighbour, the timeline untouched. The
     story planner keeps a cut at every role start, so ``max_shots`` alone left 16 shots for 11 morphs on a shipped
-    12-still pool and the compose crashed (26 Oct review); the chain's count is enforced here."""
+    12-still pool and the compose crashed (26 Oct review); the chain's count is enforced here.
+
+    ``protected`` (a paced plan): the calm passages give up their shots first and the drops and builds last
+    (``MERGE_RANK``), a shot merges into a neighbour of its own passage when it has one, and a drop run's first shot
+    keeps its own start (its event): the shortest-first rule merged the drops away first under any cap."""
     shots = [dict(s) for s in shots]
     n = max(1, int(n))
+
+    def secs(k: int) -> float:
+        return float(shots[k].get("seconds") or 0.0)
+
+    def entry(k: int) -> bool:
+        return 0 <= k < len(shots) and str(shots[k].get("boundary") or "") == "drop"
+
     while len(shots) > n:
-        i = min(range(len(shots)), key=lambda k: float(shots[k].get("seconds") or 0.0))
-        if i == 0:
+        if protected:
+            i = min(range(len(shots)), key=lambda k: (MERGE_RANK.get(str(shots[k].get("section") or ""), 1), secs(k)))
+            options = [k for k in (i - 1, i + 1) if 0 <= k < len(shots)]
+            # never fold a drop run's first shot into the shot before it (the merged shot takes the earlier one's place)
+            options = [k for k in options if not (k == i + 1 and entry(i + 1)) and not (k == i - 1 and entry(i))] or options
+            same = [k for k in options if shots[k].get("passage", -1) == shots[i].get("passage", -2)]
+            j = min(same or options, key=lambda k: (MERGE_RANK.get(str(shots[k].get("section") or ""), 1), secs(k)))
+        elif (i := min(range(len(shots)), key=secs)) == 0:
             j = 1
         elif i == len(shots) - 1:
             j = i - 1
@@ -672,13 +692,14 @@ def fit_chain(state: dict, directed: dict, audio_path: Path | None, chain: dict,
               drop: float | None = None) -> tuple[list[dict], dict, dict]:
     """A plan the chain cannot afford, made again with ``max_shots`` at the morphs it can (fewer, longer shots on the
     bars), merged down to that count when the planner's roles still outnumber it; the Make and the desk's estimate
-    (``plan_summary``) both come here, so the count the desk shows is the count the cut gets."""
+    (``plan_summary``) both come here, so the count the desk shows is the count the cut gets. A paced plan merges its
+    calm shots first and its drops and builds last (``_merge_to``'s ``protected``)."""
     duration = float(directed.get("duration") or 0.0)
     beats_list = list(directed.get("beats") or [])
     capped = {**state, "max_shots": chain["morphs"]}
     shots, plan = shots_for(capped, directed, Path(audio_path) if audio_path else None, drop=drop)
     if len(shots) > chain["morphs"]:
-        shots = _merge_to(shots, chain["morphs"])
+        shots = _merge_to(shots, chain["morphs"], protected=paced(capped, directed))
     return shots, plan, clip_plan(shots, duration, beats_list, pool=pool_n or None, tier=tier)
 
 

@@ -138,6 +138,116 @@ def bar_phase(grid: list[float], anchors: list[tuple[float, float]], first_beat:
     return k0 if score[k0] >= best - 1e-9 else score.index(best)
 
 
+# ------------------------------------------------------------------------------------------------ the drops
+
+
+LATE_BARS = 16      # a drop run's bars before its tail is drop_late (the role used to start 8 bars after ONE drop time)
+HEAT_FLOOR = 0.2    # the quietest drop run still runs a little hot
+QUIET_END = 0.6     # a last passage under this share of the loudest is the outro, whatever its label
+
+
+def refine_roles(rows: list[dict], sections: list[dict], *, period: float) -> list[dict]:
+    """The story roles made true for the drops (research 31 Oct, the montage's G16). A drop passage the fold started early
+    (Glitch Out's first drop at 87.3 s: a sustain and a build before the drop at 92.0) starts on its first span the
+    analysis labelled drop, the passage before it running up to it; and a quiet last passage is the outro (Glitch Out's
+    last 13 s, at half the loudest level, were a sixth drop)."""
+    rows = [dict(r) for r in rows]
+    raw = sorted((float(s["start"]), float(s["end"])) for s in sections or [] if str(s.get("label") or "") == "drop")
+    bar = 4 * float(period)
+    top = max((float(r.get("level") or 0.0) for r in rows), default=0.0) or 1.0
+    if len(rows) > 1 and rows[-1]["role"] in ("drop", "build") and float(rows[-1].get("level") or 0.0) < QUIET_END * top:
+        rows[-1]["role"] = "outro"
+    for i in range(1, len(rows)):
+        r = rows[i]
+        if r["role"] != "drop":
+            continue
+        inside = [a for a, b in raw if float(r["start"]) - 1e-6 <= a < float(r["end"])]
+        if inside and inside[0] - float(r["start"]) >= bar / 2 - 1e-6 and inside[0] <= float(r["end"]) - 2 * bar:
+            rows[i - 1]["end"] = inside[0]
+            r["start"] = inside[0]
+    return rows
+
+
+def split_at_drop(rows: list[dict], drop: float | None, period: float) -> list[dict]:
+    """A drop run that holds the song's drop well inside it (a window cut a little before the drop, its run-up folded
+    into the run by the analysis) is split there: the stretch before is the build, the run starts on the drop."""
+    if drop is None:
+        return rows
+    bar = 4 * float(period)
+    d = float(drop)
+    out: list[dict] = []
+    for r in rows:
+        a, b = float(r["start"]), float(r["end"])
+        if r["role"] == "drop" and a + 2 * bar <= d <= b - 2 * bar:
+            out.append({**r, "end": d, "role": "build", "label": "build"})
+            out.append({**r, "start": d})
+        else:
+            out.append(r)
+    return out
+
+
+def _weighted_median(rows: list[dict]) -> float:
+    pairs = sorted((float(r.get("level") or 0.0), max(0.0, float(r["end"]) - float(r["start"]))) for r in rows)
+    total = sum(w for _, w in pairs)
+    acc = 0.0
+    for level, w in pairs:
+        acc += w
+        if acc >= total / 2:
+            return level
+    return pairs[-1][0] if pairs else 0.0
+
+
+def drop_runs(rows: list[dict], drop: float | None, period: float, mode: str = DROP_MODE_DEFAULT) -> dict | None:
+    """Every drop row of the roles numbered as a run (``drop_run``) with its ``heat``, 0..1 by its level between the
+    song's median level and the main run's: the main run, the one the song's drop (``beatfx.drop_time``) opens (its start
+    within a bar before the drop or two after it: the drop time can sit on the riser), else the one that holds it, else
+    the loudest, is 1.0, and so is every run under ``mode`` "max". The rows are annotated in place; returns the main row
+    (None: no drop)."""
+    runs = [r for r in rows if r["role"] == "drop"]
+    if not runs:
+        return None
+    main = None
+    if drop is not None:
+        d = float(drop)
+        # a run that starts on the drop (a bar either side, two after for a long riser) is it, before one that holds
+        # it in its last beats
+        near = [r for r in runs if -4 * period - 1e-6 <= float(r["start"]) - d <= 8 * period + 1e-6]
+        main = min(near, key=lambda r: abs(float(r["start"]) - d)) if near else None
+        if main is None:
+            main = next((r for r in runs if float(r["start"]) <= d < float(r["end"])), None)
+    if main is None:
+        main = max(runs, key=lambda r: float(r.get("level") or 0.0))
+    floor = _weighted_median(rows)
+    top = float(main.get("level") or 0.0)
+    span = max(0.05, top - floor)
+    for k, r in enumerate(runs):
+        r["drop_run"] = k
+        r["main"] = r is main
+        if mode == "max" or r is main:
+            r["heat"] = 1.0
+        else:
+            r["heat"] = round(max(HEAT_FLOOR, min(1.0, (float(r.get("level") or 0.0) - floor) / span)), 3)
+    return main
+
+
+def main_drop(features: dict, drop: float | None) -> float | None:
+    """The first beat of the song's main drop run (``drop_runs`` on its own analysis), which a prototype window is cut
+    around: the drop time alone can sit on a riser or on a build well before the drop (Ambient: 120 s, against the drop
+    the analysis puts at 143 s, so its 30 s prototype held no drop at all). ``drop`` when the song has no drop run."""
+    from xenoform import dense
+
+    duration = float(features.get("duration") or 0.0)
+    sections = dense._analysis_sections(features)
+    if duration <= 0 or len(sections) < 2:
+        return drop
+    grid = grid_for(list(features.get("beats") or []), duration, features.get("tempo"))
+    period = _median_gap(grid) or 0.5
+    rows = dense._story_roles(sections, duration, min_len=max(6.0, 8 * period))
+    rows = split_at_drop(refine_roles(rows, sections, period=period), drop, period)
+    main = drop_runs(rows, drop, period)
+    return round(float(main["start"]), 4) if main is not None else drop
+
+
 # ------------------------------------------------------------------------------------------------ the plan
 
 
@@ -164,14 +274,25 @@ def song_plan(duration: float, beats: list, sections: list[dict], drop: float | 
         return dense.dense_plan(duration, beats, drop, max_shots)
     period = _median_gap(grid) or 0.5
     rows = dense._story_roles(sections, duration, min_len=max(6.0, 8 * period))  # a passage is at least two bars
-    if drop is None:
-        firsts = [r for r in rows if r["role"] == "drop"]
-        drop = float(firsts[0]["start"]) if firsts else None
-    if drop is not None:
-        drop = min(grid, key=lambda b: abs(b - drop))
-        for r in rows:  # the drop section starts on the drop itself when the analysis put it within a bar
-            if r["role"] == "drop" and abs(float(r["start"]) - drop) <= 4 * period + 1e-6 and float(r["start"]) != drop:
-                r["start"] = drop
+    per_run = drop_mode in ("auto", "max")
+    runs: list[dict] = []
+    if per_run:
+        # every drop run is its own passage with its heat; the song's drop (beatfx.drop_time, the biggest rise, which can
+        # sit on the riser two beats early) only says which run is the main one, and the record's drop is that run's
+        # first beat, where the analysis put the drop
+        rows = split_at_drop(refine_roles(rows, sections, period=period), drop, period)
+        main = drop_runs(rows, drop, period, drop_mode)
+        runs = [r for r in rows if r["role"] == "drop"]
+        drop = min(grid, key=lambda b: abs(b - float(main["start"]))) if main is not None else None
+    else:
+        if drop is None:
+            firsts = [r for r in rows if r["role"] == "drop"]
+            drop = float(firsts[0]["start"]) if firsts else None
+        if drop is not None:
+            drop = min(grid, key=lambda b: abs(b - drop))
+            for r in rows:  # the drop section starts on the drop itself when the analysis put it within a bar
+                if r["role"] == "drop" and abs(float(r["start"]) - drop) <= 4 * period + 1e-6 and float(r["start"]) != drop:
+                    r["start"] = drop
     first_beat = min((float(b) for b in beats or [] if 0 <= float(b) < duration), default=None)
     anchors = [(float(r["start"]), 3.0 if r["role"] == "drop" else 1.0) for r in rows if float(r["start"]) > 0]
     if drop is not None:
@@ -190,25 +311,32 @@ def song_plan(duration: float, beats: list, sections: list[dict], drop: float | 
         i0 = 0 if not passages else index_of(float(r["start"]))
         if passages and i0 <= passages[-1]["i0"]:
             continue
-        passages.append({"role": r["role"], "i0": i0, "start": 0.0 if not passages else grid[i0], "level": float(r.get("level") or 0.0)})
+        p = {"role": r["role"], "i0": i0, "start": 0.0 if not passages else grid[i0], "level": float(r.get("level") or 0.0)}
+        if per_run and r["role"] == "drop":
+            p.update({"drop_run": int(r["drop_run"]), "heat": float(r["heat"]), "main": bool(r.get("main"))})
+        passages.append(p)
     for p, q in zip(passages, passages[1:] + [None]):
         p["i1"] = q["i0"] if q else len(grid)
         p["end"] = q["start"] if q else duration
 
     def zone_role(p: dict, k: int) -> str:
-        if p["role"] == "drop" and drop is not None and grid[k] >= drop + DROP_HALF_BARS * 4 * period - 1e-6:
+        if p["role"] != "drop":
+            return p["role"]
+        if per_run:  # the tail of a long run, after LATE_BARS of it
+            return "drop_late" if grid[k] >= p["start"] + LATE_BARS * 4 * period - 1e-6 else "drop"
+        if drop is not None and grid[k] >= drop + DROP_HALF_BARS * 4 * period - 1e-6:  # one drop, as before
             return "drop_late"
-        return p["role"]
+        return "drop"
 
-    def cut(steps: dict) -> list[tuple[int, str, bool]]:
-        """(grid index, role, starts a passage) for every shot."""
-        out: list[tuple[int, str, bool]] = []
-        for p in passages:
+    def cut(steps: dict) -> list[tuple[int, str, bool, int]]:
+        """(grid index, role, starts a passage, passage index) for every shot."""
+        out: list[tuple[int, str, bool, int]] = []
+        for pi, p in enumerate(passages):
             k, first = p["i0"], True
             end = p["i1"]
             while k < end and grid[k] < duration - 0.3:
                 role = zone_role(p, k)
-                out.append((k, role, first))
+                out.append((k, role, first, pi))
                 step = steps[role]
                 nxt = k + step
                 if step % 4 == 0 and (nxt - phase) % 4:  # land the next cut on a bar line (the montage cut on beat 1)
@@ -239,26 +367,29 @@ def song_plan(duration: float, beats: list, sections: list[dict], drop: float | 
         steps[r] *= 2
         cuts = cut(steps)
     if target and len(cuts) < min(hard, int(target)):  # more forms asked for than the plan makes: the drops get them first
+        ceiling = min(hard, int(target) + max(1, int(target) // 10))
         for _ in range(96):
-            cands = [r for r in present if steps.get(r, 0) > MIN_BEATS]
-            if not cands:
+            cands = sorted((r for r in present if steps.get(r, 0) > MIN_BEATS),
+                           key=lambda x: (PRIORITY.get(x, 1.0) - math.log2(max(1, base[x]) / steps[x]), PRIORITY.get(x, 1.0)),
+                           reverse=True)
+            taken = False
+            for r in cands:  # the role that wants them most, else the next whose halving still fits under the ceiling
+                trial = dict(steps)
+                trial[r] = max(MIN_BEATS, trial[r] // 2)
+                more = cut(trial)
+                if len(cuts) < len(more) <= ceiling:
+                    steps, cuts, taken = trial, more, True
+                    break
+            if not taken or len(cuts) >= int(target):
                 break
-            r = max(cands, key=lambda x: (PRIORITY.get(x, 1.0) - math.log2(max(1, base[x]) / steps[x]), PRIORITY.get(x, 1.0)))
-            trial = dict(steps)
-            trial[r] = max(MIN_BEATS, trial[r] // 2)
-            more = cut(trial)
-            if len(more) > min(hard, int(target) + max(1, int(target) // 10)):
-                break
-            steps, cuts = trial, more
-            if len(cuts) >= int(target):
-                break
-    times = [grid[k] if n else 0.0 for n, (k, _, _) in enumerate(cuts)] + [duration]
+    times = [grid[k] if n else 0.0 for n, (k, _, _, _) in enumerate(cuts)] + [duration]
     shots = []
-    for n, ((k, role, starts), b) in enumerate(zip(cuts, times[1:])):
+    for n, ((k, role, starts, pi), b) in enumerate(zip(cuts, times[1:])):
         a = times[n]
         seconds = b - a
         if seconds < 0.3:
             continue
+        p = passages[pi]
         render_s = dense._render_s(seconds, SPEED.get(role, 1.25))
         effects = []
         on_beat = abs(grid[k] - a) < 1e-3
@@ -267,10 +398,12 @@ def song_plan(duration: float, beats: list, sections: list[dict], drop: float | 
         elif role in ("drop", "drop_late", "build") and on_beat:
             effects.append({"type": "punch", "t": a, "strength": 0.6 if role != "build" else 0.4})
         shot = {"start": round(a, 4), "end": round(b, 4), "render_s": render_s, "speed": round(render_s / seconds, 3),
-                "effects": effects, "section": role}
+                "effects": effects, "section": role, "passage": pi}
+        if "drop_run" in p:
+            shot.update({"drop_run": p["drop_run"], "heat": p["heat"]})
         if starts and n > 0:
-            if drop is not None and abs(a - drop) < 1e-3:
-                kind = "drop"
+            if ("drop_run" in p) or (drop is not None and abs(a - drop) < 1e-3):
+                kind = "drop"  # every drop run opens on a drop boundary (one drop, as before, with Drops off)
             elif steps.get(role, 4) > steps.get(cuts[n - 1][1], 4):
                 kind = "silence"  # dropping into a quieter passage
             else:
@@ -285,5 +418,11 @@ def song_plan(duration: float, beats: list, sections: list[dict], drop: float | 
         shots[-1]["end"] = round(duration, 4)
     return {"name": "story", "drop": round(drop, 4) if drop is not None else None, "shots": shots,
             "roles": [(r["role"], round(float(r["start"]), 2), round(float(r["end"]), 2)) for r in rows],
-            "passages": [{"role": p["role"], "start": round(p["start"], 3), "end": round(p["end"], 3)} for p in passages],
-            "steps": {k: v for k, v in steps.items() if k in present}, "grid": len(grid), "bar_phase": phase}
+            "passages": [{"role": p["role"], "start": round(p["start"], 3), "end": round(p["end"], 3),
+                          **({"drop_run": p["drop_run"], "heat": p["heat"], "main": p["main"]} if "drop_run" in p else {})}
+                         for p in passages],
+            "runs": [{"drop_run": int(r["drop_run"]), "start": round(float(r["start"]), 3), "end": round(float(r["end"]), 3),
+                      "heat": float(r["heat"]), "level": round(float(r.get("level") or 0.0), 3), "main": bool(r.get("main"))}
+                     for r in runs],
+            "steps": {k: v for k, v in steps.items() if k in present}, "grid": len(grid), "bar_phase": phase,
+            "drop_mode": drop_mode}

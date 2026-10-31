@@ -563,7 +563,7 @@ def create_app(cfg: dict | None = None):
             raise HTTPException(400, "Load a song before rewriting the storyboard.")
         return cached
 
-    def _song_plan_inputs(audio_id: str, length_s: float, length_start=None) -> dict | None:
+    def _song_plan_inputs(audio_id: str, length_s: float, length_start=None, paced: bool = True) -> dict | None:
         """The loaded song cut to the window the Make will trim (``_window_features``) and its drop, for the desk's
         estimate; None when no song is loaded under ``audio_id`` (the estimate then plans a grid of the BPM)."""
         if not audio_id or audio_id == "demo":
@@ -574,7 +574,7 @@ def create_app(cfg: dict | None = None):
         if not feats or audio is None or not Path(audio).is_file():
             return None
         try:
-            win, start, drop = _window_features(feats, Path(audio), length_s, length_start)
+            win, start, drop = _window_features(feats, Path(audio), length_s, length_start, paced=paced)
         except Exception:
             log.exception("song plan inputs")
             return None
@@ -1614,7 +1614,10 @@ def create_app(cfg: dict | None = None):
             shots = plan_shots(duration, beats)
         files = final_tier.present()
         video_s = min(duration, float(length)) if length and float(length) > 0 else duration
-        song = _song_plan_inputs(audio_id, float(length or 0.0), length_start)
+        from xenoform import pacing as _pacing
+
+        song = _song_plan_inputs(audio_id, float(length or 0.0), length_start,
+                                 paced=not _pacing.legacy({"breathe": breathe, "drop_mode": drop_mode or None}))
         if song is not None:
             # the song is on the desk: the estimate plans the Make itself (its sections, its drop, the guardrail's
             # budget, the pool), so the count and the clock here are the cut's (dense.plan_summary with sections)
@@ -1733,7 +1736,10 @@ def create_app(cfg: dict | None = None):
         except (TypeError, ValueError):
             length_s = 0.0
         dur = float(features.get("duration") or 0.0)
-        features, _start, _drop = _window_features(features, Path(audio), length_s, state.get("length_start"))
+        from xenoform import pacing as _pacing
+
+        features, _start, _drop = _window_features(features, Path(audio), length_s, state.get("length_start"),
+                                                   paced=not _pacing.legacy(state))
         try:  # the guardrail the Make runs, on the cut's own length: a count set by hand gets its clamp (40 in 20 s:
             # 15) and "auto" the budget the planner spends by role, so the preview counts what renders
             from xenoform import guardrails as _guard
@@ -2161,10 +2167,12 @@ def create_app(cfg: dict | None = None):
                              beat_tau=float(cfg["analyze"]["beat_tau"]),
                              section_min_seconds=float(cfg["analyze"]["section_min_seconds"]))
 
-    def _trim_audio(audio_id: str, audio_path: Path, length_s: float, start_s: float | None = None) -> tuple[str, Path] | None:
+    def _trim_audio(audio_id: str, audio_path: Path, length_s: float, start_s: float | None = None,
+                    paced: bool = False) -> tuple[str, Path] | None:
         """A ``length_s`` cut of the song centred a little before its drop (or from ``start_s`` when the Make body
         names a window), snapped back to a beat, with short fades, registered as its own audio id (analysed like
-        an upload). None when the song is already short."""
+        an upload). None when the song is already short. A ``paced`` Make (``pacing``) centres it on the song's main
+        drop run (``pacing.main_drop``), which the drop time alone can miss by a build."""
         try:
             features = _features_for(audio_id)
         except HTTPException:
@@ -2180,7 +2188,15 @@ def create_app(cfg: dict | None = None):
             drop = float(found) if found is not None else dur * 0.6
         except Exception:
             drop = dur * 0.6
-        start = max(0.0, min(drop - length_s * 0.45, dur - length_s))
+        anchor = drop
+        if paced:
+            from xenoform import pacing as _pacing
+
+            try:
+                anchor = float(_pacing.main_drop(features, drop) or drop)
+            except Exception:
+                log.exception("main drop")
+        start = max(0.0, min(anchor - length_s * 0.45, dur - length_s))
         if start_s is not None:
             start = max(0.0, min(float(start_s), dur - length_s))
         earlier = [b for b in beats if b <= start + 1e-6]
@@ -2231,7 +2247,9 @@ def create_app(cfg: dict | None = None):
                 start_s = float(body["length_start"]) if body.get("length_start") not in (None, "") else None
             except (TypeError, ValueError):
                 start_s = None
-            trimmed = _trim_audio(audio_id, Path(audio_path), length_s, start_s)
+            from xenoform import pacing as _pacing
+
+            trimmed = _trim_audio(audio_id, Path(audio_path), length_s, start_s, paced=not _pacing.legacy(body))
             if trimmed is not None:
                 source_path = Path(audio_path)
                 audio_id, audio_path = trimmed
@@ -3007,10 +3025,12 @@ def _pool_count(body: dict) -> int | None:
         return None
 
 
-def _window_features(features: dict, audio: Path | None, length_s: float, length_start=None) -> tuple[dict, float | None, float | None]:
+def _window_features(features: dict, audio: Path | None, length_s: float, length_start=None,
+                     paced: bool = True) -> tuple[dict, float | None, float | None]:
     """The song's analysis cut to the window a Length Make trims (the maths of ``_trim_audio``: a little before the
     drop, or from ``length_start``, back to a beat), its beats and sections shifted, without trimming anything; plus
-    the window's start in the song and the drop in window time. The whole song when no window applies."""
+    the window's start in the song and the drop in window time. The whole song when no window applies. ``paced`` as
+    ``_trim_audio`` takes it (the window around the main drop run)."""
     from xenoform import dense as _dense
 
     features = dict(features or {})
@@ -3023,6 +3043,13 @@ def _window_features(features: dict, audio: Path | None, length_s: float, length
     if not (length_s and length_s > 0 and dur > length_s + 1.0):
         return features, None, drop
     anchor = float(drop) if drop is not None else dur * 0.6
+    if paced and drop is not None:
+        from xenoform import pacing as _pacing
+
+        try:
+            anchor = float(_pacing.main_drop(features, float(drop)) or anchor)
+        except Exception:
+            log.exception("main drop")
     start = max(0.0, min(anchor - length_s * 0.45, dur - length_s))
     if length_start not in (None, ""):
         try:
