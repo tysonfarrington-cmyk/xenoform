@@ -56,6 +56,7 @@ backdrops ("morph an entire scene, not just a shape").
 | 4 | Assets into the app: the stills, the loved clips, the showcase, example cuts and cards, chain presets, records, strips | assets-in | Sonnet 5.5 | ui_static/**, examples/**, configs/chain_presets.json, configs/clip_pack.json, scripts/**, CREDITS.md, docs/LICENCES.md, vibes.py, stills.py (catalogue dedupe), app.js (preset chips), tests | now |
 | 2 | The taste file and its enforcement, chain presets as the carrier of what he loves, the morph cache, a stills import route | taste | Opus 5.5 | taste.py, configs/taste.json, guardrails.py, morph_pass.py, boundary_fx.py, beatfx.py, batch.py, morph_cache.py, ui.py, docs/TASTE.md | 1, 3 and 4 merged |
 | 5 | The whole-song music video: passages become window Makes, queued, assembled on the beat into one cut | song-plan | Opus 5.5 | song_plan.py, batch.py, dense.py, ui.py, app.js | 2 merged, Tys's go |
+| 6 | Stems mode: each stem its own layer, objects or clips, cut by the same planner on the stem's drive, composited by prominence; a Stems step | stems-mode | Opus 5.5 | stems.py, stems_mode.py, stems_composite.py, dense.py (dispatch), guardrails.py, ui.py, app.js, docs/STEMS.md, tests | now (Tys's ask of 31 Oct) |
 
 Each session works in its own worktree and branch cut from `contest-rc2`, commits as Owly, never pushes. The
 orchestrator merges the branches into `contest-rc2` as each reported (31 Oct: 3 as 91fd5d2, 4 as 39791dd, 1 with 0 as 99d4d95, each builder merging `contest-rc2` into its branch first), then 2, then 5, running the
@@ -221,6 +222,64 @@ the title on the last hit, -16 LUFS. Draft for free prototyping of a whole song;
 Out would be about 110 morphs, 400 to 650 credits). This is the stage that turns "a fancy VJ output" into a music
 video, and it is built last because it stands on all the others.
 
+## 7b. Stage 6: Stems mode (layers)
+
+Tys's ask of 31 Oct, in his words: "a mode where i can apply a certain object/clip to a individual stems, and have
+them maybe overlap. it would probably have to be a separate mode altogether, it should follow the same rules but
+... opacity may have to be adjusted or that can be a setting for how dominant or prominent the stem is so if theres
+two scenes/stems running for example you can see both".
+
+What exists: `stems.py` splits a song with Demucs when installed (it is, in the venv, on CPU torch) and falls back
+to the librosa band split; the CLI `stems` command writes `stems.json` and the stem wavs under
+`work/ui/stems/<song hash>/`; `beatfx.mix_stem_env` and `dance_fx` already read a 4-role stem envelope for the
+house look. None of this cuts picture per stem.
+
+The mode. A third source beside Objects and Clips, chosen on the desk as a Stems step. The Make body carries
+`mode: "stems"` and `layers`, a list of up to four, each `{stem, kind, vibe, pins | clips, prominence, blend, lead}`:
+- `stem` is one of drums, bass, vocals, other (Demucs) or sub, bass, mid, high (the band split);
+- `kind` is objects or clips; within a layer the two are never mixed (the standing rule); across layers both may
+  run at once, overlapping, because that is what he asked for (decision 10);
+- `prominence` 0 to 1 says how dominant the layer is; `blend` is screen (the default for objects on black ground,
+  so two layers overlap without mud), normal, add, lighten or multiply; `lead` marks the layer whose stem sets the
+  passages when the mix's own sections are not wanted (default: the mix's sections stay the passages).
+
+Each layer is its own cut, made by the same planner on the stem's drive: the mix's sections remain the passages
+(so Breathe, the drop runs and their heat are shared), but inside them the stem's own activity envelope and onsets
+set the layer's shot density, its heat and its events. A stem that is silent in a passage gets no shots there and
+its layer fades out; a stem that carries the drop gets the event. All the rules apply per layer: the taste file,
+the kind guards, Breathe, the Shape row (one setting for all layers), no object twice across layers, one palette
+per cut (layers default to one vibe; he may pick another per layer).
+
+Opacity. A layer's alpha per frame is `prominence x activity(stem)`, the activity a smoothed, normalised RMS of the
+stem (attack within a beat, release over two), so the layer breathes with its stem; layers are composited bottom
+to top in prominence order, the lowest opaque when it is the only one active. A prominence slider re-composites
+without a GPU, like a timeline re-cut.
+
+Composition. Per layer the cut renders as today (Draft, Final or Cloud morphs, `recut_from_cache`), silent; then
+`stems_composite.py` layers them with ffmpeg: for each layer a per-frame alpha stream (a 1x1 gray8 rawvideo at the
+cut's fps from the alpha curve, scaled to the frame, `alphamerge`), `blend` or `overlay` in order, the song mixed
+in once, the usual loudness. Deterministic from the record: the composite is rebuilt from the layer files and the
+curves alone.
+
+Splitting. A Split stems button runs Demucs (htdemucs, CPU, minutes) as a background job with progress, cached per
+song hash; the band split is the fallback and the test engine. No GPU and no Comfy queue are involved in a split.
+Tiers multiply by the number of layers: the estimate on the desk says so; Cloud stays behind Tys's word.
+
+Desk and record. A Stems step: Split stems, then one row per stem (on or off, Objects or Clips, the vibe and pins
+or the clips picker, prominence, blend, lead). The lane shows the layers stacked with each stem's envelope drawn;
+the timeline gets a tab per layer with its own shot and boundary overrides. `simple.json` gains `mode`, `layers`
+(each with its own record folder `layers/<stem>/`), `stems` (engine, path, hash) and `composite` (order, blends,
+curve source). Files: `stems.py` (activity envelopes, the cache, status), new `stems_mode.py` (layers to bodies,
+the run, the record) and `stems_composite.py`, `dense.py` (the dispatch in `run_simple` and the re-cut),
+`guardrails.apply` (layer validation and the [stems] report line), `ui.py` (POST /api/stems/split, GET
+/api/stems/status, the re-composite route), `app.js` (the step, the rows, the lane), `docs/STEMS.md`, tests
+(`test_stems_mode.py`, with a fake split so Demucs never runs in the suite).
+
+Acceptance: a two-layer Draft Make of Glitch Out 1:30 to 2:00 (drums on one vibe's objects, other or vocals on a
+second vibe or on clips) whose tile sheet shows both layers visible where they overlap, the drums layer gone in
+the breakdown, the event on the drop; a prominence change re-composited without a render; the record rebuilds the
+same composite byte for byte; the suite green with the fake split.
+
 ## 8. Decisions for Tys
 
 1. Repo size: decided 31 Oct, the stills and the loved clips ship in the repo itself (about 70 MB).
@@ -256,6 +315,11 @@ video, and it is built last because it stands on all the others.
    the last hit, handoff kinds at 21 percent against the montage 36, a window that starts inside a drop run opens
    on an event. Proof: Desktop/xeno_pacing_31oct (two side by sides with the song, six Draft cuts with sheets,
    the whole song planned three ways, pacing_proof.py under docs/demo/tools).
+10. Stems mode (Tys, 31 Oct): in Stems mode an objects layer and a clips layer may run at once and overlap; within
+    one layer objects and clips stay unmixed. Breathe round two (Tys, 31 Oct): the first profile read too subtle
+    in the side-by-sides; Breathe is to read as scenes (long holds, one look per calm passage, rests) against
+    eventful drops, with a Breathe amount in the API; the proof is a stacked plain-over-Breathe passage that
+    crosses groove, build, drop and release, never three small panels.
 
 ## 9. Working rules for every session
 
