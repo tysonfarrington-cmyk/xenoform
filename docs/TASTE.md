@@ -30,7 +30,7 @@ is `src/xenoform/taste.py`. The rules come from his notes on the cuts and the mo
 |---|---|
 | `guardrails.apply` (every Make body) | caps Chaos under Breathe, turns the sliced foreshadow into the trace, keeps clips and objects apart, and notes the rest: a demoted vibe, the quiet opener, a flash look, several effects, the kaleido, a banned noun typed on the line |
 | `morph_pass.pick_stills` (every pick, the Chain row's preview too) | bans before the walk, and before a cut with no line chooses its realm; the natural and iconic families first; a second still of one object, a second instrument, a demoted still and a still off the palette to the back of the pool; a realm is sized on what the cut may draw from it, and one with fewer objects than the cut walks on into the next instead of repeating |
-| `dense.long_song_chain`, the desk's count and clock | count the pool as the pick will use it, so a pool the bans shrink plans fewer morphs rather than repeat a still |
+| `dense.long_song_chain`, the desk's count and clock | count the pool as the pick will use it, so a pool the bans shrink plans fewer morphs rather than repeat a still; a Stems layer counts it without the stills and objects the layers before it took |
 | `stills.nouns_for`, `stills.family_nouns`, `stills.family_for_cut` | a grow never grows a banned noun or family; the family weight steers the cut's family and the grow |
 | `boundary_fx.pick` | wipes at most a quarter of the handoffs, the strobe only at full heat, never the kind just used |
 | `transitions_fx.guard` | a premium transition never follows itself |
@@ -40,6 +40,7 @@ is `src/xenoform/taste.py`. The rules come from his notes on the cuts and the mo
 | the knobs (`taste.cap_macros`) | Chaos capped under Breathe, in the Make and the re-cut |
 | `batch` (Variations by vibe) | no vibe twice, no demoted vibe after the one you chose |
 | `dense.recut_from_cache` | goes through the same helpers, so a timeline re-cut keeps the same rules |
+| `stems_mode.run` (the Stems mode) | every layer is a cut of its own through `guardrails.apply` and the Make, so each hook above acts inside each layer; the Make's notes carry each layer's lines, named by its stem (`[taste] drums layer: ...`) |
 
 ## The rules
 

@@ -699,6 +699,10 @@ def run(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg: dict,
     rec["pacing"] = {**pace, "line": f"{n} layers ({', '.join(lines)})" + (f"; {first['pacing']['line']}" if (first.get('pacing') or {}).get('line') else "")}
     rec["frames"] = int(rec["composite"].get("frames") or frames)
     rec["seconds"] = round(time.perf_counter() - started, 2)
+    from xenoform import taste as _taste
+
+    if _taste.active():  # what the taste file did in each layer's own cut, its [taste] lines named by the layer (the desk shows them)
+        rec["taste"] = _taste.layered((m["layer"]["stem"], (m["info"].get("taste") or {}).get("lines") or []) for m in made)
     (job / "simple" / "simple.json").write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
     report("assemble", 0.98, "Saving the video")
     return rec

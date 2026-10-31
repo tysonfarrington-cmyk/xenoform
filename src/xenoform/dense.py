@@ -694,6 +694,12 @@ def long_song_chain(state: dict, directed: dict, audio_path: Path, shots: list[d
         cat = _catalogue()
         rows = list(cat.get(pool_vibe) or []) + (list(cat.get(asked) or []) if asked and asked != pool_vibe else [])
         backdrop = _backdrop_choice(state, rows)
+        if _taste.active() and (state.get("avoid_stills") or state.get("avoid_nouns")):
+            # a Stems layer draws on what the layers before it left (the pick leaves out their stills, and their objects by
+            # name): counted so, under no object twice its chain plans fewer morphs rather than show one of its own twice
+            gone = {str(f) for f in state.get("avoid_stills") or []}
+            names = {str(n).strip().lower() for n in state.get("avoid_nouns") or []}
+            rows = [r for r in rows if str(r.get("file")) not in gone and str(r.get("noun") or "").strip().lower() not in names]
         return len(_taste.usable(_rows_of_kind(rows, choice, backdrop))) or len(_taste.usable(_rows_of_kind(rows, "off", "plain"))) \
             or len(_taste.usable(rows))
 

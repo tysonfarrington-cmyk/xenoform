@@ -195,6 +195,24 @@ def record(got: list[dict] | None) -> dict:
     return {"file": load().get("path") or str(path()), "rules": len(rules()), "fired": fired(got), "lines": lines(got)}
 
 
+def layered(layers: Iterable[tuple[str, Iterable[str]]]) -> dict:
+    """A Stems Make's ``taste`` block (``stems_mode.run``): every layer is a cut of its own that the hooks act in, so each
+    layer's ``[taste]`` lines come up named by its stem ("[taste] drums layer: ..."), the rules they speak for kept."""
+    got: list[dict] = []
+    for stem, said in layers:
+        for line in said or []:
+            text = str(line)
+            if not text.startswith("[taste] "):
+                continue
+            body = text[len("[taste] "):]
+            ids: list[str] = []
+            if body.endswith(")") and " (" in body:
+                body, tail = body[:body.rindex(" (")], body[body.rindex(" (") + 2:-1]
+                ids = [i.strip() for i in tail.split(",") if i.strip()]
+            got.append({"ids": ids, "line": say(ids, f"{stem} layer: {body}") if ids else f"[taste] {stem} layer: {body}"})
+    return record(got)
+
+
 # ------------------------------------------------------------------------------------------------ nouns
 
 

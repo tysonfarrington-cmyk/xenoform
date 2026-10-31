@@ -515,3 +515,52 @@ def test_the_make_and_the_desk_report_the_lines():
     assert 'result.get("taste_lines")' in inspect.getsource(ui)
     app = (ROOT / "src" / "xenoform" / "ui_static" / "app.js").read_text(encoding="utf-8")
     assert 'startsWith("[taste]")' in app and "taste note" in app
+
+
+# ------------------------------------------------------------------------------------------------ the Stems mode's layers
+
+
+from test_stems_mode import _stems_make, fake_render, stems_dir  # noqa: E402,F401  (a Stems Make on the mock engine)
+
+
+def test_every_stems_layer_is_a_cut_the_taste_file_acts_in(shipped, tmp_path, fake_render):
+    from xenoform import stems_mode
+
+    layers = [{"stem": "drums", "kind": "objects", "prominence": 0.8}, {"stem": "bass", "kind": "objects", "prominence": 0.6},
+              {"stem": "other", "kind": "objects", "prominence": 0.5}]
+    job = tmp_path / "job"
+    rec, rep, seen, song = _stems_make(tmp_path, job, layers)
+    chains = {s: stems_mode._chain_nouns(job / "layers" / s) for s in ("drums", "bass", "other")}
+    for stem, nouns in chains.items():
+        assert nouns, stem
+        assert not [n for n in nouns if taste.ban_for(n, stills.family_of(n))], (stem, nouns)  # the bans, in each layer
+        assert len(set(nouns)) == len(nouns), (stem, nouns)  # no object twice inside the layer
+        made = json.loads((job / "layers" / stem / "simple" / "simple.json").read_text(encoding="utf-8"))
+        assert made["taste"]["fired"], stem  # each layer's own cut says what the file did in it
+    every = [n for nouns in chains.values() for n in nouns]
+    assert len(set(every)) == len(every)  # nor across the layers (the earlier layers' objects stay out of the later ones)
+    saved = json.loads((job / "simple" / "simple.json").read_text(encoding="utf-8"))
+    assert saved["taste"] == rec["taste"] and saved["taste"]["fired"]
+    for stem in ("drums", "bass", "other"):  # the Make's notes name the layer each line comes from
+        assert any(line.startswith(f"[taste] {stem} layer: ") for line in rec["taste"]["lines"]), rec["taste"]["lines"]
+    assert all(line.startswith("[taste] ") and line.endswith(")") for line in rec["taste"]["lines"])
+
+
+def test_a_stems_layer_counts_its_pool_without_what_the_layers_before_it_took(shipped, monkeypatch):
+    rows = list(mp.catalogue()["liquid-gold"])
+    gone, names = [r["file"] for r in rows[:12]], [rows[20]["noun"]]
+    seen: dict = {}
+
+    def fit(state, directed, audio_path, chain, pool_n, tier):  # the pool the chain was planned on
+        seen[bool(state.get("avoid_stills"))] = pool_n
+        return [], {}, chain
+
+    monkeypatch.setattr(dense, "fit_chain", fit)
+    shots = [{"start": i * 0.5, "end": (i + 1) * 0.5} for i in range(120)]  # more shots than the pool: it is re-planned
+    directed = {"duration": 60.0, "beats": [i * 0.5 for i in range(120)]}
+    body = {"vibe": "liquid-gold", "mode": "simple", "quality_tier": "draft", "seed": 5}
+    dense.long_song_chain(body, directed, None, shots, {}, dense.options(body), grow=False)
+    dense.long_song_chain({**body, "avoid_stills": gone, "avoid_nouns": names}, directed, None, shots, {}, dense.options(body),
+                          grow=False)
+    left = [r for r in rows if r["file"] not in gone and r["noun"] not in names]
+    assert seen[False] == len(taste.usable(rows)) and seen[True] == len(taste.usable(left)) < seen[False]
