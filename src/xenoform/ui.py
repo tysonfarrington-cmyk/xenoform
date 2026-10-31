@@ -3217,13 +3217,15 @@ def _window_features(features: dict, audio: Path | None, length_s: float, length
     cut = [{**s, "start": round(max(0.0, float(s.get("start") or 0.0) - start), 4),
             "end": round(min(length_s, float(s.get("end") or 0.0) - start), 4)}
            for s in (rows or []) if float(s.get("end") or 0.0) > start and float(s.get("start") or 0.0) < end]
-    if paced and len(cut) > 1 and all(s.get("role") for s in cut):  # a role clipped under two beats at an edge folds in
+    if paced and len(cut) > 1 and all(s.get("role") for s in cut):
+        # a role clipped at an edge folds into its neighbour: under two beats where the window opens, under two bars
+        # where it stops (the song's next passage barely begun: a scene of a few beats would read as a slip)
         gaps = sorted(y - x for x, y in zip(beats, beats[1:]) if y > x)
-        two = 2.0 * (gaps[len(gaps) // 2] if gaps else 0.5)
-        if cut[0]["end"] - cut[0]["start"] < two:
+        beat = gaps[len(gaps) // 2] if gaps else 0.5
+        if cut[0]["end"] - cut[0]["start"] < 2.0 * beat:
             cut[1]["start"] = cut[0]["start"]
             cut = cut[1:]
-        if len(cut) > 1 and cut[-1]["end"] - cut[-1]["start"] < two:
+        if len(cut) > 1 and cut[-1]["end"] - cut[-1]["start"] < 8.0 * beat:
             cut[-2]["end"] = cut[-1]["end"]
             cut = cut[:-1]
     features["sections"] = cut

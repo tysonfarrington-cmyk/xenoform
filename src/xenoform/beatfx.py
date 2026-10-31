@@ -632,7 +632,7 @@ def _blend_at(frames: np.ndarray, pos: float) -> np.ndarray:
     return (frames[lo].astype(np.float32) * (1.0 - frac) + frames[hi].astype(np.float32) * frac + 0.5).astype(np.uint8)
 
 
-REST_TRAIL_ROLES = ("intro", "calm", "sustain")  # where a rest burns in with a feedback trail
+REST_TRAIL_ROLES = ("intro", "calm", "sustain", "release", "outro")  # where a rest burns in with a feedback trail
 REST_TRAIL = 0.75       # the trail's amount over a rest
 REST_TRAIL_LEAD = 6     # frames before the rest the trail fades in over
 

@@ -50,10 +50,11 @@ def _timing(value) -> str:
     return normal(value)
 
 
-def _breathe(state: dict) -> bool:
-    from xenoform.pacing import breathe_of
+def _breathe(state: dict) -> float:
+    """The Breathe amount the cut was made at (0 off, 1 the bold profile, 0.5 the first one)."""
+    from xenoform.pacing import breathe_amount
 
-    return breathe_of(state)
+    return round(breathe_amount(state), 2)
 
 
 def _drop_mode(state: dict) -> str:

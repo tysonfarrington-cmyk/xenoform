@@ -3,6 +3,8 @@
     python pacing_proof.py table <out dir> [--no-flash] [--vibe cosmic] [--stills <copy of a grown library>]
     python pacing_proof.py sheets <out dir> --desk http://127.0.0.1:47327 [--vibe bioluminescent] [--idea underwater] [--starts 105,0]
                                             [--modes today,plain,breathe] [--stills <the desk's XENO_STILLS>]
+    python pacing_proof.py stacked <out dir> --desk http://127.0.0.1:47327 [--windows 90:90,30:90,0:30] [--vibe ...] [--idea ...]
+                                             [--stills <the desk's XENO_STILLS>]
 
 ``table``: the whole song cut three ways through the Make's own ``dense.run_simple`` on the mock engine (no GPU, no
 model: each morph a cross-fade of its two stills, the beat FX, kinds, looks and the tame all real): today's cut
@@ -15,6 +17,11 @@ plan_table.md and plan_table.json (with every plan's passages and shots) in <out
 ``sheets``: local Draft Makes through a desk (free; each waits for an idle ComfyUI queue and never sends a Final or a
 Cloud tier) of today's cut, a plain Make now and Breathe on 30 s windows of the song, a timed tile sheet of each (a
 frame every half second), the cuts side by side with the song, and the plan lines the desk reported (sheets.json).
+
+``stacked`` (round two, Tys 31 Oct: Breathe "may be too subtle"): local Draft Makes at 16:9 of a plain Make (Breathe
+off, Drops auto) and Breathe (on), each window stacked plain above Breathe at full width with the song, a cut-rhythm
+strip under each panel (a tick at every shot change in the colour of the passage's role, a white mark at each drop
+event, a playhead), and the looks a minute, shots, holds and rests of every passage of both cuts (stacked.json).
 
 A look (montage_rules.md 5.4) is a bundle held for whole bars: here a run of shots with one morph style, one timing,
 one effect and one colour look (one vibe a Make, so the vibe does not change).
@@ -40,7 +47,7 @@ FEATURES = ROOT / "examples" / "songs" / "glitch-out.features.json"
 MODES = {  # name: (label, body keys)
     "today": ("Today (Breathe off, Drops off)", {"breathe": False, "drop_mode": "off"}),
     "plain": ("Plain Make now (Breathe off, Drops auto)", {"breathe": False, "drop_mode": "auto"}),
-    "breathe": ("Breathe (on, Drops auto)", {"breathe": True, "drop_mode": "auto"}),
+    "breathe": ("Breathe (on: 1.0, Drops auto)", {"breathe": True, "drop_mode": "auto"}),
 }
 GROUPS = ("intro", "groove", "build", "drop", "drop_late", "release", "outro")
 GROUP_OF = {"calm": "groove", "sustain": "groove", "breakdown": "release"}
@@ -435,9 +442,193 @@ def sheets(out_dir: Path, *, desk: str, comfy: str, vibe: str, starts: list[floa
     return log
 
 
+ROLE_RGB = {"intro": (176, 160, 240), "calm": (70, 205, 190), "sustain": (70, 205, 190), "build": (245, 180, 60),
+            "drop": (245, 70, 95), "drop_late": (250, 130, 185), "release": (95, 155, 245), "outro": (160, 160, 170)}
+PANEL = (960, 540)   # each cut at full width
+STRIP_H = 30         # the cut-rhythm strip under a panel
+
+
+def rhythm_strip(rec: dict, length: float, dest: Path, width: int = PANEL[0], height: int = STRIP_H) -> Path:
+    """The cut's rhythm as a strip: the passages a faint band by role, a tick in the role's colour at every shot change,
+    a white mark with a cap at each drop event."""
+    from PIL import Image, ImageDraw
+
+    img = Image.new("RGB", (width, height), (14, 14, 18))
+    d = ImageDraw.Draw(img)
+    shots = rec.get("shots") or []
+    x_of = (lambda t: int(round(width * max(0.0, min(1.0, float(t) / max(1e-6, length))))))
+    for s in shots:  # the passage band
+        rgb = ROLE_RGB.get(str(s.get("section") or ""), (110, 110, 120))
+        d.rectangle([x_of(s["start"]), height - 6, max(x_of(s["start"]), x_of(s["end"]) - 1), height - 1],
+                    fill=tuple(int(c * 0.55) for c in rgb))
+    for i, s in enumerate(shots):
+        if i == 0:
+            continue
+        x = x_of(s["start"])
+        rgb = ROLE_RGB.get(str(s.get("section") or ""), (200, 200, 200))
+        if s.get("event") == "drop":
+            d.rectangle([x - 2, 2, x + 2, height - 7], fill=(255, 255, 255))
+            d.polygon([(x - 6, 0), (x + 6, 0), (x, 7)], fill=(255, 255, 255))
+        else:
+            d.rectangle([x - 1, 6, x, height - 7], fill=rgb)
+    img.save(dest)
+    return dest
+
+
+def _playhead(dest: Path, height: int = STRIP_H) -> Path:
+    from PIL import Image
+
+    Image.new("RGB", (3, height), (255, 255, 255)).save(dest)
+    return dest
+
+
+def stacked_video(top: Path, top_strip: Path, bottom: Path, bottom_strip: Path, dest: Path, length: float,
+                  labels: tuple[str, str] = ("Plain (Breathe off)", "Breathe")) -> None:
+    """Plain above Breathe at full width, each with its rhythm strip and a playhead moving over it; the song once."""
+    font = "C\\:/Windows/Fonts/segoeuib.ttf"
+    head = _playhead(dest.with_name(dest.stem + "_playhead.png"))
+    w, h = PANEL
+
+    def label(i: int, text: str) -> str:
+        return (f"[{i}:v]scale={w}:{h}:force_original_aspect_ratio=decrease,pad={w}:{h}:(ow-iw)/2:(oh-ih)/2,setsar=1,"
+                f"drawtext=fontfile='{font}':text='{text}':x=14:y=12:fontsize=26:fontcolor=white:box=1:boxcolor=black@0.55")
+    graph = ";".join([
+        label(0, labels[0]) + "[a]",
+        label(1, labels[1]) + "[b]",
+        f"[2:v]fps=24,format=rgb24[sa];[4:v]fps=24,format=rgb24[pa];[sa][pa]overlay=x='t/{length:.3f}*{w}':y=0:eval=frame,format=yuv420p[ta]",
+        f"[3:v]fps=24,format=rgb24[sb];[5:v]fps=24,format=rgb24[pb];[sb][pb]overlay=x='t/{length:.3f}*{w}':y=0:eval=frame,format=yuv420p[tb]",
+        "[a][ta][b][tb]vstack=inputs=4[v]"])
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(top), "-i", str(bottom),
+                    "-loop", "1", "-t", f"{length:.3f}", "-i", str(top_strip), "-loop", "1", "-t", f"{length:.3f}", "-i", str(bottom_strip),
+                    "-loop", "1", "-t", f"{length:.3f}", "-i", str(head), "-loop", "1", "-t", f"{length:.3f}", "-i", str(head),
+                    "-filter_complex", graph, "-map", "[v]", "-map", "0:a?", "-c:v", "libx264", "-crf", "19", "-preset", "veryfast",
+                    "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest", str(dest)], check=True)
+    head.unlink(missing_ok=True)
+
+
+def passage_looks(rec: dict, song_start: float = 0.0) -> list[dict]:
+    """Each passage of a cut from its record: its role, where it sits in the song, its shots, its median hold in bars,
+    its rests and its looks a minute (a look: a run of shots with one morph style, one timing, one effect, one colour
+    look)."""
+    shots = rec.get("shots") or []
+    styles = rec.get("morph_styles") or []
+    beats = sorted(float(b) for b in rec.get("beats") or [])
+    bar = 4 * _period(beats) if len(beats) > 2 else 4 * 60.0 / 90.0
+
+    def key(s: dict) -> tuple:
+        m = int(s.get("morph", s.get("clip", 0)) or 0)
+        return (styles[m] if m < len(styles) else "", str((s.get("timing") or {}).get("mode") or rec.get("morph_timing") or "smooth"),
+                tuple(s.get("fx_names") or []), str(s.get("dance_fx") or ""))
+    rows: list[dict] = []
+    for i, s in enumerate(shots):
+        p = s.get("passage", s.get("section"))
+        if not rows or rows[-1]["passage"] != p:
+            rows.append({"passage": p, "role": str(s.get("section") or ""), "start": float(s["start"]), "end": float(s["end"]),
+                         "shots": 0, "looks": 0, "rests": 0, "holds": [], "_last": None})
+        r = rows[-1]
+        r["end"] = float(s["end"])
+        r["shots"] += 1
+        r["rests"] += int(bool(s.get("rest")))
+        r["holds"].append((float(s["end"]) - float(s["start"])) / bar)
+        k = key(s)
+        r["looks"] += int(k != r["_last"])
+        r["_last"] = k
+    out = []
+    for r in rows:
+        secs = r["end"] - r["start"]
+        holds = sorted(r["holds"])
+        out.append({"role": r["role"], "at": mmss(song_start + r["start"]), "seconds": round(secs, 1), "shots": r["shots"],
+                    "looks": r["looks"], "looks_per_min": round(60.0 * r["looks"] / max(1e-6, secs), 1),
+                    "hold_bars": round(holds[len(holds) // 2], 1) if holds else 0.0, "rests": r["rests"]})
+    return out
+
+
+def stacked(out_dir: Path, *, desk: str, comfy: str, vibe: str, idea: str, windows: list[tuple[float, float]],
+            stills: Path | None = None) -> list[dict]:
+    """Round two's proof: for each window (start, length) a plain Make and a Breathe Make, Draft at 16:9 through the desk
+    (each only when ComfyUI's queue is empty, the library's usage put back before each), stacked with their strips."""
+    import requests
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    usage = Usage(stills)
+    song = requests.post(f"{desk}/api/songs/load", json={"id": "glitch-out"}, timeout=300)
+    audio_id = song.json().get("audio_id")
+    if not audio_id:
+        raise SystemExit(f"no audio id: {song.text[:300]}")
+    log_path = out_dir / "stacked.json"
+    log = json.loads(log_path.read_text(encoding="utf-8")) if log_path.exists() else []
+    for start, length in windows:
+        tag = f"{int(start // 60)}m{int(start % 60):02d}_{int(length)}s"
+        made = {}
+        for mode in ("plain", "breathe"):
+            label = f"{tag}_{mode}"
+            row = next((r for r in log if r["label"] == label and r.get("status") == "done"), None)
+            if row is None:
+                while not _queue_idle(comfy):
+                    print("  the ComfyUI queue is busy: waiting", flush=True)
+                    time.sleep(30)
+                usage.reset()
+                body = {"audio_id": audio_id, "live": True, "mode": "simple", "song": "Glitch Out", "vibe": vibe, "idea": idea,
+                        "quality": "turbo", "quality_tier": "draft", "aspect": "16:9", "length_s": length, "length_start": start,
+                        "energy_preset": "dense", "morph_source": "objects", "morph_count": "auto", "morph_style": "auto",
+                        "morph_timing": "smooth", "effects": [], "beat_fx": True, "dance_fx": "auto", "foreshadow": "auto",
+                        "scene_stills": "off", "scenes_chosen": True, "backdrop": "plain", "macros": dict(MACROS),
+                        "end_card": False, "open_weights_only": True, "paid_cloud": False, "vertical_mode": "auto",
+                        "stem_orbit": True, "seed": 2727, "chain_pins": {}, **MODES[mode][1]}
+                r = requests.post(f"{desk}/api/generate", json=body, timeout=180)
+                if r.status_code != 200:
+                    print(label, "refused", r.status_code, r.text[:300], flush=True)
+                    continue
+                job = r.json()["id"]
+                print(label, "job", job, flush=True)
+                t0 = time.perf_counter()
+                last = ""
+                while True:
+                    time.sleep(10)
+                    try:
+                        j = requests.get(f"{desk}/api/jobs/{job}", timeout=60).json()
+                    except Exception as exc:
+                        print("  poll:", exc, flush=True)
+                        continue
+                    line = f"  {j.get('stage')} {round(float(j.get('progress') or 0) * 100)}% {j.get('detail')}"
+                    if line != last:
+                        print(line, flush=True)
+                        last = line
+                    if j.get("status") in ("done", "error", "cancelled"):
+                        break
+                row = {"label": label, "mode": mode, "start": start, "length": length, "job": job, "status": j.get("status"),
+                       "seconds": round(time.perf_counter() - t0, 1), "error": j.get("error")}
+                log = [x for x in log if x["label"] != label] + [row]
+                log_path.write_text(json.dumps(log, indent=1), encoding="utf-8")
+                print(label, row["status"], "in", row["seconds"], "s", flush=True)
+            if row.get("status") != "done":
+                continue
+            jobs_dir = ROOT / "work" / "ui" / "jobs" / row["job"]
+            rec = json.loads((jobs_dir / "simple" / "simple.json").read_text(encoding="utf-8"))
+            shutil.copy2(jobs_dir / "xenoform.mp4", out_dir / f"{label}.mp4")
+            at = float((rec.get("window") or {}).get("song_start") or start)
+            rhythm_strip(rec, float(length), out_dir / f"{label}_strip.png")
+            row.update({"line": (rec.get("pacing") or {}).get("line"), "song_start": at, "shots": len(rec.get("shots") or []),
+                        "passages": passage_looks(rec, at)})
+            try:
+                from xenoform import post_qa
+                beats = [b - at for b in _features()["beats"] if at <= float(b) < at + float(length)]
+                row["veil"] = {k: v for k, v in post_qa.veil_report(jobs_dir / "xenoform.mp4", 24.0, beats).items() if k != "windows"}
+            except Exception as exc:  # a report only
+                row["veil"] = {"error": str(exc)}
+            log = [x for x in log if x["label"] != label] + [row]
+            log_path.write_text(json.dumps(log, indent=1), encoding="utf-8")
+            made[mode] = row
+        if len(made) == 2:
+            stacked_video(out_dir / f"{tag}_plain.mp4", out_dir / f"{tag}_plain_strip.png", out_dir / f"{tag}_breathe.mp4",
+                          out_dir / f"{tag}_breathe_strip.png", out_dir / f"{tag}_plain_over_breathe.mp4", float(length))
+            print(tag, "stacked", flush=True)
+    return log
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("what", choices=("table", "sheets"))
+    ap.add_argument("what", choices=("table", "sheets", "stacked"))
     ap.add_argument("out", type=Path)
     ap.add_argument("--no-flash", action="store_true")
     ap.add_argument("--vibe", default="")
@@ -447,9 +638,13 @@ def main() -> None:
     ap.add_argument("--idea", default="")
     ap.add_argument("--modes", default="today,plain,breathe")
     ap.add_argument("--stills", type=Path, default=None, help="a copy of a grown stills library (its usage.json is put back)")
+    ap.add_argument("--windows", default="90:90,30:90,0:30", help="start:length pairs for stacked")
     a = ap.parse_args()
     if a.what == "table":
         table(a.out, flash=not a.no_flash, vibe=a.vibe or "cosmic", stills=a.stills)
+    elif a.what == "stacked":
+        stacked(a.out, desk=a.desk, comfy=a.comfy, vibe=a.vibe or "bioluminescent", idea=a.idea, stills=a.stills,
+                windows=[(float(w.split(":")[0]), float(w.split(":")[1])) for w in a.windows.split(",")])
     else:
         sheets(a.out, desk=a.desk, comfy=a.comfy, vibe=a.vibe or "black", starts=[float(x) for x in a.starts.split(",")],
                idea=a.idea, modes=tuple(m for m in a.modes.split(",") if m in MODES), stills=a.stills)
