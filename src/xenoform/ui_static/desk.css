@@ -842,3 +842,31 @@ body[data-knobs="folded"] .easy-done > .easy-side .knobs-fold { float: none; mar
 .preset-chip { display: inline-flex; align-items: center; gap: 7px; padding-left: 4px; }
 .preset-chip img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; background: var(--x-surface-3, #1d1d26); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14); }
 .preset-note { margin: 4px 0 0; }
+
+/* ---------------------------------------------------------------- Stems mode (31 Oct 2026, docs/STEMS_MODE.md)
+   The Stems step: Split stems with its progress, a row a stem (its envelope, on or off, objects or clips, prominence,
+   blend, lead); on the cut's screen the layers stacked over the timeline with their envelopes and alphas. */
+.stems-split-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.stems-progress { flex: 0 0 140px; height: 6px; border-radius: 3px; background: var(--x-line); overflow: hidden; }
+.stems-progress span { display: block; height: 100%; background: var(--x-accent, #8b7bff); transition: width 0.4s ease; }
+.stem-rows { display: grid; gap: 8px; margin-top: 10px; }
+.stem-row { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 6px 12px; padding: 10px; border: 1px solid var(--x-line); border-radius: 10px; background: var(--x-surface-2); }
+.stem-row.off { opacity: 0.62; }
+.stem-name { display: flex; align-items: flex-start; gap: 8px; }
+.stem-name b { padding-top: 4px; }
+.stem-body { display: grid; gap: 6px; min-width: 0; }
+.stem-facts { margin: 0; }
+.stem-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.stem-ctl select, .stems-lane select { max-width: 210px; }
+.stem-pro, .stem-blend-label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--x-text-2); }
+.stem-pro input[type="range"] { width: 120px; }
+.stem-pro b { min-width: 34px; color: var(--x-text); font-weight: 600; }
+.stem-folder-label { flex: 1 1 260px; }
+.stem-spark { display: block; width: 100%; height: 28px; color: var(--x-text); }
+.stems-lane { margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--x-line); }
+.stem-lane-row { display: grid; grid-template-columns: 96px minmax(0, 1fr) 210px 120px; align-items: center; gap: 10px; padding: 4px 0; }
+.stem-lane-row.on .stem-lane-name { color: var(--x-accent, #8b7bff); font-weight: 600; }
+@media (max-width: 720px) {
+  .stem-row { grid-template-columns: 1fr; }
+  .stem-lane-row { grid-template-columns: 1fr; }
+}
