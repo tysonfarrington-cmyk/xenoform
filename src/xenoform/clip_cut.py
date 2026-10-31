@@ -28,6 +28,13 @@ file's per-shot rules; ``boundary_fx`` by passage; the flash tame under Breathe)
   is from), and every drop run's cut goes to a film none of the last three were; a clip is never shown twice while
   unused ones remain.
 
+The taste file's rules reach a clips cut as they reach an object cut (``dense.shape_shots`` reads the clips' names as a
+chain's nouns: the kaleido steps aside on a clip of a living thing, the effects take turns, no flash look before the
+first drop; ``boundary_fx`` keeps wipes under a quarter), and two more are its own: ``no-clip-twice`` (``fit`` and
+``thin``: rather than show a clip again, the cut plays fewer, longer clips, the calm passages giving up shots first and
+the drops last) and ``no-film-clips`` (``film_note``: black-and-white film is a [taste] note on the cut, never a ban,
+because you chose the clips).
+
 Breathe off with Drops off is the cut as it was made before (``merge_first`` and ``slots``): tests/test_clips_legacy.py
 holds it to the mainline's byte for byte.
 """
@@ -36,6 +43,7 @@ from __future__ import annotations
 import copy
 import json
 import logging
+import math
 import shutil
 import time
 from pathlib import Path
@@ -57,6 +65,11 @@ FPS = 24                 # the shots' frames are counted at this rate (cloud_mor
 CUT_BEATS = 4            # a paced clips cut: no shot under a bar, but in a hot drop run's first two bars
 FRESH_BACK = 3           # a fresh film is none of the last three shown (pacing.fresh_at_drops' window)
 SLOW_MIN = 0.5           # a clip shot longer than its clip plays it slowed, never slower than this, before it holds
+MEAN_SHOT_MAX_S = 8.0    # no-clip-twice never cuts the plan past one shot in this many seconds: a folder too small
+                         # for the song lets a clip come back (a later stretch) rather than hold one for half a minute
+MONO_COLOUR = 6.0        # a clip whose colour varies less than this (Hasler and Suesstrunk's spread of the two
+                         # opponent channels) is black-and-white film: 15 of the film pack's 24 (a tinted reel, Caligari's
+                         # sepia or the dinosaurs' amber, reads as colour, as the 1 Nov demo counted them)
 
 
 def wants(state: dict | None) -> bool:
@@ -390,9 +403,11 @@ def assign(shots: list[dict], kind: list[str], clips: list[dict], *, scenes: boo
         last = fam[shown[-1]] if shown else ""
 
         def rank(c: int) -> tuple:
+            have = float(clips[c].get("seconds") or 0.0)
             return (used[c],
+                    have < 0.8 * need,  # a clip that would play under 0.8x for this shot only when no other will do
                     (fam[c] != scene_film[p]) if scene and p in scene_film else (fam[c] in recent) if cut else (fam[c] == last),
-                    float(clips[c].get("seconds") or 0.0) < need - 0.05,
+                    have < need - 0.05,
                     c)
 
         c = min(range(len(clips)), key=rank)
@@ -405,10 +420,66 @@ def assign(shots: list[dict], kind: list[str], clips: list[dict], *, scenes: boo
     return out
 
 
-def arrange(shots: list[dict], plan: dict, clips: list[dict], state: dict, beats: list | None = None) -> dict:
+def thin(shots: list[dict], kind: list[str], limit: int, period: float, *, steps: dict | None = None,
+         floor: int = 1, longest_s: float = 0.0) -> tuple[list[dict], list[str]]:
+    """Fewer, longer shots until no clip shows twice (the taste file's ``no-clip-twice``, ``limit`` the clips there are):
+    a clip plays on over the morph after it and the clip that morph led into, the pair gone, in the passage that can
+    best spare it: the calm passages first and the drops last (``pacing.PRIORITY``, plus how much longer its shots
+    already are than its role's step, as the planner spends a budget), inside the passage the pair that leaves the
+    shortest clip. A drop's entry, an event's cut, a passage's first clip and a film carried on stay; a hot drop run's
+    first two bars give theirs up only when nothing else can; no clip shot grows past ``longest_s`` (a clip's own
+    length: past it the film would slow or stop); never under ``floor`` shots. Returns the shots and kinds."""
+    from xenoform import pacing
+
+    out, kd = [dict(s) for s in shots], list(kind)
+    base = {str(k): float(v) for k, v in (steps or {}).items() if v}
+
+    def clip_count() -> int:
+        return sum(1 for s, k in zip(out, kd) if k == "clip" and not s.get("cont"))
+
+    def beats_of(s: dict) -> float:
+        return (float(s["end"]) - float(s["start"])) / max(1e-6, float(period))
+
+    while clip_count() > limit and len(out) - 2 >= floor:
+        hot = hot_entries(out, period)
+        by: dict = {}
+        for i in range(1, len(out) - 1):
+            a, m, b = out[i - 1], out[i], out[i + 1]
+            if (kd[i - 1], kd[i], kd[i + 1]) != ("clip", "morph", "clip") or b.get("cont") or b.get("event") \
+                    or b.get("boundary") or not (a.get("passage") == m.get("passage") == b.get("passage")):
+                continue
+            if longest_s and float(b["end"]) - float(a["start"]) > longest_s + 1e-3:
+                continue
+            by.setdefault(m.get("passage"), []).append((i, i in hot or i + 1 in hot))
+        cands = {p: [i for i, h in xs if not h] or [i for i, h in xs] for p, xs in by.items()}
+        if not cands:
+            break
+        cool = {p for p, xs in by.items() if any(not h for _, h in xs)}  # passages with pairs outside a hot entry first
+
+        def score(p) -> tuple:
+            mine = [s for s in out if s.get("passage") == p]
+            role = str(mine[0].get("section") or "")
+            mean = sum(beats_of(s) for s in mine) / len(mine)
+            return (p not in cool, pacing.PRIORITY.get(role, 1.0) + math.log2(max(1e-6, mean / base.get(role, mean))))
+
+        p = min(cands, key=score)
+        i = min(cands[p], key=lambda j: beats_of(out[j - 1]) + beats_of(out[j]) + beats_of(out[j + 1]))
+        a, m, b = out[i - 1], out[i], out[i + 1]
+        merged = _join(_join(a, m), b)
+        rest = int(a.get("rest") or 0) + int(b.get("rest") or 0)
+        merged.pop("rest", None)
+        if rest:
+            merged["rest"] = rest
+        out[i - 1:i + 2] = [merged]
+        kd[i - 1:i + 2] = ["clip"]
+    return _frames(out), kd
+
+
+def arrange(shots: list[dict], plan: dict, clips: list[dict], state: dict, beats: list | None = None, *,
+            limit: int | None = None, duration: float = 0.0) -> dict:
     """What a clips cut plays, shot by shot, before anything renders: ``{"shots", "slots", "paced", "clip_shots"}``. A
-    paced cut is ``tidy``, ``kinds``, ``hand_over`` and ``assign`` on the plan's shots; any other is the cut as it was
-    (``merge_first``, ``slots``)."""
+    paced cut is ``tidy``, ``kinds``, ``hand_over``, ``thin`` (under ``limit`` clip shots, when given) and ``assign`` on
+    the plan's shots; any other is the cut as it was (``merge_first``, ``slots``)."""
     from xenoform import pacing
 
     if not paced(state, shots):
@@ -418,32 +489,51 @@ def arrange(shots: list[dict], plan: dict, clips: list[dict], state: dict, beats
     period = _period(plan, beats)
     laid, kind = kinds(tidy(shots, period))
     laid, kind = hand_over(laid, kind, period, beats)
+    if limit is not None:
+        floor = max(1, int(math.ceil(float(duration or 0.0) / MEAN_SHOT_MAX_S)))
+        lengths = sorted(float(c.get("seconds") or 0.0) for c in clips if float(c.get("seconds") or 0.0) > 0)
+        # as long as the folder's longer clips (its upper quarter), which assign gives the long shots
+        longest = max(MEAN_SHOT_MAX_S, lengths[int(0.75 * (len(lengths) - 1))]) if lengths else 0.0
+        laid, kind = thin(laid, kind, int(limit), period, steps=plan.get("steps"), floor=floor, longest_s=longest)
     scenes = pacing.boldness(pacing.breathe_amount(state)) >= 0.5
     sl = assign(laid, kind, clips, scenes=scenes)
     return {"shots": laid, "slots": sl, "paced": True,
             "clip_shots": sum(1 for x in sl if x["kind"] == "clip" and not x.get("cont"))}
 
 
-def fit(plan_at: Callable[[int | None], tuple[list[dict], dict]], clips: list[dict], state: dict, *, beats: list | None,
-        duration: float, given: bool = False) -> dict:
-    """``arrange`` on the plan ``plan_at(None)`` gives (``plan_at(cap)`` plans at most ``cap`` shots; ``given``, a whole
-    song's window, plays the song plan as it came). Adds ``plan``."""
-    shots, plan = plan_at(None)
+def fit(shots: list[dict], plan: dict, clips: list[dict], state: dict, *, beats: list | None, duration: float) -> dict:
+    """``arrange`` on the plan's shots, and under the taste file's ``no-clip-twice`` (when the cut wants more clip shots
+    than there are clips) on fewer, longer ones (``thin``: the calm passages give theirs up first, the drops last) until
+    every clip plays once, though never past one shot in ``MEAN_SHOT_MAX_S``: a folder too small for the song lets a
+    clip come back, a later stretch, and says so. A whole song's window fits its stretch of the song plan the same way,
+    so the song's plan and its Make agree. Adds ``plan``."""
+    from xenoform import taste
+
+    n = len(clips)
+    once = taste.clips_once() and n > 0
     lay = arrange(shots, plan, clips, state, beats)
+    first = lay["clip_shots"]
+    if once and first > n and lay["paced"]:
+        lay = arrange(shots, plan, clips, state, beats, limit=n, duration=duration)
+        if lay["clip_shots"] < first:
+            taste.note("no-clip-twice", f"{n} clip{'s' if n != 1 else ''} for the {first} clip shots the plan had: "
+                                        f"{lay['clip_shots']} longer ones, the calm passages first, so no clip shows twice")
+    if once and lay["clip_shots"] > n:
+        back = lay["clip_shots"] - n
+        taste.note("no-clip-twice", f"{n} clip{'s' if n != 1 else ''} for {lay['clip_shots']} clip shots: {back} come"
+                                    f"{'s' if back == 1 else ''} back with a later stretch; more clips would show each once")
     lay["plan"] = plan
     return lay
 
 
 def layout(state: dict, directed: dict, audio_path: Path | None, clips: list[dict]) -> dict:
-    """The clips cut's shots and slots for this Make (``fit`` over ``dense.shots_for``, the plan an object cut gets; a
-    whole song's window plays its stretch of the song plan as given)."""
+    """The clips cut's shots and slots for this Make: ``fit`` on ``dense.shots_for``, the plan an object cut gets (a whole
+    song's window: its stretch of the song plan)."""
     from xenoform import dense
 
-    def plan_at(cap: int | None) -> tuple[list[dict], dict]:
-        return dense.shots_for({**state, "max_shots": cap} if cap else state, directed, audio_path)
-
-    return fit(plan_at, clips, state, beats=list(directed.get("beats") or []),
-               duration=float(directed.get("duration") or 0.0), given=dense.song_window(state) is not None)
+    shots, plan = dense.shots_for(state, directed, audio_path)
+    return fit(shots, plan, clips, state, beats=list(directed.get("beats") or []),
+               duration=float(directed.get("duration") or 0.0))
 
 
 def nouns(shots: list[dict]) -> list[dict]:
@@ -459,6 +549,56 @@ def nouns(shots: list[dict]) -> list[dict]:
             out.append({"noun": head})
         out.append({"noun": tail})
     return out
+
+
+_MONO: dict[tuple, bool] = {}
+
+
+def mono(path: str | Path) -> bool | None:
+    """True for black-and-white film: eight frames a second apart, their colour spread under ``MONO_COLOUR``; None when
+    the clip will not read. Measured once a file."""
+    import subprocess
+
+    import numpy as np
+
+    from xenoform.video import ffmpeg_bin
+
+    p = Path(str(path))
+    try:
+        st = p.stat()
+        key = (str(p), st.st_size, st.st_mtime_ns)
+    except OSError:
+        return None
+    if key in _MONO:
+        return _MONO[key]
+    try:
+        raw = subprocess.run([ffmpeg_bin(), "-v", "error", "-i", str(p), "-an", "-vf", "fps=1,scale=48:27,format=rgb24",
+                              "-frames:v", "8", "-f", "rawvideo", "-"], capture_output=True, check=True).stdout
+        px = np.frombuffer(raw, np.uint8).reshape(-1, 3).astype(np.float32)
+    except Exception:
+        return None
+    if not len(px):
+        return None
+    rg = px[:, 0] - px[:, 1]
+    yb = 0.5 * (px[:, 0] + px[:, 1]) - px[:, 2]
+    got = bool(float(np.sqrt(rg.std() ** 2 + yb.std() ** 2)) < MONO_COLOUR)
+    _MONO[key] = got
+    return got
+
+
+def film_note(clips: list[dict]) -> int:
+    """The taste file's ``no-film-clips`` on the cut: a [taste] note when clips it shows are black-and-white film (measured,
+    ``mono``, whatever folder they came from), which does not move to the music and reads flat in a music video; the
+    clips stay, because you chose them. Returns how many were."""
+    from xenoform import taste
+
+    if not taste.rule("no-film-clips"):
+        return 0
+    bw = sum(1 for c in clips if mono(c["path"]))
+    if bw:
+        taste.note("no-film-clips", f"{bw} of the {len(clips)} clips this cut shows are black-and-white film, which reads "
+                                    f"flat in a music video; they stay, because you chose them")
+    return bw
 
 
 # ------------------------------------------------------------------------------------------------ the draft and the cut
@@ -632,6 +772,8 @@ def run(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg: dict,
         files[i] = Path(made)
         shots[i]["clip_morph"] = {"from": names[plan_slots[i]["a"]], "to": names[plan_slots[i]["b"]]}
         shots[i]["style"] = style
+    # the taste file on what this cut shows: black-and-white film is a note, never a ban (you chose the clips)
+    film_note([clips_in[k] for k in dict.fromkeys(sl["clip"] for sl in plan_slots if sl["kind"] == "clip")])
     # 3. the cut, as an object cut is composed: the look, the knobs (a paced cut: each passage's profile, the taste file's
     # per-shot rules), the beat FX, the boundary kinds, the effects, the flash tame under Breathe
     report("assemble", 0.6, "Cutting to the beat" + (" with beat FX" if opt["fx"] else ""))

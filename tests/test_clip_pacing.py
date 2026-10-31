@@ -49,8 +49,8 @@ def _pack(n: int = 24, seconds: float = 16.0) -> list[dict]:
 def _lay(directed: dict, clips: list[dict], drop: float, **shape) -> dict:
     state = {"energy_preset": "dense", "morph_source": "clips", "own_clips": clips, **shape}
     state, _ = guardrails.apply(state, duration=directed["duration"], beats=directed["beats"])
-    return clip_cut.fit(lambda cap: dense.shots_for({**state, "max_shots": cap} if cap else state, directed, None, drop=drop),
-                        clips, state, beats=directed["beats"], duration=directed["duration"])
+    shots, plan = dense.shots_for(state, directed, None, drop=drop)
+    return clip_cut.fit(shots, plan, clips, state, beats=directed["beats"], duration=directed["duration"])
 
 
 def _period(directed: dict) -> float:

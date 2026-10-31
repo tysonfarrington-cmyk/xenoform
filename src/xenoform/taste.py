@@ -717,6 +717,11 @@ def no_mix() -> bool:
     return _limit("clips-or-objects") is not None
 
 
+def clips_once() -> bool:
+    """True when no clip shows twice in a clips cut (``no-clip-twice``): ``clip_cut.fit`` plans fewer, longer shots."""
+    return _limit("no-clip-twice") is not None
+
+
 def vibes_once() -> bool:
     return _limit("no-vibe-twice") is not None
 
