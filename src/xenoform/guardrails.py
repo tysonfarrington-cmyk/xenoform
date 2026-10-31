@@ -126,7 +126,13 @@ def apply(body: dict | None, *, expert: bool | None = None, duration: float | No
         hard_cap = max(cap, int(round(duration / 20.0 * float(r.get("hard_max_forms_per_20s", 18)))))
         mc = body.get("morph_count", "auto")
         n = None
-        if mc in (None, "", "auto", 0, "0"):
+        from xenoform import pacing as _pacing
+
+        if mc in (None, "", "auto", 0, "0") and not expert and not _pacing.legacy(body):
+            # the planner spends the budget by role (drops first, calm last) instead of "auto" being rewritten to a
+            # count, which sent most songs, the 30 s prototype among them, to a plan with no roles (research 31 Oct)
+            body[_pacing.FORM_BUDGET_KEY] = float(r.get("max_forms_per_20s", 15))
+        elif mc in (None, "", "auto", 0, "0"):
             try:
                 from xenoform import dense
                 n = dense.resolve_morph_count(body, duration, beats or body.get("beats") or [])

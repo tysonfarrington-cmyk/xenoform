@@ -90,9 +90,11 @@ def stage_frac(phase: str, frac: float, tier: str = "draft", detail: str = "") -
 
 
 # ------------------------------------------------------------------ plan
-def plan_for(features: dict | None, body: dict | None) -> dict[str, float] | None:
+def plan_for(features: dict | None, body: dict | None, audio_path=None) -> dict[str, float] | None:
     """Planned seconds per phase for this Make from ``dense.plan_summary`` (the same estimate /api/simple/options
-    shows), or None when the song or the body cannot be planned."""
+    shows), or None when the song or the body cannot be planned. With the song's sections the plan is the Make's own
+    (``dense.shots_for`` and its chain), and ``audio_path`` gives it the song's drop, so the clock counts the morphs
+    the cut will render."""
     body, features = body or {}, features or {}
     try:
         from xenoform import dense
@@ -105,6 +107,8 @@ def plan_for(features: dict | None, body: dict | None) -> dict[str, float] | Non
             return None
         opt = dense.options(body)
         beats = [float(b) for b in (features.get("beats") or []) if float(b) < duration]
+        sections = dense._analysis_sections(features) if float(features.get("duration") or 0.0) <= duration + 0.5 else []
+        drop = dense.find_drop(audio_path, beats, duration) if audio_path and sections else None
         pool = None
         try:  # the vibe's pool caps the morphs (no object twice), so the estimate counts it
             from xenoform import morph_pass as _mp
@@ -116,8 +120,9 @@ def plan_for(features: dict | None, body: dict | None) -> dict[str, float] | Non
             pool = None
         # options() folds Fast and Cloud into tier "draft" with a flag; the plan wants the real tier (its cost and cap)
         tier = "cloud" if opt["cloud"] else "fast" if opt["fast"] else opt["tier"]
-        summary = dense.plan_summary(duration, beats, opt["energy"], tier, opt["aspect"], opt["vertical"],
-                                     performer=int(opt.get("performer") or 0), pool=pool)
+        summary = dense.plan_summary(duration, beats, opt["energy"], tier, opt["aspect"], opt["vertical"], drop=drop,
+                                     performer=int(opt.get("performer") or 0), pool=pool,
+                                     sections=sections or None, state=body if sections else None)
         est = summary.get("estimate") or {}
         plan = {"analyze": FIXED_S["analyze"], "draft": FIXED_S["draft"],
                 "morphs": float(est.get("gpu_seconds") or 0.0),

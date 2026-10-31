@@ -1796,6 +1796,11 @@ async function loadSimpleOptions() {
       morphs: String(easy.morphs || "auto"),
       length: String(easyLength(easy)),
       performer: String(easy.performer || 0),
+      // the loaded song itself: the server plans the window the Make will trim with the Make's own planner (its
+      // sections, its drop, the guardrail's budget), so the count and the clock shown are the cut's
+      audio_id: state.audioId || "",
+      vibe: easy.vibe || "",
+      speed: String(((window.XENO_MACROS ? window.XENO_MACROS() : null) || {}).speed ?? 0.5),
     });
     const res = await api(`/api/simple/options?${query.toString()}`);
     if (res.ok) {

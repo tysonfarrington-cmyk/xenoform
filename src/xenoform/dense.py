@@ -650,24 +650,36 @@ def long_song_chain(state: dict, directed: dict, audio_path: Path, shots: list[d
         return len(_rows_of_kind(rows, choice)) or len(rows)
 
     pool_n = pool_count()
-    chain = clip_plan(shots, duration, beats_list, pool=pool_n or None, tier="cloud" if opt["cloud"] else opt["tier"])
+    tier = "cloud" if opt["cloud"] else opt["tier"]
+    chain = clip_plan(shots, duration, beats_list, pool=pool_n or None, tier=tier)
     if grow:
         grown = grow_family_for_cut(state, pool_vibe, chain["morphs"] + 1, cfg, report, engine=engine)
         if grown:  # the idea's family now in the pool: count again, the chain may afford more
             notes.append({"grown": grown})
             pool_n = pool_count()
-            chain = clip_plan(shots, duration, beats_list, pool=pool_n or None, tier="cloud" if opt["cloud"] else opt["tier"])
+            chain = clip_plan(shots, duration, beats_list, pool=pool_n or None, tier=tier)
     if not chain["fits"]:
         wanted = chain["wanted"]
-        shots, plan = shots_for({**state, "max_shots": chain["morphs"]}, directed, Path(audio_path))
-        if len(shots) > chain["morphs"]:
-            shots = _merge_to(shots, chain["morphs"])
-        chain = clip_plan(shots, duration, beats_list, pool=pool_n or None, tier="cloud" if opt["cloud"] else opt["tier"])
+        shots, plan, chain = fit_chain(state, directed, audio_path, chain, pool_n, tier)
         notes.append({"capped": {"wanted": wanted, "shots": len(shots), "cap": chain.get("cap"), "pool": pool_n}})
         if report:
             report("restyle", 0.04, f"{wanted} shots re-planned as {len(shots)} longer ones: no object repeats, and {opt['tier']} "
                                     f"affords {chain.get('cap')} morphs" + (f" over a pool of {pool_n}" if pool_n else ""))
     return shots, plan, chain, notes
+
+
+def fit_chain(state: dict, directed: dict, audio_path: Path | None, chain: dict, pool_n: int | None, tier: str, *,
+              drop: float | None = None) -> tuple[list[dict], dict, dict]:
+    """A plan the chain cannot afford, made again with ``max_shots`` at the morphs it can (fewer, longer shots on the
+    bars), merged down to that count when the planner's roles still outnumber it; the Make and the desk's estimate
+    (``plan_summary``) both come here, so the count the desk shows is the count the cut gets."""
+    duration = float(directed.get("duration") or 0.0)
+    beats_list = list(directed.get("beats") or [])
+    capped = {**state, "max_shots": chain["morphs"]}
+    shots, plan = shots_for(capped, directed, Path(audio_path) if audio_path else None, drop=drop)
+    if len(shots) > chain["morphs"]:
+        shots = _merge_to(shots, chain["morphs"])
+    return shots, plan, clip_plan(shots, duration, beats_list, pool=pool_n or None, tier=tier)
 
 
 def _cloud_fits(chain: dict) -> None:
@@ -724,16 +736,33 @@ def clip_plan(shots: list[dict], duration: float, beats: list, *, pool: int | No
 
 
 def plan_summary(duration: float, beats: list, energy: str = "dense", tier: str = "draft", aspect: str = "9:16",
-                 vertical: str = "native", drop: float | None = None, performer: int = 0, pool: int | None = None) -> dict:
+                 vertical: str = "native", drop: float | None = None, performer: int = 0, pool: int | None = None, *,
+                 sections: list[dict] | None = None, state: dict | None = None) -> dict:
     """What a Make will do for this song: shots, unique morphs, clip length and a time estimate (GPU + look).
-    ``pool`` is the vibe's still count when known: the chain never repeats an object, so it caps the morphs too."""
+    ``pool`` is the vibe's still count when known: the chain never repeats an object, so it caps the morphs too.
+
+    With the song's ``sections`` and the Make body (``state``) it plans with the Make's own planner and chain
+    (``shots_for``, ``clip_plan``, ``fit_chain``), so the count and the clock the desk shows are the cut's; without
+    them it is the older estimate on the demo1 plan."""
     duration = float(duration)
-    if energy == "dense":
-        shots = dense_plan(duration, beats, drop if drop is not None else duration * 0.6)["shots"]
-    else:
-        shots = plan_shots(duration, beats)
     long_song = duration > LONG_SONG_S
-    cp = clip_plan(shots, duration, beats, pool=pool or None, tier=tier) if long_song else {"clip_s": 2, "morphs": len(shots), "assign": list(range(len(shots))), "reuse": False}
+    plan: dict = {}
+    if state is not None and sections:
+        body = {**state, "energy_preset": energy, "quality_tier": tier}
+        directed = {"duration": duration, "beats": list(beats or []), "sections": list(sections)}
+        shots, plan = shots_for(body, directed, None, drop=drop)
+        if long_song and not plan.get("stills"):
+            cp = clip_plan(shots, duration, beats, pool=pool or None, tier=tier)
+            if not cp["fits"]:
+                shots, plan, cp = fit_chain(body, directed, None, cp, pool, tier, drop=drop)
+        else:
+            cp = {"clip_s": 2, "morphs": len(shots), "assign": list(range(len(shots))), "reuse": False}
+    else:
+        if energy == "dense":
+            shots = dense_plan(duration, beats, drop if drop is not None else duration * 0.6)["shots"]
+        else:
+            shots = plan_shots(duration, beats)
+        cp = clip_plan(shots, duration, beats, pool=pool or None, tier=tier) if long_song else {"clip_s": 2, "morphs": len(shots), "assign": list(range(len(shots))), "reuse": False}
     fps = 24
     frames_total = int(round(duration * fps))
     compose_s = frames_total * COMPOSE_S_PER_FRAME["final" if tier in ("final", "fast", "cloud") else "draft"] / beatfx.look_speedup(frames_total)
@@ -751,7 +780,8 @@ def plan_summary(duration: float, beats: list, energy: str = "dense", tier: str 
         est["seconds"] = int(est["seconds"] + est["performer_seconds"])
         est["minutes"] = round(est["seconds"] / 60, 1)
     return {"duration": round(duration, 2), "shots": min(len(shots), cp["morphs"]) if long_song else len(shots), "morphs": cp["morphs"],
-            "clip_s": cp["clip_s"], "reuse": cp["reuse"], "long_song": long_song, "estimate": est, "performer": n_perf}
+            "clip_s": cp["clip_s"], "reuse": cp["reuse"], "long_song": long_song, "estimate": est, "performer": n_perf,
+            "plan_name": str(plan.get("name") or ("dense (auto)" if energy == "dense" else "flow"))}
 
 
 def dense_plan(duration: float, beats: list, drop: float | None = None, max_shots: int | None = None,
@@ -1029,14 +1059,30 @@ def flow_plan(duration: float, beats: list, count: int) -> dict:
     return {"name": f"flow ({count} forms)", "shots": shots}
 
 
+_DROPS: dict[tuple, float | None] = {}  # (path, size, mtime, beats) -> drop time: one decode a song, not one a plan
+
+
 def find_drop(audio_path: Path | None, beats: list, duration: float) -> float | None:
     if audio_path is None or not Path(audio_path).is_file():
         return None
     try:
-        return beatfx.drop_time(Path(audio_path), beats)
+        st = Path(audio_path).stat()
+        key = (str(Path(audio_path).resolve()), st.st_size, st.st_mtime_ns, len(beats or []),
+               round(float(beats[0]), 3) if beats else 0.0, round(float(beats[-1]), 3) if beats else 0.0)
+    except OSError:
+        key = None
+    if key is not None and key in _DROPS:
+        return _DROPS[key]
+    try:
+        got = beatfx.drop_time(Path(audio_path), beats)
     except Exception:
         log.exception("drop detection")
         return None
+    if key is not None:
+        if len(_DROPS) > 64:
+            _DROPS.clear()
+        _DROPS[key] = got
+    return got
 
 
 def _analysis_sections(directed: dict) -> list[dict]:
@@ -1048,10 +1094,66 @@ def _analysis_sections(directed: dict) -> list[dict]:
     return [r for r in (rows or []) if r.get("label")]
 
 
-def shots_for(state: dict, directed: dict, audio_path: Path | None) -> tuple[list[dict], dict]:
-    """Validated shots plus the plan they came from."""
+PLAN_KEYS = ("section", "boundary", "heat", "drop_run", "passage", "rest", "event", "ramp")  # what custom_shots does not carry
+
+
+def paced(state: dict, directed: dict) -> bool:
+    """True when the Make is planned by the pacing engine (``pacing.song_plan``): a Dense cut of a song over
+    ``LONG_SONG_S`` with sections, unless it is shaped as before (``pacing.legacy``) or carries its own cut plan."""
+    from xenoform import pacing as _pc
+
+    return (not _pc.legacy(state) and not state.get("cut_plan") and options(state)["energy"] == "dense"
+            and float(directed.get("duration") or 0.0) > LONG_SONG_S and len(_analysis_sections(directed)) >= 2)
+
+
+def song_plan_for(state: dict, directed: dict, drop: float | None) -> dict:
+    """The pacing engine's plan for this Make: the roles always run, and a requested Forms count, an off-centre Speed
+    and the guardrail's budget (``form_budget``, forms per 20 s) scale it by role instead of replacing it."""
+    from xenoform import pacing as _pc
+
     duration = float(directed.get("duration") or 0.0)
     beats = list(directed.get("beats") or [])
+    sections = _analysis_sections(directed)
+    try:
+        cap = int(state.get("max_shots") or 0) or None
+    except (TypeError, ValueError):
+        cap = None
+    try:
+        budget = float(state.get(_pc.FORM_BUDGET_KEY) or 0.0)
+    except (TypeError, ValueError):
+        budget = 0.0
+    if budget > 0:  # the morph_density guardrail's budget, spent by role inside the planner
+        allowed = max(1, int(round(duration / 20.0 * budget)))
+        cap = min(cap, allowed) if cap else allowed
+    kw = dict(max_shots=cap, breathe=_pc.breathe_of(state), drop_mode=_pc.drop_mode_of(state), pace=story_pace(state),
+              tempo=directed.get("tempo"))
+    plan = _pc.song_plan(duration, beats, sections, drop, **kw)
+    n = morph_count(state)
+    speed = macros(state)["speed"]
+    target = None
+    if n != "auto":
+        target = int(n)
+    elif abs(speed - 0.5) > 0.05:  # the Speed knob scales the plan's own count: x0.6 at 0, x1.4 at 1
+        target = max(1, int(round(len(plan["shots"]) * (0.6 + 0.8 * max(0.0, min(1.0, float(speed)))))))
+    if target and target != len(plan["shots"]):
+        plan = _pc.song_plan(duration, beats, sections, drop, target=target, **kw)
+        plan["target"] = target
+    return plan
+
+
+def shots_for(state: dict, directed: dict, audio_path: Path | None, *, drop: float | None = None) -> tuple[list[dict], dict]:
+    """Validated shots plus the plan they came from. ``drop`` (seconds) stands in for the song's own when the caller
+    has it and no audio (the desk's estimate)."""
+    duration = float(directed.get("duration") or 0.0)
+    beats = list(directed.get("beats") or [])
+    if paced(state, directed):
+        plan = song_plan_for(state, directed, drop if drop is not None else find_drop(audio_path, beats, duration))
+        shots = custom_shots(plan, duration)
+        for shot, raw in zip(shots, plan.get("shots") or []):
+            for key in PLAN_KEYS:
+                if raw.get(key) is not None and raw.get(key) != "":
+                    shot[key] = raw[key]
+        return shots, plan
     opt = options(state)
     n = morph_count(state)
     speed = macros(state)["speed"]
@@ -1066,10 +1168,10 @@ def shots_for(state: dict, directed: dict, audio_path: Path | None) -> tuple[lis
     if state.get("cut_plan"):
         plan = state["cut_plan"]
     elif opt["energy"] == "dense" and n == "auto" and duration > LONG_SONG_S and len(_analysis_sections(directed)) >= 2:
-        drop = find_drop(audio_path, beats, duration)
+        drop = drop if drop is not None else find_drop(audio_path, beats, duration)
         plan = story_plan(duration, beats, _analysis_sections(directed), drop, max_shots=max_shots, pace=story_pace(state))
     elif opt["energy"] == "dense":
-        drop = find_drop(audio_path, beats, duration)
+        drop = drop if drop is not None else find_drop(audio_path, beats, duration)
         count = None if n == "auto" else n
         if max_shots and (count is None or count > max_shots):
             count = max_shots
@@ -1543,9 +1645,23 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
             "steps": 8 if engine == "ltx23" else None,
             "fps": made.get("fps", beatfx.FPS), "look": made.get("look") or {}, "foreshadow": made.get("foreshadow"), "macros": m,
             "handoffs": made.get("boundary_fx"),
-            "house": str(hp.get("name") or ""), "stems_path": str(state.get("stems_path") or "")}
+            "house": str(hp.get("name") or ""), "stems_path": str(state.get("stems_path") or ""),
+            # where the cut sits in the song (a Length cut is trimmed from it): the Resolve export and any later assembly
+            # read it instead of finding the offset by cross-correlating the audio (the montage had to, 30 Oct)
+            "window": window_of(state, duration)}
     (work / "simple.json").write_text(json.dumps(info, indent=1, default=str), encoding="utf-8")
     return info
+
+
+def window_of(state: dict, duration: float) -> dict:
+    """``{"song_start", "length_s"}``: the cut's start in the song it was trimmed from (``song_source``, set by the desk
+    when Length trims the song; 0 for the whole song) and its length."""
+    src = state.get("song_source") if isinstance(state.get("song_source"), dict) else {}
+    try:
+        start = float(src.get("offset") or 0.0)
+    except (TypeError, ValueError):
+        start = 0.0
+    return {"song_start": round(start, 3), "length_s": round(float(duration or 0.0), 3)}
 
 
 def ground_is_black(stills: list[dict], *, luma: float = 16.0) -> bool:

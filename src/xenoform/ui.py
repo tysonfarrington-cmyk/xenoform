@@ -563,6 +563,23 @@ def create_app(cfg: dict | None = None):
             raise HTTPException(400, "Load a song before rewriting the storyboard.")
         return cached
 
+    def _song_plan_inputs(audio_id: str, length_s: float, length_start=None) -> dict | None:
+        """The loaded song cut to the window the Make will trim (``_window_features``) and its drop, for the desk's
+        estimate; None when no song is loaded under ``audio_id`` (the estimate then plans a grid of the BPM)."""
+        if not audio_id or audio_id == "demo":
+            return None
+        with _LOCK:
+            feats = _FEATURES.get(audio_id)
+            audio = _AUDIO.get(audio_id)
+        if not feats or audio is None or not Path(audio).is_file():
+            return None
+        try:
+            win, start, drop = _window_features(feats, Path(audio), length_s, length_start)
+        except Exception:
+            log.exception("song plan inputs")
+            return None
+        return {"features": win, "start": start, "drop": drop}
+
     @app.post("/api/story")
     def story(body: dict) -> dict:
         """Turn a brief and the current song into scene cards. Offline unless XENO_LLM_URL is set."""
@@ -1576,7 +1593,8 @@ def create_app(cfg: dict | None = None):
     @app.get("/api/simple/options")
     def simple_options(duration: float = 20.0, energy: str = "flow", tier: str = "draft", bpm: float = 120.0,
                        aspect: str = "16:9", vertical: str = "native", morphs: str = "auto", length: float = 0.0,
-                       performer: int = 0) -> dict:
+                       performer: int = 0, audio_id: str = "", length_start: str = "", breathe: str = "",
+                       drop_mode: str = "", speed: float = 0.5, vibe: str = "") -> dict:
         from xenoform import cloud_final as _cloud_final
         from xenoform import dance_fx as _dance
         from xenoform import dense as _dense
@@ -1596,7 +1614,25 @@ def create_app(cfg: dict | None = None):
             shots = plan_shots(duration, beats)
         files = final_tier.present()
         video_s = min(duration, float(length)) if length and float(length) > 0 else duration
-        plan = _dense.plan_summary(video_s, [b for b in beats if b < video_s], energy, tier, aspect, vertical, performer=int(performer or 0))
+        song = _song_plan_inputs(audio_id, float(length or 0.0), length_start)
+        if song is not None:
+            # the song is on the desk: the estimate plans the Make itself (its sections, its drop, the guardrail's
+            # budget, the pool), so the count and the clock here are the cut's (dense.plan_summary with sections)
+            from xenoform import guardrails as _guard
+
+            win, video_s = song["features"], float(song["features"].get("duration") or video_s)
+            body = {"energy_preset": energy, "quality_tier": tier, "aspect": aspect, "morph_count": morphs, "vibe": vibe,
+                    "macros": {"speed": max(0.0, min(1.0, float(speed)))}, "performer": int(performer or 0)}
+            if breathe != "":
+                body["breathe"] = breathe
+            if drop_mode != "":
+                body["drop_mode"] = drop_mode
+            body, _rep = _guard.apply(body, duration=video_s, beats=win.get("beats"))
+            plan = _dense.plan_summary(video_s, list(win.get("beats") or []), energy, tier, aspect, vertical, drop=song["drop"],
+                                       performer=int(performer or 0), pool=_pool_count(body), sections=_dense._analysis_sections(win),
+                                       state=body)
+        else:
+            plan = _dense.plan_summary(video_s, [b for b in beats if b < video_s], energy, tier, aspect, vertical, performer=int(performer or 0))
         # What a cut this long took on this machine (took.json beside every cut, batch.measured) beats the COST and
         # final_tier.ETA constants: those said about 16 min for the 12 s demo's Final, which took 2:00:32 (27 Oct).
         from xenoform import batch
@@ -1697,37 +1733,15 @@ def create_app(cfg: dict | None = None):
         except (TypeError, ValueError):
             length_s = 0.0
         dur = float(features.get("duration") or 0.0)
-        if str(state.get("morph_count") or "auto").strip().lower() not in {"", "auto", "0"}:
-            try:  # a count set by hand gets the clamp Make gives it, so the preview counts what renders (40 in 20 s: 15)
-                from xenoform import guardrails as _guard
+        features, _start, _drop = _window_features(features, Path(audio), length_s, state.get("length_start"))
+        try:  # the guardrail the Make runs, on the cut's own length: a count set by hand gets its clamp (40 in 20 s:
+            # 15) and "auto" the budget the planner spends by role, so the preview counts what renders
+            from xenoform import guardrails as _guard
 
-                state, _ = _guard.apply(state, duration=dur or None, beats=features.get("beats"))
-            except Exception:
-                pass
-        if length_s > 0 and dur > length_s + 1.0:
-            beats = [float(b) for b in (features.get("beats") or [])]
-            try:
-                from xenoform.beatfx import drop_time
-
-                drop = float(drop_time(Path(audio), beats))
-            except Exception:
-                drop = dur * 0.6
-            start = max(0.0, min(drop - length_s * 0.45, dur - length_s))
-            if state.get("length_start") not in (None, ""):
-                try:
-                    start = max(0.0, min(float(state["length_start"]), dur - length_s))
-                except (TypeError, ValueError):
-                    pass
-            earlier = [b for b in beats if b <= start + 1e-6]
-            if earlier:
-                start = max(earlier)
-            end = start + length_s
-            features["beats"] = [round(b - start, 4) for b in beats if start <= b < end]
-            features["duration"] = length_s
-            features["sections"] = [{**s, "start": round(max(0.0, float(s.get("start") or 0.0) - start), 4),
-                                     "end": round(min(length_s, float(s.get("end") or 0.0) - start), 4)}
-                                    for s in (features.get("sections") or [])
-                                    if float(s.get("end") or 0.0) > start and float(s.get("start") or 0.0) < end]
+            state, _ = _guard.apply(state, duration=float(features.get("duration") or 0.0) or None, beats=features.get("beats"))
+            state.pop("guardrails", None)
+        except Exception:
+            pass
         own_folder = str(state.get("own_folder") or "").strip()
         own_id = str(state.get("own_id") or "")
         if own_id:
@@ -2160,9 +2174,10 @@ def create_app(cfg: dict | None = None):
             return None
         beats = [float(b) for b in (features.get("beats") or [])]
         try:
-            from xenoform.beatfx import drop_time
+            from xenoform.dense import find_drop  # beatfx.drop_time, decoded once a song
 
-            drop = float(drop_time(Path(audio_path), beats))
+            found = find_drop(Path(audio_path), beats, dur)
+            drop = float(found) if found is not None else dur * 0.6
         except Exception:
             drop = dur * 0.6
         start = max(0.0, min(drop - length_s * 0.45, dur - length_s))
@@ -2306,7 +2321,7 @@ def create_app(cfg: dict | None = None):
             "stems_path": str(body.get("stems_path") or ""),
             # Honest timing (job_timing): t0 / started, the planned seconds per phase for this song and Make, and the
             # overall fraction, ETA and phase boundaries _run_job's on_progress keeps up to date.
-            **job_timing.start_fields(job_timing.plan_for(features, body), body),
+            **job_timing.start_fields(job_timing.plan_for(features, body, audio_path), body),
         }
         with _LOCK:
             running = sum(1 for item in _JOBS.values() if item.get("status") == "running")
@@ -2977,6 +2992,57 @@ def _read_meta(folder: Path) -> dict:
         return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
     except ValueError:
         return {}
+
+
+def _pool_count(body: dict) -> int | None:
+    """The stills a Make of ``body`` may draw on (the asked vibe's and the pool it borrows), as job_timing counts them."""
+    try:
+        from xenoform import morph_pass as _mp
+
+        cat = _mp.catalogue()
+        pool_vibe, asked = _mp.vibe_for(body), str(body.get("vibe") or "")
+        n = len(cat.get(pool_vibe) or []) + (len(cat.get(asked) or []) if asked and asked != pool_vibe else 0)
+        return n or None
+    except Exception:
+        return None
+
+
+def _window_features(features: dict, audio: Path | None, length_s: float, length_start=None) -> tuple[dict, float | None, float | None]:
+    """The song's analysis cut to the window a Length Make trims (the maths of ``_trim_audio``: a little before the
+    drop, or from ``length_start``, back to a beat), its beats and sections shifted, without trimming anything; plus
+    the window's start in the song and the drop in window time. The whole song when no window applies."""
+    from xenoform import dense as _dense
+
+    features = dict(features or {})
+    dur = float(features.get("duration") or 0.0)
+    beats = [float(b) for b in (features.get("beats") or [])]
+    try:
+        drop = _dense.find_drop(Path(audio), beats, dur) if audio else None
+    except Exception:
+        drop = None
+    if not (length_s and length_s > 0 and dur > length_s + 1.0):
+        return features, None, drop
+    anchor = float(drop) if drop is not None else dur * 0.6
+    start = max(0.0, min(anchor - length_s * 0.45, dur - length_s))
+    if length_start not in (None, ""):
+        try:
+            start = max(0.0, min(float(length_start), dur - length_s))
+        except (TypeError, ValueError):
+            pass
+    earlier = [b for b in beats if b <= start + 1e-6]
+    if earlier:
+        start = max(earlier)
+    end = start + length_s
+    features["beats"] = [round(b - start, 4) for b in beats if start <= b < end]
+    features["duration"] = length_s
+    rows = features.get("analysis_sections") if features.get("analysis_sections") is not None else features.get("sections")
+    features["sections"] = [{**s, "start": round(max(0.0, float(s.get("start") or 0.0) - start), 4),
+                             "end": round(min(length_s, float(s.get("end") or 0.0) - start), 4)}
+                            for s in (rows or [])
+                            if float(s.get("end") or 0.0) > start and float(s.get("start") or 0.0) < end]
+    features.pop("analysis_sections", None)
+    inside = drop is not None and start <= float(drop) < end
+    return features, start, (round(float(drop) - start, 4) if inside else None)
 
 
 def _write_meta(folder: Path, body: dict, audio_id: str) -> str:

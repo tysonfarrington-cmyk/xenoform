@@ -112,6 +112,11 @@ def markers(rec: dict, frames: int, fps: Fraction) -> list[dict]:
 
     shots = list(rec.get("shots") or [])
     at: dict[int, list[tuple[str, str]]] = {}
+    window = rec.get("window") if isinstance(rec.get("window"), dict) else {}
+    start = float(window.get("song_start") or 0.0)
+    if start > 0:  # a Length cut: where it sits in the song (dense.window_of), so the edit can be laid back on the song
+        clock = f"{int(start // 60)}:{start % 60:04.1f}"
+        at.setdefault(0, []).append((f"Song {clock}", f"the cut starts {clock} into the song"))
     if rec.get("drop") is not None:
         at.setdefault(_frame(rec["drop"], fps, frames), []).append(("Drop", "the drop the cut is built on"))
     for i, row in enumerate(_rows(rec)):
