@@ -4,8 +4,11 @@ What ``docs/demo/tools/montage.py`` did by hand for the Glitch Out video of 29 O
 window's cut laid end to end by song time, so its picture plays over the very seconds it was made on (its beat FX land
 on the song's own hits), each cut between two windows on a beat of the song's own grid (``place``: a passage's start is
 pinned, the cut inside a passage goes where the outgoing morph has landed, then on beat 1, then on beat 3, and only
-where both windows have picture), a window that plays a stretch shifted by whole beats checked against its picture
-(``check``), the flash tame once over the whole when Breathe is on (``deflash.Tame`` with each passage's rule), the title
+where both windows have picture), every window checked by its own picture frames, never its file's length (``check``: a
+picture that came out short of its passage is held on its last frame for the whole shortfall, up to the larger of a bar
+and the rest its own plan ends on plus a beat (``hold_limit``), and refused past that; a window that plays a stretch
+shifted by whole beats must have the picture for it), the picture counted
+frame for frame against the song once laid, the flash tame once over the whole when Breathe is on (``deflash.Tame`` with each passage's rule), the title
 on the song's last hit (the hand-made video's "Xenoform" at 3:51), the song itself as the sound at -16 LUFS, and the QA
 pass once over the whole.
 
@@ -64,9 +67,11 @@ def _run(args: list[str], **kw) -> subprocess.CompletedProcess:
 
 
 def probe(path: Path) -> dict:
-    """A cut's picture size, rate, frame count and length."""
+    """A cut's picture size and rate, its own picture frames (``frames``) and their length (``picture_s``), and the
+    file's length (``seconds``: the longer of its picture and its sound, which a window's sound sets when its picture
+    came out short)."""
     raw = subprocess.run([_ffprobe(), "-v", "error", "-select_streams", "v:0", "-show_entries",
-                          "stream=width,height,r_frame_rate,nb_frames:format=duration", "-of", "json", str(path)],
+                          "stream=width,height,r_frame_rate,nb_frames,duration:format=duration", "-of", "json", str(path)],
                          capture_output=True, text=True, check=True).stdout
     data = json.loads(raw)
     s = (data.get("streams") or [{}])[0]
@@ -74,8 +79,22 @@ def probe(path: Path) -> dict:
     fps = float(num) / float(den or 1) if float(den or 1) else 24.0
     dur = float((data.get("format") or {}).get("duration") or 0.0)
     nb = str(s.get("nb_frames") or "")
-    return {"width": int(s.get("width") or 0), "height": int(s.get("height") or 0), "fps": fps,
-            "frames": int(nb) if nb.isdigit() else int(round(dur * fps)), "seconds": dur}
+    frames = int(nb) if nb.isdigit() else _count_frames(path)
+    if frames <= 0:  # nothing to count: the picture stream's own length, else the file's
+        frames = int(round(float(s.get("duration") or dur or 0.0) * fps))
+    return {"width": int(s.get("width") or 0), "height": int(s.get("height") or 0), "fps": fps, "frames": frames,
+            "picture_s": frames / fps if fps else dur, "seconds": dur}
+
+
+def _count_frames(path: Path) -> int:
+    """The picture's frames counted packet by packet (a container that keeps no frame count)."""
+    try:
+        raw = subprocess.run([_ffprobe(), "-v", "error", "-select_streams", "v:0", "-count_packets", "-show_entries",
+                              "stream=nb_read_packets", "-of", "csv=p=0", str(path)], capture_output=True, text=True,
+                             check=True).stdout.strip()
+        return int(raw.split(",")[0]) if raw.split(",")[0].isdigit() else 0
+    except (OSError, subprocess.CalledProcessError, ValueError):
+        return 0
 
 
 # ------------------------------------------------------------------------------------------------ the slots
@@ -83,7 +102,9 @@ def probe(path: Path) -> dict:
 
 def slots(rec: dict, jobs: Path) -> list[dict]:
     """Each window's cut as the assembly lays it: its job folder, where its picture sits in the song (its record's
-    ``window``, else the plan's), its length, its shot boundaries in song time and the beats it may be shifted by."""
+    ``window``, else the plan's), the length of its own picture (its frames, never the file's length: a window whose
+    picture came out short still carries its passage's whole sound), its shot boundaries in song time and the beats it
+    may be shifted by."""
     out = []
     for w in rec["windows"]:
         job = str(w.get("job_id") or "")
@@ -104,10 +125,14 @@ def slots(rec: dict, jobs: Path) -> list[dict]:
         shots = list(cut.get("shots") or [])
         bounds = sorted({round(offset + float(s.get("start") or 0.0), 4) for s in shots}
                         | {round(offset + float(s.get("end") or 0.0), 4) for s in shots})
+        picture = float(info["picture_s"])
+        last = shots[-1] if shots else {}
+        rest_s = float(last.get("rest_s") or 0.0) if last.get("rest") else 0.0  # the rest the window's own plan ends on
         out.append({"window": w["index"], "passage": w["passage"], "part": int(w.get("part") or 0), "job": job,
-                    "mp4": mp4, "record": cut, "info": info, "offset": offset, "seconds": info["seconds"],
-                    "end": offset + info["seconds"], "bounds": bounds, "shift_beats": shift, "start": float(w["start"]),
-                    "want_end": float(w["end"])})
+                    "role": str(w.get("role") or ""), "mp4": mp4, "record": cut, "info": info, "offset": offset,
+                    "seconds": picture, "sound_s": float(info["seconds"]), "frames": int(round(picture * FPS)),
+                    "end": offset + picture, "bounds": bounds, "shift_beats": shift, "start": float(w["start"]),
+                    "want_end": float(w["end"]), "rest_s": rest_s})
     return out
 
 
@@ -154,7 +179,7 @@ def place(a: dict, b: dict, want: float, beats: list[float], *, pin: bool, perio
         return "beat 1" if pos == 1 else "beat 3" if pos == 3 else "the nearest beat"
 
     if not near:  # the two windows were made end to end: the cut is where they meet, on the plan's own beat (an outgoing
-        meet = min(max(want, b0), a1 + PAD_S)  # window a few frames short is padded to it, not cut early)
+        meet = max(want, b0)  # window whose picture came out short is held on its last frame up to it, never cut early)
         return {"at": round(meet, 4), "want": round(want, 4), "why": reason(meet), "beat": bar_pos(meet), "pinned": pin,
                 "met": True}
     if pin:
@@ -170,18 +195,53 @@ def place(a: dict, b: dict, want: float, beats: list[float], *, pin: bool, perio
     return {"at": round(t, 4), "want": round(want, 4), "why": reason(t), "beat": bar_pos(t), "pinned": False}
 
 
+def hold_limit(slot: dict, period: float) -> tuple[float, str]:
+    """How long a window's picture may be held on its last frame when it came out short of its slot, and why: the larger
+    of a bar (``HOLD_MAX_BARS``) and the rest its own plan ends on plus a beat. A shortfall within it is a rest an older
+    QA pass cut away (a ZedsDead intro lost 49 frames of the 3.3 s rest it closed on, at 144 BPM where a bar is 40
+    frames); one past it is a window that is really broken."""
+    bar = HOLD_MAX_BARS * 4.0 * float(period)
+    rest = float(slot.get("rest_s") or 0.0)
+    if rest > 0 and rest + float(period) > bar:
+        return rest + float(period), f"the {rest:.2f} s rest its plan ends on and a beat"
+    return bar, ("a bar" if HOLD_MAX_BARS == 1 else f"{HOLD_MAX_BARS} bars") + ("" if rest > 0 else "; its plan ends on no rest")
+
+
 def check(order: list[dict], cuts: list[float], period: float) -> list[str]:
-    """The window checked (montage_check): each slot plays a stretch its cut has, its shift applied (a cut that came out
-    up to ``PAD_S`` short at its end is held on its last frame); the problems as sentences ([] when every slot is
-    covered)."""
+    """The window checked (montage_check) by its own picture frames, never its file's length (a window's sound runs its
+    passage's whole length even when its picture came out short): each slot plays a stretch its picture has, its shift
+    applied. A picture that ends short of its slot is held on its last frame for the whole shortfall (``lay_picture``)
+    up to ``hold_limit`` (a bar, or the rest the window's plan ends on and a beat); past that, or a shift that runs out
+    of picture, the slot is refused. The problems as sentences ([] when every slot is covered)."""
     bad = []
     for k, s in enumerate(order):
         a, b = cuts[k], cuts[k + 1]
         c0, c1 = shifted(s, period)
-        if a < c0 - 0.01 or b > c1 + PAD_S + 0.01:
-            shift = f", shifted {s['shift_beats']:+.0f} beats" if s.get("shift_beats") else ""
-            bad.append(f"window {s['window'] + 1} runs {c0:.2f} to {c1:.2f} in the song{shift}; its slot asks {a:.2f} to {b:.2f}")
+        name = f"window {s['window'] + 1}" + (f" ({s['role']}, passage {s['passage'] + 1})" if s.get("role") else "")
+        if s.get("shift_beats"):
+            if a < c0 - 0.01 or b > c1 + 1.5 / FPS:
+                bad.append(f"{name} runs {c0:.2f} to {c1:.2f} in the song, shifted {s['shift_beats']:+.0f} beats; its slot asks "
+                           f"{a:.2f} to {b:.2f}")
+            continue
+        if a < c0 - 0.01:
+            bad.append(f"{name} starts at {c0:.2f} in the song; its slot asks from {a:.2f}")
+            continue
+        f0, n, short = _span(s, cuts, k, period)
+        limit, why = hold_limit(s, period)
+        if short > limit * FPS + 0.5:
+            bad.append(f"{name} has {int(s['frames'])} frames of picture for the {f0 + n} its slot plays: {short} short "
+                       f"({short / FPS:.2f} s), more than the {limit:.2f} s it may be held on its last frame ({why}); "
+                       f"make that passage again")
     return bad
+
+
+def _span(slot: dict, cuts: list[float], k: int, period: float) -> tuple[int, int, int]:
+    """The frames slot ``k`` plays from its window's picture: the first (``f0``), how many (``n``), and how many of them
+    its picture lacks at its end (held on its last frame by ``lay_picture``)."""
+    c0, _ = shifted(slot, period)
+    f0 = int(round((cuts[k] - c0) * FPS))
+    n = int(round(cuts[k + 1] * FPS)) - int(round(cuts[k] * FPS))
+    return f0, n, max(0, f0 + n - int(slot["frames"]))
 
 
 # ------------------------------------------------------------------------------------------------ the composite record
@@ -333,32 +393,36 @@ def _flash_rules(shots: list[dict], rec: dict, beats: list[float]) -> list | Non
     return pacing.flash_rules(shots, FPS, beats, breathe=pacing.amount_of(rec.get("breathe")))
 
 
-PAD_S = 0.25  # a window cut up to this short (a QA lag fix drops trailing held frames) is padded with its last frame
+HOLD_MAX_BARS = 1  # a short window's picture is held on its last frame for at least this many bars (``hold_limit``)
 
 
 def lay_picture(order: list[dict], cuts: list[float], size: tuple[int, int], dest: Path, period: float) -> int:
     """The windows' stretches end to end, silent, at ``FPS`` and ``size``, each frame-exact: ``trim`` on exactly the
-    frames the slot plays, a window that came out a frame or three short padded with its own last frame first (else
-    every window after it would play that much early against the song). Returns the frame count."""
+    frames the slot plays, a window whose picture came out short (a QA lag fix that dropped the held frames of the rest
+    it closed on: 49 frames on a ZedsDead intro, 1 Nov) held on its own last frame for the whole shortfall first, else
+    every window after it would play that much early against the song (``check`` refuses one short past ``hold_limit``).
+    The picture is counted after: one that is not frame for frame the song's is refused. Returns the frame count."""
     w, h = size
     frames = [int(round(c * FPS)) for c in cuts]
     args: list[str] = []
     parts = []
     for k, s in enumerate(order):
-        n = frames[k + 1] - frames[k]
+        f0, n, short = _span(s, cuts, k, period)
         if n <= 0:
             continue
-        c0, _ = shifted(s, period)
-        f0 = int(round((cuts[k] - c0) * FPS))
         args += ["-i", str(s["mp4"])]
         idx = len(parts)
-        parts.append(f"[{idx}:v]fps={FPS},tpad=stop_mode=clone:stop_duration={PAD_S},trim=start_frame={f0}:end_frame={f0 + n},"
-                     f"setpts=PTS-STARTPTS,"
+        hold = f"tpad=stop_mode=clone:stop={short + 2},"  # the shortfall, and two for a rate's rounding: trim takes n
+        parts.append(f"[{idx}:v]fps={FPS},{hold}trim=start_frame={f0}:end_frame={f0 + n},setpts=PTS-STARTPTS,"
                      f"scale={w}:{h}:force_original_aspect_ratio=increase:flags=lanczos,crop={w}:{h},setsar=1,format=yuv420p[v{idx}]")
     graph = ";".join(parts) + ";" + "".join(f"[v{i}]" for i in range(len(parts))) + f"concat=n={len(parts)}:v=1:a=0[pic]"
     _run([*args, "-filter_complex", graph, "-map", "[pic]", "-an", "-c:v", "libx264", "-crf", "12", "-preset", "veryfast",
           "-r", str(FPS), "-pix_fmt", "yuv420p", str(dest)])
-    return frames[-1] - frames[0]
+    want, got = frames[-1] - frames[0], probe(dest)["frames"]
+    if got != want:
+        raise AssemblyError(f"The laid picture came out {got} frames against the song's {want}: nothing was written. "
+                            f"Lay it together again; if it says this again, make the window that ends short again.")
+    return want
 
 
 def finish(picture: Path, song: Path, dest: Path, *, size: tuple[int, int], video_s: float, title_at: float | None,
@@ -389,8 +453,10 @@ def finish(picture: Path, song: Path, dest: Path, *, size: tuple[int, int], vide
         audio_in = 1
     inputs += ["-i", str(wav)]
     fc.append(f"[{audio_in}:a]{af}[a]")
+    total_frames = int(round(total * FPS))
     enc = subprocess.Popen([_ffmpeg(), "-v", "error", "-y", *inputs, "-filter_complex", ";".join(fc), "-map", "[v]", "-map", "[a]",
                             "-c:v", "libx264", "-crf", str(CRF), "-preset", "medium", "-pix_fmt", "yuv420p", "-r", str(FPS),
+                            "-frames:v", str(total_frames),  # the song's frames exactly: -t alone can let one more in
                             "-c:a", "aac", "-b:a", "256k", "-movflags", "+faststart", "-t", f"{total:.3f}", str(dest)],
                            stdin=subprocess.PIPE)
     dec = subprocess.Popen([_ffmpeg(), "-v", "error", "-i", str(picture), "-f", "rawvideo", "-pix_fmt", "rgb24", "-"],
@@ -398,7 +464,6 @@ def finish(picture: Path, song: Path, dest: Path, *, size: tuple[int, int], vide
     tame = deflash.Tame() if rules else None
     frame_bytes = w * h * 3
     i = 0
-    total_frames = int(round(total * FPS))
     try:
         while True:
             buf = dec.stdout.read(frame_bytes)
@@ -477,7 +542,9 @@ def assemble(folder: Path, jobs: Path, *, report: Callable[[str, float, str], No
         got.update({"into_window": b["window"], "into_passage": b["passage"]})
         cuts_info.append(got)
         cuts.append(float(got["at"]))
-    video_s = min(duration, max(shifted(order[-1], period)[1], cuts[-1] + 0.5))
+    # the song runs to the last window's own end in the plan (its picture, held when it came out short, fills it), in
+    # whole frames, so the picture and the file end on the same frame
+    video_s = int(round(min(duration, max(float(order[-1]["want_end"]), cuts[-1] + 0.5)) * FPS)) / FPS
     cuts.append(round(video_s, 4))
     problems = check(order, cuts, period)
     if problems:
@@ -490,7 +557,12 @@ def assemble(folder: Path, jobs: Path, *, report: Callable[[str, float, str], No
     work = folder / "assembly"
     work.mkdir(parents=True, exist_ok=True)
     picture = work / "picture.mp4"
-    lay_picture(order, cuts, size, picture, period)
+    try:
+        lay_picture(order, cuts, size, picture, period)
+    except AssemblyError as exc:
+        rec["assembly"] = {"error": str(exc), "cuts": cuts_info, "made": datetime_now()}
+        song_run.save(folder, rec)
+        raise
     shots, _, _ = song_shots(order, cuts, rec, period)
     rules = _flash_rules(shots, rec, song_beats)
     title = rec.get("title") or {}
@@ -521,7 +593,8 @@ def assemble(folder: Path, jobs: Path, *, report: Callable[[str, float, str], No
                        "loudness": {"target": TARGET_LUFS, "gain_db": made["gain_db"], **level},
                        "tame": made["tame"], "title": {"text": title.get("text"), "at": title.get("at")},
                        "qa": _qa_summary(qa_rep), "windows": [{"window": s["window"], "job": s["job"], "song_start": s["offset"],
-                                                                "seconds": round(s["seconds"], 3), "shift_beats": s["shift_beats"],
+                                                                "seconds": round(s["seconds"], 3), "frames": s["frames"],
+                                                                "sound_s": round(s["sound_s"], 3), "shift_beats": s["shift_beats"],
                                                                 "padded_frames": _short(s, cuts, k, period)}
                                                                for k, s in enumerate(order)]}
     song_run.save(folder, song_run.stamp(rec, status="done"))
@@ -530,11 +603,8 @@ def assemble(folder: Path, jobs: Path, *, report: Callable[[str, float, str], No
 
 
 def _short(slot: dict, cuts: list[float], k: int, period: float) -> int:
-    """How many frames the slot's window lacked at its end (padded with its last frame by ``lay_picture``)."""
-    c0, _ = shifted(slot, period)
-    f0 = int(round((cuts[k] - c0) * FPS))
-    n = int(round(cuts[k + 1] * FPS)) - int(round(cuts[k] * FPS))
-    return max(0, f0 + n - int(slot["info"]["frames"]))
+    """How many frames the slot's window lacked at its end (held on its last frame by ``lay_picture``)."""
+    return _span(slot, cuts, k, period)[2]
 
 
 def _song_beats(rec: dict, order: list[dict]) -> list[float]:

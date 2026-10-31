@@ -213,6 +213,59 @@ def test_held_frames_detected_and_interpolated(tmp_path):
     assert abs(q.probe(v)["duration"] - 2.0) < 0.3
 
 
+def _rest_window(path, vf_motion=""):
+    """A window that closes on a rest: 3 s of picture (``vf_motion`` before the hold), then its last frame held for
+    2 s, with 5 s of sound under it, as a Breathe window ends."""
+    vf = ",".join(x for x in (vf_motion, "tpad=stop_mode=clone:stop_duration=2") if x)
+    subprocess.run([FF, "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc2=size=320x180:rate=24:duration=3", "-f", "lavfi",
+                    "-i", "sine=frequency=440:duration=5", "-vf", vf, "-map", "0:v", "-map", "1:a", "-c:v", "libx264",
+                    "-pix_fmt", "yuv420p", "-c:a", "aac", str(path)], check=True)
+    return path
+
+
+def _picture(path):
+    """The picture stream's own frame count and length (the file's length is the sound's when they differ)."""
+    out = subprocess.run([shutil.which("ffprobe"), "-v", "error", "-select_streams", "v:0", "-show_entries",
+                          "stream=nb_frames,duration", "-of", "csv=p=0", str(path)], capture_output=True, text=True).stdout
+    parts = out.strip().split(",")
+    return int(parts[1]), float(parts[0])
+
+
+def _grey(path, frame):
+    raw = subprocess.run([FF, "-v", "error", "-i", str(path), "-vf", f"select=eq(n\\,{frame}),scale=64:36", "-frames:v", "1",
+                          "-pix_fmt", "gray", "-f", "rawvideo", "-"], capture_output=True, check=True).stdout
+    return np.frombuffer(raw, np.uint8).astype(float)
+
+
+@needs_ff
+def test_a_window_ending_on_a_rest_keeps_every_frame_through_qa(tmp_path):
+    """A rest is held picture by design: the hold a window closes on is not lag (a ZedsDead intro's 49 held frames read
+    as 17% duplicates, the lag fix ran and cut them away, and its whole song drifted, 1 Nov), so the QA leaves it be."""
+    v = _rest_window(tmp_path / "rest.mp4")
+    assert _picture(v) == (120, 5.0)
+    rep = q.run(v, fps=24, beats=None, fix=True)
+    assert not rep["lag"]["lag"] and rep["lag"]["held_end_frames"] >= 48 and "lag_fix" not in rep
+    assert _picture(v) == (120, 5.0)
+
+
+@needs_ff
+def test_the_lag_fix_never_drops_the_held_frames_a_window_ends_on(tmp_path):
+    """A window with real judder is still fixed, and the rest it closes on keeps every frame: the picture is as long as
+    it was and still ends on a held picture (minterpolate had nothing after the hold to fill toward and stopped there;
+    the last picture it gives is held to the end, the frame before the landing at most)."""
+    v = _rest_window(tmp_path / "judder.mp4", "fps=8,fps=24")
+    held = _grey(v, 100)
+    rep = q.lag_report(v, 24)
+    assert rep["lag"] and rep["held_end_frames"] >= 48
+    fix = q.fix_lag(v, rep, 24)
+    assert fix["fixed"] and fix["method"].startswith("interpolate") and fix["frames"] == [120, 120]
+    frames, seconds = _picture(v)
+    assert frames == 120 and abs(seconds - 5.0) < 0.05
+    last = _grey(v, 119)
+    assert np.abs(_grey(v, 80) - last).mean() < 1.0  # the rest is still held, its 2 s whole
+    assert np.abs(last - held).mean() < 12.0  # on the picture it rested on
+
+
 @needs_ff
 def test_run_reports(tmp_path):
     v = _make(tmp_path / "r.mp4")

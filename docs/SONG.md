@@ -14,8 +14,11 @@ hit) is a Make: **Fine-tune → Length → Whole song**, then **Make the whole s
    line). The song's total is the sum of its passages: the per-Make caps (Draft's 60 on a four-minute song, Cloud's 16 a
    Make) guard one Make and do not cap the song. Glitch Out at Breathe 1.0 is 14 passages and 78 morphs, at Breathe
    off 86.
-2. **Draws a look a passage, by taste** (`song_plan.looks`). The vibe you chose takes the main drop, the moment the
-   song is built on (or, when the body is a loved chain you applied, the passage that chain fits). The loved chains
+2. **Draws a look a passage, by taste** (`song_plan.looks`). The vibe you chose owns the main drop run, the stretch
+   the song is built on: the heaviest drop run by its heat times its length (`song_plan.main_run`, decided 1 Nov), not
+   only the run the song's loudest moment opens, which keeps the drop's event (on ZedsDead v1 that run is 5.3 s at
+   2:20 and the 23.7 s run after it is now the main); a tie goes to the run the drop opens. When the body is a loved
+   chain you applied, that chain goes on the passage it fits instead. The loved chains
    (`configs/chain_presets.json`) take the passages they fit: the opener (glow sea) the intro, the finale (the gold) the
    outro, the calm ones (smooth, Chaos 0.2 and under: the black glass rose, the smoke dragon) the grooves, the ones on
    the beat (Chaos 0.4 and over: the glass hand, the origami icons) the drops and builds; a chain keeps its own style,
@@ -51,8 +54,13 @@ hit) is a Make: **Fine-tune → Length → Whole song**, then **Make the whole s
    end to end by song time, so its picture plays over the very seconds it was made on and its beat FX land on the
    song's own hits; each cut on a beat of the song's grid (`place`, montage.py's rules: a passage's start is pinned on
    its beat; inside a passage cut in two the cut goes where the outgoing morph lands, then on beat 1, then on beat 3,
-   only where both windows have picture); a window that plays a stretch shifted by whole beats is checked against its
-   picture first (`check`, montage_check.py's test); the flash tame once over the whole when Breathe is on (each
+   only where both windows have picture); every window checked by its own picture frames, never its file's length
+   (`check`, montage_check.py's test: a window's sound runs its passage's whole length even when its picture came out
+   short), a picture short of its slot held on its last frame for the whole shortfall, up to the larger of a bar and
+   the rest the window's own plan ends on plus a beat (a rest an older QA pass cut away is known from the plan: the
+   ZedsDead intro's 49 frames, at 144 BPM where a bar is 40, are held), and the assembly refused past that, as a window
+   really broken, with the window to make again; a window that plays a stretch shifted by whole beats must have the
+   picture for it; the laid picture counted frame for frame against the song; the flash tame once over the whole when Breathe is on (each
    passage's rule, `pacing.flash_rules`); the title on the song's last hit (the last bar line with the song's loudest
    onset and level, at least 3 s from the end: 3:51 on Glitch Out, where the hand-made video put it), the shot dimmed
    under it; the song itself as the sound at -16 LUFS (a fixed gain from its measured loudness and a delay-compensated
@@ -105,7 +113,13 @@ and states, the estimate, the video once laid together), `POST /api/song/<id>/st
   why: "a passage starts: pinned on its beat", "the outgoing morph lands", "beat 1", "beat 3", "the nearest beat"),
   the loudness (the gain, the integrated loudness and true peak measured on the file), the tame (frames, flashes,
   tamed, kept), the title, the QA summary (flash frames, the worst 8 bars, off-beat cuts) and each window's job, song
-  start, length and shift. An assembly that cannot run says why in `assembly.error` and writes nothing else.
+  start, picture length and frames, sound length, shift and the frames its last picture was held for
+  (`padded_frames`). An assembly that cannot run says why in `assembly.error` and writes nothing else.
+
+A window's QA (`post_qa`) leaves the rest it closes on alone: held frames at a cut's end are a hold by design, not lag
+(they count neither as duplicates nor as a short freeze), and a lag fix that does run on a window holds its last
+picture on to the picture's own end, so it keeps every frame it had. Before 1 Nov a fix could cut that rest away: a
+ZedsDead intro came out 243 frames for its 292, and its song played 1.8 s early from there until it was laid again.
 
 Beside it: `xenoform.mp4` (the song), `simple/simple.json` (`mode` "song": every shot in song time with its passage,
 window, job and vibe, a window's first shot a hard cut; the timeline, Edit in Resolve and My videos read it, the
@@ -126,5 +140,11 @@ and open from the song's timeline.
 - **Shift a stretch**: set `shift_beats` on a window in `song.json` (whole beats; positive plays a later stretch of the
   cut) and re-assemble. The window is checked first: a window is made exactly as long as its passage, so a shift only
   fits where the window has picture to spare, and one that runs out is refused with the times it asks for.
+- **A window refused as short**: "window 2 (drop, passage 2) has 122 frames of picture for the 192 its slot plays: 70
+  short (2.92 s), more than the 2.67 s it may be held on its last frame (a bar; its plan ends on no rest); make that
+  passage again". The limit is a bar, or the rest the window's plan ends on and a beat when that is longer. Resume does not run a
+  window that is done: make the whole song again from the desk. Every morph already rendered comes from the morph
+  cache (the second plain Glitch Out rendered 6 of its 86), so it costs the windows' Makes around them, and a window's
+  QA no longer cuts its rest away.
 - **Run a window again**: Resume after a failure or a stop queues every window not done; a window that renders again
   takes its morphs from the cache.

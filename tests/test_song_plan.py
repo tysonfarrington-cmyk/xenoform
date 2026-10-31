@@ -151,6 +151,31 @@ def test_the_looks_take_the_loved_chains_where_they_fit_and_no_vibe_twice(drop, 
     assert not any(taste.demoted_vibe(v) for v in vibes)  # wet paint and the pink odd-machine stay out
 
 
+def test_the_vibe_you_chose_owns_the_heaviest_drop_run():
+    """The main drop run is the heaviest by heat times length, not the loudest moment's run alone (decided 1 Nov): on
+    ZedsDead v1 the drop's own run is 5.3 s at 2:20 and the 23.7 s run right after it took a vibe drawn by taste; the
+    vibe you chose now takes the 23.7 s run. A tie goes to the run the song's drop opens."""
+    runs = [("intro", 19.1, None, False), ("drop", 11.3, 1.0, False), ("drop", 11.7, 1.0, False), ("drop", 5.3, 1.0, True),
+            ("drop", 23.7, 1.0, False), ("outro", 8.4, None, False)]
+    passages, at = [], 0.0
+    for i, (role, secs, heat, drop_at) in enumerate(runs):
+        p = {"index": i, "role": role, "start": at, "end": at + secs, "seconds": secs, "morphs": 4, "windows": [i]}
+        if heat is not None:
+            p.update({"drop_run": len([q for q in passages if q.get("drop_run") is not None]), "heat": heat})
+        if drop_at:
+            p["drop_at"] = True
+        passages.append(p)
+        at += secs
+    assert song_plan.main_run(passages) == 4
+    passages[4]["main"] = True
+    looks = song_plan.looks(passages, _state(vibe="ferrofluid"))
+    assert looks[4]["vibe"] == "ferrofluid" and "main drop" in looks[4]["why"] and looks[3]["vibe"] != "ferrofluid"
+    tie = [{"index": 0, "role": "drop", "seconds": 20.0, "drop_run": 0, "heat": 0.5},
+           {"index": 1, "role": "drop", "seconds": 10.0, "drop_run": 1, "heat": 1.0, "drop_at": True}]
+    assert song_plan.main_run(tie) == 1  # as heavy both ways: the run the song's drop opens
+    assert song_plan.main_run([p for p in passages if p.get("drop_run") is None]) is None
+
+
 def test_a_preset_chosen_on_the_desk_goes_where_it_fits(drop):
     from xenoform import presets
 
