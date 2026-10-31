@@ -158,33 +158,58 @@ def veil_report(path: str | Path, fps: float = 24.0, beats: list[float] | None =
     return veil_counts(_grey_lumas(path), fps, beats)
 
 
+def held_end(freezes: list[tuple[float, float]], frames: int, fps: float) -> int:
+    """How many frames a cut ends on a held picture: its last freeze when that runs to the picture's own end (a rest
+    the cut closes on, held by design: Breathe holds a morph's landing), 0 when the cut ends moving (pure)."""
+    if not freezes or frames <= 0 or fps <= 0:
+        return 0
+    a, b = freezes[-1]
+    end = frames / float(fps)
+    return max(0, min(frames, int(round((end - float(a)) * fps)))) if float(b) >= end - 1.5 / fps else 0
+
+
 def lag_report(path: str | Path, fps: float = 24.0) -> dict:
+    """Lag in a finished cut: held or duplicate frames past ``max_dup_ratio`` (judder), several short freezes, an fps
+    that is not the project's. A held picture the cut ends on is not lag (``held_end``: a window closing on a rest, the
+    hold its design): its frames are left out of the duplicate count and its freeze out of the short ones."""
     r = _rule("lag_qa")
     info = probe(path)
     freezes = freeze_ranges(path, float(r.get("freeze_noise", 0.003)), float(r.get("freeze_min_s", 0.25)))
     total = max(1, info["frames"])
     kept = kept_frames(path) or total
-    dup = max(0.0, 1.0 - kept / total)
+    tail = held_end(freezes, total, info["fps"] or fps)
+    counted = max(1, total - max(0, tail - 1))  # the hold keeps its first frame; the rest of it is not judder
+    dup = max(0.0, 1.0 - kept / counted)
     frozen_s = sum(b - a for a, b in freezes)
     issues = []
     if abs(info["fps"] - fps) > 0.05:
         issues.append(f"fps {info['fps']} does not match the project's {fps}")
     if dup > float(r.get("max_dup_ratio", 0.15)):
         issues.append(f"{dup:.0%} duplicate/held frames (judder)")
-    short = [f for f in freezes if f[1] - f[0] <= float(r.get("lag_freeze_max_s", 0.6))]
+    inner = freezes[:-1] if tail else freezes
+    short = [f for f in inner if f[1] - f[0] <= float(r.get("lag_freeze_max_s", 0.6))]
     if len(short) >= int(r.get("max_short_freezes", 3)):
         issues.append(f"{len(short)} short freezes read as lag")
     return {"fps": info["fps"], "project_fps": fps, "frames": total, "kept": kept, "dup_ratio": round(dup, 4),
             "freezes": [[round(a, 3), round(b, 3)] for a, b in freezes], "frozen_s": round(frozen_s, 3),
-            "short_freezes": len(short), "issues": issues, "lag": bool(issues)}
+            "held_end_frames": tail, "short_freezes": len(short), "issues": issues, "lag": bool(issues)}
 
 
 def conform(src: str | Path, dest: str | Path, fps: float = 24.0, interpolate: bool = False) -> Path:
     """Re-time to the project fps. ``interpolate`` fills held frames by motion interpolation
-    (mpdecimate keeps the timestamps, minterpolate fills the gaps), so the length and sync stay."""
-    vf = f"mpdecimate,minterpolate=fps={fps}:mi_mode=mci:mc_mode=aobmc:vsbmc=1" if interpolate else f"fps={fps}"
+    (mpdecimate keeps the timestamps, minterpolate fills the gaps), so the length and sync stay. A held run at the very
+    end has no later frame to be filled toward, so mpdecimate's drop would end the picture where the hold began (a
+    window closing on a rest lost its last 2 s that way and its whole song drifted, 1 Nov): the ``fps`` after it holds
+    the last frame on to the picture's own end, so it keeps every frame it had, and never runs past it."""
+    vf = f"mpdecimate,minterpolate=fps={fps}:mi_mode=mci:mc_mode=aobmc:vsbmc=1,fps={fps}" if interpolate else f"fps={fps}"
+    keep: list[str] = []
+    if interpolate:
+        info = probe(src)
+        frames = int(round(info["frames"] * float(fps) / info["fps"])) if info["fps"] else int(info["frames"])
+        if frames > 0:
+            keep = ["-frames:v", str(frames)]
     dest = Path(dest)
-    subprocess.run([_ffmpeg(), "-v", "error", "-y", "-i", str(src), "-map", "0:v:0", "-map", "0:a?", "-vf", vf,
+    subprocess.run([_ffmpeg(), "-v", "error", "-y", "-i", str(src), "-map", "0:v:0", "-map", "0:a?", "-vf", vf, *keep,
                     "-c:v", "libx264", "-crf", "18", "-pix_fmt", "yuv420p", "-c:a", "copy", "-movflags", "+faststart",
                     str(dest)], check=True, timeout=1800)
     return dest
@@ -200,7 +225,8 @@ def fix_lag(path: str | Path, report: dict, fps: float = 24.0) -> dict:
     tmp = path.with_name(path.stem + ".qa.mp4")
     conform(path, tmp, fps, interpolate=interp)
     tmp.replace(path)
-    return {"fixed": True, "method": "interpolate held frames" if interp else f"conform to {fps} fps"}
+    return {"fixed": True, "method": "interpolate held frames" if interp else f"conform to {fps} fps",
+            "frames": [int(report.get("frames") or 0), int(probe(path)["frames"])]}
 
 
 # ------------------------------------------------------------------ sources
