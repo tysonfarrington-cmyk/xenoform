@@ -173,3 +173,24 @@ def test_the_foreshadow_comes_earlier_in_a_ramp():
     plan = F.plan(shots, ["a", "b", "c"], [i * 0.5 for i in range(16)], 24, "trace", {"lead_beats": 2.0},
                   read_edge=lambda clip, which: frame)
     assert plan[1]["lead"] > plan[0]["lead"]
+
+
+def _window(start: float, length: float = 30.0) -> dict:
+    """A Length window as the desk trims it: from the beat at or before ``start``, beats and sections shifted."""
+    f = json.loads((SONGS / "glitch-out.features.json").read_text(encoding="utf-8"))
+    beats = [float(b) for b in f["beats"]]
+    s0 = max([b for b in beats if b <= start + 1e-6] or [0.0])
+    return {"duration": length, "beats": [round(b - s0, 4) for b in beats if s0 <= b < s0 + length],
+            "sections": [{**s, "start": round(max(0.0, s["start"] - s0), 4), "end": round(min(length, s["end"] - s0), 4)}
+                         for s in f["sections"] if s["end"] > s0 and s["start"] < s0 + length]}
+
+
+def test_a_window_end_leaves_no_sliver():
+    """Nothing under two beats, the last shot included: the 1:45 window of Glitch Out under Breathe stopped 0.9 s into
+    its last ramp shot (the window ends where it ends, mid-bar); the end now folds into the shot before it."""
+    for start in (105.0, 0.0, 60.0):
+        for extra in ({"breathe": True}, {}, {"drop_mode": "max"}):
+            win = _window(start)
+            shots, plan, _ = _plan(song=win, drop=None, **extra)
+            assert plan["name"] == "story" and shots[-1]["end"] == 30.0
+            assert all(float(s["seconds"]) / BEAT >= 1.85 for s in shots), (start, extra, [round(s["seconds"], 2) for s in shots])

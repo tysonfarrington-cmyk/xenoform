@@ -481,6 +481,10 @@ def song_plan(duration: float, beats: list, sections: list[dict], drop: float | 
                     break
             if not taken or len(cuts) >= int(target):
                 break
+    # the end of the song (or of a Length window, cut where the window stops) leaves no sliver under two beats: the
+    # last cut folds into the shot before it (a 0.9 s last shot on the 1:45 window read as a flash cut)
+    while len(cuts) > 1 and duration - grid[cuts[-1][0]] < MIN_BEATS * period - 1e-6:
+        cuts = cuts[:-1]
     times = [grid[k] if n else 0.0 for n, (k, *_rest) in enumerate(cuts)] + [duration]
     shots = []
     for n, ((k, role, starts, pi, rest), b) in enumerate(zip(cuts, times[1:])):
