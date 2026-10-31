@@ -4,16 +4,26 @@ scenes morph".
 
 Track A: a scene pair on Final and Cloud is sent as a scene, as the Draft sends it: no "one object centred ... empty
 background above and below it" portrait sentence, its guide uncompressed, and its frame never crushed to black or re-laid
-as an object. No GPU and no Comfy Cloud here: fakes stand in for both."""
+as an object.
+
+Track B: a third kind of still, the setting: one object standing in a place that suits the vibe, the object still the
+hero and big in the frame. Its places, prompts, checks, zoom, grow, desk route and CLI. No GPU and no Comfy Cloud here:
+fakes stand in for both."""
 from __future__ import annotations
 
+import json
 import threading
 from pathlib import Path
 
 import numpy as np
+from PIL import Image, ImageFilter
 
 from xenoform import cloud_backend, cloud_final, dense, final_tier as ft, morph_pass as mp, portrait
+from xenoform import stills as S
 from xenoform.portrait import PROMPT_SUFFIX
+
+SETTING_VIBES = ("none", "liquid-gold", "neon-noir", "black", "bioluminescent", "shadow-self", "origami-noir", "iridescent-glass",
+                 "chrome-mercury", "botanical")
 
 
 # ---------------------------------------------------------------------------------------------- fakes
@@ -272,3 +282,247 @@ def test_the_crush_test_reads_the_first_object_not_an_opening_scene(tmp_path):
     assert dense.ground_is_black([{"path": str(scene), "kind": "scene"}, {"path": str(obj)}])  # the object's ground decides
     assert not dense.ground_is_black([{"path": str(scene)}])  # read as an object, the dusk sky is not black
     assert not dense.ground_is_black([{"path": str(scene), "kind": "scene"}])  # scenes alone: nothing to crush
+
+
+# ---------------------------------------------------------------------------------------------- Track B: the setting kind
+
+W, H = 512, 288
+
+
+def _setting(path: Path, *, r: float = 0.34, seed: int = 0, blur: float = 0.0, cx: float = 0.5) -> Path:
+    """A synthetic setting: a soft, textured place (a sky over a ground, blurred like a shallow depth of field) and one
+    sharp, finely textured object standing in front of it."""
+    rng = np.random.default_rng(seed)
+    yy, xx = np.mgrid[0:H, 0:W]
+    sky = np.stack([90 + 80 * (1 - yy / H), 60 + 60 * (1 - yy / H), 40 + 30 * (xx / W)], axis=-1)
+    ground = (yy > H * (0.62 + 0.03 * np.sin(xx / 23.0 + seed)))[..., None]
+    place = np.where(ground, np.array([120, 90, 50]) + 60 * rng.random((H, W, 1)), sky)
+    place = np.asarray(Image.fromarray(np.clip(place, 0, 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(4)), np.float32)
+    rr = r * H
+    disc = ((xx - cx * W) / rr) ** 2 + ((yy - 0.5 * H) / rr) ** 2 <= 1.0
+    texture = 140 + 100 * (rng.random((H, W, 1)) > 0.5)  # a crisp checker of grain: the object is in focus
+    out = np.where(disc[..., None], np.concatenate([texture, texture * 0.8, texture * 0.4], axis=-1), place)
+    im = Image.fromarray(np.clip(out, 0, 255).astype(np.uint8))
+    if blur:
+        im = im.filter(ImageFilter.GaussianBlur(blur))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    im.save(path)
+    return path
+
+
+def _grown_setting(vibe: str, name: str, noun: str, place: str, seed: int = 0) -> Path:
+    path = _setting(S.root() / vibe / name, seed=seed)
+    idx = S._read_json(S.index_path(), {})
+    idx.setdefault(vibe, []).append({"file": f"{vibe}/{name}", "noun": noun, "kind": "setting", "place": place})
+    S._write_json(S.index_path(), idx)
+    return path
+
+
+def test_every_setting_vibe_has_a_subject_first_template_and_six_to_eight_places():
+    data = json.loads(S.SETTINGS.read_text(encoding="utf-8"))
+    prompts = S.prompts()
+    bad = ("person", "people ", "woman", "man ", "face", "text", "letters", "logo", "sign ", "signs", "jellyfish")
+    for vibe in SETTING_VIBES:
+        places = data["vibes"][vibe]
+        assert 6 <= len(places) <= 8 and len(set(places)) == len(places), vibe
+        assert all(not any(w in p.lower() for w in bad) for p in places), vibe
+        assert all(p.split()[0] in ("on", "in", "under", "among", "above", "at", "beside") for p in places), vibe  # read after the object
+        tmpl = prompts[vibe]["setting"]
+        assert "{noun}" in tmpl and "{place}" in tmpl and tmpl.index("{noun}") < tmpl.index(".") < len(tmpl) // 4, vibe  # the subject leads
+        assert "no people" in tmpl and "no text" in tmpl and "key light" not in tmpl.lower(), vibe
+        assert "backdrop" not in tmpl and "void" not in tmpl, vibe  # the place is the ground now
+        assert "filling two thirds of the frame height" in tmpl, vibe  # big in the frame
+    assert 6 <= len(data["default"]) <= 8 and "{place}" in prompts["default"]["setting"]
+    assert S.place_list("some-new-vibe") == [S.clean_place(p) for p in data["default"]]
+    for row in prompts.values():  # every row still reads as an object prompt too (tests/test_stills.py)
+        assert "{noun}" in row["subject"]
+
+
+def test_a_setting_prompt_puts_the_object_first_in_its_place():
+    gold = S.prompt_for("liquid-gold", "scarab", "setting", place="on wind-rippled sand dunes at dusk")
+    assert gold.startswith("One single scarab cast in solid polished gold, on wind-rippled sand dunes at dusk. ")
+    assert "{" not in gold and "key light" not in gold.lower()
+    first = S.prompt_for("neon-noir", "lantern", "setting")  # no place given: the vibe's first place
+    assert S.place_list("neon-noir")[0] in first and first.startswith("One single lantern made of black wet lacquered glass")
+    # a vibe with no template: the default, with its material and its look minus the backdrop words
+    other = S.prompt_for("ferrofluid", "owl", "setting", place="on a stone ledge in soft light")
+    assert other.startswith("One single owl made of oily black magnetic fluid, on a stone ledge in soft light.")
+    assert "jet-black glossy ferrofluid" in other and "void" not in other and "{" not in other
+    cosmic = S.prompt_for("cosmic", "orb", "setting", place="on a rooftop at dusk")  # an original: its look is morph_pass's
+    assert "cobalt and violet glow" in cosmic and "backdrop" not in cosmic
+    assert S.prompt_for("cosmic", "orb") == S.prompt_for("cosmic", "orb", "object")  # objects as before
+    assert S.place_look("each object in its own real materials, soft natural studio light, plain dark grey backdrop, photorealistic") \
+        == "each object in its own real materials, photorealistic"
+
+
+def test_kind_counts_and_nouns_tell_settings_apart():
+    _grown_setting("cosmic", "000_owl.jpg", "owl", "on a rooftop at dusk")
+    assert S.kind_of({"kind": "setting"}) == "setting" and S.kind_of({"kind": "scene"}) == "scene" and S.kind_of({}) == "object"
+    assert S.kind_of({"kind": "weird"}) == "object"
+    assert S.counts("cosmic") == {"shipped": 12, "grown": 0, "own": 0, "scenes": 0, "settings": 1, "total": 13}
+    assert S.setting_nouns_in("cosmic") == {"owl"} and "owl" not in S.nouns_in("cosmic") - {"owl"}
+    assert S.grown()["cosmic"][0]["place"] == "on a rooftop at dusk"
+
+
+def test_a_setting_is_checked_like_a_scene(tmp_path):
+    pool = [Path(str(tmp_path / f"p{i}.png")) for i in range(6)]
+    for i, p in enumerate(pool):  # a pool of objects on a plain dark ground
+        a = np.full((H, W, 3), 10, np.uint8)
+        a[100:190, 180 + 6 * i:300 + 6 * i] = 200
+        Image.fromarray(a).save(p)
+    prof = S.profile(pool)
+    place = _setting(tmp_path / "scarab.png", seed=3)
+    as_object = S.check(place, prof)
+    assert not as_object["ok"] and set(as_object["why"]) <= {"backdrop", "size", "cropped"}
+    as_setting = S.check(place, prof, kind="setting")
+    assert as_setting["ok"] and as_setting["why"] == [] and as_setting["backdrop"] == 0.0
+    assert S.check(_setting(tmp_path / "soft.png", seed=3, blur=9.0), prof, kind="setting")["why"] == ["soft"]
+    again = S.check(_setting(tmp_path / "again.png", seed=3), prof, kind="setting", extra_greys=[as_setting["grey"]])
+    assert again["why"] == ["duplicate"]
+
+
+def test_the_hero_box_finds_the_object_in_its_place_and_the_fill_zoom_makes_a_small_one_big(tmp_path):
+    big = S.hero_box(_setting(tmp_path / "big.png", r=0.36))
+    assert big is not None and big[0] < 0.5 < big[2] and big[1] < 0.5 < big[3] and big[3] - big[1] >= 0.6
+    small_path = _setting(tmp_path / "small.png", r=0.13, seed=5)
+    small = S.hero_box(small_path)
+    assert small is not None and small[3] - small[1] < S.FILL_MIN["setting"] and small[0] < 0.5 < small[2]
+    im = Image.open(small_path).convert("RGB")
+    zoomed = S.normalise_scale(im, "setting")
+    assert zoomed.size == im.size and not np.array_equal(np.asarray(zoomed), np.asarray(im))
+    after = S.hero_box(zoomed)
+    assert after[3] - after[1] > (small[3] - small[1]) * 1.3  # the object is bigger in the frame
+    same = Image.open(_setting(tmp_path / "big2.png", r=0.36)).convert("RGB")
+    assert np.array_equal(np.asarray(S.normalise_scale(same, "setting")), np.asarray(same))  # a big hero is left alone
+    off = Image.open(_setting(tmp_path / "corner.png", r=0.12, cx=0.16)).convert("RGB")  # a sharp thing off to the side is no hero
+    assert np.array_equal(np.asarray(S.normalise_scale(off, "setting")), np.asarray(off))
+    assert S.FILL["setting"] > S.FILL["object"]  # a setting's object is held bigger than a plain one
+
+
+def test_ingest_keeps_a_setting_ungraded_zooms_it_by_its_fill_and_lists_its_place(tmp_path, monkeypatch):
+    graded, zoomed = [], []
+    monkeypatch.setattr(S, "grade", lambda im, vibe: (graded.append(vibe), im)[1])
+    real = S.normalise_scale
+    monkeypatch.setattr(S, "normalise_scale", lambda im, kind="object", fill=None: (zoomed.append(kind), real(im, kind, fill))[1])
+    v = S.ingest("liquid-gold", _setting(tmp_path / "scarab.png", seed=8), "scarab", kind="setting", place="on wind-rippled sand dunes at dusk", seed=42)
+    assert v["kept"] and v["file"].startswith("liquid-gold/000_scarab") and not graded and zoomed == ["setting"]
+    row = S.grown()["liquid-gold"][0]
+    assert row["kind"] == "setting" and row["place"] == "on wind-rippled sand dunes at dusk" and row["noun"] == "scarab" and row["seed"] == 42
+    again = S.ingest("liquid-gold", _setting(tmp_path / "scarab.png", seed=8), "scarab", kind="setting")
+    assert not again["kept"] and again["why"] == ["duplicate"]  # a duplicate of the first setting
+    assert S.counts("liquid-gold")["settings"] == 1
+
+
+def test_a_settings_plan_places_each_object_and_moves_on_round_the_places():
+    places = S.place_list("liquid-gold")
+    p = S.plan("liquid-gold", kind="setting", seed=4)
+    assert p["kind"] == "setting" and len(p["nouns"]) == S.DEFAULT_GROW_SETTINGS == len(p["places"])
+    assert set(p["places"]) <= set(places) and len(set(p["places"])) == min(len(places), len(p["places"]))
+    assert all(pr.startswith(f"One single {n} cast in solid polished gold, {pl}.") for n, pl, pr in zip(p["nouns"], p["places"], p["prompts"]))
+    assert S.plan("liquid-gold", kind="setting", seed=4)["places"] == p["places"]  # the desk plans, then grows the same
+    typed = S.plan("neon-noir", 3, nouns=["lantern", "the rose", "koi fish"], kind="setting")
+    assert typed["nouns"] == ["lantern", "rose", "koi fish"] and typed["places"] == S.place_list("neon-noir")[:3] and not typed["own"]
+    assert S.places_for("neon-noir", 2, start=7) == [S.place_list("neon-noir")[7 % 8], S.place_list("neon-noir")[0]]
+
+
+class _GrowClient:
+    """A comfy-sdk client whose renders are synthetic settings (the shape tests/test_stills.py's fake uses)."""
+
+    def __init__(self):
+        self.prompts = []
+
+    class _WF:
+        def __init__(self):
+            self.inputs = {}
+
+        def set_input(self, node, name, value):
+            self.inputs[(node, name)] = value
+
+    @property
+    def workflows(self):
+        class WFs:
+            def from_file(self, path):
+                assert Path(path).name == "zimage_t2i_api.json"
+                return _GrowClient._WF()
+
+        return WFs()
+
+    def submit(self, wf):
+        self.prompts.append(wf.inputs[(S.N_TEXT, "text")])
+        k = len(self.prompts) - 1
+
+        class Out:
+            def to_file(self, path):
+                _setting(Path(path), seed=30 + k, r=0.34)
+
+        class Result:
+            outputs = []
+
+            def get_outputs(self, node):
+                return [Out()]
+
+        class Job:
+            def result(self):
+                return Result()
+
+        return Job()
+
+
+def test_grow_with_kind_setting_renders_each_object_in_its_place_and_lists_settings():
+    fake = _GrowClient()
+    res = S.grow("neon-noir", 3, nouns=["lantern", "rose", "koi fish"], client=fake, seed=9, kind="setting", sheet=True)
+    assert res["kind"] == "setting" and res["kept"] == 3 and res["rejected"] == {} and len(res["places"]) == 3
+    assert [p.split(",")[0] for p in fake.prompts] == ["One single lantern made of black wet lacquered glass",
+                                                        "One single rose made of black wet lacquered glass",
+                                                        "One single koi fish made of black wet lacquered glass"]
+    assert all(pl in pr for pl, pr in zip(res["places"], fake.prompts))
+    rows = S.grown()["neon-noir"]
+    assert [r["kind"] for r in rows] == ["setting"] * 3 and [r["place"] for r in rows] == res["places"]
+    assert Path(res["sheet"]).name == "settings.jpg" and S.counts("neon-noir")["settings"] == 3
+    nxt = S.plan("neon-noir", 2, kind="setting")  # the next grow moves on to the places not reached yet
+    assert nxt["places"] == S.places_for("neon-noir", 2, start=3)
+
+
+def test_the_desk_grows_settings_and_counts_them(monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from xenoform import ui as _ui
+
+    client = TestClient(_ui.create_app())
+    got = client.get("/api/stills?vibe=liquid-gold").json()
+    assert got["default_grow_settings"] == S.DEFAULT_GROW_SETTINGS and got["setting_places"] == len(S.place_list("liquid-gold"))
+    assert got["have"]["settings"] == 0
+    monkeypatch.setattr(S, "available", lambda cfg=None, **kw: {"ok": True, "note": ""})
+    calls = {}
+
+    def fake_grow(vibe, count=36, *, nouns=None, own=False, cfg=None, seed=None, progress=None, cancel=None, client=None, sheet=True,
+                  kind="object"):
+        calls.update({"vibe": vibe, "count": count, "nouns": nouns, "own": own, "kind": kind})
+        progress(1, 1, 1)
+        return {"vibe": vibe, "kind": kind, "asked": 1, "made": 1, "kept": 1, "rejected": {}, "files": [], "seconds": 1.0, "nouns": nouns}
+
+    monkeypatch.setattr(S, "grow", fake_grow)
+    try:
+        started = client.post("/api/stills/grow", json={"vibe": "liquid-gold", "kind": "setting", "nouns": "scarab, owl"}).json()
+        assert started["ok"] and started["kind"] == "setting" and started["nouns"] == ["scarab", "owl"]
+        assert started["places"] == S.place_list("liquid-gold")[:2]
+        import time as _t
+
+        for _ in range(50):
+            job = client.get("/api/stills").json()["job"]
+            if job.get("status") == "done":
+                break
+            _t.sleep(0.05)
+        assert job["status"] == "done" and job["kind"] == "setting"
+        assert calls["kind"] == "setting" and calls["nouns"] == ["scarab", "owl"] and calls["own"] is False
+    finally:
+        with _ui._LOCK:
+            _ui._STILLS_JOB.clear()
+
+
+def test_the_cli_grows_settings(capsys):
+    from xenoform import cli
+
+    cli.main(["stills", "grow", "liquid-gold", "--kind", "setting", "--nouns", "scarab", "--plan", "--seed", "1"])
+    out = capsys.readouterr().out
+    assert "scarab: One single scarab cast in solid polished gold, " in out and "1 settings" in out

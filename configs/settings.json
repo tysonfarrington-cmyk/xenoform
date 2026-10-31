@@ -1,0 +1,100 @@
+{
+ "version": 1,
+ "note": "Settings: one object standing in a place that suits the vibe, the object still the hero, large and readable, the place behind it in soft focus (Tys, 30 Oct: \"the blank background really kills these ones ... maybe bigger objects?\"). Each place is the phrase the prompt puts after the object (\"One single scarab cast in solid polished gold, on wind-rippled sand dunes at dusk.\"), so it starts with its preposition. No people, no text, no signage, no second creature. A vibe without a list draws on the default list. Grown with `xenoform stills grow <vibe> --kind setting`, listed with kind: setting and the place on the row, and used by the Simple make body's backdrop choice (places).",
+ "default": [
+  "on a stone ledge in soft light",
+  "on a weathered wooden table by a window",
+  "on a sandy shore at dusk",
+  "on a mossy rock in a quiet forest",
+  "on a polished floor in an empty hall",
+  "on a rooftop at dusk, the city blurred behind"
+ ],
+ "vibes": {
+  "none": [
+   "on mossy rocks beside a forest stream",
+   "on a sandy beach at golden hour",
+   "on a weathered wooden table by a sunlit window",
+   "on a stone ledge in an old library",
+   "on a workbench in a dusty workshop",
+   "on a snowy hillside under a pale winter sky",
+   "in a rock pool on a sunny shore",
+   "on a grassy meadow at dawn"
+  ],
+  "liquid-gold": [
+   "on wind-rippled sand dunes at dusk",
+   "on the polished stone floor of an ancient temple, shafts of warm light",
+   "on cracked desert earth under a glowing amber sky",
+   "on the shore of a still golden lake at sunset",
+   "on the steps of a sandstone ruin at golden hour",
+   "on a marble plinth in a candlelit hall",
+   "on a shore of black volcanic sand, pools of molten gold glowing",
+   "on a terrace above a hazy amber valley at dusk"
+  ],
+  "neon-noir": [
+   "on a rain-slick street at night, neon lights blurred behind",
+   "in a narrow alley at night, puddles mirroring magenta and cyan neon",
+   "on a wet rooftop at night, a blurred city skyline glowing behind",
+   "on the wet steps of a subway entrance at night",
+   "on a wet pier at night, neon reflections on black water",
+   "under a bridge at night, rain falling through magenta and cyan light",
+   "on the rain-beaded bonnet of a black car in a neon-lit street",
+   "in a flooded car park at night under magenta and sodium light"
+  ],
+  "black": [
+   "on wet black obsidian under drifting mist",
+   "on still black water, low mist drifting",
+   "on a black basalt shore at night",
+   "on a black marble floor in a dark empty hall",
+   "on black volcanic sand under a starless sky",
+   "among black stones in a dark cave, a thin mist"
+  ],
+  "bioluminescent": [
+   "on the dark sea floor among glowing coral",
+   "among swaying kelp in a dark ocean",
+   "above a deep-sea trench glowing faintly",
+   "in a dark underwater cave with glowing plankton",
+   "on a bed of glowing sea anemones in the abyss",
+   "in dark open water among drifting glowing particles"
+  ],
+  "shadow-self": [
+   "in an empty stone corridor",
+   "at the top of a dark staircase",
+   "in the doorway of a ruined chapel",
+   "on a bare concrete floor in an empty warehouse",
+   "on a misty empty street at night",
+   "under a high arched window in an empty hall"
+  ],
+  "origami-noir": [
+   "on a folded paper landscape of black and gold hills",
+   "in a folded black paper forest with gold leaves",
+   "on a black paper rooftop under a folded gold moon",
+   "on a black paper bridge over folded paper water",
+   "in a folded black paper garden with gold paper flowers",
+   "in a folded black paper cave lit by gold foil"
+  ],
+  "iridescent-glass": [
+   "on a sunlit glass table by a tall window",
+   "on wet pebbles at the edge of a bright lake",
+   "on a white salt flat under a pale sky",
+   "on a marble windowsill in morning light",
+   "in a greenhouse full of soft daylight",
+   "on a snowy ledge in bright winter sun"
+  ],
+  "chrome-mercury": [
+   "on a mirror-flat salt flat under a soft gradient sky",
+   "on the polished floor of an empty modern gallery",
+   "on a black glass rooftop at dusk, city lights blurred behind",
+   "on a calm sea of mercury under a grey sky",
+   "on a brushed steel platform in a vast hangar",
+   "on white sand dunes under a pale sky"
+  ],
+  "botanical": [
+   "on a mossy forest floor in soft morning light",
+   "in a dew-covered meadow at dawn",
+   "on a riverbank among ferns",
+   "in a sunlit greenhouse",
+   "in a shaded rainforest understory",
+   "in a misty garden at first light"
+  ]
+ }
+}
