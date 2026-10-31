@@ -48,21 +48,90 @@ def _grown(vibe: str, name: str, noun: str, r: float = 0.18, **row) -> Path:
 # ---------------------------------------------------------------------------------------------- catalogue
 
 
+def _seed_set(monkeypatch, vibe: str = "cosmic", n: int = 12) -> int:
+    """The shipped pool cut back to its original ``n`` stills (the repo has since added the stills the finished cuts
+    show), for the tests that count a pool: ``morph_pass.manifest`` is what the chain reads."""
+    real = mp.manifest()
+    monkeypatch.setattr(mp, "manifest", lambda: {**real, vibe: real[vibe][:n]})
+    return n
+
+
 def test_catalogue_merges_shipped_and_grown_and_drops_deleted_files():
-    assert L.counts("cosmic") == {"shipped": 12, "grown": 0, "own": 0, "scenes": 0, "total": 12}
+    n = len(L.shipped()["cosmic"])
+    assert L.counts("cosmic") == {"shipped": n, "grown": 0, "own": 0, "scenes": 0, "total": n}
     _grown("cosmic", "000_astrolabe.jpg", "astrolabe")
     _grown("cosmic", "001_gone.jpg", "gone")
     (L.root() / "cosmic" / "001_gone.jpg").unlink()  # deleting the jpg is the cull
     rows = L.catalogue()["cosmic"]
-    assert len(rows) == 13 and rows[0]["shipped"] and not rows[-1]["shipped"]
+    assert len(rows) == n + 1 and rows[0]["shipped"] and not rows[-1]["shipped"]
     assert rows[-1]["noun"] == "astrolabe" and Path(rows[-1]["path"]).is_file()
     assert L.counts("cosmic")["grown"] == 1 and "astrolabe" in L.nouns_in("cosmic")
-    assert "cosmic" in mp.catalogue() and len(mp.catalogue()["cosmic"]) == 13
+    assert "cosmic" in mp.catalogue() and len(mp.catalogue()["cosmic"]) == n + 1
     _grown("brand-new", "000_thing.jpg", "thing")
     assert mp.vibe_for({"vibe": "brand-new"}) == "liquid-gold"  # one grown still is not a pool yet: the fallback carries it
     _grown("brand-new", "001_other.jpg", "other")
     _grown("brand-new", "002_third.jpg", "third")
     assert mp.vibe_for({"vibe": "brand-new"}) == "brand-new"  # three grown stills alone make a pool
+
+
+def _grown_copy(src: Path, vibe: str, name: str, noun: str, **row) -> Path:
+    """A grown still that is a byte copy of ``src`` (a shipped still), on disk and in stills.json."""
+    dest = L.root() / vibe / name
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_bytes(src.read_bytes())
+    idx = L._read_json(L.index_path(), {})
+    idx.setdefault(vibe, []).append({"file": f"{vibe}/{name}", "noun": noun, **row})
+    L._write_json(L.index_path(), idx)
+    return dest
+
+
+def test_a_shipped_copy_of_a_grown_still_is_listed_once_as_the_grown_row():
+    """The repo ships copies of the stills the finished cuts show, under the file name the author's machine grew them
+    with; there the catalogue lists each once, as the grown row (it carries ``own``, the usage and the cull)."""
+    ship = L.shipped()["ocean"]
+    twin = ship[3]
+    _grown_copy(L.SHIPPED / twin["file"], "ocean", Path(twin["file"]).name, twin["noun"], own=True)
+    rows = L.catalogue()["ocean"]
+    hits = [r for r in rows if r["file"] == twin["file"]]
+    assert len(rows) == len(ship) and len(hits) == 1 and not hits[0]["shipped"] and hits[0].get("own")
+    assert L.counts("ocean") == {"shipped": len(ship) - 1, "grown": 0, "own": 1, "scenes": 0, "total": len(ship)}
+    assert len(mp.catalogue()["ocean"]) == len(ship)  # the chain's pool is the deduplicated one
+    _, picked = mp.pick_stills({"vibe": "ocean", "chain_pins": {"1": twin["file"]}}, 4, record=False)
+    assert picked[1]["file"] == twin["file"] and picked[1]["pinned"] and len({p["file"] for p in picked}) == 4
+
+
+def test_a_cull_holds_when_the_repo_ships_a_copy():
+    """Deleting the grown jpg is the cull (``grown()`` drops the row), but stills.json still lists it: the shipped copy
+    must not come back on the machine that culled it."""
+    ship = L.shipped()["ocean"]
+    twin = ship[5]
+    dest = _grown_copy(L.SHIPPED / twin["file"], "ocean", Path(twin["file"]).name, twin["noun"])
+    dest.unlink()
+    assert twin["file"] not in {r["file"] for r in L.catalogue()["ocean"]}
+    assert len(L.catalogue()["ocean"]) == len(ship) - 1
+    # a machine that never grew it (an empty index) lists the shipped copy
+    L.index_path().unlink()
+    assert twin["file"] in {r["file"] for r in L.catalogue()["ocean"]}
+
+
+def test_the_same_picture_under_another_name_is_a_twin_but_another_picture_is_not():
+    ship = L.shipped()["ocean"]
+    same, other = ship[1], ship[2]
+    _grown_copy(L.SHIPPED / same["file"], "ocean", "900_renamed.jpg", same["noun"].upper())  # same noun (any case), same bytes
+    _grown("ocean", "901_other.jpg", other["noun"])  # same noun, another picture
+    files = {r["file"] for r in L.catalogue()["ocean"]}
+    assert same["file"] not in files and "ocean/900_renamed.jpg" in files
+    assert other["file"] in files and "ocean/901_other.jpg" in files
+
+
+def test_a_still_is_hashed_only_when_a_noun_matches(monkeypatch):
+    calls = []
+    real = L._sha1
+    monkeypatch.setattr(L, "_sha1", lambda p: calls.append(p) or real(p))
+    L.catalogue()
+    _grown("ocean", "900_thing.jpg", "a noun no shipped still has")
+    L.catalogue()
+    assert calls == []
 
 
 def test_order_fresh_puts_own_shapes_first_then_the_least_used():
@@ -73,7 +142,8 @@ def test_order_fresh_puts_own_shapes_first_then_the_least_used():
     assert L.usage()["_tick"] == 2
 
 
-def test_pick_stills_prefers_what_the_last_cut_left_alone_and_own_shapes_lead():
+def test_pick_stills_prefers_what_the_last_cut_left_alone_and_own_shapes_lead(monkeypatch):
+    _seed_set(monkeypatch)  # twelve stills: the arithmetic below is a twelve-still pool's
     _, first = mp.pick_stills({"vibe": "cosmic"}, 5)
     _, second = mp.pick_stills({"vibe": "cosmic"}, 5)
     assert not {s["file"] for s in first} & {s["file"] for s in second}  # twelve stills: the second cut takes fresh ones
@@ -321,7 +391,8 @@ def test_desk_routes_count_grow_and_stop(monkeypatch):
 
     client = TestClient(_ui.create_app())
     got = client.get("/api/stills?vibe=cosmic").json()
-    assert got["counts"]["cosmic"]["shipped"] == 12 and got["have"]["total"] == 12 and got["subjects_left"] > 100
+    n = len(L.shipped()["cosmic"])
+    assert got["counts"]["cosmic"]["shipped"] == n and got["have"]["total"] == n and got["subjects_left"] > 100
     assert got["job"] == {} and got["default_grow"] == L.DEFAULT_GROW
     monkeypatch.setattr(L, "available", lambda cfg=None, **kw: {"ok": False, "note": "ComfyUI is not answering"})
     assert client.post("/api/stills/grow", json={"vibe": "cosmic"}).status_code == 503

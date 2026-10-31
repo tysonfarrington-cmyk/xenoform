@@ -71,6 +71,186 @@
    "noun": "cube",
    "finish": "liquid mercury",
    "source": "library/gpu_objects/cube_mercury.png (regraded)"
+  },
+  {
+   "file": "liquid-gold/004_dragonfly.jpg",
+   "noun": "dragonfly",
+   "finish": "liquid mercury",
+   "source": "Z-Image Turbo (Apache 2.0), seed 5108, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "liquid-gold/021_bird_skull.jpg",
+   "noun": "bird skull",
+   "finish": "liquid mercury",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4026, 1024x576, prompt configs/still_prompts.json liquid-gold prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "liquid-gold/052_honeybee.jpg",
+   "noun": "honeybee",
+   "finish": "liquid mercury",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1992267605, 1024x576, prompt configs/still_prompts.json liquid-gold prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "liquid-gold/076_enchanted_rose_under_glass.jpg",
+   "noun": "enchanted rose under glass",
+   "finish": "liquid mercury",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2014844580, 1024x576, prompt configs/still_prompts.json liquid-gold prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "liquid-gold/077_gargoyle_head.jpg",
+   "noun": "gargoyle head",
+   "finish": "liquid mercury",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2014844581, 1024x576, prompt configs/still_prompts.json liquid-gold prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "liquid-gold/082_runed_elven_crown.jpg",
+   "noun": "runed elven crown",
+   "finish": "liquid mercury",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2014844586, 1024x576, prompt configs/still_prompts.json liquid-gold prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "liquid-gold/083_chained_grimoire.jpg",
+   "noun": "chained grimoire",
+   "finish": "liquid mercury",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2014844587, 1024x576, prompt configs/still_prompts.json liquid-gold prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "liquid-gold/088_giant_acorn_with_a_tiny_door.jpg",
+   "noun": "giant acorn with a tiny door",
+   "finish": "liquid mercury",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2014844592, 1024x576, prompt configs/still_prompts.json liquid-gold prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "liquid-gold/090_wind_up_beetle_automaton.jpg",
+   "noun": "wind-up beetle automaton",
+   "finish": "liquid mercury",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2014844594, 1024x576, prompt configs/still_prompts.json liquid-gold prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "liquid-gold/094_dragon_skull_with_curling_horns.jpg",
+   "noun": "dragon skull with curling horns",
+   "finish": "liquid mercury",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2014844598, 1024x576, prompt configs/still_prompts.json liquid-gold prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "liquid-gold/095_throne_of_bones.jpg",
+   "noun": "throne of bones",
+   "finish": "liquid mercury",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2014844599, 1024x576, prompt configs/still_prompts.json liquid-gold prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "liquid-gold/100_dragon_claw_holding_a_gem.jpg",
+   "noun": "dragon claw holding a gem",
+   "finish": "liquid mercury",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2014844604, 1024x576, prompt configs/still_prompts.json liquid-gold prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "liquid-gold/101_raven_skull.jpg",
+   "noun": "raven skull",
+   "finish": "liquid mercury",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2014844605, 1024x576, prompt configs/still_prompts.json liquid-gold prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "liquid-gold/105_crystal_orb_on_a_claw_stand.jpg",
+   "noun": "crystal orb on a claw stand",
+   "finish": "liquid mercury",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2014844610, 1024x576, prompt configs/still_prompts.json liquid-gold prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "liquid-gold/111_jewelled_dragon_egg.jpg",
+   "noun": "jewelled dragon egg",
+   "finish": "liquid mercury",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2014844616, 1024x576, prompt configs/still_prompts.json liquid-gold prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "liquid-gold/112_skull_crowned_with_candles.jpg",
+   "noun": "skull crowned with candles",
+   "finish": "liquid mercury",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2014844617, 1024x576, prompt configs/still_prompts.json liquid-gold prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "liquid-gold/172_phoenix.jpg",
+   "noun": "phoenix",
+   "finish": "liquid mercury",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1175089973, 1024x576, prompt configs/still_prompts.json liquid-gold prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "liquid-gold/173_lion_head.jpg",
+   "noun": "lion head",
+   "finish": "liquid mercury",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1175089974, 1024x576, prompt configs/still_prompts.json liquid-gold prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "liquid-gold/174_dragon.jpg",
+   "noun": "dragon",
+   "finish": "liquid mercury",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1175089975, 1024x576, prompt configs/still_prompts.json liquid-gold prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "liquid-gold/175_eagle.jpg",
+   "noun": "eagle",
+   "finish": "liquid mercury",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1175089976, 1024x576, prompt configs/still_prompts.json liquid-gold prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "liquid-gold/176_infinity_knot.jpg",
+   "noun": "infinity knot",
+   "finish": "liquid mercury",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1175089977, 1024x576, prompt configs/still_prompts.json liquid-gold prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "liquid-gold/177_scarab_beetle.jpg",
+   "noun": "scarab beetle",
+   "finish": "liquid mercury",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1876366221, 1024x576, prompt configs/still_prompts.json liquid-gold prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "liquid-gold/178_koi.jpg",
+   "noun": "koi",
+   "finish": "liquid mercury",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1876366222, 1024x576, prompt configs/still_prompts.json liquid-gold prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "liquid-gold/179_butterfly.jpg",
+   "noun": "butterfly",
+   "finish": "liquid mercury",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1792761437, 1024x576, prompt configs/still_prompts.json liquid-gold prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "liquid-gold/180_moth.jpg",
+   "noun": "moth",
+   "finish": "liquid mercury",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1792761438, 1024x576, prompt configs/still_prompts.json liquid-gold prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "liquid-gold/181_luna_moth.jpg",
+   "noun": "luna moth",
+   "finish": "liquid mercury",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1792761439, 1024x576, prompt configs/still_prompts.json liquid-gold prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "liquid-gold/182_praying_mantis.jpg",
+   "noun": "praying mantis",
+   "finish": "liquid mercury",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1792761443, 1024x576, prompt configs/still_prompts.json liquid-gold prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "liquid-gold/186_stag_beetle.jpg",
+   "noun": "stag beetle",
+   "finish": "liquid mercury",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1393760380, 1024x576, prompt configs/still_prompts.json liquid-gold prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "liquid-gold/187_rhinoceros_beetle.jpg",
+   "noun": "rhinoceros beetle",
+   "finish": "liquid mercury",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1393760381, 1024x576, prompt configs/still_prompts.json liquid-gold prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "liquid-gold/189_hummingbird.jpg",
+   "noun": "hummingbird",
+   "finish": "liquid mercury",
+   "source": "Z-Image Turbo (Apache 2.0), seed 954009194, 1024x576, prompt configs/still_prompts.json liquid-gold prefix and subject sentence, grown 2026-10-30"
   }
  ],
  "bloom": [
@@ -293,6 +473,96 @@
    "noun": "droplet",
    "finish": "dark iridescent enamel",
    "source": "library/gpu_objects/droplet_gr.png (regraded)"
+  },
+  {
+   "file": "ocean/002_sea_anemone.jpg",
+   "noun": "sea anemone",
+   "finish": "dark iridescent enamel",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4019, 1024x576, prompt configs/still_prompts.json ocean prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "ocean/003_anglerfish.jpg",
+   "noun": "anglerfish",
+   "finish": "dark iridescent enamel",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4020, 1024x576, prompt configs/still_prompts.json ocean prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "ocean/030_axolotl.jpg",
+   "noun": "axolotl",
+   "finish": "dark iridescent enamel",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4052, 1024x576, prompt configs/still_prompts.json ocean prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "ocean/034_seahorse.jpg",
+   "noun": "seahorse",
+   "finish": "dark iridescent enamel",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1420987399, 1024x576, prompt configs/still_prompts.json ocean prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "ocean/035_octopus.jpg",
+   "noun": "octopus",
+   "finish": "dark iridescent enamel",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1420987400, 1024x576, prompt configs/still_prompts.json ocean prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "ocean/036_starfish.jpg",
+   "noun": "starfish",
+   "finish": "dark iridescent enamel",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1420987401, 1024x576, prompt configs/still_prompts.json ocean prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "ocean/037_sea_turtle.jpg",
+   "noun": "sea turtle",
+   "finish": "dark iridescent enamel",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1420987402, 1024x576, prompt configs/still_prompts.json ocean prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "ocean/040_cuttlefish.jpg",
+   "noun": "cuttlefish",
+   "finish": "dark iridescent enamel",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1420987405, 1024x576, prompt configs/still_prompts.json ocean prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "ocean/045_kraken.jpg",
+   "noun": "kraken",
+   "finish": "dark iridescent enamel",
+   "source": "Z-Image Turbo (Apache 2.0), seed 486447261, 1024x576, prompt configs/still_prompts.json ocean prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "ocean/047_hammerhead_shark.jpg",
+   "noun": "hammerhead shark",
+   "finish": "dark iridescent enamel",
+   "source": "Z-Image Turbo (Apache 2.0), seed 486447263, 1024x576, prompt configs/still_prompts.json ocean prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "ocean/049_lionfish.jpg",
+   "noun": "lionfish",
+   "finish": "dark iridescent enamel",
+   "source": "Z-Image Turbo (Apache 2.0), seed 788783034, 1024x576, prompt configs/still_prompts.json ocean prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "ocean/063_leafy_sea_dragon.jpg",
+   "noun": "leafy sea dragon",
+   "finish": "dark iridescent enamel",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1041152029, 1024x576, prompt configs/still_prompts.json ocean prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "ocean/068_leviathan_whale.jpg",
+   "noun": "leviathan whale",
+   "finish": "dark iridescent enamel",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1707304894, 1024x576, prompt configs/still_prompts.json ocean prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "ocean/072_clownfish.jpg",
+   "noun": "clownfish",
+   "finish": "dark iridescent enamel",
+   "source": "Z-Image Turbo (Apache 2.0), seed 888706470, 1024x576, prompt configs/still_prompts.json ocean prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "ocean/073_brain_coral.jpg",
+   "noun": "brain coral",
+   "finish": "dark iridescent enamel",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1123972752, 1024x576, prompt configs/still_prompts.json ocean prefix and subject sentence, grown 2026-10-30"
   }
  ],
  "cosmic": [
@@ -367,6 +637,102 @@
    "noun": "torus knot",
    "finish": "dark iridescent enamel",
    "source": "library/gpu_objects/torus_knot_gr.png (regraded)"
+  },
+  {
+   "file": "cosmic/029_accretion_disc.jpg",
+   "noun": "accretion disc",
+   "finish": "iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 3020, 1024x576, prompt configs/still_prompts.json cosmic prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "cosmic/035_spiral_galaxy.jpg",
+   "noun": "spiral galaxy",
+   "finish": "iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 3027, 1024x576, prompt configs/still_prompts.json cosmic prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "cosmic/072_jetpack.jpg",
+   "noun": "jetpack",
+   "finish": "iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1580130730, 1024x576, prompt configs/still_prompts.json cosmic prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "cosmic/073_lunar_rover.jpg",
+   "noun": "lunar rover",
+   "finish": "iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1580130731, 1024x576, prompt configs/still_prompts.json cosmic prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "cosmic/074_ray_gun.jpg",
+   "noun": "ray gun",
+   "finish": "iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1580130732, 1024x576, prompt configs/still_prompts.json cosmic prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "cosmic/075_astronaut_glove.jpg",
+   "noun": "astronaut glove",
+   "finish": "iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1580130733, 1024x576, prompt configs/still_prompts.json cosmic prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "cosmic/076_brass_orrery.jpg",
+   "noun": "brass orrery",
+   "finish": "iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1580130734, 1024x576, prompt configs/still_prompts.json cosmic prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "cosmic/077_oxygen_tank.jpg",
+   "noun": "oxygen tank",
+   "finish": "iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1580130735, 1024x576, prompt configs/still_prompts.json cosmic prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "cosmic/078_radio_telescope.jpg",
+   "noun": "radio telescope",
+   "finish": "iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1580130736, 1024x576, prompt configs/still_prompts.json cosmic prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "cosmic/096_saturn_ring.jpg",
+   "noun": "saturn ring",
+   "finish": "iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 130386341, 1024x576, prompt configs/still_prompts.json cosmic prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "cosmic/097_escape_pod.jpg",
+   "noun": "escape pod",
+   "finish": "iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 130386342, 1024x576, prompt configs/still_prompts.json cosmic prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "cosmic/098_comet.jpg",
+   "noun": "comet",
+   "finish": "iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 262001760, 1024x576, prompt configs/still_prompts.json cosmic prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "cosmic/103_meteorite.jpg",
+   "noun": "meteorite",
+   "finish": "iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 262001765, 1024x576, prompt configs/still_prompts.json cosmic prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "cosmic/109_cratered_moon.jpg",
+   "noun": "cratered moon",
+   "finish": "iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1224549223, 1024x576, prompt configs/still_prompts.json cosmic prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "cosmic/111_eclipse_disc.jpg",
+   "noun": "eclipse disc",
+   "finish": "iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1224549226, 1024x576, prompt configs/still_prompts.json cosmic prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "cosmic/113_moon_globe.jpg",
+   "noun": "moon globe",
+   "finish": "iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1224549229, 1024x576, prompt configs/still_prompts.json cosmic prefix and subject sentence, grown 2026-10-30"
   }
  ],
  "paper-summer": [
@@ -545,6 +911,12 @@
    "noun": "liquid orb",
    "finish": "iridescent liquid metal",
    "source": "library/gpu_objects/soap_orb_gr.png (cut out onto pure black)"
+  },
+  {
+   "file": "black/011_ammonite.jpg",
+   "noun": "ammonite",
+   "finish": "iridescent liquid metal",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4022, 1024x576, prompt configs/still_prompts.json black prefix and subject sentence, grown 2026-10-25"
   }
  ],
  "chrome-mercury": [
@@ -619,6 +991,78 @@
    "noun": "butterfly",
    "finish": "liquid mirror chrome",
    "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "chrome-mercury/074_potion_bottle_of_swirling_light.jpg",
+   "noun": "potion bottle of swirling light",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1268107356, 1024x576, prompt configs/still_prompts.json chrome-mercury prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "chrome-mercury/084_griffin_statue.jpg",
+   "noun": "griffin statue",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1268107368, 1024x576, prompt configs/still_prompts.json chrome-mercury prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "chrome-mercury/085_raven_skull.jpg",
+   "noun": "raven skull",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1268107369, 1024x576, prompt configs/still_prompts.json chrome-mercury prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "chrome-mercury/091_throne_of_bones.jpg",
+   "noun": "throne of bones",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1268107375, 1024x576, prompt configs/still_prompts.json chrome-mercury prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "chrome-mercury/096_elven_chainmail_gauntlet.jpg",
+   "noun": "elven chainmail gauntlet",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1268107380, 1024x576, prompt configs/still_prompts.json chrome-mercury prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "chrome-mercury/100_skull_crowned_with_candles.jpg",
+   "noun": "skull crowned with candles",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1268107387, 1024x576, prompt configs/still_prompts.json chrome-mercury prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "chrome-mercury/105_floating_island_with_a_tiny_castle.jpg",
+   "noun": "floating island with a tiny castle",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1268107392, 1024x576, prompt configs/still_prompts.json chrome-mercury prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "chrome-mercury/106_ritual_dagger_with_a_bone_hilt.jpg",
+   "noun": "ritual dagger with a bone hilt",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1268107393, 1024x576, prompt configs/still_prompts.json chrome-mercury prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "chrome-mercury/117_enchanted_rose_under_glass.jpg",
+   "noun": "enchanted rose under glass",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1268107404, 1024x576, prompt configs/still_prompts.json chrome-mercury prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "chrome-mercury/161_great_white_shark.jpg",
+   "noun": "great white shark",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2000985011, 1024x576, prompt configs/still_prompts.json chrome-mercury prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "chrome-mercury/162_bull.jpg",
+   "noun": "bull",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2000985012, 1024x576, prompt configs/still_prompts.json chrome-mercury prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "chrome-mercury/163_ram.jpg",
+   "noun": "ram",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2000985013, 1024x576, prompt configs/still_prompts.json chrome-mercury prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
   }
  ],
  "ferrofluid": [
@@ -693,6 +1137,108 @@
    "noun": "butterfly",
    "finish": "oily black magnetic fluid",
    "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "ferrofluid/014_comet.jpg",
+   "noun": "comet",
+   "finish": "oily black magnetic fluid",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4022, 1024x576, prompt configs/still_prompts.json ferrofluid prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "ferrofluid/032_octopus.jpg",
+   "noun": "octopus",
+   "finish": "oily black magnetic fluid",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4042, 1024x576, prompt configs/still_prompts.json ferrofluid prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "ferrofluid/046_all_seeing_eye.jpg",
+   "noun": "all-seeing eye",
+   "finish": "oily black magnetic fluid",
+   "source": "Z-Image Turbo (Apache 2.0), seed 844090789, 1024x576, prompt configs/still_prompts.json ferrofluid prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "ferrofluid/047_anatomical_heart.jpg",
+   "noun": "anatomical heart",
+   "finish": "oily black magnetic fluid",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1542858596, 1024x576, prompt configs/still_prompts.json ferrofluid prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "ferrofluid/048_moth.jpg",
+   "noun": "moth",
+   "finish": "oily black magnetic fluid",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1542858597, 1024x576, prompt configs/still_prompts.json ferrofluid prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "ferrofluid/059_shark_tooth.jpg",
+   "noun": "shark tooth",
+   "finish": "oily black magnetic fluid",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1985365620, 1024x576, prompt configs/still_prompts.json ferrofluid prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "ferrofluid/060_neuron.jpg",
+   "noun": "neuron",
+   "finish": "oily black magnetic fluid",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1985365621, 1024x576, prompt configs/still_prompts.json ferrofluid prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "ferrofluid/061_cochlea.jpg",
+   "noun": "cochlea",
+   "finish": "oily black magnetic fluid",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1985365622, 1024x576, prompt configs/still_prompts.json ferrofluid prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "ferrofluid/062_ferrofluid_dragon.jpg",
+   "noun": "ferrofluid dragon",
+   "finish": "oily black magnetic fluid",
+   "source": "Z-Image Turbo (Apache 2.0), seed 949508814, 1024x576, prompt configs/still_prompts.json ferrofluid prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "ferrofluid/063_ferrofluid_phoenix.jpg",
+   "noun": "ferrofluid phoenix",
+   "finish": "oily black magnetic fluid",
+   "source": "Z-Image Turbo (Apache 2.0), seed 949508815, 1024x576, prompt configs/still_prompts.json ferrofluid prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "ferrofluid/064_ferrofluid_scorpion.jpg",
+   "noun": "ferrofluid scorpion",
+   "finish": "oily black magnetic fluid",
+   "source": "Z-Image Turbo (Apache 2.0), seed 949508816, 1024x576, prompt configs/still_prompts.json ferrofluid prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "ferrofluid/065_ferrofluid_wolf.jpg",
+   "noun": "ferrofluid wolf",
+   "finish": "oily black magnetic fluid",
+   "source": "Z-Image Turbo (Apache 2.0), seed 949508817, 1024x576, prompt configs/still_prompts.json ferrofluid prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "ferrofluid/066_ferrofluid_serpent.jpg",
+   "noun": "ferrofluid serpent",
+   "finish": "oily black magnetic fluid",
+   "source": "Z-Image Turbo (Apache 2.0), seed 949508818, 1024x576, prompt configs/still_prompts.json ferrofluid prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "ferrofluid/067_ferrofluid_spider.jpg",
+   "noun": "ferrofluid spider",
+   "finish": "oily black magnetic fluid",
+   "source": "Z-Image Turbo (Apache 2.0), seed 949508819, 1024x576, prompt configs/still_prompts.json ferrofluid prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "ferrofluid/068_raven.jpg",
+   "noun": "raven",
+   "finish": "oily black magnetic fluid",
+   "source": "Z-Image Turbo (Apache 2.0), seed 130598431, 1024x576, prompt configs/still_prompts.json ferrofluid prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "ferrofluid/081_ouroboros_serpent.jpg",
+   "noun": "ouroboros serpent",
+   "finish": "oily black magnetic fluid",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1569336602, 1024x576, prompt configs/still_prompts.json ferrofluid prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "ferrofluid/082_open_hand.jpg",
+   "noun": "open hand",
+   "finish": "oily black magnetic fluid",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1569336603, 1024x576, prompt configs/still_prompts.json ferrofluid prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
   }
  ],
  "y2k-chrome": [
@@ -767,6 +1313,48 @@
    "noun": "butterfly",
    "finish": "inflated chrome, frosted plastic",
    "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "y2k-chrome/009_shooting_star.jpg",
+   "noun": "shooting star",
+   "finish": "inflated chrome, frosted plastic",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4035, 1024x576, prompt configs/still_prompts.json y2k-chrome prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "y2k-chrome/043_chrome_heart.jpg",
+   "noun": "chrome heart",
+   "finish": "inflated chrome, frosted plastic",
+   "source": "Z-Image Turbo (Apache 2.0), seed 188237286, 1024x576, prompt configs/still_prompts.json y2k-chrome prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "y2k-chrome/044_dolphin.jpg",
+   "noun": "dolphin",
+   "finish": "inflated chrome, frosted plastic",
+   "source": "Z-Image Turbo (Apache 2.0), seed 188237287, 1024x576, prompt configs/still_prompts.json y2k-chrome prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "y2k-chrome/045_smiley_face.jpg",
+   "noun": "smiley face",
+   "finish": "inflated chrome, frosted plastic",
+   "source": "Z-Image Turbo (Apache 2.0), seed 188237288, 1024x576, prompt configs/still_prompts.json y2k-chrome prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "y2k-chrome/046_peace_sign.jpg",
+   "noun": "peace sign",
+   "finish": "inflated chrome, frosted plastic",
+   "source": "Z-Image Turbo (Apache 2.0), seed 188237289, 1024x576, prompt configs/still_prompts.json y2k-chrome prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "y2k-chrome/047_yin_yang.jpg",
+   "noun": "yin yang",
+   "finish": "inflated chrome, frosted plastic",
+   "source": "Z-Image Turbo (Apache 2.0), seed 188237290, 1024x576, prompt configs/still_prompts.json y2k-chrome prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "y2k-chrome/048_alien_head.jpg",
+   "noun": "alien head",
+   "finish": "inflated chrome, frosted plastic",
+   "source": "Z-Image Turbo (Apache 2.0), seed 188237291, 1024x576, prompt configs/still_prompts.json y2k-chrome prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
   }
  ],
  "low-poly": [
@@ -989,6 +1577,36 @@
    "noun": "butterfly",
    "finish": "raw concrete",
    "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "brutalist/042_water_tower.jpg",
+   "noun": "water tower",
+   "finish": "raw concrete",
+   "source": "Z-Image Turbo (Apache 2.0), seed 526675903, 1024x576, prompt configs/still_prompts.json brutalist prefix and subject sentence, grown 2026-10-29"
+  },
+  {
+   "file": "brutalist/052_stonehenge.jpg",
+   "noun": "stonehenge",
+   "finish": "raw concrete",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1905803112, 1024x576, prompt configs/still_prompts.json brutalist prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "brutalist/053_moai_head.jpg",
+   "noun": "moai head",
+   "finish": "raw concrete",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1905803113, 1024x576, prompt configs/still_prompts.json brutalist prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "brutalist/054_parthenon.jpg",
+   "noun": "parthenon",
+   "finish": "raw concrete",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1905803114, 1024x576, prompt configs/still_prompts.json brutalist prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "brutalist/056_statue_liberty.jpg",
+   "noun": "statue liberty",
+   "finish": "raw concrete",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1905803116, 1024x576, prompt configs/still_prompts.json brutalist prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
   }
  ],
  "porcelain-marble": [
@@ -1063,6 +1681,60 @@
    "noun": "butterfly",
    "finish": "marble, porcelain glaze",
    "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "porcelain-marble/008_praying_mantis.jpg",
+   "noun": "praying mantis",
+   "finish": "marble, porcelain glaze",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4032, 1024x576, prompt configs/still_prompts.json porcelain-marble prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "porcelain-marble/014_globe.jpg",
+   "noun": "globe",
+   "finish": "marble, porcelain glaze",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4038, 1024x576, prompt configs/still_prompts.json porcelain-marble prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "porcelain-marble/068_thinker_statue.jpg",
+   "noun": "thinker statue",
+   "finish": "marble, porcelain glaze",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1976412426, 1024x576, prompt configs/still_prompts.json porcelain-marble prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "porcelain-marble/069_laocoon_serpent.jpg",
+   "noun": "laocoon serpent",
+   "finish": "marble, porcelain glaze",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1976412427, 1024x576, prompt configs/still_prompts.json porcelain-marble prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "porcelain-marble/070_praying_hand.jpg",
+   "noun": "praying hand",
+   "finish": "marble, porcelain glaze",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1976412428, 1024x576, prompt configs/still_prompts.json porcelain-marble prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "porcelain-marble/071_winged_angel_statue.jpg",
+   "noun": "winged angel statue",
+   "finish": "marble, porcelain glaze",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1976412429, 1024x576, prompt configs/still_prompts.json porcelain-marble prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "porcelain-marble/072_statue_david.jpg",
+   "noun": "statue david",
+   "finish": "marble, porcelain glaze",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1976412430, 1024x576, prompt configs/still_prompts.json porcelain-marble prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "porcelain-marble/073_venus_de_milo.jpg",
+   "noun": "venus de milo",
+   "finish": "marble, porcelain glaze",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1976412431, 1024x576, prompt configs/still_prompts.json porcelain-marble prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "porcelain-marble/074_hand_god.jpg",
+   "noun": "hand god",
+   "finish": "marble, porcelain glaze",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1976412432, 1024x576, prompt configs/still_prompts.json porcelain-marble prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
   }
  ],
  "lava-obsidian": [
@@ -1211,6 +1883,30 @@
    "noun": "butterfly",
    "finish": "ice, frost",
    "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "ice-crystal/008_frost_fern.jpg",
+   "noun": "frost fern",
+   "finish": "ice, frost",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4017, 1024x576, prompt configs/still_prompts.json ice-crystal prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "ice-crystal/040_stone_cairn.jpg",
+   "noun": "stone cairn",
+   "finish": "ice, frost",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1084490491, 1024x576, prompt configs/still_prompts.json ice-crystal prefix and subject sentence, grown 2026-10-29"
+  },
+  {
+   "file": "ice-crystal/047_rune_stone.jpg",
+   "noun": "rune stone",
+   "finish": "ice, frost",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1045679237, 1024x576, prompt configs/still_prompts.json ice-crystal prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "ice-crystal/048_viking_longship.jpg",
+   "noun": "viking longship",
+   "finish": "ice, frost",
+   "source": "Z-Image Turbo (Apache 2.0), seed 277812038, 1024x576, prompt configs/still_prompts.json ice-crystal prefix and subject sentence, grown 2026-10-30"
   }
  ],
  "origami-noir": [
@@ -1285,6 +1981,78 @@
    "noun": "butterfly",
    "finish": "black paper, gold foil",
    "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "origami-noir/003_magnolia.jpg",
+   "noun": "magnolia",
+   "finish": "black paper, gold foil",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4022, 1024x576, prompt configs/still_prompts.json origami-noir prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "origami-noir/004_maple_seed.jpg",
+   "noun": "maple seed",
+   "finish": "black paper, gold foil",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4023, 1024x576, prompt configs/still_prompts.json origami-noir prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "origami-noir/005_luna_moth.jpg",
+   "noun": "luna moth",
+   "finish": "black paper, gold foil",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4024, 1024x576, prompt configs/still_prompts.json origami-noir prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "origami-noir/008_poppy.jpg",
+   "noun": "poppy",
+   "finish": "black paper, gold foil",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4027, 1024x576, prompt configs/still_prompts.json origami-noir prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "origami-noir/009_origami_dragon.jpg",
+   "noun": "origami dragon",
+   "finish": "black paper, gold foil",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4028, 1024x576, prompt configs/still_prompts.json origami-noir prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "origami-noir/012_cicada.jpg",
+   "noun": "cicada",
+   "finish": "black paper, gold foil",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4031, 1024x576, prompt configs/still_prompts.json origami-noir prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "origami-noir/016_chestnut.jpg",
+   "noun": "chestnut",
+   "finish": "black paper, gold foil",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4035, 1024x576, prompt configs/still_prompts.json origami-noir prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "origami-noir/019_passion_flower.jpg",
+   "noun": "passion flower",
+   "finish": "black paper, gold foil",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4038, 1024x576, prompt configs/still_prompts.json origami-noir prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "origami-noir/024_penguin.jpg",
+   "noun": "penguin",
+   "finish": "black paper, gold foil",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4043, 1024x576, prompt configs/still_prompts.json origami-noir prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "origami-noir/056_origami_tiger.jpg",
+   "noun": "origami tiger",
+   "finish": "black paper, gold foil",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1886945868, 1024x576, prompt configs/still_prompts.json origami-noir prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "origami-noir/057_origami_crane.jpg",
+   "noun": "origami crane",
+   "finish": "black paper, gold foil",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1886945869, 1024x576, prompt configs/still_prompts.json origami-noir prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "origami-noir/058_origami_wolf.jpg",
+   "noun": "origami wolf",
+   "finish": "black paper, gold foil",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1886945870, 1024x576, prompt configs/still_prompts.json origami-noir prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
   }
  ],
  "neon-noir": [
@@ -1359,6 +2127,132 @@
    "noun": "butterfly",
    "finish": "rain-beaded black glass, smoked chrome",
    "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/featured_prompts.json"
+  },
+  {
+   "file": "neon-noir/000_crescent_moon.jpg",
+   "noun": "crescent moon",
+   "finish": "rain-beaded black glass, smoked chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 5200, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "neon-noir/073_dragon_scale_shield.jpg",
+   "noun": "dragon scale shield",
+   "finish": "rain-beaded black glass, smoked chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1257679604, 1024x576, prompt configs/still_prompts.json neon-noir prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "neon-noir/074_horned_demon_skull.jpg",
+   "noun": "horned demon skull",
+   "finish": "rain-beaded black glass, smoked chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1257679605, 1024x576, prompt configs/still_prompts.json neon-noir prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "neon-noir/079_runed_elven_crown.jpg",
+   "noun": "runed elven crown",
+   "finish": "rain-beaded black glass, smoked chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1257679610, 1024x576, prompt configs/still_prompts.json neon-noir prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "neon-noir/080_iron_crown_of_thorns.jpg",
+   "noun": "iron crown of thorns",
+   "finish": "rain-beaded black glass, smoked chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1257679611, 1024x576, prompt configs/still_prompts.json neon-noir prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "neon-noir/085_dragon_claw_holding_a_gem.jpg",
+   "noun": "dragon claw holding a gem",
+   "finish": "rain-beaded black glass, smoked chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1257679616, 1024x576, prompt configs/still_prompts.json neon-noir prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "neon-noir/086_plague_doctor_mask.jpg",
+   "noun": "plague doctor mask",
+   "finish": "rain-beaded black glass, smoked chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1257679617, 1024x576, prompt configs/still_prompts.json neon-noir prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "neon-noir/092_tarnished_silver_chalice.jpg",
+   "noun": "tarnished silver chalice",
+   "finish": "rain-beaded black glass, smoked chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1257679623, 1024x576, prompt configs/still_prompts.json neon-noir prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "neon-noir/104_candelabra_of_black_wax.jpg",
+   "noun": "candelabra of black wax",
+   "finish": "rain-beaded black glass, smoked chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1257679635, 1024x576, prompt configs/still_prompts.json neon-noir prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "neon-noir/110_raven_skull.jpg",
+   "noun": "raven skull",
+   "finish": "rain-beaded black glass, smoked chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1257679641, 1024x576, prompt configs/still_prompts.json neon-noir prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "neon-noir/115_jewelled_dragon_egg.jpg",
+   "noun": "jewelled dragon egg",
+   "finish": "rain-beaded black glass, smoked chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1257679646, 1024x576, prompt configs/still_prompts.json neon-noir prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "neon-noir/122_cracked_chapel_bell.jpg",
+   "noun": "cracked chapel bell",
+   "finish": "rain-beaded black glass, smoked chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1257679653, 1024x576, prompt configs/still_prompts.json neon-noir prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "neon-noir/133_robotic_arm.jpg",
+   "noun": "robotic arm",
+   "finish": "rain-beaded black glass, smoked chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2050885155, 1024x576, prompt configs/still_prompts.json neon-noir prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-29"
+  },
+  {
+   "file": "neon-noir/164_eight_pointed_star.jpg",
+   "noun": "eight-pointed star",
+   "finish": "rain-beaded black glass, smoked chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 637455570, 1024x576, prompt configs/still_prompts.json neon-noir prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "neon-noir/165_entwined_heart.jpg",
+   "noun": "entwined heart",
+   "finish": "rain-beaded black glass, smoked chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 637455571, 1024x576, prompt configs/still_prompts.json neon-noir prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "neon-noir/166_scales_justice.jpg",
+   "noun": "scales justice",
+   "finish": "rain-beaded black glass, smoked chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 637455572, 1024x576, prompt configs/still_prompts.json neon-noir prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "neon-noir/167_infinity_sign.jpg",
+   "noun": "infinity sign",
+   "finish": "rain-beaded black glass, smoked chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 637455573, 1024x576, prompt configs/still_prompts.json neon-noir prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "neon-noir/183_cyber_samurai_mask.jpg",
+   "noun": "cyber samurai mask",
+   "finish": "rain-beaded black glass, smoked chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1892492716, 1024x576, prompt configs/still_prompts.json neon-noir prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "neon-noir/184_robotic_hand.jpg",
+   "noun": "robotic hand",
+   "finish": "rain-beaded black glass, smoked chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1892492717, 1024x576, prompt configs/still_prompts.json neon-noir prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "neon-noir/185_android_face.jpg",
+   "noun": "android face",
+   "finish": "rain-beaded black glass, smoked chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1892492718, 1024x576, prompt configs/still_prompts.json neon-noir prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "neon-noir/203_origami_dragon.jpg",
+   "noun": "origami dragon",
+   "finish": "rain-beaded black glass, smoked chrome",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1513113569, 1024x576, prompt configs/still_prompts.json neon-noir prefix and subject sentence, grown 2026-10-30"
   }
  ],
  "porcelain-kintsugi": [
@@ -1433,6 +2327,126 @@
    "noun": "butterfly",
    "finish": "white porcelain, gold kintsugi seams",
    "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/featured_prompts.json"
+  },
+  {
+   "file": "porcelain-kintsugi/000_crescent_moon.jpg",
+   "noun": "crescent moon",
+   "finish": "white porcelain, gold kintsugi seams",
+   "source": "Z-Image Turbo (Apache 2.0), seed 5300, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "porcelain-kintsugi/001_snowflake.jpg",
+   "noun": "snowflake",
+   "finish": "white porcelain, gold kintsugi seams",
+   "source": "Z-Image Turbo (Apache 2.0), seed 5301, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "porcelain-kintsugi/002_faceted_gem.jpg",
+   "noun": "faceted gem",
+   "finish": "white porcelain, gold kintsugi seams",
+   "source": "Z-Image Turbo (Apache 2.0), seed 5302, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "porcelain-kintsugi/003_mobius_strip.jpg",
+   "noun": "mobius strip",
+   "finish": "white porcelain, gold kintsugi seams",
+   "source": "Z-Image Turbo (Apache 2.0), seed 5303, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "porcelain-kintsugi/004_dodecahedron.jpg",
+   "noun": "dodecahedron",
+   "finish": "white porcelain, gold kintsugi seams",
+   "source": "Z-Image Turbo (Apache 2.0), seed 5304, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "porcelain-kintsugi/035_gyroid.jpg",
+   "noun": "gyroid",
+   "finish": "white porcelain, gold kintsugi seams",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4027, 1024x576, prompt configs/still_prompts.json porcelain-kintsugi prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "porcelain-kintsugi/052_torus.jpg",
+   "noun": "torus",
+   "finish": "white porcelain, gold kintsugi seams",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4044, 1024x576, prompt configs/still_prompts.json porcelain-kintsugi prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "porcelain-kintsugi/128_venetian_mask.jpg",
+   "noun": "venetian mask",
+   "finish": "white porcelain, gold kintsugi seams",
+   "source": "Z-Image Turbo (Apache 2.0), seed 464887171, 1024x576, prompt configs/still_prompts.json porcelain-kintsugi prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "porcelain-kintsugi/129_oni_mask.jpg",
+   "noun": "oni mask",
+   "finish": "white porcelain, gold kintsugi seams",
+   "source": "Z-Image Turbo (Apache 2.0), seed 464887172, 1024x576, prompt configs/still_prompts.json porcelain-kintsugi prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "porcelain-kintsugi/130_tribal_mask.jpg",
+   "noun": "tribal mask",
+   "finish": "white porcelain, gold kintsugi seams",
+   "source": "Z-Image Turbo (Apache 2.0), seed 464887173, 1024x576, prompt configs/still_prompts.json porcelain-kintsugi prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "porcelain-kintsugi/131_jaguar_mask.jpg",
+   "noun": "jaguar mask",
+   "finish": "white porcelain, gold kintsugi seams",
+   "source": "Z-Image Turbo (Apache 2.0), seed 464887174, 1024x576, prompt configs/still_prompts.json porcelain-kintsugi prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "porcelain-kintsugi/132_opera_mask.jpg",
+   "noun": "opera mask",
+   "finish": "white porcelain, gold kintsugi seams",
+   "source": "Z-Image Turbo (Apache 2.0), seed 464887175, 1024x576, prompt configs/still_prompts.json porcelain-kintsugi prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "porcelain-kintsugi/133_noh_mask.jpg",
+   "noun": "noh mask",
+   "finish": "white porcelain, gold kintsugi seams",
+   "source": "Z-Image Turbo (Apache 2.0), seed 464887176, 1024x576, prompt configs/still_prompts.json porcelain-kintsugi prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "porcelain-kintsugi/134_fox.jpg",
+   "noun": "fox",
+   "finish": "white porcelain, gold kintsugi seams",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1393121543, 1024x576, prompt configs/still_prompts.json porcelain-kintsugi prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "porcelain-kintsugi/141_swan.jpg",
+   "noun": "swan",
+   "finish": "white porcelain, gold kintsugi seams",
+   "source": "Z-Image Turbo (Apache 2.0), seed 110454253, 1024x576, prompt configs/still_prompts.json porcelain-kintsugi prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "porcelain-kintsugi/144_elephant.jpg",
+   "noun": "elephant",
+   "finish": "white porcelain, gold kintsugi seams",
+   "source": "Z-Image Turbo (Apache 2.0), seed 110454256, 1024x576, prompt configs/still_prompts.json porcelain-kintsugi prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "porcelain-kintsugi/149_mended_heart.jpg",
+   "noun": "mended heart",
+   "finish": "white porcelain, gold kintsugi seams",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2027992990, 1024x576, prompt configs/still_prompts.json porcelain-kintsugi prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "porcelain-kintsugi/150_open_porcelain_hand.jpg",
+   "noun": "open porcelain hand",
+   "finish": "white porcelain, gold kintsugi seams",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2027992991, 1024x576, prompt configs/still_prompts.json porcelain-kintsugi prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "porcelain-kintsugi/151_buddha_head.jpg",
+   "noun": "buddha head",
+   "finish": "white porcelain, gold kintsugi seams",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2027992992, 1024x576, prompt configs/still_prompts.json porcelain-kintsugi prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "porcelain-kintsugi/152_lucky_cat.jpg",
+   "noun": "lucky cat",
+   "finish": "white porcelain, gold kintsugi seams",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2027992993, 1024x576, prompt configs/still_prompts.json porcelain-kintsugi prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
   }
  ],
  "bioluminescent": [
@@ -1507,6 +2521,156 @@
    "noun": "butterfly",
    "finish": "translucent gelatinous tissue, bioluminescent glow",
    "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/featured_prompts.json, regraded teal/violet with scripts/vibe_objects/regrade_bio.py"
+  },
+  {
+   "file": "bioluminescent/000_crescent_moon.jpg",
+   "noun": "crescent moon",
+   "finish": "translucent gelatinous tissue, bioluminescent glow",
+   "source": "Z-Image Turbo (Apache 2.0), seed 5400, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "bioluminescent/010_seahorse.jpg",
+   "noun": "seahorse",
+   "finish": "translucent gelatinous tissue, bioluminescent glow",
+   "source": "Z-Image Turbo (Apache 2.0), seed 5411, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "bioluminescent/012_koi_fish.jpg",
+   "noun": "koi fish",
+   "finish": "translucent gelatinous tissue, bioluminescent glow",
+   "source": "Z-Image Turbo (Apache 2.0), seed 5413, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "bioluminescent/013_octopus.jpg",
+   "noun": "octopus",
+   "finish": "translucent gelatinous tissue, bioluminescent glow",
+   "source": "Z-Image Turbo (Apache 2.0), seed 5414, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "bioluminescent/032_cratered_moon.jpg",
+   "noun": "cratered moon",
+   "finish": "translucent gelatinous tissue, bioluminescent glow",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4000, 1024x576, prompt configs/still_prompts.json bioluminescent prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "bioluminescent/034_sea_turtle.jpg",
+   "noun": "sea turtle",
+   "finish": "translucent gelatinous tissue, bioluminescent glow",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4002, 1024x576, prompt configs/still_prompts.json bioluminescent prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "bioluminescent/042_gas_giant.jpg",
+   "noun": "gas giant",
+   "finish": "translucent gelatinous tissue, bioluminescent glow",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4010, 1024x576, prompt configs/still_prompts.json bioluminescent prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "bioluminescent/044_sea_urchin.jpg",
+   "noun": "sea urchin",
+   "finish": "translucent gelatinous tissue, bioluminescent glow",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4012, 1024x576, prompt configs/still_prompts.json bioluminescent prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "bioluminescent/062_cuttlefish.jpg",
+   "noun": "cuttlefish",
+   "finish": "translucent gelatinous tissue, bioluminescent glow",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4031, 1024x576, prompt configs/still_prompts.json bioluminescent prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "bioluminescent/063_humpback_whale.jpg",
+   "noun": "humpback whale",
+   "finish": "translucent gelatinous tissue, bioluminescent glow",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4032, 1024x576, prompt configs/still_prompts.json bioluminescent prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "bioluminescent/065_anglerfish.jpg",
+   "noun": "anglerfish",
+   "finish": "translucent gelatinous tissue, bioluminescent glow",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4034, 1024x576, prompt configs/still_prompts.json bioluminescent prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "bioluminescent/094_glass_frog.jpg",
+   "noun": "glass frog",
+   "finish": "translucent gelatinous tissue, bioluminescent glow",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1312030859, 1024x576, prompt configs/still_prompts.json bioluminescent prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "bioluminescent/111_hourglass_holding_a_sea.jpg",
+   "noun": "hourglass holding a sea",
+   "finish": "translucent gelatinous tissue, bioluminescent glow",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1312030876, 1024x576, prompt configs/still_prompts.json bioluminescent prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "bioluminescent/116_seashell.jpg",
+   "noun": "seashell",
+   "finish": "translucent gelatinous tissue, bioluminescent glow",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1959416096, 1024x576, prompt configs/still_prompts.json bioluminescent prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-29"
+  },
+  {
+   "file": "bioluminescent/117_coral.jpg",
+   "noun": "coral",
+   "finish": "translucent gelatinous tissue, bioluminescent glow",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1959416097, 1024x576, prompt configs/still_prompts.json bioluminescent prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-29"
+  },
+  {
+   "file": "bioluminescent/118_pearl_oyster.jpg",
+   "noun": "pearl oyster",
+   "finish": "translucent gelatinous tissue, bioluminescent glow",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1959416098, 1024x576, prompt configs/still_prompts.json bioluminescent prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-29"
+  },
+  {
+   "file": "bioluminescent/119_manta_ray.jpg",
+   "noun": "manta ray",
+   "finish": "translucent gelatinous tissue, bioluminescent glow",
+   "source": "Z-Image Turbo (Apache 2.0), seed 79401317, 1024x576, prompt configs/still_prompts.json bioluminescent prefix and subject sentence, grown 2026-10-29"
+  },
+  {
+   "file": "bioluminescent/120_starfish.jpg",
+   "noun": "starfish",
+   "finish": "translucent gelatinous tissue, bioluminescent glow",
+   "source": "Z-Image Turbo (Apache 2.0), seed 79401318, 1024x576, prompt configs/still_prompts.json bioluminescent prefix and subject sentence, grown 2026-10-29"
+  },
+  {
+   "file": "bioluminescent/121_pufferfish.jpg",
+   "noun": "pufferfish",
+   "finish": "translucent gelatinous tissue, bioluminescent glow",
+   "source": "Z-Image Turbo (Apache 2.0), seed 79401319, 1024x576, prompt configs/still_prompts.json bioluminescent prefix and subject sentence, grown 2026-10-29"
+  },
+  {
+   "file": "bioluminescent/125_sea_anemone.jpg",
+   "noun": "sea anemone",
+   "finish": "translucent gelatinous tissue, bioluminescent glow",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1096820721, 1024x576, prompt configs/still_prompts.json bioluminescent prefix and subject sentence, grown 2026-10-29"
+  },
+  {
+   "file": "bioluminescent/127_nudibranch.jpg",
+   "noun": "nudibranch",
+   "finish": "translucent gelatinous tissue, bioluminescent glow",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1096820723, 1024x576, prompt configs/still_prompts.json bioluminescent prefix and subject sentence, grown 2026-10-29"
+  },
+  {
+   "file": "bioluminescent/145_comb_jelly.jpg",
+   "noun": "comb jelly",
+   "finish": "translucent gelatinous tissue, bioluminescent glow",
+   "source": "Z-Image Turbo (Apache 2.0), seed 822937044, 1024x576, prompt configs/still_prompts.json bioluminescent prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "bioluminescent/146_siphonophore.jpg",
+   "noun": "siphonophore",
+   "finish": "translucent gelatinous tissue, bioluminescent glow",
+   "source": "Z-Image Turbo (Apache 2.0), seed 822937045, 1024x576, prompt configs/still_prompts.json bioluminescent prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "bioluminescent/147_lanternfish.jpg",
+   "noun": "lanternfish",
+   "finish": "translucent gelatinous tissue, bioluminescent glow",
+   "source": "Z-Image Turbo (Apache 2.0), seed 822937046, 1024x576, prompt configs/still_prompts.json bioluminescent prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "bioluminescent/148_squid.jpg",
+   "noun": "squid",
+   "finish": "translucent gelatinous tissue, bioluminescent glow",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1305050555, 1024x576, prompt configs/still_prompts.json bioluminescent prefix and subject sentence, grown 2026-10-30"
   }
  ],
  "risograph": [
@@ -1581,6 +2745,132 @@
    "noun": "butterfly",
    "finish": "two-colour risograph print, pink and blue ink",
    "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/featured_prompts.json"
+  },
+  {
+   "file": "risograph/008_seahorse.jpg",
+   "noun": "seahorse",
+   "finish": "two-colour risograph print, pink and blue ink",
+   "source": "Z-Image Turbo (Apache 2.0), seed 5511, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "risograph/010_koi_fish.jpg",
+   "noun": "koi fish",
+   "finish": "two-colour risograph print, pink and blue ink",
+   "source": "Z-Image Turbo (Apache 2.0), seed 5513, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "risograph/011_octopus.jpg",
+   "noun": "octopus",
+   "finish": "two-colour risograph print, pink and blue ink",
+   "source": "Z-Image Turbo (Apache 2.0), seed 5514, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "risograph/025_coral_branch.jpg",
+   "noun": "coral branch",
+   "finish": "two-colour risograph print, pink and blue ink",
+   "source": "Z-Image Turbo (Apache 2.0), seed 5533, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "risograph/026_antler.jpg",
+   "noun": "antler",
+   "finish": "two-colour risograph print, pink and blue ink",
+   "source": "Z-Image Turbo (Apache 2.0), seed 5534, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "risograph/056_brain.jpg",
+   "noun": "brain",
+   "finish": "two-colour risograph print, pink and blue ink",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4055, 1024x576, prompt configs/still_prompts.json risograph prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "risograph/057_deer_skull.jpg",
+   "noun": "deer skull",
+   "finish": "two-colour risograph print, pink and blue ink",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4056, 1024x576, prompt configs/still_prompts.json risograph prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "risograph/058_femur_bone.jpg",
+   "noun": "femur bone",
+   "finish": "two-colour risograph print, pink and blue ink",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4057, 1024x576, prompt configs/still_prompts.json risograph prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "risograph/060_crystal_orb_on_a_claw_stand.jpg",
+   "noun": "crystal orb on a claw stand",
+   "finish": "two-colour risograph print, pink and blue ink",
+   "source": "Z-Image Turbo (Apache 2.0), seed 947073214, 1024x576, prompt configs/still_prompts.json risograph prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "risograph/066_thorned_black_rose.jpg",
+   "noun": "thorned black rose",
+   "finish": "two-colour risograph print, pink and blue ink",
+   "source": "Z-Image Turbo (Apache 2.0), seed 947073221, 1024x576, prompt configs/still_prompts.json risograph prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "risograph/071_kraken_tentacle.jpg",
+   "noun": "kraken tentacle",
+   "finish": "two-colour risograph print, pink and blue ink",
+   "source": "Z-Image Turbo (Apache 2.0), seed 947073226, 1024x576, prompt configs/still_prompts.json risograph prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "risograph/077_mandrake_root.jpg",
+   "noun": "mandrake root",
+   "finish": "two-colour risograph print, pink and blue ink",
+   "source": "Z-Image Turbo (Apache 2.0), seed 947073232, 1024x576, prompt configs/still_prompts.json risograph prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "risograph/078_horned_demon_skull.jpg",
+   "noun": "horned demon skull",
+   "finish": "two-colour risograph print, pink and blue ink",
+   "source": "Z-Image Turbo (Apache 2.0), seed 947073233, 1024x576, prompt configs/still_prompts.json risograph prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "risograph/084_gas_mask.jpg",
+   "noun": "gas mask",
+   "finish": "two-colour risograph print, pink and blue ink",
+   "source": "Z-Image Turbo (Apache 2.0), seed 947073239, 1024x576, prompt configs/still_prompts.json risograph prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "risograph/089_potion_bottle_of_swirling_light.jpg",
+   "noun": "potion bottle of swirling light",
+   "finish": "two-colour risograph print, pink and blue ink",
+   "source": "Z-Image Turbo (Apache 2.0), seed 947073244, 1024x576, prompt configs/still_prompts.json risograph prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "risograph/090_hourglass_of_black_sand.jpg",
+   "noun": "hourglass of black sand",
+   "finish": "two-colour risograph print, pink and blue ink",
+   "source": "Z-Image Turbo (Apache 2.0), seed 947073245, 1024x576, prompt configs/still_prompts.json risograph prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "risograph/095_dragon_scale_shield.jpg",
+   "noun": "dragon scale shield",
+   "finish": "two-colour risograph print, pink and blue ink",
+   "source": "Z-Image Turbo (Apache 2.0), seed 947073250, 1024x576, prompt configs/still_prompts.json risograph prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "risograph/096_ritual_dagger_with_a_bone_hilt.jpg",
+   "noun": "ritual dagger with a bone hilt",
+   "finish": "two-colour risograph print, pink and blue ink",
+   "source": "Z-Image Turbo (Apache 2.0), seed 947073251, 1024x576, prompt configs/still_prompts.json risograph prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "risograph/101_dragon_skull_with_curling_horns.jpg",
+   "noun": "dragon skull with curling horns",
+   "finish": "two-colour risograph print, pink and blue ink",
+   "source": "Z-Image Turbo (Apache 2.0), seed 947073256, 1024x576, prompt configs/still_prompts.json risograph prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "risograph/102_bone_flute.jpg",
+   "noun": "bone flute",
+   "finish": "two-colour risograph print, pink and blue ink",
+   "source": "Z-Image Turbo (Apache 2.0), seed 947073257, 1024x576, prompt configs/still_prompts.json risograph prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "risograph/107_floating_island_with_a_tiny_castle.jpg",
+   "noun": "floating island with a tiny castle",
+   "finish": "two-colour risograph print, pink and blue ink",
+   "source": "Z-Image Turbo (Apache 2.0), seed 947073262, 1024x576, prompt configs/still_prompts.json risograph prefix and subject sentence, grown 2026-10-28"
   }
  ],
  "iridescent-glass": [
@@ -1655,6 +2945,120 @@
    "noun": "butterfly",
    "finish": "hand-blown iridescent glass",
    "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/featured_prompts.json"
+  },
+  {
+   "file": "iridescent-glass/020_antler.jpg",
+   "noun": "antler",
+   "finish": "hand-blown iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 5634, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "iridescent-glass/031_anatomical_heart.jpg",
+   "noun": "anatomical heart",
+   "finish": "hand-blown iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4022, 1024x576, prompt configs/still_prompts.json iridescent-glass prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "iridescent-glass/054_phoenix_feather.jpg",
+   "noun": "phoenix feather",
+   "finish": "hand-blown iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 917139908, 1024x576, prompt configs/still_prompts.json iridescent-glass prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "iridescent-glass/060_winged_helm.jpg",
+   "noun": "winged helm",
+   "finish": "hand-blown iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 917139914, 1024x576, prompt configs/still_prompts.json iridescent-glass prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "iridescent-glass/061_horned_demon_skull.jpg",
+   "noun": "horned demon skull",
+   "finish": "hand-blown iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 917139915, 1024x576, prompt configs/still_prompts.json iridescent-glass prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "iridescent-glass/063_moth_with_stained_glass_wings.jpg",
+   "noun": "moth with stained-glass wings",
+   "finish": "hand-blown iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 917139917, 1024x576, prompt configs/still_prompts.json iridescent-glass prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "iridescent-glass/073_dented_knight_s_helm.jpg",
+   "noun": "dented knight's helm",
+   "finish": "hand-blown iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 917139927, 1024x576, prompt configs/still_prompts.json iridescent-glass prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "iridescent-glass/075_melting_pocket_watch.jpg",
+   "noun": "melting pocket watch",
+   "finish": "hand-blown iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 917139929, 1024x576, prompt configs/still_prompts.json iridescent-glass prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "iridescent-glass/080_seashell_holding_a_tiny_city.jpg",
+   "noun": "seashell holding a tiny city",
+   "finish": "hand-blown iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 917139935, 1024x576, prompt configs/still_prompts.json iridescent-glass prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "iridescent-glass/083_dragon_skull_with_curling_horns.jpg",
+   "noun": "dragon skull with curling horns",
+   "finish": "hand-blown iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 917139938, 1024x576, prompt configs/still_prompts.json iridescent-glass prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "iridescent-glass/084_cracked_chapel_bell.jpg",
+   "noun": "cracked chapel bell",
+   "finish": "hand-blown iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 917139939, 1024x576, prompt configs/still_prompts.json iridescent-glass prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "iridescent-glass/086_candle_with_a_flame_of_water.jpg",
+   "noun": "candle with a flame of water",
+   "finish": "hand-blown iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 917139941, 1024x576, prompt configs/still_prompts.json iridescent-glass prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "iridescent-glass/089_floating_island_with_a_tiny_castle.jpg",
+   "noun": "floating island with a tiny castle",
+   "finish": "hand-blown iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 917139944, 1024x576, prompt configs/still_prompts.json iridescent-glass prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "iridescent-glass/092_hourglass_holding_a_sea.jpg",
+   "noun": "hourglass holding a sea",
+   "finish": "hand-blown iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 917139947, 1024x576, prompt configs/still_prompts.json iridescent-glass prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "iridescent-glass/095_dragon_scale_shield.jpg",
+   "noun": "dragon scale shield",
+   "finish": "hand-blown iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 917139950, 1024x576, prompt configs/still_prompts.json iridescent-glass prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "iridescent-glass/096_tarnished_silver_chalice.jpg",
+   "noun": "tarnished silver chalice",
+   "finish": "hand-blown iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 917139951, 1024x576, prompt configs/still_prompts.json iridescent-glass prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "iridescent-glass/115_jetpack.jpg",
+   "noun": "jetpack",
+   "finish": "hand-blown iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 476302938, 1024x576, prompt configs/still_prompts.json iridescent-glass prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-29"
+  },
+  {
+   "file": "iridescent-glass/116_lunar_rover.jpg",
+   "noun": "lunar rover",
+   "finish": "hand-blown iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 476302939, 1024x576, prompt configs/still_prompts.json iridescent-glass prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-29"
+  },
+  {
+   "file": "iridescent-glass/117_astronaut_glove.jpg",
+   "noun": "astronaut glove",
+   "finish": "hand-blown iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 476302941, 1024x576, prompt configs/still_prompts.json iridescent-glass prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-29"
   }
  ],
  "ink-wash": [
@@ -1729,6 +3133,96 @@
    "noun": "butterfly",
    "finish": "sumi-e ink on rice paper",
    "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/featured_prompts.json"
+  },
+  {
+   "file": "ink-wash/018_skeleton_key.jpg",
+   "noun": "skeleton key",
+   "finish": "sumi-e ink on rice paper",
+   "source": "Z-Image Turbo (Apache 2.0), seed 5727, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "ink-wash/025_antler.jpg",
+   "noun": "antler",
+   "finish": "sumi-e ink on rice paper",
+   "source": "Z-Image Turbo (Apache 2.0), seed 5734, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "ink-wash/066_hourglass_holding_a_sea.jpg",
+   "noun": "hourglass holding a sea",
+   "finish": "sumi-e ink on rice paper",
+   "source": "Z-Image Turbo (Apache 2.0), seed 232365887, 1024x576, prompt configs/still_prompts.json ink-wash prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "ink-wash/069_griffin_statue.jpg",
+   "noun": "griffin statue",
+   "finish": "sumi-e ink on rice paper",
+   "source": "Z-Image Turbo (Apache 2.0), seed 232365890, 1024x576, prompt configs/still_prompts.json ink-wash prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "ink-wash/070_black_iron_lantern.jpg",
+   "noun": "black iron lantern",
+   "finish": "sumi-e ink on rice paper",
+   "source": "Z-Image Turbo (Apache 2.0), seed 232365891, 1024x576, prompt configs/still_prompts.json ink-wash prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "ink-wash/075_winged_helm.jpg",
+   "noun": "winged helm",
+   "finish": "sumi-e ink on rice paper",
+   "source": "Z-Image Turbo (Apache 2.0), seed 232365896, 1024x576, prompt configs/still_prompts.json ink-wash prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "ink-wash/076_tarnished_silver_chalice.jpg",
+   "noun": "tarnished silver chalice",
+   "finish": "sumi-e ink on rice paper",
+   "source": "Z-Image Turbo (Apache 2.0), seed 232365897, 1024x576, prompt configs/still_prompts.json ink-wash prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "ink-wash/083_chess_knight_made_of_smoke.jpg",
+   "noun": "chess knight made of smoke",
+   "finish": "sumi-e ink on rice paper",
+   "source": "Z-Image Turbo (Apache 2.0), seed 232365905, 1024x576, prompt configs/still_prompts.json ink-wash prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "ink-wash/092_iron_crown_of_thorns.jpg",
+   "noun": "iron crown of thorns",
+   "finish": "sumi-e ink on rice paper",
+   "source": "Z-Image Turbo (Apache 2.0), seed 232365915, 1024x576, prompt configs/still_prompts.json ink-wash prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "ink-wash/097_mermaid_s_trident.jpg",
+   "noun": "mermaid's trident",
+   "finish": "sumi-e ink on rice paper",
+   "source": "Z-Image Turbo (Apache 2.0), seed 232365920, 1024x576, prompt configs/still_prompts.json ink-wash prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "ink-wash/098_reliquary_holding_a_skull.jpg",
+   "noun": "reliquary holding a skull",
+   "finish": "sumi-e ink on rice paper",
+   "source": "Z-Image Turbo (Apache 2.0), seed 232365921, 1024x576, prompt configs/still_prompts.json ink-wash prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "ink-wash/100_staircase_looping_into_itself.jpg",
+   "noun": "staircase looping into itself",
+   "finish": "sumi-e ink on rice paper",
+   "source": "Z-Image Turbo (Apache 2.0), seed 232365923, 1024x576, prompt configs/still_prompts.json ink-wash prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "ink-wash/103_runed_elven_crown.jpg",
+   "noun": "runed elven crown",
+   "finish": "sumi-e ink on rice paper",
+   "source": "Z-Image Turbo (Apache 2.0), seed 232365926, 1024x576, prompt configs/still_prompts.json ink-wash prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "ink-wash/104_skull_crowned_with_candles.jpg",
+   "noun": "skull crowned with candles",
+   "finish": "sumi-e ink on rice paper",
+   "source": "Z-Image Turbo (Apache 2.0), seed 232365927, 1024x576, prompt configs/still_prompts.json ink-wash prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "ink-wash/109_unicorn_horn.jpg",
+   "noun": "unicorn horn",
+   "finish": "sumi-e ink on rice paper",
+   "source": "Z-Image Turbo (Apache 2.0), seed 232365932, 1024x576, prompt configs/still_prompts.json ink-wash prefix and subject sentence, grown 2026-10-28"
   }
  ],
  "cyberspace-95": [
@@ -1803,6 +3297,144 @@
    "noun": "butterfly",
    "finish": "green wireframe, cyan gouraud shading",
    "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/featured_prompts.json"
+  },
+  {
+   "file": "cyberspace-95/010_hummingbird.jpg",
+   "noun": "hummingbird",
+   "finish": "green wireframe, cyan gouraud shading",
+   "source": "Z-Image Turbo (Apache 2.0), seed 5812, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "cyberspace-95/026_antler.jpg",
+   "noun": "antler",
+   "finish": "green wireframe, cyan gouraud shading",
+   "source": "Z-Image Turbo (Apache 2.0), seed 5834, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "cyberspace-95/038_anatomical_heart.jpg",
+   "noun": "anatomical heart",
+   "finish": "green wireframe, cyan gouraud shading",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4013, 1024x576, prompt configs/still_prompts.json cyberspace-95 prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "cyberspace-95/049_bird_skull.jpg",
+   "noun": "bird skull",
+   "finish": "green wireframe, cyan gouraud shading",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4026, 1024x576, prompt configs/still_prompts.json cyberspace-95 prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "cyberspace-95/064_ritual_dagger_with_a_bone_hilt.jpg",
+   "noun": "ritual dagger with a bone hilt",
+   "finish": "green wireframe, cyan gouraud shading",
+   "source": "Z-Image Turbo (Apache 2.0), seed 37062750, 1024x576, prompt configs/still_prompts.json cyberspace-95 prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "cyberspace-95/065_moth_with_stained_glass_wings.jpg",
+   "noun": "moth with stained-glass wings",
+   "finish": "green wireframe, cyan gouraud shading",
+   "source": "Z-Image Turbo (Apache 2.0), seed 37062752, 1024x576, prompt configs/still_prompts.json cyberspace-95 prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "cyberspace-95/068_potion_bottle_of_swirling_light.jpg",
+   "noun": "potion bottle of swirling light",
+   "finish": "green wireframe, cyan gouraud shading",
+   "source": "Z-Image Turbo (Apache 2.0), seed 37062755, 1024x576, prompt configs/still_prompts.json cyberspace-95 prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "cyberspace-95/069_cracked_chapel_bell.jpg",
+   "noun": "cracked chapel bell",
+   "finish": "green wireframe, cyan gouraud shading",
+   "source": "Z-Image Turbo (Apache 2.0), seed 37062756, 1024x576, prompt configs/still_prompts.json cyberspace-95 prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "cyberspace-95/074_dwarven_war_hammer.jpg",
+   "noun": "dwarven war hammer",
+   "finish": "green wireframe, cyan gouraud shading",
+   "source": "Z-Image Turbo (Apache 2.0), seed 37062761, 1024x576, prompt configs/still_prompts.json cyberspace-95 prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "cyberspace-95/075_tattered_war_banner.jpg",
+   "noun": "tattered war banner",
+   "finish": "green wireframe, cyan gouraud shading",
+   "source": "Z-Image Turbo (Apache 2.0), seed 37062762, 1024x576, prompt configs/still_prompts.json cyberspace-95 prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "cyberspace-95/082_hourglass_holding_a_sea.jpg",
+   "noun": "hourglass holding a sea",
+   "finish": "green wireframe, cyan gouraud shading",
+   "source": "Z-Image Turbo (Apache 2.0), seed 37062770, 1024x576, prompt configs/still_prompts.json cyberspace-95 prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "cyberspace-95/085_unicorn_horn.jpg",
+   "noun": "unicorn horn",
+   "finish": "green wireframe, cyan gouraud shading",
+   "source": "Z-Image Turbo (Apache 2.0), seed 37062773, 1024x576, prompt configs/still_prompts.json cyberspace-95 prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "cyberspace-95/092_gargoyle_head.jpg",
+   "noun": "gargoyle head",
+   "finish": "green wireframe, cyan gouraud shading",
+   "source": "Z-Image Turbo (Apache 2.0), seed 37062780, 1024x576, prompt configs/still_prompts.json cyberspace-95 prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "cyberspace-95/098_horned_demon_skull.jpg",
+   "noun": "horned demon skull",
+   "finish": "green wireframe, cyan gouraud shading",
+   "source": "Z-Image Turbo (Apache 2.0), seed 37062786, 1024x576, prompt configs/still_prompts.json cyberspace-95 prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "cyberspace-95/102_executioner_s_axe.jpg",
+   "noun": "executioner's axe",
+   "finish": "green wireframe, cyan gouraud shading",
+   "source": "Z-Image Turbo (Apache 2.0), seed 37062792, 1024x576, prompt configs/still_prompts.json cyberspace-95 prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "cyberspace-95/107_dragon_scale_shield.jpg",
+   "noun": "dragon scale shield",
+   "finish": "green wireframe, cyan gouraud shading",
+   "source": "Z-Image Turbo (Apache 2.0), seed 37062797, 1024x576, prompt configs/still_prompts.json cyberspace-95 prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "cyberspace-95/108_reaper_s_scythe.jpg",
+   "noun": "reaper's scythe",
+   "finish": "green wireframe, cyan gouraud shading",
+   "source": "Z-Image Turbo (Apache 2.0), seed 37062798, 1024x576, prompt configs/still_prompts.json cyberspace-95 prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "cyberspace-95/127_wireframe_phoenix.jpg",
+   "noun": "wireframe phoenix",
+   "finish": "green wireframe, cyan gouraud shading",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1523323130, 1024x576, prompt configs/still_prompts.json cyberspace-95 prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "cyberspace-95/128_wireframe_whale.jpg",
+   "noun": "wireframe whale",
+   "finish": "green wireframe, cyan gouraud shading",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1523323131, 1024x576, prompt configs/still_prompts.json cyberspace-95 prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "cyberspace-95/129_wireframe_tiger.jpg",
+   "noun": "wireframe tiger",
+   "finish": "green wireframe, cyan gouraud shading",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1523323132, 1024x576, prompt configs/still_prompts.json cyberspace-95 prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "cyberspace-95/130_wireframe_dragon.jpg",
+   "noun": "wireframe dragon",
+   "finish": "green wireframe, cyan gouraud shading",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1523323133, 1024x576, prompt configs/still_prompts.json cyberspace-95 prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "cyberspace-95/131_wireframe_horse.jpg",
+   "noun": "wireframe horse",
+   "finish": "green wireframe, cyan gouraud shading",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1523323134, 1024x576, prompt configs/still_prompts.json cyberspace-95 prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "cyberspace-95/132_stag.jpg",
+   "noun": "stag",
+   "finish": "green wireframe, cyan gouraud shading",
+   "source": "Z-Image Turbo (Apache 2.0), seed 402118422, 1024x576, prompt configs/still_prompts.json cyberspace-95 prefix and subject sentence, grown 2026-10-30"
   }
  ],
  "wet-paint": [
@@ -1877,6 +3509,78 @@
    "noun": "butterfly",
    "finish": "wet acrylic impasto, cobalt, vermilion, cream",
    "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/featured_prompts.json"
+  },
+  {
+   "file": "wet-paint/000_crescent_moon.jpg",
+   "noun": "crescent moon",
+   "finish": "wet acrylic impasto, cobalt, vermilion, cream",
+   "source": "Z-Image Turbo (Apache 2.0), seed 5900, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "wet-paint/001_snowflake.jpg",
+   "noun": "snowflake",
+   "finish": "wet acrylic impasto, cobalt, vermilion, cream",
+   "source": "Z-Image Turbo (Apache 2.0), seed 5901, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "wet-paint/002_faceted_gem.jpg",
+   "noun": "faceted gem",
+   "finish": "wet acrylic impasto, cobalt, vermilion, cream",
+   "source": "Z-Image Turbo (Apache 2.0), seed 5902, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "wet-paint/003_mobius_strip.jpg",
+   "noun": "mobius strip",
+   "finish": "wet acrylic impasto, cobalt, vermilion, cream",
+   "source": "Z-Image Turbo (Apache 2.0), seed 5903, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "wet-paint/004_dodecahedron.jpg",
+   "noun": "dodecahedron",
+   "finish": "wet acrylic impasto, cobalt, vermilion, cream",
+   "source": "Z-Image Turbo (Apache 2.0), seed 5904, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "wet-paint/036_amethyst_geode.jpg",
+   "noun": "amethyst geode",
+   "finish": "wet acrylic impasto, cobalt, vermilion, cream",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4030, 1024x576, prompt configs/still_prompts.json wet-paint prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "wet-paint/042_cube.jpg",
+   "noun": "cube",
+   "finish": "wet acrylic impasto, cobalt, vermilion, cream",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4036, 1024x576, prompt configs/still_prompts.json wet-paint prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "wet-paint/047_mobius.jpg",
+   "noun": "mobius",
+   "finish": "wet acrylic impasto, cobalt, vermilion, cream",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4041, 1024x576, prompt configs/still_prompts.json wet-paint prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "wet-paint/052_frost_fern.jpg",
+   "noun": "frost fern",
+   "finish": "wet acrylic impasto, cobalt, vermilion, cream",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4046, 1024x576, prompt configs/still_prompts.json wet-paint prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "wet-paint/056_trefoil_knot.jpg",
+   "noun": "trefoil knot",
+   "finish": "wet acrylic impasto, cobalt, vermilion, cream",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4050, 1024x576, prompt configs/still_prompts.json wet-paint prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "wet-paint/060_spiral_galaxy.jpg",
+   "noun": "spiral galaxy",
+   "finish": "wet acrylic impasto, cobalt, vermilion, cream",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4054, 1024x576, prompt configs/still_prompts.json wet-paint prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "wet-paint/061_asteroid.jpg",
+   "noun": "asteroid",
+   "finish": "wet acrylic impasto, cobalt, vermilion, cream",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4055, 1024x576, prompt configs/still_prompts.json wet-paint prefix and subject sentence, grown 2026-10-25"
   }
  ],
  "shadow-self": [
@@ -1951,6 +3655,168 @@
    "noun": "butterfly",
    "finish": "backlit silhouette, smoke, film grain",
    "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/featured_prompts.json"
+  },
+  {
+   "file": "shadow-self/021_skeleton_key.jpg",
+   "noun": "skeleton key",
+   "finish": "backlit silhouette, smoke, film grain",
+   "source": "Z-Image Turbo (Apache 2.0), seed 6027, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "shadow-self/067_enchanted_rose_under_glass.jpg",
+   "noun": "enchanted rose under glass",
+   "finish": "backlit silhouette, smoke, film grain",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2137672054, 1024x576, prompt configs/still_prompts.json shadow-self prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "shadow-self/073_notched_greatsword.jpg",
+   "noun": "notched greatsword",
+   "finish": "backlit silhouette, smoke, film grain",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2137672061, 1024x576, prompt configs/still_prompts.json shadow-self prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "shadow-self/083_giant_acorn_with_a_tiny_door.jpg",
+   "noun": "giant acorn with a tiny door",
+   "finish": "backlit silhouette, smoke, film grain",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2137672072, 1024x576, prompt configs/still_prompts.json shadow-self prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "shadow-self/084_gas_mask.jpg",
+   "noun": "gas mask",
+   "finish": "backlit silhouette, smoke, film grain",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2137672073, 1024x576, prompt configs/still_prompts.json shadow-self prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "shadow-self/089_phoenix_feather.jpg",
+   "noun": "phoenix feather",
+   "finish": "backlit silhouette, smoke, film grain",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2137672078, 1024x576, prompt configs/still_prompts.json shadow-self prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "shadow-self/096_throne_of_bones.jpg",
+   "noun": "throne of bones",
+   "finish": "backlit silhouette, smoke, film grain",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2137672085, 1024x576, prompt configs/still_prompts.json shadow-self prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "shadow-self/101_kraken_tentacle.jpg",
+   "noun": "kraken tentacle",
+   "finish": "backlit silhouette, smoke, film grain",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2137672090, 1024x576, prompt configs/still_prompts.json shadow-self prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "shadow-self/107_candelabra_of_black_wax.jpg",
+   "noun": "candelabra of black wax",
+   "finish": "backlit silhouette, smoke, film grain",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2137672097, 1024x576, prompt configs/still_prompts.json shadow-self prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "shadow-self/112_dragon_claw_holding_a_gem.jpg",
+   "noun": "dragon claw holding a gem",
+   "finish": "backlit silhouette, smoke, film grain",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2137672102, 1024x576, prompt configs/still_prompts.json shadow-self prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "shadow-self/129_snowy_owl.jpg",
+   "noun": "snowy owl",
+   "finish": "backlit silhouette, smoke, film grain",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1627377836, 1024x576, prompt configs/still_prompts.json shadow-self prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-29"
+  },
+  {
+   "file": "shadow-self/130_dragon_egg.jpg",
+   "noun": "dragon egg",
+   "finish": "backlit silhouette, smoke, film grain",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1627377837, 1024x576, prompt configs/still_prompts.json shadow-self prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-29"
+  },
+  {
+   "file": "shadow-self/131_amulet.jpg",
+   "noun": "amulet",
+   "finish": "backlit silhouette, smoke, film grain",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1627377838, 1024x576, prompt configs/still_prompts.json shadow-self prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-29"
+  },
+  {
+   "file": "shadow-self/132_phoenix.jpg",
+   "noun": "phoenix",
+   "finish": "backlit silhouette, smoke, film grain",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1627377839, 1024x576, prompt configs/still_prompts.json shadow-self prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-29"
+  },
+  {
+   "file": "shadow-self/133_unicorn.jpg",
+   "noun": "unicorn",
+   "finish": "backlit silhouette, smoke, film grain",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1627377840, 1024x576, prompt configs/still_prompts.json shadow-self prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-29"
+  },
+  {
+   "file": "shadow-self/134_flying_carpet.jpg",
+   "noun": "flying carpet",
+   "finish": "backlit silhouette, smoke, film grain",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1627377841, 1024x576, prompt configs/still_prompts.json shadow-self prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-29"
+  },
+  {
+   "file": "shadow-self/135_genie_lamp.jpg",
+   "noun": "genie lamp",
+   "finish": "backlit silhouette, smoke, film grain",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1627377842, 1024x576, prompt configs/still_prompts.json shadow-self prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-29"
+  },
+  {
+   "file": "shadow-self/155_serpent.jpg",
+   "noun": "serpent",
+   "finish": "backlit silhouette, smoke, film grain",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2068073620, 1024x576, prompt configs/still_prompts.json shadow-self prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "shadow-self/156_dragon.jpg",
+   "noun": "dragon",
+   "finish": "backlit silhouette, smoke, film grain",
+   "source": "Z-Image Turbo (Apache 2.0), seed 44162908, 1024x576, prompt configs/still_prompts.json shadow-self prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "shadow-self/157_griffin.jpg",
+   "noun": "griffin",
+   "finish": "backlit silhouette, smoke, film grain",
+   "source": "Z-Image Turbo (Apache 2.0), seed 44162909, 1024x576, prompt configs/still_prompts.json shadow-self prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "shadow-self/158_hydra.jpg",
+   "noun": "hydra",
+   "finish": "backlit silhouette, smoke, film grain",
+   "source": "Z-Image Turbo (Apache 2.0), seed 44162910, 1024x576, prompt configs/still_prompts.json shadow-self prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "shadow-self/159_cerberus.jpg",
+   "noun": "cerberus",
+   "finish": "backlit silhouette, smoke, film grain",
+   "source": "Z-Image Turbo (Apache 2.0), seed 44162911, 1024x576, prompt configs/still_prompts.json shadow-self prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "shadow-self/160_pegasus.jpg",
+   "noun": "pegasus",
+   "finish": "backlit silhouette, smoke, film grain",
+   "source": "Z-Image Turbo (Apache 2.0), seed 44162912, 1024x576, prompt configs/still_prompts.json shadow-self prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "shadow-self/161_basilisk.jpg",
+   "noun": "basilisk",
+   "finish": "backlit silhouette, smoke, film grain",
+   "source": "Z-Image Turbo (Apache 2.0), seed 44162913, 1024x576, prompt configs/still_prompts.json shadow-self prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "shadow-self/162_chimera.jpg",
+   "noun": "chimera",
+   "finish": "backlit silhouette, smoke, film grain",
+   "source": "Z-Image Turbo (Apache 2.0), seed 44162914, 1024x576, prompt configs/still_prompts.json shadow-self prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "shadow-self/163_wyvern.jpg",
+   "noun": "wyvern",
+   "finish": "backlit silhouette, smoke, film grain",
+   "source": "Z-Image Turbo (Apache 2.0), seed 44162915, 1024x576, prompt configs/still_prompts.json shadow-self prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "shadow-self/171_origami_dragon.jpg",
+   "noun": "origami dragon",
+   "finish": "backlit silhouette, smoke, film grain",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2073545798, 1024x576, prompt configs/still_prompts.json shadow-self prefix and subject sentence, grown 2026-10-30"
   }
  ],
  "botanical": [
@@ -2025,6 +3891,256 @@
    "noun": "butterfly",
    "finish": "living plant form, dewy",
    "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/featured_prompts.json"
+  },
+  {
+   "file": "botanical/000_rose.jpg",
+   "noun": "rose",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 6100, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "botanical/005_dahlia.jpg",
+   "noun": "dahlia",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 6105, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "botanical/010_protea.jpg",
+   "noun": "protea",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 6112, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "botanical/016_cherry_blossom_branch.jpg",
+   "noun": "cherry blossom branch",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 6118, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "botanical/017_fern_frond.jpg",
+   "noun": "fern frond",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 6119, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "botanical/018_succulent_rosette.jpg",
+   "noun": "succulent rosette",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 6120, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "botanical/021_bird_of_paradise.jpg",
+   "noun": "bird of paradise",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 6124, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "botanical/029_cactus_flower.jpg",
+   "noun": "cactus flower",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 6133, 1024x576, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject sentence), made 2026-10-24, imported into the grown set 2026-10-25"
+  },
+  {
+   "file": "botanical/033_dandelion.jpg",
+   "noun": "dandelion",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4003, 1024x576, prompt configs/still_prompts.json botanical prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "botanical/034_cicada.jpg",
+   "noun": "cicada",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4004, 1024x576, prompt configs/still_prompts.json botanical prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "botanical/035_morel_mushroom.jpg",
+   "noun": "morel mushroom",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4005, 1024x576, prompt configs/still_prompts.json botanical prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "botanical/036_praying_mantis.jpg",
+   "noun": "praying mantis",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4006, 1024x576, prompt configs/still_prompts.json botanical prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "botanical/038_firefly.jpg",
+   "noun": "firefly",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4008, 1024x576, prompt configs/still_prompts.json botanical prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "botanical/039_pitcher_plant.jpg",
+   "noun": "pitcher plant",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4009, 1024x576, prompt configs/still_prompts.json botanical prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "botanical/045_scallop_shell.jpg",
+   "noun": "scallop shell",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4015, 1024x576, prompt configs/still_prompts.json botanical prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "botanical/047_acorn.jpg",
+   "noun": "acorn",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4017, 1024x576, prompt configs/still_prompts.json botanical prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "botanical/048_pine_cone.jpg",
+   "noun": "pine cone",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4018, 1024x576, prompt configs/still_prompts.json botanical prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "botanical/051_maple_seed.jpg",
+   "noun": "maple seed",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4021, 1024x576, prompt configs/still_prompts.json botanical prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "botanical/052_cactus.jpg",
+   "noun": "cactus",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4022, 1024x576, prompt configs/still_prompts.json botanical prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "botanical/054_barnacle_cluster.jpg",
+   "noun": "barnacle cluster",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4024, 1024x576, prompt configs/still_prompts.json botanical prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "botanical/055_stag_beetle.jpg",
+   "noun": "stag beetle",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4025, 1024x576, prompt configs/still_prompts.json botanical prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "botanical/056_chameleon.jpg",
+   "noun": "chameleon",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4026, 1024x576, prompt configs/still_prompts.json botanical prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "botanical/057_bumblebee.jpg",
+   "noun": "bumblebee",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4027, 1024x576, prompt configs/still_prompts.json botanical prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "botanical/059_mushroom.jpg",
+   "noun": "mushroom",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4030, 1024x576, prompt configs/still_prompts.json botanical prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "botanical/060_apple.jpg",
+   "noun": "apple",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4031, 1024x576, prompt configs/still_prompts.json botanical prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "botanical/062_sea_sponge.jpg",
+   "noun": "sea sponge",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4033, 1024x576, prompt configs/still_prompts.json botanical prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "botanical/067_poppy_seed_head.jpg",
+   "noun": "poppy seed head",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4038, 1024x576, prompt configs/still_prompts.json botanical prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "botanical/068_dark_greenhouse_of_dewy_petals.jpg",
+   "noun": "dark greenhouse of dewy petals",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1116953540, 1024x576, prompt configs/still_prompts.json botanical scene prefix, grown 2026-10-27",
+   "kind": "scene"
+  },
+  {
+   "file": "botanical/069_meadow_of_flowers_on_black_at_night.jpg",
+   "noun": "meadow of flowers on black at night",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1116953541, 1024x576, prompt configs/still_prompts.json botanical scene prefix, grown 2026-10-27",
+   "kind": "scene"
+  },
+  {
+   "file": "botanical/073_forest_floor_of_mushrooms_and_dew.jpg",
+   "noun": "forest floor of mushrooms and dew",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1116953545, 1024x576, prompt configs/still_prompts.json botanical scene prefix, grown 2026-10-27",
+   "kind": "scene"
+  },
+  {
+   "file": "botanical/074_dark_greenhouse_of_dewy_petals.jpg",
+   "noun": "dark greenhouse of dewy petals",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1116953546, 1024x576, prompt configs/still_prompts.json botanical scene prefix, grown 2026-10-27",
+   "kind": "scene"
+  },
+  {
+   "file": "botanical/089_carnivorous_sundew.jpg",
+   "noun": "carnivorous sundew",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 932466003, 1024x576, prompt configs/still_prompts.json botanical prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "botanical/129_bird_paradise.jpg",
+   "noun": "bird paradise",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 523948863, 1024x576, prompt configs/still_prompts.json botanical prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "botanical/130_sundew.jpg",
+   "noun": "sundew",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 523948864, 1024x576, prompt configs/still_prompts.json botanical prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "botanical/131_venus_flytrap.jpg",
+   "noun": "venus flytrap",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1066597778, 1024x576, prompt configs/still_prompts.json botanical prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "botanical/132_sunflower.jpg",
+   "noun": "sunflower",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1066597779, 1024x576, prompt configs/still_prompts.json botanical prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "botanical/133_tree_life.jpg",
+   "noun": "tree life",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1482615291, 1024x576, prompt configs/still_prompts.json botanical prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "botanical/134_laurel_wreath.jpg",
+   "noun": "laurel wreath",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1482615292, 1024x576, prompt configs/still_prompts.json botanical prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "botanical/135_olive_branch.jpg",
+   "noun": "olive branch",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1482615293, 1024x576, prompt configs/still_prompts.json botanical prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "botanical/136_mandrake_root.jpg",
+   "noun": "mandrake root",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 738058786, 1024x576, prompt configs/still_prompts.json botanical prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "botanical/149_dandelion_seed_head.jpg",
+   "noun": "dandelion seed head",
+   "finish": "living plant form, dewy",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1144850348, 1024x576, prompt configs/still_prompts.json botanical prefix and subject sentence, grown 2026-10-30"
   }
  ],
  "none": [
@@ -2099,6 +4215,96 @@
    "noun": "snowflake",
    "finish": "its own real materials and colours",
    "source": "Z-Image Turbo (Apache 2.0), configs/still_prompts.json none"
+  },
+  {
+   "file": "none/003_seahorse.jpg",
+   "noun": "seahorse",
+   "finish": "its own real materials and colours",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2932, 1024x576, prompt configs/still_prompts.json none prefix and subject sentence, grown 2026-10-29"
+  },
+  {
+   "file": "none/004_sea_turtle.jpg",
+   "noun": "sea turtle",
+   "finish": "its own real materials and colours",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2933, 1024x576, prompt configs/still_prompts.json none prefix and subject sentence, grown 2026-10-29"
+  },
+  {
+   "file": "none/005_betta_fish.jpg",
+   "noun": "betta fish",
+   "finish": "its own real materials and colours",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2934, 1024x576, prompt configs/still_prompts.json none prefix and subject sentence, grown 2026-10-29"
+  },
+  {
+   "file": "none/100_seashell.jpg",
+   "noun": "seashell",
+   "finish": "its own real materials and colours",
+   "source": "Z-Image Turbo (Apache 2.0), seed 321454919, 1024x576, prompt configs/still_prompts.json none prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-29"
+  },
+  {
+   "file": "none/101_coral.jpg",
+   "noun": "coral",
+   "finish": "its own real materials and colours",
+   "source": "Z-Image Turbo (Apache 2.0), seed 321454920, 1024x576, prompt configs/still_prompts.json none prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-29"
+  },
+  {
+   "file": "none/102_pearl_oyster.jpg",
+   "noun": "pearl oyster",
+   "finish": "its own real materials and colours",
+   "source": "Z-Image Turbo (Apache 2.0), seed 321454921, 1024x576, prompt configs/still_prompts.json none prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-29"
+  },
+  {
+   "file": "none/103_jellyfish.jpg",
+   "noun": "jellyfish",
+   "finish": "its own real materials and colours",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2014990786, 1024x576, prompt configs/still_prompts.json none prefix and subject sentence, grown 2026-10-29"
+  },
+  {
+   "file": "none/104_octopus.jpg",
+   "noun": "octopus",
+   "finish": "its own real materials and colours",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2014990787, 1024x576, prompt configs/still_prompts.json none prefix and subject sentence, grown 2026-10-29"
+  },
+  {
+   "file": "none/105_manta_ray.jpg",
+   "noun": "manta ray",
+   "finish": "its own real materials and colours",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2014990788, 1024x576, prompt configs/still_prompts.json none prefix and subject sentence, grown 2026-10-29"
+  },
+  {
+   "file": "none/106_starfish.jpg",
+   "noun": "starfish",
+   "finish": "its own real materials and colours",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2014990789, 1024x576, prompt configs/still_prompts.json none prefix and subject sentence, grown 2026-10-29"
+  },
+  {
+   "file": "none/107_pufferfish.jpg",
+   "noun": "pufferfish",
+   "finish": "its own real materials and colours",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2014990790, 1024x576, prompt configs/still_prompts.json none prefix and subject sentence, grown 2026-10-29"
+  },
+  {
+   "file": "none/108_anglerfish.jpg",
+   "noun": "anglerfish",
+   "finish": "its own real materials and colours",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2014990791, 1024x576, prompt configs/still_prompts.json none prefix and subject sentence, grown 2026-10-29"
+  },
+  {
+   "file": "none/111_humpback_whale.jpg",
+   "noun": "humpback whale",
+   "finish": "its own real materials and colours",
+   "source": "Z-Image Turbo (Apache 2.0), seed 2014990794, 1024x576, prompt configs/still_prompts.json none prefix and subject sentence, grown 2026-10-29"
+  },
+  {
+   "file": "none/112_koi.jpg",
+   "noun": "koi",
+   "finish": "its own real materials and colours",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1260179208, 1024x576, prompt configs/still_prompts.json none prefix and subject sentence, grown 2026-10-29"
+  },
+  {
+   "file": "none/114_cuttlefish.jpg",
+   "noun": "cuttlefish",
+   "finish": "its own real materials and colours",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1260179210, 1024x576, prompt configs/still_prompts.json none prefix and subject sentence, grown 2026-10-29"
   }
  ]
 }

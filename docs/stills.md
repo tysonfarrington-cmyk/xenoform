@@ -6,8 +6,12 @@ own GPU, how a still earns its place, and how the chain draws on it.
 
 ## Two sets, one pool
 
-- **Shipped** (`src/xenoform/ui_static/objects/<vibe>/`, listed in `objects.json`): the seed set in the repo, twelve a vibe,
-  made once with Z-Image Turbo and kept small so a clone stays light.
+- **Shipped** (`src/xenoform/ui_static/objects/<vibe>/`, listed in `objects.json`): the seed set in the repo, twelve a vibe
+  made once with Z-Image Turbo, then the stills the finished videos show (31 Oct 2026: 367 more in 22 vibes, same file
+  names as on the machine that grew them, so a pinned chain or a chain preset reproduces on a fresh clone). Each row
+  names its model, seed and prompt file. On a machine that has grown the same still, the catalogue lists the grown copy
+  once and hides the shipped twin (same file name, or the same picture under the same noun); culling the grown jpg
+  keeps it culled.
 - **Grown here** (`work/ui/objects/<vibe>/`, listed in `stills.json`): what this machine has rendered. Not in the repo.
   `XENO_STILLS` moves the folder.
 

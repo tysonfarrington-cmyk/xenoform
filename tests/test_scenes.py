@@ -105,7 +105,8 @@ def test_scene_nouns_skip_the_rendered_ones_then_go_round_again():
 def test_counts_and_catalogue_tell_scenes_from_objects():
     _grown("cosmic", "000_shore.jpg", "dark shore under a star field", kind="scene")
     _grown("cosmic", "001_astrolabe.jpg", "astrolabe")
-    assert S.counts("cosmic") == {"shipped": 12, "grown": 1, "own": 0, "scenes": 1, "total": 14}
+    n = len(S.shipped()["cosmic"])
+    assert S.counts("cosmic") == {"shipped": n, "grown": 1, "own": 0, "scenes": 1, "total": n + 2}
     assert S.scene_nouns_in("cosmic") == {"dark shore under a star field"} and "dark shore under a star field" not in S.nouns_in("cosmic")
     rows = S.catalogue()["cosmic"]
     assert [S.kind_of(r) for r in rows].count("scene") == 1 and S.kind_of(rows[0]) == "object"
@@ -203,7 +204,8 @@ def test_grow_with_kind_scene_renders_the_scene_prompts_and_lists_scenes():
     assert all(p.startswith(S.prompts()["cosmic"]["scene"]) and p.endswith(", seen wide.") for p in fake.prompts)
     rows = S.grown()["cosmic"]
     assert [r["kind"] for r in rows] == ["scene"] * 3 and Path(res["sheet"]).name == "scenes.jpg"
-    assert S.counts("cosmic") == {"shipped": 12, "grown": 0, "own": 0, "scenes": 3, "total": 15}
+    n = len(S.shipped()["cosmic"])
+    assert S.counts("cosmic") == {"shipped": n, "grown": 0, "own": 0, "scenes": 3, "total": n + 3}
     # the next scene grow moves on to the subjects not rendered yet, in list order
     assert S.plan("cosmic", 2, kind="scene")["nouns"] == [n for n in S.scene_list("cosmic") if n not in res["nouns"]][:2]
 
