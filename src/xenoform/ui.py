@@ -2214,11 +2214,14 @@ def create_app(cfg: dict | None = None):
         """A ``length_s`` cut of the song centred a little before its drop (or from ``start_s`` when the Make body
         names a window), snapped back to a beat, with short fades, registered as its own audio id (analysed like
         an upload). None when the song is already short. A ``paced`` Make (``pacing``) centres it on the song's main
-        drop run (``pacing.main_drop``), which the drop time alone can miss by a build."""
+        drop run (``pacing.main_drop``), which the drop time alone can miss by a build, and plans on the song's own
+        beats, tempo and sections cut to the window (``_window_features``, as the Chain row previews it): 30 s analysed
+        alone can hear double time (Glitch Out's first 30 s, the first 14 of them without a beat, read as 180 bpm)."""
         try:
             features = _features_for(audio_id)
         except HTTPException:
             features = {}
+        song = features
         dur = float(features.get("duration") or 0.0)
         if length_s <= 0 or dur <= 0 or dur <= length_s + 1.0:
             return None
@@ -2254,6 +2257,15 @@ def create_app(cfg: dict | None = None):
                         "-af", f"afade=t=in:d=0.3,afade=t=out:st={fade_out:.3f}:d=0.4", "-ar", "48000", "-ac", "2", str(dest)],
                        check=True)
         features = _analyze_file(dest)
+        if paced and beats:  # the song's own grid and roles, where the window sits in them (the Chain row's own maths)
+            try:
+                win, _at, _drop = _window_features(song, Path(audio_path), length_s, start, paced=True)
+                features["beats"], features["sections"] = win["beats"], win["sections"]
+                if song.get("tempo"):
+                    features["tempo"] = song["tempo"]
+                features.pop("analysis_sections", None)
+            except Exception:
+                log.exception("the song's beats for the cut")
         features["trimmed_from"] = {"audio_id": audio_id, "start": round(start, 3), "length_s": float(length_s),
                                     "drop": round(drop, 3), "song_duration": round(dur, 3)}
         try:  # the cut inherits the song's stems (sliced), or gets its own split in the background

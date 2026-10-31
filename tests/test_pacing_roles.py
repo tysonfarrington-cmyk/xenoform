@@ -190,3 +190,63 @@ def test_a_capped_plan_spends_its_budget_rather_than_landing_under_it():
         assert max(by["calm"]) > max(by["drop"]) and sum(by["calm"]) / len(by["calm"]) > sum(by["drop"]) / len(by["drop"])
     small, _ = dense.shots_for(_make_body(song, max_shots=20), song, None, drop=139.71)
     assert len(small) <= 20
+
+
+def test_a_paced_window_plans_on_the_songs_own_beats(tmp_path, monkeypatch):
+    """A Length cut is analysed again on its own, and 30 s can hear double time (Glitch Out's 0:00 to 0:30, its first
+    14 s without a beat, came back at 180 bpm and every plan ran twice as fast): a paced Make plans on the song's own
+    beats, tempo and sections cut to the window, as the Chain row previews it; Breathe off with Drops off keeps the
+    window's own analysis, as the old cut did."""
+    import wave
+
+    import numpy as np
+    from fastapi.testclient import TestClient
+
+    from xenoform import analyze, ui as ui_mod
+
+    sr, seconds = 22050, 24.0
+    t = np.arange(int(seconds * sr)) / sr
+    y = 0.3 * np.sin(2 * np.pi * 220 * t) * (1 + 0.5 * np.sign(np.sin(2 * np.pi * 1.5 * t)))
+    path = tmp_path / "long.wav"
+    with wave.open(str(path), "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(sr)
+        w.writeframes((y * 32767).astype("<i2").tobytes())
+    client = TestClient(ui_mod.create_app())
+    audio_id = client.post("/api/analyze", files={"file": ("long.wav", path.read_bytes(), "audio/wav")}).json()["audio_id"]
+    with ui_mod._LOCK:  # the song's own analysis: 120 bpm, a calm half and a drop
+        song = dict(ui_mod._FEATURES[audio_id])
+        song.update({"beats": [round(0.5 * i, 3) for i in range(48)], "tempo": 120.0, "sections": [
+            {"index": 0, "label": "calm", "start": 0.0, "end": 12.0, "level": 0.3},
+            {"index": 1, "label": "drop", "start": 12.0, "end": 24.0, "level": 1.0}]})
+        song.pop("analysis_sections", None)
+        ui_mod._FEATURES[audio_id] = song
+    real = analyze.analyze_audio
+
+    def doubled(*a, **kw):  # the window alone hears double time
+        f = real(*a, **kw)
+        f["beats"] = [round(0.25 * i, 3) for i in range(int(float(f["duration"]) / 0.25))]
+        f["tempo"] = 240.0
+        return f
+
+    monkeypatch.setattr(analyze, "analyze_audio", doubled)
+    seen = {}
+
+    def fake_run_job(job_id, audio_path, body, cfg, out, cancel_event=None):
+        seen["body"] = dict(body)
+        with ui_mod._LOCK:
+            ui_mod._JOBS[job_id]["status"] = "done"
+
+    monkeypatch.setattr(ui_mod, "_run_job", fake_run_job)
+    for extra, paced in (({}, True), ({"breathe": False, "drop_mode": "off"}, False)):
+        r = client.post("/api/generate", json={"audio_id": audio_id, "quality": "turbo", "mode": "simple", "vibe": "ocean",
+                                               "length_s": 8, "length_start": 6.2, **extra})
+        assert r.status_code == 200, r.text
+        cut = ui_mod._FEATURES[seen["body"]["audio_id"]]
+        assert cut["trimmed_from"]["start"] == 6.0 and abs(float(cut["duration"]) - 8.0) < 0.3
+        if paced:
+            assert cut["beats"][:4] == [0.0, 0.5, 1.0, 1.5] and len(cut["beats"]) == 16 and cut["tempo"] == 120.0
+            assert [(s["label"], s["start"], s["end"]) for s in cut["sections"]] == [("calm", 0.0, 6.0), ("drop", 6.0, 8.0)]
+        else:
+            assert cut["beats"][:3] == [0.0, 0.25, 0.5] and cut["tempo"] == 240.0  # the old cut: its own analysis
