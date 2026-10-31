@@ -87,7 +87,8 @@ one), Look preset family, Chaos cap, Intensity, handoff-kind share, foreshadow m
 written into the shots as per-shot fields the timeline already understands (`timing`, `fx_names`, `look`,
 `fx_intensity`) plus the new ones below, so a re-cut can change them without a GPU.
 
-New names (checked free in the code): body keys `breathe` (true/false, default true) and `drop_mode`
+New names (checked free in the code): body keys `breathe` (true/false; default false until Tys has judged the
+sheets, his decision of 31 Oct) and `drop_mode`
 ("auto" default, "max", "off"); shot fields `heat` (0..1), `drop_run` (int), `rest` (beats the arrived object
 dwells before the next shot). Never reuse `drop`, `effects`, `source`, `style`, `timing`, `energy`, `breath`.
 
@@ -222,9 +223,8 @@ video, and it is built last because it stands on all the others.
 
 ## 8. Decisions for Tys
 
-1. Repo size: shipping the on-screen stills and the loved clips adds about 70 MB to a 90 MB repo. Yes, or a
-   release asset fetched by `scripts/fetch_library.py`?
-2. Breathe on by default (the music-video shape; Breathe off is today's VJ cut), or off until judged?
+1. Repo size: decided 31 Oct, the stills and the loved clips ship in the repo itself (about 70 MB).
+2. Breathe default: decided 31 Oct, off until Tys has judged the sheets; the drop treatment stays on ("auto").
 3. Credits: the judged Cloud sets for backdrops and for Breathe, and later a whole song on Cloud. None is spent
    until he says so; Draft sheets come first and are free.
 4. Wet paint and the pink odd-machine: hidden from the featured cards (still in the registry), or left as they are?
