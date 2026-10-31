@@ -932,8 +932,12 @@ def _fill_setting(im: Image.Image, target: float) -> Image.Image:
 # ------------------------------------------------------------------------------------------------ ingest
 
 
-def _next_index(folder: Path) -> int:
-    nums = [int(m.group(1)) for p in folder.glob("*.jpg") if (m := re.match(r"^(\d+)_", p.name))]
+def _next_index(folder: Path, listed: list[dict] | None = None) -> int:
+    """The next free number in ``folder``: past every jpg there and every row ``stills.json`` still lists for it, so a
+    number whose file was culled is never handed out again (a re-grown "015_skeleton_key.jpg" once brought the culled
+    one's row, noun and place back to life, 31 Oct)."""
+    names = [p.name for p in folder.glob("*.jpg")] + [Path(str(r.get("file") or "")).name for r in (listed or [])]
+    nums = [int(m.group(1)) for name in names if (m := re.match(r"^(\d+)_", name))]
     return (max(nums) + 1) if nums else 0
 
 
@@ -990,7 +994,7 @@ def ingest(vibe: str, source: Path | str, noun: str, *, prof: dict | None = None
             tmp.unlink(missing_ok=True)
         verdict["kept"] = False
         return verdict
-    n = _next_index(folder)
+    n = _next_index(folder, _read_json(index_path(), {}).get(vibe))
     dest = folder / f"{n:03d}_{slug(noun)}.jpg"
     os.replace(tmp, dest)
     rel = str(dest.relative_to(root())).replace("\\", "/")

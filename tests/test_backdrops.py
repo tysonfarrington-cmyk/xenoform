@@ -413,6 +413,16 @@ def test_ingest_keeps_a_setting_ungraded_zooms_it_by_its_fill_and_lists_its_plac
     assert S.counts("liquid-gold")["settings"] == 1
 
 
+def test_a_culled_still_never_lends_its_number_and_row_to_the_next(tmp_path):
+    first = S.ingest("neon-noir", _setting(tmp_path / "key.png", seed=11), "skeleton key", kind="setting", place="on the subway steps")
+    assert first["kept"] and first["file"] == "neon-noir/000_skeleton_key.jpg"
+    (S.root() / first["file"]).unlink()  # the cull: delete the jpg
+    again = S.ingest("neon-noir", _setting(tmp_path / "key2.png", seed=12), "skeleton key", kind="setting", place="on a loading dock")
+    assert again["kept"] and again["file"] == "neon-noir/001_skeleton_key.jpg"  # not 000 again
+    rows = S.grown()["neon-noir"]
+    assert [(r["file"], r["place"]) for r in rows] == [("neon-noir/001_skeleton_key.jpg", "on a loading dock")]  # the culled row stays gone
+
+
 def test_a_settings_plan_places_each_object_and_moves_on_round_the_places():
     places = S.place_list("liquid-gold")
     p = S.plan("liquid-gold", kind="setting", seed=4)
