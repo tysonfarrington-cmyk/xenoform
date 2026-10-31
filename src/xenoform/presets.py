@@ -2,8 +2,9 @@
 
 A preset is a vibe, an idea line, the stills pinned slot by slot (the Make body's ``chain_pins``) and the settings the
 chain was loved with: morph style, timing, effects, look, foreshadow, the four knobs, the seed and the Backdrop (``plain``:
-every loved chain stood on the vibe's own studio ground, so a vibe that has grown places does not change it). The desk shows them as
-chips beside the idea line (``GET /api/presets``); a click sets the vibe, the line, the pins and the Fine-tune rows in one
+every loved chain stood on the vibe's own studio ground, so a vibe that has grown places does not change it) and the
+Shape (``breathe`` and ``drop_mode``: every loved chain was cut before the Shape row, so a row that does not say is
+Breathe off with Drops off, and a re-make comes out as it was). The desk shows them as chips beside the idea line (``GET /api/presets``); a click sets the vibe, the line, the pins and the Fine-tune rows in one
 go, and never the tier (a preset made on Cloud Final does not tick the credits box: a Make is still the user's to start).
 
 ``load()`` reads the file (a missing or bad file means none; a bad row is dropped, a bad field falls back to the desk's
@@ -61,7 +62,7 @@ def _pin_exists(file: str) -> bool:
 
 def clean(row: dict) -> dict | None:
     """One preset as the desk can use it, or None when it is not one (no id, no name, or a vibe the registry does not know)."""
-    from xenoform import effects, morph_pass, morph_style, morph_timing, simple_recipe, vibes
+    from xenoform import effects, morph_pass, morph_style, morph_timing, pacing, simple_recipe, vibes
 
     pid = re.sub(r"[^a-z0-9-]+", "-", str(row.get("id") or "").lower()).strip("-")
     name = str(row.get("name") or "").strip()[:60]
@@ -79,6 +80,7 @@ def clean(row: dict) -> dict | None:
     look = str(row.get("look") or "auto")
     foreshadow = str(row.get("foreshadow") or "auto").lower()
     backdrop = str(row.get("backdrop") or "plain").lower()  # every loved chain stood on the vibe's own studio ground
+    drop_mode = str(row.get("drop_mode") or "off").lower()  # and was cut before the Shape row: Drops off, Breathe off
     knobs = {}
     for key in KNOBS:
         try:
@@ -103,6 +105,8 @@ def clean(row: dict) -> dict | None:
         "look": look if look in _looks() else "auto",
         "foreshadow": foreshadow if foreshadow in simple_recipe.FORESHADOW else "auto",
         "backdrop": backdrop if backdrop in morph_pass.BACKDROPS else "plain",
+        "breathe": row.get("breathe") is True,
+        "drop_mode": drop_mode if drop_mode in pacing.DROP_MODES else "off",
         "knobs": knobs,
         "seed": seed,
         "engine": str(row.get("engine") or ""),
@@ -135,8 +139,9 @@ def get(preset_id: str) -> dict:
 
 def body(preset: dict) -> dict:
     """The Make-body keys a preset sets: ``vibe``, ``idea``, ``chain_pins`` (slot -> still), ``morph_style``, ``morph_timing``,
-    ``effects``, ``dance_fx`` (the look), ``foreshadow``, ``backdrop``, ``macros`` (the four knobs) and ``seed``. Not the tier, not the
-    song, not the length: a preset says what the cut is made of, not what it costs."""
+    ``effects``, ``dance_fx`` (the look), ``foreshadow``, ``backdrop``, the Shape (``breathe``, ``drop_mode``), ``macros`` (the
+    four knobs) and ``seed``. Not the tier, not the song, not the length: a preset says what the cut is made of, not what it
+    costs."""
     return {
         "vibe": preset["vibe"],
         "idea": preset["idea"],
@@ -147,6 +152,8 @@ def body(preset: dict) -> dict:
         "dance_fx": preset["look"],
         "foreshadow": preset["foreshadow"],
         "backdrop": preset["backdrop"],
+        "breathe": preset["breathe"],
+        "drop_mode": preset["drop_mode"],
         "macros": dict(preset["knobs"]),
         "seed": preset["seed"],
     }

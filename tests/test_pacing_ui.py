@@ -70,3 +70,26 @@ def test_the_make_reports_what_the_plan_did():
 
     assert '"plan_line"' in inspect.getsource(turbo._run_turbo)
     assert 'result.get("plan_line")' in inspect.getsource(ui)
+
+
+def test_a_loved_chain_comes_back_in_the_shape_it_was_cut_in(tmp_path, monkeypatch):
+    """The loved chains (configs/chain_presets.json) were all cut before the Shape row: a preset carries Breathe off with
+    Drops off, the legacy cut, so re-made later it comes out as it was; a row may say otherwise, a bad value is off."""
+    import json
+
+    from xenoform import pacing, presets
+
+    loved = presets.load()
+    assert loved and all((p["breathe"], p["drop_mode"]) == (False, "off") for p in loved)
+    assert all(pacing.legacy(presets.body(p)) for p in loved)
+    f = tmp_path / "presets.json"
+    f.write_text(json.dumps({"presets": [
+        {"id": "said", "name": "Said", "vibe": "black", "breathe": True, "drop_mode": "MAX"},
+        {"id": "silent", "name": "Silent", "vibe": "black"},
+        {"id": "odd", "name": "Odd", "vibe": "black", "breathe": "yes", "drop_mode": "loud"}]}), encoding="utf-8")
+    monkeypatch.setenv("XENO_PRESETS", str(f))
+    got = {p["id"]: (presets.body(p)["breathe"], presets.body(p)["drop_mode"]) for p in presets.load()}
+    assert got == {"said": (True, "max"), "silent": (False, "off"), "odd": (False, "off")}
+    apply = APP.split("function applyPreset(id) {", 1)[1].split("function ideaReadingLine(", 1)[0]
+    assert "easy.breathe = body.breathe === true;" in apply and 'DROP_MODES.includes(body.drop_mode) ? body.drop_mode : "off"' in apply
+    assert "loadSimpleOptions().then(render)" in apply  # the Shape moves the plan: the count and the clock are asked again

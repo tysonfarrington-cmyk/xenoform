@@ -44,7 +44,9 @@ def test_the_loved_chains_are_presets_whose_pins_are_shipped_stills():
 
 def test_a_preset_body_is_the_make_body_and_pins_hold_their_slots():
     body = presets.body(presets.get("black-rose"))
-    assert set(body) == {"vibe", "idea", "chain_pins", "morph_style", "morph_timing", "effects", "dance_fx", "foreshadow", "backdrop", "macros", "seed"}
+    assert set(body) == {"vibe", "idea", "chain_pins", "morph_style", "morph_timing", "effects", "dance_fx", "foreshadow", "backdrop",
+                         "breathe", "drop_mode", "macros", "seed"}
+    assert (body["breathe"], body["drop_mode"]) == (False, "off")  # cut before the Shape row: a re-make comes out as it was
     assert body["backdrop"] == "plain" and body["backdrop"] in mp.BACKDROPS  # every loved chain stood on the studio ground
     assert not {"quality_tier", "tier", "cloud_final_ok", "cloud_quality", "song", "audio_id", "length_s"} & set(body)  # it costs nothing
     assert body["vibe"] == "black" and body["dance_fx"] == "auto" and body["foreshadow"] == "off" and body["macros"]["glow"] == 0.6

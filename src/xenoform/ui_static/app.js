@@ -1632,11 +1632,15 @@ function applyPreset(id) {
   easy.danceFx = body.dance_fx || "auto";
   easy.foreshadow = body.foreshadow || "auto";
   easy.backdrop = BACKDROPS.includes(body.backdrop) ? body.backdrop : "plain";  // the loved chains stood on the studio ground, whatever places this vibe has grown
+  // the Shape (xenoform.pacing): every loved chain was cut before it, so it comes back Breathe off and Drops off, as it was
+  easy.breathe = body.breathe === true;
+  easy.dropMode = DROP_MODES.includes(body.drop_mode) ? body.drop_mode : "off";
   Object.entries(body.macros || {}).forEach(([key, value]) => { if (window.XENO_MACRO_SET) window.XENO_MACRO_SET(key, Number(value)); });
   easy.presetId = preset.id;  // the chip stays lit, and the note under the chips speaks, while the vibe and the pins are still the preset's
   easy.note = "";
   saveEasy();
   render();
+  loadSimpleOptions().then(render);  // the vibe, the Speed and the Shape move the plan: the count and the clock are asked again
   if (easy.song && easy.vibe) scheduleChain(chainKey());  // the pins move the picks: the Chain row follows
   const chip = document.querySelector(`[data-act=easy-preset][data-id="${id}"]`);
   if (chip) chip.focus();
