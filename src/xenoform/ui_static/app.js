@@ -2589,7 +2589,7 @@ function shotsLane(easy) {
   const dropMark = lane.drop != null && Number(lane.drop) > 0 ? `<span class="drop-mark" style="left:${((100 * Number(lane.drop)) / total).toFixed(3)}%" title="${esc(`the drop · ${clockText(lane.drop)}`)}"></span>` : "";
   const song = passages || dropMark ? `<div class="lane-song" aria-label="Song">${passages}${dropMark}</div>` : "";
   const facts = [lane.plan_line || "", `${lane.shots.length} shots`, lane.morphs ? `${lane.morphs} morphs over ${lane.objects} objects` : "", lane.pace ? `${lane.pace} pace` : "",
-    (lane.sections || []).length > 1 ? `${lane.sections.length} passages` : "", lane.swaps ? `${lane.swaps} swap${lane.swaps === 1 ? "" : "s"}` : "",
+    (lane.sections || []).length > 1 && !songCut ? `${lane.sections.length} passages` : "", lane.swaps ? `${lane.swaps} swap${lane.swaps === 1 ? "" : "s"}` : "",
     lane.rerenders ? `${lane.rerenders} re-render${lane.rerenders === 1 ? "" : "s"}` : "", lane.inserts ? `${lane.inserts} generated run${lane.inserts === 1 ? "" : "s"}` : "", lane.dreams ? `${lane.dreams} dream${lane.dreams === 1 ? "" : "s"}` : ""].filter(Boolean).join(" · ");
   const hint = swapping ? "click a shot to swap the object it lands on" : songCut ? "click a passage to open its own cut and edit it there" : "click a shot, or the seam between two, to change it";
   const toggle = swapping ? `<button type="button" class="text lane-swap-toggle" data-act="easy-swap-mode" aria-pressed="true">Done swapping</button>` : "";
