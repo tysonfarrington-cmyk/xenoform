@@ -148,6 +148,7 @@ def totals(rec: dict) -> dict:
             "draft_render_min": round(renders / 60.0, 1), "assembly_min": round(assembly / 60.0, 1),
             "wall_min": round((finished - started) / 60.0, 1) if started and finished else None,
             "draft_estimate_min": (tiers.get("draft") or {}).get("minutes"),
+            "draft_measured": bool((tiers.get("draft") or {}).get("measured")),
             "fast_estimate_min": (tiers.get("fast") or {}).get("minutes"),
             "final_estimate_min": (tiers.get("final") or {}).get("minutes"),
             "cloud_estimate_min": (tiers.get("cloud") or {}).get("minutes"),
@@ -238,13 +239,17 @@ def readme(out: Path, intro: Path | None) -> Path:
                   f"- Morphs: {t['morphs']} in {t['windows']} Makes over {t['passages']} passages (at most 16 a Make).",
                   f"- Draft: {t['draft_render_min']} min of renders here (the windows' own times) and {t['assembly_min']} min to lay it "
                   f"together" + (f"; {t['wall_min']} min from the first window's start to the last one's end" if t.get("wall_min") else "")
-                  + f" (the plan estimated {t['draft_estimate_min']} min).",
+                  + f" (the desk estimated {t['draft_estimate_min']} min before it ran, "
+                  + ("from the pace this card had kept on Draft)." if t.get("draft_measured") else "from the profile table: this card "
+                     "had no measured Draft pace yet)."),
                   f"- Final on this card would take about {t['final_estimate_min']} min ({round((t['final_estimate_min'] or 0) / 60, 1)} h); "
                   f"Fast Final about {t['fast_estimate_min']} min.",
                   f"- Cloud Final would take about {t['cloud_estimate_min']} min and spend {credits[0]} to {credits[1]} Comfy Cloud credits "
                   f"(3.6 to 6 a morph). Nothing was spent.",
                   f"- Sound: {loud.get('lufs')} LUFS integrated (target -16), true peak {loud.get('true_peak_db')} dB.",
-                  f"- Flash frames after the tame: {qa.get('flash_frames')} in all, {qa.get('max_flash_8_bars')} in the worst 8 bars; "
+                  (f"- Flash frames after the tame: " if s.get("tame") else
+                   f"- Flash frames (Breathe off, so no tame, as on any Make without Breathe): ")
+                  + f"{qa.get('flash_frames')} in all, {qa.get('max_flash_8_bars')} in the worst 8 bars; "
                   f"cuts off the beat: {qa.get('off_beat')}."]
     path = out / "README.md"
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
