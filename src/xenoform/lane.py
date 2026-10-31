@@ -50,6 +50,10 @@ def choices() -> dict:
 
 
 def build(info: dict, video_id: str = "") -> dict:
+    if str(info.get("mode") or "") == "stems":  # a Stems cut: its layers' lanes, stacked (stems_mode.lane)
+        from xenoform import stems_mode
+
+        return stems_mode.lane(info, video_id)
     shots = list(info.get("shots") or [])
     files = [str(f) for f in (info.get("stills") or [])]
     stills = [noun_of(s) for s in files]

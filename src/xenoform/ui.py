@@ -269,7 +269,9 @@ def create_app(cfg: dict | None = None):
 
     app.mount("/static", _FreshCode(directory=static), name="static")
     from xenoform.stems_api import router as stems_router  # /api/stems, /api/midi/*, /ws/midi
+    from xenoform.stems_mode import router as stems_mode_router  # /api/stems/split, /api/stems/status, the re-composite
 
+    app.include_router(stems_mode_router)  # first: /api/stems/status is not a stems id
     app.include_router(stems_router)
     from xenoform.film_pack import router as film_pack_router  # /api/film_pack (the free film pack's status)
 
@@ -687,7 +689,8 @@ def create_app(cfg: dict | None = None):
         # answer "No such video." to Re-cut with these knobs on any cut made before the restart, 28 Oct)
         job, folder = _cut_job_for_edit(job_id, "re-cut")
         overrides = {k: body.get(k) for k in ("macros", "dance_fx", "stem_orbit", "beat_fx", "end_card", "beat_overlay", "foreshadow",
-                                              "morph_timing", "effects", "boundary_smear", "breathe", "drop_mode") if k in body}
+                                              "morph_timing", "effects", "boundary_smear", "breathe", "drop_mode",
+                                              "layer", "prominence", "blend") if k in body}  # the last three: a Stems cut's
         # the timeline's per-shot and per-boundary overrides (docs/TIMELINE.md): whole maps, each replacing the record's
         for key in ("shot_overrides", "boundary_overrides"):
             if key in body and isinstance(body.get(key), (dict, list)):

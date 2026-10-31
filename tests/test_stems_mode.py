@@ -17,6 +17,7 @@ def _song(tmp_path, name="song.wav", sec=20.0, sr=22050):
     """A plain tone as long as the song should be: the fake split reads only its length."""
     t = np.arange(int(sr * sec)) / sr
     p = Path(tmp_path) / name
+    p.parent.mkdir(parents=True, exist_ok=True)
     sf.write(str(p), (0.2 * np.sin(2 * np.pi * 220 * t)).astype(np.float32), sr)
     return p
 
@@ -351,3 +352,396 @@ def test_a_missing_layer_or_song_says_so(tmp_path):
     job2, rec2 = _stems_job(tmp_path / "b", tmp_path / "gone.wav")
     with pytest.raises(FileNotFoundError, match="song"):
         SC.build(job2, rec2)
+
+
+# ------------------------------------------------------------------------------------------------ the layers
+
+from xenoform import dense, guardrails, stems_mode  # noqa: E402
+
+
+def test_layers_are_validated_one_a_stem_four_at_most_never_mixed():
+    raw = [{"stem": "drums", "kind": "objects", "pins": {"0": "black/001_rose.jpg"}, "clips": ["a.mp4"], "prominence": 3},
+           {"stem": "drums", "kind": "objects"},
+           {"stem": "kazoo"},
+           {"stem": "other", "kind": "clips", "clips_folder": "C:/clips", "pins": {"1": "x.jpg"}, "blend": "Lighten", "lead": True},
+           {"stem": "bass", "kind": "clips"},
+           {"stem": "vocals", "on": False},
+           {"stem": "bass", "kind": "weird", "lead": True},
+           {"stem": "vocals"},
+           {"stem": "sub"},
+           "nonsense"]
+    layers, notes = stems_mode.layers_of(raw, vibe="black")
+    assert [l["stem"] for l in layers] == ["drums", "other", "bass", "vocals"]
+    drums, other, bass, vocals = layers
+    assert drums["kind"] == "objects" and drums["pins"] == {"0": "black/001_rose.jpg"} and "clips" not in drums
+    assert drums["prominence"] == 1.0 and drums["blend"] == "screen" and drums["vibe"] == "black"
+    assert other["kind"] == "clips" and "pins" not in other and other["clips_folder"] == "C:/clips"
+    assert other["blend"] == "lighten" and other["lead"] is True and bass["lead"] is False
+    assert bass["kind"] == "objects" and vocals["prominence"] == stems_mode.PROMINENCE_DEFAULT
+    text = " | ".join(notes)
+    for bit in ("clips were left out", "second drums layer", "not kazoo", "pinned stills were left out", "has none",
+                "no kind called weird", "one lead a cut", "4 layers at most", "not a layer"):
+        assert bit in text, bit
+    only, _ = stems_mode.layers_of([{"stem": "Drums"}, {"stem": "Guitar"}], names=["Drums", "Guitar"])
+    assert [l["stem"] for l in only] == ["Drums", "Guitar"]  # your own stems' names
+
+
+def test_guardrails_validates_the_layers_and_writes_a_stems_line():
+    body = {"mode": "stems", "vibe": "black", "layers": [{"stem": "drums", "prominence": 0.8},
+                                                         {"stem": "other", "kind": "clips", "clips_folder": "C:/x", "prominence": 0.6},
+                                                         {"stem": "bogus"}]}
+    clean, rep = guardrails.apply(body)
+    assert [l["stem"] for l in clean["layers"]] == ["drums", "other"]
+    lines = [m for m in rep["messages"] if m.startswith("[stems]")]
+    assert any("not bogus" in m for m in lines)
+    assert any("2 layers: drums as objects of black (prominence 0.8, screen), other as your clips (prominence 0.6, screen)"
+               " ; the passages are the mix's sections".replace(" ;", ";") in m for m in lines)
+    expert, rep2 = guardrails.apply({**body, "expert": True})
+    assert [l["stem"] for l in expert["layers"]] == ["drums", "other"]  # a broken layer is structure: even Expert loses it
+    plain, rep3 = guardrails.apply({"mode": "simple", "layers": [{"stem": "drums"}]})
+    assert "layers" not in plain and not [m for m in rep3["messages"] if m.startswith("[stems]")]
+    none, rep4 = guardrails.apply({"mode": "stems", "layers": []})
+    assert none["layers"] == [] and any("no layer is on" in m for m in rep4["messages"])
+    cloud, rep5 = guardrails.apply({**body, "quality_tier": "cloud"})
+    assert any("Cloud Final has no clips path" in m for m in rep5["messages"])
+
+
+def test_a_layer_body_keeps_the_cuts_knobs_with_its_own_stem_and_stills():
+    parent = {"mode": "stems", "vibe": "black", "seed": 100, "macros": {"chaos": 0.3}, "breathe": True, "drop_mode": "auto",
+              "end_card": True, "performer": 2, "chain_pins": {"0": "x"}, "morph_targets": ["me.png"], "guardrails": {"x": 1},
+              "layers": [{"stem": "drums"}]}
+    obj = stems_mode.layer_body(parent, {"stem": "drums", "kind": "objects", "vibe": "liquid-gold", "pins": {"2": "liquid-gold/a.jpg"}},
+                                1, avoid=["black/1.jpg", ""], avoid_nouns=["Orb ", "rose"], drive={"stem": "drums"}, own_images=False)
+    assert obj["mode"] == "simple" and obj["vibe"] == "liquid-gold" and obj["seed"] == 100 + stems_mode.SEED_STEP
+    assert obj["end_card"] is False and obj["performer"] == 0 and obj["breathe"] is True and obj["macros"] == {"chaos": 0.3}
+    assert obj["chain_pins"] == {"2": "liquid-gold/a.jpg"} and obj["avoid_stills"] == ["black/1.jpg"]
+    assert obj["avoid_nouns"] == ["orb", "rose"]
+    assert obj["morph_targets"] == [] and obj["stem_drive"] == {"stem": "drums"} and obj["stem_layer"] == "drums"
+    assert "layers" not in obj and "guardrails" not in obj and parent["layers"]  # the parent is left as it was
+    first = stems_mode.layer_body(parent, {"stem": "drums", "kind": "objects", "vibe": ""}, 0)
+    assert first["vibe"] == "black" and first["morph_targets"] == ["me.png"] and first["seed"] == 100
+
+
+def test_the_pick_leaves_out_what_earlier_layers_took_by_file_and_by_name():
+    from xenoform import morph_pass as mp
+
+    _, plain = mp.pick_stills({"vibe": "bioluminescent", "seed": 1}, 6, record=False)
+    names = [r["noun"] for r in plain]
+    _, out = mp.pick_stills({"vibe": "bioluminescent", "seed": 1, "avoid_stills": [plain[0]["file"]],
+                             "avoid_nouns": [names[1].upper()]}, 6, record=False)
+    assert plain[0]["file"] not in {r["file"] for r in out} and names[1] not in {r["noun"] for r in out}
+    assert len({r["file"] for r in out}) == 6
+    from xenoform import cloud_morph
+
+    _, first = cloud_morph.chain_stills({"vibe": "black"}, 5, record=False)  # the black chain's own path keeps the keys too
+    _, black = cloud_morph.chain_stills({"vibe": "black", "avoid_nouns": [first[0]["noun"]]}, 5, record=False)
+    assert first[0]["noun"] not in {str(r.get("noun")) for r in black}
+
+
+def test_a_clips_layer_takes_only_its_clips(tmp_path):
+    from xenoform.video import write_mp4
+
+    folder = tmp_path / "clips"
+    folder.mkdir()
+    for k in range(2):
+        write_mp4(folder / f"0{k}_reel.mp4", [np.full((32, 32, 3), 40 * k, np.uint8)] * 72, 24)
+    body = stems_mode.layer_body({"vibe": "black", "chain_pins": {"0": "x"}, "morph_targets": ["me.png"]},
+                                 {"stem": "other", "kind": "clips", "clips_folder": str(folder)}, 0)
+    assert body["morph_source"] == "clips" and len(body["own_clips"]) == 2 and body["morph_targets"] == []
+    assert "chain_pins" not in body and "avoid_stills" not in body
+
+
+# ------------------------------------------------------------------------------------------------ the drive
+
+
+def _plan_shots(edges, sections, passages, extra=None):
+    shots = []
+    for i, (a, b) in enumerate(zip(edges, edges[1:])):
+        s = {"index": i, "start": float(a), "end": float(b), "seconds": float(b - a), "frames": int(round(b * 24)) - int(round(a * 24)),
+             "render_s": 2, "speed": round(2 / (b - a), 3), "effects": [{"type": "punch", "t": float(a), "strength": 0.6}],
+             "section": sections[i], "passage": passages[i]}
+        s.update((extra or {}).get(i, {}))
+        shots.append(s)
+    return shots
+
+
+def test_the_drive_folds_silence_halves_quiet_and_keeps_the_drop_where_the_stem_carries_it():
+    edges = [0, 2, 4, 6, 8, 10, 12, 14, 16]
+    sections = ["calm", "calm", "calm", "calm", "drop", "drop", "drop", "drop"]
+    passages = [0, 0, 0, 0, 1, 1, 1, 1]
+    extra = {4: {"event": "drop", "boundary": "drop", "heat": 1.0, "drop_run": 0,
+                 "effects": [{"type": "punch", "t": 8.0, "strength": 1.0}, {"type": "stutter", "t": 8.0, "frames": 2, "repeat": 4}]},
+             5: {"heat": 1.0, "drop_run": 0}, 6: {"heat": 1.0, "drop_run": 0}, 7: {"heat": 1.0, "drop_run": 0}}
+    shots = _plan_shots(edges, sections, passages, extra)
+    # silent 0..4 s, quiet 4..8 s, loud (0.9) 8..12 s, half (0.5) 12..16 s
+    act = [0.0] * 96 + [0.3] * 96 + [0.9] * 96 + [0.5] * 96
+    out, plan = stems_mode.drive((shots, {"name": "story", "shots": []}),
+                                 {"stem_drive": {"stem": "drums", "fps": 24, "period": 0.5, "activity": act, "onsets": [8.0, 9.0]}})
+    starts = [s["start"] for s in out]
+    assert starts == [0.0, 4.0, 8.0, 10.0, 12.0, 14.0]  # the silence one shot, the two quiet ones one, the rest kept
+    assert out[0]["stem_silent"] and out[0]["effects"] == [] and out[0]["end"] == 4.0 and out[0]["frames"] == 96
+    assert out[1]["seconds"] == 4.0 and not out[1].get("stem_silent") and out[1]["stem_activity"] == 0.3
+    assert out[2]["event"] == "drop" and out[2]["boundary"] == "drop" and out[2]["heat"] == 1.0  # it carries the drop
+    assert out[4]["heat"] == pytest.approx(0.625)  # the run's heat times how hard the stem plays it (0.5 / 0.8)
+    assert [s["index"] for s in out] == list(range(6)) and sum(s["frames"] for s in out) == 384
+    assert plan["stem_drive"]["shots_in"] == 8 and plan["stem_drive"]["shots_out"] == 6 and plan["stem_drive"]["silent_s"] == 4.0
+    assert plan["stem_drive"]["drops_kept"] == 1 and len(plan["shots"]) == 6
+    # the same plan for a stem that is out at the drop: the event, its punch and stutter go, the boundary is a switch
+    act2 = [0.9] * 192 + [0.0] * 24 + [0.6] * 168
+    out2, plan2 = stems_mode.drive((_plan_shots(edges, sections, passages, extra), {"name": "story"}),
+                                   {"stem_drive": {"stem": "other", "fps": 24, "period": 0.5, "activity": act2}})
+    drop_shot = next(s for s in out2 if s["start"] == 8.0)
+    assert "event" not in drop_shot and drop_shot["boundary"] == "switch"
+    assert not [fx for fx in drop_shot["effects"] if fx["type"] == "stutter"]
+    assert plan2["stem_drive"]["drops_left"] == 1
+
+
+def test_the_drive_never_merges_across_a_passage_and_leaves_a_plan_without_a_drive_alone():
+    edges = [0, 2, 4, 6, 8]
+    shots = _plan_shots(edges, ["calm", "calm", "build", "build"], [0, 0, 1, 1], {2: {"boundary": "switch"}})
+    act = [0.3] * 192
+    out, _ = stems_mode.drive((shots, {}), {"stem_drive": {"stem": "bass", "fps": 24, "period": 0.5, "activity": act}})
+    assert [s["start"] for s in out] == [0.0, 4.0]  # two quiet pairs, one a passage
+    same, plan = stems_mode.drive((shots, {"name": "x"}), {})
+    assert same is shots and plan == {"name": "x"}
+
+
+def test_shots_for_runs_the_drive_for_a_layer(monkeypatch):
+    directed = {"duration": 30.0, "beats": [i * 0.5 for i in range(60)],
+                "sections": [{"label": "calm", "start": 0.0, "end": 12.0, "level": 0.4},
+                             {"label": "drop", "start": 12.0, "end": 24.0, "level": 0.9},
+                             {"label": "calm", "start": 24.0, "end": 30.0, "level": 0.4}]}
+    state = {"energy_preset": "dense", "quality_tier": "draft", "aspect": "16:9", "drop_mode": "auto"}
+    plain, _ = dense.shots_for(state, directed, None, drop=12.0)
+    act = [0.0] * (12 * 24) + [1.0] * (12 * 24) + [0.0] * (6 * 24)
+    driven, plan = dense.shots_for({**state, "stem_drive": {"stem": "drums", "fps": 24, "period": 0.5, "activity": act}},
+                                   directed, None, drop=12.0)
+    assert len(driven) < len(plain)
+    assert driven[0]["stem_silent"] and driven[0]["start"] == 0.0 and driven[0]["end"] == 12.0
+    assert driven[-1]["stem_silent"] and plan["stem_drive"]["silent_s"] == 18.0
+    assert any(s.get("event") == "drop" for s in driven)  # the drums carry the drop
+    assert abs(sum(s["seconds"] for s in driven) - 30.0) < 1e-6
+
+
+def test_a_lead_layer_splits_the_passages_where_its_stem_goes_out():
+    directed = {"duration": 32.0, "beats": [i * 0.5 for i in range(64)],
+                "sections": [{"label": "calm", "start": 0.0, "end": 16.0, "level": 0.5, "role": "calm"},
+                             {"label": "drop", "start": 16.0, "end": 32.0, "level": 0.9, "role": "drop"}]}
+    curve = [1.0] * (6 * 24) + [0.0] * (6 * 24) + [1.0] * (20 * 24)
+    rows = stems_mode.lead_sections(directed, curve, 24)
+    assert [(r["role"], r["start"], r["end"]) for r in rows] == [("calm", 0.0, 6.0), ("release", 6.0, 12.0),
+                                                                ("calm", 12.0, 16.0), ("drop", 16.0, 32.0)]
+    assert rows[1]["lead_out"] is True
+    short = [1.0] * (6 * 24) + [0.0] * 24 + [1.0] * (25 * 24)  # out for under two bars: no passage of its own
+    assert [r["role"] for r in stems_mode.lead_sections(directed, short, 24)] == ["calm", "drop"]
+
+
+SECTIONS = [{"label": "calm", "start": 0.0, "end": 8.0, "level": 0.4},
+            {"label": "drop", "start": 8.0, "end": 16.0, "level": 0.9},
+            {"label": "calm", "start": 16.0, "end": 24.0, "level": 0.5}]
+
+
+@pytest.fixture
+def fake_render(monkeypatch, stems_dir):
+    """The mock engine's morphs as empty files and the compositor's layer cuts as tiny grey clips of the right length:
+    every layer is a real file the composite lays together, in seconds."""
+    import xenoform.cloud_morph as cm
+    from xenoform import beatfx
+
+    made = {"mock": [], "compose": []}
+    levels = iter([200, 90, 150, 60, 210, 120, 170, 80] * 8)
+
+    def fake_mock_clips(shots, stills, work, w, h):
+        out = []
+        for i in range(len(shots)):
+            p = Path(work) / f"mock{i:02d}.mp4"
+            p.write_bytes(b"mp4")
+            out.append(p)
+        made["mock"].append([s.get("file") for s in stills])
+        return out
+
+    def fake_compose(clips, shots, audio, out, **kw):
+        frames = sum(int(s["frames"]) for s in shots)
+        _solid(out, next(levels), frames=frames)
+        made["compose"].append({"shots": [dict(s) for s in shots], "out": str(out), "audio": str(audio)})
+        return {"frames": frames, "seconds": frames / 24.0, "size": "32x32", "aspect": kw["aspect"], "fx": True, "overlay": False,
+                "centres": [], "fps": 24, "look": {}, "boundary_fx": {}}
+
+    monkeypatch.setattr(cm, "_mock_clips", fake_mock_clips)
+    monkeypatch.setattr(beatfx, "compose", fake_compose)
+    return made
+
+
+def _stems_make(tmp_path, job, layers, sec=24.0, sections=None, **extra):
+    song = _song(tmp_path, "song.wav", sec=sec)
+    beats = [i * 0.5 for i in range(int(sec * 2))]
+    directed = {"duration": sec, "beats": beats, "sections": [dict(s) for s in (sections or SECTIONS)]}
+    body = {"mode": "stems", "vibe": "liquid-gold", "aspect": "16:9", "energy_preset": "dense", "quality_tier": "draft",
+            "dance_fx": "off", "drop_mode": "auto", "seed": 5, "layers": layers, **extra}
+    clean, rep = guardrails.apply(body, duration=sec, beats=beats)
+    seen = []
+    job.mkdir(parents=True, exist_ok=True)
+    rec = dense.run_simple(directed, song, job / "xenoform.mp4", job, {}, clean, lambda *a: seen.append(a), engine="mock")
+    return rec, rep, seen, song
+
+
+TWO = [{"stem": "drums", "kind": "objects", "prominence": 0.8}, {"stem": "other", "kind": "objects", "prominence": 0.5}]
+
+
+def test_a_stems_make_cuts_each_layer_on_its_stem_and_lays_them_together(tmp_path, fake_render):
+    job = tmp_path / "job"
+    rec, rep, seen, song = _stems_make(tmp_path, job, [dict(l) for l in TWO])
+    assert any(m.startswith("[stems] 2 layers: drums as objects of liquid-gold (prominence 0.8") for m in rep["messages"])
+    assert rec["mode"] == "stems" and [l["stem"] for l in rec["layers"]] == ["drums", "other"]
+    assert rec["composite"]["order"] == ["other", "drums"]  # the most prominent on top
+    assert rec["stems"]["engine"] == "fake" and rec["stems"]["names"] == ["drums", "bass", "other", "vocals"]
+    saved = json.loads((job / "simple" / "simple.json").read_text(encoding="utf-8"))
+    assert saved["composite"]["sha256"] == SC.sha256_of(job / "xenoform.mp4") and saved["layers"][0]["video"].endswith("xenoform.mp4")
+    assert _streams(job / "xenoform.mp4") == ["audio", "video"] and _frames(job / "xenoform.mp4").shape[0] == 576
+    drums = json.loads((job / "layers" / "drums" / "simple" / "simple.json").read_text(encoding="utf-8"))
+    other = json.loads((job / "layers" / "other" / "simple" / "simple.json").read_text(encoding="utf-8"))
+    # the drums are out in the breakdown (the middle fifth): one silent shot there; the other is silent before and after it
+    gap = [s for s in drums["shots"] if s.get("stem_silent")]
+    assert gap and all(9.0 <= s["start"] and s["end"] <= 15.5 for s in gap)
+    assert other["shots"][0].get("stem_silent") and other["shots"][0]["start"] == 0.0
+    assert other["shots"][-1].get("stem_silent")
+    assert len(drums["shots"]) != len(other["shots"])  # each layer cut on its own stem's drive
+    assert not set(drums["stills"]) & set(other["stills"])  # no object twice across layers (the same vibe)
+    nouns = [stems_mode._chain_nouns(job / "layers" / s) for s in ("drums", "other")]
+    assert nouns[0] and nouns[1] and not set(nouns[0]) & set(nouns[1])  # by name too
+    assert (job / "simple" / "chain.json").is_file()
+    assert any("Drums layer (1 of 2)" in a[2] for a in seen) and any("Other layer (2 of 2)" in a[2] for a in seen)
+    assert all(a[0] in ("restyle", "assemble") for a in seen)
+    # deterministic from the record: the same file again, byte for byte
+    first = (job / "xenoform.mp4").read_bytes()
+    SC.build(job, saved)
+    assert (job / "xenoform.mp4").read_bytes() == first
+    # a layer re-cut from its cached morphs with its own timeline edit, then the knobs over every layer
+    out = dense.recut_from_cache(job, {"layer": "drums", "shot_overrides": {"1": {"play": "hold"}}})
+    assert out["recuts"] == 1
+    drums2 = json.loads((job / "layers" / "drums" / "simple" / "simple.json").read_text(encoding="utf-8"))
+    other2 = json.loads((job / "layers" / "other" / "simple" / "simple.json").read_text(encoding="utf-8"))
+    assert drums2["shot_overrides"] == {"1": {"play": "hold"}} and drums2["recuts"] == 1 and not other2.get("recuts")
+    out = dense.recut_from_cache(job, {"macros": {"chaos": 0.1}, "shot_overrides": {"0": {"play": "hold"}}})
+    other3 = json.loads((job / "layers" / "other" / "simple" / "simple.json").read_text(encoding="utf-8"))
+    assert out["recuts"] == 2 and other3["recuts"] == 1 and not other3.get("shot_overrides")  # maps need a layer
+    with pytest.raises(ValueError):
+        dense.recut_from_cache(job, {"layer": "vocals"})
+
+
+def test_a_stems_make_says_no_before_it_renders(tmp_path, fake_render):
+    with pytest.raises(RuntimeError, match="needs a layer"):
+        _stems_make(tmp_path / "a", tmp_path / "a" / "job", [])
+    with pytest.raises(RuntimeError, match="not your clips"):
+        _stems_make(tmp_path / "b", tmp_path / "b" / "job", [{"stem": "other", "kind": "clips", "clips_folder": str(tmp_path)}],
+                    quality_tier="cloud", cloud_final_ok=True)
+    assert not fake_render["compose"]
+
+
+def test_an_objects_layer_and_a_clips_layer_run_at_once_each_unmixed(tmp_path, fake_render):
+    from xenoform.video import write_mp4
+
+    folder = tmp_path / "reels"
+    folder.mkdir()
+    for k in range(2):
+        write_mp4(folder / f"0{k}_reel{k}.mp4", [np.full((36, 64, 3), 60 + 90 * k, np.uint8)] * 96, 24)
+    job = tmp_path / "job"
+    layers = [{"stem": "drums", "kind": "objects", "prominence": 0.8},
+              {"stem": "other", "kind": "clips", "clips_folder": str(folder), "prominence": 0.6, "pins": {"0": "x.jpg"}}]
+    rec, rep, seen, song = _stems_make(tmp_path, job, layers)
+    drums = json.loads((job / "layers" / "drums" / "simple" / "simple.json").read_text(encoding="utf-8"))
+    other = json.loads((job / "layers" / "other" / "simple" / "simple.json").read_text(encoding="utf-8"))
+    assert drums.get("source") != "clips" and drums["stills"] and not drums["own"]["clips"]  # objects only
+    assert other["source"] == "clips" and other["stills"] == [] and len(other["own_clips"]) == 2  # clips only
+    assert any("its pinned stills were left out" in m for m in rep["messages"])
+    assert rec["layers"][1]["kind"] == "clips" and (job / "xenoform.mp4").is_file()
+    with pytest.raises(RuntimeError, match="clips were not found"):
+        _stems_make(tmp_path / "z", tmp_path / "z" / "job", [{"stem": "other", "kind": "clips", "clips_folder": str(tmp_path / "none")}])
+
+
+def test_a_lead_layer_sets_the_passages_for_every_layer(tmp_path, fake_render):
+    job = tmp_path / "job"
+    layers = [{"stem": "drums", "kind": "objects", "prominence": 0.8, "lead": True}, {"stem": "other", "kind": "objects", "prominence": 0.5}]
+    sections = [{"label": "calm", "start": 0.0, "end": 14.0, "level": 0.4}, {"label": "drop", "start": 14.0, "end": 26.0, "level": 0.9},
+                {"label": "calm", "start": 26.0, "end": 40.0, "level": 0.5}]
+    rec, rep, seen, song = _stems_make(tmp_path, job, layers, sec=40.0, sections=sections)  # the drums out from 16 s to 24 s
+    assert rec["lead"] == "drums" and any(s.get("lead_out") for s in rec["sections"])
+    assert any("the passages follow the drums" in m for m in rep["messages"])
+    other = json.loads((job / "layers" / "other" / "simple" / "simple.json").read_text(encoding="utf-8"))
+    assert any(s.get("section") == "release" for s in other["shots"])  # the drums' breakdown is a passage for the other too
+
+
+def test_the_desk_routes_split_lane_and_recomposite(tmp_path, fake_render, monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from xenoform import ui
+
+    work = tmp_path / "work"
+    monkeypatch.setattr(ui, "work_dir", lambda: work)
+    job = work / "jobs" / "abc12345"
+    rec, rep, seen, song = _stems_make(tmp_path, job, [dict(l) for l in TWO])
+    c = TestClient(ui.create_app())
+    lane = c.get("/api/videos/abc12345/shots").json()
+    assert lane["mode"] == "stems" and [l["stem"] for l in lane["layers"]] == ["drums", "other"]
+    assert lane["layer"] == "drums" and lane["swappable"] is False and lane["rerenderable"] is False
+    assert lane["shots"] == lane["layers"][0]["lane"]["shots"] and lane["layers"][1]["lane"]["tl_key"] == "abc12345:other"
+    assert 0 < len(lane["layers"][0]["envelope"]) <= stems.ENVELOPE_POINTS and len(lane["layers"][1]["alpha"]) > 0
+    assert lane["order"] == ["other", "drums"] and lane["prominence"] == {"drums": 0.8, "other": 0.5}
+    before = rec["composite"]["sha256"]
+    assert c.post("/api/jobs/abc12345/composite", json={"prominence": {"nope": 1}}).status_code == 400
+    assert c.post("/api/jobs/abc12345/composite", json={"blend": {"drums": "dodge"}}).status_code == 400
+    r = c.post("/api/jobs/abc12345/composite", json={"prominence": {"other": 1.0}, "blend": {"drums": "add"}})
+    assert r.status_code == 200 and r.json()["status"] == "running"
+    for _ in range(400):
+        j = c.get("/api/jobs/abc12345").json()
+        if j["status"] != "running":
+            break
+        time.sleep(0.05)
+    assert j["status"] == "done" and j["detail"] == "Laid together again" and j["video_version"] == 1
+    saved = json.loads((job / "simple" / "simple.json").read_text(encoding="utf-8"))
+    assert saved["composite"]["order"] == ["drums", "other"] and saved["composite"]["blends"]["drums"] == "add"
+    assert saved["composite"]["sha256"] != before and saved["composites"] == 1
+    r = c.post("/api/jobs/abc12345/recut", json={"layer": "other", "shot_overrides": {"2": {"play": "hold"}}})
+    assert r.status_code == 200
+    for _ in range(400):
+        j = c.get("/api/jobs/abc12345").json()
+        if j["status"] != "running":
+            break
+        time.sleep(0.05)
+    assert j["detail"] == "Re-cut ready"
+    other = json.loads((job / "layers" / "other" / "simple" / "simple.json").read_text(encoding="utf-8"))
+    assert other["shot_overrides"] == {"2": {"play": "hold"}}
+    plain = work / "jobs" / "plain0001"
+    (plain / "simple").mkdir(parents=True)
+    (plain / "simple" / "simple.json").write_text(json.dumps({"shots": []}), encoding="utf-8")
+    (plain / "xenoform.mp4").write_bytes(b"x")
+    assert c.post("/api/jobs/plain0001/composite", json={}).status_code == 400
+    assert c.post("/api/jobs/nothere1/composite", json={}).status_code == 404
+
+
+def test_the_split_and_status_routes(tmp_path, stems_dir):
+    from fastapi.testclient import TestClient
+
+    from xenoform import ui
+
+    song = _song(tmp_path, "s.wav", sec=12.0)
+    c = TestClient(ui.create_app())
+    assert c.get("/api/stems/status", params={"path": str(song)}).json()["status"] == "none"  # not the {sid} route
+    first = c.post("/api/stems/split", json={"path": str(song)})
+    assert first.status_code == 200 and first.json()["status"] in ("running", "done") and "path" not in first.json()
+    for _ in range(200):
+        st = c.get("/api/stems/status", params={"path": str(song)}).json()
+        if st["status"] != "running":
+            break
+        time.sleep(0.05)
+    assert st["status"] == "done" and [r["name"] for r in st["stems"]] == ["drums", "bass", "other", "vocals"]
+    assert st["engine"] == "fake" and all(len(r["envelope"]) <= stems.ENVELOPE_POINTS for r in st["stems"])
+    assert c.get("/api/stems/status", params={"path": str(tmp_path / "x.txt")}).status_code == 400
+    assert c.post("/api/stems/split", json={"audio_id": "not-loaded-xyz"}).status_code == 404
+
+
+def test_the_clock_counts_every_layer():
+    plan = {"analyze": 3.0, "morphs": 100.0, "cut": 40.0, "qa": 5.0}
+    out = stems_mode.timing(plan, {"layers": [{"stem": "drums"}, {"stem": "other"}, {"stem": "bass", "on": False}]}, 30.0)
+    assert out["morphs"] == 280.0 and out["cut"] == pytest.approx(stems_mode.COMPOSITE_BASE_S + stems_mode.COMPOSITE_S_PER_S * 30.0)
+    assert dense.wants_finishing({"mode": "stems", "energy_preset": "flow", "aspect": "16:9"})

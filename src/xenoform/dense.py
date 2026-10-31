@@ -741,7 +741,7 @@ def wants_finishing(state: dict) -> bool:
     Simple-mode cut: Flow at 16:9 on a short song once went through the plain pass and came out as one morph held
     over fifteen seconds (66 % duplicate frames, 25 Oct test drive); the Simple cut is the beat-cut compose."""
     opt = options(state)
-    return str(state.get("mode") or "") == "simple" or opt["energy"] == "dense" or opt["tier"] == "final" \
+    return str(state.get("mode") or "") in ("simple", "stems") or opt["energy"] == "dense" or opt["tier"] == "final" \
         or opt["aspect"] != "16:9" or opt["end_card"] or bool(state.get("cut_plan")) or morph_count(state) != "auto"
 
 
@@ -1262,6 +1262,11 @@ def song_plan_for(state: dict, directed: dict, drop: float | None) -> dict:
 def shots_for(state: dict, directed: dict, audio_path: Path | None, *, drop: float | None = None) -> tuple[list[dict], dict]:
     """Validated shots plus the plan they came from. ``drop`` (seconds) stands in for the song's own when the caller
     has it and no audio (the desk's estimate)."""
+    if state.get("stem_drive"):  # a Stems layer: the same plan, reshaped by its stem's drive (stems_mode.drive)
+        from xenoform import stems_mode
+
+        return stems_mode.drive(shots_for({k: v for k, v in state.items() if k != "stem_drive"}, directed, audio_path, drop=drop),
+                                state, directed)
     duration = float(directed.get("duration") or 0.0)
     beats = list(directed.get("beats") or [])
     if paced(state, directed):
@@ -1383,6 +1388,11 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
         # it spends the account's Comfy Cloud credits: only a Make that says so (the desk's tick) runs it; cloud_confirm is
         # the paid partner path's token, a different thing. Checked before the clips cut too, so no tier slips past it.
         raise RuntimeError("Cloud Final spends Comfy Cloud credits: tick \"Spend my Comfy Cloud credits\" to run it. Nothing was sent.")
+    from xenoform import stems_mode
+
+    if stems_mode.wants(state):  # Stems mode: each stem its own layer, laid together by prominence (docs/STEMS_MODE.md)
+        return stems_mode.run(directed, Path(audio_path), Path(out_path), Path(work), cfg, state, report, cancel=cancel,
+                              client=client, engine=engine)
     if clip_cut.wants(state):  # Clips mode: only the user's clips, each morphing into the next (Tys, 28 Oct)
         return clip_cut.run(directed, Path(audio_path), Path(out_path), Path(work), cfg, state, report, cancel=cancel,
                             client=client, engine=engine)
@@ -1944,6 +1954,10 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
     if not rec_path.is_file():
         raise FileNotFoundError("This video has no cached morphs to re-cut (it was not made by Simple mode).")
     rec = json.loads(rec_path.read_text(encoding="utf-8"))
+    if str(rec.get("mode") or "") == "stems":  # a Stems cut: its layers re-cut, then laid together again
+        from xenoform import stems_mode
+
+        return stems_mode.recut(job_dir, overrides, report=report, cfg=cfg)
     clips = [Path(c) for c in rec.get("clips") or []]
     shots = rec.get("plan_shots") or rec.get("shots") or []
     if not clips or not shots or len(clips) != len(shots) or not all(c.is_file() for c in clips):

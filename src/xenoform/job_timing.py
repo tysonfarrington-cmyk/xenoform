@@ -131,6 +131,10 @@ def plan_for(features: dict | None, body: dict | None, audio_path=None) -> dict[
                 "card": FIXED_S["card"] if opt.get("end_card") else 0.0,
                 "save": FIXED_S["save"],
                 "qa": QA_BASE_S + QA_S_PER_SONG_S * duration}
+        if str(body.get("mode") or "") == "stems":  # every layer is a cut of its own, then the composite
+            from xenoform import stems_mode
+
+            plan = stems_mode.timing(plan, body, duration)
     except Exception as exc:  # a plan is a courtesy; the fallback weights still move the bar
         log.debug("job plan skipped: %s", exc)
         return None
