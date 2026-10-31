@@ -394,6 +394,17 @@ same composite byte for byte; the suite green with the fake split.
     clips (no clip twice, black-and-white film as a note not a ban), and the whole-song maker takes clips. An Opus
     builder started 1 Nov from 346d766 (desk 47335; proof on ZedsDead v2 in Desktop/xeno_clips_1nov, stacked plain
     over Breathe with a still-picture count).
+    Landed 1 Nov as 577ae08 (1590 passed on its tree): a paced clips cut follows the plan an object cut gets,
+    rests play the film on, a morph lands on the incoming clip's first frame and never runs slower than 0.6x, one
+    film per Breathe scene, drop runs open on a cut to a fresh film with punch and stutter and Snap, no shot under a
+    bar outside a hot run's opening bars, a shot held two bars plays a film that moves; taste: no-clip-twice, the
+    kaleido off living things (a word list shared with object stills), black-and-white measured and noted; a clips
+    song is one Make of the whole song (one look, Final as one job, no Cloud path), laid together with the title.
+    Proof on ZedsDead v2 (Desktop/xeno_clips_1nov): 42 shots both ways; frozen picture 5.3 s with Breathe against
+    the demo's 55 s; flash frames 0 against 259 plain. For Tys: no clip twice against a 24-clip pack means long
+    holds (a 15 s build on one clip, drops holding one film 9 to 11 s after their opening bars): keep it, let clips
+    return in drops and builds after a gap, or a bigger or curated pack of about 40. Follow-up: Edit in Resolve
+    names clip shots your clip, not the film. The estimate test reads the checkout's jobs; being isolated.
 
 ## 9. Working rules for every session
 
