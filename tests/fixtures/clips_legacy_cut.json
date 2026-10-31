@@ -1,0 +1,10261 @@
+{
+ "short20": {
+  "morph_count": 15,
+  "guard": [
+   "[morph_density] auto picked 24 forms for 20s; capped at 15 (~15 per 20 s)"
+  ],
+  "compose": {
+   "clips": [
+    "clip00.mp4",
+    "mock00.mp4",
+    "clip02.mp4",
+    "mock00.mp4",
+    "clip04.mp4",
+    "mock00.mp4",
+    "clip06.mp4",
+    "mock00.mp4",
+    "clip08.mp4",
+    "mock00.mp4",
+    "clip10.mp4",
+    "mock00.mp4",
+    "clip12.mp4",
+    "mock00.mp4",
+    "clip14.mp4"
+   ],
+   "shots": [
+    {
+     "index": 0,
+     "start": 0.0,
+     "end": 1.6667,
+     "seconds": 1.6667,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 0.7917,
+       "strength": 0.62
+      }
+     ],
+     "frames": 40,
+     "own": true,
+     "source": "01_reel_a.mp4",
+     "label": "reel a",
+     "clip_start": 0.5,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 1,
+     "start": 1.6667,
+     "end": 3.6667,
+     "seconds": 2.0,
+     "render_s": 3,
+     "speed": 1.5,
+     "ease": "",
+     "effects": [],
+     "frames": 48,
+     "clip_morph": {
+      "from": "reel a",
+      "to": "reel b"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 2,
+     "start": 3.6667,
+     "end": 5.25,
+     "seconds": 1.5833,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 38,
+     "own": true,
+     "source": "02_reel_b.mp4",
+     "label": "reel b",
+     "clip_start": 1.5,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 3,
+     "start": 5.25,
+     "end": 7.25,
+     "seconds": 2.0,
+     "render_s": 3,
+     "speed": 1.5,
+     "ease": "",
+     "effects": [],
+     "frames": 48,
+     "clip_morph": {
+      "from": "reel b",
+      "to": "reel c"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 4,
+     "start": 7.25,
+     "end": 9.25,
+     "seconds": 2.0,
+     "render_s": 3,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 48,
+     "own": true,
+     "source": "03_reel_c.mp4",
+     "label": "reel c",
+     "clip_start": 2.0,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 5,
+     "start": 9.25,
+     "end": 10.8333,
+     "seconds": 1.5833,
+     "render_s": 2,
+     "speed": 1.263,
+     "ease": "",
+     "effects": [],
+     "frames": 38,
+     "clip_morph": {
+      "from": "reel c",
+      "to": "reel a"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 6,
+     "start": 10.8333,
+     "end": 12.7917,
+     "seconds": 1.9584,
+     "render_s": 3,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 47,
+     "own": true,
+     "source": "01_reel_a.mp4",
+     "label": "reel a",
+     "clip_start": 0.5,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 7,
+     "start": 12.7917,
+     "end": 13.5833,
+     "seconds": 0.7916,
+     "render_s": 2,
+     "speed": 2.527,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 12.7917,
+       "strength": 0.62
+      },
+      {
+       "type": "stutter",
+       "t": 12.7917,
+       "frames": 2,
+       "repeat": 4
+      }
+     ],
+     "frames": 19,
+     "clip_morph": {
+      "from": "reel a",
+      "to": "reel b"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 8,
+     "start": 13.5833,
+     "end": 14.4167,
+     "seconds": 0.8334,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 13.8833,
+       "strength": 0.62
+      }
+     ],
+     "frames": 20,
+     "own": true,
+     "source": "02_reel_b.mp4",
+     "label": "reel b",
+     "clip_start": 0.0,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 9,
+     "start": 14.4167,
+     "end": 15.625,
+     "seconds": 1.2083,
+     "render_s": 3,
+     "speed": 2.483,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 14.4167,
+       "strength": 0.31
+      }
+     ],
+     "frames": 29,
+     "clip_morph": {
+      "from": "reel b",
+      "to": "reel c"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 10,
+     "start": 15.625,
+     "end": 16.4167,
+     "seconds": 0.7917,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 19,
+     "own": true,
+     "source": "03_reel_c.mp4",
+     "label": "reel c",
+     "clip_start": 3.5,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 11,
+     "start": 16.4167,
+     "end": 17.2083,
+     "seconds": 0.7916,
+     "render_s": 2,
+     "speed": 2.527,
+     "ease": "",
+     "effects": [],
+     "frames": 19,
+     "clip_morph": {
+      "from": "reel c",
+      "to": "reel a"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 12,
+     "start": 17.2083,
+     "end": 18.0,
+     "seconds": 0.7917,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 19,
+     "own": true,
+     "source": "01_reel_a.mp4",
+     "label": "reel a",
+     "clip_start": 0.0,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 13,
+     "start": 18.0,
+     "end": 19.2083,
+     "seconds": 1.2083,
+     "render_s": 3,
+     "speed": 2.483,
+     "ease": "",
+     "effects": [],
+     "frames": 29,
+     "clip_morph": {
+      "from": "reel a",
+      "to": "reel b"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 14,
+     "start": 19.2083,
+     "end": 20.0,
+     "seconds": 0.7917,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 19,
+     "own": true,
+     "source": "02_reel_b.mp4",
+     "label": "reel b",
+     "clip_start": 3.5,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    }
+   ],
+   "kw": {
+    "aspect": "16:9",
+    "quality": "draft",
+    "fx": true,
+    "overlay": false,
+    "size": [
+     768,
+     432
+    ],
+    "fps": 24,
+    "dance_fx": "off",
+    "stem_orbit": true,
+    "macros": {
+     "intensity": 0.5,
+     "speed": 0.5,
+     "chaos": 0.3,
+     "glow": 0.4
+    },
+    "end_card": false,
+    "seed": 2727,
+    "adaptive": true,
+    "transitions": null,
+    "foreshadow": null,
+    "boundary_fx": [
+     null,
+     {
+      "kind": "wipe",
+      "frames": 40,
+      "tail": 20,
+      "head": 20,
+      "section": "",
+      "boundary": "",
+      "stem": "bass",
+      "variant": "strips",
+      "t": 1.667
+     },
+     null,
+     null,
+     null,
+     null,
+     null,
+     {
+      "kind": "rip",
+      "frames": 19,
+      "tail": 10,
+      "head": 9,
+      "section": "",
+      "boundary": "drop",
+      "stem": "other",
+      "variant": "",
+      "t": 12.792
+     },
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     {
+      "kind": "wipe",
+      "frames": 23,
+      "tail": 14,
+      "head": 9,
+      "section": "",
+      "boundary": "",
+      "stem": "bass",
+      "variant": "iris",
+      "t": 19.208
+     }
+    ],
+    "effects": [],
+    "tones": null,
+    "tame": null
+   },
+   "extra": []
+  },
+  "record": {
+   "plan_name": "dense (15 forms)",
+   "drop": 12.7917,
+   "morph_style": "melt",
+   "morph_styles": [
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt"
+   ],
+   "morph_timing": "smooth",
+   "effects": [],
+   "smear": "off",
+   "boundary_fx": [
+    null,
+    {
+     "kind": "wipe",
+     "frames": 40,
+     "tail": 20,
+     "head": 20,
+     "section": "",
+     "boundary": "",
+     "stem": "bass",
+     "variant": "strips",
+     "t": 1.667
+    },
+    null,
+    null,
+    null,
+    null,
+    null,
+    {
+     "kind": "rip",
+     "frames": 19,
+     "tail": 10,
+     "head": 9,
+     "section": "",
+     "boundary": "drop",
+     "stem": "other",
+     "variant": "",
+     "t": 12.792
+    },
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    {
+     "kind": "wipe",
+     "frames": 23,
+     "tail": 14,
+     "head": 9,
+     "section": "",
+     "boundary": "",
+     "stem": "bass",
+     "variant": "iris",
+     "t": 19.208
+    }
+   ],
+   "handoffs_s": [
+    0.0,
+    1.6667,
+    3.6667,
+    5.25,
+    7.25,
+    9.25,
+    10.8333,
+    12.7917,
+    13.5833,
+    14.4167,
+    15.625,
+    16.4167,
+    17.2083,
+    18.0,
+    19.2083,
+    20.0
+   ],
+   "macros": {
+    "intensity": 0.5,
+    "speed": 0.5,
+    "chaos": 0.3,
+    "glow": 0.4
+   },
+   "stills": [],
+   "source": "clips",
+   "vibe": "none",
+   "fps": 24,
+   "size": [
+    768,
+    432
+   ],
+   "seed": 2727,
+   "clips": [
+    "clip00.mp4",
+    "mock00.mp4",
+    "clip02.mp4",
+    "mock00.mp4",
+    "clip04.mp4",
+    "mock00.mp4",
+    "clip06.mp4",
+    "mock00.mp4",
+    "clip08.mp4",
+    "mock00.mp4",
+    "clip10.mp4",
+    "mock00.mp4",
+    "clip12.mp4",
+    "mock00.mp4",
+    "clip14.mp4"
+   ],
+   "chain": [
+    {
+     "noun": "reel a",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel b",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel c",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel a",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel b",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel c",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel a",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel b",
+     "kind": "clip"
+    }
+   ]
+  },
+  "plan_shots": [
+   {
+    "index": 0,
+    "start": 0.0,
+    "end": 1.6667,
+    "seconds": 1.6667,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 0.7917,
+      "strength": 1.0
+     }
+    ],
+    "frames": 40,
+    "own": true,
+    "source": "01_reel_a.mp4",
+    "label": "reel a",
+    "clip_start": 0.5
+   },
+   {
+    "index": 1,
+    "start": 1.6667,
+    "end": 3.6667,
+    "seconds": 2.0,
+    "render_s": 3,
+    "speed": 1.5,
+    "ease": "",
+    "effects": [],
+    "frames": 48,
+    "clip_morph": {
+     "from": "reel a",
+     "to": "reel b"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 2,
+    "start": 3.6667,
+    "end": 5.25,
+    "seconds": 1.5833,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 38,
+    "own": true,
+    "source": "02_reel_b.mp4",
+    "label": "reel b",
+    "clip_start": 1.5
+   },
+   {
+    "index": 3,
+    "start": 5.25,
+    "end": 7.25,
+    "seconds": 2.0,
+    "render_s": 3,
+    "speed": 1.5,
+    "ease": "",
+    "effects": [],
+    "frames": 48,
+    "clip_morph": {
+     "from": "reel b",
+     "to": "reel c"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 4,
+    "start": 7.25,
+    "end": 9.25,
+    "seconds": 2.0,
+    "render_s": 3,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 48,
+    "own": true,
+    "source": "03_reel_c.mp4",
+    "label": "reel c",
+    "clip_start": 2.0
+   },
+   {
+    "index": 5,
+    "start": 9.25,
+    "end": 10.8333,
+    "seconds": 1.5833,
+    "render_s": 2,
+    "speed": 1.263,
+    "ease": "",
+    "effects": [],
+    "frames": 38,
+    "clip_morph": {
+     "from": "reel c",
+     "to": "reel a"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 6,
+    "start": 10.8333,
+    "end": 12.7917,
+    "seconds": 1.9584,
+    "render_s": 3,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 47,
+    "own": true,
+    "source": "01_reel_a.mp4",
+    "label": "reel a",
+    "clip_start": 0.5
+   },
+   {
+    "index": 7,
+    "start": 12.7917,
+    "end": 13.5833,
+    "seconds": 0.7916,
+    "render_s": 2,
+    "speed": 2.527,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 12.7917,
+      "strength": 1.0
+     },
+     {
+      "type": "stutter",
+      "t": 12.7917,
+      "frames": 2,
+      "repeat": 4
+     }
+    ],
+    "frames": 19,
+    "clip_morph": {
+     "from": "reel a",
+     "to": "reel b"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 8,
+    "start": 13.5833,
+    "end": 14.4167,
+    "seconds": 0.8334,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 13.8833,
+      "strength": 1.0
+     }
+    ],
+    "frames": 20,
+    "own": true,
+    "source": "02_reel_b.mp4",
+    "label": "reel b",
+    "clip_start": 0.0
+   },
+   {
+    "index": 9,
+    "start": 14.4167,
+    "end": 15.625,
+    "seconds": 1.2083,
+    "render_s": 3,
+    "speed": 2.483,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 14.4167,
+      "strength": 0.5
+     }
+    ],
+    "frames": 29,
+    "clip_morph": {
+     "from": "reel b",
+     "to": "reel c"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 10,
+    "start": 15.625,
+    "end": 16.4167,
+    "seconds": 0.7917,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 19,
+    "own": true,
+    "source": "03_reel_c.mp4",
+    "label": "reel c",
+    "clip_start": 3.5
+   },
+   {
+    "index": 11,
+    "start": 16.4167,
+    "end": 17.2083,
+    "seconds": 0.7916,
+    "render_s": 2,
+    "speed": 2.527,
+    "ease": "",
+    "effects": [],
+    "frames": 19,
+    "clip_morph": {
+     "from": "reel c",
+     "to": "reel a"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 12,
+    "start": 17.2083,
+    "end": 18.0,
+    "seconds": 0.7917,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 19,
+    "own": true,
+    "source": "01_reel_a.mp4",
+    "label": "reel a",
+    "clip_start": 0.0
+   },
+   {
+    "index": 13,
+    "start": 18.0,
+    "end": 19.2083,
+    "seconds": 1.2083,
+    "render_s": 3,
+    "speed": 2.483,
+    "ease": "",
+    "effects": [],
+    "frames": 29,
+    "clip_morph": {
+     "from": "reel a",
+     "to": "reel b"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 14,
+    "start": 19.2083,
+    "end": 20.0,
+    "seconds": 0.7917,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 19,
+    "own": true,
+    "source": "02_reel_b.mp4",
+    "label": "reel b",
+    "clip_start": 3.5
+   }
+  ]
+ },
+ "glitch_window30": {
+  "morph_count": "auto",
+  "guard": [],
+  "compose": {
+   "clips": [
+    "clip00.mp4",
+    "mock00.mp4",
+    "clip02.mp4",
+    "mock00.mp4",
+    "clip04.mp4",
+    "mock00.mp4",
+    "clip06.mp4",
+    "mock00.mp4",
+    "clip08.mp4"
+   ],
+   "shots": [
+    {
+     "index": 0,
+     "start": 0.0,
+     "end": 10.5,
+     "seconds": 10.5,
+     "render_s": 8,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 252,
+     "section": "release",
+     "own": true,
+     "source": "01_reel_a.mp4",
+     "label": "reel a",
+     "clip_start": 0.0,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 1,
+     "start": 10.5,
+     "end": 14.6667,
+     "seconds": 4.1667,
+     "render_s": 6,
+     "speed": 1.44,
+     "ease": "",
+     "effects": [],
+     "frames": 100,
+     "section": "release",
+     "clip_morph": {
+      "from": "reel a",
+      "to": "reel b"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 2,
+     "start": 14.6667,
+     "end": 16.0,
+     "seconds": 1.3333,
+     "render_s": 4,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 14.6667,
+       "strength": 0.62
+      }
+     ],
+     "frames": 32,
+     "section": "drop",
+     "boundary": "drop",
+     "own": true,
+     "source": "02_reel_b.mp4",
+     "label": "reel b",
+     "clip_start": 2.0,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 3,
+     "start": 16.0,
+     "end": 18.625,
+     "seconds": 2.625,
+     "render_s": 4,
+     "speed": 1.524,
+     "ease": "",
+     "effects": [],
+     "frames": 63,
+     "section": "release",
+     "clip_morph": {
+      "from": "reel b",
+      "to": "reel c"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 4,
+     "start": 18.625,
+     "end": 21.4583,
+     "seconds": 2.8333,
+     "render_s": 8,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 18.625,
+       "strength": 0.372
+      }
+     ],
+     "frames": 68,
+     "section": "drop",
+     "own": true,
+     "source": "03_reel_c.mp4",
+     "label": "reel c",
+     "clip_start": 1.5,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 5,
+     "start": 21.4583,
+     "end": 24.0833,
+     "seconds": 2.625,
+     "render_s": 8,
+     "speed": 3.048,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 21.4583,
+       "strength": 0.372
+      }
+     ],
+     "frames": 63,
+     "section": "drop",
+     "clip_morph": {
+      "from": "reel c",
+      "to": "reel d"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 6,
+     "start": 24.0833,
+     "end": 26.7083,
+     "seconds": 2.625,
+     "render_s": 8,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 24.0833,
+       "strength": 0.372
+      }
+     ],
+     "frames": 63,
+     "section": "drop",
+     "own": true,
+     "source": "04_reel_d.mp4",
+     "label": "reel d",
+     "clip_start": 0.5,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 7,
+     "start": 26.7083,
+     "end": 29.3333,
+     "seconds": 2.625,
+     "render_s": 8,
+     "speed": 3.048,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 26.7083,
+       "strength": 0.372
+      }
+     ],
+     "frames": 63,
+     "section": "drop",
+     "clip_morph": {
+      "from": "reel d",
+      "to": "reel a"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 8,
+     "start": 29.3333,
+     "end": 30.0,
+     "seconds": 0.6667,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 29.3333,
+       "strength": 0.372
+      }
+     ],
+     "frames": 16,
+     "section": "drop",
+     "own": true,
+     "source": "01_reel_a.mp4",
+     "label": "reel a",
+     "clip_start": 2.333,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    }
+   ],
+   "kw": {
+    "aspect": "9:16",
+    "quality": "draft",
+    "fx": true,
+    "overlay": false,
+    "size": [
+     540,
+     960
+    ],
+    "fps": 24,
+    "dance_fx": "noir-glow",
+    "stem_orbit": true,
+    "macros": {
+     "intensity": 0.5,
+     "speed": 0.5,
+     "chaos": 0.3,
+     "glow": 0.4
+    },
+    "end_card": false,
+    "seed": 2727,
+    "adaptive": true,
+    "transitions": null,
+    "foreshadow": null,
+    "boundary_fx": [
+     null,
+     {
+      "kind": "wipe",
+      "frames": 64,
+      "tail": 32,
+      "head": 32,
+      "section": "release",
+      "boundary": "",
+      "stem": "bass",
+      "variant": "strips",
+      "t": 10.5
+     },
+     {
+      "kind": "rip",
+      "frames": 32,
+      "tail": 16,
+      "head": 16,
+      "section": "drop",
+      "boundary": "drop",
+      "stem": "other",
+      "variant": "",
+      "t": 14.667
+     },
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "effects": [],
+    "tones": null,
+    "tame": null
+   },
+   "extra": []
+  },
+  "record": {
+   "plan_name": "story",
+   "drop": 14.6667,
+   "morph_style": "melt",
+   "morph_styles": [
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt"
+   ],
+   "morph_timing": "smooth",
+   "effects": [],
+   "smear": "off",
+   "boundary_fx": [
+    null,
+    {
+     "kind": "wipe",
+     "frames": 64,
+     "tail": 32,
+     "head": 32,
+     "section": "release",
+     "boundary": "",
+     "stem": "bass",
+     "variant": "strips",
+     "t": 10.5
+    },
+    {
+     "kind": "rip",
+     "frames": 32,
+     "tail": 16,
+     "head": 16,
+     "section": "drop",
+     "boundary": "drop",
+     "stem": "other",
+     "variant": "",
+     "t": 14.667
+    },
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ],
+   "handoffs_s": [
+    0.0,
+    10.5,
+    14.6667,
+    16.0,
+    18.625,
+    21.4583,
+    24.0833,
+    26.7083,
+    29.3333,
+    30.0
+   ],
+   "macros": {
+    "intensity": 0.5,
+    "speed": 0.5,
+    "chaos": 0.3,
+    "glow": 0.4
+   },
+   "stills": [],
+   "source": "clips",
+   "vibe": "neon-noir",
+   "fps": 24,
+   "size": [
+    540,
+    960
+   ],
+   "seed": 2727,
+   "clips": [
+    "clip00.mp4",
+    "mock00.mp4",
+    "clip02.mp4",
+    "mock00.mp4",
+    "clip04.mp4",
+    "mock00.mp4",
+    "clip06.mp4",
+    "mock00.mp4",
+    "clip08.mp4"
+   ],
+   "chain": [
+    {
+     "noun": "reel a",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel b",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel c",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel d",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel a",
+     "kind": "clip"
+    }
+   ]
+  },
+  "plan_shots": [
+   {
+    "index": 0,
+    "start": 0.0,
+    "end": 10.5,
+    "seconds": 10.5,
+    "render_s": 8,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 252,
+    "section": "release",
+    "own": true,
+    "source": "01_reel_a.mp4",
+    "label": "reel a",
+    "clip_start": 0.0
+   },
+   {
+    "index": 1,
+    "start": 10.5,
+    "end": 14.6667,
+    "seconds": 4.1667,
+    "render_s": 6,
+    "speed": 1.44,
+    "ease": "",
+    "effects": [],
+    "frames": 100,
+    "section": "release",
+    "clip_morph": {
+     "from": "reel a",
+     "to": "reel b"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 2,
+    "start": 14.6667,
+    "end": 16.0,
+    "seconds": 1.3333,
+    "render_s": 4,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 14.6667,
+      "strength": 1.0
+     }
+    ],
+    "frames": 32,
+    "section": "drop",
+    "boundary": "drop",
+    "own": true,
+    "source": "02_reel_b.mp4",
+    "label": "reel b",
+    "clip_start": 2.0
+   },
+   {
+    "index": 3,
+    "start": 16.0,
+    "end": 18.625,
+    "seconds": 2.625,
+    "render_s": 4,
+    "speed": 1.524,
+    "ease": "",
+    "effects": [],
+    "frames": 63,
+    "section": "release",
+    "clip_morph": {
+     "from": "reel b",
+     "to": "reel c"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 4,
+    "start": 18.625,
+    "end": 21.4583,
+    "seconds": 2.8333,
+    "render_s": 8,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 18.625,
+      "strength": 0.6
+     }
+    ],
+    "frames": 68,
+    "section": "drop",
+    "own": true,
+    "source": "03_reel_c.mp4",
+    "label": "reel c",
+    "clip_start": 1.5
+   },
+   {
+    "index": 5,
+    "start": 21.4583,
+    "end": 24.0833,
+    "seconds": 2.625,
+    "render_s": 8,
+    "speed": 3.048,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 21.4583,
+      "strength": 0.6
+     }
+    ],
+    "frames": 63,
+    "section": "drop",
+    "clip_morph": {
+     "from": "reel c",
+     "to": "reel d"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 6,
+    "start": 24.0833,
+    "end": 26.7083,
+    "seconds": 2.625,
+    "render_s": 8,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 24.0833,
+      "strength": 0.6
+     }
+    ],
+    "frames": 63,
+    "section": "drop",
+    "own": true,
+    "source": "04_reel_d.mp4",
+    "label": "reel d",
+    "clip_start": 0.5
+   },
+   {
+    "index": 7,
+    "start": 26.7083,
+    "end": 29.3333,
+    "seconds": 2.625,
+    "render_s": 8,
+    "speed": 3.048,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 26.7083,
+      "strength": 0.6
+     }
+    ],
+    "frames": 63,
+    "section": "drop",
+    "clip_morph": {
+     "from": "reel d",
+     "to": "reel a"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 8,
+    "start": 29.3333,
+    "end": 30.0,
+    "seconds": 0.6667,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 29.3333,
+      "strength": 0.6
+     }
+    ],
+    "frames": 16,
+    "section": "drop",
+    "own": true,
+    "source": "01_reel_a.mp4",
+    "label": "reel a",
+    "clip_start": 2.333
+   }
+  ]
+ },
+ "wobble_whole_wild": {
+  "morph_count": 77,
+  "guard": [
+   "[morph_density] auto picked 120 forms for 103s; capped at 77 (~15 per 20 s)"
+  ],
+  "compose": {
+   "clips": [
+    "clip00.mp4",
+    "mock00.mp4",
+    "clip02.mp4",
+    "mock00.mp4",
+    "clip04.mp4",
+    "mock00.mp4",
+    "clip06.mp4",
+    "mock00.mp4",
+    "clip08.mp4",
+    "mock00.mp4",
+    "clip10.mp4",
+    "mock00.mp4",
+    "clip12.mp4",
+    "mock00.mp4",
+    "clip14.mp4",
+    "mock00.mp4",
+    "clip16.mp4",
+    "mock00.mp4",
+    "clip18.mp4",
+    "mock00.mp4",
+    "clip20.mp4",
+    "mock00.mp4",
+    "clip22.mp4",
+    "mock00.mp4",
+    "clip24.mp4",
+    "mock00.mp4",
+    "clip26.mp4",
+    "mock00.mp4",
+    "clip28.mp4",
+    "mock00.mp4",
+    "clip30.mp4",
+    "mock00.mp4",
+    "clip32.mp4",
+    "mock00.mp4",
+    "clip34.mp4",
+    "mock00.mp4",
+    "clip36.mp4",
+    "mock00.mp4",
+    "clip38.mp4",
+    "mock00.mp4",
+    "clip40.mp4",
+    "mock00.mp4",
+    "clip42.mp4",
+    "mock00.mp4",
+    "clip44.mp4",
+    "mock00.mp4",
+    "clip46.mp4",
+    "mock00.mp4",
+    "clip48.mp4",
+    "mock00.mp4",
+    "clip50.mp4",
+    "mock00.mp4",
+    "clip52.mp4",
+    "mock00.mp4",
+    "clip54.mp4",
+    "mock00.mp4",
+    "clip56.mp4",
+    "mock00.mp4",
+    "clip58.mp4",
+    "mock00.mp4",
+    "clip60.mp4",
+    "mock00.mp4",
+    "clip62.mp4",
+    "mock00.mp4",
+    "clip64.mp4",
+    "mock00.mp4",
+    "clip66.mp4",
+    "mock00.mp4",
+    "clip68.mp4",
+    "mock00.mp4",
+    "clip70.mp4",
+    "mock00.mp4",
+    "clip72.mp4",
+    "mock00.mp4",
+    "clip74.mp4",
+    "mock00.mp4",
+    "clip76.mp4"
+   ],
+   "shots": [
+    {
+     "index": 0,
+     "start": 0.0,
+     "end": 1.6667,
+     "seconds": 1.6667,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 0.7917,
+       "strength": 1.0
+      }
+     ],
+     "frames": 40,
+     "own": true,
+     "source": "01_reel_a.mp4",
+     "label": "reel a",
+     "clip_start": 0.5,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 1,
+     "start": 1.6667,
+     "end": 3.25,
+     "seconds": 1.5833,
+     "render_s": 2,
+     "speed": 1.263,
+     "ease": "",
+     "effects": [],
+     "frames": 38,
+     "clip_morph": {
+      "from": "reel a",
+      "to": "reel b"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 2,
+     "start": 3.25,
+     "end": 4.875,
+     "seconds": 1.625,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 39,
+     "own": true,
+     "source": "02_reel_b.mp4",
+     "label": "reel b",
+     "clip_start": 1.5,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 3,
+     "start": 4.875,
+     "end": 6.4583,
+     "seconds": 1.5833,
+     "render_s": 2,
+     "speed": 1.263,
+     "ease": "",
+     "effects": [],
+     "frames": 38,
+     "clip_morph": {
+      "from": "reel b",
+      "to": "reel c"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 4,
+     "start": 6.4583,
+     "end": 7.6667,
+     "seconds": 1.2084,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 29,
+     "own": true,
+     "source": "03_reel_c.mp4",
+     "label": "reel c",
+     "clip_start": 2.5,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 5,
+     "start": 7.6667,
+     "end": 9.25,
+     "seconds": 1.5833,
+     "render_s": 2,
+     "speed": 1.263,
+     "ease": "",
+     "effects": [],
+     "frames": 38,
+     "clip_morph": {
+      "from": "reel c",
+      "to": "reel d"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 6,
+     "start": 9.25,
+     "end": 10.8333,
+     "seconds": 1.5833,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 38,
+     "own": true,
+     "source": "04_reel_d.mp4",
+     "label": "reel d",
+     "clip_start": 1.0,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 7,
+     "start": 10.8333,
+     "end": 12.4167,
+     "seconds": 1.5834,
+     "render_s": 2,
+     "speed": 1.263,
+     "ease": "",
+     "effects": [],
+     "frames": 38,
+     "clip_morph": {
+      "from": "reel d",
+      "to": "reel e"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 8,
+     "start": 12.4167,
+     "end": 14.0,
+     "seconds": 1.5833,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 38,
+     "own": true,
+     "source": "05_reel_e.mp4",
+     "label": "reel e",
+     "clip_start": 1.0,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 9,
+     "start": 14.0,
+     "end": 15.625,
+     "seconds": 1.625,
+     "render_s": 2,
+     "speed": 1.231,
+     "ease": "",
+     "effects": [],
+     "frames": 39,
+     "clip_morph": {
+      "from": "reel e",
+      "to": "reel a"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 10,
+     "start": 15.625,
+     "end": 17.2083,
+     "seconds": 1.5833,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 38,
+     "own": true,
+     "source": "01_reel_a.mp4",
+     "label": "reel a",
+     "clip_start": 0.5,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 11,
+     "start": 17.2083,
+     "end": 18.9583,
+     "seconds": 1.75,
+     "render_s": 3,
+     "speed": 1.714,
+     "ease": "",
+     "effects": [],
+     "frames": 42,
+     "clip_morph": {
+      "from": "reel a",
+      "to": "reel b"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 12,
+     "start": 18.9583,
+     "end": 20.2917,
+     "seconds": 1.3334,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 32,
+     "own": true,
+     "source": "02_reel_b.mp4",
+     "label": "reel b",
+     "clip_start": 0.0,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 13,
+     "start": 20.2917,
+     "end": 21.875,
+     "seconds": 1.5833,
+     "render_s": 2,
+     "speed": 1.263,
+     "ease": "",
+     "effects": [],
+     "frames": 38,
+     "clip_morph": {
+      "from": "reel b",
+      "to": "reel c"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 14,
+     "start": 21.875,
+     "end": 23.4583,
+     "seconds": 1.5833,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 38,
+     "own": true,
+     "source": "03_reel_c.mp4",
+     "label": "reel c",
+     "clip_start": 0.0,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 15,
+     "start": 23.4583,
+     "end": 25.0833,
+     "seconds": 1.625,
+     "render_s": 2,
+     "speed": 1.231,
+     "ease": "",
+     "effects": [],
+     "frames": 39,
+     "clip_morph": {
+      "from": "reel c",
+      "to": "reel d"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 16,
+     "start": 25.0833,
+     "end": 26.7917,
+     "seconds": 1.7084,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 41,
+     "own": true,
+     "source": "04_reel_d.mp4",
+     "label": "reel d",
+     "clip_start": 1.0,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 17,
+     "start": 26.7917,
+     "end": 28.4167,
+     "seconds": 1.625,
+     "render_s": 2,
+     "speed": 1.231,
+     "ease": "",
+     "effects": [],
+     "frames": 39,
+     "clip_morph": {
+      "from": "reel d",
+      "to": "reel e"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 18,
+     "start": 28.4167,
+     "end": 30.0,
+     "seconds": 1.5833,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 38,
+     "own": true,
+     "source": "05_reel_e.mp4",
+     "label": "reel e",
+     "clip_start": 1.0,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 19,
+     "start": 30.0,
+     "end": 31.2083,
+     "seconds": 1.2083,
+     "render_s": 2,
+     "speed": 1.655,
+     "ease": "",
+     "effects": [],
+     "frames": 29,
+     "clip_morph": {
+      "from": "reel e",
+      "to": "reel a"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 20,
+     "start": 31.2083,
+     "end": 32.7917,
+     "seconds": 1.5834,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 38,
+     "own": true,
+     "source": "01_reel_a.mp4",
+     "label": "reel a",
+     "clip_start": 0.5,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 21,
+     "start": 32.7917,
+     "end": 34.4167,
+     "seconds": 1.625,
+     "render_s": 2,
+     "speed": 1.231,
+     "ease": "",
+     "effects": [],
+     "frames": 39,
+     "clip_morph": {
+      "from": "reel a",
+      "to": "reel b"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 22,
+     "start": 34.4167,
+     "end": 36.0,
+     "seconds": 1.5833,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 38,
+     "own": true,
+     "source": "02_reel_b.mp4",
+     "label": "reel b",
+     "clip_start": 1.5,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 23,
+     "start": 36.0,
+     "end": 37.6667,
+     "seconds": 1.6667,
+     "render_s": 2,
+     "speed": 1.2,
+     "ease": "",
+     "effects": [],
+     "frames": 40,
+     "clip_morph": {
+      "from": "reel b",
+      "to": "reel c"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 24,
+     "start": 37.6667,
+     "end": 39.3333,
+     "seconds": 1.6666,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 40,
+     "own": true,
+     "source": "03_reel_c.mp4",
+     "label": "reel c",
+     "clip_start": 4.0,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 25,
+     "start": 39.3333,
+     "end": 40.5833,
+     "seconds": 1.25,
+     "render_s": 2,
+     "speed": 1.6,
+     "ease": "",
+     "effects": [],
+     "frames": 30,
+     "clip_morph": {
+      "from": "reel c",
+      "to": "reel d"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 26,
+     "start": 40.5833,
+     "end": 42.375,
+     "seconds": 1.7917,
+     "render_s": 3,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 43,
+     "own": true,
+     "source": "04_reel_d.mp4",
+     "label": "reel d",
+     "clip_start": 1.0,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 27,
+     "start": 42.375,
+     "end": 44.0,
+     "seconds": 1.625,
+     "render_s": 2,
+     "speed": 1.231,
+     "ease": "",
+     "effects": [],
+     "frames": 39,
+     "clip_morph": {
+      "from": "reel d",
+      "to": "reel e"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 28,
+     "start": 44.0,
+     "end": 45.5833,
+     "seconds": 1.5833,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 38,
+     "own": true,
+     "source": "05_reel_e.mp4",
+     "label": "reel e",
+     "clip_start": 1.0,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 29,
+     "start": 45.5833,
+     "end": 47.2083,
+     "seconds": 1.625,
+     "render_s": 2,
+     "speed": 1.231,
+     "ease": "",
+     "effects": [],
+     "frames": 39,
+     "clip_morph": {
+      "from": "reel e",
+      "to": "reel a"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 30,
+     "start": 47.2083,
+     "end": 48.7917,
+     "seconds": 1.5834,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 38,
+     "own": true,
+     "source": "01_reel_a.mp4",
+     "label": "reel a",
+     "clip_start": 0.5,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 31,
+     "start": 48.7917,
+     "end": 50.4167,
+     "seconds": 1.625,
+     "render_s": 2,
+     "speed": 1.231,
+     "ease": "",
+     "effects": [],
+     "frames": 39,
+     "clip_morph": {
+      "from": "reel a",
+      "to": "reel b"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 32,
+     "start": 50.4167,
+     "end": 51.625,
+     "seconds": 1.2083,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 29,
+     "own": true,
+     "source": "02_reel_b.mp4",
+     "label": "reel b",
+     "clip_start": 2.0,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 33,
+     "start": 51.625,
+     "end": 53.2083,
+     "seconds": 1.5833,
+     "render_s": 2,
+     "speed": 1.263,
+     "ease": "",
+     "effects": [],
+     "frames": 38,
+     "clip_morph": {
+      "from": "reel b",
+      "to": "reel c"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 34,
+     "start": 53.2083,
+     "end": 54.8333,
+     "seconds": 1.625,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 39,
+     "own": true,
+     "source": "03_reel_c.mp4",
+     "label": "reel c",
+     "clip_start": 2.0,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 35,
+     "start": 54.8333,
+     "end": 56.4167,
+     "seconds": 1.5834,
+     "render_s": 2,
+     "speed": 1.263,
+     "ease": "",
+     "effects": [],
+     "frames": 38,
+     "clip_morph": {
+      "from": "reel c",
+      "to": "reel d"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 36,
+     "start": 56.4167,
+     "end": 58.0,
+     "seconds": 1.5833,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 38,
+     "own": true,
+     "source": "04_reel_d.mp4",
+     "label": "reel d",
+     "clip_start": 1.0,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 37,
+     "start": 58.0,
+     "end": 59.5833,
+     "seconds": 1.5833,
+     "render_s": 2,
+     "speed": 1.263,
+     "ease": "",
+     "effects": [],
+     "frames": 38,
+     "clip_morph": {
+      "from": "reel d",
+      "to": "reel e"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 38,
+     "start": 59.5833,
+     "end": 61.25,
+     "seconds": 1.6667,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 40,
+     "own": true,
+     "source": "05_reel_e.mp4",
+     "label": "reel e",
+     "clip_start": 1.0,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 39,
+     "start": 61.25,
+     "end": 62.625,
+     "seconds": 1.375,
+     "render_s": 2,
+     "speed": 1.455,
+     "ease": "",
+     "effects": [],
+     "frames": 33,
+     "clip_morph": {
+      "from": "reel e",
+      "to": "reel a"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 40,
+     "start": 62.625,
+     "end": 64.2917,
+     "seconds": 1.6667,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 40,
+     "own": true,
+     "source": "01_reel_a.mp4",
+     "label": "reel a",
+     "clip_start": 0.5,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 41,
+     "start": 64.2917,
+     "end": 65.9583,
+     "seconds": 1.6666,
+     "render_s": 2,
+     "speed": 1.2,
+     "ease": "",
+     "effects": [],
+     "frames": 40,
+     "clip_morph": {
+      "from": "reel a",
+      "to": "reel b"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 42,
+     "start": 65.9583,
+     "end": 67.625,
+     "seconds": 1.6667,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 40,
+     "own": true,
+     "source": "02_reel_b.mp4",
+     "label": "reel b",
+     "clip_start": 1.5,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 43,
+     "start": 67.625,
+     "end": 69.2083,
+     "seconds": 1.5833,
+     "render_s": 2,
+     "speed": 1.263,
+     "ease": "",
+     "effects": [],
+     "frames": 38,
+     "clip_morph": {
+      "from": "reel b",
+      "to": "reel c"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 44,
+     "start": 69.2083,
+     "end": 70.8333,
+     "seconds": 1.625,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 39,
+     "own": true,
+     "source": "03_reel_c.mp4",
+     "label": "reel c",
+     "clip_start": 0.0,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 45,
+     "start": 70.8333,
+     "end": 72.0,
+     "seconds": 1.1667,
+     "render_s": 2,
+     "speed": 1.714,
+     "ease": "",
+     "effects": [],
+     "frames": 28,
+     "clip_morph": {
+      "from": "reel c",
+      "to": "reel d"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 46,
+     "start": 72.0,
+     "end": 73.625,
+     "seconds": 1.625,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 39,
+     "own": true,
+     "source": "04_reel_d.mp4",
+     "label": "reel d",
+     "clip_start": 1.0,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 47,
+     "start": 73.625,
+     "end": 75.2083,
+     "seconds": 1.5833,
+     "render_s": 2,
+     "speed": 1.263,
+     "ease": "",
+     "effects": [],
+     "frames": 38,
+     "clip_morph": {
+      "from": "reel d",
+      "to": "reel e"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 48,
+     "start": 75.2083,
+     "end": 76.75,
+     "seconds": 1.5417,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 37,
+     "own": true,
+     "source": "05_reel_e.mp4",
+     "label": "reel e",
+     "clip_start": 1.0,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 49,
+     "start": 76.75,
+     "end": 78.4167,
+     "seconds": 1.6667,
+     "render_s": 2,
+     "speed": 1.2,
+     "ease": "",
+     "effects": [],
+     "frames": 40,
+     "clip_morph": {
+      "from": "reel e",
+      "to": "reel a"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 50,
+     "start": 78.4167,
+     "end": 80.0,
+     "seconds": 1.5833,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 38,
+     "own": true,
+     "source": "01_reel_a.mp4",
+     "label": "reel a",
+     "clip_start": 0.5,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 51,
+     "start": 80.0,
+     "end": 81.625,
+     "seconds": 1.625,
+     "render_s": 2,
+     "speed": 1.231,
+     "ease": "",
+     "effects": [],
+     "frames": 39,
+     "clip_morph": {
+      "from": "reel a",
+      "to": "reel b"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 52,
+     "start": 81.625,
+     "end": 83.2083,
+     "seconds": 1.5833,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 38,
+     "own": true,
+     "source": "02_reel_b.mp4",
+     "label": "reel b",
+     "clip_start": 3.417,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 53,
+     "start": 83.2083,
+     "end": 84.4167,
+     "seconds": 1.2084,
+     "render_s": 2,
+     "speed": 1.655,
+     "ease": "in",
+     "effects": [],
+     "frames": 29,
+     "clip_morph": {
+      "from": "reel b",
+      "to": "reel c"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 54,
+     "start": 84.4167,
+     "end": 85.2083,
+     "seconds": 0.7916,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 84.4167,
+       "strength": 1.0
+      }
+     ],
+     "frames": 19,
+     "own": true,
+     "source": "03_reel_c.mp4",
+     "label": "reel c",
+     "clip_start": 2.5,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 55,
+     "start": 85.2083,
+     "end": 86.0417,
+     "seconds": 0.8334,
+     "render_s": 2,
+     "speed": 2.4,
+     "ease": "",
+     "effects": [
+      {
+       "type": "hold",
+       "t": 85.375,
+       "len": 0.12
+      },
+      {
+       "type": "punch",
+       "t": 85.5083,
+       "strength": 1.0
+      },
+      {
+       "type": "skip",
+       "t": 85.5083,
+       "amount": 0.3
+      }
+     ],
+     "frames": 20,
+     "clip_morph": {
+      "from": "reel c",
+      "to": "reel d"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 56,
+     "start": 86.0417,
+     "end": 86.8333,
+     "seconds": 0.7916,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 86.0417,
+       "strength": 0.66
+      }
+     ],
+     "frames": 19,
+     "own": true,
+     "source": "04_reel_d.mp4",
+     "label": "reel d",
+     "clip_start": 0.5,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 57,
+     "start": 86.8333,
+     "end": 87.5833,
+     "seconds": 0.75,
+     "render_s": 2,
+     "speed": 2.667,
+     "ease": "",
+     "effects": [],
+     "frames": 18,
+     "clip_morph": {
+      "from": "reel d",
+      "to": "reel e"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 58,
+     "start": 87.5833,
+     "end": 88.4167,
+     "seconds": 0.8334,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 87.5833,
+       "strength": 0.66
+      }
+     ],
+     "frames": 20,
+     "own": true,
+     "source": "05_reel_e.mp4",
+     "label": "reel e",
+     "clip_start": 0.5,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 59,
+     "start": 88.4167,
+     "end": 89.2083,
+     "seconds": 0.7916,
+     "render_s": 2,
+     "speed": 2.527,
+     "ease": "",
+     "effects": [],
+     "frames": 19,
+     "clip_morph": {
+      "from": "reel e",
+      "to": "reel a"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 60,
+     "start": 89.2083,
+     "end": 90.0,
+     "seconds": 0.7917,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 19,
+     "own": true,
+     "source": "01_reel_a.mp4",
+     "label": "reel a",
+     "clip_start": 1.0,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 61,
+     "start": 90.0,
+     "end": 90.7917,
+     "seconds": 0.7917,
+     "render_s": 2,
+     "speed": 2.526,
+     "ease": "",
+     "effects": [],
+     "frames": 19,
+     "clip_morph": {
+      "from": "reel a",
+      "to": "reel b"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 62,
+     "start": 90.7917,
+     "end": 91.625,
+     "seconds": 0.8333,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 20,
+     "own": true,
+     "source": "02_reel_b.mp4",
+     "label": "reel b",
+     "clip_start": 3.5,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 63,
+     "start": 91.625,
+     "end": 92.4167,
+     "seconds": 0.7917,
+     "render_s": 2,
+     "speed": 2.526,
+     "ease": "",
+     "effects": [],
+     "frames": 19,
+     "clip_morph": {
+      "from": "reel b",
+      "to": "reel c"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 64,
+     "start": 92.4167,
+     "end": 93.2083,
+     "seconds": 0.7916,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 19,
+     "own": true,
+     "source": "03_reel_c.mp4",
+     "label": "reel c",
+     "clip_start": 3.5,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 65,
+     "start": 93.2083,
+     "end": 94.0,
+     "seconds": 0.7917,
+     "render_s": 2,
+     "speed": 2.526,
+     "ease": "",
+     "effects": [],
+     "frames": 19,
+     "clip_morph": {
+      "from": "reel c",
+      "to": "reel d"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 66,
+     "start": 94.0,
+     "end": 94.7917,
+     "seconds": 0.7917,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 19,
+     "own": true,
+     "source": "04_reel_d.mp4",
+     "label": "reel d",
+     "clip_start": 1.5,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 67,
+     "start": 94.7917,
+     "end": 95.625,
+     "seconds": 0.8333,
+     "render_s": 2,
+     "speed": 2.4,
+     "ease": "",
+     "effects": [],
+     "frames": 20,
+     "clip_morph": {
+      "from": "reel d",
+      "to": "reel e"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 68,
+     "start": 95.625,
+     "end": 96.3614,
+     "seconds": 0.7364,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 18,
+     "own": true,
+     "source": "05_reel_e.mp4",
+     "label": "reel e",
+     "clip_start": 1.5,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 69,
+     "start": 96.3614,
+     "end": 97.1462,
+     "seconds": 0.7848,
+     "render_s": 2,
+     "speed": 2.548,
+     "ease": "",
+     "effects": [],
+     "frames": 19,
+     "clip_morph": {
+      "from": "reel e",
+      "to": "reel a"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 70,
+     "start": 97.1462,
+     "end": 97.931,
+     "seconds": 0.7848,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 18,
+     "own": true,
+     "source": "01_reel_a.mp4",
+     "label": "reel a",
+     "clip_start": 2.0,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 71,
+     "start": 97.931,
+     "end": 98.7159,
+     "seconds": 0.7849,
+     "render_s": 2,
+     "speed": 2.548,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 97.931,
+       "strength": 0.66
+      }
+     ],
+     "frames": 19,
+     "clip_morph": {
+      "from": "reel a",
+      "to": "reel b"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 72,
+     "start": 98.7159,
+     "end": 99.5007,
+     "seconds": 0.7848,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 19,
+     "own": true,
+     "source": "02_reel_b.mp4",
+     "label": "reel b",
+     "clip_start": 1.0,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 73,
+     "start": 99.5007,
+     "end": 100.2855,
+     "seconds": 0.7848,
+     "render_s": 2,
+     "speed": 2.548,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 99.5007,
+       "strength": 0.66
+      }
+     ],
+     "frames": 19,
+     "clip_morph": {
+      "from": "reel b",
+      "to": "reel c"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 74,
+     "start": 100.2855,
+     "end": 101.0703,
+     "seconds": 0.7848,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 19,
+     "own": true,
+     "source": "03_reel_c.mp4",
+     "label": "reel c",
+     "clip_start": 1.0,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 75,
+     "start": 101.0703,
+     "end": 101.8552,
+     "seconds": 0.7849,
+     "render_s": 2,
+     "speed": 2.548,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 101.0703,
+       "strength": 0.66
+      }
+     ],
+     "frames": 19,
+     "clip_morph": {
+      "from": "reel c",
+      "to": "reel d"
+     },
+     "style": "melt",
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    },
+    {
+     "index": 76,
+     "start": 101.8552,
+     "end": 102.64,
+     "seconds": 0.7848,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 18,
+     "own": true,
+     "source": "04_reel_d.mp4",
+     "label": "reel d",
+     "clip_start": 3.0,
+     "fx_intensity": 1.0,
+     "chaos": 0.8,
+     "wobble": 0.4
+    }
+   ],
+   "kw": {
+    "aspect": "16:9",
+    "quality": "draft",
+    "fx": true,
+    "overlay": false,
+    "size": [
+     768,
+     432
+    ],
+    "fps": 24,
+    "dance_fx": "house",
+    "stem_orbit": true,
+    "macros": {
+     "intensity": 0.7,
+     "speed": 0.5,
+     "chaos": 0.8,
+     "glow": 0.4
+    },
+    "end_card": false,
+    "seed": 2727,
+    "adaptive": true,
+    "transitions": null,
+    "foreshadow": null,
+    "boundary_fx": [
+     null,
+     {
+      "kind": "rip",
+      "frames": 20,
+      "tail": 10,
+      "head": 10,
+      "section": "",
+      "boundary": "",
+      "stem": "other",
+      "variant": "",
+      "t": 1.667
+     },
+     {
+      "kind": "wipe",
+      "frames": 38,
+      "tail": 19,
+      "head": 19,
+      "section": "",
+      "boundary": "",
+      "stem": "bass",
+      "variant": "strips",
+      "t": 3.25
+     },
+     {
+      "kind": "rip",
+      "frames": 20,
+      "tail": 10,
+      "head": 10,
+      "section": "",
+      "boundary": "",
+      "stem": "other",
+      "variant": "",
+      "t": 4.875
+     },
+     {
+      "kind": "strobe",
+      "frames": 10,
+      "tail": 5,
+      "head": 5,
+      "section": "",
+      "boundary": "",
+      "stem": "drums",
+      "variant": "",
+      "t": 6.458
+     },
+     {
+      "kind": "wipe",
+      "frames": 33,
+      "tail": 14,
+      "head": 19,
+      "section": "",
+      "boundary": "",
+      "stem": "bass",
+      "variant": "strips",
+      "t": 7.667
+     },
+     {
+      "kind": "rip",
+      "frames": 20,
+      "tail": 10,
+      "head": 10,
+      "section": "",
+      "boundary": "",
+      "stem": "other",
+      "variant": "",
+      "t": 9.25
+     },
+     {
+      "kind": "strobe",
+      "frames": 10,
+      "tail": 5,
+      "head": 5,
+      "section": "",
+      "boundary": "",
+      "stem": "drums",
+      "variant": "",
+      "t": 10.833
+     },
+     null,
+     {
+      "kind": "wipe",
+      "frames": 38,
+      "tail": 19,
+      "head": 19,
+      "section": "",
+      "boundary": "",
+      "stem": "bass",
+      "variant": "strips",
+      "t": 14.0
+     },
+     {
+      "kind": "rip",
+      "frames": 20,
+      "tail": 10,
+      "head": 10,
+      "section": "",
+      "boundary": "",
+      "stem": "other",
+      "variant": "",
+      "t": 15.625
+     },
+     {
+      "kind": "strobe",
+      "frames": 10,
+      "tail": 5,
+      "head": 5,
+      "section": "",
+      "boundary": "",
+      "stem": "drums",
+      "variant": "",
+      "t": 17.208
+     },
+     {
+      "kind": "wipe",
+      "frames": 36,
+      "tail": 20,
+      "head": 16,
+      "section": "",
+      "boundary": "",
+      "stem": "bass",
+      "variant": "strips",
+      "t": 18.958
+     },
+     {
+      "kind": "rip",
+      "frames": 20,
+      "tail": 10,
+      "head": 10,
+      "section": "",
+      "boundary": "",
+      "stem": "other",
+      "variant": "",
+      "t": 20.292
+     },
+     {
+      "kind": "strobe",
+      "frames": 10,
+      "tail": 5,
+      "head": 5,
+      "section": "",
+      "boundary": "",
+      "stem": "drums",
+      "variant": "",
+      "t": 21.875
+     },
+     {
+      "kind": "wipe",
+      "frames": 38,
+      "tail": 19,
+      "head": 19,
+      "section": "",
+      "boundary": "",
+      "stem": "bass",
+      "variant": "strips",
+      "t": 23.458
+     },
+     {
+      "kind": "rip",
+      "frames": 20,
+      "tail": 10,
+      "head": 10,
+      "section": "",
+      "boundary": "",
+      "stem": "other",
+      "variant": "",
+      "t": 25.083
+     },
+     {
+      "kind": "strobe",
+      "frames": 10,
+      "tail": 5,
+      "head": 5,
+      "section": "",
+      "boundary": "",
+      "stem": "drums",
+      "variant": "",
+      "t": 26.792
+     },
+     {
+      "kind": "wipe",
+      "frames": 38,
+      "tail": 19,
+      "head": 19,
+      "section": "",
+      "boundary": "",
+      "stem": "bass",
+      "variant": "strips",
+      "t": 28.417
+     },
+     {
+      "kind": "rip",
+      "frames": 20,
+      "tail": 10,
+      "head": 10,
+      "section": "",
+      "boundary": "",
+      "stem": "other",
+      "variant": "",
+      "t": 30.0
+     },
+     {
+      "kind": "strobe",
+      "frames": 10,
+      "tail": 5,
+      "head": 5,
+      "section": "",
+      "boundary": "",
+      "stem": "drums",
+      "variant": "",
+      "t": 31.208
+     },
+     {
+      "kind": "wipe",
+      "frames": 38,
+      "tail": 19,
+      "head": 19,
+      "section": "",
+      "boundary": "",
+      "stem": "bass",
+      "variant": "strips",
+      "t": 32.792
+     },
+     {
+      "kind": "rip",
+      "frames": 20,
+      "tail": 10,
+      "head": 10,
+      "section": "",
+      "boundary": "",
+      "stem": "other",
+      "variant": "",
+      "t": 34.417
+     },
+     null,
+     {
+      "kind": "strobe",
+      "frames": 10,
+      "tail": 5,
+      "head": 5,
+      "section": "",
+      "boundary": "",
+      "stem": "drums",
+      "variant": "",
+      "t": 37.667
+     },
+     {
+      "kind": "wipe",
+      "frames": 35,
+      "tail": 20,
+      "head": 15,
+      "section": "",
+      "boundary": "",
+      "stem": "bass",
+      "variant": "strips",
+      "t": 39.333
+     },
+     {
+      "kind": "rip",
+      "frames": 20,
+      "tail": 10,
+      "head": 10,
+      "section": "",
+      "boundary": "",
+      "stem": "other",
+      "variant": "",
+      "t": 40.583
+     },
+     {
+      "kind": "strobe",
+      "frames": 10,
+      "tail": 5,
+      "head": 5,
+      "section": "",
+      "boundary": "",
+      "stem": "drums",
+      "variant": "",
+      "t": 42.375
+     },
+     {
+      "kind": "wipe",
+      "frames": 38,
+      "tail": 19,
+      "head": 19,
+      "section": "",
+      "boundary": "",
+      "stem": "bass",
+      "variant": "strips",
+      "t": 44.0
+     },
+     {
+      "kind": "rip",
+      "frames": 20,
+      "tail": 10,
+      "head": 10,
+      "section": "",
+      "boundary": "",
+      "stem": "other",
+      "variant": "",
+      "t": 45.583
+     },
+     {
+      "kind": "strobe",
+      "frames": 10,
+      "tail": 5,
+      "head": 5,
+      "section": "",
+      "boundary": "",
+      "stem": "drums",
+      "variant": "",
+      "t": 47.208
+     },
+     {
+      "kind": "wipe",
+      "frames": 38,
+      "tail": 19,
+      "head": 19,
+      "section": "",
+      "boundary": "",
+      "stem": "bass",
+      "variant": "strips",
+      "t": 48.792
+     },
+     {
+      "kind": "rip",
+      "frames": 20,
+      "tail": 10,
+      "head": 10,
+      "section": "",
+      "boundary": "",
+      "stem": "other",
+      "variant": "",
+      "t": 50.417
+     },
+     {
+      "kind": "strobe",
+      "frames": 10,
+      "tail": 5,
+      "head": 5,
+      "section": "",
+      "boundary": "",
+      "stem": "drums",
+      "variant": "",
+      "t": 51.625
+     },
+     {
+      "kind": "wipe",
+      "frames": 38,
+      "tail": 19,
+      "head": 19,
+      "section": "",
+      "boundary": "",
+      "stem": "bass",
+      "variant": "strips",
+      "t": 53.208
+     },
+     {
+      "kind": "rip",
+      "frames": 20,
+      "tail": 10,
+      "head": 10,
+      "section": "",
+      "boundary": "",
+      "stem": "other",
+      "variant": "",
+      "t": 54.833
+     },
+     {
+      "kind": "strobe",
+      "frames": 10,
+      "tail": 5,
+      "head": 5,
+      "section": "",
+      "boundary": "",
+      "stem": "drums",
+      "variant": "",
+      "t": 56.417
+     },
+     {
+      "kind": "wipe",
+      "frames": 38,
+      "tail": 19,
+      "head": 19,
+      "section": "",
+      "boundary": "",
+      "stem": "bass",
+      "variant": "strips",
+      "t": 58.0
+     },
+     null,
+     {
+      "kind": "rip",
+      "frames": 20,
+      "tail": 10,
+      "head": 10,
+      "section": "",
+      "boundary": "",
+      "stem": "other",
+      "variant": "",
+      "t": 61.25
+     },
+     {
+      "kind": "strobe",
+      "frames": 10,
+      "tail": 5,
+      "head": 5,
+      "section": "",
+      "boundary": "",
+      "stem": "drums",
+      "variant": "",
+      "t": 62.625
+     },
+     {
+      "kind": "wipe",
+      "frames": 40,
+      "tail": 20,
+      "head": 20,
+      "section": "",
+      "boundary": "",
+      "stem": "bass",
+      "variant": "strips",
+      "t": 64.292
+     },
+     {
+      "kind": "rip",
+      "frames": 20,
+      "tail": 10,
+      "head": 10,
+      "section": "",
+      "boundary": "",
+      "stem": "other",
+      "variant": "",
+      "t": 65.958
+     },
+     {
+      "kind": "strobe",
+      "frames": 10,
+      "tail": 5,
+      "head": 5,
+      "section": "",
+      "boundary": "",
+      "stem": "drums",
+      "variant": "",
+      "t": 67.625
+     },
+     {
+      "kind": "wipe",
+      "frames": 38,
+      "tail": 19,
+      "head": 19,
+      "section": "",
+      "boundary": "",
+      "stem": "bass",
+      "variant": "strips",
+      "t": 69.208
+     },
+     {
+      "kind": "rip",
+      "frames": 20,
+      "tail": 10,
+      "head": 10,
+      "section": "",
+      "boundary": "",
+      "stem": "other",
+      "variant": "",
+      "t": 70.833
+     },
+     {
+      "kind": "strobe",
+      "frames": 10,
+      "tail": 5,
+      "head": 5,
+      "section": "",
+      "boundary": "",
+      "stem": "drums",
+      "variant": "",
+      "t": 72.0
+     },
+     {
+      "kind": "wipe",
+      "frames": 38,
+      "tail": 19,
+      "head": 19,
+      "section": "",
+      "boundary": "",
+      "stem": "bass",
+      "variant": "strips",
+      "t": 73.625
+     },
+     {
+      "kind": "rip",
+      "frames": 20,
+      "tail": 10,
+      "head": 10,
+      "section": "",
+      "boundary": "",
+      "stem": "other",
+      "variant": "",
+      "t": 75.208
+     },
+     {
+      "kind": "strobe",
+      "frames": 10,
+      "tail": 5,
+      "head": 5,
+      "section": "",
+      "boundary": "",
+      "stem": "drums",
+      "variant": "",
+      "t": 76.75
+     },
+     {
+      "kind": "wipe",
+      "frames": 39,
+      "tail": 20,
+      "head": 19,
+      "section": "",
+      "boundary": "",
+      "stem": "bass",
+      "variant": "strips",
+      "t": 78.417
+     },
+     {
+      "kind": "rip",
+      "frames": 20,
+      "tail": 10,
+      "head": 10,
+      "section": "",
+      "boundary": "",
+      "stem": "other",
+      "variant": "",
+      "t": 80.0
+     },
+     {
+      "kind": "wipe",
+      "frames": 38,
+      "tail": 19,
+      "head": 19,
+      "section": "",
+      "boundary": "",
+      "stem": "bass",
+      "variant": "strips",
+      "t": 81.625
+     },
+     null,
+     {
+      "kind": "strobe",
+      "frames": 10,
+      "tail": 5,
+      "head": 5,
+      "section": "",
+      "boundary": "drop",
+      "stem": "drums",
+      "variant": "",
+      "t": 84.417
+     },
+     {
+      "kind": "rip",
+      "frames": 19,
+      "tail": 9,
+      "head": 10,
+      "section": "",
+      "boundary": "",
+      "stem": "other",
+      "variant": "",
+      "t": 85.208
+     },
+     {
+      "kind": "wipe",
+      "frames": 19,
+      "tail": 10,
+      "head": 9,
+      "section": "",
+      "boundary": "",
+      "stem": "bass",
+      "variant": "iris",
+      "t": 86.042
+     },
+     {
+      "kind": "strobe",
+      "frames": 10,
+      "tail": 5,
+      "head": 5,
+      "section": "",
+      "boundary": "",
+      "stem": "drums",
+      "variant": "",
+      "t": 86.833
+     },
+     {
+      "kind": "rip",
+      "frames": 19,
+      "tail": 9,
+      "head": 10,
+      "section": "",
+      "boundary": "",
+      "stem": "other",
+      "variant": "",
+      "t": 87.583
+     },
+     {
+      "kind": "wipe",
+      "frames": 19,
+      "tail": 10,
+      "head": 9,
+      "section": "",
+      "boundary": "",
+      "stem": "bass",
+      "variant": "iris",
+      "t": 88.417
+     },
+     {
+      "kind": "strobe",
+      "frames": 10,
+      "tail": 5,
+      "head": 5,
+      "section": "",
+      "boundary": "",
+      "stem": "drums",
+      "variant": "",
+      "t": 89.208
+     },
+     {
+      "kind": "rip",
+      "frames": 18,
+      "tail": 9,
+      "head": 9,
+      "section": "",
+      "boundary": "",
+      "stem": "other",
+      "variant": "",
+      "t": 90.0
+     },
+     {
+      "kind": "wipe",
+      "frames": 19,
+      "tail": 9,
+      "head": 10,
+      "section": "",
+      "boundary": "",
+      "stem": "bass",
+      "variant": "iris",
+      "t": 90.792
+     },
+     {
+      "kind": "strobe",
+      "frames": 10,
+      "tail": 5,
+      "head": 5,
+      "section": "",
+      "boundary": "",
+      "stem": "drums",
+      "variant": "",
+      "t": 91.625
+     },
+     {
+      "kind": "rip",
+      "frames": 18,
+      "tail": 9,
+      "head": 9,
+      "section": "",
+      "boundary": "",
+      "stem": "other",
+      "variant": "",
+      "t": 92.417
+     },
+     {
+      "kind": "wipe",
+      "frames": 18,
+      "tail": 9,
+      "head": 9,
+      "section": "",
+      "boundary": "",
+      "stem": "bass",
+      "variant": "iris",
+      "t": 93.208
+     },
+     {
+      "kind": "strobe",
+      "frames": 10,
+      "tail": 5,
+      "head": 5,
+      "section": "",
+      "boundary": "",
+      "stem": "drums",
+      "variant": "",
+      "t": 94.0
+     },
+     {
+      "kind": "rip",
+      "frames": 19,
+      "tail": 9,
+      "head": 10,
+      "section": "",
+      "boundary": "",
+      "stem": "other",
+      "variant": "",
+      "t": 94.792
+     },
+     {
+      "kind": "wipe",
+      "frames": 19,
+      "tail": 10,
+      "head": 9,
+      "section": "",
+      "boundary": "",
+      "stem": "bass",
+      "variant": "iris",
+      "t": 95.625
+     },
+     null,
+     {
+      "kind": "strobe",
+      "frames": 10,
+      "tail": 5,
+      "head": 5,
+      "section": "",
+      "boundary": "",
+      "stem": "drums",
+      "variant": "",
+      "t": 97.146
+     },
+     {
+      "kind": "rip",
+      "frames": 18,
+      "tail": 9,
+      "head": 9,
+      "section": "",
+      "boundary": "",
+      "stem": "other",
+      "variant": "",
+      "t": 97.931
+     },
+     {
+      "kind": "wipe",
+      "frames": 18,
+      "tail": 9,
+      "head": 9,
+      "section": "",
+      "boundary": "",
+      "stem": "bass",
+      "variant": "iris",
+      "t": 98.716
+     },
+     {
+      "kind": "strobe",
+      "frames": 10,
+      "tail": 5,
+      "head": 5,
+      "section": "",
+      "boundary": "",
+      "stem": "drums",
+      "variant": "",
+      "t": 99.501
+     },
+     {
+      "kind": "rip",
+      "frames": 18,
+      "tail": 9,
+      "head": 9,
+      "section": "",
+      "boundary": "",
+      "stem": "other",
+      "variant": "",
+      "t": 100.285
+     },
+     {
+      "kind": "wipe",
+      "frames": 18,
+      "tail": 9,
+      "head": 9,
+      "section": "",
+      "boundary": "",
+      "stem": "bass",
+      "variant": "iris",
+      "t": 101.07
+     },
+     {
+      "kind": "strobe",
+      "frames": 10,
+      "tail": 5,
+      "head": 5,
+      "section": "",
+      "boundary": "",
+      "stem": "drums",
+      "variant": "",
+      "t": 101.855
+     }
+    ],
+    "effects": [
+     "dither"
+    ],
+    "tones": [
+     [
+      6.0,
+      6.0,
+      10.0
+     ],
+     [
+      22.1267,
+      55.6903,
+      255.0
+     ],
+     [
+      181.4041,
+      41.5615,
+      255.0
+     ],
+     [
+      232.8339,
+      162.0476,
+      192.7895
+     ]
+    ],
+    "tame": null
+   },
+   "extra": []
+  },
+  "record": {
+   "plan_name": "dense (77 forms)",
+   "drop": 84.4167,
+   "morph_style": "melt",
+   "morph_styles": [
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt"
+   ],
+   "morph_timing": "smooth",
+   "effects": [
+    "dither"
+   ],
+   "smear": "off",
+   "boundary_fx": [
+    null,
+    {
+     "kind": "rip",
+     "frames": 20,
+     "tail": 10,
+     "head": 10,
+     "section": "",
+     "boundary": "",
+     "stem": "other",
+     "variant": "",
+     "t": 1.667
+    },
+    {
+     "kind": "wipe",
+     "frames": 38,
+     "tail": 19,
+     "head": 19,
+     "section": "",
+     "boundary": "",
+     "stem": "bass",
+     "variant": "strips",
+     "t": 3.25
+    },
+    {
+     "kind": "rip",
+     "frames": 20,
+     "tail": 10,
+     "head": 10,
+     "section": "",
+     "boundary": "",
+     "stem": "other",
+     "variant": "",
+     "t": 4.875
+    },
+    {
+     "kind": "strobe",
+     "frames": 10,
+     "tail": 5,
+     "head": 5,
+     "section": "",
+     "boundary": "",
+     "stem": "drums",
+     "variant": "",
+     "t": 6.458
+    },
+    {
+     "kind": "wipe",
+     "frames": 33,
+     "tail": 14,
+     "head": 19,
+     "section": "",
+     "boundary": "",
+     "stem": "bass",
+     "variant": "strips",
+     "t": 7.667
+    },
+    {
+     "kind": "rip",
+     "frames": 20,
+     "tail": 10,
+     "head": 10,
+     "section": "",
+     "boundary": "",
+     "stem": "other",
+     "variant": "",
+     "t": 9.25
+    },
+    {
+     "kind": "strobe",
+     "frames": 10,
+     "tail": 5,
+     "head": 5,
+     "section": "",
+     "boundary": "",
+     "stem": "drums",
+     "variant": "",
+     "t": 10.833
+    },
+    null,
+    {
+     "kind": "wipe",
+     "frames": 38,
+     "tail": 19,
+     "head": 19,
+     "section": "",
+     "boundary": "",
+     "stem": "bass",
+     "variant": "strips",
+     "t": 14.0
+    },
+    {
+     "kind": "rip",
+     "frames": 20,
+     "tail": 10,
+     "head": 10,
+     "section": "",
+     "boundary": "",
+     "stem": "other",
+     "variant": "",
+     "t": 15.625
+    },
+    {
+     "kind": "strobe",
+     "frames": 10,
+     "tail": 5,
+     "head": 5,
+     "section": "",
+     "boundary": "",
+     "stem": "drums",
+     "variant": "",
+     "t": 17.208
+    },
+    {
+     "kind": "wipe",
+     "frames": 36,
+     "tail": 20,
+     "head": 16,
+     "section": "",
+     "boundary": "",
+     "stem": "bass",
+     "variant": "strips",
+     "t": 18.958
+    },
+    {
+     "kind": "rip",
+     "frames": 20,
+     "tail": 10,
+     "head": 10,
+     "section": "",
+     "boundary": "",
+     "stem": "other",
+     "variant": "",
+     "t": 20.292
+    },
+    {
+     "kind": "strobe",
+     "frames": 10,
+     "tail": 5,
+     "head": 5,
+     "section": "",
+     "boundary": "",
+     "stem": "drums",
+     "variant": "",
+     "t": 21.875
+    },
+    {
+     "kind": "wipe",
+     "frames": 38,
+     "tail": 19,
+     "head": 19,
+     "section": "",
+     "boundary": "",
+     "stem": "bass",
+     "variant": "strips",
+     "t": 23.458
+    },
+    {
+     "kind": "rip",
+     "frames": 20,
+     "tail": 10,
+     "head": 10,
+     "section": "",
+     "boundary": "",
+     "stem": "other",
+     "variant": "",
+     "t": 25.083
+    },
+    {
+     "kind": "strobe",
+     "frames": 10,
+     "tail": 5,
+     "head": 5,
+     "section": "",
+     "boundary": "",
+     "stem": "drums",
+     "variant": "",
+     "t": 26.792
+    },
+    {
+     "kind": "wipe",
+     "frames": 38,
+     "tail": 19,
+     "head": 19,
+     "section": "",
+     "boundary": "",
+     "stem": "bass",
+     "variant": "strips",
+     "t": 28.417
+    },
+    {
+     "kind": "rip",
+     "frames": 20,
+     "tail": 10,
+     "head": 10,
+     "section": "",
+     "boundary": "",
+     "stem": "other",
+     "variant": "",
+     "t": 30.0
+    },
+    {
+     "kind": "strobe",
+     "frames": 10,
+     "tail": 5,
+     "head": 5,
+     "section": "",
+     "boundary": "",
+     "stem": "drums",
+     "variant": "",
+     "t": 31.208
+    },
+    {
+     "kind": "wipe",
+     "frames": 38,
+     "tail": 19,
+     "head": 19,
+     "section": "",
+     "boundary": "",
+     "stem": "bass",
+     "variant": "strips",
+     "t": 32.792
+    },
+    {
+     "kind": "rip",
+     "frames": 20,
+     "tail": 10,
+     "head": 10,
+     "section": "",
+     "boundary": "",
+     "stem": "other",
+     "variant": "",
+     "t": 34.417
+    },
+    null,
+    {
+     "kind": "strobe",
+     "frames": 10,
+     "tail": 5,
+     "head": 5,
+     "section": "",
+     "boundary": "",
+     "stem": "drums",
+     "variant": "",
+     "t": 37.667
+    },
+    {
+     "kind": "wipe",
+     "frames": 35,
+     "tail": 20,
+     "head": 15,
+     "section": "",
+     "boundary": "",
+     "stem": "bass",
+     "variant": "strips",
+     "t": 39.333
+    },
+    {
+     "kind": "rip",
+     "frames": 20,
+     "tail": 10,
+     "head": 10,
+     "section": "",
+     "boundary": "",
+     "stem": "other",
+     "variant": "",
+     "t": 40.583
+    },
+    {
+     "kind": "strobe",
+     "frames": 10,
+     "tail": 5,
+     "head": 5,
+     "section": "",
+     "boundary": "",
+     "stem": "drums",
+     "variant": "",
+     "t": 42.375
+    },
+    {
+     "kind": "wipe",
+     "frames": 38,
+     "tail": 19,
+     "head": 19,
+     "section": "",
+     "boundary": "",
+     "stem": "bass",
+     "variant": "strips",
+     "t": 44.0
+    },
+    {
+     "kind": "rip",
+     "frames": 20,
+     "tail": 10,
+     "head": 10,
+     "section": "",
+     "boundary": "",
+     "stem": "other",
+     "variant": "",
+     "t": 45.583
+    },
+    {
+     "kind": "strobe",
+     "frames": 10,
+     "tail": 5,
+     "head": 5,
+     "section": "",
+     "boundary": "",
+     "stem": "drums",
+     "variant": "",
+     "t": 47.208
+    },
+    {
+     "kind": "wipe",
+     "frames": 38,
+     "tail": 19,
+     "head": 19,
+     "section": "",
+     "boundary": "",
+     "stem": "bass",
+     "variant": "strips",
+     "t": 48.792
+    },
+    {
+     "kind": "rip",
+     "frames": 20,
+     "tail": 10,
+     "head": 10,
+     "section": "",
+     "boundary": "",
+     "stem": "other",
+     "variant": "",
+     "t": 50.417
+    },
+    {
+     "kind": "strobe",
+     "frames": 10,
+     "tail": 5,
+     "head": 5,
+     "section": "",
+     "boundary": "",
+     "stem": "drums",
+     "variant": "",
+     "t": 51.625
+    },
+    {
+     "kind": "wipe",
+     "frames": 38,
+     "tail": 19,
+     "head": 19,
+     "section": "",
+     "boundary": "",
+     "stem": "bass",
+     "variant": "strips",
+     "t": 53.208
+    },
+    {
+     "kind": "rip",
+     "frames": 20,
+     "tail": 10,
+     "head": 10,
+     "section": "",
+     "boundary": "",
+     "stem": "other",
+     "variant": "",
+     "t": 54.833
+    },
+    {
+     "kind": "strobe",
+     "frames": 10,
+     "tail": 5,
+     "head": 5,
+     "section": "",
+     "boundary": "",
+     "stem": "drums",
+     "variant": "",
+     "t": 56.417
+    },
+    {
+     "kind": "wipe",
+     "frames": 38,
+     "tail": 19,
+     "head": 19,
+     "section": "",
+     "boundary": "",
+     "stem": "bass",
+     "variant": "strips",
+     "t": 58.0
+    },
+    null,
+    {
+     "kind": "rip",
+     "frames": 20,
+     "tail": 10,
+     "head": 10,
+     "section": "",
+     "boundary": "",
+     "stem": "other",
+     "variant": "",
+     "t": 61.25
+    },
+    {
+     "kind": "strobe",
+     "frames": 10,
+     "tail": 5,
+     "head": 5,
+     "section": "",
+     "boundary": "",
+     "stem": "drums",
+     "variant": "",
+     "t": 62.625
+    },
+    {
+     "kind": "wipe",
+     "frames": 40,
+     "tail": 20,
+     "head": 20,
+     "section": "",
+     "boundary": "",
+     "stem": "bass",
+     "variant": "strips",
+     "t": 64.292
+    },
+    {
+     "kind": "rip",
+     "frames": 20,
+     "tail": 10,
+     "head": 10,
+     "section": "",
+     "boundary": "",
+     "stem": "other",
+     "variant": "",
+     "t": 65.958
+    },
+    {
+     "kind": "strobe",
+     "frames": 10,
+     "tail": 5,
+     "head": 5,
+     "section": "",
+     "boundary": "",
+     "stem": "drums",
+     "variant": "",
+     "t": 67.625
+    },
+    {
+     "kind": "wipe",
+     "frames": 38,
+     "tail": 19,
+     "head": 19,
+     "section": "",
+     "boundary": "",
+     "stem": "bass",
+     "variant": "strips",
+     "t": 69.208
+    },
+    {
+     "kind": "rip",
+     "frames": 20,
+     "tail": 10,
+     "head": 10,
+     "section": "",
+     "boundary": "",
+     "stem": "other",
+     "variant": "",
+     "t": 70.833
+    },
+    {
+     "kind": "strobe",
+     "frames": 10,
+     "tail": 5,
+     "head": 5,
+     "section": "",
+     "boundary": "",
+     "stem": "drums",
+     "variant": "",
+     "t": 72.0
+    },
+    {
+     "kind": "wipe",
+     "frames": 38,
+     "tail": 19,
+     "head": 19,
+     "section": "",
+     "boundary": "",
+     "stem": "bass",
+     "variant": "strips",
+     "t": 73.625
+    },
+    {
+     "kind": "rip",
+     "frames": 20,
+     "tail": 10,
+     "head": 10,
+     "section": "",
+     "boundary": "",
+     "stem": "other",
+     "variant": "",
+     "t": 75.208
+    },
+    {
+     "kind": "strobe",
+     "frames": 10,
+     "tail": 5,
+     "head": 5,
+     "section": "",
+     "boundary": "",
+     "stem": "drums",
+     "variant": "",
+     "t": 76.75
+    },
+    {
+     "kind": "wipe",
+     "frames": 39,
+     "tail": 20,
+     "head": 19,
+     "section": "",
+     "boundary": "",
+     "stem": "bass",
+     "variant": "strips",
+     "t": 78.417
+    },
+    {
+     "kind": "rip",
+     "frames": 20,
+     "tail": 10,
+     "head": 10,
+     "section": "",
+     "boundary": "",
+     "stem": "other",
+     "variant": "",
+     "t": 80.0
+    },
+    {
+     "kind": "wipe",
+     "frames": 38,
+     "tail": 19,
+     "head": 19,
+     "section": "",
+     "boundary": "",
+     "stem": "bass",
+     "variant": "strips",
+     "t": 81.625
+    },
+    null,
+    {
+     "kind": "strobe",
+     "frames": 10,
+     "tail": 5,
+     "head": 5,
+     "section": "",
+     "boundary": "drop",
+     "stem": "drums",
+     "variant": "",
+     "t": 84.417
+    },
+    {
+     "kind": "rip",
+     "frames": 19,
+     "tail": 9,
+     "head": 10,
+     "section": "",
+     "boundary": "",
+     "stem": "other",
+     "variant": "",
+     "t": 85.208
+    },
+    {
+     "kind": "wipe",
+     "frames": 19,
+     "tail": 10,
+     "head": 9,
+     "section": "",
+     "boundary": "",
+     "stem": "bass",
+     "variant": "iris",
+     "t": 86.042
+    },
+    {
+     "kind": "strobe",
+     "frames": 10,
+     "tail": 5,
+     "head": 5,
+     "section": "",
+     "boundary": "",
+     "stem": "drums",
+     "variant": "",
+     "t": 86.833
+    },
+    {
+     "kind": "rip",
+     "frames": 19,
+     "tail": 9,
+     "head": 10,
+     "section": "",
+     "boundary": "",
+     "stem": "other",
+     "variant": "",
+     "t": 87.583
+    },
+    {
+     "kind": "wipe",
+     "frames": 19,
+     "tail": 10,
+     "head": 9,
+     "section": "",
+     "boundary": "",
+     "stem": "bass",
+     "variant": "iris",
+     "t": 88.417
+    },
+    {
+     "kind": "strobe",
+     "frames": 10,
+     "tail": 5,
+     "head": 5,
+     "section": "",
+     "boundary": "",
+     "stem": "drums",
+     "variant": "",
+     "t": 89.208
+    },
+    {
+     "kind": "rip",
+     "frames": 18,
+     "tail": 9,
+     "head": 9,
+     "section": "",
+     "boundary": "",
+     "stem": "other",
+     "variant": "",
+     "t": 90.0
+    },
+    {
+     "kind": "wipe",
+     "frames": 19,
+     "tail": 9,
+     "head": 10,
+     "section": "",
+     "boundary": "",
+     "stem": "bass",
+     "variant": "iris",
+     "t": 90.792
+    },
+    {
+     "kind": "strobe",
+     "frames": 10,
+     "tail": 5,
+     "head": 5,
+     "section": "",
+     "boundary": "",
+     "stem": "drums",
+     "variant": "",
+     "t": 91.625
+    },
+    {
+     "kind": "rip",
+     "frames": 18,
+     "tail": 9,
+     "head": 9,
+     "section": "",
+     "boundary": "",
+     "stem": "other",
+     "variant": "",
+     "t": 92.417
+    },
+    {
+     "kind": "wipe",
+     "frames": 18,
+     "tail": 9,
+     "head": 9,
+     "section": "",
+     "boundary": "",
+     "stem": "bass",
+     "variant": "iris",
+     "t": 93.208
+    },
+    {
+     "kind": "strobe",
+     "frames": 10,
+     "tail": 5,
+     "head": 5,
+     "section": "",
+     "boundary": "",
+     "stem": "drums",
+     "variant": "",
+     "t": 94.0
+    },
+    {
+     "kind": "rip",
+     "frames": 19,
+     "tail": 9,
+     "head": 10,
+     "section": "",
+     "boundary": "",
+     "stem": "other",
+     "variant": "",
+     "t": 94.792
+    },
+    {
+     "kind": "wipe",
+     "frames": 19,
+     "tail": 10,
+     "head": 9,
+     "section": "",
+     "boundary": "",
+     "stem": "bass",
+     "variant": "iris",
+     "t": 95.625
+    },
+    null,
+    {
+     "kind": "strobe",
+     "frames": 10,
+     "tail": 5,
+     "head": 5,
+     "section": "",
+     "boundary": "",
+     "stem": "drums",
+     "variant": "",
+     "t": 97.146
+    },
+    {
+     "kind": "rip",
+     "frames": 18,
+     "tail": 9,
+     "head": 9,
+     "section": "",
+     "boundary": "",
+     "stem": "other",
+     "variant": "",
+     "t": 97.931
+    },
+    {
+     "kind": "wipe",
+     "frames": 18,
+     "tail": 9,
+     "head": 9,
+     "section": "",
+     "boundary": "",
+     "stem": "bass",
+     "variant": "iris",
+     "t": 98.716
+    },
+    {
+     "kind": "strobe",
+     "frames": 10,
+     "tail": 5,
+     "head": 5,
+     "section": "",
+     "boundary": "",
+     "stem": "drums",
+     "variant": "",
+     "t": 99.501
+    },
+    {
+     "kind": "rip",
+     "frames": 18,
+     "tail": 9,
+     "head": 9,
+     "section": "",
+     "boundary": "",
+     "stem": "other",
+     "variant": "",
+     "t": 100.285
+    },
+    {
+     "kind": "wipe",
+     "frames": 18,
+     "tail": 9,
+     "head": 9,
+     "section": "",
+     "boundary": "",
+     "stem": "bass",
+     "variant": "iris",
+     "t": 101.07
+    },
+    {
+     "kind": "strobe",
+     "frames": 10,
+     "tail": 5,
+     "head": 5,
+     "section": "",
+     "boundary": "",
+     "stem": "drums",
+     "variant": "",
+     "t": 101.855
+    }
+   ],
+   "handoffs_s": [
+    0.0,
+    1.6667,
+    3.25,
+    4.875,
+    6.4583,
+    7.6667,
+    9.25,
+    10.8333,
+    12.4167,
+    14.0,
+    15.625,
+    17.2083,
+    18.9583,
+    20.2917,
+    21.875,
+    23.4583,
+    25.0833,
+    26.7917,
+    28.4167,
+    30.0,
+    31.2083,
+    32.7917,
+    34.4167,
+    36.0,
+    37.6667,
+    39.3333,
+    40.5833,
+    42.375,
+    44.0,
+    45.5833,
+    47.2083,
+    48.7917,
+    50.4167,
+    51.625,
+    53.2083,
+    54.8333,
+    56.4167,
+    58.0,
+    59.5833,
+    61.25,
+    62.625,
+    64.2917,
+    65.9583,
+    67.625,
+    69.2083,
+    70.8333,
+    72.0,
+    73.625,
+    75.2083,
+    76.75,
+    78.4167,
+    80.0,
+    81.625,
+    83.2083,
+    84.4167,
+    85.2083,
+    86.0417,
+    86.8333,
+    87.5833,
+    88.4167,
+    89.2083,
+    90.0,
+    90.7917,
+    91.625,
+    92.4167,
+    93.2083,
+    94.0,
+    94.7917,
+    95.625,
+    96.3614,
+    97.1462,
+    97.931,
+    98.7159,
+    99.5007,
+    100.2855,
+    101.0703,
+    101.8552,
+    102.64
+   ],
+   "macros": {
+    "intensity": 0.7,
+    "speed": 0.5,
+    "chaos": 0.8,
+    "glow": 0.4
+   },
+   "stills": [],
+   "source": "clips",
+   "vibe": "cosmic",
+   "fps": 24,
+   "size": [
+    768,
+    432
+   ],
+   "seed": 2727,
+   "clips": [
+    "clip00.mp4",
+    "mock00.mp4",
+    "clip02.mp4",
+    "mock00.mp4",
+    "clip04.mp4",
+    "mock00.mp4",
+    "clip06.mp4",
+    "mock00.mp4",
+    "clip08.mp4",
+    "mock00.mp4",
+    "clip10.mp4",
+    "mock00.mp4",
+    "clip12.mp4",
+    "mock00.mp4",
+    "clip14.mp4",
+    "mock00.mp4",
+    "clip16.mp4",
+    "mock00.mp4",
+    "clip18.mp4",
+    "mock00.mp4",
+    "clip20.mp4",
+    "mock00.mp4",
+    "clip22.mp4",
+    "mock00.mp4",
+    "clip24.mp4",
+    "mock00.mp4",
+    "clip26.mp4",
+    "mock00.mp4",
+    "clip28.mp4",
+    "mock00.mp4",
+    "clip30.mp4",
+    "mock00.mp4",
+    "clip32.mp4",
+    "mock00.mp4",
+    "clip34.mp4",
+    "mock00.mp4",
+    "clip36.mp4",
+    "mock00.mp4",
+    "clip38.mp4",
+    "mock00.mp4",
+    "clip40.mp4",
+    "mock00.mp4",
+    "clip42.mp4",
+    "mock00.mp4",
+    "clip44.mp4",
+    "mock00.mp4",
+    "clip46.mp4",
+    "mock00.mp4",
+    "clip48.mp4",
+    "mock00.mp4",
+    "clip50.mp4",
+    "mock00.mp4",
+    "clip52.mp4",
+    "mock00.mp4",
+    "clip54.mp4",
+    "mock00.mp4",
+    "clip56.mp4",
+    "mock00.mp4",
+    "clip58.mp4",
+    "mock00.mp4",
+    "clip60.mp4",
+    "mock00.mp4",
+    "clip62.mp4",
+    "mock00.mp4",
+    "clip64.mp4",
+    "mock00.mp4",
+    "clip66.mp4",
+    "mock00.mp4",
+    "clip68.mp4",
+    "mock00.mp4",
+    "clip70.mp4",
+    "mock00.mp4",
+    "clip72.mp4",
+    "mock00.mp4",
+    "clip74.mp4",
+    "mock00.mp4",
+    "clip76.mp4"
+   ],
+   "chain": [
+    {
+     "noun": "reel a",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel b",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel c",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel d",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel e",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel a",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel b",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel c",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel d",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel e",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel a",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel b",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel c",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel d",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel e",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel a",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel b",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel c",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel d",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel e",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel a",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel b",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel c",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel d",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel e",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel a",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel b",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel c",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel d",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel e",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel a",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel b",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel c",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel d",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel e",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel a",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel b",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel c",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel d",
+     "kind": "clip"
+    }
+   ]
+  },
+  "plan_shots": [
+   {
+    "index": 0,
+    "start": 0.0,
+    "end": 1.6667,
+    "seconds": 1.6667,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 0.7917,
+      "strength": 1.0
+     }
+    ],
+    "frames": 40,
+    "own": true,
+    "source": "01_reel_a.mp4",
+    "label": "reel a",
+    "clip_start": 0.5
+   },
+   {
+    "index": 1,
+    "start": 1.6667,
+    "end": 3.25,
+    "seconds": 1.5833,
+    "render_s": 2,
+    "speed": 1.263,
+    "ease": "",
+    "effects": [],
+    "frames": 38,
+    "clip_morph": {
+     "from": "reel a",
+     "to": "reel b"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 2,
+    "start": 3.25,
+    "end": 4.875,
+    "seconds": 1.625,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 39,
+    "own": true,
+    "source": "02_reel_b.mp4",
+    "label": "reel b",
+    "clip_start": 1.5
+   },
+   {
+    "index": 3,
+    "start": 4.875,
+    "end": 6.4583,
+    "seconds": 1.5833,
+    "render_s": 2,
+    "speed": 1.263,
+    "ease": "",
+    "effects": [],
+    "frames": 38,
+    "clip_morph": {
+     "from": "reel b",
+     "to": "reel c"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 4,
+    "start": 6.4583,
+    "end": 7.6667,
+    "seconds": 1.2084,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 29,
+    "own": true,
+    "source": "03_reel_c.mp4",
+    "label": "reel c",
+    "clip_start": 2.5
+   },
+   {
+    "index": 5,
+    "start": 7.6667,
+    "end": 9.25,
+    "seconds": 1.5833,
+    "render_s": 2,
+    "speed": 1.263,
+    "ease": "",
+    "effects": [],
+    "frames": 38,
+    "clip_morph": {
+     "from": "reel c",
+     "to": "reel d"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 6,
+    "start": 9.25,
+    "end": 10.8333,
+    "seconds": 1.5833,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 38,
+    "own": true,
+    "source": "04_reel_d.mp4",
+    "label": "reel d",
+    "clip_start": 1.0
+   },
+   {
+    "index": 7,
+    "start": 10.8333,
+    "end": 12.4167,
+    "seconds": 1.5834,
+    "render_s": 2,
+    "speed": 1.263,
+    "ease": "",
+    "effects": [],
+    "frames": 38,
+    "clip_morph": {
+     "from": "reel d",
+     "to": "reel e"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 8,
+    "start": 12.4167,
+    "end": 14.0,
+    "seconds": 1.5833,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 38,
+    "own": true,
+    "source": "05_reel_e.mp4",
+    "label": "reel e",
+    "clip_start": 1.0
+   },
+   {
+    "index": 9,
+    "start": 14.0,
+    "end": 15.625,
+    "seconds": 1.625,
+    "render_s": 2,
+    "speed": 1.231,
+    "ease": "",
+    "effects": [],
+    "frames": 39,
+    "clip_morph": {
+     "from": "reel e",
+     "to": "reel a"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 10,
+    "start": 15.625,
+    "end": 17.2083,
+    "seconds": 1.5833,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 38,
+    "own": true,
+    "source": "01_reel_a.mp4",
+    "label": "reel a",
+    "clip_start": 0.5
+   },
+   {
+    "index": 11,
+    "start": 17.2083,
+    "end": 18.9583,
+    "seconds": 1.75,
+    "render_s": 3,
+    "speed": 1.714,
+    "ease": "",
+    "effects": [],
+    "frames": 42,
+    "clip_morph": {
+     "from": "reel a",
+     "to": "reel b"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 12,
+    "start": 18.9583,
+    "end": 20.2917,
+    "seconds": 1.3334,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 32,
+    "own": true,
+    "source": "02_reel_b.mp4",
+    "label": "reel b",
+    "clip_start": 0.0
+   },
+   {
+    "index": 13,
+    "start": 20.2917,
+    "end": 21.875,
+    "seconds": 1.5833,
+    "render_s": 2,
+    "speed": 1.263,
+    "ease": "",
+    "effects": [],
+    "frames": 38,
+    "clip_morph": {
+     "from": "reel b",
+     "to": "reel c"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 14,
+    "start": 21.875,
+    "end": 23.4583,
+    "seconds": 1.5833,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 38,
+    "own": true,
+    "source": "03_reel_c.mp4",
+    "label": "reel c",
+    "clip_start": 0.0
+   },
+   {
+    "index": 15,
+    "start": 23.4583,
+    "end": 25.0833,
+    "seconds": 1.625,
+    "render_s": 2,
+    "speed": 1.231,
+    "ease": "",
+    "effects": [],
+    "frames": 39,
+    "clip_morph": {
+     "from": "reel c",
+     "to": "reel d"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 16,
+    "start": 25.0833,
+    "end": 26.7917,
+    "seconds": 1.7084,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 41,
+    "own": true,
+    "source": "04_reel_d.mp4",
+    "label": "reel d",
+    "clip_start": 1.0
+   },
+   {
+    "index": 17,
+    "start": 26.7917,
+    "end": 28.4167,
+    "seconds": 1.625,
+    "render_s": 2,
+    "speed": 1.231,
+    "ease": "",
+    "effects": [],
+    "frames": 39,
+    "clip_morph": {
+     "from": "reel d",
+     "to": "reel e"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 18,
+    "start": 28.4167,
+    "end": 30.0,
+    "seconds": 1.5833,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 38,
+    "own": true,
+    "source": "05_reel_e.mp4",
+    "label": "reel e",
+    "clip_start": 1.0
+   },
+   {
+    "index": 19,
+    "start": 30.0,
+    "end": 31.2083,
+    "seconds": 1.2083,
+    "render_s": 2,
+    "speed": 1.655,
+    "ease": "",
+    "effects": [],
+    "frames": 29,
+    "clip_morph": {
+     "from": "reel e",
+     "to": "reel a"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 20,
+    "start": 31.2083,
+    "end": 32.7917,
+    "seconds": 1.5834,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 38,
+    "own": true,
+    "source": "01_reel_a.mp4",
+    "label": "reel a",
+    "clip_start": 0.5
+   },
+   {
+    "index": 21,
+    "start": 32.7917,
+    "end": 34.4167,
+    "seconds": 1.625,
+    "render_s": 2,
+    "speed": 1.231,
+    "ease": "",
+    "effects": [],
+    "frames": 39,
+    "clip_morph": {
+     "from": "reel a",
+     "to": "reel b"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 22,
+    "start": 34.4167,
+    "end": 36.0,
+    "seconds": 1.5833,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 38,
+    "own": true,
+    "source": "02_reel_b.mp4",
+    "label": "reel b",
+    "clip_start": 1.5
+   },
+   {
+    "index": 23,
+    "start": 36.0,
+    "end": 37.6667,
+    "seconds": 1.6667,
+    "render_s": 2,
+    "speed": 1.2,
+    "ease": "",
+    "effects": [],
+    "frames": 40,
+    "clip_morph": {
+     "from": "reel b",
+     "to": "reel c"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 24,
+    "start": 37.6667,
+    "end": 39.3333,
+    "seconds": 1.6666,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 40,
+    "own": true,
+    "source": "03_reel_c.mp4",
+    "label": "reel c",
+    "clip_start": 4.0
+   },
+   {
+    "index": 25,
+    "start": 39.3333,
+    "end": 40.5833,
+    "seconds": 1.25,
+    "render_s": 2,
+    "speed": 1.6,
+    "ease": "",
+    "effects": [],
+    "frames": 30,
+    "clip_morph": {
+     "from": "reel c",
+     "to": "reel d"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 26,
+    "start": 40.5833,
+    "end": 42.375,
+    "seconds": 1.7917,
+    "render_s": 3,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 43,
+    "own": true,
+    "source": "04_reel_d.mp4",
+    "label": "reel d",
+    "clip_start": 1.0
+   },
+   {
+    "index": 27,
+    "start": 42.375,
+    "end": 44.0,
+    "seconds": 1.625,
+    "render_s": 2,
+    "speed": 1.231,
+    "ease": "",
+    "effects": [],
+    "frames": 39,
+    "clip_morph": {
+     "from": "reel d",
+     "to": "reel e"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 28,
+    "start": 44.0,
+    "end": 45.5833,
+    "seconds": 1.5833,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 38,
+    "own": true,
+    "source": "05_reel_e.mp4",
+    "label": "reel e",
+    "clip_start": 1.0
+   },
+   {
+    "index": 29,
+    "start": 45.5833,
+    "end": 47.2083,
+    "seconds": 1.625,
+    "render_s": 2,
+    "speed": 1.231,
+    "ease": "",
+    "effects": [],
+    "frames": 39,
+    "clip_morph": {
+     "from": "reel e",
+     "to": "reel a"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 30,
+    "start": 47.2083,
+    "end": 48.7917,
+    "seconds": 1.5834,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 38,
+    "own": true,
+    "source": "01_reel_a.mp4",
+    "label": "reel a",
+    "clip_start": 0.5
+   },
+   {
+    "index": 31,
+    "start": 48.7917,
+    "end": 50.4167,
+    "seconds": 1.625,
+    "render_s": 2,
+    "speed": 1.231,
+    "ease": "",
+    "effects": [],
+    "frames": 39,
+    "clip_morph": {
+     "from": "reel a",
+     "to": "reel b"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 32,
+    "start": 50.4167,
+    "end": 51.625,
+    "seconds": 1.2083,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 29,
+    "own": true,
+    "source": "02_reel_b.mp4",
+    "label": "reel b",
+    "clip_start": 2.0
+   },
+   {
+    "index": 33,
+    "start": 51.625,
+    "end": 53.2083,
+    "seconds": 1.5833,
+    "render_s": 2,
+    "speed": 1.263,
+    "ease": "",
+    "effects": [],
+    "frames": 38,
+    "clip_morph": {
+     "from": "reel b",
+     "to": "reel c"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 34,
+    "start": 53.2083,
+    "end": 54.8333,
+    "seconds": 1.625,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 39,
+    "own": true,
+    "source": "03_reel_c.mp4",
+    "label": "reel c",
+    "clip_start": 2.0
+   },
+   {
+    "index": 35,
+    "start": 54.8333,
+    "end": 56.4167,
+    "seconds": 1.5834,
+    "render_s": 2,
+    "speed": 1.263,
+    "ease": "",
+    "effects": [],
+    "frames": 38,
+    "clip_morph": {
+     "from": "reel c",
+     "to": "reel d"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 36,
+    "start": 56.4167,
+    "end": 58.0,
+    "seconds": 1.5833,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 38,
+    "own": true,
+    "source": "04_reel_d.mp4",
+    "label": "reel d",
+    "clip_start": 1.0
+   },
+   {
+    "index": 37,
+    "start": 58.0,
+    "end": 59.5833,
+    "seconds": 1.5833,
+    "render_s": 2,
+    "speed": 1.263,
+    "ease": "",
+    "effects": [],
+    "frames": 38,
+    "clip_morph": {
+     "from": "reel d",
+     "to": "reel e"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 38,
+    "start": 59.5833,
+    "end": 61.25,
+    "seconds": 1.6667,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 40,
+    "own": true,
+    "source": "05_reel_e.mp4",
+    "label": "reel e",
+    "clip_start": 1.0
+   },
+   {
+    "index": 39,
+    "start": 61.25,
+    "end": 62.625,
+    "seconds": 1.375,
+    "render_s": 2,
+    "speed": 1.455,
+    "ease": "",
+    "effects": [],
+    "frames": 33,
+    "clip_morph": {
+     "from": "reel e",
+     "to": "reel a"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 40,
+    "start": 62.625,
+    "end": 64.2917,
+    "seconds": 1.6667,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 40,
+    "own": true,
+    "source": "01_reel_a.mp4",
+    "label": "reel a",
+    "clip_start": 0.5
+   },
+   {
+    "index": 41,
+    "start": 64.2917,
+    "end": 65.9583,
+    "seconds": 1.6666,
+    "render_s": 2,
+    "speed": 1.2,
+    "ease": "",
+    "effects": [],
+    "frames": 40,
+    "clip_morph": {
+     "from": "reel a",
+     "to": "reel b"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 42,
+    "start": 65.9583,
+    "end": 67.625,
+    "seconds": 1.6667,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 40,
+    "own": true,
+    "source": "02_reel_b.mp4",
+    "label": "reel b",
+    "clip_start": 1.5
+   },
+   {
+    "index": 43,
+    "start": 67.625,
+    "end": 69.2083,
+    "seconds": 1.5833,
+    "render_s": 2,
+    "speed": 1.263,
+    "ease": "",
+    "effects": [],
+    "frames": 38,
+    "clip_morph": {
+     "from": "reel b",
+     "to": "reel c"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 44,
+    "start": 69.2083,
+    "end": 70.8333,
+    "seconds": 1.625,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 39,
+    "own": true,
+    "source": "03_reel_c.mp4",
+    "label": "reel c",
+    "clip_start": 0.0
+   },
+   {
+    "index": 45,
+    "start": 70.8333,
+    "end": 72.0,
+    "seconds": 1.1667,
+    "render_s": 2,
+    "speed": 1.714,
+    "ease": "",
+    "effects": [],
+    "frames": 28,
+    "clip_morph": {
+     "from": "reel c",
+     "to": "reel d"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 46,
+    "start": 72.0,
+    "end": 73.625,
+    "seconds": 1.625,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 39,
+    "own": true,
+    "source": "04_reel_d.mp4",
+    "label": "reel d",
+    "clip_start": 1.0
+   },
+   {
+    "index": 47,
+    "start": 73.625,
+    "end": 75.2083,
+    "seconds": 1.5833,
+    "render_s": 2,
+    "speed": 1.263,
+    "ease": "",
+    "effects": [],
+    "frames": 38,
+    "clip_morph": {
+     "from": "reel d",
+     "to": "reel e"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 48,
+    "start": 75.2083,
+    "end": 76.75,
+    "seconds": 1.5417,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 37,
+    "own": true,
+    "source": "05_reel_e.mp4",
+    "label": "reel e",
+    "clip_start": 1.0
+   },
+   {
+    "index": 49,
+    "start": 76.75,
+    "end": 78.4167,
+    "seconds": 1.6667,
+    "render_s": 2,
+    "speed": 1.2,
+    "ease": "",
+    "effects": [],
+    "frames": 40,
+    "clip_morph": {
+     "from": "reel e",
+     "to": "reel a"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 50,
+    "start": 78.4167,
+    "end": 80.0,
+    "seconds": 1.5833,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 38,
+    "own": true,
+    "source": "01_reel_a.mp4",
+    "label": "reel a",
+    "clip_start": 0.5
+   },
+   {
+    "index": 51,
+    "start": 80.0,
+    "end": 81.625,
+    "seconds": 1.625,
+    "render_s": 2,
+    "speed": 1.231,
+    "ease": "",
+    "effects": [],
+    "frames": 39,
+    "clip_morph": {
+     "from": "reel a",
+     "to": "reel b"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 52,
+    "start": 81.625,
+    "end": 83.2083,
+    "seconds": 1.5833,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 38,
+    "own": true,
+    "source": "02_reel_b.mp4",
+    "label": "reel b",
+    "clip_start": 3.417
+   },
+   {
+    "index": 53,
+    "start": 83.2083,
+    "end": 84.4167,
+    "seconds": 1.2084,
+    "render_s": 2,
+    "speed": 1.655,
+    "ease": "in",
+    "effects": [],
+    "frames": 29,
+    "clip_morph": {
+     "from": "reel b",
+     "to": "reel c"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 54,
+    "start": 84.4167,
+    "end": 85.2083,
+    "seconds": 0.7916,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 84.4167,
+      "strength": 1.0
+     }
+    ],
+    "frames": 19,
+    "own": true,
+    "source": "03_reel_c.mp4",
+    "label": "reel c",
+    "clip_start": 2.5
+   },
+   {
+    "index": 55,
+    "start": 85.2083,
+    "end": 86.0417,
+    "seconds": 0.8334,
+    "render_s": 2,
+    "speed": 2.4,
+    "ease": "",
+    "effects": [
+     {
+      "type": "hold",
+      "t": 85.375,
+      "len": 0.12
+     },
+     {
+      "type": "punch",
+      "t": 85.5083,
+      "strength": 1.0
+     },
+     {
+      "type": "skip",
+      "t": 85.5083,
+      "amount": 0.3
+     }
+    ],
+    "frames": 20,
+    "clip_morph": {
+     "from": "reel c",
+     "to": "reel d"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 56,
+    "start": 86.0417,
+    "end": 86.8333,
+    "seconds": 0.7916,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 86.0417,
+      "strength": 0.5
+     }
+    ],
+    "frames": 19,
+    "own": true,
+    "source": "04_reel_d.mp4",
+    "label": "reel d",
+    "clip_start": 0.5
+   },
+   {
+    "index": 57,
+    "start": 86.8333,
+    "end": 87.5833,
+    "seconds": 0.75,
+    "render_s": 2,
+    "speed": 2.667,
+    "ease": "",
+    "effects": [],
+    "frames": 18,
+    "clip_morph": {
+     "from": "reel d",
+     "to": "reel e"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 58,
+    "start": 87.5833,
+    "end": 88.4167,
+    "seconds": 0.8334,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 87.5833,
+      "strength": 0.5
+     }
+    ],
+    "frames": 20,
+    "own": true,
+    "source": "05_reel_e.mp4",
+    "label": "reel e",
+    "clip_start": 0.5
+   },
+   {
+    "index": 59,
+    "start": 88.4167,
+    "end": 89.2083,
+    "seconds": 0.7916,
+    "render_s": 2,
+    "speed": 2.527,
+    "ease": "",
+    "effects": [],
+    "frames": 19,
+    "clip_morph": {
+     "from": "reel e",
+     "to": "reel a"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 60,
+    "start": 89.2083,
+    "end": 90.0,
+    "seconds": 0.7917,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 19,
+    "own": true,
+    "source": "01_reel_a.mp4",
+    "label": "reel a",
+    "clip_start": 1.0
+   },
+   {
+    "index": 61,
+    "start": 90.0,
+    "end": 90.7917,
+    "seconds": 0.7917,
+    "render_s": 2,
+    "speed": 2.526,
+    "ease": "",
+    "effects": [],
+    "frames": 19,
+    "clip_morph": {
+     "from": "reel a",
+     "to": "reel b"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 62,
+    "start": 90.7917,
+    "end": 91.625,
+    "seconds": 0.8333,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 20,
+    "own": true,
+    "source": "02_reel_b.mp4",
+    "label": "reel b",
+    "clip_start": 3.5
+   },
+   {
+    "index": 63,
+    "start": 91.625,
+    "end": 92.4167,
+    "seconds": 0.7917,
+    "render_s": 2,
+    "speed": 2.526,
+    "ease": "",
+    "effects": [],
+    "frames": 19,
+    "clip_morph": {
+     "from": "reel b",
+     "to": "reel c"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 64,
+    "start": 92.4167,
+    "end": 93.2083,
+    "seconds": 0.7916,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 19,
+    "own": true,
+    "source": "03_reel_c.mp4",
+    "label": "reel c",
+    "clip_start": 3.5
+   },
+   {
+    "index": 65,
+    "start": 93.2083,
+    "end": 94.0,
+    "seconds": 0.7917,
+    "render_s": 2,
+    "speed": 2.526,
+    "ease": "",
+    "effects": [],
+    "frames": 19,
+    "clip_morph": {
+     "from": "reel c",
+     "to": "reel d"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 66,
+    "start": 94.0,
+    "end": 94.7917,
+    "seconds": 0.7917,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 19,
+    "own": true,
+    "source": "04_reel_d.mp4",
+    "label": "reel d",
+    "clip_start": 1.5
+   },
+   {
+    "index": 67,
+    "start": 94.7917,
+    "end": 95.625,
+    "seconds": 0.8333,
+    "render_s": 2,
+    "speed": 2.4,
+    "ease": "",
+    "effects": [],
+    "frames": 20,
+    "clip_morph": {
+     "from": "reel d",
+     "to": "reel e"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 68,
+    "start": 95.625,
+    "end": 96.3614,
+    "seconds": 0.7364,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 18,
+    "own": true,
+    "source": "05_reel_e.mp4",
+    "label": "reel e",
+    "clip_start": 1.5
+   },
+   {
+    "index": 69,
+    "start": 96.3614,
+    "end": 97.1462,
+    "seconds": 0.7848,
+    "render_s": 2,
+    "speed": 2.548,
+    "ease": "",
+    "effects": [],
+    "frames": 19,
+    "clip_morph": {
+     "from": "reel e",
+     "to": "reel a"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 70,
+    "start": 97.1462,
+    "end": 97.931,
+    "seconds": 0.7848,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 18,
+    "own": true,
+    "source": "01_reel_a.mp4",
+    "label": "reel a",
+    "clip_start": 2.0
+   },
+   {
+    "index": 71,
+    "start": 97.931,
+    "end": 98.7159,
+    "seconds": 0.7849,
+    "render_s": 2,
+    "speed": 2.548,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 97.931,
+      "strength": 0.5
+     }
+    ],
+    "frames": 19,
+    "clip_morph": {
+     "from": "reel a",
+     "to": "reel b"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 72,
+    "start": 98.7159,
+    "end": 99.5007,
+    "seconds": 0.7848,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 19,
+    "own": true,
+    "source": "02_reel_b.mp4",
+    "label": "reel b",
+    "clip_start": 1.0
+   },
+   {
+    "index": 73,
+    "start": 99.5007,
+    "end": 100.2855,
+    "seconds": 0.7848,
+    "render_s": 2,
+    "speed": 2.548,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 99.5007,
+      "strength": 0.5
+     }
+    ],
+    "frames": 19,
+    "clip_morph": {
+     "from": "reel b",
+     "to": "reel c"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 74,
+    "start": 100.2855,
+    "end": 101.0703,
+    "seconds": 0.7848,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 19,
+    "own": true,
+    "source": "03_reel_c.mp4",
+    "label": "reel c",
+    "clip_start": 1.0
+   },
+   {
+    "index": 75,
+    "start": 101.0703,
+    "end": 101.8552,
+    "seconds": 0.7849,
+    "render_s": 2,
+    "speed": 2.548,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 101.0703,
+      "strength": 0.5
+     }
+    ],
+    "frames": 19,
+    "clip_morph": {
+     "from": "reel c",
+     "to": "reel d"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 76,
+    "start": 101.8552,
+    "end": 102.64,
+    "seconds": 0.7848,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 18,
+    "own": true,
+    "source": "04_reel_d.mp4",
+    "label": "reel d",
+    "clip_start": 3.0
+   }
+  ]
+ },
+ "glitch_whole": {
+  "morph_count": "auto",
+  "guard": [],
+  "compose": {
+   "clips": [
+    "clip00.mp4",
+    "mock00.mp4",
+    "clip02.mp4",
+    "mock00.mp4",
+    "clip04.mp4",
+    "mock00.mp4",
+    "clip06.mp4",
+    "mock00.mp4",
+    "clip08.mp4",
+    "mock00.mp4",
+    "clip10.mp4",
+    "mock00.mp4",
+    "clip12.mp4",
+    "mock00.mp4",
+    "clip14.mp4",
+    "mock00.mp4",
+    "clip16.mp4",
+    "mock00.mp4",
+    "clip18.mp4",
+    "mock00.mp4",
+    "clip20.mp4",
+    "mock00.mp4",
+    "clip22.mp4",
+    "mock00.mp4",
+    "clip24.mp4",
+    "mock00.mp4",
+    "clip26.mp4",
+    "mock00.mp4",
+    "clip28.mp4",
+    "mock00.mp4",
+    "clip30.mp4",
+    "mock00.mp4",
+    "clip32.mp4",
+    "mock00.mp4",
+    "clip34.mp4",
+    "mock00.mp4",
+    "clip36.mp4",
+    "mock00.mp4",
+    "clip38.mp4",
+    "mock00.mp4",
+    "clip40.mp4",
+    "mock00.mp4",
+    "clip42.mp4",
+    "mock00.mp4",
+    "clip44.mp4",
+    "mock00.mp4",
+    "clip46.mp4",
+    "mock00.mp4",
+    "clip48.mp4",
+    "mock00.mp4",
+    "clip50.mp4",
+    "mock00.mp4",
+    "clip52.mp4",
+    "mock00.mp4",
+    "clip54.mp4",
+    "mock00.mp4",
+    "clip56.mp4"
+   ],
+   "shots": [
+    {
+     "index": 0,
+     "start": 0.0,
+     "end": 19.0417,
+     "seconds": 19.0417,
+     "render_s": 10,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 457,
+     "section": "intro",
+     "own": true,
+     "source": "01_reel_a.mp4",
+     "label": "reel a",
+     "clip_start": 0.0,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 1,
+     "start": 19.0417,
+     "end": 24.2917,
+     "seconds": 5.25,
+     "render_s": 6,
+     "speed": 1.143,
+     "ease": "",
+     "effects": [],
+     "frames": 126,
+     "section": "calm",
+     "clip_morph": {
+      "from": "reel a",
+      "to": "reel b"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 2,
+     "start": 24.2917,
+     "end": 28.25,
+     "seconds": 3.9583,
+     "render_s": 4,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 95,
+     "section": "calm",
+     "own": true,
+     "source": "02_reel_b.mp4",
+     "label": "reel b",
+     "clip_start": 0.5,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 3,
+     "start": 28.25,
+     "end": 33.5,
+     "seconds": 5.25,
+     "render_s": 6,
+     "speed": 1.143,
+     "ease": "",
+     "effects": [],
+     "frames": 126,
+     "section": "calm",
+     "boundary": "switch",
+     "clip_morph": {
+      "from": "reel b",
+      "to": "reel c"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 4,
+     "start": 33.5,
+     "end": 39.0,
+     "seconds": 5.5,
+     "render_s": 6,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 132,
+     "section": "calm",
+     "own": true,
+     "source": "03_reel_c.mp4",
+     "label": "reel c",
+     "clip_start": 0.25,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 5,
+     "start": 39.0,
+     "end": 44.25,
+     "seconds": 5.25,
+     "render_s": 6,
+     "speed": 1.143,
+     "ease": "",
+     "effects": [],
+     "frames": 126,
+     "section": "calm",
+     "clip_morph": {
+      "from": "reel c",
+      "to": "reel d"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 6,
+     "start": 44.25,
+     "end": 49.5417,
+     "seconds": 5.2917,
+     "render_s": 6,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 127,
+     "section": "calm",
+     "own": true,
+     "source": "04_reel_d.mp4",
+     "label": "reel d",
+     "clip_start": 0.0,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 7,
+     "start": 49.5417,
+     "end": 54.9583,
+     "seconds": 5.4166,
+     "render_s": 6,
+     "speed": 1.108,
+     "ease": "",
+     "effects": [],
+     "frames": 130,
+     "section": "calm",
+     "clip_morph": {
+      "from": "reel d",
+      "to": "reel a"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 8,
+     "start": 54.9583,
+     "end": 55.625,
+     "seconds": 0.6667,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 16,
+     "section": "calm",
+     "own": true,
+     "source": "01_reel_a.mp4",
+     "label": "reel a",
+     "clip_start": 2.333,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 9,
+     "start": 55.625,
+     "end": 60.875,
+     "seconds": 5.25,
+     "render_s": 8,
+     "speed": 1.524,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 55.625,
+       "strength": 0.248
+      }
+     ],
+     "frames": 126,
+     "section": "build",
+     "boundary": "switch",
+     "clip_morph": {
+      "from": "reel a",
+      "to": "reel b"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 10,
+     "start": 60.875,
+     "end": 66.125,
+     "seconds": 5.25,
+     "render_s": 8,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 60.875,
+       "strength": 0.248
+      }
+     ],
+     "frames": 126,
+     "section": "build",
+     "own": true,
+     "source": "02_reel_b.mp4",
+     "label": "reel b",
+     "clip_start": 0.0,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 11,
+     "start": 66.125,
+     "end": 71.375,
+     "seconds": 5.25,
+     "render_s": 8,
+     "speed": 1.524,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 66.125,
+       "strength": 0.248
+      }
+     ],
+     "frames": 126,
+     "section": "build",
+     "clip_morph": {
+      "from": "reel b",
+      "to": "reel c"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 12,
+     "start": 71.375,
+     "end": 76.6667,
+     "seconds": 5.2917,
+     "render_s": 8,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 71.375,
+       "strength": 0.248
+      }
+     ],
+     "frames": 127,
+     "section": "build",
+     "own": true,
+     "source": "03_reel_c.mp4",
+     "label": "reel c",
+     "clip_start": 0.5,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 13,
+     "start": 76.6667,
+     "end": 82.125,
+     "seconds": 5.4583,
+     "render_s": 8,
+     "speed": 1.466,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 76.6667,
+       "strength": 0.248
+      }
+     ],
+     "frames": 131,
+     "section": "build",
+     "clip_morph": {
+      "from": "reel c",
+      "to": "reel d"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 14,
+     "start": 82.125,
+     "end": 87.375,
+     "seconds": 5.25,
+     "render_s": 8,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 82.125,
+       "strength": 0.248
+      }
+     ],
+     "frames": 126,
+     "section": "build",
+     "own": true,
+     "source": "04_reel_d.mp4",
+     "label": "reel d",
+     "clip_start": 0.0,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 15,
+     "start": 87.375,
+     "end": 90.0,
+     "seconds": 2.625,
+     "render_s": 8,
+     "speed": 3.048,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 87.375,
+       "strength": 0.372
+      }
+     ],
+     "frames": 63,
+     "section": "drop",
+     "boundary": "switch",
+     "clip_morph": {
+      "from": "reel d",
+      "to": "reel a"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 16,
+     "start": 90.0,
+     "end": 92.625,
+     "seconds": 2.625,
+     "render_s": 8,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 90.0,
+       "strength": 0.372
+      }
+     ],
+     "frames": 63,
+     "section": "drop",
+     "own": true,
+     "source": "01_reel_a.mp4",
+     "label": "reel a",
+     "clip_start": 0.188,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 17,
+     "start": 92.625,
+     "end": 95.25,
+     "seconds": 2.625,
+     "render_s": 8,
+     "speed": 3.048,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 92.625,
+       "strength": 0.372
+      }
+     ],
+     "frames": 63,
+     "section": "drop",
+     "clip_morph": {
+      "from": "reel a",
+      "to": "reel b"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 18,
+     "start": 95.25,
+     "end": 97.875,
+     "seconds": 2.625,
+     "render_s": 8,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 95.25,
+       "strength": 0.372
+      }
+     ],
+     "frames": 63,
+     "section": "drop",
+     "own": true,
+     "source": "02_reel_b.mp4",
+     "label": "reel b",
+     "clip_start": 1.0,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 19,
+     "start": 97.875,
+     "end": 99.2083,
+     "seconds": 1.3333,
+     "render_s": 4,
+     "speed": 3.0,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 97.875,
+       "strength": 0.372
+      }
+     ],
+     "frames": 32,
+     "section": "drop",
+     "clip_morph": {
+      "from": "reel b",
+      "to": "reel c"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 20,
+     "start": 99.2083,
+     "end": 104.4583,
+     "seconds": 5.25,
+     "render_s": 8,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 99.2083,
+       "strength": 0.248
+      }
+     ],
+     "frames": 126,
+     "section": "build",
+     "boundary": "silence",
+     "own": true,
+     "source": "03_reel_c.mp4",
+     "label": "reel c",
+     "clip_start": 0.5,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 21,
+     "start": 104.4583,
+     "end": 109.9167,
+     "seconds": 5.4584,
+     "render_s": 8,
+     "speed": 1.466,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 104.4583,
+       "strength": 0.248
+      }
+     ],
+     "frames": 131,
+     "section": "build",
+     "clip_morph": {
+      "from": "reel c",
+      "to": "reel d"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 22,
+     "start": 109.9167,
+     "end": 111.9167,
+     "seconds": 2.0,
+     "render_s": 3,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 109.9167,
+       "strength": 0.248
+      }
+     ],
+     "frames": 48,
+     "section": "build",
+     "own": true,
+     "source": "04_reel_d.mp4",
+     "label": "reel d",
+     "clip_start": 1.0,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 23,
+     "start": 111.9167,
+     "end": 117.1667,
+     "seconds": 5.25,
+     "render_s": 8,
+     "speed": 1.524,
+     "ease": "",
+     "effects": [],
+     "frames": 126,
+     "section": "release",
+     "boundary": "switch",
+     "clip_morph": {
+      "from": "reel d",
+      "to": "reel a"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 24,
+     "start": 117.1667,
+     "end": 119.7917,
+     "seconds": 2.625,
+     "render_s": 4,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 63,
+     "section": "release",
+     "own": true,
+     "source": "01_reel_a.mp4",
+     "label": "reel a",
+     "clip_start": 0.188,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 25,
+     "start": 119.7917,
+     "end": 122.4167,
+     "seconds": 2.625,
+     "render_s": 8,
+     "speed": 3.048,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 119.7917,
+       "strength": 0.372
+      }
+     ],
+     "frames": 63,
+     "section": "drop",
+     "boundary": "switch",
+     "clip_morph": {
+      "from": "reel a",
+      "to": "reel b"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 26,
+     "start": 122.4167,
+     "end": 125.0417,
+     "seconds": 2.625,
+     "render_s": 8,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 122.4167,
+       "strength": 0.372
+      }
+     ],
+     "frames": 63,
+     "section": "drop",
+     "own": true,
+     "source": "02_reel_b.mp4",
+     "label": "reel b",
+     "clip_start": 1.0,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 27,
+     "start": 125.0417,
+     "end": 126.3333,
+     "seconds": 1.2916,
+     "render_s": 4,
+     "speed": 3.097,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 125.0417,
+       "strength": 0.372
+      }
+     ],
+     "frames": 31,
+     "section": "drop",
+     "clip_morph": {
+      "from": "reel b",
+      "to": "reel c"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 28,
+     "start": 126.3333,
+     "end": 131.625,
+     "seconds": 5.2917,
+     "render_s": 8,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 126.3333,
+       "strength": 0.248
+      }
+     ],
+     "frames": 127,
+     "section": "build",
+     "boundary": "silence",
+     "own": true,
+     "source": "03_reel_c.mp4",
+     "label": "reel c",
+     "clip_start": 0.5,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 29,
+     "start": 131.625,
+     "end": 136.9583,
+     "seconds": 5.3333,
+     "render_s": 8,
+     "speed": 1.5,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 131.625,
+       "strength": 0.248
+      }
+     ],
+     "frames": 128,
+     "section": "build",
+     "clip_morph": {
+      "from": "reel c",
+      "to": "reel d"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 30,
+     "start": 136.9583,
+     "end": 139.7083,
+     "seconds": 2.75,
+     "render_s": 4,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 136.9583,
+       "strength": 0.248
+      }
+     ],
+     "frames": 66,
+     "section": "build",
+     "own": true,
+     "source": "04_reel_d.mp4",
+     "label": "reel d",
+     "clip_start": 0.5,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 31,
+     "start": 139.7083,
+     "end": 142.3333,
+     "seconds": 2.625,
+     "render_s": 8,
+     "speed": 3.048,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 139.7083,
+       "strength": 0.62
+      },
+      {
+       "type": "stutter",
+       "t": 139.7083,
+       "frames": 2,
+       "repeat": 4
+      }
+     ],
+     "frames": 63,
+     "section": "drop",
+     "boundary": "drop",
+     "clip_morph": {
+      "from": "reel d",
+      "to": "reel a"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 32,
+     "start": 142.3333,
+     "end": 145.1667,
+     "seconds": 2.8334,
+     "render_s": 8,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 142.3333,
+       "strength": 0.372
+      }
+     ],
+     "frames": 68,
+     "section": "drop",
+     "own": true,
+     "source": "01_reel_a.mp4",
+     "label": "reel a",
+     "clip_start": 0.083,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 33,
+     "start": 145.1667,
+     "end": 147.7917,
+     "seconds": 2.625,
+     "render_s": 8,
+     "speed": 3.048,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 145.1667,
+       "strength": 0.372
+      }
+     ],
+     "frames": 63,
+     "section": "drop",
+     "clip_morph": {
+      "from": "reel a",
+      "to": "reel b"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 34,
+     "start": 147.7917,
+     "end": 150.4167,
+     "seconds": 2.625,
+     "render_s": 8,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 147.7917,
+       "strength": 0.372
+      }
+     ],
+     "frames": 63,
+     "section": "drop",
+     "own": true,
+     "source": "02_reel_b.mp4",
+     "label": "reel b",
+     "clip_start": 1.0,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 35,
+     "start": 150.4167,
+     "end": 153.0417,
+     "seconds": 2.625,
+     "render_s": 8,
+     "speed": 3.048,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 150.4167,
+       "strength": 0.372
+      }
+     ],
+     "frames": 63,
+     "section": "drop",
+     "clip_morph": {
+      "from": "reel b",
+      "to": "reel c"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 36,
+     "start": 153.0417,
+     "end": 155.7083,
+     "seconds": 2.6666,
+     "render_s": 8,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 153.0417,
+       "strength": 0.372
+      }
+     ],
+     "frames": 64,
+     "section": "drop",
+     "own": true,
+     "source": "03_reel_c.mp4",
+     "label": "reel c",
+     "clip_start": 1.5,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 37,
+     "start": 155.7083,
+     "end": 158.3333,
+     "seconds": 2.625,
+     "render_s": 8,
+     "speed": 3.048,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 155.7083,
+       "strength": 0.372
+      }
+     ],
+     "frames": 63,
+     "section": "drop",
+     "clip_morph": {
+      "from": "reel c",
+      "to": "reel d"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 38,
+     "start": 158.3333,
+     "end": 160.9583,
+     "seconds": 2.625,
+     "render_s": 8,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 158.3333,
+       "strength": 0.372
+      }
+     ],
+     "frames": 63,
+     "section": "drop",
+     "own": true,
+     "source": "04_reel_d.mp4",
+     "label": "reel d",
+     "clip_start": 0.5,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 39,
+     "start": 160.9583,
+     "end": 163.5833,
+     "seconds": 2.625,
+     "render_s": 8,
+     "speed": 3.048,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 160.9583,
+       "strength": 0.372
+      }
+     ],
+     "frames": 63,
+     "section": "drop",
+     "clip_morph": {
+      "from": "reel d",
+      "to": "reel a"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 40,
+     "start": 163.5833,
+     "end": 169.0417,
+     "seconds": 5.4584,
+     "render_s": 10,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 163.5833,
+       "strength": 0.372
+      }
+     ],
+     "frames": 131,
+     "section": "drop_late",
+     "own": true,
+     "source": "01_reel_a.mp4",
+     "label": "reel a",
+     "clip_start": 0.0,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 41,
+     "start": 169.0417,
+     "end": 170.3333,
+     "seconds": 1.2916,
+     "render_s": 2,
+     "speed": 1.548,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 169.0417,
+       "strength": 0.372
+      }
+     ],
+     "frames": 31,
+     "section": "drop_late",
+     "clip_morph": {
+      "from": "reel a",
+      "to": "reel b"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 42,
+     "start": 170.3333,
+     "end": 175.625,
+     "seconds": 5.2917,
+     "render_s": 8,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 170.3333,
+       "strength": 0.248
+      }
+     ],
+     "frames": 127,
+     "section": "build",
+     "boundary": "switch",
+     "own": true,
+     "source": "02_reel_b.mp4",
+     "label": "reel b",
+     "clip_start": 0.0,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 43,
+     "start": 175.625,
+     "end": 180.875,
+     "seconds": 5.25,
+     "render_s": 8,
+     "speed": 1.524,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 175.625,
+       "strength": 0.248
+      }
+     ],
+     "frames": 126,
+     "section": "build",
+     "clip_morph": {
+      "from": "reel b",
+      "to": "reel c"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 44,
+     "start": 180.875,
+     "end": 182.1667,
+     "seconds": 1.2917,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 180.875,
+       "strength": 0.248
+      }
+     ],
+     "frames": 31,
+     "section": "build",
+     "own": true,
+     "source": "03_reel_c.mp4",
+     "label": "reel c",
+     "clip_start": 4.0,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 45,
+     "start": 182.1667,
+     "end": 187.75,
+     "seconds": 5.5833,
+     "render_s": 10,
+     "speed": 1.791,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 182.1667,
+       "strength": 0.372
+      }
+     ],
+     "frames": 134,
+     "section": "drop_late",
+     "boundary": "switch",
+     "clip_morph": {
+      "from": "reel c",
+      "to": "reel d"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 46,
+     "start": 187.75,
+     "end": 193.125,
+     "seconds": 5.375,
+     "render_s": 10,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 187.75,
+       "strength": 0.372
+      }
+     ],
+     "frames": 129,
+     "section": "drop_late",
+     "own": true,
+     "source": "04_reel_d.mp4",
+     "label": "reel d",
+     "clip_start": 0.0,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 47,
+     "start": 193.125,
+     "end": 198.375,
+     "seconds": 5.25,
+     "render_s": 10,
+     "speed": 1.905,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 193.125,
+       "strength": 0.372
+      }
+     ],
+     "frames": 126,
+     "section": "drop_late",
+     "clip_morph": {
+      "from": "reel d",
+      "to": "reel a"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 48,
+     "start": 198.375,
+     "end": 203.8333,
+     "seconds": 5.4583,
+     "render_s": 10,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 198.375,
+       "strength": 0.372
+      }
+     ],
+     "frames": 131,
+     "section": "drop_late",
+     "own": true,
+     "source": "01_reel_a.mp4",
+     "label": "reel a",
+     "clip_start": 0.0,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 49,
+     "start": 203.8333,
+     "end": 208.4167,
+     "seconds": 4.5834,
+     "render_s": 8,
+     "speed": 1.745,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 203.8333,
+       "strength": 0.372
+      }
+     ],
+     "frames": 110,
+     "section": "drop_late",
+     "clip_morph": {
+      "from": "reel a",
+      "to": "reel b"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 50,
+     "start": 208.4167,
+     "end": 213.6667,
+     "seconds": 5.25,
+     "render_s": 10,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 208.4167,
+       "strength": 0.372
+      }
+     ],
+     "frames": 126,
+     "section": "drop_late",
+     "boundary": "switch",
+     "own": true,
+     "source": "02_reel_b.mp4",
+     "label": "reel b",
+     "clip_start": 0.0,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 51,
+     "start": 213.6667,
+     "end": 218.875,
+     "seconds": 5.2083,
+     "render_s": 10,
+     "speed": 1.92,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 213.6667,
+       "strength": 0.372
+      }
+     ],
+     "frames": 125,
+     "section": "drop_late",
+     "clip_morph": {
+      "from": "reel b",
+      "to": "reel c"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 52,
+     "start": 218.875,
+     "end": 224.125,
+     "seconds": 5.25,
+     "render_s": 10,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 218.875,
+       "strength": 0.372
+      }
+     ],
+     "frames": 126,
+     "section": "drop_late",
+     "own": true,
+     "source": "03_reel_c.mp4",
+     "label": "reel c",
+     "clip_start": 0.5,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 53,
+     "start": 224.125,
+     "end": 226.0833,
+     "seconds": 1.9583,
+     "render_s": 3,
+     "speed": 1.532,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 224.125,
+       "strength": 0.372
+      }
+     ],
+     "frames": 47,
+     "section": "drop_late",
+     "clip_morph": {
+      "from": "reel c",
+      "to": "reel d"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 54,
+     "start": 226.0833,
+     "end": 231.3333,
+     "seconds": 5.25,
+     "render_s": 10,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 226.0833,
+       "strength": 0.372
+      }
+     ],
+     "frames": 126,
+     "section": "drop_late",
+     "boundary": "switch",
+     "own": true,
+     "source": "04_reel_d.mp4",
+     "label": "reel d",
+     "clip_start": 0.0,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 55,
+     "start": 231.3333,
+     "end": 236.875,
+     "seconds": 5.5417,
+     "render_s": 10,
+     "speed": 1.805,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 231.3333,
+       "strength": 0.372
+      }
+     ],
+     "frames": 133,
+     "section": "drop_late",
+     "clip_morph": {
+      "from": "reel d",
+      "to": "reel a"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 56,
+     "start": 236.875,
+     "end": 238.8,
+     "seconds": 1.925,
+     "render_s": 3,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 236.875,
+       "strength": 0.372
+      }
+     ],
+     "frames": 46,
+     "section": "drop_late",
+     "own": true,
+     "source": "01_reel_a.mp4",
+     "label": "reel a",
+     "clip_start": 0.5,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    }
+   ],
+   "kw": {
+    "aspect": "16:9",
+    "quality": "draft",
+    "fx": true,
+    "overlay": false,
+    "size": [
+     768,
+     432
+    ],
+    "fps": 24,
+    "dance_fx": "warm-leak",
+    "stem_orbit": true,
+    "macros": {
+     "intensity": 0.5,
+     "speed": 0.5,
+     "chaos": 0.3,
+     "glow": 0.4
+    },
+    "end_card": false,
+    "seed": 2727,
+    "adaptive": true,
+    "transitions": null,
+    "foreshadow": null,
+    "boundary_fx": [
+     null,
+     null,
+     null,
+     {
+      "kind": "wipe",
+      "frames": 64,
+      "tail": 32,
+      "head": 32,
+      "section": "calm",
+      "boundary": "switch",
+      "stem": "bass",
+      "variant": "strips",
+      "t": 28.25
+     },
+     null,
+     null,
+     null,
+     null,
+     null,
+     {
+      "kind": "rip",
+      "frames": 24,
+      "tail": 8,
+      "head": 16,
+      "section": "build",
+      "boundary": "switch",
+      "stem": "other",
+      "variant": "",
+      "t": 55.625
+     },
+     null,
+     null,
+     null,
+     null,
+     null,
+     {
+      "kind": "wipe",
+      "frames": 63,
+      "tail": 32,
+      "head": 31,
+      "section": "drop",
+      "boundary": "switch",
+      "stem": "bass",
+      "variant": "iris",
+      "t": 87.375
+     },
+     null,
+     null,
+     null,
+     null,
+     {
+      "kind": "rip",
+      "frames": 32,
+      "tail": 16,
+      "head": 16,
+      "section": "build",
+      "boundary": "silence",
+      "stem": "other",
+      "variant": "",
+      "t": 99.208
+     },
+     null,
+     null,
+     {
+      "kind": "wipe",
+      "frames": 56,
+      "tail": 24,
+      "head": 32,
+      "section": "release",
+      "boundary": "switch",
+      "stem": "bass",
+      "variant": "strips",
+      "t": 111.917
+     },
+     null,
+     {
+      "kind": "rip",
+      "frames": 32,
+      "tail": 16,
+      "head": 16,
+      "section": "drop",
+      "boundary": "switch",
+      "stem": "other",
+      "variant": "",
+      "t": 119.792
+     },
+     null,
+     null,
+     {
+      "kind": "wipe",
+      "frames": 47,
+      "tail": 15,
+      "head": 32,
+      "section": "build",
+      "boundary": "silence",
+      "stem": "bass",
+      "variant": "iris",
+      "t": 126.333
+     },
+     null,
+     null,
+     {
+      "kind": "rip",
+      "frames": 32,
+      "tail": 16,
+      "head": 16,
+      "section": "drop",
+      "boundary": "drop",
+      "stem": "other",
+      "variant": "",
+      "t": 139.708
+     },
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     {
+      "kind": "wipe",
+      "frames": 47,
+      "tail": 15,
+      "head": 32,
+      "section": "build",
+      "boundary": "switch",
+      "stem": "bass",
+      "variant": "iris",
+      "t": 170.333
+     },
+     null,
+     null,
+     {
+      "kind": "rip",
+      "frames": 31,
+      "tail": 15,
+      "head": 16,
+      "section": "drop_late",
+      "boundary": "switch",
+      "stem": "other",
+      "variant": "",
+      "t": 182.167
+     },
+     null,
+     null,
+     null,
+     null,
+     {
+      "kind": "wipe",
+      "frames": 64,
+      "tail": 32,
+      "head": 32,
+      "section": "drop_late",
+      "boundary": "switch",
+      "stem": "bass",
+      "variant": "iris",
+      "t": 208.417
+     },
+     null,
+     null,
+     null,
+     {
+      "kind": "rip",
+      "frames": 32,
+      "tail": 16,
+      "head": 16,
+      "section": "drop_late",
+      "boundary": "switch",
+      "stem": "other",
+      "variant": "",
+      "t": 226.083
+     },
+     null,
+     null
+    ],
+    "effects": [],
+    "tones": null,
+    "tame": null
+   },
+   "extra": []
+  },
+  "record": {
+   "plan_name": "story",
+   "drop": 139.7083,
+   "morph_style": "melt",
+   "morph_styles": [
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt"
+   ],
+   "morph_timing": "smooth",
+   "effects": [],
+   "smear": "off",
+   "boundary_fx": [
+    null,
+    null,
+    null,
+    {
+     "kind": "wipe",
+     "frames": 64,
+     "tail": 32,
+     "head": 32,
+     "section": "calm",
+     "boundary": "switch",
+     "stem": "bass",
+     "variant": "strips",
+     "t": 28.25
+    },
+    null,
+    null,
+    null,
+    null,
+    null,
+    {
+     "kind": "rip",
+     "frames": 24,
+     "tail": 8,
+     "head": 16,
+     "section": "build",
+     "boundary": "switch",
+     "stem": "other",
+     "variant": "",
+     "t": 55.625
+    },
+    null,
+    null,
+    null,
+    null,
+    null,
+    {
+     "kind": "wipe",
+     "frames": 63,
+     "tail": 32,
+     "head": 31,
+     "section": "drop",
+     "boundary": "switch",
+     "stem": "bass",
+     "variant": "iris",
+     "t": 87.375
+    },
+    null,
+    null,
+    null,
+    null,
+    {
+     "kind": "rip",
+     "frames": 32,
+     "tail": 16,
+     "head": 16,
+     "section": "build",
+     "boundary": "silence",
+     "stem": "other",
+     "variant": "",
+     "t": 99.208
+    },
+    null,
+    null,
+    {
+     "kind": "wipe",
+     "frames": 56,
+     "tail": 24,
+     "head": 32,
+     "section": "release",
+     "boundary": "switch",
+     "stem": "bass",
+     "variant": "strips",
+     "t": 111.917
+    },
+    null,
+    {
+     "kind": "rip",
+     "frames": 32,
+     "tail": 16,
+     "head": 16,
+     "section": "drop",
+     "boundary": "switch",
+     "stem": "other",
+     "variant": "",
+     "t": 119.792
+    },
+    null,
+    null,
+    {
+     "kind": "wipe",
+     "frames": 47,
+     "tail": 15,
+     "head": 32,
+     "section": "build",
+     "boundary": "silence",
+     "stem": "bass",
+     "variant": "iris",
+     "t": 126.333
+    },
+    null,
+    null,
+    {
+     "kind": "rip",
+     "frames": 32,
+     "tail": 16,
+     "head": 16,
+     "section": "drop",
+     "boundary": "drop",
+     "stem": "other",
+     "variant": "",
+     "t": 139.708
+    },
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    {
+     "kind": "wipe",
+     "frames": 47,
+     "tail": 15,
+     "head": 32,
+     "section": "build",
+     "boundary": "switch",
+     "stem": "bass",
+     "variant": "iris",
+     "t": 170.333
+    },
+    null,
+    null,
+    {
+     "kind": "rip",
+     "frames": 31,
+     "tail": 15,
+     "head": 16,
+     "section": "drop_late",
+     "boundary": "switch",
+     "stem": "other",
+     "variant": "",
+     "t": 182.167
+    },
+    null,
+    null,
+    null,
+    null,
+    {
+     "kind": "wipe",
+     "frames": 64,
+     "tail": 32,
+     "head": 32,
+     "section": "drop_late",
+     "boundary": "switch",
+     "stem": "bass",
+     "variant": "iris",
+     "t": 208.417
+    },
+    null,
+    null,
+    null,
+    {
+     "kind": "rip",
+     "frames": 32,
+     "tail": 16,
+     "head": 16,
+     "section": "drop_late",
+     "boundary": "switch",
+     "stem": "other",
+     "variant": "",
+     "t": 226.083
+    },
+    null,
+    null
+   ],
+   "handoffs_s": [
+    0.0,
+    19.0417,
+    24.2917,
+    28.25,
+    33.5,
+    39.0,
+    44.25,
+    49.5417,
+    54.9583,
+    55.625,
+    60.875,
+    66.125,
+    71.375,
+    76.6667,
+    82.125,
+    87.375,
+    90.0,
+    92.625,
+    95.25,
+    97.875,
+    99.2083,
+    104.4583,
+    109.9167,
+    111.9167,
+    117.1667,
+    119.7917,
+    122.4167,
+    125.0417,
+    126.3333,
+    131.625,
+    136.9583,
+    139.7083,
+    142.3333,
+    145.1667,
+    147.7917,
+    150.4167,
+    153.0417,
+    155.7083,
+    158.3333,
+    160.9583,
+    163.5833,
+    169.0417,
+    170.3333,
+    175.625,
+    180.875,
+    182.1667,
+    187.75,
+    193.125,
+    198.375,
+    203.8333,
+    208.4167,
+    213.6667,
+    218.875,
+    224.125,
+    226.0833,
+    231.3333,
+    236.875,
+    238.8
+   ],
+   "macros": {
+    "intensity": 0.5,
+    "speed": 0.5,
+    "chaos": 0.3,
+    "glow": 0.4
+   },
+   "stills": [],
+   "source": "clips",
+   "vibe": "liquid-gold",
+   "fps": 24,
+   "size": [
+    768,
+    432
+   ],
+   "seed": 2727,
+   "clips": [
+    "clip00.mp4",
+    "mock00.mp4",
+    "clip02.mp4",
+    "mock00.mp4",
+    "clip04.mp4",
+    "mock00.mp4",
+    "clip06.mp4",
+    "mock00.mp4",
+    "clip08.mp4",
+    "mock00.mp4",
+    "clip10.mp4",
+    "mock00.mp4",
+    "clip12.mp4",
+    "mock00.mp4",
+    "clip14.mp4",
+    "mock00.mp4",
+    "clip16.mp4",
+    "mock00.mp4",
+    "clip18.mp4",
+    "mock00.mp4",
+    "clip20.mp4",
+    "mock00.mp4",
+    "clip22.mp4",
+    "mock00.mp4",
+    "clip24.mp4",
+    "mock00.mp4",
+    "clip26.mp4",
+    "mock00.mp4",
+    "clip28.mp4",
+    "mock00.mp4",
+    "clip30.mp4",
+    "mock00.mp4",
+    "clip32.mp4",
+    "mock00.mp4",
+    "clip34.mp4",
+    "mock00.mp4",
+    "clip36.mp4",
+    "mock00.mp4",
+    "clip38.mp4",
+    "mock00.mp4",
+    "clip40.mp4",
+    "mock00.mp4",
+    "clip42.mp4",
+    "mock00.mp4",
+    "clip44.mp4",
+    "mock00.mp4",
+    "clip46.mp4",
+    "mock00.mp4",
+    "clip48.mp4",
+    "mock00.mp4",
+    "clip50.mp4",
+    "mock00.mp4",
+    "clip52.mp4",
+    "mock00.mp4",
+    "clip54.mp4",
+    "mock00.mp4",
+    "clip56.mp4"
+   ],
+   "chain": [
+    {
+     "noun": "reel a",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel b",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel c",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel d",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel a",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel b",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel c",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel d",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel a",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel b",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel c",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel d",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel a",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel b",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel c",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel d",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel a",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel b",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel c",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel d",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel a",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel b",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel c",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel d",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel a",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel b",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel c",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel d",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel a",
+     "kind": "clip"
+    }
+   ]
+  },
+  "plan_shots": [
+   {
+    "index": 0,
+    "start": 0.0,
+    "end": 19.0417,
+    "seconds": 19.0417,
+    "render_s": 10,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 457,
+    "section": "intro",
+    "own": true,
+    "source": "01_reel_a.mp4",
+    "label": "reel a",
+    "clip_start": 0.0
+   },
+   {
+    "index": 1,
+    "start": 19.0417,
+    "end": 24.2917,
+    "seconds": 5.25,
+    "render_s": 6,
+    "speed": 1.143,
+    "ease": "",
+    "effects": [],
+    "frames": 126,
+    "section": "calm",
+    "clip_morph": {
+     "from": "reel a",
+     "to": "reel b"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 2,
+    "start": 24.2917,
+    "end": 28.25,
+    "seconds": 3.9583,
+    "render_s": 4,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 95,
+    "section": "calm",
+    "own": true,
+    "source": "02_reel_b.mp4",
+    "label": "reel b",
+    "clip_start": 0.5
+   },
+   {
+    "index": 3,
+    "start": 28.25,
+    "end": 33.5,
+    "seconds": 5.25,
+    "render_s": 6,
+    "speed": 1.143,
+    "ease": "",
+    "effects": [],
+    "frames": 126,
+    "section": "calm",
+    "boundary": "switch",
+    "clip_morph": {
+     "from": "reel b",
+     "to": "reel c"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 4,
+    "start": 33.5,
+    "end": 39.0,
+    "seconds": 5.5,
+    "render_s": 6,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 132,
+    "section": "calm",
+    "own": true,
+    "source": "03_reel_c.mp4",
+    "label": "reel c",
+    "clip_start": 0.25
+   },
+   {
+    "index": 5,
+    "start": 39.0,
+    "end": 44.25,
+    "seconds": 5.25,
+    "render_s": 6,
+    "speed": 1.143,
+    "ease": "",
+    "effects": [],
+    "frames": 126,
+    "section": "calm",
+    "clip_morph": {
+     "from": "reel c",
+     "to": "reel d"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 6,
+    "start": 44.25,
+    "end": 49.5417,
+    "seconds": 5.2917,
+    "render_s": 6,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 127,
+    "section": "calm",
+    "own": true,
+    "source": "04_reel_d.mp4",
+    "label": "reel d",
+    "clip_start": 0.0
+   },
+   {
+    "index": 7,
+    "start": 49.5417,
+    "end": 54.9583,
+    "seconds": 5.4166,
+    "render_s": 6,
+    "speed": 1.108,
+    "ease": "",
+    "effects": [],
+    "frames": 130,
+    "section": "calm",
+    "clip_morph": {
+     "from": "reel d",
+     "to": "reel a"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 8,
+    "start": 54.9583,
+    "end": 55.625,
+    "seconds": 0.6667,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 16,
+    "section": "calm",
+    "own": true,
+    "source": "01_reel_a.mp4",
+    "label": "reel a",
+    "clip_start": 2.333
+   },
+   {
+    "index": 9,
+    "start": 55.625,
+    "end": 60.875,
+    "seconds": 5.25,
+    "render_s": 8,
+    "speed": 1.524,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 55.625,
+      "strength": 0.4
+     }
+    ],
+    "frames": 126,
+    "section": "build",
+    "boundary": "switch",
+    "clip_morph": {
+     "from": "reel a",
+     "to": "reel b"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 10,
+    "start": 60.875,
+    "end": 66.125,
+    "seconds": 5.25,
+    "render_s": 8,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 60.875,
+      "strength": 0.4
+     }
+    ],
+    "frames": 126,
+    "section": "build",
+    "own": true,
+    "source": "02_reel_b.mp4",
+    "label": "reel b",
+    "clip_start": 0.0
+   },
+   {
+    "index": 11,
+    "start": 66.125,
+    "end": 71.375,
+    "seconds": 5.25,
+    "render_s": 8,
+    "speed": 1.524,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 66.125,
+      "strength": 0.4
+     }
+    ],
+    "frames": 126,
+    "section": "build",
+    "clip_morph": {
+     "from": "reel b",
+     "to": "reel c"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 12,
+    "start": 71.375,
+    "end": 76.6667,
+    "seconds": 5.2917,
+    "render_s": 8,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 71.375,
+      "strength": 0.4
+     }
+    ],
+    "frames": 127,
+    "section": "build",
+    "own": true,
+    "source": "03_reel_c.mp4",
+    "label": "reel c",
+    "clip_start": 0.5
+   },
+   {
+    "index": 13,
+    "start": 76.6667,
+    "end": 82.125,
+    "seconds": 5.4583,
+    "render_s": 8,
+    "speed": 1.466,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 76.6667,
+      "strength": 0.4
+     }
+    ],
+    "frames": 131,
+    "section": "build",
+    "clip_morph": {
+     "from": "reel c",
+     "to": "reel d"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 14,
+    "start": 82.125,
+    "end": 87.375,
+    "seconds": 5.25,
+    "render_s": 8,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 82.125,
+      "strength": 0.4
+     }
+    ],
+    "frames": 126,
+    "section": "build",
+    "own": true,
+    "source": "04_reel_d.mp4",
+    "label": "reel d",
+    "clip_start": 0.0
+   },
+   {
+    "index": 15,
+    "start": 87.375,
+    "end": 90.0,
+    "seconds": 2.625,
+    "render_s": 8,
+    "speed": 3.048,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 87.375,
+      "strength": 0.6
+     }
+    ],
+    "frames": 63,
+    "section": "drop",
+    "boundary": "switch",
+    "clip_morph": {
+     "from": "reel d",
+     "to": "reel a"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 16,
+    "start": 90.0,
+    "end": 92.625,
+    "seconds": 2.625,
+    "render_s": 8,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 90.0,
+      "strength": 0.6
+     }
+    ],
+    "frames": 63,
+    "section": "drop",
+    "own": true,
+    "source": "01_reel_a.mp4",
+    "label": "reel a",
+    "clip_start": 0.188
+   },
+   {
+    "index": 17,
+    "start": 92.625,
+    "end": 95.25,
+    "seconds": 2.625,
+    "render_s": 8,
+    "speed": 3.048,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 92.625,
+      "strength": 0.6
+     }
+    ],
+    "frames": 63,
+    "section": "drop",
+    "clip_morph": {
+     "from": "reel a",
+     "to": "reel b"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 18,
+    "start": 95.25,
+    "end": 97.875,
+    "seconds": 2.625,
+    "render_s": 8,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 95.25,
+      "strength": 0.6
+     }
+    ],
+    "frames": 63,
+    "section": "drop",
+    "own": true,
+    "source": "02_reel_b.mp4",
+    "label": "reel b",
+    "clip_start": 1.0
+   },
+   {
+    "index": 19,
+    "start": 97.875,
+    "end": 99.2083,
+    "seconds": 1.3333,
+    "render_s": 4,
+    "speed": 3.0,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 97.875,
+      "strength": 0.6
+     }
+    ],
+    "frames": 32,
+    "section": "drop",
+    "clip_morph": {
+     "from": "reel b",
+     "to": "reel c"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 20,
+    "start": 99.2083,
+    "end": 104.4583,
+    "seconds": 5.25,
+    "render_s": 8,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 99.2083,
+      "strength": 0.4
+     }
+    ],
+    "frames": 126,
+    "section": "build",
+    "boundary": "silence",
+    "own": true,
+    "source": "03_reel_c.mp4",
+    "label": "reel c",
+    "clip_start": 0.5
+   },
+   {
+    "index": 21,
+    "start": 104.4583,
+    "end": 109.9167,
+    "seconds": 5.4584,
+    "render_s": 8,
+    "speed": 1.466,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 104.4583,
+      "strength": 0.4
+     }
+    ],
+    "frames": 131,
+    "section": "build",
+    "clip_morph": {
+     "from": "reel c",
+     "to": "reel d"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 22,
+    "start": 109.9167,
+    "end": 111.9167,
+    "seconds": 2.0,
+    "render_s": 3,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 109.9167,
+      "strength": 0.4
+     }
+    ],
+    "frames": 48,
+    "section": "build",
+    "own": true,
+    "source": "04_reel_d.mp4",
+    "label": "reel d",
+    "clip_start": 1.0
+   },
+   {
+    "index": 23,
+    "start": 111.9167,
+    "end": 117.1667,
+    "seconds": 5.25,
+    "render_s": 8,
+    "speed": 1.524,
+    "ease": "",
+    "effects": [],
+    "frames": 126,
+    "section": "release",
+    "boundary": "switch",
+    "clip_morph": {
+     "from": "reel d",
+     "to": "reel a"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 24,
+    "start": 117.1667,
+    "end": 119.7917,
+    "seconds": 2.625,
+    "render_s": 4,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 63,
+    "section": "release",
+    "own": true,
+    "source": "01_reel_a.mp4",
+    "label": "reel a",
+    "clip_start": 0.188
+   },
+   {
+    "index": 25,
+    "start": 119.7917,
+    "end": 122.4167,
+    "seconds": 2.625,
+    "render_s": 8,
+    "speed": 3.048,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 119.7917,
+      "strength": 0.6
+     }
+    ],
+    "frames": 63,
+    "section": "drop",
+    "boundary": "switch",
+    "clip_morph": {
+     "from": "reel a",
+     "to": "reel b"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 26,
+    "start": 122.4167,
+    "end": 125.0417,
+    "seconds": 2.625,
+    "render_s": 8,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 122.4167,
+      "strength": 0.6
+     }
+    ],
+    "frames": 63,
+    "section": "drop",
+    "own": true,
+    "source": "02_reel_b.mp4",
+    "label": "reel b",
+    "clip_start": 1.0
+   },
+   {
+    "index": 27,
+    "start": 125.0417,
+    "end": 126.3333,
+    "seconds": 1.2916,
+    "render_s": 4,
+    "speed": 3.097,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 125.0417,
+      "strength": 0.6
+     }
+    ],
+    "frames": 31,
+    "section": "drop",
+    "clip_morph": {
+     "from": "reel b",
+     "to": "reel c"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 28,
+    "start": 126.3333,
+    "end": 131.625,
+    "seconds": 5.2917,
+    "render_s": 8,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 126.3333,
+      "strength": 0.4
+     }
+    ],
+    "frames": 127,
+    "section": "build",
+    "boundary": "silence",
+    "own": true,
+    "source": "03_reel_c.mp4",
+    "label": "reel c",
+    "clip_start": 0.5
+   },
+   {
+    "index": 29,
+    "start": 131.625,
+    "end": 136.9583,
+    "seconds": 5.3333,
+    "render_s": 8,
+    "speed": 1.5,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 131.625,
+      "strength": 0.4
+     }
+    ],
+    "frames": 128,
+    "section": "build",
+    "clip_morph": {
+     "from": "reel c",
+     "to": "reel d"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 30,
+    "start": 136.9583,
+    "end": 139.7083,
+    "seconds": 2.75,
+    "render_s": 4,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 136.9583,
+      "strength": 0.4
+     }
+    ],
+    "frames": 66,
+    "section": "build",
+    "own": true,
+    "source": "04_reel_d.mp4",
+    "label": "reel d",
+    "clip_start": 0.5
+   },
+   {
+    "index": 31,
+    "start": 139.7083,
+    "end": 142.3333,
+    "seconds": 2.625,
+    "render_s": 8,
+    "speed": 3.048,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 139.7083,
+      "strength": 1.0
+     },
+     {
+      "type": "stutter",
+      "t": 139.7083,
+      "frames": 2,
+      "repeat": 4
+     }
+    ],
+    "frames": 63,
+    "section": "drop",
+    "boundary": "drop",
+    "clip_morph": {
+     "from": "reel d",
+     "to": "reel a"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 32,
+    "start": 142.3333,
+    "end": 145.1667,
+    "seconds": 2.8334,
+    "render_s": 8,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 142.3333,
+      "strength": 0.6
+     }
+    ],
+    "frames": 68,
+    "section": "drop",
+    "own": true,
+    "source": "01_reel_a.mp4",
+    "label": "reel a",
+    "clip_start": 0.083
+   },
+   {
+    "index": 33,
+    "start": 145.1667,
+    "end": 147.7917,
+    "seconds": 2.625,
+    "render_s": 8,
+    "speed": 3.048,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 145.1667,
+      "strength": 0.6
+     }
+    ],
+    "frames": 63,
+    "section": "drop",
+    "clip_morph": {
+     "from": "reel a",
+     "to": "reel b"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 34,
+    "start": 147.7917,
+    "end": 150.4167,
+    "seconds": 2.625,
+    "render_s": 8,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 147.7917,
+      "strength": 0.6
+     }
+    ],
+    "frames": 63,
+    "section": "drop",
+    "own": true,
+    "source": "02_reel_b.mp4",
+    "label": "reel b",
+    "clip_start": 1.0
+   },
+   {
+    "index": 35,
+    "start": 150.4167,
+    "end": 153.0417,
+    "seconds": 2.625,
+    "render_s": 8,
+    "speed": 3.048,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 150.4167,
+      "strength": 0.6
+     }
+    ],
+    "frames": 63,
+    "section": "drop",
+    "clip_morph": {
+     "from": "reel b",
+     "to": "reel c"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 36,
+    "start": 153.0417,
+    "end": 155.7083,
+    "seconds": 2.6666,
+    "render_s": 8,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 153.0417,
+      "strength": 0.6
+     }
+    ],
+    "frames": 64,
+    "section": "drop",
+    "own": true,
+    "source": "03_reel_c.mp4",
+    "label": "reel c",
+    "clip_start": 1.5
+   },
+   {
+    "index": 37,
+    "start": 155.7083,
+    "end": 158.3333,
+    "seconds": 2.625,
+    "render_s": 8,
+    "speed": 3.048,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 155.7083,
+      "strength": 0.6
+     }
+    ],
+    "frames": 63,
+    "section": "drop",
+    "clip_morph": {
+     "from": "reel c",
+     "to": "reel d"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 38,
+    "start": 158.3333,
+    "end": 160.9583,
+    "seconds": 2.625,
+    "render_s": 8,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 158.3333,
+      "strength": 0.6
+     }
+    ],
+    "frames": 63,
+    "section": "drop",
+    "own": true,
+    "source": "04_reel_d.mp4",
+    "label": "reel d",
+    "clip_start": 0.5
+   },
+   {
+    "index": 39,
+    "start": 160.9583,
+    "end": 163.5833,
+    "seconds": 2.625,
+    "render_s": 8,
+    "speed": 3.048,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 160.9583,
+      "strength": 0.6
+     }
+    ],
+    "frames": 63,
+    "section": "drop",
+    "clip_morph": {
+     "from": "reel d",
+     "to": "reel a"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 40,
+    "start": 163.5833,
+    "end": 169.0417,
+    "seconds": 5.4584,
+    "render_s": 10,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 163.5833,
+      "strength": 0.6
+     }
+    ],
+    "frames": 131,
+    "section": "drop_late",
+    "own": true,
+    "source": "01_reel_a.mp4",
+    "label": "reel a",
+    "clip_start": 0.0
+   },
+   {
+    "index": 41,
+    "start": 169.0417,
+    "end": 170.3333,
+    "seconds": 1.2916,
+    "render_s": 2,
+    "speed": 1.548,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 169.0417,
+      "strength": 0.6
+     }
+    ],
+    "frames": 31,
+    "section": "drop_late",
+    "clip_morph": {
+     "from": "reel a",
+     "to": "reel b"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 42,
+    "start": 170.3333,
+    "end": 175.625,
+    "seconds": 5.2917,
+    "render_s": 8,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 170.3333,
+      "strength": 0.4
+     }
+    ],
+    "frames": 127,
+    "section": "build",
+    "boundary": "switch",
+    "own": true,
+    "source": "02_reel_b.mp4",
+    "label": "reel b",
+    "clip_start": 0.0
+   },
+   {
+    "index": 43,
+    "start": 175.625,
+    "end": 180.875,
+    "seconds": 5.25,
+    "render_s": 8,
+    "speed": 1.524,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 175.625,
+      "strength": 0.4
+     }
+    ],
+    "frames": 126,
+    "section": "build",
+    "clip_morph": {
+     "from": "reel b",
+     "to": "reel c"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 44,
+    "start": 180.875,
+    "end": 182.1667,
+    "seconds": 1.2917,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 180.875,
+      "strength": 0.4
+     }
+    ],
+    "frames": 31,
+    "section": "build",
+    "own": true,
+    "source": "03_reel_c.mp4",
+    "label": "reel c",
+    "clip_start": 4.0
+   },
+   {
+    "index": 45,
+    "start": 182.1667,
+    "end": 187.75,
+    "seconds": 5.5833,
+    "render_s": 10,
+    "speed": 1.791,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 182.1667,
+      "strength": 0.6
+     }
+    ],
+    "frames": 134,
+    "section": "drop_late",
+    "boundary": "switch",
+    "clip_morph": {
+     "from": "reel c",
+     "to": "reel d"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 46,
+    "start": 187.75,
+    "end": 193.125,
+    "seconds": 5.375,
+    "render_s": 10,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 187.75,
+      "strength": 0.6
+     }
+    ],
+    "frames": 129,
+    "section": "drop_late",
+    "own": true,
+    "source": "04_reel_d.mp4",
+    "label": "reel d",
+    "clip_start": 0.0
+   },
+   {
+    "index": 47,
+    "start": 193.125,
+    "end": 198.375,
+    "seconds": 5.25,
+    "render_s": 10,
+    "speed": 1.905,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 193.125,
+      "strength": 0.6
+     }
+    ],
+    "frames": 126,
+    "section": "drop_late",
+    "clip_morph": {
+     "from": "reel d",
+     "to": "reel a"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 48,
+    "start": 198.375,
+    "end": 203.8333,
+    "seconds": 5.4583,
+    "render_s": 10,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 198.375,
+      "strength": 0.6
+     }
+    ],
+    "frames": 131,
+    "section": "drop_late",
+    "own": true,
+    "source": "01_reel_a.mp4",
+    "label": "reel a",
+    "clip_start": 0.0
+   },
+   {
+    "index": 49,
+    "start": 203.8333,
+    "end": 208.4167,
+    "seconds": 4.5834,
+    "render_s": 8,
+    "speed": 1.745,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 203.8333,
+      "strength": 0.6
+     }
+    ],
+    "frames": 110,
+    "section": "drop_late",
+    "clip_morph": {
+     "from": "reel a",
+     "to": "reel b"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 50,
+    "start": 208.4167,
+    "end": 213.6667,
+    "seconds": 5.25,
+    "render_s": 10,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 208.4167,
+      "strength": 0.6
+     }
+    ],
+    "frames": 126,
+    "section": "drop_late",
+    "boundary": "switch",
+    "own": true,
+    "source": "02_reel_b.mp4",
+    "label": "reel b",
+    "clip_start": 0.0
+   },
+   {
+    "index": 51,
+    "start": 213.6667,
+    "end": 218.875,
+    "seconds": 5.2083,
+    "render_s": 10,
+    "speed": 1.92,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 213.6667,
+      "strength": 0.6
+     }
+    ],
+    "frames": 125,
+    "section": "drop_late",
+    "clip_morph": {
+     "from": "reel b",
+     "to": "reel c"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 52,
+    "start": 218.875,
+    "end": 224.125,
+    "seconds": 5.25,
+    "render_s": 10,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 218.875,
+      "strength": 0.6
+     }
+    ],
+    "frames": 126,
+    "section": "drop_late",
+    "own": true,
+    "source": "03_reel_c.mp4",
+    "label": "reel c",
+    "clip_start": 0.5
+   },
+   {
+    "index": 53,
+    "start": 224.125,
+    "end": 226.0833,
+    "seconds": 1.9583,
+    "render_s": 3,
+    "speed": 1.532,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 224.125,
+      "strength": 0.6
+     }
+    ],
+    "frames": 47,
+    "section": "drop_late",
+    "clip_morph": {
+     "from": "reel c",
+     "to": "reel d"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 54,
+    "start": 226.0833,
+    "end": 231.3333,
+    "seconds": 5.25,
+    "render_s": 10,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 226.0833,
+      "strength": 0.6
+     }
+    ],
+    "frames": 126,
+    "section": "drop_late",
+    "boundary": "switch",
+    "own": true,
+    "source": "04_reel_d.mp4",
+    "label": "reel d",
+    "clip_start": 0.0
+   },
+   {
+    "index": 55,
+    "start": 231.3333,
+    "end": 236.875,
+    "seconds": 5.5417,
+    "render_s": 10,
+    "speed": 1.805,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 231.3333,
+      "strength": 0.6
+     }
+    ],
+    "frames": 133,
+    "section": "drop_late",
+    "clip_morph": {
+     "from": "reel d",
+     "to": "reel a"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 56,
+    "start": 236.875,
+    "end": 238.8,
+    "seconds": 1.925,
+    "render_s": 3,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 236.875,
+      "strength": 0.6
+     }
+    ],
+    "frames": 46,
+    "section": "drop_late",
+    "own": true,
+    "source": "01_reel_a.mp4",
+    "label": "reel a",
+    "clip_start": 0.5
+   }
+  ]
+ },
+ "real:short20": {
+  "morph_count": 15,
+  "guard": [
+   "[morph_density] auto picked 24 forms for 20s; capped at 15 (~15 per 20 s)"
+  ],
+  "compose": {
+   "clips": [
+    "clip00.mp4",
+    "mock00.mp4",
+    "clip02.mp4",
+    "mock00.mp4",
+    "clip04.mp4",
+    "mock00.mp4",
+    "clip06.mp4",
+    "mock00.mp4",
+    "clip08.mp4",
+    "mock00.mp4",
+    "clip10.mp4",
+    "mock00.mp4",
+    "clip12.mp4",
+    "mock00.mp4",
+    "clip14.mp4"
+   ],
+   "shots": [
+    {
+     "index": 0,
+     "start": 0.0,
+     "end": 1.6667,
+     "seconds": 1.6667,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 0.7917,
+       "strength": 0.62
+      }
+     ],
+     "frames": 40,
+     "own": true,
+     "source": "01_reel_a.mp4",
+     "label": "reel a",
+     "clip_start": 0.5,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 1,
+     "start": 1.6667,
+     "end": 3.6667,
+     "seconds": 2.0,
+     "render_s": 3,
+     "speed": 1.5,
+     "ease": "",
+     "effects": [],
+     "frames": 48,
+     "clip_morph": {
+      "from": "reel a",
+      "to": "reel b"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 2,
+     "start": 3.6667,
+     "end": 5.25,
+     "seconds": 1.5833,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 38,
+     "own": true,
+     "source": "02_reel_b.mp4",
+     "label": "reel b",
+     "clip_start": 1.5,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 3,
+     "start": 5.25,
+     "end": 7.25,
+     "seconds": 2.0,
+     "render_s": 3,
+     "speed": 1.5,
+     "ease": "",
+     "effects": [],
+     "frames": 48,
+     "clip_morph": {
+      "from": "reel b",
+      "to": "reel c"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 4,
+     "start": 7.25,
+     "end": 9.25,
+     "seconds": 2.0,
+     "render_s": 3,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 48,
+     "own": true,
+     "source": "03_reel_c.mp4",
+     "label": "reel c",
+     "clip_start": 2.0,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 5,
+     "start": 9.25,
+     "end": 10.8333,
+     "seconds": 1.5833,
+     "render_s": 2,
+     "speed": 1.263,
+     "ease": "",
+     "effects": [],
+     "frames": 38,
+     "clip_morph": {
+      "from": "reel c",
+      "to": "reel a"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 6,
+     "start": 10.8333,
+     "end": 12.7917,
+     "seconds": 1.9584,
+     "render_s": 3,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 47,
+     "own": true,
+     "source": "01_reel_a.mp4",
+     "label": "reel a",
+     "clip_start": 0.5,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 7,
+     "start": 12.7917,
+     "end": 13.5833,
+     "seconds": 0.7916,
+     "render_s": 2,
+     "speed": 2.527,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 12.7917,
+       "strength": 0.62
+      },
+      {
+       "type": "stutter",
+       "t": 12.7917,
+       "frames": 2,
+       "repeat": 4
+      }
+     ],
+     "frames": 19,
+     "clip_morph": {
+      "from": "reel a",
+      "to": "reel b"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 8,
+     "start": 13.5833,
+     "end": 14.4167,
+     "seconds": 0.8334,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [
+      {
+       "type": "punch",
+       "t": 13.8833,
+       "strength": 0.62
+      }
+     ],
+     "frames": 20,
+     "own": true,
+     "source": "02_reel_b.mp4",
+     "label": "reel b",
+     "clip_start": 0.0,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 9,
+     "start": 14.4167,
+     "end": 15.625,
+     "seconds": 1.2083,
+     "render_s": 3,
+     "speed": 2.483,
+     "ease": "",
+     "effects": [
+      {
+       "type": "punch",
+       "t": 14.4167,
+       "strength": 0.31
+      }
+     ],
+     "frames": 29,
+     "clip_morph": {
+      "from": "reel b",
+      "to": "reel c"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 10,
+     "start": 15.625,
+     "end": 16.4167,
+     "seconds": 0.7917,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 19,
+     "own": true,
+     "source": "03_reel_c.mp4",
+     "label": "reel c",
+     "clip_start": 3.5,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 11,
+     "start": 16.4167,
+     "end": 17.2083,
+     "seconds": 0.7916,
+     "render_s": 2,
+     "speed": 2.527,
+     "ease": "",
+     "effects": [],
+     "frames": 19,
+     "clip_morph": {
+      "from": "reel c",
+      "to": "reel a"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 12,
+     "start": 17.2083,
+     "end": 18.0,
+     "seconds": 0.7917,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 19,
+     "own": true,
+     "source": "01_reel_a.mp4",
+     "label": "reel a",
+     "clip_start": 0.0,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 13,
+     "start": 18.0,
+     "end": 19.2083,
+     "seconds": 1.2083,
+     "render_s": 3,
+     "speed": 2.483,
+     "ease": "",
+     "effects": [],
+     "frames": 29,
+     "clip_morph": {
+      "from": "reel a",
+      "to": "reel b"
+     },
+     "style": "melt",
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    },
+    {
+     "index": 14,
+     "start": 19.2083,
+     "end": 20.0,
+     "seconds": 0.7917,
+     "render_s": 2,
+     "speed": 1.0,
+     "effects": [],
+     "frames": 19,
+     "own": true,
+     "source": "02_reel_b.mp4",
+     "label": "reel b",
+     "clip_start": 3.5,
+     "fx_intensity": 0.8,
+     "chaos": 0.3
+    }
+   ],
+   "kw": {
+    "aspect": "16:9",
+    "quality": "draft",
+    "fx": true,
+    "overlay": false,
+    "size": [
+     768,
+     432
+    ],
+    "fps": 24,
+    "dance_fx": "off",
+    "stem_orbit": true,
+    "macros": {
+     "intensity": 0.5,
+     "speed": 0.5,
+     "chaos": 0.3,
+     "glow": 0.4
+    },
+    "end_card": false,
+    "seed": 2727,
+    "adaptive": true,
+    "transitions": null,
+    "foreshadow": null,
+    "boundary_fx": [
+     null,
+     {
+      "kind": "wipe",
+      "frames": 40,
+      "tail": 20,
+      "head": 20,
+      "section": "",
+      "boundary": "",
+      "stem": "bass",
+      "variant": "strips",
+      "t": 1.667
+     },
+     null,
+     null,
+     null,
+     null,
+     null,
+     {
+      "kind": "rip",
+      "frames": 19,
+      "tail": 10,
+      "head": 9,
+      "section": "",
+      "boundary": "drop",
+      "stem": "other",
+      "variant": "",
+      "t": 12.792
+     },
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     {
+      "kind": "wipe",
+      "frames": 23,
+      "tail": 14,
+      "head": 9,
+      "section": "",
+      "boundary": "",
+      "stem": "bass",
+      "variant": "iris",
+      "t": 19.208
+     }
+    ],
+    "effects": [],
+    "tones": null,
+    "tame": null
+   },
+   "extra": [],
+   "sha256": "8b51c875aadcbee2ff60b315f35a34370d7d773d0fed78dface6a68b16b687c6"
+  },
+  "record": {
+   "plan_name": "dense (15 forms)",
+   "drop": 12.7917,
+   "morph_style": "melt",
+   "morph_styles": [
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt",
+    "melt"
+   ],
+   "morph_timing": "smooth",
+   "effects": [],
+   "smear": "off",
+   "boundary_fx": [
+    null,
+    {
+     "kind": "wipe",
+     "frames": 40,
+     "tail": 20,
+     "head": 20,
+     "section": "",
+     "boundary": "",
+     "stem": "bass",
+     "variant": "strips",
+     "t": 1.667
+    },
+    null,
+    null,
+    null,
+    null,
+    null,
+    {
+     "kind": "rip",
+     "frames": 19,
+     "tail": 10,
+     "head": 9,
+     "section": "",
+     "boundary": "drop",
+     "stem": "other",
+     "variant": "",
+     "t": 12.792
+    },
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    {
+     "kind": "wipe",
+     "frames": 23,
+     "tail": 14,
+     "head": 9,
+     "section": "",
+     "boundary": "",
+     "stem": "bass",
+     "variant": "iris",
+     "t": 19.208
+    }
+   ],
+   "handoffs_s": [
+    0.0,
+    1.6667,
+    3.6667,
+    5.25,
+    7.25,
+    9.25,
+    10.8333,
+    12.7917,
+    13.5833,
+    14.4167,
+    15.625,
+    16.4167,
+    17.2083,
+    18.0,
+    19.2083,
+    20.0
+   ],
+   "macros": {
+    "intensity": 0.5,
+    "speed": 0.5,
+    "chaos": 0.3,
+    "glow": 0.4
+   },
+   "stills": [],
+   "source": "clips",
+   "vibe": "none",
+   "fps": 24,
+   "size": [
+    768,
+    432
+   ],
+   "seed": 2727,
+   "clips": [
+    "clip00.mp4",
+    "mock00.mp4",
+    "clip02.mp4",
+    "mock00.mp4",
+    "clip04.mp4",
+    "mock00.mp4",
+    "clip06.mp4",
+    "mock00.mp4",
+    "clip08.mp4",
+    "mock00.mp4",
+    "clip10.mp4",
+    "mock00.mp4",
+    "clip12.mp4",
+    "mock00.mp4",
+    "clip14.mp4"
+   ],
+   "chain": [
+    {
+     "noun": "reel a",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel b",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel c",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel a",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel b",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel c",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel a",
+     "kind": "clip"
+    },
+    {
+     "noun": "reel b",
+     "kind": "clip"
+    }
+   ]
+  },
+  "plan_shots": [
+   {
+    "index": 0,
+    "start": 0.0,
+    "end": 1.6667,
+    "seconds": 1.6667,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 0.7917,
+      "strength": 1.0
+     }
+    ],
+    "frames": 40,
+    "own": true,
+    "source": "01_reel_a.mp4",
+    "label": "reel a",
+    "clip_start": 0.5
+   },
+   {
+    "index": 1,
+    "start": 1.6667,
+    "end": 3.6667,
+    "seconds": 2.0,
+    "render_s": 3,
+    "speed": 1.5,
+    "ease": "",
+    "effects": [],
+    "frames": 48,
+    "clip_morph": {
+     "from": "reel a",
+     "to": "reel b"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 2,
+    "start": 3.6667,
+    "end": 5.25,
+    "seconds": 1.5833,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 38,
+    "own": true,
+    "source": "02_reel_b.mp4",
+    "label": "reel b",
+    "clip_start": 1.5
+   },
+   {
+    "index": 3,
+    "start": 5.25,
+    "end": 7.25,
+    "seconds": 2.0,
+    "render_s": 3,
+    "speed": 1.5,
+    "ease": "",
+    "effects": [],
+    "frames": 48,
+    "clip_morph": {
+     "from": "reel b",
+     "to": "reel c"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 4,
+    "start": 7.25,
+    "end": 9.25,
+    "seconds": 2.0,
+    "render_s": 3,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 48,
+    "own": true,
+    "source": "03_reel_c.mp4",
+    "label": "reel c",
+    "clip_start": 2.0
+   },
+   {
+    "index": 5,
+    "start": 9.25,
+    "end": 10.8333,
+    "seconds": 1.5833,
+    "render_s": 2,
+    "speed": 1.263,
+    "ease": "",
+    "effects": [],
+    "frames": 38,
+    "clip_morph": {
+     "from": "reel c",
+     "to": "reel a"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 6,
+    "start": 10.8333,
+    "end": 12.7917,
+    "seconds": 1.9584,
+    "render_s": 3,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 47,
+    "own": true,
+    "source": "01_reel_a.mp4",
+    "label": "reel a",
+    "clip_start": 0.5
+   },
+   {
+    "index": 7,
+    "start": 12.7917,
+    "end": 13.5833,
+    "seconds": 0.7916,
+    "render_s": 2,
+    "speed": 2.527,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 12.7917,
+      "strength": 1.0
+     },
+     {
+      "type": "stutter",
+      "t": 12.7917,
+      "frames": 2,
+      "repeat": 4
+     }
+    ],
+    "frames": 19,
+    "clip_morph": {
+     "from": "reel a",
+     "to": "reel b"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 8,
+    "start": 13.5833,
+    "end": 14.4167,
+    "seconds": 0.8334,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [
+     {
+      "type": "punch",
+      "t": 13.8833,
+      "strength": 1.0
+     }
+    ],
+    "frames": 20,
+    "own": true,
+    "source": "02_reel_b.mp4",
+    "label": "reel b",
+    "clip_start": 0.0
+   },
+   {
+    "index": 9,
+    "start": 14.4167,
+    "end": 15.625,
+    "seconds": 1.2083,
+    "render_s": 3,
+    "speed": 2.483,
+    "ease": "",
+    "effects": [
+     {
+      "type": "punch",
+      "t": 14.4167,
+      "strength": 0.5
+     }
+    ],
+    "frames": 29,
+    "clip_morph": {
+     "from": "reel b",
+     "to": "reel c"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 10,
+    "start": 15.625,
+    "end": 16.4167,
+    "seconds": 0.7917,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 19,
+    "own": true,
+    "source": "03_reel_c.mp4",
+    "label": "reel c",
+    "clip_start": 3.5
+   },
+   {
+    "index": 11,
+    "start": 16.4167,
+    "end": 17.2083,
+    "seconds": 0.7916,
+    "render_s": 2,
+    "speed": 2.527,
+    "ease": "",
+    "effects": [],
+    "frames": 19,
+    "clip_morph": {
+     "from": "reel c",
+     "to": "reel a"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 12,
+    "start": 17.2083,
+    "end": 18.0,
+    "seconds": 0.7917,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 19,
+    "own": true,
+    "source": "01_reel_a.mp4",
+    "label": "reel a",
+    "clip_start": 0.0
+   },
+   {
+    "index": 13,
+    "start": 18.0,
+    "end": 19.2083,
+    "seconds": 1.2083,
+    "render_s": 3,
+    "speed": 2.483,
+    "ease": "",
+    "effects": [],
+    "frames": 29,
+    "clip_morph": {
+     "from": "reel a",
+     "to": "reel b"
+    },
+    "style": "melt"
+   },
+   {
+    "index": 14,
+    "start": 19.2083,
+    "end": 20.0,
+    "seconds": 0.7917,
+    "render_s": 2,
+    "speed": 1.0,
+    "effects": [],
+    "frames": 19,
+    "own": true,
+    "source": "02_reel_b.mp4",
+    "label": "reel b",
+    "clip_start": 3.5
+   }
+  ]
+ }
+}

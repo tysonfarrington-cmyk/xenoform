@@ -798,9 +798,11 @@ def shot_intensity(s: dict, intensity: float, breathe: bool | float, drops: bool
 
 def song_context(state: dict | None) -> dict | None:
     """A whole song's window (``song_plan.KEY``): its place in the song (where it starts, the passage's span, the song's
-    first drop, the calm passages and scenes before it, the style its drop run opens on, its turn), or None."""
+    first drop, the calm passages and scenes before it, the style its drop run opens on, its turn), or None. A window
+    that is the whole song (a clips song is one Make of every passage: it carries no ``passage_start``) is shaped as
+    any cut is, passage by passage, so it is None here too."""
     raw = (state or {}).get("song_passage")
-    return raw if isinstance(raw, dict) else None
+    return raw if isinstance(raw, dict) and "passage_start" in raw else None
 
 
 def shape(shots: list[dict], macros: dict, *, breathe: bool | float, drop_mode: str, house: dict | None = None,
@@ -906,7 +908,9 @@ def shape(shots: list[dict], macros: dict, *, breathe: bool | float, drop_mode: 
                 if calm:
                     s["dance_fx"] = calm
                     counts["looks"] += 1
-            if role not in ("drop", "drop_late") and _fit_rest(s, period):
+            # a rest is a held frame: never on film (your clip plays on; a clips cut's morph hands over to the clip it
+            # lands on, clip_cut.hand_over), only on a morph that arrives at an object
+            if role not in ("drop", "drop_late") and not (s.get("own") or s.get("clip_morph")) and _fit_rest(s, period):
                 counts["long_rests"] = counts.get("long_rests", 0) + 1
         if drops:  # the drop treatment, over the profile: the entries and the ramps into them
             _treat(s, timing=timing, user_effects=user_effects, intensity=intensity, breathe=prof is not None, counts=counts,

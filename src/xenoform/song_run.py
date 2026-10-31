@@ -22,7 +22,8 @@ VERSION = 1
 # the body keys the record keeps of the desk's own (the rest are the Director desk's and the other modes')
 BODY_KEEP = ("audio_id", "vibe", "idea", "quality_tier", "aspect", "breathe", "drop_mode", "macros", "morph_style",
              "morph_timing", "effects", "dance_fx", "foreshadow", "backdrop", "scene_stills", "seed", "song",
-             "song_morph_cap", "song_title", "chain_pins", "cloud_final_ok", "beat_fx", "stem_orbit", "stems_path")
+             "song_morph_cap", "song_title", "chain_pins", "cloud_final_ok", "beat_fx", "stem_orbit", "stems_path",
+             "morph_source", "own_folder")
 
 
 def path(folder: Path) -> Path:
@@ -80,8 +81,9 @@ def items(rec: dict) -> list[dict]:
         p = rec["passages"][w["passage"]]
         look = p.get("look") or {}
         part = f" (part {w['part'] + 1} of {w['parts']})" if w.get("parts", 1) > 1 else ""
-        out.append({"label": f"Passage {p['index'] + 1} of {len(rec['passages'])}{part}: {p['role']}, {look.get('name') or look.get('vibe') or ''}",
-                    "body": copy.deepcopy(w["body"]), "kind": "window", "window": w["index"]})
+        label = (f"The whole song in your clips: {len(rec['passages'])} passages" if w.get("whole") else
+                 f"Passage {p['index'] + 1} of {len(rec['passages'])}{part}: {p['role']}, {look.get('name') or look.get('vibe') or ''}")
+        out.append({"label": label, "body": copy.deepcopy(w["body"]), "kind": "window", "window": w["index"]})
     return out
 
 
@@ -163,7 +165,8 @@ def view(rec: dict, *, assembling: dict | None = None, elsewhere: bool = False) 
                         if assembly.get(k) is not None}}
     if running is not None:
         p = rec["passages"][running["passage"]]
-        out["running"] = {"window": running["index"], "passage": p["index"], "role": p["role"],
+        out["running"] = {"window": running["index"], "passage": p["index"],
+                          "role": "the whole song" if running.get("whole") else p["role"],
                           "vibe": (p.get("look") or {}).get("vibe") or "", "status": running.get("status"),
                           "progress": running.get("progress"), "detail": running.get("detail") or "",
                           "eta_s": running.get("eta_s"), "job_id": running.get("job_id") or ""}

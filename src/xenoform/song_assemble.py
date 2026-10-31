@@ -132,7 +132,7 @@ def slots(rec: dict, jobs: Path) -> list[dict]:
                     "role": str(w.get("role") or ""), "mp4": mp4, "record": cut, "info": info, "offset": offset,
                     "seconds": picture, "sound_s": float(info["seconds"]), "frames": int(round(picture * FPS)),
                     "end": offset + picture, "bounds": bounds, "shift_beats": shift, "start": float(w["start"]),
-                    "want_end": float(w["end"]), "rest_s": rest_s})
+                    "want_end": float(w["end"]), "rest_s": rest_s, "whole": bool(w.get("whole"))})
     return out
 
 
@@ -252,6 +252,8 @@ def song_shots(order: list[dict], cuts: list[float], rec: dict, period: float) -
     passage, window, job and vibe, its morph pointing into the song's stills (each window's in turn), the first shot of
     every window after the first a hard cut (``cut_in``). Returns the shots, the stills and the styles a shot."""
     shots, stills, styles = [], [], []
+    # a window that is the whole song (a clips song): each shot names the song's passage its own plan passage is
+    by_plan = {int(p.get("plan_passage", p["index"])): int(p["index"]) for p in rec["passages"]}
     for k, s in enumerate(order):
         cut = s["record"]
         c0, _ = shifted(s, period)
@@ -273,7 +275,8 @@ def song_shots(order: list[dict], cuts: list[float], rec: dict, period: float) -
             row["frames"] = int(round(row["end"] * FPS)) - int(round(row["start"] * FPS))
             m = int(sh.get("morph", sh.get("clip", i)) or 0)
             row["morph"] = base + m
-            row.update({"window": s["window"], "song_passage": s["passage"], "job": s["job"], "vibe": look.get("vibe") or cut.get("vibe") or "",
+            mine_p = by_plan.get(int(sh.get("passage") or 0), s["passage"]) if s.get("whole") else s["passage"]
+            row.update({"window": s["window"], "song_passage": mine_p, "job": s["job"], "vibe": look.get("vibe") or cut.get("vibe") or "",
                         "look_name": look.get("name") or "", "shot_in_window": i})
             row.pop("clip", None)
             if first and k > 0:
@@ -297,6 +300,16 @@ def composite(rec: dict, order: list[dict], cuts: list[float], *, video_s: float
         for sh_clip in cut.get("clips") or []:
             clips.append(str(sh_clip))
     first = order[0]["record"] if order else {}
+    out = _composite(rec, first, shots, stills, styles, clips, video_s=video_s, size=size, beats=beats)
+    if str(first.get("source") or "") == "clips":  # a clips song: one clips cut, laid with its title and its sound
+        out.update({"source": "clips", "own_clips": list(first.get("own_clips") or [])})
+        if isinstance(first.get("pacing"), dict):  # its passages, drop runs and rests are the one cut's
+            out["pacing"] = {**first["pacing"], **out["pacing"]}
+    return out
+
+
+def _composite(rec: dict, first: dict, shots: list[dict], stills: list[str], styles: list[str], clips: list[str], *,
+               video_s: float, size: tuple[int, int], beats: list[float]) -> dict:
     return {"mode": "song", "song_id": rec["id"], "engine": first.get("engine") or "", "tier": first.get("tier") or rec.get("tier"),
             "aspect": first.get("aspect") or rec.get("aspect"), "fast": bool(first.get("fast")), "cloud": bool(first.get("cloud")),
             "vibe": "", "vibes": [(p.get("look") or {}).get("vibe") or "" for p in rec["passages"]],

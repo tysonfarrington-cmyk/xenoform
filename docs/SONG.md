@@ -74,9 +74,54 @@ passages over the shots, each with its look and its window's job; a click opens 
 stays behind the usual credits tick: a whole song on Cloud is its windows' credits, the estimate says how many
 (3.6 to 6 credits a morph: 464 for 128 morphs measured on 29 Oct, about 6 for a single 3 s morph).
 
-Not yet: a Clips cut and a Stems cut are not made whole (each is one Make: Length Full song); no performer shots in a
-whole song; a passage cut in two (Final) carries on from the still its first window landed on, so that still shows at
-the join twice by design (the morph continues through it).
+Not yet: a Stems cut is not made whole (it is one Make: Length Full song); no performer shots in a whole song; a passage
+cut in two (Final) carries on from the still its first window landed on, so that still shows at the join twice by
+design (the morph continues through it).
+
+## Clips
+
+A whole song takes your clips (1 Nov): **Morph → Your clips** (a folder, the files dropped on the desk, or the free film
+pack), then **Length → Whole song** and **Make the whole song**. It is the same maker, with one difference: a clips song
+is one Make, not a window a passage.
+
+1. **Planned by its passages** (`song_plan.clips_passages`). The song plan is the one an objects song gets (`whole`: the
+   pacing engine over the whole song at the Shape row's Breathe and Drops), and its passages are the same; the clips cut
+   is laid out on it as any clips cut is (`clip_cut.fit`, below), so each passage's morphs are the morphs the cut plays
+   in it and the estimate is the cut's own.
+2. **One window, the whole song** (`windows[0].whole`). Its body is a clips cut of your clips at Length Full song (the
+   song as it is, no trim), carrying the whole song plan (`song_passage.plan`) and a context with no passage of its own
+   (`whole`, no `passage_start`): the Make plays the song plan as planned and shapes it passage by passage, as any cut
+   is shaped (`pacing.song_context` reads only a passage's window). One picture keeps every passage in sync by its own
+   frames (the 1 Nov fix: nothing is laid end to end that could drift), and the morphs between passages are the cut's
+   own: a passage opens on a morph, a hard cut on a drop's first beat, or a film carried on, as the music asks.
+3. **One look**: the vibe you chose over your clips (its colour pass and the knobs as set), every passage
+   (`song_plan.clips_look`); no vibe is drawn by taste and no object is picked: the cut shows your clips, each once
+   under the taste file (`no-clip-twice`), the drops opening on a fresh film.
+4. **Queued and laid together as any whole song**: one item through the Variations queue (an idle desk, an idle ComfyUI
+   queue), then `song_assemble` lays that one cut with the title on the last hit, the flash tame under Breathe, the song
+   at -16 LUFS, the QA once; the composite record (`simple/simple.json`, `source` "clips", the cut's own pacing block)
+   is what the timeline, My videos and **Edit in Resolve** read (every shot its own clip on V1, named for your clip or the
+   morph between two, the song on A1, a marker at each passage).
+
+What a clips cut does with the pacing engine (`clip_cut`, the same for a clips song and a clips cut of any Length):
+
+- **Every drop run opens on an event**: a cut on its first beat to a fresh film (none of the last three films shown), the
+  punch and the stutter on that clip, its morphs on Snap (On the beat under heat 0.5), half-bar cuts only in a hot run's
+  first two bars (heat 0.8 and over), a cut to a fresh film again at each eight-bar event of a long run, Chaos rising with
+  its heat. Drops Auto, Max and off as for objects (off: one drop, no opening cut).
+- **Rests are film playing, never a held frame**: a clip plays on over its rest; a morph that would rest lands on the
+  incoming clip's first frame and hands over to it moving, so no morph sits on its soft last frame, and no morph plays
+  slower than 0.6x (a longer one gives the rest of its time to the clip it lands on). Where that clip opens the next
+  passage, it starts in this one and carries on into its own (`cont`: the same film, no cut), so every passage keeps
+  the span the song gives it.
+- **Under Breathe a calm passage holds one film** (the film the pack says a clip is from) for three or four bars a clip,
+  cut on the bar, with no effects and no boundary kinds, Chaos 0.15; builds tighten from two bars a shot to one; the
+  flash tame applies. A shot held two bars or longer plays a film that moves (`clip_cut.motion`): a film whose own
+  picture barely moves (the Moon's face, Caligari's stairs, the city of tomorrow) held for bars reads as a frozen
+  picture, so it goes to the short shots of the drops and builds, where it flashes by.
+- **No shot under a bar** but in a hot drop run's first two bars: the plan's two-beat slivers fold into a neighbour.
+- The record carries the pacing block (passages, runs, rests, the line), and the timeline's re-cut obeys the same rules.
+  Breathe off with Drops off is the clips cut as it was made before, byte for byte (`tests/test_clips_legacy.py`).
 
 ## The body keys
 
@@ -90,11 +135,13 @@ the join twice by design (the morph continues through it).
 | `song_passage` | Set by the plan on each window's body, never by hand: the window's stretch of the song plan (`plan`) and its place in the song (`offset`, `passage_start`, `passage_end`, `first_drop`, `opener`, `calm_seen`, `role_seen`, `opens`, `turn`, `song`). A re-cut of the window keeps it (`recut_state`). |
 | `length_exact` | On a window's body: the desk trims at `length_start` as given (no snap back to a beat) with a hundredth of a second of fade. |
 
-Routes: `POST /api/song` (`{"body": make body, "song_cap": ...}`: plan, record, queue; refuses a clips cut, a Stems cut,
-a song under 20 s or without sections, and Cloud without the tick), `GET /api/song` (the songs on this desk),
+Routes: `POST /api/song` (`{"body": make body, "song_cap": ...}`: plan, record, queue; a clips body is planned on its
+clips, read from its folder or the files dropped; refuses a clips body with no clips, a Stems cut, a song under 20 s or
+without sections, and Cloud without the tick), `GET /api/song` (the songs on this desk),
 `GET /api/song/<id>` (the view: status, n of m, the passage rendering, the passages with their looks, objects, jobs
 and states, the estimate, the video once laid together), `POST /api/song/<id>/stop`, `/resume`, `/assemble`.
-`GET /api/simple/options?...&whole_song=1[&song_cap=n]` adds the song's estimate (`song`) to the desk's options.
+`GET /api/simple/options?...&whole_song=1[&song_cap=n]` adds the song's estimate (`song`) to the desk's options;
+`&source=clips&own_folder=...` (or `&own_id=...`, the files dropped) plans a clips song on those clips.
 
 ## The record
 

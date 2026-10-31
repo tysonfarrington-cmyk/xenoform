@@ -13,10 +13,10 @@ RULES = json.loads((ROOT / "configs" / "taste.json").read_text(encoding="utf-8")
 def test_every_rule_is_explained_with_its_day():
     for r in RULES:
         assert f"`{r['id']}`" in DOC, r["id"]
-        day = int(r["since"].split("-")[2])
+        _, month, day = r["since"].split("-")
         row = next((line for line in DOC.splitlines() if f"`{r['id']}`" in line), "")
         if row.startswith("|"):  # a table row carries its day
-            assert re.search(rf"\b{day} Oct\b", row), r["id"]
+            assert re.search(rf"\b{int(day)} {dict(zip(('10', '11'), ('Oct', 'Nov')))[month]}\b", row), r["id"]
 
 
 def test_the_doc_says_how_to_add_a_rule_and_what_it_never_does():

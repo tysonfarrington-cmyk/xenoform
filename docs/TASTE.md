@@ -41,6 +41,27 @@ is `src/xenoform/taste.py`. The rules come from his notes on the cuts and the mo
 | `batch` (Variations by vibe) | no vibe twice, no demoted vibe after the one you chose |
 | `dense.recut_from_cache` | goes through the same helpers, so a timeline re-cut keeps the same rules |
 | `stems_mode.run` (the Stems mode) | every layer is a cut of its own through `guardrails.apply` and the Make, so each hook above acts inside each layer; the Make's notes carry each layer's lines, named by its stem (`[taste] drums layer: ...`) |
+| `clip_cut` (a clips cut, a clips song) | no clip twice (`fit` and `thin`), black-and-white film a note (`film_note`); and the hooks above through the same helpers: `dense.shape_shots` reads your clips' names as a chain's nouns, so the kaleido steps aside on a clip of a living thing, the effects take turns, and no flash look plays before the first drop; `boundary_fx.pick` keeps the wipes under a quarter |
+
+## Clips
+
+A clips cut shows your clips, so the subject bans, the families and the family weight, which steer what the app picks
+from its library, do not touch it: you chose every clip. Three rules read a clips cut as its own:
+
+- `no-clip-twice`: each clip once. When the plan wants more clip shots than the folder holds, a clip plays on over the
+  morph and the clip after it, the pair gone, until it fits: the calm passages give theirs up first and the drops last,
+  as the pacing engine spends any budget; a drop's opening cut, an event's cut and a passage's first clip stay, and a
+  hot drop's half-bar entries go only when nothing else can. No clip shot grows past the folder's longer clips (its
+  upper quarter: past that the film would slow down) and the cut never falls under a shot in 8 s; past those, a clip
+  comes back with a later stretch, and the cut's `[taste]` line says how many. The free film pack's 24 clips cover a
+  three-minute song once each.
+- `no-film-clips`: black-and-white film in a music video is a demoted look, a `[taste]` note and never a ban. The
+  guardrail notes it when the clips come from the free film pack, and the cut counts the black-and-white clips it shows
+  by measuring their colour (15 of the pack's 24; a tinted reel, Caligari's sepia or the dinosaurs' amber, reads as
+  colour). The clips stay: you chose them.
+- `no-kaleido-on-living`: a clip whose name says a living thing (its label from the folder's `labels.json`, else its
+  file name: a face, a figure, a dancer, a crowd, a witch, a vampire, a dinosaur, and the film pack's Nosferatu,
+  Phantom, Jekyll and Hyde, Cesare, Keaton and Willie) plays another chosen effect, or none, instead of the kaleido.
 
 ## The rules
 
@@ -80,8 +101,8 @@ Demoted looks (`kind: look`): kept, never deleted, and said.
 | `wet-paint-weak` | a note when the vibe is chosen; it is already off the featured cards (`configs/vibes.json`) | One of the weakest vibes, its colour scheme does not work. | 29 Oct |
 | `pink-odd-machine` | a note when the vibe is chosen; never featured | He does not want the pink odd-machine or its theme. | 29 Oct |
 | `plain-marble-chess` | chess pieces go to the back of a porcelain-marble cut | Plain marble chess was dull. | 30 Oct |
-| `no-film-clips` | a note on a clips cut drawn from the free film pack | Black-and-white film does not react to the music; the montage dropped it. | 30 Oct |
-| `no-kaleido-on-living` | a shot that morphs a living thing (a fish, a bird, an insect) plays another chosen effect, or none, instead of the kaleido | Overused, and on the fish it flattened them into a pattern. | 29 Oct |
+| `no-film-clips` | a note, never a ban: the guardrail's when a clips cut draws on the free film pack, and the cut's own (its `taste` block) counting the black-and-white clips it shows, measured by their colour whatever folder they came from (a tinted reel counts as colour); the clips stay, because you chose them | Black-and-white film does not react to the music; the montage dropped it. | 30 Oct |
+| `no-kaleido-on-living` | a shot that morphs a living thing (a fish, a bird, an insect), or plays a clip of one (a clip whose name says a face, a figure, a dancer, a vampire, a dinosaur: the film pack's Nosferatu, Phantom, Jekyll and Hyde, Keaton), plays another chosen effect, or none, instead of the kaleido | Overused, and on the fish it flattened them into a pattern. | 29 Oct |
 
 Limits (`kind: limit`):
 
@@ -96,6 +117,7 @@ Limits (`kind: limit`):
 | `strobe-at-full-heat` | the strobe cut only on a boundary at full heat: the main drop | The loudest handoff there is belongs to the biggest moment. | 30 Oct |
 | `one-effect` | the cut's effects take turns, one a passage (or one a stretch on a cut with no passages), never two on one shot | Effects are optional and sparing; the montage never stacked two. | 28 Oct |
 | `no-object-twice` | two stills of one object count as a repeat: the second goes to the back, the pool is counted without it, and a realm with fewer objects than the cut walks on into the next (31 Oct: a default ten-morph cut of liquid gold drew a cosmos of nine stills and showed the orb and the mobius twice) | No image repeats in a cut. | 25 Oct |
+| `no-clip-twice` | a clips cut shows each of your clips once: when its plan wants more clip shots than the folder holds, a clip plays on over the morph and the clip after it until it fits, the calm passages giving up shots first and the drops last (a drop's opening cut, an event's cut and a passage's first clip stay; a hot drop's first two bars only when nothing else can), no clip shot longer than the folder's middle clip and never under a shot in 8 s; past that a clip comes back with a later stretch, and the cut says so | No image repeats in a cut, and a film that comes round again reads as a loop. | 1 Nov |
 | `no-vibe-twice` | a batch of variations (and the song plan, when it comes) never uses one vibe twice | Nothing shown twice in a montage. | 29 Oct |
 | `clips-or-objects` | an object cut takes no clips and a clips cut no stills, under Expert too; in Stems mode the rule holds within a layer, and an objects layer may overlap a clips layer (the plan's decision 10, 31 Oct) | A film clip dissolving into a still read as two videos stitched together. | 28 Oct |
 | `one-palette` | a still off the vibe's palette goes to the back of the pool: on a neutral vibe (black glass) a colourful still, else a still whose hues do not overlap the vibe's own stills by 30 percent; vibes of many colours (None, botanical, the primaries, the rainbows) are left alone | A pink rose blooming among black glass flowers made the opener uneven. | 30 Oct |

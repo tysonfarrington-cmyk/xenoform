@@ -1218,23 +1218,29 @@ function songCapRow(easy) {
 function songLengthNote(easy, secs) {
   const s = state.simpleOptions && state.simpleOptions.song;
   if (s && s.error) return s.error;
-  if (!s) return `Whole song (${clockText(secs)}): the song's passages, each its own Make on the beat, laid together. Planning it...`;
+  const clips = morphSource(easy) === "clips";  // a clips song (song_plan.clips_song): one clips cut over every passage
+  if (!s) return clips ? `Whole song (${clockText(secs)}): your clips as one cut over the song's passages, laid with the title on the last hit. Planning it...`
+    : `Whole song (${clockText(secs)}): the song's passages, each its own Make on the beat, laid together. Planning it...`;
+  if (clips) return `Whole song (${clockText(secs)}): your clips as one cut over the song's ${s.passages} passages, a morph between every two clips, cut on the beat and laid with the title on the last hit and the song at -16 LUFS. ${s.morphs} morphs in all; Draft ${songTierText(s, "draft")}.`;
   return `Whole song (${clockText(secs)}): ${s.passages} passages, each its own Make of at most ${s.window_cap} morphs on the beat, queued one after another on a free GPU and laid together on the song's beats. ${s.morphs} morphs in all; Draft ${songTierText(s, "draft")}.`;
 }
 function songMakeLine(easy) {
   const s = songEstimate();
   const tier = easy.tier || "draft";
-  if (!s) return "The whole song as its passages: a look a passage, drawn by taste, every cut on the beat.";
+  const clips = morphSource(easy) === "clips";
+  if (!s) return clips ? "The whole song in your clips: one cut over its passages, every cut on the beat." : "The whole song as its passages: a look a passage, drawn by taste, every cut on the beat.";
+  if (clips) return `${s.line}. ${TIER_LABEL[tier] || "Draft"}: ${songTierText(s, tier)}. Your clips, one cut over the whole song, each clip once, the title on the last hit.`;
   return `${s.line}. ${TIER_LABEL[tier] || "Draft"}: ${songTierText(s, tier)}. A look a passage, drawn by taste (no vibe twice, the loved chains where they fit), the title on the last hit.`;
 }
 function songPlanFacts(easy) {
   const s = songEstimate();
   const rows = [["Video", `${clockText(easySongSeconds())} (the whole song, in passages)`]];
   if (s) {
-    rows.push(["Passages", `${s.passages}${s.windows !== s.passages ? ` in ${s.windows} Makes` : ""}, a look each`]);
-    rows.push(["Morphs", `${s.morphs} on the beat (at most ${s.window_cap} a Make${s.cap && s.cap !== "auto" ? `, capped at ${s.cap}` : ""})`]);
+    const clips = morphSource(easy) === "clips";  // a clips song: one clips cut over every passage
+    rows.push(["Passages", clips ? `${s.passages}, one clips cut over them` : `${s.passages}${s.windows !== s.passages ? ` in ${s.windows} Makes` : ""}, a look each`]);
+    rows.push(["Morphs", clips ? `${s.morphs} between your clips, on the beat` : `${s.morphs} on the beat (at most ${s.window_cap} a Make${s.cap && s.cap !== "auto" ? `, capped at ${s.cap}` : ""})`]);
     for (const [tier, label] of [["draft", "Draft"], ["fast", "Fast Final"], ["final", "Final"], ["cloud", "Cloud Final"]]) {
-      rows.push([label, songTierText(s, tier)]);
+      if (!(clips && tier === "cloud")) rows.push([label, songTierText(s, tier)]);  // a clips cut has no Cloud path
     }
     if (s.title && s.title.at != null) rows.push(["Title", `on the last hit, ${clockText(s.title.at)}`]);
   } else {
@@ -1247,7 +1253,8 @@ function songPlanFacts(easy) {
 async function easySongMake() {
   const vibe = vibeById(state.easy.vibe);
   if (!vibe) return;
-  state.easy.note = "Planning the whole song: its passages, a look each, the objects. A few seconds.";
+  state.easy.note = morphSource(state.easy) === "clips" ? "Planning the whole song in your clips: its passages, one cut over them. A few seconds."
+    : "Planning the whole song: its passages, a look each, the objects. A few seconds.";
   render();
   state.brief = (state.easy.idea || "").trim() || vibe.line;
   state.palette = vibe.palette;
@@ -1576,6 +1583,14 @@ const SHAPE_NOTES = {
   "max": "Drops on Max: every drop gets the main drop's full treatment.",
   "off": "Drops off: one drop, as the cut was made before.",
 };
+// A clips cut takes the same Shape (xenoform.clip_cut, 1 Nov): its rests are film playing, never a held frame, and its
+// drops open on a hard cut to a fresh film
+const SHAPE_NOTES_CLIPS = {
+  ...SHAPE_NOTES,
+  "breathe-on": "Breathe: the calm passages become scenes. One film a passage, three or four bars a clip, each morph landing on the next clip's first frame and handing over to it moving: the film never stops, no effects and no flash; the builds tighten from two bars a shot to one; the drops cut as hard as ever.",
+  "breathe-off": "Breathe off: one timing all through, a morph between every two clips.",
+  "auto": "Drops on Auto: every drop opens on a cut on the beat to a fresh film, with a punch and a stutter; the build's last four bars ramp into it, the loudest drops cut faster.",
+};
 // Breathe as the body sends it (xenoform.pacing.amount_of): true from the Shape row's On (the bold profile, 1.0), a recipe's
 // own amount 0..1 as it came, false when off
 function breatheValue(easy) {
@@ -1587,12 +1602,13 @@ function breatheValue(easy) {
 function shapeRow(easy) {
   const breathe = !!breatheValue(easy);
   const drops = DROP_MODES.includes(easy.dropMode) ? easy.dropMode : "auto";
+  const notes = morphSource(easy) === "clips" ? SHAPE_NOTES_CLIPS : SHAPE_NOTES;
   const chip = (act, value, label, on, note) => `<button type="button" class="chip${on ? " on" : ""}" data-act="${act}" data-value="${esc(value)}" aria-pressed="${on ? "true" : "false"}" title="${esc(note)}">${esc(label)}</button>`;
   return `<div class="simple-seg shape-row"><span>Shape</span><div class="toggle chips" role="group" aria-label="The cut's shape: Breathe and the drops">
-      ${chip("easy-breathe", "on", "Breathe", breathe, SHAPE_NOTES["breathe-on"])}${chip("easy-breathe", "off", "Breathe off", !breathe, SHAPE_NOTES["breathe-off"])}
+      ${chip("easy-breathe", "on", "Breathe", breathe, notes["breathe-on"])}${chip("easy-breathe", "off", "Breathe off", !breathe, notes["breathe-off"])}
       <span class="chip-gap" aria-hidden="true"></span>
-      ${DROP_MODES.map((m) => chip("easy-drops", m, `Drops ${m === "auto" ? "Auto" : m === "max" ? "Max" : "off"}`, drops === m, SHAPE_NOTES[m])).join("")}</div></div>
-      <p class="note shape-note">${esc(`${SHAPE_NOTES[breathe ? "breathe-on" : "breathe-off"]} ${SHAPE_NOTES[drops]}`)}</p>`;
+      ${DROP_MODES.map((m) => chip("easy-drops", m, `Drops ${m === "auto" ? "Auto" : m === "max" ? "Max" : "off"}`, drops === m, notes[m])).join("")}</div></div>
+      <p class="note shape-note">${esc(`${notes[breathe ? "breathe-on" : "breathe-off"]} ${notes[drops]}`)}</p>`;
 }
 
 // TouchDesigner-style effects (xenoform.effects), any of them at once, after the Look and riding the kick and the
@@ -2386,6 +2402,10 @@ async function loadSimpleOptions() {
       // Whole song: the server plans the song's passages too (song_plan) and says the morphs, the minutes and the credits
       whole_song: wholeSong(easy) ? "1" : "",
       song_cap: wholeSong(easy) && easy.songCap ? String(easy.songCap) : "",
+      // a clips song plans on your clips (song_plan.clips_song): the folder or the files dropped
+      source: morphSource(easy),
+      own_folder: wholeSong(easy) && morphSource(easy) === "clips" ? easy.ownFolder || "" : "",
+      own_id: wholeSong(easy) && morphSource(easy) === "clips" ? easy.ownId || "" : "",
     });
     const res = await api(`/api/simple/options?${query.toString()}`);
     if (res.ok) {
@@ -2536,7 +2556,7 @@ function shotsLane(easy) {
     const held = o.play === "hold";
     const edited = held || !!o.look || o.fx_intensity != null || !!o.timing || !!o.grade || Array.isArray(o.effects) || o.source != null || !!o.drop;
     const label = s.to ? `${s.from} → ${s.to}` : s.from;
-    const marks = `${s.style && s.style !== "melt" ? ` · ${morphStyleLabel(s.style)}` : ""}${o.timing ? ` · ${MORPH_TIMING_LABELS[o.timing] || o.timing}` : ""}${s.pinned ? " · pinned" : ""}${s.swapped ? " · swapped" : ""}${held ? " · held" : ""}${o.look ? ` · look ${o.look}` : ""}${o.fx_intensity != null ? ` · FX ${o.fx_intensity}` : ""}${o.grade ? " · colour" : ""}${Array.isArray(o.effects) ? ` · effects ${o.effects.length ? o.effects.join("+") : "none"}` : ""}${s.rerendered ? " · re-rendered" : ""}${s.generated != null ? " · generated" : ""}${s.dream != null ? " · dream" : ""}${s.performer ? " · Polly" : ""}${s.own ? " · your clip" : ""}${s.event === "drop" ? ` · opens drop ${Number(s.drop_run) + 1} (heat ${Number(s.heat).toFixed(1)})` : ""}${s.rest ? ` · rests ${s.rest} beats on what it arrives at` : ""}`;
+    const marks = `${s.style && s.style !== "melt" ? ` · ${morphStyleLabel(s.style)}` : ""}${o.timing ? ` · ${MORPH_TIMING_LABELS[o.timing] || o.timing}` : ""}${s.pinned ? " · pinned" : ""}${s.swapped ? " · swapped" : ""}${held ? " · held" : ""}${o.look ? ` · look ${o.look}` : ""}${o.fx_intensity != null ? ` · FX ${o.fx_intensity}` : ""}${o.grade ? " · colour" : ""}${Array.isArray(o.effects) ? ` · effects ${o.effects.length ? o.effects.join("+") : "none"}` : ""}${s.rerendered ? " · re-rendered" : ""}${s.generated != null ? " · generated" : ""}${s.dream != null ? " · dream" : ""}${s.performer ? " · Polly" : ""}${s.own ? " · your clip" : ""}${s.event === "drop" ? ` · opens drop ${Number(s.drop_run) + 1} (heat ${Number(s.heat).toFixed(1)})` : ""}${s.rest ? (s.own ? ` · the film plays on ${s.rest} beats` : ` · rests ${s.rest} beats on what it arrives at`) : ""}`;
     const title = `Shot ${s.index + 1} · ${clockText(s.start)} · ${s.seconds} s${s.section ? ` · ${s.section}` : ""}${s.transition ? ` · ${s.transition}` : ""}${label ? ` · ${label}` : ""}${marks}`;
     const pick = swapping && s.still != null;
     const act = pick ? `data-act="easy-swap-pick" data-slot="${s.still}" data-at="${s.start}"` : songCut ? `data-act="easy-seek" data-at="${s.start}"` : `data-act="easy-tl-shot" data-index="${s.index}" data-at="${s.start}"`;
@@ -4808,6 +4828,7 @@ document.addEventListener("click", async (event) => {
     state.easy.morphSource = to;
     if (to === "stems") loadStemsMode(false);
     render();
+    if (wholeSong(state.easy) && from !== to) loadSimpleOptions().then(render);  // a clips song plans on your clips
   } else if (act === "easy-stems-split") {
     loadStemsMode(true);
   } else if (act === "easy-stem-on" || act === "easy-stem-kind" || act === "easy-stem-lead" || act === "easy-stem-chainpins" || act === "easy-stem-pins-clear") {
@@ -5750,6 +5771,7 @@ async function uploadOwn(files) {
     : (n ? `${n} image${n === 1 ? "" : "s"} here. They lead the morphs, in name order.` : "No images came with those files. Clips go under Morph > Your clips.");
   if (left) state.easy.ownNote += ` ${left} left out: a cut takes ${clipsCut ? data.max_clips : data.max_images} at most.`;
   render();
+  if (clipsCut && wholeSong(state.easy)) loadSimpleOptions().then(render);  // a clips song is planned on these clips
 }
 
 // The Stems line under the song. Every song is split in the background (GET /api/stems/for/<id>), and stems you
@@ -6203,6 +6225,7 @@ async function pickFilmPack() {
     ? `The free film pack: ${pack.count} clips from ${pack.films} public-domain films. They play in turn, each morphing into the next.`
     : `The free film pack: ${count} of its ${pack.total} clips are here, and they play in turn, each morphing into the next. Download again in Setup & models fetches the rest.`;
   render();
+  if (wholeSong(state.easy)) loadSimpleOptions().then(render);  // a clips song is planned on the pack's clips
 }
 
 // The library counts and the running grow (GET /api/stills); polled every few seconds while a grow runs.

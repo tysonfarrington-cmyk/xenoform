@@ -45,12 +45,29 @@ def _labels(folder: Path) -> dict:
     return data if isinstance(data, dict) else {}
 
 
+PACK = "pack.json"  # the free film pack's record beside its clips (film_pack.py): each clip's film is its ``source``
+
+
+def _families(folder: Path) -> dict:
+    """{file name: the film it is from} from the folder's ``pack.json`` (the free film pack writes one), or {}."""
+    path = folder / PACK
+    if not path.is_file():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    rows = data.get("clips") if isinstance(data, dict) else None
+    return {str(r["file"]): str(r["source"]) for r in rows or [] if isinstance(r, dict) and r.get("file") and r.get("source")}
+
+
 def scan(folder: str | Path) -> dict:
     """The images and clips in ``folder`` (not recursive, sorted by name), the images capped at ``MAX_ITEMS`` and the
     clips at ``MAX_CLIPS``.
 
     ``{"folder", "images": [paths], "clips": [{"path", "seconds"}]}``; a clip shorter than ``MIN_CLIP_S``
-    or one ffprobe cannot read is left out. A clip named in the folder's ``labels.json`` carries its ``label``.
+    or one ffprobe cannot read is left out. A clip named in the folder's ``labels.json`` carries its ``label``, and one
+    its ``pack.json`` lists carries its ``family``: the film it is from (clip_cut holds a Breathe scene on one film).
     """
     folder = Path(str(folder)).expanduser()
     if not folder.is_dir():
@@ -59,6 +76,7 @@ def scan(folder: str | Path) -> dict:
     images = [str(i["path"]) for i in items if i["kind"] == "image"][:MAX_ITEMS]
     clips: list[dict] = []
     labels = _labels(folder)
+    films = _families(folder)
     for item in items:
         if item["kind"] != "video" or len(clips) >= MAX_CLIPS:
             continue
@@ -72,6 +90,8 @@ def scan(folder: str | Path) -> dict:
             label = labels.get(Path(item["path"]).name)
             if isinstance(label, str) and label.strip():  # only words go on the chain: a number or an object is ignored
                 clip["label"] = label.strip()
+            if films.get(Path(item["path"]).name):
+                clip["family"] = films[Path(item["path"]).name]
             clips.append(clip)
     return {"folder": str(folder), "images": images, "clips": clips}
 
@@ -196,14 +216,17 @@ def size_for(aspect: str) -> tuple[int, int]:
     return {"9:16": (540, 960), "1:1": (720, 720)}.get(str(aspect or "16:9"), (960, 540))
 
 
-def render_clip(src: str | Path, start_s: float, frames: int, size: tuple[int, int], out: str | Path, *, fps: float = 24) -> Path:
+def render_clip(src: str | Path, start_s: float, frames: int, size: tuple[int, int], out: str | Path, *, fps: float = 24,
+                speed: float = 1.0) -> Path:
     """``frames`` frames of ``src`` from ``start_s``, cover-cropped to ``size`` at ``fps``, silent (the song is the
-    audio), libx264; the last frame is cloned when the clip runs out, so the count is always exact."""
+    audio), libx264; the last frame is cloned when the clip runs out, so the count is always exact. ``speed`` under 1
+    plays the clip slowed (a paced clips cut's shot longer than its clip: the film moves on rather than freezing)."""
     out = Path(out)
     out.parent.mkdir(parents=True, exist_ok=True)
     w, h = int(size[0]), int(size[1])
+    slow = f"setpts=PTS/{float(speed):.4f}," if 0 < float(speed) < 1.0 else ""
     subprocess.run(["ffmpeg", "-y", "-v", "error", "-ss", f"{max(0.0, float(start_s)):.3f}", "-i", str(src), "-an",
-                    "-vf", f"scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},setsar=1,fps={fps},"
+                    "-vf", f"{slow}scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},setsar=1,fps={fps},"
                            f"tpad=stop_mode=clone:stop_duration={max(1.0, int(frames) / float(fps)):.3f}",
                     "-frames:v", str(int(frames)), "-c:v", "libx264", "-preset", "veryfast", "-crf", "17",
                     "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(out)], check=True, capture_output=True)

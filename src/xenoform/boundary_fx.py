@@ -152,6 +152,8 @@ def _pick_paced(shots: list[dict], macros: dict | None, beats, fps: int, *, seed
     for i in range(1, n):
         if i < len(prem) and isinstance(prem[i], dict) and bool(prem[i].get("kind")):
             continue  # the vibe's premium transition keeps its boundary
+        if shots[i].get("cont"):
+            continue  # a clips cut's film carried on into the next passage (clip_cut.hand_over): no handoff to dress
         if int(shots[i].get("frames") or 0) < 2 * MIN_HALF or int(shots[i - 1].get("frames") or 0) < 2 * MIN_HALF:
             continue
         cand.append(i)

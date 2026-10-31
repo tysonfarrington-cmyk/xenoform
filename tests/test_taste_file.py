@@ -34,7 +34,7 @@ def test_every_rule_has_an_id_a_kind_its_data_and_a_one_line_reason(shipped):
         assert re.fullmatch(r"[a-z0-9-]+", r["id"]), r["id"]
         assert r["kind"] in taste.KINDS
         assert r["reason"].strip() and "\n" not in r["reason"] and len(r["reason"]) < 200, r["id"]
-        assert re.fullmatch(r"2026-10-\d\d", r["since"]), r["id"]
+        assert re.fullmatch(r"2026-1[01]-\d\d", r["since"]), r["id"]  # October's notes, and November's (no-clip-twice)
         for key in data_keys[r["kind"]]:
             assert r.get(key), f"{r['id']} has no {key}"
         assert set(r) - {"id", "kind", "reason", "since", "off"}, f"{r['id']} carries no data"
