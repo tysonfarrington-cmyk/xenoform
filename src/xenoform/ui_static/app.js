@@ -114,7 +114,7 @@ function shortcutLabel() {
 }
 
 // The last session's vibe and Fine-tune choices survive a reload or a desk restart (the song cannot: uploads live on the server).
-const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow", "scenes", "pins", "feelSig", "batchN", "batchVary", "morphSource", "scenesChosen", "morphStyle", "morphTiming", "effects"];
+const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow", "scenes", "pins", "feelSig", "batchN", "batchVary", "morphSource", "scenesChosen", "morphStyle", "morphTiming", "effects", "breathe", "dropMode"];
 // The Model row's tiers as the desk names them (quality_tier: draft, fast, final, cloud)
 const TIER_LABEL = { draft: "Draft", fast: "Fast Final", final: "Final", cloud: "Cloud Final" };
 function saveEasy() {
@@ -202,6 +202,9 @@ function payload() {
     morph_styles: (state.easy && state.easy.carryStyles) || null,
     // when the change happens inside each morph (xenoform.morph_timing): smooth, beat or snap; a re-cut changes it
     morph_timing: (state.easy && state.easy.morphTiming) || "smooth",
+    // the cut's shape (xenoform.pacing): Breathe (off until judged) and how the drops hit; a re-cut changes both
+    breathe: !!(state.easy && state.easy.breathe),
+    drop_mode: (state.easy && state.easy.dropMode) || "auto",
     // the effects (xenoform.effects) and the blocky smear: a re-cut changes them too
     effects: (state.easy && state.easy.effects) || [],
     // Scenes (stills.kind "scene"): "off" (objects only), "mix" (a scene at every passage change), "only" (scenes alone)
@@ -884,6 +887,7 @@ function renderEasy() {
         <div class="energy-head"><h3>Knobs</h3><span>Turn, then re-cut. No GPU.</span></div>
         <div class="simple-knobs"></div>
         ${timingRow(easy.morphTiming || "smooth", "easy-morph-timing")}
+        ${shapeRow(easy)}
         ${effectsRow(easy.effects, "easy-effect")}
         ${lookRow(easy.danceFx || "auto", "easy-look")}
         ${(state.lane && state.lane.source === "clips") || morphSource(easy) === "clips" ? "" : `${foreshadowRow(easy)}${scenesRow(easy)}<p class="note">Scenes applies to the next render, not the re-cut: a re-cut keeps this cut's stills.</p>`}
@@ -939,6 +943,7 @@ function renderEasy() {
         <p class="note morph-style-note">${esc(MORPH_STYLE_NOTES[easy.morphStyle || "auto"] || "")}</p>
         ${timingRow(easy.morphTiming || "smooth", "easy-morph-timing")}
         <p class="note morph-timing-note">${esc(MORPH_TIMING_NOTES[easy.morphTiming || "smooth"] || "")}</p>
+        ${shapeRow(easy)}
         ${effectsRow(easy.effects, "easy-effect")}
         ${lookRow(easy.danceFx || "auto", "easy-look")}
         ${morphSource(easy) === "objects" ? `${foreshadowRow(easy)}${scenesRow(easy)}` : ""}
@@ -1153,6 +1158,29 @@ function timingRow(current, act, index, asCut) {
     })
     .join("");
   return `<div class="simple-seg morph-timing-row"><span>Timing</span><div class="toggle chips" role="group" aria-label="When the change happens inside each morph">${chips}</div></div>`;
+}
+
+// The cut's shape (xenoform.pacing, docs/MUSIC_VIDEO_PLAN.md section 3): Breathe, the music-video shape (calm passages
+// calm, rests where the object dwells, the white flashes tamed), and how the drops hit (every drop run an event, the
+// build ramping into it). Both are body keys (breathe, drop_mode); a re-cut changes them with no GPU where the shot
+// lengths stay. Breathe is off until Tys has judged the sheets (31 Oct); the Drops are on Auto.
+const DROP_MODES = ["auto", "max", "off"];
+const SHAPE_NOTES = {
+  "breathe-on": "Breathe: the intro smooth and quiet, a bar a shot in the grooves on the beat, rests where the object dwells with the beat still on it, one effect at a time, no flash look before the first drop, the white flashes tamed.",
+  "breathe-off": "Breathe off: the cut keeps one look and one timing all through, as it always has.",
+  "auto": "Drops on Auto: every drop opens with an event (a punch, Snap, a Shatter, a new object), the build's last four bars ramp into it, the loudest drops cut faster.",
+  "max": "Drops on Max: every drop gets the main drop's full treatment.",
+  "off": "Drops off: one drop, as the cut was made before.",
+};
+function shapeRow(easy) {
+  const breathe = !!easy.breathe;
+  const drops = DROP_MODES.includes(easy.dropMode) ? easy.dropMode : "auto";
+  const chip = (act, value, label, on, note) => `<button type="button" class="chip${on ? " on" : ""}" data-act="${act}" data-value="${esc(value)}" aria-pressed="${on ? "true" : "false"}" title="${esc(note)}">${esc(label)}</button>`;
+  return `<div class="simple-seg shape-row"><span>Shape</span><div class="toggle chips" role="group" aria-label="The cut's shape: Breathe and the drops">
+      ${chip("easy-breathe", "on", "Breathe", breathe, SHAPE_NOTES["breathe-on"])}${chip("easy-breathe", "off", "Breathe off", !breathe, SHAPE_NOTES["breathe-off"])}
+      <span class="chip-gap" aria-hidden="true"></span>
+      ${DROP_MODES.map((m) => chip("easy-drops", m, `Drops ${m === "auto" ? "Auto" : m === "max" ? "Max" : "off"}`, drops === m, SHAPE_NOTES[m])).join("")}</div></div>
+      <p class="note shape-note">${esc(`${SHAPE_NOTES[breathe ? "breathe-on" : "breathe-off"]} ${SHAPE_NOTES[drops]}`)}</p>`;
 }
 
 // TouchDesigner-style effects (xenoform.effects), any of them at once, after the Look and riding the kick and the
@@ -1801,6 +1829,8 @@ async function loadSimpleOptions() {
       audio_id: state.audioId || "",
       vibe: easy.vibe || "",
       speed: String(((window.XENO_MACROS ? window.XENO_MACROS() : null) || {}).speed ?? 0.5),
+      breathe: easy.breathe ? "on" : "off",
+      drop_mode: easy.dropMode || "auto",
     });
     const res = await api(`/api/simple/options?${query.toString()}`);
     if (res.ok) {
@@ -1944,12 +1974,13 @@ function shotsLane(easy) {
     const held = o.play === "hold";
     const edited = held || !!o.look || o.fx_intensity != null || !!o.timing || !!o.grade || Array.isArray(o.effects) || o.source != null || !!o.drop;
     const label = s.to ? `${s.from} → ${s.to}` : s.from;
-    const marks = `${s.style && s.style !== "melt" ? ` · ${morphStyleLabel(s.style)}` : ""}${o.timing ? ` · ${MORPH_TIMING_LABELS[o.timing] || o.timing}` : ""}${s.pinned ? " · pinned" : ""}${s.swapped ? " · swapped" : ""}${held ? " · held" : ""}${o.look ? ` · look ${o.look}` : ""}${o.fx_intensity != null ? ` · FX ${o.fx_intensity}` : ""}${o.grade ? " · colour" : ""}${Array.isArray(o.effects) ? ` · effects ${o.effects.length ? o.effects.join("+") : "none"}` : ""}${s.rerendered ? " · re-rendered" : ""}${s.generated != null ? " · generated" : ""}${s.dream != null ? " · dream" : ""}${s.performer ? " · Polly" : ""}${s.own ? " · your clip" : ""}`;
+    const marks = `${s.style && s.style !== "melt" ? ` · ${morphStyleLabel(s.style)}` : ""}${o.timing ? ` · ${MORPH_TIMING_LABELS[o.timing] || o.timing}` : ""}${s.pinned ? " · pinned" : ""}${s.swapped ? " · swapped" : ""}${held ? " · held" : ""}${o.look ? ` · look ${o.look}` : ""}${o.fx_intensity != null ? ` · FX ${o.fx_intensity}` : ""}${o.grade ? " · colour" : ""}${Array.isArray(o.effects) ? ` · effects ${o.effects.length ? o.effects.join("+") : "none"}` : ""}${s.rerendered ? " · re-rendered" : ""}${s.generated != null ? " · generated" : ""}${s.dream != null ? " · dream" : ""}${s.performer ? " · Polly" : ""}${s.own ? " · your clip" : ""}${s.event === "drop" ? ` · opens drop ${Number(s.drop_run) + 1} (heat ${Number(s.heat).toFixed(1)})` : ""}${s.rest ? ` · rests ${s.rest} beats on what it arrives at` : ""}`;
     const title = `Shot ${s.index + 1} · ${clockText(s.start)} · ${s.seconds} s${s.section ? ` · ${s.section}` : ""}${s.transition ? ` · ${s.transition}` : ""}${label ? ` · ${label}` : ""}${marks}`;
     const pick = swapping && s.still != null;
     const act = pick ? `data-act="easy-swap-pick" data-slot="${s.still}" data-at="${s.start}"` : `data-act="easy-tl-shot" data-index="${s.index}" data-at="${s.start}"`;
     const cls = `shot${s.boundary ? " boundary" : ""}${s.transition ? " has-transition" : ""}${s.pinned ? " pinned" : ""}${s.swapped ? " swapped" : ""}${pick ? " swap" : ""}${pick && easy.swapSlot === s.still ? " picked" : ""}${held ? " held" : ""}${edited ? " edited" : ""}${s.rerendered ? " rerendered" : ""}${s.generated != null ? " generated" : ""}${!swapping && picked && picked.kind === "shot" && picked.index === s.index ? " picked" : ""}`;
-    const badge = s.style && s.style !== "melt" ? `<b class="tl-style">${esc(morphStyleLabel(s.style))}</b>` : "";  // how this morph changes
+    const badge = (s.style && s.style !== "melt" ? `<b class="tl-style">${esc(morphStyleLabel(s.style))}</b>` : "")  // how this morph changes
+      + (s.rest ? `<b class="tl-rest" title="${esc(`rests ${s.rest} beats`)}">rest</b>` : "");  // Breathe: the object dwells here
     // each tile shows the cut itself at the shot's middle (GET /api/videos/<id>/frame.jpg), so a shot is a picture, not a word
     const mid = Number(s.start) + Number(s.seconds) / 2;
     const thumb = `--thumb:url('${media(`/api/videos/${encodeURIComponent(id)}/frame.jpg?t=${mid.toFixed(2)}&w=160&v=${lane.version || 0}`)}')`;
@@ -1985,11 +2016,14 @@ function shotsLane(easy) {
     const left = (100 * Number(sec.start)) / total;
     const w = (100 * (Number(sec.end) - Number(sec.start))) / total;
     const hue = SECTION_HUES[sec.section] != null ? SECTION_HUES[sec.section] : 260;
-    return `<button type="button" class="passage" style="left:${left.toFixed(3)}%;width:${w.toFixed(3)}%;--hue:${hue}" data-act="easy-seek" data-at="${sec.start}" title="${esc(`${sec.section} · ${clockText(sec.start)} to ${clockText(sec.end)}`)}"><i>${esc(sec.section)}</i></button>`;
+    // a passage by role (xenoform.pacing): a drop run names its heat, a Breathe passage how many rests it holds
+    const name = `${sec.section.replace("_", " ")}${sec.heat != null ? ` ${Number(sec.heat).toFixed(1)}` : ""}`;
+    const more = `${sec.heat != null ? ` · drop ${Number(sec.drop_run) + 1}, heat ${Number(sec.heat).toFixed(2)}` : ""}${sec.rests ? ` · ${sec.rests} rest${sec.rests === 1 ? "" : "s"}` : ""}`;
+    return `<button type="button" class="passage" style="left:${left.toFixed(3)}%;width:${w.toFixed(3)}%;--hue:${hue}" data-act="easy-seek" data-at="${sec.start}" title="${esc(`${sec.section} · ${clockText(sec.start)} to ${clockText(sec.end)}${more}`)}"><i>${esc(name)}</i></button>`;
   }).join("");
   const dropMark = lane.drop != null && Number(lane.drop) > 0 ? `<span class="drop-mark" style="left:${((100 * Number(lane.drop)) / total).toFixed(3)}%" title="${esc(`the drop · ${clockText(lane.drop)}`)}"></span>` : "";
   const song = passages || dropMark ? `<div class="lane-song" aria-label="Song">${passages}${dropMark}</div>` : "";
-  const facts = [`${lane.shots.length} shots`, lane.morphs ? `${lane.morphs} morphs over ${lane.objects} objects` : "", lane.pace ? `${lane.pace} pace` : "",
+  const facts = [lane.plan_line || "", `${lane.shots.length} shots`, lane.morphs ? `${lane.morphs} morphs over ${lane.objects} objects` : "", lane.pace ? `${lane.pace} pace` : "",
     (lane.sections || []).length > 1 ? `${lane.sections.length} passages` : "", lane.swaps ? `${lane.swaps} swap${lane.swaps === 1 ? "" : "s"}` : "",
     lane.rerenders ? `${lane.rerenders} re-render${lane.rerenders === 1 ? "" : "s"}` : "", lane.inserts ? `${lane.inserts} generated run${lane.inserts === 1 ? "" : "s"}` : "", lane.dreams ? `${lane.dreams} dream${lane.dreams === 1 ? "" : "s"}` : ""].filter(Boolean).join(" · ");
   const hint = swapping ? "click a shot to swap the object it lands on" : "click a shot, or the seam between two, to change it";
@@ -2323,6 +2357,9 @@ function applySimpleRecipe(recipe) {
   easy.foreshadow = recipe.foreshadow || "auto";
   easy.morphStyle = recipe.morph_style || "auto";
   easy.morphTiming = recipe.morph_timing || "smooth";
+  // the shape the code was made in (an older code made its cut with both off, and decodes so)
+  easy.breathe = recipe.breathe === true;
+  easy.dropMode = DROP_MODES.includes(recipe.drop_mode) ? recipe.drop_mode : "auto";
   easy.effects = Array.isArray(recipe.effects) ? recipe.effects.filter((x) => EFFECTS.includes(x)) : [];
   easy.scenes = ["off", "mix", "only"].includes(recipe.scene_stills) ? recipe.scene_stills : "off";
   easy.lengthS = Number(recipe.length_s || 0);
@@ -2560,9 +2597,11 @@ function easyPlanFacts(easy) {
   if (plan && plan.shots) {
     rows.push(["Shots", plan.reuse ? `${plan.shots} on the beat, over a loop of ${plan.morphs} morphs` : `${plan.shots} morphs on the beat`]);
   } else {
-    rows.push(["Shots", dense ? (song ? "Two bars a shot, a bar on the drop" : "A shot a bar, a half bar after the drop") : "One per section"]);
+    rows.push(["Shots", dense ? (song ? (easy.breathe ? "A bar a shot, rests where the object dwells" : "Two bars a shot, a bar on the drops") : "A shot a bar, a half bar after the drop") : "One per section"]);
   }
-  rows.push(["Cut", dense ? (song ? "Every two bars, every bar on the drop" : "Every bar, every half bar on the drop") : "On the bar"]);
+  const drops = easy.dropMode || "auto";
+  rows.push(["Cut", dense ? (song ? (drops === "off" ? "Every two bars, every bar on the drop" : "On the bar; every drop opens on an event, the build ramping into it") : "Every bar, every half bar on the drop") : "On the bar"]);
+  rows.push(["Shape", `${easy.breathe ? "Breathe" : "Breathe off"} · Drops ${drops === "auto" ? "Auto" : drops === "max" ? "Max" : "off"}`]);
   if (plan && plan.performer) rows.push(["Performer", `${plan.performer} shots of Polly (MiniMax H3)`]);
   rows.push(["Time", easyTimeFact()]);
   return rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("");
@@ -2717,6 +2756,8 @@ async function recutWithKnobs() {
     end_card: !!state.easy.endCard,
     morph_timing: state.easy.morphTiming || "smooth",
     effects: state.easy.effects || [],
+    breathe: !!state.easy.breathe,  // the shape re-cuts too: the same shots, each passage's profile on or off
+    drop_mode: state.easy.dropMode || "auto",
   };
   if (state.easy.tl && state.easy.tl.id === id) {  // the timeline's edits waiting for Apply ride along with the knobs
     body.shot_overrides = state.easy.tl.shots;
@@ -3214,7 +3255,8 @@ function knobsFolded() {
 // change) and the timeline's edits. One bar at the bottom of the window applies all of them in one re-cut from the
 // cached morphs; the lane's Apply and the knobs' Re-cut used to be two buttons for the same thing (28 Oct).
 // (Scenes is not here: a re-cut keeps the cut's stills, so a Scenes choice waits for the next render)
-const KNOB_ACTS = { "easy-look": "Look", "easy-effect": "Effects", "easy-morph-timing": "Timing", "easy-foreshadow": "Foreshadow" };
+const KNOB_ACTS = { "easy-look": "Look", "easy-effect": "Effects", "easy-morph-timing": "Timing", "easy-foreshadow": "Foreshadow",
+  "easy-breathe": "Breathe", "easy-drops": "Drops" };
 function touchKnob(row) {
   if (!state.easy) return;
   state.easy.knobsTouched = Object.assign({}, state.easy.knobsTouched || {}, { [row]: 1 });
@@ -3568,7 +3610,9 @@ function adoptSession(data, options = {}) {
       ? previous.easy
       : Object.assign({ song: "", songLabel: "", vibe: "", idea: "", ownFolder: "", ownId: "", ownNote: "", ownShapes: "", stillsNote: "", foreshadow: "auto", scenes: "off", phase: "song", note: "", playedHere: false,
           // the house (demo_house): 9:16 native, Dense, Draft, Beat FX, the house look, subject orbit, no end card
-          energyPreset: "dense", aspect: "9:16", tier: "draft", fx: true, endCard: false, danceFx: "auto", stemOrbit: true },
+          energyPreset: "dense", aspect: "9:16", tier: "draft", fx: true, endCard: false, danceFx: "auto", stemOrbit: true,
+          // the shape (xenoform.pacing): Breathe off until Tys has judged the sheets, the Drops on Auto
+          breathe: false, dropMode: "auto" },
         loadEasy()),
     morphCap: previous && previous.morphCap != null ? previous.morphCap : null,
     heldBoard: previous ? previous.heldBoard : null,
@@ -4066,6 +4110,15 @@ document.addEventListener("click", async (event) => {
   } else if (act === "easy-morph-timing") {
     state.easy.morphTiming = MORPH_TIMINGS.includes(el.dataset.value) ? el.dataset.value : "smooth";
     render();
+  } else if (act === "easy-breathe") {
+    // the cut's shape (xenoform.pacing): the plan changes with it, so the count and the clock are asked again
+    state.easy.breathe = el.dataset.value === "on";
+    render();
+    loadSimpleOptions().then(render);
+  } else if (act === "easy-drops") {
+    state.easy.dropMode = DROP_MODES.includes(el.dataset.value) ? el.dataset.value : "auto";
+    render();
+    loadSimpleOptions().then(render);
   } else if (act === "easy-tl-move") {
     const lane = state.lane;
     const tl = timelineState(state.easy, lane);

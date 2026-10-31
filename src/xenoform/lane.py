@@ -113,6 +113,13 @@ def build(info: dict, video_id: str = "") -> dict:
                         "pinned": b in pinned, "swapped": b in swapped, "morph": m})
         if not (s.get("performer") or s.get("own")):
             row["style"] = styles[i] if i < len(styles) and styles[i] else "melt"
+        # the pacing engine's marks (xenoform.pacing): a drop run and its heat, its opening event, a rest's beats
+        if s.get("drop_run") is not None:
+            row.update({"drop_run": int(s["drop_run"]), "heat": float(s.get("heat") or 0.0)})
+        if s.get("event"):
+            row["event"] = str(s["event"])
+        if s.get("rest"):
+            row.update({"rest": int(s["rest"]), "rest_s": round(float(s.get("rest_s") or 0.0), 3)})
         t = transitions[i] if i < len(transitions) else None
         if isinstance(t, dict) and t.get("kind"):
             row["transition"] = str(t["kind"])
@@ -172,10 +179,20 @@ def build(info: dict, video_id: str = "") -> dict:
     duration = rows[-1]["end"] if rows else 0.0
     sections = []
     for r in rows:
-        if r["section"] and (not sections or sections[-1]["section"] != r["section"]):
-            sections.append({"section": r["section"], "start": r["start"], "end": r["end"]})
+        # a passage by role: a new one starts where the role changes and where a drop run opens (two runs side by side
+        # stay two passages, each with its heat)
+        opens = r.get("event") == "drop" or (r.get("drop_run") is not None and sections and sections[-1].get("drop_run") != r.get("drop_run"))
+        if r["section"] and (not sections or sections[-1]["section"] != r["section"] or opens):
+            sections.append({"section": r["section"], "start": r["start"], "end": r["end"],
+                             **({"drop_run": r["drop_run"], "heat": r["heat"]} if r.get("drop_run") is not None else {})})
         elif sections and r["section"] == sections[-1]["section"]:
             sections[-1]["end"] = r["end"]
+    for sec in sections:  # the rests a passage holds (Breathe)
+        held = sum(1 for r in rows if r.get("rest") and sec["start"] - 1e-6 <= r["start"] < sec["end"] - 1e-6)
+        if held:
+            sec["rests"] = held
+    pacing = info.get("pacing") if isinstance(info.get("pacing"), dict) else {}
+    shape = info.get("recut_state") if isinstance(info.get("recut_state"), dict) else {}
     chain_rows = [{"index": k, "file": f, "noun": stills[k], "kind": "scene" if f in scene_files else "object",
                    "pinned": k in pinned, "swapped": k in swapped} for k, f in enumerate(files)]
     # only a Draft cut swaps and re-renders: a Fast Final or Cloud Final record says tier "draft" too, with its flag
@@ -193,4 +210,8 @@ def build(info: dict, video_id: str = "") -> dict:
             "rerenderable": draft and bool(info.get("clips")) and info.get("source") != "clips",
             "source": str(info.get("source") or "objects"), "beats": [round(float(b), 3) for b in (info.get("beats") or [])],
             "drop": info.get("drop"), "morph_style": str(info.get("morph_style") or "auto"),
-            "morph_timing": str(info.get("morph_timing") or "smooth"), "choices": choices() if rows else {}}
+            "morph_timing": str(info.get("morph_timing") or "smooth"), "choices": choices() if rows else {},
+            # the cut's shape (xenoform.pacing): what it was made or last re-cut in, and the line the Make reported
+            "breathe": bool(pacing.get("breathe", shape.get("breathe", False))),
+            "drop_mode": str(pacing.get("drop_mode") or shape.get("drop_mode") or "off"),
+            "plan_line": str(pacing.get("line") or ""), "rests": sum(1 for r in rows if r.get("rest"))}

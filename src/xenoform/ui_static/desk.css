@@ -620,6 +620,13 @@ button.easy-showcase { width: 100%; margin-top: 12px; }
   position: absolute; top: 2px; left: 3px; font-size: 9px; font-weight: 600; line-height: 1; letter-spacing: 0.02em;
   color: #fff; background: var(--x-accent); padding: 1px 3px; border-radius: 3px; pointer-events: none;
 }
+/* a Breathe rest (xenoform.pacing): the shot's object dwells after its morph; the badge sits in the tile's other corner */
+.shots-lane .shot .tl-rest {
+  position: absolute; bottom: 2px; right: 3px; font-size: 9px; font-weight: 600; line-height: 1; letter-spacing: 0.02em;
+  color: var(--x-text); background: rgba(255, 255, 255, 0.18); padding: 1px 3px; border-radius: 3px; pointer-events: none;
+}
+/* the Shape row's two groups (Breathe, Drops) */
+.shape-row .chip-gap { display: inline-block; width: 10px; }
 .shots-lane .shot.picked { outline: 2px solid #fff; outline-offset: -2px; }
 .shots-lane .overlay { border-radius: var(--x-r-xs); }
 .shots-lane .tl-drawer { padding: 12px; background: var(--x-surface-2); border: 1px solid var(--x-line-2); border-radius: 10px; }
