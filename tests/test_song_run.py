@@ -177,6 +177,25 @@ def test_the_desk_plans_queues_stops_and_resumes_a_whole_song(tmp_path, monkeypa
     assert client.get("/api/song/nope").status_code == 404
 
 
+def test_cloud_is_queued_only_behind_the_credits_tick_and_each_window_holds_its_gate(tmp_path, monkeypatch, drop):
+    """A whole song on Cloud Final queues only with the tick, every window a Make of at most 16 morphs carrying the tier
+    and the tick; a window body without the tick is refused by the Make before anything is sent (nothing renders here:
+    the queue never runs in a test)."""
+    client = _client(tmp_path, monkeypatch)
+    assert client.post("/api/song", json={"body": _state(quality_tier="cloud")}).status_code == 400
+    v = client.post("/api/song", json={"body": _state(quality_tier="cloud", cloud_final_ok=True)}).json()
+    saved = json.loads((tmp_path / "batches" / f"{v['batch']}.json").read_text(encoding="utf-8"))
+    bodies = [i["body"] for i in saved["items"]]
+    assert all(b["quality_tier"] == "cloud" and b["cloud_final_ok"] is True for b in bodies)
+    assert all(len(b[song_plan.KEY]["plan"]["shots"]) <= 16 for b in bodies) and v["morphs"] == 78
+    rec = json.loads((tmp_path / "jobs" / v["id"] / "song.json").read_text(encoding="utf-8"))
+    assert rec["estimate"]["tiers"]["cloud"]["credits"] == [281, 468]
+    w = rec["windows"][0]
+    with pytest.raises(RuntimeError, match="Cloud Final spends Comfy Cloud credits"):
+        dense.run_simple(song_plan.directed_for(FEATURES, w), AUDIO, tmp_path / "x.mp4", tmp_path, {},
+                         {**w["body"], "cloud_final_ok": False}, lambda *a: None)
+
+
 def test_a_window_is_trimmed_where_it_says_and_hidden_from_my_videos(tmp_path, monkeypatch, drop):
     """The desk trims a window exactly at its passage's start (no snap back to a beat, a hundredth of a second of fade),
     writes the song's beats and roles beside it, and its job is listed under its song, not in My videos."""
