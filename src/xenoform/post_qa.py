@@ -129,9 +129,10 @@ def flash_report(path: str | Path, fps: float = 24.0, *, jump: float = 40.0, max
 
 
 def _grey_lumas(path: str | Path) -> np.ndarray:
-    """Each frame's mean luma (the encoded Y plane, as the montage's deflash read YAVG) from a small grey decode."""
-    raw = subprocess.run([_ffmpeg(), "-v", "error", "-i", str(path), "-vf", "scale=64:36", "-pix_fmt", "gray", "-f", "rawvideo", "-"],
-                         capture_output=True, check=False).stdout
+    """Each frame's mean luma: the encoded Y plane as it is (limited range, the levels the montage's deflash read as
+    YAVG and ``deflash.luma`` computes), shrunk; a plain grey decode would stretch it to full range, 1.16 x every rise."""
+    raw = subprocess.run([_ffmpeg(), "-v", "error", "-i", str(path), "-vf", "extractplanes=y,scale=64:36", "-pix_fmt", "gray",
+                          "-f", "rawvideo", "-"], capture_output=True, check=False).stdout
     return np.frombuffer(raw, dtype=np.uint8).reshape(-1, 36, 64).astype(np.float32).mean(axis=(1, 2))
 
 

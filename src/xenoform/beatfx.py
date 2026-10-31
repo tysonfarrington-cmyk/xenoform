@@ -887,7 +887,7 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
         if frame.shape[0] != h or frame.shape[1] != w:
             log.warning("compose: a %dx%d frame where %dx%d was expected; resized", frame.shape[1], frame.shape[0], w, h)
             frame = resize(frame, w, h)
-        if tamer is not None:  # the flash tame, the last pass: frames leave it five behind, decided
+        if tamer is not None:  # the flash tame, the last pass: frames leave it deflash.AHEAD behind, decided
             k = written[0]
             written[0] += 1
             for done in tamer.push(np.ascontiguousarray(frame), rules[k] if k < len(rules) else None):

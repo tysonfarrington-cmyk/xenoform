@@ -127,3 +127,20 @@ def test_breathe_turns_the_tame_on(tmp_path, monkeypatch):
     dense.run_simple({"duration": 20.0, "beats": beats}, demo, tmp_path / "b.mp4", tmp_path / "b", {},
                      {"vibe": "black", "aspect": "16:9", "energy_preset": "dense"}, lambda *a: None, engine="mock")
     assert seen["tame"] is None  # Breathe off (the default): the frames as they come
+
+
+def test_a_pulse_is_settled_whole_so_its_edges_never_stand():
+    """A beat pulse lasts several frames, and taming its middle left its edges standing over the lowered frames (the 1:45
+    Draft under Breathe still read 100 flash frames in 30 s after the tame): the tame settles the whole pulse before it
+    lets the first frame go, so what it writes holds no flash past its budget, and none at all in the intro."""
+    lumas = []
+    for _ in range(6):
+        lumas += [60] * 8 + [118, 150, 165, 158, 140, 122, 104]  # a seven-frame pulse on every beat
+    lumas += [60] * 8
+    assert DF.flash_frames([DF.luma(f) for f in _frames(lumas)]).sum() >= 18
+    none = _run(DF.Tame(), _frames(lumas), (0.0, 0, 1000))
+    assert len(none) == len(lumas) and DF.flash_frames(none).sum() == 0  # the intro: none
+    capped = _run(DF.Tame(), _frames(lumas), (DF.KEEP, 5, 1000))
+    assert 0 < DF.flash_frames(capped).sum() <= 5  # a window's budget, and what is over it brought under the line
+    ground = DF.luma(_frames([60])[0])
+    assert all(abs(v - ground) < 0.6 for v in none[:8]) and min(none) >= ground - 0.6  # never darker than its ground
