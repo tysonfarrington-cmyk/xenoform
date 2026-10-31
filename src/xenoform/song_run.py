@@ -45,8 +45,10 @@ def save(folder: Path, rec: dict) -> None:
     tmp.replace(path(folder))
 
 
-def new(song: dict, *, song_id: str, body: dict, audio_id: str, audio_path: Path | str, label: str) -> dict:
-    """The record of a whole song about to be queued, from its plan (``song_plan.plan`` with ``pick``)."""
+def new(song: dict, *, song_id: str, body: dict, audio_id: str, audio_path: Path | str, label: str,
+        beats: list | None = None) -> dict:
+    """The record of a whole song about to be queued, from its plan (``song_plan.plan`` with ``pick``); ``beats`` the
+    song's own, which the assembly cuts on."""
     from xenoform import taste
 
     windows = []
@@ -58,7 +60,8 @@ def new(song: dict, *, song_id: str, body: dict, audio_id: str, audio_path: Path
         "kind": "song", "version": VERSION, "id": song_id,
         "created": datetime.now().astimezone().isoformat(timespec="seconds"),
         "song": {"label": label, "audio_id": audio_id, "path": str(audio_path), "duration": song["duration"],
-                 "tempo": song.get("tempo"), "drop": song.get("drop"), "first_drop": song.get("first_drop")},
+                 "tempo": song.get("tempo"), "drop": song.get("drop"), "first_drop": song.get("first_drop"),
+                 "beats": [round(float(b), 4) for b in beats or []]},
         "tier": song["tier"], "aspect": song["aspect"], "breathe": song["breathe"], "drop_mode": song["drop_mode"],
         "cap": song["cap"], "window_cap": song["window_cap"], "taste": taste.active(),
         "plan": {"morphs": song["morphs"], "shots": song["shots"], "line": song["line"], "steps": song.get("steps"),

@@ -119,6 +119,13 @@ def markers(rec: dict, frames: int, fps: Fraction) -> list[dict]:
         at.setdefault(0, []).append((f"Song {clock}", f"the cut starts {clock} into the song"))
     if rec.get("drop") is not None:
         at.setdefault(_frame(rec["drop"], fps, frames), []).append(("Drop", "the drop the cut is built on"))
+    song = rec.get("song") if str(rec.get("mode") or "") == "song" and isinstance(rec.get("song"), dict) else None
+    for p in (song or {}).get("passages") or []:  # a whole song: where each passage, and its look, comes in
+        look = str(p.get("name") or p.get("vibe") or "")
+        jobs = ", ".join(j for j in p.get("jobs") or [] if j)
+        at.setdefault(_frame(p.get("start"), fps, frames), []).append(
+            (f"Passage {int(p.get('index') or 0) + 1} · {p.get('role') or ''}" + (f" · {look}" if look else ""),
+             f"made by {jobs}" if jobs else "a passage of the song"))
     for i, row in enumerate(_rows(rec)):
         if i and row.get("transition"):
             kind = str(row.get("transition_id") or row["transition"])

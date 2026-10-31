@@ -730,6 +730,9 @@ def create_app(cfg: dict | None = None):
         # a cut reopened after a desk restart is registered from its folder, as the timeline's edits are (it used to
         # answer "No such video." to Re-cut with these knobs on any cut made before the restart, 28 Oct)
         job, folder = _cut_job_for_edit(job_id, "re-cut")
+        if _is_song(folder):  # a whole song is its passages' cuts laid together: each re-cuts on its own timeline
+            raise HTTPException(409, "A whole song re-cuts a passage at a time: open the passage on the song's timeline, "
+                                     "re-cut it there, then Lay the song together again (no GPU).")
         overrides = {k: body.get(k) for k in ("macros", "dance_fx", "stem_orbit", "beat_fx", "end_card", "beat_overlay", "foreshadow",
                                               "morph_timing", "effects", "boundary_smear", "breathe", "drop_mode",
                                               "layer", "prominence", "blend") if k in body}  # the last three: a Stems cut's
@@ -2297,7 +2300,8 @@ def create_app(cfg: dict | None = None):
         return song_run.view(rec, assembling=_song_state.get(rec["id"]), elsewhere=elsewhere)
 
     def _song_closed(b: dict) -> None:
-        """The queue left a song's batch with nothing open: its record takes the windows' last states."""
+        """The queue left a song's batch with nothing open: its record takes the windows' last states, and when every
+        window is done the song is laid together (no GPU)."""
         from xenoform import batch, song_run
 
         if b.get("vary") != batch.SONG or not b.get("song_id"):
@@ -2308,6 +2312,58 @@ def create_app(cfg: dict | None = None):
             return
         song_run.sync(rec, b)
         song_run.save(folder, song_run.stamp(rec, status=song_run.status_of(rec)))
+        if song_run.ready(rec):
+            _song_assemble_start(str(b["song_id"]))
+
+    def _song_assemble_start(song_id: str) -> bool:
+        """Lay the song together in the background (CPU only, one at a time a song); True when it started. Its progress
+        is ``_song_state``; its outcome the record's ``assembly`` (``error`` when it failed)."""
+        from xenoform import song_assemble, song_run
+
+        with _LOCK:
+            if song_id in _song_state:
+                return False
+            _song_state[song_id] = {"progress": 0.0, "detail": "Laying the song together", "started": time.time()}
+        folder = _song_folder(song_id)
+
+        def report(stage: str, frac: float, detail: str) -> None:
+            state = _song_state.get(song_id)
+            if state is not None:
+                state.update({"progress": round(float(frac), 3), "detail": str(detail)})
+
+        def run() -> None:
+            try:
+                song_assemble.assemble(folder, work_dir() / "jobs", report=report)
+            except Exception as exc:
+                log.exception("song %s assembly", song_id)
+                rec = song_run.load(folder)
+                if rec is not None:
+                    rec["assembly"] = {**(rec.get("assembly") or {}), "error": str(exc)[:400]}
+                    song_run.save(folder, song_run.stamp(rec, status="failed"))
+            finally:
+                with _LOCK:
+                    _song_state.pop(song_id, None)
+
+        threading.Thread(target=run, daemon=True, name=f"xenoform-song-{song_id}").start()
+        return True
+
+    @app.post("/api/song/{song_id}/assemble")
+    def song_assemble_route(song_id: str) -> dict:
+        """Lay the song together again from its windows' cuts as they are now (a passage re-cut or re-rendered on its own
+        timeline is laid in): no GPU, a few minutes of CPU."""
+        from xenoform import song_run
+
+        folder, rec = _song_rec(song_id)
+        song_run.sync(rec, _song_batch(rec))
+        song_run.save(folder, rec)
+        if not song_run.ready(rec):
+            c = song_run.counts(rec)
+            raise HTTPException(409, f"Every window must be done first: {c['done']} of {c['of']} are.")
+        if rec.get("assembly") and (rec["assembly"].get("error")):
+            rec["assembly"] = {k: v for k, v in rec["assembly"].items() if k != "error"}
+            song_run.save(folder, rec)
+        _song_assemble_start(song_id)
+        return _song_view(folder, rec)
 
     @app.post("/api/song")
     def song_make(body: dict) -> dict:
@@ -2337,7 +2393,8 @@ def create_app(cfg: dict | None = None):
         except song_plan.SongError as exc:
             raise HTTPException(400, str(exc)) from exc
         folder = _song_folder(song_id)
-        rec = song_run.new(song, song_id=song_id, body=make, audio_id=audio_id, audio_path=audio_path, label=label)
+        rec = song_run.new(song, song_id=song_id, body=make, audio_id=audio_id, audio_path=audio_path, label=label,
+                           beats=list(features.get("beats") or []))
         song_run.save(folder, rec)
         b = _batches().add_items(song_run.items(rec), vary=batch.SONG, song_id=song_id, song=label,
                                  vibe=str(make.get("vibe") or ""), idea=str(make.get("idea") or ""), seconds=duration)
@@ -3330,6 +3387,13 @@ def _read_chain(folder: Path) -> list[dict] | None:
     except (OSError, ValueError):
         return None
     return [r for r in rows if isinstance(r, dict)] if isinstance(rows, list) and rows else None
+
+
+def _is_song(folder: Path) -> bool:
+    """True for a whole song's folder (``song_run``): its cut is the passages' cuts laid together."""
+    from xenoform import song_run
+
+    return (Path(folder) / song_run.FILE).is_file()
 
 
 def _read_meta(folder: Path) -> dict:

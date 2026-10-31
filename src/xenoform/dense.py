@@ -2143,6 +2143,9 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
     if not rec_path.is_file():
         raise FileNotFoundError("This video has no cached morphs to re-cut (it was not made by Simple mode).")
     rec = json.loads(rec_path.read_text(encoding="utf-8"))
+    if str(rec.get("mode") or "") == "song":  # a whole song is its passages' cuts laid together (song_assemble)
+        raise ValueError("A whole song re-cuts a passage at a time: re-cut the passage on its own timeline, then lay the "
+                         "song together again.")
     if str(rec.get("mode") or "") == "stems":  # a Stems cut: its layers re-cut, then laid together again
         from xenoform import stems_mode
 
