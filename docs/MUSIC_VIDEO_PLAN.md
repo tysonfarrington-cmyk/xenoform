@@ -59,7 +59,7 @@ backdrops ("morph an entire scene, not just a shape").
 | 6 | Stems mode: each stem its own layer, objects or clips, cut by the same planner on the stem's drive, composited by prominence; a Stems step | stems-mode | Opus 5.5 | stems.py, stems_mode.py, stems_composite.py, dense.py (dispatch), guardrails.py, ui.py, app.js, docs/STEMS.md, tests | now (Tys's ask of 31 Oct) |
 
 Each session works in its own worktree and branch cut from `contest-rc2`, commits as Owly, never pushes. The
-orchestrator merges the branches into `contest-rc2` as each reported (31 Oct: 3 as 91fd5d2, 4 as 39791dd, 1 with 0 as 99d4d95, each builder merging `contest-rc2` into its branch first), then 2, then 5, running the
+orchestrator merges the branches into `contest-rc2` as each reported (31 Oct: 3 as 91fd5d2, 4 as 39791dd, 1 with 0 as 99d4d95, each builder merging `contest-rc2` into its branch first; then Breathe round two aac4ec2, 6 as f226c5e, 2 as 8a3c12d), then 5, running the
 whole suite after each merge. Tys's desks 47320 and 47321 are never restarted without his word.
 
 ## 2. Stage 0: roles that are true
@@ -340,6 +340,21 @@ same composite byte for byte; the suite green with the fake split.
     way, handed to the taste stage: pick_stills with no idea line and a pool of 40 or more narrows to one realm of
     min(count, 8) stills, so a chain longer than the realm repeats objects (the orb and the mobius twice in a
     default liquid-gold cut); bioluminescent's default pick reaches the DNA helix.
+12. Taste: landed 31 Oct as 8a3c12d (1507 passed on its tree): configs/taste.json and taste.py, the rules at
+    guardrails.apply, pick_stills, the kind pickers and the re-cut with [taste] report lines, docs/TASTE.md, Import a
+    folder (POST /api/stills/import), morph_cache.py with xenoform morph-cache seed|status, the realm-repeat fix
+    (a cut with no line sizes each realm by what it may draw after the bans and walks on instead of lapping), and
+    the rules inside each Stems layer. With no taste file a cut is the mainline byte for byte (fixture). Proof:
+    Desktop/xeno_taste_31oct (None, same seed: 14 machines without, 14 sea creatures with; the cache made the same
+    Make again with zero renders, 7 s for the morph stage against 490). For Tys: (a) no-wig-helmet-hay bans every
+    helmet, samurai, astronaut and diving included; (b) no-vessels-family drops shipped stills: wine glass, perfume
+    flask, liquid-gold amphora, mortar and pestle, teapot; (c) natural-first at 1.5 lets almost only the creatures
+    realm open a cut and makes None all creatures; lower it and cosmos, dark fantasy and garden take turns; (d) the
+    cache was only dry-run on work/ui (3170 clips, 183 repeated requests, 29 of them Cloud): xenoform morph-cache
+    seed fills it; a Cloud Make with every morph cached runs without the key but still needs the credits tick.
+    Kept as built: flash looks stand down before the first drop even when chosen; kaleido steps aside per shot on
+    living things; an idea line naming a small family still repeats (28 Oct decision); one-palette skips None;
+    quiet-opener bites above Intensity 0.6.
 
 ## 9. Working rules for every session
 
