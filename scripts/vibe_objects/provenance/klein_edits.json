@@ -1,0 +1,839 @@
+{
+ "version": 1,
+ "model": "flux-2-klein-4b.safetensors (FLUX.2 Klein 4B, Apache 2.0)",
+ "seed": 77,
+ "steps": 4,
+ "size": [
+  1024,
+  576
+ ],
+ "note": "Each file is one edit of a reference image (ov_<object>_gr.png is the 768x448 centre crop of objects/<object>.png, the Z-Image still; a mid reference is one of the run's own guide stills): ov_lib.kgraph, euler, cfg 1, reference scaled to one megapixel, seed 77, the prompt of its material in `prompts` (overnight.py's KEDIT with the material's phrase from plan.json).",
+ "prompts": {
+  "chrome": "Edit the first image: keep the object's exact shape, outline, size, pose and position, the same black void, the same soft teal glow halo behind it and the same rim light from the upper left. Change only its material: it is now made entirely of mirror-polished liquid chrome metal reflecting soft teal and violet light. No text, no lettering, no extra objects.",
+  "mercury": "Edit the first image: keep the object's exact shape, outline, size, pose and position, the same black void, the same soft teal glow halo behind it and the same rim light from the upper left. Change only its material: it is now made entirely of bright liquid mercury quicksilver with a wet beaded silver surface. No text, no lettering, no extra objects.",
+  "black_glass": "Edit the first image: keep the object's exact shape, outline, size, pose and position, the same black void, the same soft teal glow halo behind it and the same rim light from the upper left. Change only its material: it is now made entirely of molten glossy black obsidian glass with a deep violet inner glow. No text, no lettering, no extra objects.",
+  "oil_slick": "Edit the first image: keep the object's exact shape, outline, size, pose and position, the same black void, the same soft teal glow halo behind it and the same rim light from the upper left. Change only its material: it is now made entirely of glossy black liquid metal covered in a swirling oil-slick rainbow film. No text, no lettering, no extra objects.",
+  "iridescent": "Edit the first image: keep the object's exact shape, outline, size, pose and position, the same black void, the same soft teal glow halo behind it and the same rim light from the upper left. Change only its material: it is now made entirely of pearlescent iridescent liquid metal shifting between violet, teal and gold. No text, no lettering, no extra objects."
+ },
+ "edits": [
+  {
+   "file": "ov_acorn_iridescent.png",
+   "kind": "object",
+   "what": "acorn",
+   "material": "iridescent",
+   "reference": "ov_acorn_gr.png"
+  },
+  {
+   "file": "ov_amethyst_geode_black_glass.png",
+   "kind": "object",
+   "what": "amethyst_geode",
+   "material": "black_glass",
+   "reference": "ov_amethyst_geode_gr.png"
+  },
+  {
+   "file": "ov_apple_oil_slick.png",
+   "kind": "object",
+   "what": "apple",
+   "material": "oil_slick",
+   "reference": "ov_apple_gr.png"
+  },
+  {
+   "file": "ov_bell_mercury.png",
+   "kind": "object",
+   "what": "bell",
+   "material": "mercury",
+   "reference": "ov_bell_gr.png"
+  },
+  {
+   "file": "ov_butterfly_oil_slick.png",
+   "kind": "object",
+   "what": "butterfly",
+   "material": "oil_slick",
+   "reference": "ov_butterfly_gr.png"
+  },
+  {
+   "file": "ov_chess_knight_chrome.png",
+   "kind": "object",
+   "what": "chess_knight",
+   "material": "chrome",
+   "reference": "ov_chess_knight_gr.png"
+  },
+  {
+   "file": "ov_chess_pawn_chrome.png",
+   "kind": "object",
+   "what": "chess_pawn",
+   "material": "chrome",
+   "reference": "ov_chess_pawn_gr.png"
+  },
+  {
+   "file": "ov_compass_chrome.png",
+   "kind": "object",
+   "what": "compass",
+   "material": "chrome",
+   "reference": "ov_compass_gr.png"
+  },
+  {
+   "file": "ov_conch_mercury.png",
+   "kind": "object",
+   "what": "conch",
+   "material": "mercury",
+   "reference": "ov_conch_gr.png"
+  },
+  {
+   "file": "ov_crescent_moon_mercury.png",
+   "kind": "object",
+   "what": "crescent_moon",
+   "material": "mercury",
+   "reference": "ov_crescent_moon_gr.png"
+  },
+  {
+   "file": "ov_crescent_moon_oil_slick.png",
+   "kind": "object",
+   "what": "crescent_moon",
+   "material": "oil_slick",
+   "reference": "ov_crescent_moon_gr.png"
+  },
+  {
+   "file": "ov_crown_splash_mercury.png",
+   "kind": "object",
+   "what": "crown_splash",
+   "material": "mercury",
+   "reference": "ov_crown_splash_gr.png"
+  },
+  {
+   "file": "ov_crystal_cluster_black_glass.png",
+   "kind": "object",
+   "what": "crystal_cluster",
+   "material": "black_glass",
+   "reference": "ov_crystal_cluster_gr.png"
+  },
+  {
+   "file": "ov_cube_mercury.png",
+   "kind": "object",
+   "what": "cube",
+   "material": "mercury",
+   "reference": "ov_cube_gr.png"
+  },
+  {
+   "file": "ov_dandelion_iridescent.png",
+   "kind": "object",
+   "what": "dandelion",
+   "material": "iridescent",
+   "reference": "ov_dandelion_gr.png"
+  },
+  {
+   "file": "ov_dna_helix_chrome.png",
+   "kind": "object",
+   "what": "dna_helix",
+   "material": "chrome",
+   "reference": "ov_dna_helix_gr.png"
+  },
+  {
+   "file": "ov_dna_helix_iridescent.png",
+   "kind": "object",
+   "what": "dna_helix",
+   "material": "iridescent",
+   "reference": "ov_dna_helix_gr.png"
+  },
+  {
+   "file": "ov_dodecahedron_chrome.png",
+   "kind": "object",
+   "what": "dodecahedron",
+   "material": "chrome",
+   "reference": "ov_dodecahedron_gr.png"
+  },
+  {
+   "file": "ov_dodecahedron_mercury.png",
+   "kind": "object",
+   "what": "dodecahedron",
+   "material": "mercury",
+   "reference": "ov_dodecahedron_gr.png"
+  },
+  {
+   "file": "ov_dragonfly_oil_slick.png",
+   "kind": "object",
+   "what": "dragonfly",
+   "material": "oil_slick",
+   "reference": "ov_dragonfly_gr.png"
+  },
+  {
+   "file": "ov_droplet_black_glass.png",
+   "kind": "object",
+   "what": "droplet",
+   "material": "black_glass",
+   "reference": "ov_droplet_gr.png"
+  },
+  {
+   "file": "ov_droplet_mercury.png",
+   "kind": "object",
+   "what": "droplet",
+   "material": "mercury",
+   "reference": "ov_droplet_gr.png"
+  },
+  {
+   "file": "ov_egg_iridescent.png",
+   "kind": "object",
+   "what": "egg",
+   "material": "iridescent",
+   "reference": "ov_egg_gr.png"
+  },
+  {
+   "file": "ov_erlenmeyer_iridescent.png",
+   "kind": "object",
+   "what": "erlenmeyer",
+   "material": "iridescent",
+   "reference": "ov_erlenmeyer_gr.png"
+  },
+  {
+   "file": "ov_erlenmeyer_mercury.png",
+   "kind": "object",
+   "what": "erlenmeyer",
+   "material": "mercury",
+   "reference": "ov_erlenmeyer_gr.png"
+  },
+  {
+   "file": "ov_feather_iridescent.png",
+   "kind": "object",
+   "what": "feather",
+   "material": "iridescent",
+   "reference": "ov_feather_gr.png"
+  },
+  {
+   "file": "ov_film_reel_chrome.png",
+   "kind": "object",
+   "what": "film_reel",
+   "material": "chrome",
+   "reference": "ov_film_reel_gr.png"
+  },
+  {
+   "file": "ov_film_reel_oil_slick.png",
+   "kind": "object",
+   "what": "film_reel",
+   "material": "oil_slick",
+   "reference": "ov_film_reel_gr.png"
+  },
+  {
+   "file": "ov_fluorite_octahedron_black_glass.png",
+   "kind": "object",
+   "what": "fluorite_octahedron",
+   "material": "black_glass",
+   "reference": "ov_fluorite_octahedron_gr.png"
+  },
+  {
+   "file": "ov_french_horn_chrome.png",
+   "kind": "object",
+   "what": "french_horn",
+   "material": "chrome",
+   "reference": "ov_french_horn_gr.png"
+  },
+  {
+   "file": "ov_gear_chrome.png",
+   "kind": "object",
+   "what": "gear",
+   "material": "chrome",
+   "reference": "ov_gear_gr.png"
+  },
+  {
+   "file": "ov_gear_oil_slick.png",
+   "kind": "object",
+   "what": "gear",
+   "material": "oil_slick",
+   "reference": "ov_gear_gr.png"
+  },
+  {
+   "file": "ov_gem_chrome.png",
+   "kind": "object",
+   "what": "gem",
+   "material": "chrome",
+   "reference": "ov_gem_gr.png"
+  },
+  {
+   "file": "ov_horn_mercury.png",
+   "kind": "object",
+   "what": "horn",
+   "material": "mercury",
+   "reference": "ov_horn_gr.png"
+  },
+  {
+   "file": "ov_horseshoe_magnet_mercury.png",
+   "kind": "object",
+   "what": "horseshoe_magnet",
+   "material": "mercury",
+   "reference": "ov_horseshoe_magnet_gr.png"
+  },
+  {
+   "file": "ov_hourglass_black_glass.png",
+   "kind": "object",
+   "what": "hourglass",
+   "material": "black_glass",
+   "reference": "ov_hourglass_gr.png"
+  },
+  {
+   "file": "ov_hourglass_chrome.png",
+   "kind": "object",
+   "what": "hourglass",
+   "material": "chrome",
+   "reference": "ov_hourglass_gr.png"
+  },
+  {
+   "file": "ov_hourglass_iridescent.png",
+   "kind": "object",
+   "what": "hourglass",
+   "material": "iridescent",
+   "reference": "ov_hourglass_gr.png"
+  },
+  {
+   "file": "ov_jellyfish_black_glass.png",
+   "kind": "object",
+   "what": "jellyfish",
+   "material": "black_glass",
+   "reference": "ov_jellyfish_gr.png"
+  },
+  {
+   "file": "ov_jellyfish_iridescent.png",
+   "kind": "object",
+   "what": "jellyfish",
+   "material": "iridescent",
+   "reference": "ov_jellyfish_gr.png"
+  },
+  {
+   "file": "ov_key_chrome.png",
+   "kind": "object",
+   "what": "key",
+   "material": "chrome",
+   "reference": "ov_key_gr.png"
+  },
+  {
+   "file": "ov_leaf_black_glass.png",
+   "kind": "object",
+   "what": "leaf",
+   "material": "black_glass",
+   "reference": "ov_leaf_gr.png"
+  },
+  {
+   "file": "ov_leaf_iridescent.png",
+   "kind": "object",
+   "what": "leaf",
+   "material": "iridescent",
+   "reference": "ov_leaf_gr.png"
+  },
+  {
+   "file": "ov_lightbulb_black_glass.png",
+   "kind": "object",
+   "what": "lightbulb",
+   "material": "black_glass",
+   "reference": "ov_lightbulb_gr.png"
+  },
+  {
+   "file": "ov_lightbulb_chrome.png",
+   "kind": "object",
+   "what": "lightbulb",
+   "material": "chrome",
+   "reference": "ov_lightbulb_gr.png"
+  },
+  {
+   "file": "ov_lightbulb_oil_slick.png",
+   "kind": "object",
+   "what": "lightbulb",
+   "material": "oil_slick",
+   "reference": "ov_lightbulb_gr.png"
+  },
+  {
+   "file": "ov_lotus_black_glass.png",
+   "kind": "object",
+   "what": "lotus",
+   "material": "black_glass",
+   "reference": "ov_lotus_gr.png"
+  },
+  {
+   "file": "ov_lotus_iridescent.png",
+   "kind": "object",
+   "what": "lotus",
+   "material": "iridescent",
+   "reference": "ov_lotus_gr.png"
+  },
+  {
+   "file": "ov_lotus_seedpod_oil_slick.png",
+   "kind": "object",
+   "what": "lotus_seedpod",
+   "material": "oil_slick",
+   "reference": "ov_lotus_seedpod_gr.png"
+  },
+  {
+   "file": "ov_manta_ray_chrome.png",
+   "kind": "object",
+   "what": "manta_ray",
+   "material": "chrome",
+   "reference": "ov_manta_ray_gr.png"
+  },
+  {
+   "file": "ov_mantel_clock_iridescent.png",
+   "kind": "object",
+   "what": "mantel_clock",
+   "material": "iridescent",
+   "reference": "ov_mantel_clock_gr.png"
+  },
+  {
+   "file": "ov_maple_seed_iridescent.png",
+   "kind": "object",
+   "what": "maple_seed",
+   "material": "iridescent",
+   "reference": "ov_maple_seed_gr.png"
+  },
+  {
+   "file": "ov_mid_pour_black_glass.png",
+   "kind": "mid",
+   "what": "pour",
+   "material": "black_glass",
+   "reference": "g2_pour.png"
+  },
+  {
+   "file": "ov_mid_pour_chrome.png",
+   "kind": "mid",
+   "what": "pour",
+   "material": "chrome",
+   "reference": "g2_pour.png"
+  },
+  {
+   "file": "ov_mid_pour_iridescent.png",
+   "kind": "mid",
+   "what": "pour",
+   "material": "iridescent",
+   "reference": "g2_pour.png"
+  },
+  {
+   "file": "ov_mid_pour_mercury.png",
+   "kind": "mid",
+   "what": "pour",
+   "material": "mercury",
+   "reference": "g2_pour.png"
+  },
+  {
+   "file": "ov_mid_pour_oil_slick.png",
+   "kind": "mid",
+   "what": "pour",
+   "material": "oil_slick",
+   "reference": "g2_pour.png"
+  },
+  {
+   "file": "ov_mid_ripple_iridescent.png",
+   "kind": "mid",
+   "what": "ripple",
+   "material": "iridescent",
+   "reference": "g2_ripple.png"
+  },
+  {
+   "file": "ov_mid_ripple_oil_slick.png",
+   "kind": "mid",
+   "what": "ripple",
+   "material": "oil_slick",
+   "reference": "g2_ripple.png"
+  },
+  {
+   "file": "ov_mid_spike_black_glass.png",
+   "kind": "mid",
+   "what": "spike",
+   "material": "black_glass",
+   "reference": "g2_spike2.png"
+  },
+  {
+   "file": "ov_mid_spike_chrome.png",
+   "kind": "mid",
+   "what": "spike",
+   "material": "chrome",
+   "reference": "g2_spike2.png"
+  },
+  {
+   "file": "ov_mid_spike_iridescent.png",
+   "kind": "mid",
+   "what": "spike",
+   "material": "iridescent",
+   "reference": "g2_spike2.png"
+  },
+  {
+   "file": "ov_mid_spike_oil_slick.png",
+   "kind": "mid",
+   "what": "spike",
+   "material": "oil_slick",
+   "reference": "g2_spike2.png"
+  },
+  {
+   "file": "ov_mid_splash_black_glass.png",
+   "kind": "mid",
+   "what": "splash",
+   "material": "black_glass",
+   "reference": "g2_splash.png"
+  },
+  {
+   "file": "ov_mid_splash_chrome.png",
+   "kind": "mid",
+   "what": "splash",
+   "material": "chrome",
+   "reference": "g2_splash.png"
+  },
+  {
+   "file": "ov_mid_splash_iridescent.png",
+   "kind": "mid",
+   "what": "splash",
+   "material": "iridescent",
+   "reference": "g2_splash.png"
+  },
+  {
+   "file": "ov_mid_splash_mercury.png",
+   "kind": "mid",
+   "what": "splash",
+   "material": "mercury",
+   "reference": "g2_splash.png"
+  },
+  {
+   "file": "ov_mid_splash_oil_slick.png",
+   "kind": "mid",
+   "what": "splash",
+   "material": "oil_slick",
+   "reference": "g2_splash.png"
+  },
+  {
+   "file": "ov_mobius_chrome.png",
+   "kind": "object",
+   "what": "mobius",
+   "material": "chrome",
+   "reference": "ov_mobius_gr.png"
+  },
+  {
+   "file": "ov_mobius_iridescent.png",
+   "kind": "object",
+   "what": "mobius",
+   "material": "iridescent",
+   "reference": "ov_mobius_gr.png"
+  },
+  {
+   "file": "ov_nautilus_mercury.png",
+   "kind": "object",
+   "what": "nautilus",
+   "material": "mercury",
+   "reference": "ov_nautilus_gr.png"
+  },
+  {
+   "file": "ov_obelisk_black_glass.png",
+   "kind": "object",
+   "what": "obelisk",
+   "material": "black_glass",
+   "reference": "ov_obelisk_gr.png"
+  },
+  {
+   "file": "ov_orb_iridescent.png",
+   "kind": "object",
+   "what": "orb",
+   "material": "iridescent",
+   "reference": "ov_orb_gr.png"
+  },
+  {
+   "file": "ov_orb_mercury.png",
+   "kind": "object",
+   "what": "orb",
+   "material": "mercury",
+   "reference": "ov_orb_gr.png"
+  },
+  {
+   "file": "ov_orb_oil_slick.png",
+   "kind": "object",
+   "what": "orb",
+   "material": "oil_slick",
+   "reference": "ov_orb_gr.png"
+  },
+  {
+   "file": "ov_origami_crane_chrome.png",
+   "kind": "object",
+   "what": "origami_crane",
+   "material": "chrome",
+   "reference": "ov_origami_crane_gr.png"
+  },
+  {
+   "file": "ov_padlock_chrome.png",
+   "kind": "object",
+   "what": "padlock",
+   "material": "chrome",
+   "reference": "ov_padlock_gr.png"
+  },
+  {
+   "file": "ov_paper_plane_chrome.png",
+   "kind": "object",
+   "what": "paper_plane",
+   "material": "chrome",
+   "reference": "ov_paper_plane_gr.png"
+  },
+  {
+   "file": "ov_pearl_iridescent.png",
+   "kind": "object",
+   "what": "pearl",
+   "material": "iridescent",
+   "reference": "ov_pearl_gr.png"
+  },
+  {
+   "file": "ov_perfume_flask_iridescent.png",
+   "kind": "object",
+   "what": "perfume_flask",
+   "material": "iridescent",
+   "reference": "ov_perfume_flask_gr.png"
+  },
+  {
+   "file": "ov_pine_cone_iridescent.png",
+   "kind": "object",
+   "what": "pine_cone",
+   "material": "iridescent",
+   "reference": "ov_pine_cone_gr.png"
+  },
+  {
+   "file": "ov_pocket_watch_chrome.png",
+   "kind": "object",
+   "what": "pocket_watch",
+   "material": "chrome",
+   "reference": "ov_pocket_watch_gr.png"
+  },
+  {
+   "file": "ov_pocket_watch_mercury.png",
+   "kind": "object",
+   "what": "pocket_watch",
+   "material": "mercury",
+   "reference": "ov_pocket_watch_gr.png"
+  },
+  {
+   "file": "ov_pomegranate_oil_slick.png",
+   "kind": "object",
+   "what": "pomegranate",
+   "material": "oil_slick",
+   "reference": "ov_pomegranate_gr.png"
+  },
+  {
+   "file": "ov_pyramid_black_glass.png",
+   "kind": "object",
+   "what": "pyramid",
+   "material": "black_glass",
+   "reference": "ov_pyramid_gr.png"
+  },
+  {
+   "file": "ov_quartz_black_glass.png",
+   "kind": "object",
+   "what": "quartz",
+   "material": "black_glass",
+   "reference": "ov_quartz_gr.png"
+  },
+  {
+   "file": "ov_ringed_planet_iridescent.png",
+   "kind": "object",
+   "what": "ringed_planet",
+   "material": "iridescent",
+   "reference": "ov_ringed_planet_gr.png"
+  },
+  {
+   "file": "ov_ringed_planet_oil_slick.png",
+   "kind": "object",
+   "what": "ringed_planet",
+   "material": "oil_slick",
+   "reference": "ov_ringed_planet_gr.png"
+  },
+  {
+   "file": "ov_rocket_chrome.png",
+   "kind": "object",
+   "what": "rocket",
+   "material": "chrome",
+   "reference": "ov_rocket_gr.png"
+  },
+  {
+   "file": "ov_rocket_iridescent.png",
+   "kind": "object",
+   "what": "rocket",
+   "material": "iridescent",
+   "reference": "ov_rocket_gr.png"
+  },
+  {
+   "file": "ov_rose_black_glass.png",
+   "kind": "object",
+   "what": "rose",
+   "material": "black_glass",
+   "reference": "ov_rose_gr.png"
+  },
+  {
+   "file": "ov_sand_dollar_mercury.png",
+   "kind": "object",
+   "what": "sand_dollar",
+   "material": "mercury",
+   "reference": "ov_sand_dollar_gr.png"
+  },
+  {
+   "file": "ov_saxophone_chrome.png",
+   "kind": "object",
+   "what": "saxophone",
+   "material": "chrome",
+   "reference": "ov_saxophone_gr.png"
+  },
+  {
+   "file": "ov_scallop_shell_iridescent.png",
+   "kind": "object",
+   "what": "scallop_shell",
+   "material": "iridescent",
+   "reference": "ov_scallop_shell_gr.png"
+  },
+  {
+   "file": "ov_sea_urchin_iridescent.png",
+   "kind": "object",
+   "what": "sea_urchin",
+   "material": "iridescent",
+   "reference": "ov_sea_urchin_gr.png"
+  },
+  {
+   "file": "ov_sea_urchin_oil_slick.png",
+   "kind": "object",
+   "what": "sea_urchin",
+   "material": "oil_slick",
+   "reference": "ov_sea_urchin_gr.png"
+  },
+  {
+   "file": "ov_snowflake_black_glass.png",
+   "kind": "object",
+   "what": "snowflake",
+   "material": "black_glass",
+   "reference": "ov_snowflake_gr.png"
+  },
+  {
+   "file": "ov_snowflake_iridescent.png",
+   "kind": "object",
+   "what": "snowflake",
+   "material": "iridescent",
+   "reference": "ov_snowflake_gr.png"
+  },
+  {
+   "file": "ov_snowflake_mercury.png",
+   "kind": "object",
+   "what": "snowflake",
+   "material": "mercury",
+   "reference": "ov_snowflake_gr.png"
+  },
+  {
+   "file": "ov_spiral_seashell_iridescent.png",
+   "kind": "object",
+   "what": "spiral_seashell",
+   "material": "iridescent",
+   "reference": "ov_spiral_seashell_gr.png"
+  },
+  {
+   "file": "ov_sputnik_oil_slick.png",
+   "kind": "object",
+   "what": "sputnik",
+   "material": "oil_slick",
+   "reference": "ov_sputnik_gr.png"
+  },
+  {
+   "file": "ov_sundial_mercury.png",
+   "kind": "object",
+   "what": "sundial",
+   "material": "mercury",
+   "reference": "ov_sundial_gr.png"
+  },
+  {
+   "file": "ov_sunflower_head_oil_slick.png",
+   "kind": "object",
+   "what": "sunflower_head",
+   "material": "oil_slick",
+   "reference": "ov_sunflower_head_gr.png"
+  },
+  {
+   "file": "ov_swallow_chrome.png",
+   "kind": "object",
+   "what": "swallow",
+   "material": "chrome",
+   "reference": "ov_swallow_gr.png"
+  },
+  {
+   "file": "ov_tarot_card_mercury.png",
+   "kind": "object",
+   "what": "tarot_card",
+   "material": "mercury",
+   "reference": "ov_tarot_card_gr.png"
+  },
+  {
+   "file": "ov_tarot_card_oil_slick.png",
+   "kind": "object",
+   "what": "tarot_card",
+   "material": "oil_slick",
+   "reference": "ov_tarot_card_gr.png"
+  },
+  {
+   "file": "ov_tesla_coil_black_glass.png",
+   "kind": "object",
+   "what": "tesla_coil",
+   "material": "black_glass",
+   "reference": "ov_tesla_coil_gr.png"
+  },
+  {
+   "file": "ov_torus_black_glass.png",
+   "kind": "object",
+   "what": "torus",
+   "material": "black_glass",
+   "reference": "ov_torus_gr.png"
+  },
+  {
+   "file": "ov_torus_knot_chrome.png",
+   "kind": "object",
+   "what": "torus_knot",
+   "material": "chrome",
+   "reference": "ov_torus_knot_gr.png"
+  },
+  {
+   "file": "ov_trumpet_mercury.png",
+   "kind": "object",
+   "what": "trumpet",
+   "material": "mercury",
+   "reference": "ov_trumpet_gr.png"
+  },
+  {
+   "file": "ov_umbrella_black_glass.png",
+   "kind": "object",
+   "what": "umbrella",
+   "material": "black_glass",
+   "reference": "ov_umbrella_gr.png"
+  },
+  {
+   "file": "ov_vacuum_tube_oil_slick.png",
+   "kind": "object",
+   "what": "vacuum_tube",
+   "material": "oil_slick",
+   "reference": "ov_vacuum_tube_gr.png"
+  },
+  {
+   "file": "ov_vintage_mic_mercury.png",
+   "kind": "object",
+   "what": "vintage_mic",
+   "material": "mercury",
+   "reference": "ov_vintage_mic_gr.png"
+  },
+  {
+   "file": "ov_vinyl_record_iridescent.png",
+   "kind": "object",
+   "what": "vinyl_record",
+   "material": "iridescent",
+   "reference": "ov_vinyl_record_gr.png"
+  },
+  {
+   "file": "ov_vinyl_record_mercury.png",
+   "kind": "object",
+   "what": "vinyl_record",
+   "material": "mercury",
+   "reference": "ov_vinyl_record_gr.png"
+  },
+  {
+   "file": "ov_wine_glass_black_glass.png",
+   "kind": "object",
+   "what": "wine_glass",
+   "material": "black_glass",
+   "reference": "ov_wine_glass_gr.png"
+  },
+  {
+   "file": "ov_wine_glass_mercury.png",
+   "kind": "object",
+   "what": "wine_glass",
+   "material": "mercury",
+   "reference": "ov_wine_glass_gr.png"
+  }
+ ]
+}

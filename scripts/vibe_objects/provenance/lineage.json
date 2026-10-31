@@ -1,0 +1,1388 @@
+{
+ "version": 1,
+ "checked": "2026-10-31",
+ "method": "grade_psnr_db: scripts/vibe_objects/grade.py applied to the run's still against the shipped jpg (the five graded pools). match: SIFT features (CLAHE-lifted grey, ratio test 0.75) between the run's still and the shipped jpg, RANSAC similarity fit; inliers = agreeing matches, scale and shift_px = the fitted placement (1.0 and 0 mean the same frame, as for every graded row; the black pool's cut-out re-framed the rows listed in `reframed`).",
+ "summary": {
+  "rows": 77,
+  "graded_rows": 60,
+  "min_grade_psnr_db": 32.8,
+  "min_inliers": 13,
+  "reframed": [
+   "black/12_manta_ray_gr.jpg",
+   "black/13_dragonfly_gr.jpg",
+   "black/15_ribbon_twist_gr.jpg",
+   "black/16_liquid_orb_gr.jpg"
+  ]
+ },
+ "rows": [
+  {
+   "file": "liquid-gold/00_droplet_mercury.jpg",
+   "pool": "liquid-gold",
+   "still": "droplet_mercury.png",
+   "object": "droplet",
+   "material": "mercury",
+   "seed": 1003,
+   "from": "klein/ov_droplet_mercury.png",
+   "grade_psnr_db": 41.8,
+   "match": {
+    "inliers": 622,
+    "scale": 1.0,
+    "shift_px": [
+     0.1,
+     0.0
+    ]
+   }
+  },
+  {
+   "file": "liquid-gold/01_crown_splash_mercury.jpg",
+   "pool": "liquid-gold",
+   "still": "crown_splash_mercury.png",
+   "object": "crown_splash",
+   "material": "mercury",
+   "seed": 1004,
+   "from": "klein/ov_crown_splash_mercury.png",
+   "grade_psnr_db": 39.1,
+   "match": {
+    "inliers": 1156,
+    "scale": 1.0,
+    "shift_px": [
+     -0.0,
+     -0.0
+    ]
+   }
+  },
+  {
+   "file": "liquid-gold/02_orb_mercury.jpg",
+   "pool": "liquid-gold",
+   "still": "orb_mercury.png",
+   "object": "orb",
+   "material": "mercury",
+   "seed": 1001,
+   "from": "klein/ov_orb_mercury.png",
+   "grade_psnr_db": 40.4,
+   "match": {
+    "inliers": 983,
+    "scale": 1.0,
+    "shift_px": [
+     -0.0,
+     0.0
+    ]
+   }
+  },
+  {
+   "file": "liquid-gold/03_nautilus_mercury.jpg",
+   "pool": "liquid-gold",
+   "still": "nautilus_mercury.png",
+   "object": "nautilus",
+   "material": "mercury",
+   "seed": 1049,
+   "from": "klein/ov_nautilus_mercury.png",
+   "grade_psnr_db": 40.0,
+   "match": {
+    "inliers": 970,
+    "scale": 1.0,
+    "shift_px": [
+     0.1,
+     0.0
+    ]
+   }
+  },
+  {
+   "file": "liquid-gold/04_torus_knot_chrome.jpg",
+   "pool": "liquid-gold",
+   "still": "torus_knot_chrome.png",
+   "object": "torus_knot",
+   "material": "chrome",
+   "seed": 1046,
+   "from": "klein/ov_torus_knot_chrome.png",
+   "grade_psnr_db": 38.3,
+   "match": {
+    "inliers": 258,
+    "scale": 1.0,
+    "shift_px": [
+     -0.1,
+     0.0
+    ]
+   }
+  },
+  {
+   "file": "liquid-gold/05_dna_helix_chrome.jpg",
+   "pool": "liquid-gold",
+   "still": "dna_helix_chrome.png",
+   "object": "dna_helix",
+   "material": "chrome",
+   "seed": 1048,
+   "from": "klein/ov_dna_helix_chrome.png",
+   "grade_psnr_db": 39.2,
+   "match": {
+    "inliers": 515,
+    "scale": 1.0,
+    "shift_px": [
+     -0.0,
+     0.1
+    ]
+   }
+  },
+  {
+   "file": "liquid-gold/06_snowflake_mercury.jpg",
+   "pool": "liquid-gold",
+   "still": "snowflake_mercury.png",
+   "object": "snowflake",
+   "material": "mercury",
+   "seed": 1062,
+   "from": "klein/ov_snowflake_mercury.png",
+   "grade_psnr_db": 39.9,
+   "match": {
+    "inliers": 1070,
+    "scale": 1.0,
+    "shift_px": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  {
+   "file": "liquid-gold/07_mobius_chrome.jpg",
+   "pool": "liquid-gold",
+   "still": "mobius_chrome.png",
+   "object": "mobius",
+   "material": "chrome",
+   "seed": 1047,
+   "from": "klein/ov_mobius_chrome.png",
+   "grade_psnr_db": 38.1,
+   "match": {
+    "inliers": 197,
+    "scale": 1.0,
+    "shift_px": [
+     0.1,
+     0.0
+    ]
+   }
+  },
+  {
+   "file": "liquid-gold/08_wine_glass_mercury.jpg",
+   "pool": "liquid-gold",
+   "still": "wine_glass_mercury.png",
+   "object": "wine_glass",
+   "material": "mercury",
+   "seed": 1028,
+   "from": "klein/ov_wine_glass_mercury.png",
+   "grade_psnr_db": 41.3,
+   "match": {
+    "inliers": 606,
+    "scale": 1.0,
+    "shift_px": [
+     -0.0,
+     -0.0
+    ]
+   }
+  },
+  {
+   "file": "liquid-gold/09_dodecahedron_chrome.jpg",
+   "pool": "liquid-gold",
+   "still": "dodecahedron_chrome.png",
+   "object": "dodecahedron",
+   "material": "chrome",
+   "seed": 1045,
+   "from": "klein/ov_dodecahedron_chrome.png",
+   "grade_psnr_db": 41.1,
+   "match": {
+    "inliers": 154,
+    "scale": 1.0,
+    "shift_px": [
+     0.0,
+     0.5
+    ]
+   }
+  },
+  {
+   "file": "liquid-gold/10_gem_chrome.jpg",
+   "pool": "liquid-gold",
+   "still": "gem_chrome.png",
+   "object": "gem",
+   "material": "chrome",
+   "seed": 1025,
+   "from": "klein/ov_gem_chrome.png",
+   "grade_psnr_db": 39.0,
+   "match": {
+    "inliers": 673,
+    "scale": 1.0,
+    "shift_px": [
+     -0.0,
+     -0.0
+    ]
+   }
+  },
+  {
+   "file": "liquid-gold/11_cube_mercury.jpg",
+   "pool": "liquid-gold",
+   "still": "cube_mercury.png",
+   "object": "cube",
+   "material": "mercury",
+   "seed": 1043,
+   "from": "klein/ov_cube_mercury.png",
+   "grade_psnr_db": 41.3,
+   "match": {
+    "inliers": 681,
+    "scale": 1.0,
+    "shift_px": [
+     0.1,
+     0.1
+    ]
+   }
+  },
+  {
+   "file": "bloom/00_dandelion_iridescent.jpg",
+   "pool": "bloom",
+   "still": "dandelion_iridescent.png",
+   "object": "dandelion",
+   "material": "iridescent",
+   "seed": 1010,
+   "from": "klein/ov_dandelion_iridescent.png",
+   "grade_psnr_db": 36.8,
+   "match": {
+    "inliers": 284,
+    "scale": 1.0,
+    "shift_px": [
+     0.1,
+     -0.1
+    ]
+   }
+  },
+  {
+   "file": "bloom/01_lotus_iridescent.jpg",
+   "pool": "bloom",
+   "still": "lotus_iridescent.png",
+   "object": "lotus",
+   "material": "iridescent",
+   "seed": 1058,
+   "from": "klein/ov_lotus_iridescent.png",
+   "grade_psnr_db": 35.0,
+   "match": {
+    "inliers": 359,
+    "scale": 1.0,
+    "shift_px": [
+     -0.0,
+     0.1
+    ]
+   }
+  },
+  {
+   "file": "bloom/02_butterfly_oil_slick.jpg",
+   "pool": "bloom",
+   "still": "butterfly_oil_slick.png",
+   "object": "butterfly",
+   "material": "oil_slick",
+   "seed": 1051,
+   "from": "klein/ov_butterfly_oil_slick.png",
+   "grade_psnr_db": 32.8,
+   "match": {
+    "inliers": 110,
+    "scale": 0.999,
+    "shift_px": [
+     0.4,
+     0.1
+    ]
+   }
+  },
+  {
+   "file": "bloom/03_dragonfly_oil_slick.jpg",
+   "pool": "bloom",
+   "still": "dragonfly_oil_slick.png",
+   "object": "dragonfly",
+   "material": "oil_slick",
+   "seed": 1054,
+   "from": "klein/ov_dragonfly_oil_slick.png",
+   "grade_psnr_db": 32.8,
+   "match": {
+    "inliers": 43,
+    "scale": 1.0,
+    "shift_px": [
+     -0.1,
+     0.1
+    ]
+   }
+  },
+  {
+   "file": "bloom/04_feather_iridescent.jpg",
+   "pool": "bloom",
+   "still": "feather_iridescent.png",
+   "object": "feather",
+   "material": "iridescent",
+   "seed": 1022,
+   "from": "klein/ov_feather_iridescent.png",
+   "grade_psnr_db": 36.1,
+   "match": {
+    "inliers": 230,
+    "scale": 1.0,
+    "shift_px": [
+     0.1,
+     0.2
+    ]
+   }
+  },
+  {
+   "file": "bloom/05_leaf_iridescent.jpg",
+   "pool": "bloom",
+   "still": "leaf_iridescent.png",
+   "object": "leaf",
+   "material": "iridescent",
+   "seed": 1060,
+   "from": "klein/ov_leaf_iridescent.png",
+   "grade_psnr_db": 35.1,
+   "match": {
+    "inliers": 226,
+    "scale": 1.0,
+    "shift_px": [
+     -0.0,
+     -0.2
+    ]
+   }
+  },
+  {
+   "file": "bloom/06_maple_seed_iridescent.jpg",
+   "pool": "bloom",
+   "still": "maple_seed_iridescent.png",
+   "object": "maple_seed",
+   "material": "iridescent",
+   "seed": 1326,
+   "from": "klein/ov_maple_seed_iridescent.png",
+   "grade_psnr_db": 38.4,
+   "match": {
+    "inliers": 162,
+    "scale": 0.999,
+    "shift_px": [
+     0.3,
+     0.1
+    ]
+   }
+  },
+  {
+   "file": "bloom/07_acorn_iridescent.jpg",
+   "pool": "bloom",
+   "still": "acorn_iridescent.png",
+   "object": "acorn",
+   "material": "iridescent",
+   "seed": 1325,
+   "from": "klein/ov_acorn_iridescent.png",
+   "grade_psnr_db": 35.7,
+   "match": {
+    "inliers": 227,
+    "scale": 1.0,
+    "shift_px": [
+     -0.3,
+     0.3
+    ]
+   }
+  },
+  {
+   "file": "bloom/08_pine_cone_iridescent.jpg",
+   "pool": "bloom",
+   "still": "pine_cone_iridescent.png",
+   "object": "pine_cone",
+   "material": "iridescent",
+   "seed": 1061,
+   "from": "klein/ov_pine_cone_iridescent.png",
+   "grade_psnr_db": 35.8,
+   "match": {
+    "inliers": 529,
+    "scale": 1.0,
+    "shift_px": [
+     -0.2,
+     -0.0
+    ]
+   }
+  },
+  {
+   "file": "bloom/09_egg_iridescent.jpg",
+   "pool": "bloom",
+   "still": "egg_iridescent.png",
+   "object": "egg",
+   "material": "iridescent",
+   "seed": 1006,
+   "from": "klein/ov_egg_iridescent.png",
+   "grade_psnr_db": 37.2,
+   "match": {
+    "inliers": 70,
+    "scale": 1.0,
+    "shift_px": [
+     -0.1,
+     0.4
+    ]
+   }
+  },
+  {
+   "file": "bloom/10_lotus_seedpod_oil_slick.jpg",
+   "pool": "bloom",
+   "still": "lotus_seedpod_oil_slick.png",
+   "object": "lotus_seedpod",
+   "material": "oil_slick",
+   "seed": 1327,
+   "from": "klein/ov_lotus_seedpod_oil_slick.png",
+   "grade_psnr_db": 34.8,
+   "match": {
+    "inliers": 102,
+    "scale": 1.0,
+    "shift_px": [
+     0.1,
+     -0.2
+    ]
+   }
+  },
+  {
+   "file": "bloom/11_perfume_flask_iridescent.jpg",
+   "pool": "bloom",
+   "still": "perfume_flask_iridescent.png",
+   "object": "perfume_flask",
+   "material": "iridescent",
+   "seed": 1030,
+   "from": "klein/ov_perfume_flask_iridescent.png",
+   "grade_psnr_db": 36.5,
+   "match": {
+    "inliers": 135,
+    "scale": 0.999,
+    "shift_px": [
+     0.6,
+     0.2
+    ]
+   }
+  },
+  {
+   "file": "neon-night/00_droplet_black_glass.jpg",
+   "pool": "neon-night",
+   "still": "droplet_black_glass.png",
+   "object": "droplet",
+   "material": "black_glass",
+   "seed": 1003,
+   "from": "klein/ov_droplet_black_glass.png",
+   "grade_psnr_db": 42.7,
+   "match": {
+    "inliers": 13,
+    "scale": 0.997,
+    "shift_px": [
+     0.8,
+     2.2
+    ]
+   }
+  },
+  {
+   "file": "neon-night/01_jellyfish_black_glass.jpg",
+   "pool": "neon-night",
+   "still": "jellyfish_black_glass.png",
+   "object": "jellyfish",
+   "material": "black_glass",
+   "seed": 1055,
+   "from": "klein/ov_jellyfish_black_glass.png",
+   "grade_psnr_db": 38.0,
+   "match": {
+    "inliers": 117,
+    "scale": 1.0,
+    "shift_px": [
+     -0.1,
+     -0.3
+    ]
+   }
+  },
+  {
+   "file": "neon-night/02_quartz_black_glass.jpg",
+   "pool": "neon-night",
+   "still": "quartz_black_glass.png",
+   "object": "quartz",
+   "material": "black_glass",
+   "seed": 1023,
+   "from": "klein/ov_quartz_black_glass.png",
+   "grade_psnr_db": 39.4,
+   "match": {
+    "inliers": 121,
+    "scale": 1.0,
+    "shift_px": [
+     -0.2,
+     -0.2
+    ]
+   }
+  },
+  {
+   "file": "neon-night/03_lotus_black_glass.jpg",
+   "pool": "neon-night",
+   "still": "lotus_black_glass.png",
+   "object": "lotus",
+   "material": "black_glass",
+   "seed": 1058,
+   "from": "klein/ov_lotus_black_glass.png",
+   "grade_psnr_db": 38.9,
+   "match": {
+    "inliers": 286,
+    "scale": 1.0,
+    "shift_px": [
+     -0.1,
+     0.1
+    ]
+   }
+  },
+  {
+   "file": "neon-night/04_crystal_cluster_black_glass.jpg",
+   "pool": "neon-night",
+   "still": "crystal_cluster_black_glass.png",
+   "object": "crystal_cluster",
+   "material": "black_glass",
+   "seed": 1024,
+   "from": "klein/ov_crystal_cluster_black_glass.png",
+   "grade_psnr_db": 37.4,
+   "match": {
+    "inliers": 330,
+    "scale": 1.0,
+    "shift_px": [
+     0.2,
+     -0.2
+    ]
+   }
+  },
+  {
+   "file": "neon-night/05_rose_black_glass.jpg",
+   "pool": "neon-night",
+   "still": "rose_black_glass.png",
+   "object": "rose",
+   "material": "black_glass",
+   "seed": 1057,
+   "from": "klein/ov_rose_black_glass.png",
+   "grade_psnr_db": 38.9,
+   "match": {
+    "inliers": 78,
+    "scale": 0.999,
+    "shift_px": [
+     0.8,
+     -0.4
+    ]
+   }
+  },
+  {
+   "file": "neon-night/06_umbrella_black_glass.jpg",
+   "pool": "neon-night",
+   "still": "umbrella_black_glass.png",
+   "object": "umbrella",
+   "material": "black_glass",
+   "seed": 1074,
+   "from": "klein/ov_umbrella_black_glass.png",
+   "grade_psnr_db": 37.0,
+   "match": {
+    "inliers": 546,
+    "scale": 1.0,
+    "shift_px": [
+     0.2,
+     0.0
+    ]
+   }
+  },
+  {
+   "file": "neon-night/07_wine_glass_black_glass.jpg",
+   "pool": "neon-night",
+   "still": "wine_glass_black_glass.png",
+   "object": "wine_glass",
+   "material": "black_glass",
+   "seed": 1028,
+   "from": "klein/ov_wine_glass_black_glass.png",
+   "grade_psnr_db": 41.5,
+   "match": {
+    "inliers": 57,
+    "scale": 1.0,
+    "shift_px": [
+     -0.3,
+     -0.5
+    ]
+   }
+  },
+  {
+   "file": "neon-night/08_snowflake_black_glass.jpg",
+   "pool": "neon-night",
+   "still": "snowflake_black_glass.png",
+   "object": "snowflake",
+   "material": "black_glass",
+   "seed": 1062,
+   "from": "klein/ov_snowflake_black_glass.png",
+   "grade_psnr_db": 36.5,
+   "match": {
+    "inliers": 223,
+    "scale": 1.0,
+    "shift_px": [
+     0.1,
+     0.3
+    ]
+   }
+  },
+  {
+   "file": "neon-night/09_torus_black_glass.jpg",
+   "pool": "neon-night",
+   "still": "torus_black_glass.png",
+   "object": "torus",
+   "material": "black_glass",
+   "seed": 1103,
+   "from": "klein/ov_torus_black_glass.png",
+   "grade_psnr_db": 38.7,
+   "match": {
+    "inliers": 50,
+    "scale": 1.0,
+    "shift_px": [
+     0.1,
+     0.1
+    ]
+   }
+  },
+  {
+   "file": "neon-night/10_amethyst_geode_black_glass.jpg",
+   "pool": "neon-night",
+   "still": "amethyst_geode_black_glass.png",
+   "object": "amethyst_geode",
+   "material": "black_glass",
+   "seed": 1314,
+   "from": "klein/ov_amethyst_geode_black_glass.png",
+   "grade_psnr_db": 36.7,
+   "match": {
+    "inliers": 475,
+    "scale": 1.0,
+    "shift_px": [
+     0.1,
+     0.0
+    ]
+   }
+  },
+  {
+   "file": "neon-night/11_fluorite_octahedron_black_glass.jpg",
+   "pool": "neon-night",
+   "still": "fluorite_octahedron_black_glass.png",
+   "object": "fluorite_octahedron",
+   "material": "black_glass",
+   "seed": 1315,
+   "from": "klein/ov_fluorite_octahedron_black_glass.png",
+   "grade_psnr_db": 40.1,
+   "match": {
+    "inliers": 206,
+    "scale": 1.0,
+    "shift_px": [
+     0.0,
+     -0.1
+    ]
+   }
+  },
+  {
+   "file": "ocean/00_jellyfish_iridescent.jpg",
+   "pool": "ocean",
+   "still": "jellyfish_iridescent.png",
+   "object": "jellyfish",
+   "material": "iridescent",
+   "seed": 1055,
+   "from": "klein/ov_jellyfish_iridescent.png",
+   "grade_psnr_db": 40.1,
+   "match": {
+    "inliers": 372,
+    "scale": 1.0,
+    "shift_px": [
+     -0.1,
+     -0.0
+    ]
+   }
+  },
+  {
+   "file": "ocean/01_spiral_seashell_iridescent.jpg",
+   "pool": "ocean",
+   "still": "spiral_seashell_iridescent.png",
+   "object": "spiral_seashell",
+   "material": "iridescent",
+   "seed": 1312,
+   "from": "klein/ov_spiral_seashell_iridescent.png",
+   "grade_psnr_db": 38.2,
+   "match": {
+    "inliers": 815,
+    "scale": 1.0,
+    "shift_px": [
+     -0.1,
+     0.0
+    ]
+   }
+  },
+  {
+   "file": "ocean/02_nautilus_gr.jpg",
+   "pool": "ocean",
+   "still": "nautilus_gr.png",
+   "object": "nautilus",
+   "material": "gr",
+   "seed": 1049,
+   "from": "objects/nautilus.png",
+   "grade_psnr_db": 39.7,
+   "match": {
+    "inliers": 791,
+    "scale": 1.0,
+    "shift_px": [
+     0.1,
+     -0.0
+    ]
+   }
+  },
+  {
+   "file": "ocean/03_sea_urchin_iridescent.jpg",
+   "pool": "ocean",
+   "still": "sea_urchin_iridescent.png",
+   "object": "sea_urchin",
+   "material": "iridescent",
+   "seed": 1009,
+   "from": "klein/ov_sea_urchin_iridescent.png",
+   "grade_psnr_db": 36.4,
+   "match": {
+    "inliers": 1046,
+    "scale": 1.0,
+    "shift_px": [
+     0.0,
+     -0.0
+    ]
+   }
+  },
+  {
+   "file": "ocean/04_scallop_shell_iridescent.jpg",
+   "pool": "ocean",
+   "still": "scallop_shell_iridescent.png",
+   "object": "scallop_shell",
+   "material": "iridescent",
+   "seed": 1311,
+   "from": "klein/ov_scallop_shell_iridescent.png",
+   "grade_psnr_db": 38.9,
+   "match": {
+    "inliers": 934,
+    "scale": 1.0,
+    "shift_px": [
+     0.2,
+     -0.0
+    ]
+   }
+  },
+  {
+   "file": "ocean/05_sand_dollar_gr.jpg",
+   "pool": "ocean",
+   "still": "sand_dollar_gr.png",
+   "object": "sand_dollar",
+   "material": "gr",
+   "seed": 1313,
+   "from": "objects/sand_dollar.png",
+   "grade_psnr_db": 40.6,
+   "match": {
+    "inliers": 822,
+    "scale": 1.0,
+    "shift_px": [
+     -0.0,
+     -0.0
+    ]
+   }
+  },
+  {
+   "file": "ocean/06_manta_ray_chrome.jpg",
+   "pool": "ocean",
+   "still": "manta_ray_chrome.png",
+   "object": "manta_ray",
+   "material": "chrome",
+   "seed": 1053,
+   "from": "klein/ov_manta_ray_chrome.png",
+   "grade_psnr_db": 41.6,
+   "match": {
+    "inliers": 200,
+    "scale": 1.0,
+    "shift_px": [
+     -0.1,
+     -0.0
+    ]
+   }
+  },
+  {
+   "file": "ocean/07_conch_mercury.jpg",
+   "pool": "ocean",
+   "still": "conch_mercury.png",
+   "object": "conch",
+   "material": "mercury",
+   "seed": 1050,
+   "from": "klein/ov_conch_mercury.png",
+   "grade_psnr_db": 42.6,
+   "match": {
+    "inliers": 1207,
+    "scale": 1.0,
+    "shift_px": [
+     -0.0,
+     -0.1
+    ]
+   }
+  },
+  {
+   "file": "ocean/08_koi_gr.jpg",
+   "pool": "ocean",
+   "still": "koi_gr.png",
+   "object": "koi",
+   "material": "gr",
+   "seed": 1056,
+   "from": "objects/koi.png",
+   "grade_psnr_db": 39.6,
+   "match": {
+    "inliers": 743,
+    "scale": 1.0,
+    "shift_px": [
+     -0.0,
+     -0.1
+    ]
+   }
+  },
+  {
+   "file": "ocean/09_crown_splash_gr.jpg",
+   "pool": "ocean",
+   "still": "crown_splash_gr.png",
+   "object": "crown_splash",
+   "material": "gr",
+   "seed": 1004,
+   "from": "objects/crown_splash.png",
+   "grade_psnr_db": 40.8,
+   "match": {
+    "inliers": 547,
+    "scale": 1.0,
+    "shift_px": [
+     0.0,
+     -0.1
+    ]
+   }
+  },
+  {
+   "file": "ocean/10_pearl_gr.jpg",
+   "pool": "ocean",
+   "still": "pearl_gr.png",
+   "object": "pearl",
+   "material": "gr",
+   "seed": 1005,
+   "from": "objects/pearl.png",
+   "grade_psnr_db": 44.1,
+   "match": {
+    "inliers": 121,
+    "scale": 0.999,
+    "shift_px": [
+     0.5,
+     -0.2
+    ]
+   }
+  },
+  {
+   "file": "ocean/11_droplet_gr.jpg",
+   "pool": "ocean",
+   "still": "droplet_gr.png",
+   "object": "droplet",
+   "material": "gr",
+   "seed": 1003,
+   "from": "objects/droplet.png",
+   "grade_psnr_db": 45.2,
+   "match": {
+    "inliers": 48,
+    "scale": 1.0,
+    "shift_px": [
+     -0.6,
+     0.3
+    ]
+   }
+  },
+  {
+   "file": "cosmic/00_orb_iridescent.jpg",
+   "pool": "cosmic",
+   "still": "orb_iridescent.png",
+   "object": "orb",
+   "material": "iridescent",
+   "seed": 1001,
+   "from": "klein/ov_orb_iridescent.png",
+   "grade_psnr_db": 40.2,
+   "match": {
+    "inliers": 291,
+    "scale": 1.0,
+    "shift_px": [
+     0.1,
+     -0.1
+    ]
+   }
+  },
+  {
+   "file": "cosmic/01_crescent_moon_oil_slick.jpg",
+   "pool": "cosmic",
+   "still": "crescent_moon_oil_slick.png",
+   "object": "crescent_moon",
+   "material": "oil_slick",
+   "seed": 1013,
+   "from": "klein/ov_crescent_moon_oil_slick.png",
+   "grade_psnr_db": 37.2,
+   "match": {
+    "inliers": 187,
+    "scale": 1.0,
+    "shift_px": [
+     0.1,
+     -0.0
+    ]
+   }
+  },
+  {
+   "file": "cosmic/02_pearl_iridescent.jpg",
+   "pool": "cosmic",
+   "still": "pearl_iridescent.png",
+   "object": "pearl",
+   "material": "iridescent",
+   "seed": 1005,
+   "from": "klein/ov_pearl_iridescent.png",
+   "grade_psnr_db": 39.6,
+   "match": {
+    "inliers": 89,
+    "scale": 1.0,
+    "shift_px": [
+     -0.1,
+     0.5
+    ]
+   }
+  },
+  {
+   "file": "cosmic/03_snowflake_iridescent.jpg",
+   "pool": "cosmic",
+   "still": "snowflake_iridescent.png",
+   "object": "snowflake",
+   "material": "iridescent",
+   "seed": 1062,
+   "from": "klein/ov_snowflake_iridescent.png",
+   "grade_psnr_db": 38.0,
+   "match": {
+    "inliers": 201,
+    "scale": 1.0,
+    "shift_px": [
+     -0.0,
+     -0.0
+    ]
+   }
+  },
+  {
+   "file": "cosmic/04_egg_iridescent.jpg",
+   "pool": "cosmic",
+   "still": "egg_iridescent.png",
+   "object": "egg",
+   "material": "iridescent",
+   "seed": 1006,
+   "from": "klein/ov_egg_iridescent.png",
+   "grade_psnr_db": 39.2,
+   "match": {
+    "inliers": 107,
+    "scale": 1.0,
+    "shift_px": [
+     -0.2,
+     0.0
+    ]
+   }
+  },
+  {
+   "file": "cosmic/05_mobius_iridescent.jpg",
+   "pool": "cosmic",
+   "still": "mobius_iridescent.png",
+   "object": "mobius",
+   "material": "iridescent",
+   "seed": 1047,
+   "from": "klein/ov_mobius_iridescent.png",
+   "grade_psnr_db": 37.9,
+   "match": {
+    "inliers": 91,
+    "scale": 1.0,
+    "shift_px": [
+     0.3,
+     0.2
+    ]
+   }
+  },
+  {
+   "file": "cosmic/06_dna_helix_iridescent.jpg",
+   "pool": "cosmic",
+   "still": "dna_helix_iridescent.png",
+   "object": "dna_helix",
+   "material": "iridescent",
+   "seed": 1048,
+   "from": "klein/ov_dna_helix_iridescent.png",
+   "grade_psnr_db": 38.3,
+   "match": {
+    "inliers": 365,
+    "scale": 1.0,
+    "shift_px": [
+     -0.0,
+     -0.1
+    ]
+   }
+  },
+  {
+   "file": "cosmic/07_sea_urchin_oil_slick.jpg",
+   "pool": "cosmic",
+   "still": "sea_urchin_oil_slick.png",
+   "object": "sea_urchin",
+   "material": "oil_slick",
+   "seed": 1009,
+   "from": "klein/ov_sea_urchin_oil_slick.png",
+   "grade_psnr_db": 34.4,
+   "match": {
+    "inliers": 651,
+    "scale": 1.0,
+    "shift_px": [
+     0.1,
+     0.2
+    ]
+   }
+  },
+  {
+   "file": "cosmic/08_soap_orb_gr.jpg",
+   "pool": "cosmic",
+   "still": "soap_orb_gr.png",
+   "object": "soap_orb",
+   "material": "gr",
+   "seed": 1002,
+   "from": "objects/soap_orb.png",
+   "grade_psnr_db": 42.8,
+   "match": {
+    "inliers": 288,
+    "scale": 1.0,
+    "shift_px": [
+     -0.1,
+     0.2
+    ]
+   }
+  },
+  {
+   "file": "cosmic/09_dodecahedron_mercury.jpg",
+   "pool": "cosmic",
+   "still": "dodecahedron_mercury.png",
+   "object": "dodecahedron",
+   "material": "mercury",
+   "seed": 1045,
+   "from": "klein/ov_dodecahedron_mercury.png",
+   "grade_psnr_db": 42.4,
+   "match": {
+    "inliers": 683,
+    "scale": 1.0,
+    "shift_px": [
+     -0.0,
+     0.2
+    ]
+   }
+  },
+  {
+   "file": "cosmic/10_gem_chrome.jpg",
+   "pool": "cosmic",
+   "still": "gem_chrome.png",
+   "object": "gem",
+   "material": "chrome",
+   "seed": 1025,
+   "from": "klein/ov_gem_chrome.png",
+   "grade_psnr_db": 39.9,
+   "match": {
+    "inliers": 563,
+    "scale": 1.0,
+    "shift_px": [
+     -0.0,
+     0.0
+    ]
+   }
+  },
+  {
+   "file": "cosmic/11_torus_knot_gr.jpg",
+   "pool": "cosmic",
+   "still": "torus_knot_gr.png",
+   "object": "torus_knot",
+   "material": "gr",
+   "seed": 1046,
+   "from": "objects/torus_knot.png",
+   "grade_psnr_db": 41.2,
+   "match": {
+    "inliers": 286,
+    "scale": 1.0,
+    "shift_px": [
+     0.1,
+     -0.0
+    ]
+   }
+  },
+  {
+   "file": "black/00_rose_black_glass.jpg",
+   "pool": "black",
+   "still": "rose_black_glass.png",
+   "object": "rose",
+   "material": "black_glass",
+   "seed": 1057,
+   "from": "klein/ov_rose_black_glass.png",
+   "match": {
+    "inliers": 152,
+    "scale": 1.0,
+    "shift_px": [
+     0.2,
+     -0.1
+    ]
+   }
+  },
+  {
+   "file": "black/01_jellyfish_black_glass.jpg",
+   "pool": "black",
+   "still": "jellyfish_black_glass.png",
+   "object": "jellyfish",
+   "material": "black_glass",
+   "seed": 1055,
+   "from": "klein/ov_jellyfish_black_glass.png",
+   "match": {
+    "inliers": 70,
+    "scale": 1.001,
+    "shift_px": [
+     -0.7,
+     0.5
+    ]
+   }
+  },
+  {
+   "file": "black/02_butterfly_gr.jpg",
+   "pool": "black",
+   "still": "butterfly_gr.png",
+   "object": "butterfly",
+   "material": "gr",
+   "seed": 1051,
+   "from": "objects/butterfly.png",
+   "match": {
+    "inliers": 776,
+    "scale": 1.0,
+    "shift_px": [
+     0.1,
+     -0.0
+    ]
+   }
+  },
+  {
+   "file": "black/03_swallow_gr.jpg",
+   "pool": "black",
+   "still": "swallow_gr.png",
+   "object": "swallow",
+   "material": "gr",
+   "seed": 1052,
+   "from": "objects/swallow.png",
+   "match": {
+    "inliers": 314,
+    "scale": 1.0,
+    "shift_px": [
+     -0.0,
+     -0.0
+    ]
+   }
+  },
+  {
+   "file": "black/04_droplet_swarm_gr.jpg",
+   "pool": "black",
+   "still": "droplet_swarm_gr.png",
+   "object": "droplet_swarm",
+   "material": "gr",
+   "seed": 1101,
+   "from": "objects/droplet_swarm.png",
+   "match": {
+    "inliers": 537,
+    "scale": 1.0,
+    "shift_px": [
+     0.1,
+     -0.0
+    ]
+   }
+  },
+  {
+   "file": "black/05_lotus_black_glass.jpg",
+   "pool": "black",
+   "still": "lotus_black_glass.png",
+   "object": "lotus",
+   "material": "black_glass",
+   "seed": 1058,
+   "from": "klein/ov_lotus_black_glass.png",
+   "match": {
+    "inliers": 391,
+    "scale": 1.0,
+    "shift_px": [
+     0.1,
+     0.1
+    ]
+   }
+  },
+  {
+   "file": "black/06_nautilus_gr.jpg",
+   "pool": "black",
+   "still": "nautilus_gr.png",
+   "object": "nautilus",
+   "material": "gr",
+   "seed": 1049,
+   "from": "objects/nautilus.png",
+   "match": {
+    "inliers": 733,
+    "scale": 1.0,
+    "shift_px": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  {
+   "file": "black/07_sea_urchin_gr.jpg",
+   "pool": "black",
+   "still": "sea_urchin_gr.png",
+   "object": "sea_urchin",
+   "material": "gr",
+   "seed": 1009,
+   "from": "objects/sea_urchin.png",
+   "match": {
+    "inliers": 924,
+    "scale": 1.0,
+    "shift_px": [
+     0.1,
+     0.0
+    ]
+   }
+  },
+  {
+   "file": "black/08_crystal_cluster_black_glass.jpg",
+   "pool": "black",
+   "still": "crystal_cluster_black_glass.png",
+   "object": "crystal_cluster",
+   "material": "black_glass",
+   "seed": 1024,
+   "from": "klein/ov_crystal_cluster_black_glass.png",
+   "match": {
+    "inliers": 581,
+    "scale": 1.0,
+    "shift_px": [
+     0.1,
+     0.0
+    ]
+   }
+  },
+  {
+   "file": "black/09_mobius_gr.jpg",
+   "pool": "black",
+   "still": "mobius_gr.png",
+   "object": "mobius",
+   "material": "gr",
+   "seed": 1047,
+   "from": "objects/mobius.png",
+   "match": {
+    "inliers": 80,
+    "scale": 1.0,
+    "shift_px": [
+     0.1,
+     0.2
+    ]
+   }
+  },
+  {
+   "file": "black/10_dna_helix_gr.jpg",
+   "pool": "black",
+   "still": "dna_helix_gr.png",
+   "object": "dna_helix",
+   "material": "gr",
+   "seed": 1048,
+   "from": "objects/dna_helix.png",
+   "match": {
+    "inliers": 182,
+    "scale": 1.0,
+    "shift_px": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  {
+   "file": "black/11_droplet_black_glass.jpg",
+   "pool": "black",
+   "still": "droplet_black_glass.png",
+   "object": "droplet",
+   "material": "black_glass",
+   "seed": 1003,
+   "from": "klein/ov_droplet_black_glass.png",
+   "match": {
+    "inliers": 39,
+    "scale": 0.996,
+    "shift_px": [
+     3.5,
+     -1.0
+    ]
+   }
+  },
+  {
+   "file": "black/12_manta_ray_gr.jpg",
+   "pool": "black",
+   "still": "manta_ray_gr.png",
+   "object": "manta_ray",
+   "material": "gr",
+   "seed": 1053,
+   "from": "objects/manta_ray.png",
+   "match": {
+    "inliers": 139,
+    "scale": 0.767,
+    "shift_px": [
+     109.0,
+     79.0
+    ]
+   }
+  },
+  {
+   "file": "black/13_dragonfly_gr.jpg",
+   "pool": "black",
+   "still": "dragonfly_gr.png",
+   "object": "dragonfly",
+   "material": "gr",
+   "seed": 1054,
+   "from": "objects/dragonfly.png",
+   "match": {
+    "inliers": 546,
+    "scale": 0.921,
+    "shift_px": [
+     36.3,
+     -35.2
+    ]
+   }
+  },
+  {
+   "file": "black/14_torus_knot_gr.jpg",
+   "pool": "black",
+   "still": "torus_knot_gr.png",
+   "object": "torus_knot",
+   "material": "gr",
+   "seed": 1046,
+   "from": "objects/torus_knot.png",
+   "match": {
+    "inliers": 232,
+    "scale": 1.0,
+    "shift_px": [
+     -2.0,
+     -2.9
+    ]
+   }
+  },
+  {
+   "file": "black/15_ribbon_twist_gr.jpg",
+   "pool": "black",
+   "still": "ribbon_twist_gr.png",
+   "object": "ribbon_twist",
+   "material": "gr",
+   "seed": 1102,
+   "from": "objects/ribbon_twist.png",
+   "match": {
+    "inliers": 48,
+    "scale": 1.372,
+    "shift_px": [
+     -179.4,
+     -112.1
+    ]
+   }
+  },
+  {
+   "file": "black/16_liquid_orb_gr.jpg",
+   "pool": "black",
+   "still": "soap_orb_gr.png",
+   "object": "soap_orb",
+   "material": "gr",
+   "seed": 1002,
+   "from": "objects/soap_orb.png",
+   "match": {
+    "inliers": 361,
+    "scale": 1.056,
+    "shift_px": [
+     -30.1,
+     -16.0
+    ]
+   }
+  }
+ ]
+}

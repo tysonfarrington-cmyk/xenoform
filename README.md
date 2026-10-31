@@ -259,7 +259,7 @@ assets/library/                        manifest.json and the NASA anchor stills;
 library/                               shapes, loops, moves (driving clips are fetched, not shipped)
 examples/                              demo.wav, demo_base.mp4, demo_features.json, songs/ (the six bundled songs and their analyses),
                                        morphs/ (the loved morphs as raw clips), clips/ (the gold outro), cuts/ (an excerpt per vibe)
-scripts/                               vibe_objects/, autotune/, fetch_library.py, fetch_moves.py, build_showcase.py, qa_library.py, analyse_bundled_songs.py
+scripts/                               vibe_objects/, autotune/, fetch_library.py, fetch_moves.py, build_showcase.py, cut_examples.py, export_records.py, qa_library.py, analyse_bundled_songs.py
 docs/                                  REPRODUCE, CONTEST, LICENCES, mcp, stems, midi, vj, VIBES, transitions, footage, demo/
 tests/                                 pytest suite, incl. test_eligibility.py and test_docs.py
 ```

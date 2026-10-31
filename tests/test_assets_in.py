@@ -1,14 +1,20 @@
 """Assets into the app (31 Oct 2026, Stage 4 of docs/MUSIC_VIDEO_PLAN.md): the loved morphs, the gold outro clip and the
 rebuilt showcase reel, then the example cuts and the vibe cards, the chain presets, the records and the library strips.
 Each manifest is checked against the files it lists and the shipped stills it names."""
+import ast
 import hashlib
+import importlib.util
 import json
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 STATIC = ROOT / "src" / "xenoform" / "ui_static"
 MORPHS = ROOT / "examples" / "morphs"
 CLIPS = ROOT / "examples" / "clips"
+RECORDS = ROOT / "docs" / "demo" / "records"
+YOUTUBE = ROOT / "docs" / "demo" / "youtube"
+PROVENANCE = ROOT / "scripts" / "vibe_objects" / "provenance"
 
 
 def _json(path: Path):
@@ -217,3 +223,232 @@ def test_the_judges_page_lists_the_vibes_it_should():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     assert module.main(["--check"]) == 0, "judges.html is stale: python scripts/gen_judges_cards.py"
+
+
+# ------------------------------------------------------------------------------- records, the YouTube kit, provenance
+
+
+def _script(name: str, path: Path):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+# what the records and the kit must not carry: an artist's name (the Suno demos' file names), a path on the author's machine
+_LEAKS = re.compile(r"XF_|Korn|Prodigy|ZedsDead|Zeds Dead|Slipknot|System of a Down|\bTool\b|(?<![A-Za-z])[A-Za-z]:[\\/]|/Users/|tyson@|AppData|Desktop[\\/]|\.mp3\b")
+_SECRETS = re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+|api[_-]?key\s*[:=]|token\s*[:=]|password|secret", re.I)
+
+
+def _plain(text: str) -> str:
+    """A records file without its recipe codes (base64 can spell anything)."""
+    return re.sub(r"xf1\.[A-Za-z0-9_=-]+", "xf1.-", text)
+
+
+def test_the_as_cut_records_name_the_published_slots_and_every_job_has_a_chain_record():
+    from xenoform import simple_recipe
+
+    cuts = {"169": _json(RECORDS / "as_cut_169.json"), "916": _json(RECORDS / "as_cut_916.json")}
+    chains = _json(RECORDS / "chains.json")["jobs"]
+    jobs = set()
+    for key, cut in cuts.items():
+        assert cut["aspect"] == ("16:9" if key == "169" else "9:16") and len(cut["slots"]) == 34
+        plan = _json(ROOT / "docs" / "demo" / "tools" / "plans" / f"montage_{key}.json")
+        assert [s["label"] for s in cut["slots"]] == [row[0] for row in plan["slots"]]  # the plan's slots, in order
+        assert cut["slots"][0]["song_in"] == 0.0
+        for a, b in zip(cut["slots"], cut["slots"][1:]):
+            assert a["song_out"] == b["song_in"] and a["song_out"] > a["song_in"]  # the cuts tile the song
+        jobs |= {s["job"] for s in cut["slots"]}
+    assert len(jobs) == 62 and jobs <= set(chains)
+    assert len(chains) == 96
+    shipped = _shipped_files()
+    for job, rec in chains.items():
+        assert re.fullmatch(r"[0-9a-f]{8}", job) and rec["used_in"] and rec["vibe"] and rec["made"].startswith("2026-10-")
+        assert rec["tier"] in ("cloud", "final", "fast", "draft") and rec["engine"] and rec["seconds"] > 0, job
+        state = simple_recipe.decode(rec["recipe"])  # the code pastes into the desk
+        assert state["vibe"] == rec["vibe"] and not _LEAKS.search(json.dumps(state, ensure_ascii=False)), job
+        assert rec["song"]["label"] and (rec["song"]["id"] is None or rec["song"]["id"] in ("glitch-out", "hip-hop-boom-bap", "ambient", "liquid-dnb"))
+        assert rec["shots"] and all(sh["end"] > sh["start"] for sh in rec["shots"]), job
+        for a, b in zip(rec["shots"], rec["shots"][1:]):
+            assert b["start"] >= a["end"] - 0.01, job
+        if "clips" in rec:  # a film-pack cut: the clips it joined, by file name
+            assert rec["clips"] and all("/" not in c["file"] and "\\" not in c["file"] for c in rec["clips"]), job
+            continue
+        for sh in rec["shots"]:
+            m = sh.get("morph", sh["i"])
+            assert (sh["from"], sh["to"]) == (rec["chain"][m], rec["chain"][m + 1]), (job, sh["i"])
+        for f in (rec.get("pins") or {}).values():
+            assert f in rec["chain"], job
+    # a pin of a chain preset is a still of the job it was made on
+    for p in _json(ROOT / "configs" / "chain_presets.json")["presets"]:
+        job = (p.get("source") or {}).get("job")
+        if job:
+            assert set(p["pins"].values()) <= set(chains[job]["chain"]), p["id"]
+    assert len({f for rec in chains.values() for f in rec.get("chain", [])} & shipped) > 400  # most of what the records name ships
+
+
+def test_the_records_and_the_youtube_kit_carry_no_artist_no_path_no_secret():
+    files = [p for d in (RECORDS, YOUTUBE) for p in d.iterdir() if p.suffix in (".json", ".md", ".txt")]
+    files += [p for p in PROVENANCE.iterdir() if p.suffix in (".json", ".md")]
+    assert len(files) >= 14
+    for p in files:
+        text = _plain(p.read_text(encoding="utf-8"))
+        assert not _LEAKS.search(text), (p.name, _LEAKS.search(text).group(0))
+        assert not _SECRETS.search(text), (p.name, _SECRETS.search(text).group(0))
+    # in the cut records the song is a bundled one or neutral
+    songs = {rec["song"]["label"] for rec in _json(RECORDS / "chains.json")["jobs"].values()}
+    assert "Glitch Out" in songs and "Suno demo, heavy riff (not bundled)" in songs
+    # records are small: no media came with them (the budget of the whole of item 5)
+    total = sum(p.stat().st_size for d in (RECORDS, YOUTUBE, PROVENANCE) for p in d.iterdir() if p.is_file())
+    assert total < 1_000_000
+    assert not [p for d in (RECORDS, YOUTUBE, PROVENANCE) for p in d.iterdir() if p.suffix in (".mp4", ".jpg", ".png", ".wav", ".mp3")]
+
+
+def test_the_youtube_kit_is_the_published_text_and_the_thumbnail_scripts():
+    names = sorted(p.name for p in YOUTUBE.iterdir())
+    assert names == ["README.md", "demo_description.txt", "long_description.txt", "make_cover_916.py", "make_thumb_song.py",
+                     "make_thumbs_xf.py", "metadata.md", "song_description.txt"]
+    for p in YOUTUBE.glob("*.py"):
+        ast.parse(p.read_text(encoding="utf-8"))  # they run from a folder with frames/ and fonts/, but they parse
+    meta = (YOUTUBE / "metadata.md").read_text(encoding="utf-8")
+    assert "youtu.be/w6CTnHRR8U0" in meta and "Glitch Out" in meta and "#OpenSourceHiggsfield" in (YOUTUBE / "demo_description.txt").read_text(encoding="utf-8")
+    song = (YOUTUBE / "song_description.txt").read_text(encoding="utf-8")
+    assert "youtu.be/x_zMu29HfDA" in song and "youtu.be/xpUb5XcHtlQ" in song and "LTX-2.5" in song
+
+
+def test_the_chain_record_exporter_names_no_song_no_path_and_pairs_each_shot(tmp_path):
+    from xenoform import simple_recipe
+
+    export = _script("export_records", ROOT / "scripts" / "export_records.py")
+    assert export.neutral_song("Glitch Out (30 s cut)") == ("glitch-out", "Glitch Out", 30)
+    assert export.neutral_song("XF_Riff_Korn_01 (30 s cut)") == (None, "Suno demo, heavy riff (not bundled)", 30)
+    assert export.neutral_song("hip_hop_boom_bap (20 s cut)")[0] == "hip-hop-boom-bap"
+    assert export.neutral_song("Some Band - Some Song.mp3 (30 s cut)")[:2] == (None, "a song that is not bundled")
+    state = simple_recipe.decode(_json(ROOT / "examples" / "cuts" / "cuts.json")["cuts"][0]["recipe"])
+    state["song"] = "XF_Riff_Korn_01 (30 s cut)"
+    jobs = tmp_path / "jobs"
+    (jobs / "abcd1234" / "simple").mkdir(parents=True)
+    (jobs / "abcd1234" / "meta.json").write_text(json.dumps({
+        "created": "2026-10-29T08:35:00+11:00", "song": "XF_Riff_Korn_01 (30 s cut)", "vibe": state["vibe"], "aspect": "9:16",
+        "energy_preset": "dense", "quality_tier": "cloud", "recipe": simple_recipe.encode(state)}), encoding="utf-8")
+    here = "C:\\Projects\\xenoform-rc2\\work\\ui\\jobs\\abcd1234\\simple\\"
+    (jobs / "abcd1234" / "simple" / "simple.json").write_text(json.dumps({
+        "engine": "Cloud Final", "open_weights": True, "vibe": state["vibe"], "frames": 72, "fps": 24, "size": [1080, 1920], "seed": 2727,
+        "morph_style": "auto", "morph_styles": ["bloom", "melt"], "morph_timing": "smooth", "effects": ["feedback"],
+        "look": {"dance_fx": "cool-echo", "stems_path": "C:\\Users\\someone\\stems.json"}, "foreshadow": {"mode": "trace"},
+        "macros": {"intensity": 0.4, "speed": 0.5, "chaos": 0.15, "glow": 0.55, "drums": 0.6}, "idea": {"line": "moon jellyfish, comb jelly"},
+        "stills": ["cosmic/a.jpg", "cosmic/b.jpg", "cosmic/c.jpg"], "scene_mode": "off", "pins": {"1": "cosmic/b.jpg"},
+        "chain": {"morphs": 2, "assign": [0, 1], "reuse": False},
+        "fallbacks": [{"capped": {}}, {"cloud_final": "2 of 2 morphs rendered with LTX-2.5 on Comfy Cloud"}],
+        "clips": [here + "cloud_full00.mp4"], "audio_path": "C:\\Projects\\xenoform-rc2\\work\\ui\\uploads\\x.wav",
+        "shots": [{"index": 0, "start": 0.0, "end": 1.5, "render_s": 2, "speed": 0.75, "morph": 0, "effects": []},
+                  {"index": 1, "start": 1.5, "end": 3.0, "render_s": 2, "speed": 0.75, "ease": "in", "morph": 1,
+                   "effects": [{"type": "punch", "t": 1.5, "strength": 0.6}]}]}), encoding="utf-8")
+    rec = export.record("abcd1234", ["example cut"], jobs)
+    text = json.dumps(rec)
+    assert not _LEAKS.search(_plain(text)) and "Korn" not in json.dumps(simple_recipe.decode(rec["recipe"]))
+    assert simple_recipe.decode(rec["recipe"])["song"] == "Suno demo, heavy riff (30 s cut)"
+    assert rec["song"] == {"id": None, "label": "Suno demo, heavy riff (not bundled)", "window_s": 30} and rec["seconds"] == 3.0
+    assert rec["look"] == "cool-echo" and rec["foreshadow"] == "trace" and rec["knobs"] == {"intensity": 0.4, "speed": 0.5, "chaos": 0.15, "glow": 0.55}
+    assert rec["rendered"].startswith("2 of 2 morphs") and rec["idea"] == "moon jellyfish, comb jelly" and rec["pins"] == {"1": "cosmic/b.jpg"}
+    assert [(s["from"], s["to"], s["style"]) for s in rec["shots"]] == [("cosmic/a.jpg", "cosmic/b.jpg", "bloom"), ("cosmic/b.jpg", "cosmic/c.jpg", "melt")]
+    assert rec["shots"][1]["ease"] == "in" and rec["shots"][1]["effects"][0]["type"] == "punch" and rec["morph_styles"] == ["bloom", "melt"]
+    # a cut of film clips lists the clips by file name
+    film = json.loads((jobs / "abcd1234" / "simple" / "simple.json").read_text(encoding="utf-8"))
+    film.update({"source": "clips", "stills": [], "own_clips": [{"path": "C:\\Projects\\own\\01_metropolis_robot.mp4", "seconds": 24.0, "label": "Metropolis robot"}],
+                 "shots": [{"index": 0, "start": 0.0, "end": 2.0, "render_s": 3, "source": "01_metropolis_robot.mp4", "clip_start": 13.0, "effects": []}]})
+    (jobs / "abcd1234" / "simple" / "simple.json").write_text(json.dumps(film), encoding="utf-8")
+    frec = export.record("abcd1234", ["film"], jobs)
+    assert frec["clips"] == [{"file": "01_metropolis_robot.mp4", "label": "Metropolis robot", "seconds": 24.0}] and "chain" not in frec
+    assert not _LEAKS.search(_plain(json.dumps(frec)))
+    # the writer keeps a shot on a line and parses back to the same object
+    obj = {"a": 1, "b": [1, 2], "c": [{"x": 1}, {"y": [2]}], "d": {}, "e": []}
+    assert json.loads(export.fmt(obj)) == obj and export.fmt({"s": [{"x": 1}, {"x": 2}]}).count("\n") == 5
+
+
+def test_the_first_six_vibes_stills_are_traced_to_the_overnight_run():
+    plan = _json(PROVENANCE / "plan.json")
+    seeds = _json(PROVENANCE / "objects_seeds.json")["objects"]
+    assert len(seeds) == 116 == len(plan["objects"]) + len(plan["textures"])
+    assert sum(1 for s in seeds.values() if s["how"] == "reroll") == 12 and all(s["how"] != "other" for s in seeds.values())
+    klein = _json(PROVENANCE / "klein_edits.json")
+    assert len(klein["edits"]) == 117 and klein["seed"] == 77 and set(klein["prompts"]) == set(plan["materials"]) - {"gr"}
+    assert all("{M}" not in text and "Change only its material" in text for text in klein["prompts"].values())
+    clips = _json(PROVENANCE / "clips.json")
+    assert len(clips["clips"]) == 93 and len(clips["not_rendered"]) == 4 and all("ltx-2.3" in c["model"] for c in clips["clips"])
+    # the five clips the 19 October showcase reel was cut from are among them
+    old = {"h08_rose_to_lotus_to_jellyfish_black_glass", "h02_droplet_swarm_to_butterfly_to_swallow_gr", "m02_tarot_card_to_orb_gr",
+           "m13_torus_knot_to_mobius_chrome", "m22_lotus_to_jellyfish_iridescent"}
+    assert old <= {c["id"] for c in clips["clips"]}
+    # every one of the 77 original rows says which still, which seed and which models, and was matched to that still
+    lineage = _json(PROVENANCE / "lineage.json")
+    rows = {r["file"]: r for r in lineage["rows"]}
+    objects = _json(STATIC / "objects" / "objects.json")
+    originals = [(pool, r) for pool in ("liquid-gold", "bloom", "neon-night", "ocean", "cosmic", "black") for r in objects[pool]
+                 if r["source"].startswith("library/gpu_objects/")]
+    assert len(originals) == 77 == len(rows) and lineage["summary"]["rows"] == 77 and lineage["summary"]["graded_rows"] == 60
+    build = _script("provenance_build", PROVENANCE / "build.py")
+    for pool, r in originals:
+        lin = rows[r["file"]]
+        assert (STATIC / "objects" / r["file"]).is_file() and lin["pool"] == pool
+        assert lin["seed"] == seeds[lin["object"]]["seed"] and f"seed {lin['seed']}," in r["source"], r["file"]
+        assert "Z-Image Turbo" in r["source"] and "Apache 2.0" in r["source"] and "lineage.json" in r["source"], r["file"]
+        assert (lin["material"] == "gr") == ("Klein" not in r["source"]), r["file"]
+        assert (pool == "black") == ("cut out onto pure black" in r["source"]), r["file"]
+        assert lin["match"]["inliers"] >= 12 and (lin["material"] == "gr" or lin["material"] in plan["materials"])
+        if pool != "black":
+            assert lin["grade_psnr_db"] >= 30, r["file"]  # grade.py applied to the run's still gives the shipped jpg
+        name, mat = build.split_material(r["source"].split("library/gpu_objects/")[1].split(".png")[0], plan["materials"])
+        assert (name, mat) == (lin["object"], lin["material"])
+        assert build.source_text(pool, f"{name}_{mat}", name, mat, lin["seed"]) == r["source"], r["file"]  # `stamp` is idempotent
+    assert len(lineage["summary"]["reframed"]) == 4 and all(f.startswith("black/") for f in lineage["summary"]["reframed"])
+
+
+def test_the_provenance_compiler_reads_a_run_folder(tmp_path):
+    build = _script("provenance_build2", PROVENANCE / "build.py")
+    plan = {"objects": [{"name": "rose", "seed": 1057}, {"name": "horn", "seed": 3036}], "textures": [{"name": "tex_flow", "seed": 1201}],
+            "materials": {"gr": "ferrofluid", "black_glass": "obsidian", "chrome": "chrome"}, "clips": [{"id": "m00_a_to_b_gr"}, {"id": "m01_c_to_d_gr"}],
+            "heroes": []}
+    (tmp_path / "objects").mkdir()
+    (tmp_path / "klein").mkdir()
+    (tmp_path / "clips").mkdir()
+    (tmp_path / "cull.json").write_text(json.dumps({"reroll": {"horn": {"seed": 3037, "prompt_add": "Side view."}}}), encoding="utf-8")
+    for name, rec in (("rose", {"seed": 1057}), ("horn", {"seed": 3037, "reroll": True}), ("tex_flow", {"seed": 2201})):
+        (tmp_path / "objects" / f"{name}.png.json").write_text(json.dumps(rec), encoding="utf-8")
+    got = build.compile_objects(tmp_path, plan)["objects"]
+    assert got["rose"]["how"] == "planned" and got["horn"] == {"seed": 3037, "planned": 3036, "how": "reroll", "kind": "object", "prompt_add": "Side view."}
+    assert got["tex_flow"]["how"] == "retry" and got["tex_flow"]["kind"] == "texture"  # the plan's seed + 1000
+    for f in ("ov_rose_black_glass.png", "ov_mid_pour_chrome.png"):
+        (tmp_path / "klein" / f).write_bytes(b"x")
+    edits = build.compile_klein(tmp_path, plan)
+    assert [(e["kind"], e["what"], e["material"], e["reference"]) for e in edits["edits"]] == [
+        ("mid", "pour", "chrome", "g2_pour.png"), ("object", "rose", "black_glass", "ov_rose_gr.png")]
+    assert "obsidian" in edits["prompts"]["black_glass"] and "gr" not in edits["prompts"]
+    take = {"id": "m00_a_to_b_gr", "A": "a", "B": "b", "recipe": "ribbon", "material": "gr", "guide": None, "seed": 8000, "seed_used": 8500,
+            "res": [768, 448], "fps": 24, "L": 121, "prompt": "p", "guides": [["ov_a_gr.png", 0, 1.0]], "model": "ltx-2.3-22b-distilled-fp8",
+            "compute_s": 90.0, "gate": {"ok": True, "why": []}, "diffs": [1, 2, 3]}
+    (tmp_path / "clips" / "m00_a_to_b_gr.mp4.json").write_text(json.dumps(take), encoding="utf-8")
+    (tmp_path / "clips" / "m00_a_to_b_gr_s8000.mp4.json").write_text(json.dumps(dict(take, seed_used=8000, gate={"ok": False, "why": ["midcut"]})), encoding="utf-8")
+    (tmp_path / "clips" / "m00_a_to_b_gr_s8500.mp4.json").write_text(json.dumps(take), encoding="utf-8")
+    (tmp_path / "clips" / "m01_c_to_d_gr.mp4.failed").write_text("missing ov_c_gr.png", encoding="utf-8")
+    out = build.compile_clips(tmp_path, plan)
+    clip = out["clips"][0]
+    assert len(out["clips"]) == 1 and clip["from"] == "a" and clip["to"] == "b" and clip["via"] is None and clip["seed_used"] == 8500
+    assert clip["takes"] == [{"seed": 8000, "ok": False, "why": ["midcut"]}, {"seed": 8500, "ok": True, "why": []}] and "diffs" not in clip
+    assert out["not_rendered"] == [{"id": "m01_c_to_d_gr", "why": "missing ov_c_gr.png"}]
+    assert build.split_material("droplet_swarm_gr", plan["materials"]) == ("droplet_swarm", "gr")
+
+
+def test_credits_and_licences_say_what_is_traced_and_what_is_not():
+    credits = (ROOT / "CREDITS.md").read_text(encoding="utf-8")
+    row = next(line for line in credits.splitlines() if line.startswith("| liquid-gold, bloom, neon-night, ocean, cosmic (12 each) and black (17)"))
+    assert "scripts/vibe_objects/provenance/" in row and "unrecorded" not in row
+    assert "Z-Image Turbo" in row and "FLUX.2 Klein 4B" in row and "lineage.json" in row and "18 and 19 October 2026" in row
+    # what nothing traces still says so, and only that
+    unrecorded = [line.split("|")[1].strip() for line in credits.splitlines() if "Origin unrecorded" in line]
+    assert unrecorded == ["`neon-night.jpg`", "`src/xenoform/ui_static/poster.jpg`"]
+    assert "origin unrecorded" in credits  # the policy sentence
+    licences = (ROOT / "docs" / "LICENCES.md").read_text(encoding="utf-8")
+    assert "scripts/vibe_objects/provenance/" in licences and "Only `neon-night.jpg`" in licences and "FLUX.2 Klein 4B" in licences
+    readme = (ROOT / "scripts" / "vibe_objects" / "README.md").read_text(encoding="utf-8")
+    assert "provenance/" in readme and "ship_grown.py" in readme and "make_card.py" in readme

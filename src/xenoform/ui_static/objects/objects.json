@@ -4,73 +4,73 @@
    "file": "liquid-gold/00_droplet_mercury.jpg",
    "noun": "droplet",
    "finish": "liquid mercury",
-   "source": "library/gpu_objects/droplet_mercury.png (regraded)"
+   "source": "library/gpu_objects/droplet_mercury.png (regraded for liquid-gold by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"droplet\", seed 1003, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to mercury (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "liquid-gold/01_crown_splash_mercury.jpg",
    "noun": "crown splash",
    "finish": "liquid mercury",
-   "source": "library/gpu_objects/crown_splash_mercury.png (regraded)"
+   "source": "library/gpu_objects/crown_splash_mercury.png (regraded for liquid-gold by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"crown_splash\", seed 1004, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to mercury (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "liquid-gold/02_orb_mercury.jpg",
    "noun": "orb",
    "finish": "liquid mercury",
-   "source": "library/gpu_objects/orb_mercury.png (regraded)"
+   "source": "library/gpu_objects/orb_mercury.png (regraded for liquid-gold by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"orb\", seed 1001, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to mercury (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "liquid-gold/03_nautilus_mercury.jpg",
    "noun": "nautilus",
    "finish": "liquid mercury",
-   "source": "library/gpu_objects/nautilus_mercury.png (regraded)"
+   "source": "library/gpu_objects/nautilus_mercury.png (regraded for liquid-gold by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"nautilus\", seed 1049, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to mercury (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "liquid-gold/04_torus_knot_chrome.jpg",
    "noun": "torus knot",
    "finish": "polished chrome",
-   "source": "library/gpu_objects/torus_knot_chrome.png (regraded)"
+   "source": "library/gpu_objects/torus_knot_chrome.png (regraded for liquid-gold by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"torus_knot\", seed 1046, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to chrome (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "liquid-gold/05_dna_helix_chrome.jpg",
    "noun": "dna helix",
    "finish": "polished chrome",
-   "source": "library/gpu_objects/dna_helix_chrome.png (regraded)"
+   "source": "library/gpu_objects/dna_helix_chrome.png (regraded for liquid-gold by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"dna_helix\", seed 1048, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to chrome (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "liquid-gold/06_snowflake_mercury.jpg",
    "noun": "snowflake",
    "finish": "liquid mercury",
-   "source": "library/gpu_objects/snowflake_mercury.png (regraded)"
+   "source": "library/gpu_objects/snowflake_mercury.png (regraded for liquid-gold by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"snowflake\", seed 1062, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to mercury (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "liquid-gold/07_mobius_chrome.jpg",
    "noun": "mobius",
    "finish": "polished chrome",
-   "source": "library/gpu_objects/mobius_chrome.png (regraded)"
+   "source": "library/gpu_objects/mobius_chrome.png (regraded for liquid-gold by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"mobius\", seed 1047, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to chrome (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "liquid-gold/08_wine_glass_mercury.jpg",
    "noun": "wine glass",
    "finish": "liquid mercury",
-   "source": "library/gpu_objects/wine_glass_mercury.png (regraded)"
+   "source": "library/gpu_objects/wine_glass_mercury.png (regraded for liquid-gold by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"wine_glass\", seed 1028, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to mercury (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "liquid-gold/09_dodecahedron_chrome.jpg",
    "noun": "dodecahedron",
    "finish": "polished chrome",
-   "source": "library/gpu_objects/dodecahedron_chrome.png (regraded)"
+   "source": "library/gpu_objects/dodecahedron_chrome.png (regraded for liquid-gold by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"dodecahedron\", seed 1045, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to chrome (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "liquid-gold/10_gem_chrome.jpg",
    "noun": "gem",
    "finish": "polished chrome",
-   "source": "library/gpu_objects/gem_chrome.png (regraded)"
+   "source": "library/gpu_objects/gem_chrome.png (regraded for liquid-gold by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"gem\", seed 1025, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to chrome (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "liquid-gold/11_cube_mercury.jpg",
    "noun": "cube",
    "finish": "liquid mercury",
-   "source": "library/gpu_objects/cube_mercury.png (regraded)"
+   "source": "library/gpu_objects/cube_mercury.png (regraded for liquid-gold by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"cube\", seed 1043, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to mercury (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "liquid-gold/004_dragonfly.jpg",
@@ -258,73 +258,73 @@
    "file": "bloom/00_dandelion_iridescent.jpg",
    "noun": "dandelion",
    "finish": "iridescent glass",
-   "source": "library/gpu_objects/dandelion_iridescent.png (regraded)"
+   "source": "library/gpu_objects/dandelion_iridescent.png (regraded for bloom by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"dandelion\", seed 1010, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to iridescent (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "bloom/01_lotus_iridescent.jpg",
    "noun": "lotus",
    "finish": "iridescent glass",
-   "source": "library/gpu_objects/lotus_iridescent.png (regraded)"
+   "source": "library/gpu_objects/lotus_iridescent.png (regraded for bloom by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"lotus\", seed 1058, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to iridescent (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "bloom/02_butterfly_oil_slick.jpg",
    "noun": "butterfly",
    "finish": "oil-slick metal",
-   "source": "library/gpu_objects/butterfly_oil_slick.png (regraded)"
+   "source": "library/gpu_objects/butterfly_oil_slick.png (regraded for bloom by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"butterfly\", seed 1051, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to oil slick (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "bloom/03_dragonfly_oil_slick.jpg",
    "noun": "dragonfly",
    "finish": "oil-slick metal",
-   "source": "library/gpu_objects/dragonfly_oil_slick.png (regraded)"
+   "source": "library/gpu_objects/dragonfly_oil_slick.png (regraded for bloom by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"dragonfly\", seed 1054, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to oil slick (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "bloom/04_feather_iridescent.jpg",
    "noun": "feather",
    "finish": "iridescent glass",
-   "source": "library/gpu_objects/feather_iridescent.png (regraded)"
+   "source": "library/gpu_objects/feather_iridescent.png (regraded for bloom by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"feather\", seed 1022, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to iridescent (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "bloom/05_leaf_iridescent.jpg",
    "noun": "leaf",
    "finish": "iridescent glass",
-   "source": "library/gpu_objects/leaf_iridescent.png (regraded)"
+   "source": "library/gpu_objects/leaf_iridescent.png (regraded for bloom by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"leaf\", seed 1060, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to iridescent (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "bloom/06_maple_seed_iridescent.jpg",
    "noun": "maple seed",
    "finish": "iridescent glass",
-   "source": "library/gpu_objects/maple_seed_iridescent.png (regraded)"
+   "source": "library/gpu_objects/maple_seed_iridescent.png (regraded for bloom by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"maple_seed\", seed 1326, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to iridescent (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "bloom/07_acorn_iridescent.jpg",
    "noun": "acorn",
    "finish": "iridescent glass",
-   "source": "library/gpu_objects/acorn_iridescent.png (regraded)"
+   "source": "library/gpu_objects/acorn_iridescent.png (regraded for bloom by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"acorn\", seed 1325, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to iridescent (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "bloom/08_pine_cone_iridescent.jpg",
    "noun": "pine cone",
    "finish": "iridescent glass",
-   "source": "library/gpu_objects/pine_cone_iridescent.png (regraded)"
+   "source": "library/gpu_objects/pine_cone_iridescent.png (regraded for bloom by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"pine_cone\", seed 1061, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to iridescent (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "bloom/09_egg_iridescent.jpg",
    "noun": "egg",
    "finish": "iridescent glass",
-   "source": "library/gpu_objects/egg_iridescent.png (regraded)"
+   "source": "library/gpu_objects/egg_iridescent.png (regraded for bloom by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"egg\", seed 1006, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to iridescent (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "bloom/10_lotus_seedpod_oil_slick.jpg",
    "noun": "lotus seedpod",
    "finish": "oil-slick metal",
-   "source": "library/gpu_objects/lotus_seedpod_oil_slick.png (regraded)"
+   "source": "library/gpu_objects/lotus_seedpod_oil_slick.png (regraded for bloom by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"lotus_seedpod\", seed 1327, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to oil slick (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "bloom/11_perfume_flask_iridescent.jpg",
    "noun": "perfume flask",
    "finish": "iridescent glass",
-   "source": "library/gpu_objects/perfume_flask_iridescent.png (regraded)"
+   "source": "library/gpu_objects/perfume_flask_iridescent.png (regraded for bloom by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"perfume_flask\", seed 1030, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to iridescent (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   }
  ],
  "neon-night": [
@@ -332,73 +332,73 @@
    "file": "neon-night/00_droplet_black_glass.jpg",
    "noun": "droplet",
    "finish": "black glass",
-   "source": "library/gpu_objects/droplet_black_glass.png (regraded)"
+   "source": "library/gpu_objects/droplet_black_glass.png (regraded for neon-night by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"droplet\", seed 1003, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to black glass (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "neon-night/01_jellyfish_black_glass.jpg",
    "noun": "jellyfish",
    "finish": "black glass",
-   "source": "library/gpu_objects/jellyfish_black_glass.png (regraded)"
+   "source": "library/gpu_objects/jellyfish_black_glass.png (regraded for neon-night by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"jellyfish\", seed 1055, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to black glass (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "neon-night/02_quartz_black_glass.jpg",
    "noun": "quartz",
    "finish": "black glass",
-   "source": "library/gpu_objects/quartz_black_glass.png (regraded)"
+   "source": "library/gpu_objects/quartz_black_glass.png (regraded for neon-night by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"quartz\", seed 1023, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to black glass (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "neon-night/03_lotus_black_glass.jpg",
    "noun": "lotus",
    "finish": "black glass",
-   "source": "library/gpu_objects/lotus_black_glass.png (regraded)"
+   "source": "library/gpu_objects/lotus_black_glass.png (regraded for neon-night by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"lotus\", seed 1058, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to black glass (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "neon-night/04_crystal_cluster_black_glass.jpg",
    "noun": "crystal cluster",
    "finish": "black glass",
-   "source": "library/gpu_objects/crystal_cluster_black_glass.png (regraded)"
+   "source": "library/gpu_objects/crystal_cluster_black_glass.png (regraded for neon-night by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"crystal_cluster\", seed 1024, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to black glass (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "neon-night/05_rose_black_glass.jpg",
    "noun": "rose",
    "finish": "black glass",
-   "source": "library/gpu_objects/rose_black_glass.png (regraded)"
+   "source": "library/gpu_objects/rose_black_glass.png (regraded for neon-night by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"rose\", seed 1057, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to black glass (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "neon-night/06_umbrella_black_glass.jpg",
    "noun": "umbrella",
    "finish": "black glass",
-   "source": "library/gpu_objects/umbrella_black_glass.png (regraded)"
+   "source": "library/gpu_objects/umbrella_black_glass.png (regraded for neon-night by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"umbrella\", seed 1074, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to black glass (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "neon-night/07_wine_glass_black_glass.jpg",
    "noun": "wine glass",
    "finish": "black glass",
-   "source": "library/gpu_objects/wine_glass_black_glass.png (regraded)"
+   "source": "library/gpu_objects/wine_glass_black_glass.png (regraded for neon-night by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"wine_glass\", seed 1028, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to black glass (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "neon-night/08_snowflake_black_glass.jpg",
    "noun": "snowflake",
    "finish": "black glass",
-   "source": "library/gpu_objects/snowflake_black_glass.png (regraded)"
+   "source": "library/gpu_objects/snowflake_black_glass.png (regraded for neon-night by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"snowflake\", seed 1062, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to black glass (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "neon-night/09_torus_black_glass.jpg",
    "noun": "torus",
    "finish": "black glass",
-   "source": "library/gpu_objects/torus_black_glass.png (regraded)"
+   "source": "library/gpu_objects/torus_black_glass.png (regraded for neon-night by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"torus\", seed 1103, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to black glass (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "neon-night/10_amethyst_geode_black_glass.jpg",
    "noun": "amethyst geode",
    "finish": "black glass",
-   "source": "library/gpu_objects/amethyst_geode_black_glass.png (regraded)"
+   "source": "library/gpu_objects/amethyst_geode_black_glass.png (regraded for neon-night by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"amethyst_geode\", seed 1314, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to black glass (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "neon-night/11_fluorite_octahedron_black_glass.jpg",
    "noun": "fluorite octahedron",
    "finish": "black glass",
-   "source": "library/gpu_objects/fluorite_octahedron_black_glass.png (regraded)"
+   "source": "library/gpu_objects/fluorite_octahedron_black_glass.png (regraded for neon-night by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"fluorite_octahedron\", seed 1315, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to black glass (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   }
  ],
  "ocean": [
@@ -406,73 +406,73 @@
    "file": "ocean/00_jellyfish_iridescent.jpg",
    "noun": "jellyfish",
    "finish": "iridescent glass",
-   "source": "library/gpu_objects/jellyfish_iridescent.png (regraded)"
+   "source": "library/gpu_objects/jellyfish_iridescent.png (regraded for ocean by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"jellyfish\", seed 1055, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to iridescent (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "ocean/01_spiral_seashell_iridescent.jpg",
    "noun": "spiral seashell",
    "finish": "iridescent glass",
-   "source": "library/gpu_objects/spiral_seashell_iridescent.png (regraded)"
+   "source": "library/gpu_objects/spiral_seashell_iridescent.png (regraded for ocean by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"spiral_seashell\", seed 1312, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to iridescent (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "ocean/02_nautilus_gr.jpg",
    "noun": "nautilus",
    "finish": "dark iridescent enamel",
-   "source": "library/gpu_objects/nautilus_gr.png (regraded)"
+   "source": "library/gpu_objects/nautilus_gr.png (regraded for ocean by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"nautilus\", seed 1049, 1024x576, overnight run of 18 October 2026; scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "ocean/03_sea_urchin_iridescent.jpg",
    "noun": "sea urchin",
    "finish": "iridescent glass",
-   "source": "library/gpu_objects/sea_urchin_iridescent.png (regraded)"
+   "source": "library/gpu_objects/sea_urchin_iridescent.png (regraded for ocean by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"sea_urchin\", seed 1009, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to iridescent (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "ocean/04_scallop_shell_iridescent.jpg",
    "noun": "scallop shell",
    "finish": "iridescent glass",
-   "source": "library/gpu_objects/scallop_shell_iridescent.png (regraded)"
+   "source": "library/gpu_objects/scallop_shell_iridescent.png (regraded for ocean by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"scallop_shell\", seed 1311, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to iridescent (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "ocean/05_sand_dollar_gr.jpg",
    "noun": "sand dollar",
    "finish": "dark iridescent enamel",
-   "source": "library/gpu_objects/sand_dollar_gr.png (regraded)"
+   "source": "library/gpu_objects/sand_dollar_gr.png (regraded for ocean by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"sand_dollar\", seed 1313, 1024x576, overnight run of 18 October 2026; scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "ocean/06_manta_ray_chrome.jpg",
    "noun": "manta ray",
    "finish": "polished chrome",
-   "source": "library/gpu_objects/manta_ray_chrome.png (regraded)"
+   "source": "library/gpu_objects/manta_ray_chrome.png (regraded for ocean by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"manta_ray\", seed 1053, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to chrome (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "ocean/07_conch_mercury.jpg",
    "noun": "conch",
    "finish": "liquid mercury",
-   "source": "library/gpu_objects/conch_mercury.png (regraded)"
+   "source": "library/gpu_objects/conch_mercury.png (regraded for ocean by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"conch\", seed 1050, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to mercury (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "ocean/08_koi_gr.jpg",
    "noun": "koi",
    "finish": "dark iridescent enamel",
-   "source": "library/gpu_objects/koi_gr.png (regraded)"
+   "source": "library/gpu_objects/koi_gr.png (regraded for ocean by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"koi\", seed 1056, 1024x576, overnight run of 18 October 2026; scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "ocean/09_crown_splash_gr.jpg",
    "noun": "crown splash",
    "finish": "dark iridescent enamel",
-   "source": "library/gpu_objects/crown_splash_gr.png (regraded)"
+   "source": "library/gpu_objects/crown_splash_gr.png (regraded for ocean by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"crown_splash\", seed 1004, 1024x576, overnight run of 18 October 2026; scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "ocean/10_pearl_gr.jpg",
    "noun": "pearl",
    "finish": "dark iridescent enamel",
-   "source": "library/gpu_objects/pearl_gr.png (regraded)"
+   "source": "library/gpu_objects/pearl_gr.png (regraded for ocean by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"pearl\", seed 1005, 1024x576, overnight run of 18 October 2026; scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "ocean/11_droplet_gr.jpg",
    "noun": "droplet",
    "finish": "dark iridescent enamel",
-   "source": "library/gpu_objects/droplet_gr.png (regraded)"
+   "source": "library/gpu_objects/droplet_gr.png (regraded for ocean by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"droplet\", seed 1003, 1024x576, overnight run of 18 October 2026; scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "ocean/002_sea_anemone.jpg",
@@ -570,73 +570,73 @@
    "file": "cosmic/00_orb_iridescent.jpg",
    "noun": "orb",
    "finish": "iridescent glass",
-   "source": "library/gpu_objects/orb_iridescent.png (regraded)"
+   "source": "library/gpu_objects/orb_iridescent.png (regraded for cosmic by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"orb\", seed 1001, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to iridescent (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "cosmic/01_crescent_moon_oil_slick.jpg",
    "noun": "crescent moon",
    "finish": "oil-slick metal",
-   "source": "library/gpu_objects/crescent_moon_oil_slick.png (regraded)"
+   "source": "library/gpu_objects/crescent_moon_oil_slick.png (regraded for cosmic by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"crescent_moon\", seed 1013, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to oil slick (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "cosmic/02_pearl_iridescent.jpg",
    "noun": "pearl",
    "finish": "iridescent glass",
-   "source": "library/gpu_objects/pearl_iridescent.png (regraded)"
+   "source": "library/gpu_objects/pearl_iridescent.png (regraded for cosmic by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"pearl\", seed 1005, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to iridescent (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "cosmic/03_snowflake_iridescent.jpg",
    "noun": "snowflake",
    "finish": "iridescent glass",
-   "source": "library/gpu_objects/snowflake_iridescent.png (regraded)"
+   "source": "library/gpu_objects/snowflake_iridescent.png (regraded for cosmic by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"snowflake\", seed 1062, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to iridescent (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "cosmic/04_egg_iridescent.jpg",
    "noun": "egg",
    "finish": "iridescent glass",
-   "source": "library/gpu_objects/egg_iridescent.png (regraded)"
+   "source": "library/gpu_objects/egg_iridescent.png (regraded for cosmic by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"egg\", seed 1006, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to iridescent (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "cosmic/05_mobius_iridescent.jpg",
    "noun": "mobius",
    "finish": "iridescent glass",
-   "source": "library/gpu_objects/mobius_iridescent.png (regraded)"
+   "source": "library/gpu_objects/mobius_iridescent.png (regraded for cosmic by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"mobius\", seed 1047, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to iridescent (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "cosmic/06_dna_helix_iridescent.jpg",
    "noun": "dna helix",
    "finish": "iridescent glass",
-   "source": "library/gpu_objects/dna_helix_iridescent.png (regraded)"
+   "source": "library/gpu_objects/dna_helix_iridescent.png (regraded for cosmic by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"dna_helix\", seed 1048, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to iridescent (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "cosmic/07_sea_urchin_oil_slick.jpg",
    "noun": "sea urchin",
    "finish": "oil-slick metal",
-   "source": "library/gpu_objects/sea_urchin_oil_slick.png (regraded)"
+   "source": "library/gpu_objects/sea_urchin_oil_slick.png (regraded for cosmic by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"sea_urchin\", seed 1009, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to oil slick (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "cosmic/08_soap_orb_gr.jpg",
    "noun": "soap orb",
    "finish": "dark iridescent enamel",
-   "source": "library/gpu_objects/soap_orb_gr.png (regraded)"
+   "source": "library/gpu_objects/soap_orb_gr.png (regraded for cosmic by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"soap_orb\", seed 1002, 1024x576, overnight run of 18 October 2026; scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "cosmic/09_dodecahedron_mercury.jpg",
    "noun": "dodecahedron",
    "finish": "liquid mercury",
-   "source": "library/gpu_objects/dodecahedron_mercury.png (regraded)"
+   "source": "library/gpu_objects/dodecahedron_mercury.png (regraded for cosmic by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"dodecahedron\", seed 1045, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to mercury (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "cosmic/10_gem_chrome.jpg",
    "noun": "gem",
    "finish": "polished chrome",
-   "source": "library/gpu_objects/gem_chrome.png (regraded)"
+   "source": "library/gpu_objects/gem_chrome.png (regraded for cosmic by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"gem\", seed 1025, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to chrome (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "cosmic/11_torus_knot_gr.jpg",
    "noun": "torus knot",
    "finish": "dark iridescent enamel",
-   "source": "library/gpu_objects/torus_knot_gr.png (regraded)"
+   "source": "library/gpu_objects/torus_knot_gr.png (regraded for cosmic by scripts/vibe_objects/grade.py): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"torus_knot\", seed 1046, 1024x576, overnight run of 18 October 2026; scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "cosmic/029_accretion_disc.jpg",
@@ -814,103 +814,103 @@
    "file": "black/00_rose_black_glass.jpg",
    "noun": "rose",
    "finish": "black glass",
-   "source": "library/gpu_objects/rose_black_glass.png (cut out onto pure black)"
+   "source": "library/gpu_objects/rose_black_glass.png (cut out onto pure black): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"rose\", seed 1057, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to black glass (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "black/01_jellyfish_black_glass.jpg",
    "noun": "jellyfish",
    "finish": "black glass",
-   "source": "library/gpu_objects/jellyfish_black_glass.png (cut out onto pure black)"
+   "source": "library/gpu_objects/jellyfish_black_glass.png (cut out onto pure black): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"jellyfish\", seed 1055, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to black glass (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "black/02_butterfly_gr.jpg",
    "noun": "butterfly",
    "finish": "iridescent liquid metal",
-   "source": "library/gpu_objects/butterfly_gr.png (cut out onto pure black)"
+   "source": "library/gpu_objects/butterfly_gr.png (cut out onto pure black): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"butterfly\", seed 1051, 1024x576, overnight run of 18 October 2026; scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "black/03_swallow_gr.jpg",
    "noun": "swallow",
    "finish": "iridescent liquid metal",
-   "source": "library/gpu_objects/swallow_gr.png (cut out onto pure black)"
+   "source": "library/gpu_objects/swallow_gr.png (cut out onto pure black): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"swallow\", seed 1052, 1024x576, overnight run of 18 October 2026; scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "black/04_droplet_swarm_gr.jpg",
    "noun": "drop swarm",
    "finish": "iridescent liquid metal",
-   "source": "library/gpu_objects/droplet_swarm_gr.png (cut out onto pure black)"
+   "source": "library/gpu_objects/droplet_swarm_gr.png (cut out onto pure black): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"droplet_swarm\", seed 1101, 1024x576, overnight run of 18 October 2026; scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "black/05_lotus_black_glass.jpg",
    "noun": "lotus",
    "finish": "black glass",
-   "source": "library/gpu_objects/lotus_black_glass.png (cut out onto pure black)"
+   "source": "library/gpu_objects/lotus_black_glass.png (cut out onto pure black): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"lotus\", seed 1058, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to black glass (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "black/06_nautilus_gr.jpg",
    "noun": "nautilus",
    "finish": "iridescent liquid metal",
-   "source": "library/gpu_objects/nautilus_gr.png (cut out onto pure black)"
+   "source": "library/gpu_objects/nautilus_gr.png (cut out onto pure black): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"nautilus\", seed 1049, 1024x576, overnight run of 18 October 2026; scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "black/07_sea_urchin_gr.jpg",
    "noun": "sea urchin",
    "finish": "iridescent liquid metal",
-   "source": "library/gpu_objects/sea_urchin_gr.png (cut out onto pure black)"
+   "source": "library/gpu_objects/sea_urchin_gr.png (cut out onto pure black): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"sea_urchin\", seed 1009, 1024x576, overnight run of 18 October 2026; scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "black/08_crystal_cluster_black_glass.jpg",
    "noun": "crystal cluster",
    "finish": "black glass",
-   "source": "library/gpu_objects/crystal_cluster_black_glass.png (cut out onto pure black)"
+   "source": "library/gpu_objects/crystal_cluster_black_glass.png (cut out onto pure black): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"crystal_cluster\", seed 1024, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to black glass (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "black/09_mobius_gr.jpg",
    "noun": "mobius",
    "finish": "iridescent liquid metal",
-   "source": "library/gpu_objects/mobius_gr.png (cut out onto pure black)"
+   "source": "library/gpu_objects/mobius_gr.png (cut out onto pure black): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"mobius\", seed 1047, 1024x576, overnight run of 18 October 2026; scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "black/10_dna_helix_gr.jpg",
    "noun": "dna helix",
    "finish": "iridescent liquid metal",
-   "source": "library/gpu_objects/dna_helix_gr.png (cut out onto pure black)"
+   "source": "library/gpu_objects/dna_helix_gr.png (cut out onto pure black): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"dna_helix\", seed 1048, 1024x576, overnight run of 18 October 2026; scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "black/11_droplet_black_glass.jpg",
    "noun": "droplet",
    "finish": "black glass",
-   "source": "library/gpu_objects/droplet_black_glass.png (cut out onto pure black)"
+   "source": "library/gpu_objects/droplet_black_glass.png (cut out onto pure black): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"droplet\", seed 1003, 1024x576, overnight run of 18 October 2026, then a FLUX.2 Klein 4B (Apache 2.0) edit to black glass (seed 77, 19 October 2026); scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "black/12_manta_ray_gr.jpg",
    "noun": "manta ray",
    "finish": "iridescent liquid metal",
-   "source": "library/gpu_objects/manta_ray_gr.png (cut out onto pure black)"
+   "source": "library/gpu_objects/manta_ray_gr.png (cut out onto pure black): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"manta_ray\", seed 1053, 1024x576, overnight run of 18 October 2026; scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "black/13_dragonfly_gr.jpg",
    "noun": "dragonfly",
    "finish": "iridescent liquid metal",
-   "source": "library/gpu_objects/dragonfly_gr.png (cut out onto pure black)"
+   "source": "library/gpu_objects/dragonfly_gr.png (cut out onto pure black): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"dragonfly\", seed 1054, 1024x576, overnight run of 18 October 2026; scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "black/14_torus_knot_gr.jpg",
    "noun": "torus knot",
    "finish": "iridescent liquid metal",
-   "source": "library/gpu_objects/torus_knot_gr.png (cut out onto pure black)"
+   "source": "library/gpu_objects/torus_knot_gr.png (cut out onto pure black): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"torus_knot\", seed 1046, 1024x576, overnight run of 18 October 2026; scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "black/15_ribbon_twist_gr.jpg",
    "noun": "ribbon",
    "finish": "iridescent liquid metal",
-   "source": "library/gpu_objects/ribbon_twist_gr.png (cut out onto pure black)"
+   "source": "library/gpu_objects/ribbon_twist_gr.png (cut out onto pure black): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"ribbon_twist\", seed 1102, 1024x576, overnight run of 18 October 2026; scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "black/16_liquid_orb_gr.jpg",
    "noun": "liquid orb",
    "finish": "iridescent liquid metal",
-   "source": "library/gpu_objects/soap_orb_gr.png (cut out onto pure black)"
+   "source": "library/gpu_objects/soap_orb_gr.png (cut out onto pure black): Z-Image Turbo (GGUF Q8_0, Apache 2.0) object \"soap_orb\", seed 1002, 1024x576, overnight run of 18 October 2026; scripts/vibe_objects/provenance/lineage.json"
   },
   {
    "file": "black/011_ammonite.jpg",
