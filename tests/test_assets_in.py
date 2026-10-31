@@ -1,11 +1,14 @@
 """Assets into the app (31 Oct 2026, Stage 4 of docs/MUSIC_VIDEO_PLAN.md): the loved morphs, the gold outro clip and the
 rebuilt showcase reel, then the example cuts and the vibe cards, the chain presets, the records and the library strips.
 Each manifest is checked against the files it lists and the shipped stills it names."""
+import argparse
 import ast
 import hashlib
 import importlib.util
 import json
 import re
+import shutil
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -260,7 +263,7 @@ def test_the_as_cut_records_name_the_published_slots_and_every_job_has_a_chain_r
             assert a["song_out"] == b["song_in"] and a["song_out"] > a["song_in"]  # the cuts tile the song
         jobs |= {s["job"] for s in cut["slots"]}
     assert len(jobs) == 62 and jobs <= set(chains)
-    assert len(chains) == 96
+    assert len(chains) == 98
     shipped = _shipped_files()
     for job, rec in chains.items():
         assert re.fullmatch(r"[0-9a-f]{8}", job) and rec["used_in"] and rec["vibe"] and rec["made"].startswith("2026-10-")
@@ -452,3 +455,102 @@ def test_credits_and_licences_say_what_is_traced_and_what_is_not():
     assert "scripts/vibe_objects/provenance/" in licences and "Only `neon-night.jpg`" in licences and "FLUX.2 Klein 4B" in licences
     readme = (ROOT / "scripts" / "vibe_objects" / "README.md").read_text(encoding="utf-8")
     assert "provenance/" in readme and "ship_grown.py" in readme and "make_card.py" in readme
+
+
+# --------------------------------------------------------------------------------------------- the library strips
+
+STRIPS = ("bioluminescent", "black", "botanical", "brutalist", "chrome-mercury", "cosmic", "cyberspace-95", "ferrofluid", "ice-crystal",
+          "ink-wash", "iridescent-glass", "liquid-gold", "low-poly", "neon-noir", "none", "ocean", "origami-noir", "porcelain-kintsugi",
+          "porcelain-marble", "risograph", "shadow-self", "y2k-chrome")
+KEPT = ("lava-obsidian", "odd-machine", "wet-paint", "paper-summer", "bloom", "neon-night")  # orb to nautilus, or own-stills, as they were
+SHOTS = ("wide", "medium", "close", "reveal")
+
+
+def test_the_22_re_cut_strips_are_cloud_morphs_of_each_vibes_own_stills():
+    pack = _json(ROOT / "configs" / "clip_pack.json")
+    vibes, chains, shipped = pack["vibes"], _json(RECORDS / "chains.json")["jobs"], _shipped_files()
+    assert len(STRIPS) == 22 and sorted(v for v, e in vibes.items() if "source_clip" in e) == sorted(STRIPS)
+    assert set(vibes) == set(STRIPS) | set(KEPT) and "31 October 2026" in pack["note"] and "LTX-2.5" in pack["note"]
+    for vibe in STRIPS:
+        entry = vibes[vibe]
+        assert list(entry) == ["clips", "source_morph", "source_clip", "qa", "checked"], vibe  # a fresh entry: no old autotune score
+        assert entry["clips"] == [f"library/{vibe}/{shot}.mp4" for shot in SHOTS] and entry["qa"] is True
+        src = entry["source_clip"]
+        a, b = src["from"], src["to"]
+        assert a in shipped and b in shipped and a != b and a.startswith(vibe + "/") and b.startswith(vibe + "/"), vibe
+        assert entry["source_morph"] == f"{Path(a).stem} -> {Path(b).stem}", vibe
+        assert "LTX-2.5" in src["engine"] and "Comfy Cloud" in src["engine"] and "2026-10-31" in entry["checked"], vibe
+        rec = chains[src["job"]]  # the job's record has that shot, between those two stills, and says the strip was cut from it
+        shot = next(s for s in rec["shots"] if s["i"] == src["shot"])
+        assert (shot["from"], shot["to"]) == (a, b) and rec["vibe"] == vibe and rec["tier"] == "cloud", vibe
+        assert any(u.startswith(f"library strip of {vibe}") for u in rec["used_in"]), vibe
+        for name in SHOTS:
+            mp4, jpg = STATIC / "library" / vibe / f"{name}.mp4", STATIC / "library" / vibe / f"{name}.jpg"
+            assert 500 < mp4.stat().st_size <= 1_200_000 and jpg.stat().st_size > 4_000, (vibe, name)
+    # lava-obsidian, odd-machine and wet-paint (un-featured or vetoed looks) and the three own-stills strips stay as they were
+    for vibe in KEPT:
+        assert "source_clip" not in vibes[vibe] and vibes[vibe]["source_morph"] and vibes[vibe]["clips"], vibe
+    assert vibes["wet-paint"]["source_morph"] == "00_orb -> 01_nautilus" and vibes["bloom"]["source_morph"] == "00_dandelion_iridescent -> 01_lotus_iridescent"
+    # the repo stays about as heavy as the strips it replaced (the 22 were 18 MB with posters): 4 s strips at CRF 30
+    total = sum(p.stat().st_size for vibe in STRIPS for p in (STATIC / "library" / vibe).iterdir())
+    assert 10_000_000 < total < 24_000_000, total
+
+
+def test_each_re_cut_strip_is_four_768x432_cuts_of_one_clip_and_the_reveal_runs_backwards():
+    if not shutil.which("ffprobe"):
+        return  # sizes and posters are checked above; the picture format needs ffprobe
+
+    def probe(path):
+        out = subprocess.check_output(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height,r_frame_rate,nb_frames",
+                                       "-of", "json", str(path)], text=True)
+        s = json.loads(out)["streams"][0]
+        return s["width"], s["height"], s["r_frame_rate"], int(s["nb_frames"])
+
+    for vibe in STRIPS:
+        got = {name: probe(STATIC / "library" / vibe / f"{name}.mp4") for name in SHOTS}
+        assert {g[:3] for g in got.values()} == {(768, 432, "24/1")}, vibe
+        assert len({g[3] for g in got.values()}) == 1 and got["wide"][3] in (49, 97), (vibe, got)  # 2 s or 4 s of the morph, the same four times
+
+
+def test_the_strip_cutter_makes_four_cuts_a_poster_each_and_a_fresh_pack_entry(tmp_path, monkeypatch):
+    strip = _script("strip_from_clip", ROOT / "scripts" / "vibe_objects" / "strip_from_clip.py")
+    land, tall = {"w": 1024, "h": 576, "frames": 97}, {"w": 576, "h": 1024, "frames": 97}
+    assert strip.vf_for(land, 1.0, False) == "scale=768:432:flags=lanczos,format=yuv420p"
+    assert strip.vf_for(land, 1.5, True) == "crop=iw/1.5:ih/1.5,scale=768:432:flags=lanczos,format=yuv420p,reverse"
+    assert strip.vf_for(tall, 1.0, False).startswith("crop=576:324:0:(ih-324)/2,scale=768:432")  # a portrait clip: its centre 16:9 band
+    assert strip.CUTS["wide"] == (1.0, False) and strip.CUTS["reveal"] == (1.0, True) and strip.CRF_FROM >= 26
+    pack = tmp_path / "clip_pack.json"
+    pack.write_text(json.dumps({"version": 1, "note": "n", "vibes": {"x": {"clips": [], "source_morph": "00_orb -> 01_nautilus", "autotune_score": 74.0,
+                                                                              "qa": True, "checked": "old"}, "y": {"clips": ["a"]}}}), encoding="utf-8")
+    monkeypatch.setattr(strip, "PACK", pack)
+    args = argparse.Namespace(src="a", dst="b", source=json.dumps({"job": "abcd1234", "shot": 3}), checked="re-cut", vibe="x")
+    strip.update_pack("x", args, True)
+    vibes = json.loads(pack.read_text(encoding="utf-8"))["vibes"]
+    assert list(vibes["x"]) == ["clips", "source_morph", "source_clip", "qa", "checked"] and vibes["y"] == {"clips": ["a"]}  # only x changed
+    assert vibes["x"]["source_morph"] == "a -> b" and vibes["x"]["source_clip"] == {"job": "abcd1234", "shot": 3} and "autotune_score" not in vibes["x"]
+    assert vibes["x"]["clips"] == [f"library/x/{shot}.mp4" for shot in SHOTS] and vibes["x"]["checked"] == "re-cut"
+    if not (shutil.which("ffmpeg") and shutil.which("ffprobe")):
+        return
+    clip = tmp_path / "src.mp4"
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "testsrc2=size=1024x576:rate=24:duration=1", "-c:v", "libx264", "-pix_fmt", "yuv420p",
+                    str(clip)], check=True)
+    done = strip.cut(clip, tmp_path / "out")
+    assert sorted(p.name for p in (tmp_path / "out").iterdir()) == sorted(f"{n}.{ext}" for n in SHOTS for ext in ("mp4", "jpg"))
+    assert done["frames"] == 24 and done["size"] == [1024, 576] and set(done["crf"]) == set(SHOTS)
+    for p in (tmp_path / "out").glob("*.mp4"):
+        assert strip.MIN_BYTES < p.stat().st_size <= strip.MAX_BYTES, p.name
+    for p in (tmp_path / "out").glob("*.jpg"):
+        assert p.stat().st_size > strip.MIN_POSTER, p.name
+
+
+def test_credits_and_docs_say_what_the_strips_are():
+    credits = (ROOT / "CREDITS.md").read_text(encoding="utf-8")
+    row = next(line for line in credits.splitlines() if line.startswith("| The 22 vibes "))
+    assert all(vibe in row for vibe in STRIPS) and "strip_from_clip.py" in row and "LTX-2.5" in row and "11 August 2026" in row and "source_clip" in row
+    kept = next(line for line in credits.splitlines() if line.startswith("| lava-obsidian, odd-machine, wet-paint |"))
+    assert "LTX-Video 0.9.5" in kept and "orb to nautilus" in kept
+    assert "| liquid-gold, paper-summer," not in credits  # liquid-gold, ocean and cosmic moved to the Cloud row
+    licences = (ROOT / "docs" / "LICENCES.md").read_text(encoding="utf-8")
+    assert "strip_from_clip.py" in licences and "22 vibes were re-cut on 31 October 2026" in licences and "Comfy Cloud" in licences
+    assert "strip_from_clip.py" in (ROOT / "README.md").read_text(encoding="utf-8") and "strip_from_clip.py" in (ROOT / "docs" / "VIBES.md").read_text(encoding="utf-8")
+    assert "strip_from_clip.py" in (ROOT / "scripts" / "vibe_objects" / "README.md").read_text(encoding="utf-8")

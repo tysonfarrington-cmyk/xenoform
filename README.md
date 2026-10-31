@@ -157,7 +157,7 @@ The SDK calls are the documented ones: `workflows.from_file`, `assets.from_file`
 
 ### Vibes and stills
 
-The stills live in `src/xenoform/ui_static/objects/<vibe>/`, twelve per vibe, generated locally with Z-Image Turbo (`scripts/vibe_objects/`). A run walks the list forward and only wraps after twelve shots, and when the pool would wrap it uses fewer, longer morphs instead of repeating. Each vibe's default clip pack (`ui_static/library/<vibe>/`) is cut from a hand-checked LTX 0.9.5 morph; `configs/clip_pack.json` records the scores. Per-vibe LTX settings come from an overnight auto-tuner ([docs/AUTOTUNE.md](docs/AUTOTUNE.md)). Real subjects (Jupiter, Saturn, Earth, Moon, Mars) use public-domain NASA photographs as anchors instead of painted stills.
+The stills live in `src/xenoform/ui_static/objects/<vibe>/`, twelve per vibe, generated locally with Z-Image Turbo (`scripts/vibe_objects/`). A run walks the list forward and only wraps after twelve shots, and when the pool would wrap it uses fewer, longer morphs instead of repeating. Each vibe's default clip pack (`ui_static/library/<vibe>/`) is a short morph of its own stills: 22 vibes are cut from a Cloud Final (LTX-2.5) morph (`scripts/vibe_objects/strip_from_clip.py`), the other six from a hand-checked LTX 0.9.5 morph rendered locally; `configs/clip_pack.json` records which one and the scores. Per-vibe LTX settings come from an overnight auto-tuner ([docs/AUTOTUNE.md](docs/AUTOTUNE.md)). Real subjects (Jupiter, Saturn, Earth, Moon, Mars) use public-domain NASA photographs as anchors instead of painted stills.
 
 ### Guardrails
 

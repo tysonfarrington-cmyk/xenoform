@@ -510,8 +510,61 @@
    ],
    "recipe": "xf1.eNoVy00KAjEMhuGrlKwUZqEIgr2ASw8gLjJpqsX-QJs6C_HuJrvny0u-gODh4o9nWICVgetgcwR_h8gcVqQ3PBaIQ7N0JMtP9TUnoZe7TXG708ENR1P22pK2WQP3DYW7Hop9rrm1YkNsMIraSLnNoP7YObU8S6o8iKvA7w8FPy9H"
   },
+  "21e2aa7b": {
+   "used_in": ["library strip of ink-wash (shot 1)"],
+   "made": "2026-10-30",
+   "vibe": "ink-wash",
+   "aspect": "16:9",
+   "tier": "cloud",
+   "engine": "Cloud Final on Comfy Cloud (open weights), scaled to full size here",
+   "open_weights": true,
+   "song": {
+    "id": "glitch-out",
+    "label": "Glitch Out",
+    "window_s": 30
+   },
+   "seconds": 30.0,
+   "size": [1920, 1080],
+   "seed": 2727,
+   "energy": "dense",
+   "morph_style": "spin",
+   "morph_timing": "snap",
+   "effects": ["dither"],
+   "look": "house",
+   "foreshadow": "slices",
+   "knobs": {
+    "intensity": 1.0,
+    "speed": 0.9,
+    "chaos": 0.9,
+    "glow": 0.85
+   },
+   "drop_s": 19.25,
+   "rendered": "16 of 16 morphs rendered with LTX-2.5 on Comfy Cloud (open weights), scaled here to 1920x1080",
+   "idea": "samurai helmet, katana, koi, crane, dragon, tiger, bonsai, paper lantern",
+   "morphs": 16,
+   "chain": ["ink-wash/121_katana.jpg", "ink-wash/122_crane.jpg", "ink-wash/123_dragon.jpg", "ink-wash/124_tiger.jpg", "ink-wash/125_bonsai.jpg", "ink-wash/068_samurai_helmet.jpg", "ink-wash/019_origami_crane.jpg", "ink-wash/026_bonsai_tree.jpg", "ink-wash/126_koi.jpg", "ink-wash/127_paper_lantern.jpg", "ink-wash/010_koi_fish.jpg", "ink-wash/070_black_iron_lantern.jpg", "ink-wash/017_lantern.jpg", "ink-wash/020_paper_boat.jpg", "ink-wash/059_stone_lantern.jpg", "ink-wash/085_colosseum.jpg", "ink-wash/091_formula_racing_car.jpg"],
+   "shots": [
+    {"i": 0, "start": 0.0, "end": 2.4167, "render_s": 2, "speed": 0.828, "from": "ink-wash/121_katana.jpg", "to": "ink-wash/122_crane.jpg", "effects": [{"type": "punch", "t": 1.4167, "strength": 1.0}, {"type": "stutter", "t": 1.4167, "frames": 2, "repeat": 7}]},
+    {"i": 1, "start": 2.4167, "end": 5.0833, "render_s": 2, "speed": 0.75, "from": "ink-wash/122_crane.jpg", "to": "ink-wash/123_dragon.jpg"},
+    {"i": 2, "start": 5.0833, "end": 7.75, "render_s": 2, "speed": 0.75, "from": "ink-wash/123_dragon.jpg", "to": "ink-wash/124_tiger.jpg"},
+    {"i": 3, "start": 7.75, "end": 10.1667, "render_s": 2, "speed": 0.828, "from": "ink-wash/124_tiger.jpg", "to": "ink-wash/125_bonsai.jpg"},
+    {"i": 4, "start": 10.1667, "end": 12.5833, "render_s": 2, "speed": 0.828, "from": "ink-wash/125_bonsai.jpg", "to": "ink-wash/068_samurai_helmet.jpg"},
+    {"i": 5, "start": 12.5833, "end": 15.4167, "render_s": 2, "speed": 0.706, "from": "ink-wash/068_samurai_helmet.jpg", "to": "ink-wash/019_origami_crane.jpg"},
+    {"i": 6, "start": 15.4167, "end": 17.8333, "render_s": 2, "speed": 0.828, "from": "ink-wash/019_origami_crane.jpg", "to": "ink-wash/026_bonsai_tree.jpg"},
+    {"i": 7, "start": 17.8333, "end": 19.25, "render_s": 2, "speed": 1.412, "from": "ink-wash/026_bonsai_tree.jpg", "to": "ink-wash/126_koi.jpg", "ease": "in"},
+    {"i": 8, "start": 19.25, "end": 21.0, "render_s": 2, "speed": 1.143, "from": "ink-wash/126_koi.jpg", "to": "ink-wash/127_paper_lantern.jpg", "effects": [{"type": "punch", "t": 19.25, "strength": 1.0}, {"type": "stutter", "t": 19.25, "frames": 2, "repeat": 8}]},
+    {"i": 9, "start": 21.0, "end": 22.4167, "render_s": 2, "speed": 1.412, "from": "ink-wash/127_paper_lantern.jpg", "to": "ink-wash/010_koi_fish.jpg", "effects": [{"type": "hold", "t": 21.2833, "len": 0.12}, {"type": "punch", "t": 21.51, "strength": 1.0}, {"type": "skip", "t": 21.51, "amount": 0.3}]},
+    {"i": 10, "start": 22.4167, "end": 23.5, "render_s": 2, "speed": 1.846, "from": "ink-wash/010_koi_fish.jpg", "to": "ink-wash/070_black_iron_lantern.jpg"},
+    {"i": 11, "start": 23.5, "end": 24.8333, "render_s": 2, "speed": 1.5, "from": "ink-wash/070_black_iron_lantern.jpg", "to": "ink-wash/017_lantern.jpg"},
+    {"i": 12, "start": 24.8333, "end": 26.25, "render_s": 2, "speed": 1.412, "from": "ink-wash/017_lantern.jpg", "to": "ink-wash/020_paper_boat.jpg"},
+    {"i": 13, "start": 26.25, "end": 27.5833, "render_s": 2, "speed": 1.5, "from": "ink-wash/020_paper_boat.jpg", "to": "ink-wash/059_stone_lantern.jpg"},
+    {"i": 14, "start": 27.5833, "end": 28.5833, "render_s": 2, "speed": 2.0, "from": "ink-wash/059_stone_lantern.jpg", "to": "ink-wash/085_colosseum.jpg"},
+    {"i": 15, "start": 28.5833, "end": 30.0, "render_s": 2, "speed": 1.412, "from": "ink-wash/085_colosseum.jpg", "to": "ink-wash/091_formula_racing_car.jpg", "effects": [{"type": "punch", "t": 28.5833, "strength": 0.73}, {"type": "reverse", "t": 28.5833, "len": 0.4}]}
+   ],
+   "recipe": "xf1.eNodzcEKwjAMgOFXCTkpVBC87QU8-gDiIbbZFuzS0mZ6EN_dbKd-4Q_pFxkHTKydMSCPONwxic3c8BFw7B57lsjd6-TDNYvFGW6rweFyhg5xtaM32RZpWRsJzJwXtgAvMlLyt0iA2Eg5QGo0FQ1gMnEL8CzayWulyg0yqXFTP7fsH1fZbZuVqntjzGVN7rdb9HX6UJ_x9wewIz9D"
+  },
   "24fb3ab5": {
-   "used_in": ["Glitch Out music video, 16:9 cut, slot chrome_beasts_shatter: song 119.792 to 122.417 s"],
+   "used_in": ["Glitch Out music video, 16:9 cut, slot chrome_beasts_shatter: song 119.792 to 122.417 s", "library strip of chrome-mercury (shot 4)"],
    "made": "2026-10-30",
    "vibe": "chrome-mercury",
    "aspect": "16:9",
@@ -669,7 +722,7 @@
    "recipe": "xf1.eNqrVkpUslKytDI0U9JRSgUyU1LzilOB7LRiICc_LQ3ITAey3HMyS5IzFPxLSxQ0jAwUihWSS0s0gXK5IGVJOfn5uUBOCZCdnJNfmgJkl4HFE5OzlWoBTFob9Q"
   },
   "292bd6f7": {
-   "used_in": ["Glitch Out music video, 16:9 cut, slot b_kintsugi_symbols: song 159.625 to 164.875 s"],
+   "used_in": ["Glitch Out music video, 16:9 cut, slot b_kintsugi_symbols: song 159.625 to 164.875 s", "library strip of porcelain-kintsugi (shot 1)"],
    "made": "2026-10-30",
    "vibe": "porcelain-kintsugi",
    "aspect": "16:9",
@@ -722,7 +775,7 @@
    "recipe": "xf1.eNo9jk0OAiEMha_SsNIEExN3XsClZyhQBzJMIVCcGOPdLS7cfe8n7XsbMlcTiDsZax5dRU85lkEi01nUuOUkPsJ9CBwuZ-jghxw1S5ptxIECRMImFkolhlqap4yJISIHC26EEHFWVOTh1xd41DJlqtpQ6juyha0UhobOJbVcK6ve8q3srK-237CIOqpNKVMyVuWJPpcRlJ_K__enNbH0sSTz-QKJ50un"
   },
   "340d1cb9": {
-   "used_in": ["Glitch Out music video, 16:9 cut, slot botanical_clear_bloom: song 141.0 to 149.125 s"],
+   "used_in": ["Glitch Out music video, 16:9 cut, slot botanical_clear_bloom: song 141.0 to 149.125 s", "library strip of botanical (shot 5)"],
    "made": "2026-10-30",
    "vibe": "botanical",
    "aspect": "16:9",
@@ -882,7 +935,7 @@
    "recipe": "xf1.eNoVy0EKAjEMRuGrlH-lMILgbi7g0gOIi5imM4XWgUmqC_HuJrsPHu8LwYwsLxVMkIL5Du1COx4TinqznTja4r62arym27B0uJyTJh529Fa9dVoqu3tMXZqFzf0UCge5bSO7325dKW-fk0or-P0Bc_wn5g"
   },
   "3950ac41": {
-   "used_in": ["Glitch Out music video, 16:9 cut, slot b_y2k_symbols: song 164.875 to 170.333 s"],
+   "used_in": ["Glitch Out music video, 16:9 cut, slot b_y2k_symbols: song 164.875 to 170.333 s", "library strip of y2k-chrome (shot 1)"],
    "made": "2026-10-30",
    "vibe": "y2k-chrome",
    "aspect": "16:9",
@@ -1241,8 +1294,60 @@
    ],
    "recipe": "xf1.eNqrVkpVslJKSc0rTlXSUUorBnLy09KAzHQgyz0nsyQ5Q8G_tERBw9hAoVghubREEyiXC1KWlJOfnwvklADZyTn5pSlAdhlYPDE5W6kWAHuRGc0"
   },
+  "459c8eab": {
+   "used_in": ["library strip of low-poly (shot 6)"],
+   "made": "2026-10-29",
+   "vibe": "low-poly",
+   "aspect": "16:9",
+   "tier": "cloud",
+   "engine": "Cloud Final on Comfy Cloud (open weights), scaled to full size here",
+   "open_weights": true,
+   "song": {
+    "id": "glitch-out",
+    "label": "Glitch Out",
+    "window_s": 30
+   },
+   "seconds": 30.0,
+   "size": [1920, 1080],
+   "seed": 2727,
+   "energy": "dense",
+   "morph_style": "fold",
+   "morph_timing": "snap",
+   "effects": ["dither"],
+   "look": "house",
+   "foreshadow": "slices",
+   "knobs": {
+    "intensity": 1.0,
+    "speed": 0.9,
+    "chaos": 0.9,
+    "glow": 0.85
+   },
+   "drop_s": 19.25,
+   "rendered": "16 of 16 morphs rendered with LTX-2.5 on Comfy Cloud (open weights), scaled here to 1920x1080",
+   "morphs": 16,
+   "chain": ["low-poly/000_gyroid.jpg", "low-poly/004_klein_bottle.jpg", "low-poly/005_geodesic_sphere.jpg", "low-poly/011_stellated_dodecahedron.jpg", "low-poly/013_dodecahedron.jpg", "low-poly/030_torus.jpg", "low-poly/031_cube.jpg", "low-poly/032_trefoil_knot.jpg", "low-poly/034_mobius.jpg", "low-poly/035_icosahedron.jpg", "low-poly/036_octahedron.jpg", "low-poly/037_tetrahedron.jpg", "low-poly/038_borromean_rings.jpg", "low-poly/039_menger_sponge.jpg", "low-poly/00_orb.jpg", "low-poly/03_torus_knot.jpg", "low-poly/05_crystal.jpg"],
+   "shots": [
+    {"i": 0, "start": 0.0, "end": 2.4167, "render_s": 2, "speed": 0.828, "from": "low-poly/000_gyroid.jpg", "to": "low-poly/004_klein_bottle.jpg", "effects": [{"type": "punch", "t": 1.4167, "strength": 1.0}, {"type": "stutter", "t": 1.4167, "frames": 2, "repeat": 7}]},
+    {"i": 1, "start": 2.4167, "end": 5.0833, "render_s": 2, "speed": 0.75, "from": "low-poly/004_klein_bottle.jpg", "to": "low-poly/005_geodesic_sphere.jpg"},
+    {"i": 2, "start": 5.0833, "end": 7.75, "render_s": 2, "speed": 0.75, "from": "low-poly/005_geodesic_sphere.jpg", "to": "low-poly/011_stellated_dodecahedron.jpg"},
+    {"i": 3, "start": 7.75, "end": 10.1667, "render_s": 2, "speed": 0.828, "from": "low-poly/011_stellated_dodecahedron.jpg", "to": "low-poly/013_dodecahedron.jpg"},
+    {"i": 4, "start": 10.1667, "end": 12.5833, "render_s": 2, "speed": 0.828, "from": "low-poly/013_dodecahedron.jpg", "to": "low-poly/030_torus.jpg"},
+    {"i": 5, "start": 12.5833, "end": 15.4167, "render_s": 2, "speed": 0.706, "from": "low-poly/030_torus.jpg", "to": "low-poly/031_cube.jpg"},
+    {"i": 6, "start": 15.4167, "end": 17.8333, "render_s": 2, "speed": 0.828, "from": "low-poly/031_cube.jpg", "to": "low-poly/032_trefoil_knot.jpg"},
+    {"i": 7, "start": 17.8333, "end": 19.25, "render_s": 2, "speed": 1.412, "from": "low-poly/032_trefoil_knot.jpg", "to": "low-poly/034_mobius.jpg", "ease": "in"},
+    {"i": 8, "start": 19.25, "end": 21.0, "render_s": 2, "speed": 1.143, "from": "low-poly/034_mobius.jpg", "to": "low-poly/035_icosahedron.jpg", "effects": [{"type": "punch", "t": 19.25, "strength": 1.0}, {"type": "stutter", "t": 19.25, "frames": 2, "repeat": 8}]},
+    {"i": 9, "start": 21.0, "end": 22.4167, "render_s": 2, "speed": 1.412, "from": "low-poly/035_icosahedron.jpg", "to": "low-poly/036_octahedron.jpg", "effects": [{"type": "hold", "t": 21.2833, "len": 0.12}, {"type": "punch", "t": 21.51, "strength": 1.0}, {"type": "skip", "t": 21.51, "amount": 0.3}]},
+    {"i": 10, "start": 22.4167, "end": 23.5, "render_s": 2, "speed": 1.846, "from": "low-poly/036_octahedron.jpg", "to": "low-poly/037_tetrahedron.jpg"},
+    {"i": 11, "start": 23.5, "end": 24.8333, "render_s": 2, "speed": 1.5, "from": "low-poly/037_tetrahedron.jpg", "to": "low-poly/038_borromean_rings.jpg"},
+    {"i": 12, "start": 24.8333, "end": 26.25, "render_s": 2, "speed": 1.412, "from": "low-poly/038_borromean_rings.jpg", "to": "low-poly/039_menger_sponge.jpg"},
+    {"i": 13, "start": 26.25, "end": 27.5833, "render_s": 2, "speed": 1.5, "from": "low-poly/039_menger_sponge.jpg", "to": "low-poly/00_orb.jpg"},
+    {"i": 14, "start": 27.5833, "end": 28.5833, "render_s": 2, "speed": 2.0, "from": "low-poly/00_orb.jpg", "to": "low-poly/03_torus_knot.jpg"},
+    {"i": 15, "start": 28.5833, "end": 30.0, "render_s": 2, "speed": 1.412, "from": "low-poly/03_torus_knot.jpg", "to": "low-poly/05_crystal.jpg", "effects": [{"type": "punch", "t": 28.5833, "strength": 0.73}, {"type": "reverse", "t": 28.5833, "len": 0.4}]}
+   ],
+   "recipe": "xf1.eNoVi0EKwzAMBL9i9tRACoXc8oEe-4DQQ7HlxqDGIZIbQsnfK91md3Z_IIxItAihB2WME1LRmTY8e2QxKVwiidm3hTsXjXN4NA2X4RYkxKaduY8vc-XkrP5aXquxY-TavP8ac92va-UD5x-s9CRZ"
+  },
   "45b4eb51": {
-   "used_in": ["Glitch Out music video, 16:9 cut, slot gold_finale_clear: song 224.125 to 238.19 s", "Glitch Out music video, 9:16 cut, slot gold_finale_clear@169 (the 16:9 render cropped): song 224.125 to 238.19 s", "chain preset gold-finale", "loved morph liquid-gold-dragon-to-eagle (shot 2)", "loved morph liquid-gold-eagle-to-infinity-knot (shot 3)", "loved morph liquid-gold-infinity-knot-to-scarab-beetle (shot 4)", "loved morph liquid-gold-koi-to-gargoyle-head (shot 6)", "loved morph liquid-gold-lion-head-to-dragon (shot 1)", "loved morph liquid-gold-phoenix-to-lion-head (shot 0)", "loved morph liquid-gold-scarab-beetle-to-koi (shot 5)"],
+   "used_in": ["Glitch Out music video, 16:9 cut, slot gold_finale_clear: song 224.125 to 238.19 s", "Glitch Out music video, 9:16 cut, slot gold_finale_clear@169 (the 16:9 render cropped): song 224.125 to 238.19 s", "chain preset gold-finale", "library strip of liquid-gold (shot 1)", "loved morph liquid-gold-dragon-to-eagle (shot 2)", "loved morph liquid-gold-eagle-to-infinity-knot (shot 3)", "loved morph liquid-gold-infinity-knot-to-scarab-beetle (shot 4)", "loved morph liquid-gold-koi-to-gargoyle-head (shot 6)", "loved morph liquid-gold-lion-head-to-dragon (shot 1)", "loved morph liquid-gold-phoenix-to-lion-head (shot 0)", "loved morph liquid-gold-scarab-beetle-to-koi (shot 5)"],
    "made": "2026-10-30",
    "vibe": "liquid-gold",
    "aspect": "16:9",
@@ -1295,7 +1400,7 @@
    "recipe": "xf1.eNoVzEEKAjEMheGrhK4UIgjuvIBLz9BpYydMJlGbiiLe3czqffDg_yZK51RJOyVMLXwR9jLDdTjsTkfoUIbv4-P47rOR8htB2BRmyhWhPnMzReglP_MEE5ELIVBu2_ShsOa-ICzGCKw3VvYPLGoe0bVHdSXZ7MEiNmr4FRZ-DK6HZlLT7w9g9DWt"
   },
   "4ab7c8ca": {
-   "used_in": ["chain preset black-rose", "loved morph black-droplet-to-rose (shot 0)", "loved morph black-lotus-to-jellyfish (shot 2)", "loved morph black-rose-to-lotus (shot 1)"],
+   "used_in": ["chain preset black-rose", "library strip of black (shot 1)", "loved morph black-droplet-to-rose (shot 0)", "loved morph black-lotus-to-jellyfish (shot 2)", "loved morph black-rose-to-lotus (shot 1)"],
    "made": "2026-10-29",
    "vibe": "black",
    "aspect": "16:9",
@@ -1346,7 +1451,7 @@
    "recipe": "xf1.eNqrVkpVslJKSc0rTlXSUUorBnLy09KAzHQgyz0nsyQ5Q8G_tERBw9hAoVghubREEyiXC1KWlJOfnwvklADZyTn5pSlAdhlYPDE5W6kWAHuRGc0"
   },
   "4b735507": {
-   "used_in": ["Glitch Out music video, 16:9 cut, slot glass_space_bloom: song 210.417 to 216.917 s", "Glitch Out music video, 9:16 cut, slot glass_space_bloom@169 (the 16:9 render cropped): song 210.417 to 216.917 s", "chain preset glass-hand", "loved morph iridescent-glass-astronaut-glove-to-brass-orrery (shot 3)", "loved morph iridescent-glass-lunar-rover-to-astronaut-glove (shot 2)"],
+   "used_in": ["Glitch Out music video, 16:9 cut, slot glass_space_bloom: song 210.417 to 216.917 s", "Glitch Out music video, 9:16 cut, slot glass_space_bloom@169 (the 16:9 render cropped): song 210.417 to 216.917 s", "chain preset glass-hand", "library strip of iridescent-glass (shot 2)", "loved morph iridescent-glass-astronaut-glove-to-brass-orrery (shot 3)", "loved morph iridescent-glass-lunar-rover-to-astronaut-glove (shot 2)"],
    "made": "2026-10-29",
    "vibe": "iridescent-glass",
    "aspect": "16:9",
@@ -1399,7 +1504,7 @@
    "recipe": "xf1.eNolyzEOwjAMheGrRG8CqUhIbL0AIwdADKnjlIi0QbXTBXF3bLF9T7_9AWNE4lUYAzhjvCMzpynSC48BWSzrFsnzbL7WovQMt67hcDkHCdT1aK1Yk_f_bvGnqba2-FAfHNXspNp6Mu_mspXEQrzqaa5RBN8fB4sreQ"
   },
   "51c65cff": {
-   "used_in": ["Glitch Out music video, 16:9 cut, slot a07_ice_norse: song 49.542 to 57.583 s", "Glitch Out music video, 9:16 cut, slot a07_ice_norse@169 (the 16:9 render cropped): song 49.542 to 57.583 s"],
+   "used_in": ["Glitch Out music video, 16:9 cut, slot a07_ice_norse: song 49.542 to 57.583 s", "Glitch Out music video, 9:16 cut, slot a07_ice_norse@169 (the 16:9 render cropped): song 49.542 to 57.583 s", "library strip of ice-crystal (shot 3)"],
    "made": "2026-10-30",
    "vibe": "ice-crystal",
    "aspect": "16:9",
@@ -1647,7 +1752,7 @@
    "recipe": "xf1.eNolzsFqwzAMgOFXETpt4MLSQ6F5gR73AKMH11FiUccOljwwo-8-mZ78wS9k_aHHGa_zdEGHZFwoCw2vOP-gJFYJPuPd4SqWtfow8ma-WQwRvpvCx_QFAqHppzW2FmItO0EkX9XBo6lSXVN3sJR0RM4OZOdEHVbb5-Age0B4s9A5Q_d5c-ATUx47FhuPpSjnDUR9tU_2cY0cnIfV_CCv5sGQSlvMv-Z-fp7ex-DrH8-OSoY"
   },
   "5e8470dc": {
-   "used_in": ["Glitch Out music video, 16:9 cut, slot b_cyber_beasts: song 170.333 to 174.292 s"],
+   "used_in": ["Glitch Out music video, 16:9 cut, slot b_cyber_beasts: song 170.333 to 174.292 s", "library strip of cyberspace-95 (shot 0)"],
    "made": "2026-10-30",
    "vibe": "cyberspace-95",
    "aspect": "16:9",
@@ -1869,7 +1974,7 @@
    "recipe": "xf1.eNqrVkpVslJKSc0rTlXSUUoHst1zMkuSMxT8S0sUNIwMFIoVkktLNIFyuSVAyaTUxBIgG8RMy8xLzAGyy4DsvPy8VKVaAEgoFfQ"
   },
   "690d9b97": {
-   "used_in": ["the contest demo video, segment result"],
+   "used_in": ["library strip of none (shot 7)", "the contest demo video, segment result"],
    "made": "2026-10-29",
    "vibe": "none",
    "aspect": "16:9",
@@ -2121,7 +2226,7 @@
    "recipe": "xf1.eNo1zsEKwjAMBuBXKTkpTHAXwb2ARx9APGRbtsbVdrTpEMR3Nx3b7fvzB5IvIDRwbeoLVEDKnnyi4gGaB_QsliI8KxiSlomdDZlEysaog5tj6ay5ZzGH-myS6bIctWPtJmzzxOaNaarMQp6E0W8x-L0YwmeTRG7RbeGFY8a4b88UcbMPdpUeea8vWdR3YolSosdZXdi5kHv1op5D7Mgh-9PEXlIeGX5_J3FQMQ"
   },
   "6ec2172d": {
-   "used_in": ["Glitch Out music video, 16:9 cut, slot a14_neon_beasts: song 91.958 to 97.25 s"],
+   "used_in": ["Glitch Out music video, 16:9 cut, slot a14_neon_beasts: song 91.958 to 97.25 s", "library strip of neon-noir (shot 1)"],
    "made": "2026-10-30",
    "vibe": "neon-noir",
    "aspect": "16:9",
@@ -2973,7 +3078,7 @@
    "recipe": "xf1.eNotjk1qAzEMha8ivGrBm0ApNBfoMmdQbDlj0EiDLSWE0LtXLt1970fovRKmc_o6nz5TThRYSSYFtxlidt7UyWw5tzC-uVvZ4OIGb6cPmFDc3iPrkTUaAm2oVHBpPrjLLcOdxCc0ftrAI0NFqcRdBSZRhY2wZji6UFGhDNMjfmRgtbj6qxwaDSw6JIMp1mmqDLvPbaju8XtfS6_8L2wJQgteWFi9Bt-XrYbSC3L6-QUh3lCj"
   },
   "9618f65c": {
-   "used_in": ["Glitch Out music video, 16:9 cut, slot b3_ferro_beasts: song 202.417 to 210.417 s"],
+   "used_in": ["Glitch Out music video, 16:9 cut, slot b3_ferro_beasts: song 202.417 to 210.417 s", "library strip of ferrofluid (shot 1)"],
    "made": "2026-10-30",
    "vibe": "ferrofluid",
    "aspect": "16:9",
@@ -3171,7 +3276,7 @@
    "recipe": "xf1.eNodjjEOwjAMRa9iZQKpA12Q6AUYOYNx3RLJiavYYUHcHYftfb3_ZX8SpiXdlvmapsSBK1fj4M0ieEMaYQ--S3Z6waM7nOYLGFD3c7gcDs2bVgy1iaLnuk9gKtiASfJhPAE1NuLqUFRrRC3sE0ivUSq6dolOiyGvcAjWIe2I60B42N_GgLVlHw-V8V1h8cEe_GQcPJBE-xr8HqxWMqXvD8hJSkc"
   },
   "a24fc8c8": {
-   "used_in": ["Glitch Out music video, 16:9 cut, slot b2_cosmic_more: song 191.792 to 197.042 s"],
+   "used_in": ["Glitch Out music video, 16:9 cut, slot b2_cosmic_more: song 191.792 to 197.042 s", "library strip of cosmic (shot 3)"],
    "made": "2026-10-30",
    "vibe": "cosmic",
    "aspect": "16:9",
@@ -3224,7 +3329,7 @@
    "recipe": "xf1.eNodjjEOAjEMBL9ipQIpBRIdH6DkDcbxHZGc-BQ7NIi_49DNanZlfxKnWyrcjVNOm0XwgbTCHnyX6vSCx3Q4XS9gQNPP4Wo4NB_aMdQmil77nsFUcACT1MM4Aw024u7QVHtEbewZZPYoNS1TojNiyAUOwb6kHXEdCA_72xiwjurroba-ayy-2IOfjIsXkugswe_Faq1S-v4A3ahIIA"
   },
   "a2d64f77": {
-   "used_in": ["loved morph bioluminescent-koi-fish-to-octopus (shot 7)", "loved morph bioluminescent-seahorse-to-koi-fish (shot 6)"],
+   "used_in": ["library strip of bioluminescent (shot 6)", "loved morph bioluminescent-koi-fish-to-octopus (shot 7)", "loved morph bioluminescent-seahorse-to-koi-fish (shot 6)"],
    "made": "2026-10-29",
    "vibe": "bioluminescent",
    "aspect": "16:9",
@@ -3428,7 +3533,7 @@
    "recipe": "xf1.eNqrVkpUslKytDI0U9JRSgUyU1LzilOB7HQgO7g0L18hJTU3X0ehoLiypCgxLzlVQcPYQKFYIbm0RBOoqgSoKjknvzQFyC4DsSuTUouKCxKTU3UtTZVqAewZG6g"
   },
   "a7536eaf": {
-   "used_in": ["Glitch Out music video, 16:9 cut, slot b_marble_icons: song 197.042 to 202.417 s"],
+   "used_in": ["Glitch Out music video, 16:9 cut, slot b_marble_icons: song 197.042 to 202.417 s", "library strip of porcelain-marble (shot 4)"],
    "made": "2026-10-30",
    "vibe": "porcelain-marble",
    "aspect": "16:9",
@@ -3481,7 +3586,7 @@
    "recipe": "xf1.eNo9j0FKBTEMhq8SslKoILh7F3DpAcRFXptpg510aNN5iHh30ye4ypd-f0LzjYwXTKyDMSBveHnHJFa440fAbbhUzmRyLp-9fa1iscDbNHh4eYYBcdqjO3Hnc2BF9JM7DCObHICs0oDSahLNsBK5tquLSi22pkCa7s-D-8FqI8DR6WuFiytvb86cPJe5_q_9q9A2SHRKCnCyzgGJYZfawn122dySf25fh4xDdLEtVjqcF8ba5sqczkfrkSuJPu3Ur5Xx5xeV5V-x"
   },
   "b289bdb5": {
-   "used_in": ["Glitch Out music video, 16:9 cut, slot n1_origami_icons: song 57.583 to 62.833 s", "Glitch Out music video, 9:16 cut, slot n1_origami_icons@169 (the 16:9 render cropped): song 57.583 to 62.833 s", "chain preset origami-icons", "loved morph origami-noir-crane-to-wolf (shot 2)", "loved morph origami-noir-tiger-to-crane (shot 1)", "loved morph origami-noir-wolf-to-dragon (shot 3)"],
+   "used_in": ["Glitch Out music video, 16:9 cut, slot n1_origami_icons: song 57.583 to 62.833 s", "Glitch Out music video, 9:16 cut, slot n1_origami_icons@169 (the 16:9 render cropped): song 57.583 to 62.833 s", "chain preset origami-icons", "library strip of origami-noir (shot 2)", "loved morph origami-noir-crane-to-wolf (shot 2)", "loved morph origami-noir-tiger-to-crane (shot 1)", "loved morph origami-noir-wolf-to-dragon (shot 3)"],
    "made": "2026-10-30",
    "vibe": "origami-noir",
    "aspect": "16:9",
@@ -3685,7 +3790,7 @@
    "recipe": "xf1.eNoVzUEKgzAQBdCrDFm1kC7cCPUCXfYMaZzEQNQyM1FEevd-d-_P5zOnC25wz6HrnXcMjrwow0kRTEK8QoZftVic6N2Mbl1PSrHZHV25RhLyunjKUlIqgLJ8eTFP04HO035sLLhHlg9LU-zm68HM1WADY13bCG-wTmFc94dyTe73B1LUMhk"
   },
   "b90b9735": {
-   "used_in": ["Glitch Out music video, 16:9 cut, slot s1_shadow_dragon: song 16.417 to 28.25 s", "chain preset smoke-dragon", "loved morph shadow-self-dragon-to-griffin (shot 0)", "loved morph shadow-self-griffin-to-serpent (shot 1)"],
+   "used_in": ["Glitch Out music video, 16:9 cut, slot s1_shadow_dragon: song 16.417 to 28.25 s", "chain preset smoke-dragon", "library strip of shadow-self (shot 0)", "loved morph shadow-self-dragon-to-griffin (shot 0)", "loved morph shadow-self-griffin-to-serpent (shot 1)"],
    "made": "2026-10-30",
    "vibe": "shadow-self",
    "aspect": "16:9",
@@ -4013,7 +4118,7 @@
    "recipe": "xf1.eNo9jkEOQiEMBa_SsNIEExN3XsClZyjQzycpoFBMiPHuFhfuZvry2r4NmasJVDoZa7auIg39kqh84yR-h_sQOFzO0MEPOWqWNOseGzpwRMJkoQvGv-y10FSxEBrGWjaeFnIt2HSbGyLUfqNHw5lKhIxFUtfeyFndpRYs8CioJdn1YF6fZWJZLMqOcPFCz3UE5Zcyp-dI4RQrB_P5Au9ASG0"
   },
   "cacf1c61": {
-   "used_in": ["Glitch Out music video, 16:9 cut, slot o3_ocean_reef: song 39.0 to 49.542 s"],
+   "used_in": ["Glitch Out music video, 16:9 cut, slot o3_ocean_reef: song 39.0 to 49.542 s", "library strip of ocean (shot 3)"],
    "made": "2026-10-30",
    "vibe": "ocean",
    "aspect": "16:9",
@@ -4429,7 +4534,7 @@
    "recipe": "xf1.eNo1j81KBTEMhV8lZKXQAcHdfQGXPoDcRW8n7UQ76dCkd1Dx3U0Fdx_nJ5x8I-EFVxIlDEgZL2-4sm3U8Rowq5vWY5pmcX6pbGmD12Hw8PwECmnYo3vsXuqkicRgb00geynArcYvlgI6_hXistlyNBajFdRiD1CnJp5b1PpIH2DtJNd9xc4GNXq2i3fFThavbRS7aQBNsZJCy_A-1HjeZ8ksbJ-gXMSX7fMFPfiPbbLEw3liqm2szndnoSaLNO748wv08Fvv"
   },
   "e38ef555": {
-   "used_in": ["Glitch Out music video, 16:9 cut, slot riso_fold_snap: song 151.75 to 159.625 s", "Glitch Out music video, 9:16 cut, slot riso_fold_snap@169 (the 16:9 render cropped): song 151.75 to 159.625 s"],
+   "used_in": ["Glitch Out music video, 16:9 cut, slot riso_fold_snap: song 151.75 to 159.625 s", "Glitch Out music video, 9:16 cut, slot riso_fold_snap@169 (the 16:9 render cropped): song 151.75 to 159.625 s", "library strip of risograph (shot 1)"],
    "made": "2026-10-29",
    "vibe": "risograph",
    "aspect": "16:9",
@@ -4892,7 +4997,7 @@
    "recipe": "xf1.eNoNylEKgCAMANCrjH0VGBRBkNfoBOKGCabQtIjo7u3vfbwXHVpc7bSgQVYSZ2F1UG8tFyA-igF5ct1vdzF08wgCvtVeV9XlU2mkvtTxjMTiOdchJCeC3w9IIR1t"
   },
   "fe5ea7d2": {
-   "used_in": ["Glitch Out music video, 16:9 cut, slot a10_brutalist_wonders: song 68.75 to 71.375 s"],
+   "used_in": ["Glitch Out music video, 16:9 cut, slot a10_brutalist_wonders: song 68.75 to 71.375 s", "library strip of brutalist (shot 1)"],
    "made": "2026-10-30",
    "vibe": "brutalist",
    "aspect": "16:9",

@@ -1,6 +1,6 @@
 {
  "version": 1,
- "note": "Pre-rendered, hand-checked default clips per vibe. All files are generated locally with open weights (Z-Image Turbo stills, LTX-Video 0.9.5 morphs) and ship in the repo; nothing to fetch.",
+ "note": "Pre-rendered, hand-checked default clips per vibe, shipped in the repo (nothing to fetch), made with open weights only. The 22 vibes with a `source_clip` were re-cut on 31 October 2026 by scripts/vibe_objects/strip_from_clip.py (ffmpeg) from one Cloud Final morph of their own Z-Image Turbo stills (LTX-2.5 22B distilled on Comfy Cloud; the job and shot are in `source_clip`, the chain in docs/demo/records/chains.json). The others (lava-obsidian, odd-machine, wet-paint, paper-summer, bloom, neon-night) are LTX-Video 0.9.5 morphs rendered locally.",
  "vibes": {
   "chrome-mercury": {
    "clips": [
@@ -9,10 +9,16 @@
     "library/chrome-mercury/close.mp4",
     "library/chrome-mercury/reveal.mp4"
    ],
-   "source_morph": "00_orb -> 01_nautilus",
-   "autotune_score": 90.04,
+   "source_morph": "162_bull -> 163_ram",
+   "source_clip": {
+    "job": "24fb3ab5",
+    "shot": 4,
+    "from": "chrome-mercury/162_bull.jpg",
+    "to": "chrome-mercury/163_ram.jpg",
+    "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), 1024x576, 24 fps, no audio"
+   },
    "qa": true,
-   "checked": "contact sheet reviewed 2026-10-20"
+   "checked": "re-cut 2026-10-31 from the Cloud Final morph 162_bull -> 163_ram of the vibe's own stills (source_clip); contact sheet of the four cuts reviewed 2026-10-31"
   },
   "ferrofluid": {
    "clips": [
@@ -21,10 +27,16 @@
     "library/ferrofluid/close.mp4",
     "library/ferrofluid/reveal.mp4"
    ],
-   "source_morph": "00_orb -> 01_nautilus",
-   "autotune_score": 78.34,
+   "source_morph": "063_ferrofluid_phoenix -> 064_ferrofluid_scorpion",
+   "source_clip": {
+    "job": "9618f65c",
+    "shot": 1,
+    "from": "ferrofluid/063_ferrofluid_phoenix.jpg",
+    "to": "ferrofluid/064_ferrofluid_scorpion.jpg",
+    "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), 1024x576, 24 fps, no audio"
+   },
    "qa": true,
-   "checked": "contact sheet reviewed 2026-10-20"
+   "checked": "re-cut 2026-10-31 from the Cloud Final morph 063_ferrofluid_phoenix -> 064_ferrofluid_scorpion of the vibe's own stills (source_clip); contact sheet of the four cuts reviewed 2026-10-31"
   },
   "y2k-chrome": {
    "clips": [
@@ -33,10 +45,16 @@
     "library/y2k-chrome/close.mp4",
     "library/y2k-chrome/reveal.mp4"
    ],
-   "source_morph": "00_orb -> 01_nautilus",
-   "autotune_score": 92.07,
+   "source_morph": "044_dolphin -> 045_smiley_face",
+   "source_clip": {
+    "job": "3950ac41",
+    "shot": 1,
+    "from": "y2k-chrome/044_dolphin.jpg",
+    "to": "y2k-chrome/045_smiley_face.jpg",
+    "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), 1024x576, 24 fps, no audio"
+   },
    "qa": true,
-   "checked": "contact sheet reviewed 2026-10-20"
+   "checked": "re-cut 2026-10-31 from the Cloud Final morph 044_dolphin -> 045_smiley_face of the vibe's own stills (source_clip); contact sheet of the four cuts reviewed 2026-10-31"
   },
   "low-poly": {
    "clips": [
@@ -45,10 +63,16 @@
     "library/low-poly/close.mp4",
     "library/low-poly/reveal.mp4"
    ],
-   "source_morph": "00_orb -> 01_nautilus",
-   "autotune_score": 82.68,
+   "source_morph": "031_cube -> 032_trefoil_knot",
+   "source_clip": {
+    "job": "459c8eab",
+    "shot": 6,
+    "from": "low-poly/031_cube.jpg",
+    "to": "low-poly/032_trefoil_knot.jpg",
+    "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), 1024x576, 24 fps, no audio"
+   },
    "qa": true,
-   "checked": "contact sheet reviewed 2026-10-20"
+   "checked": "re-cut 2026-10-31 from the Cloud Final morph 031_cube -> 032_trefoil_knot of the vibe's own stills (source_clip); contact sheet of the four cuts reviewed 2026-10-31"
   },
   "odd-machine": {
    "clips": [
@@ -69,10 +93,16 @@
     "library/brutalist/close.mp4",
     "library/brutalist/reveal.mp4"
    ],
-   "source_morph": "00_orb -> 01_nautilus",
-   "autotune_score": 94.07,
+   "source_morph": "053_moai_head -> 054_parthenon",
+   "source_clip": {
+    "job": "fe5ea7d2",
+    "shot": 1,
+    "from": "brutalist/053_moai_head.jpg",
+    "to": "brutalist/054_parthenon.jpg",
+    "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), 1024x576, 24 fps, no audio"
+   },
    "qa": true,
-   "checked": "contact sheet reviewed 2026-10-20"
+   "checked": "re-cut 2026-10-31 from the Cloud Final morph 053_moai_head -> 054_parthenon of the vibe's own stills (source_clip); contact sheet of the four cuts reviewed 2026-10-31"
   },
   "porcelain-marble": {
    "clips": [
@@ -81,10 +111,16 @@
     "library/porcelain-marble/close.mp4",
     "library/porcelain-marble/reveal.mp4"
    ],
-   "source_morph": "00_orb -> 01_nautilus",
-   "autotune_score": 93.34,
+   "source_morph": "072_statue_david -> 073_venus_de_milo",
+   "source_clip": {
+    "job": "a7536eaf",
+    "shot": 4,
+    "from": "porcelain-marble/072_statue_david.jpg",
+    "to": "porcelain-marble/073_venus_de_milo.jpg",
+    "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), 1024x576, 24 fps, no audio"
+   },
    "qa": true,
-   "checked": "contact sheet reviewed 2026-10-20"
+   "checked": "re-cut 2026-10-31 from the Cloud Final morph 072_statue_david -> 073_venus_de_milo of the vibe's own stills (source_clip); contact sheet of the four cuts reviewed 2026-10-31"
   },
   "lava-obsidian": {
    "clips": [
@@ -105,10 +141,16 @@
     "library/ice-crystal/close.mp4",
     "library/ice-crystal/reveal.mp4"
    ],
-   "source_morph": "00_orb -> 01_nautilus",
-   "autotune_score": 88.87,
+   "source_morph": "048_viking_longship -> 008_frost_fern",
+   "source_clip": {
+    "job": "51c65cff",
+    "shot": 3,
+    "from": "ice-crystal/048_viking_longship.jpg",
+    "to": "ice-crystal/008_frost_fern.jpg",
+    "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), 1024x576, 24 fps, no audio"
+   },
    "qa": true,
-   "checked": "contact sheet reviewed 2026-10-20"
+   "checked": "re-cut 2026-10-31 from the Cloud Final morph 048_viking_longship -> 008_frost_fern of the vibe's own stills (source_clip); contact sheet of the four cuts reviewed 2026-10-31"
   },
   "origami-noir": {
    "clips": [
@@ -117,10 +159,16 @@
     "library/origami-noir/close.mp4",
     "library/origami-noir/reveal.mp4"
    ],
-   "source_morph": "00_orb -> 01_nautilus",
-   "autotune_score": 74.07,
+   "source_morph": "057_origami_crane -> 058_origami_wolf",
+   "source_clip": {
+    "job": "b289bdb5",
+    "shot": 2,
+    "from": "origami-noir/057_origami_crane.jpg",
+    "to": "origami-noir/058_origami_wolf.jpg",
+    "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), 1024x576, 24 fps, no audio"
+   },
    "qa": true,
-   "checked": "contact sheet reviewed 2026-10-20"
+   "checked": "re-cut 2026-10-31 from the Cloud Final morph 057_origami_crane -> 058_origami_wolf of the vibe's own stills (source_clip); contact sheet of the four cuts reviewed 2026-10-31"
   },
   "neon-noir": {
    "clips": [
@@ -129,10 +177,16 @@
     "library/neon-noir/close.mp4",
     "library/neon-noir/reveal.mp4"
    ],
-   "source_morph": "00_orb -> 01_nautilus",
-   "autotune_score": 88.88,
+   "source_morph": "184_robotic_hand -> 185_android_face",
+   "source_clip": {
+    "job": "6ec2172d",
+    "shot": 1,
+    "from": "neon-noir/184_robotic_hand.jpg",
+    "to": "neon-noir/185_android_face.jpg",
+    "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), 1024x576, 24 fps, no audio"
+   },
    "qa": true,
-   "checked": "generated 2026-10-22, pending Tys review"
+   "checked": "re-cut 2026-10-31 from the Cloud Final morph 184_robotic_hand -> 185_android_face of the vibe's own stills (source_clip); contact sheet of the four cuts reviewed 2026-10-31"
   },
   "porcelain-kintsugi": {
    "clips": [
@@ -141,10 +195,16 @@
     "library/porcelain-kintsugi/close.mp4",
     "library/porcelain-kintsugi/reveal.mp4"
    ],
-   "source_morph": "00_orb -> 01_nautilus",
-   "autotune_score": 96.27,
+   "source_morph": "150_open_porcelain_hand -> 151_buddha_head",
+   "source_clip": {
+    "job": "292bd6f7",
+    "shot": 1,
+    "from": "porcelain-kintsugi/150_open_porcelain_hand.jpg",
+    "to": "porcelain-kintsugi/151_buddha_head.jpg",
+    "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), 1024x576, 24 fps, no audio"
+   },
    "qa": true,
-   "checked": "generated 2026-10-22, pending Tys review"
+   "checked": "re-cut 2026-10-31 from the Cloud Final morph 150_open_porcelain_hand -> 151_buddha_head of the vibe's own stills (source_clip); contact sheet of the four cuts reviewed 2026-10-31"
   },
   "bioluminescent": {
    "clips": [
@@ -153,10 +213,16 @@
     "library/bioluminescent/close.mp4",
     "library/bioluminescent/reveal.mp4"
    ],
-   "source_morph": "00_orb -> 01_nautilus",
-   "autotune_score": 74.45,
+   "source_morph": "010_seahorse -> 012_koi_fish",
+   "source_clip": {
+    "job": "a2d64f77",
+    "shot": 6,
+    "from": "bioluminescent/010_seahorse.jpg",
+    "to": "bioluminescent/012_koi_fish.jpg",
+    "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), 1024x576, 24 fps, no audio"
+   },
    "qa": true,
-   "checked": "generated 2026-10-22, pending Tys review"
+   "checked": "re-cut 2026-10-31 from the Cloud Final morph 010_seahorse -> 012_koi_fish of the vibe's own stills (source_clip); contact sheet of the four cuts reviewed 2026-10-31"
   },
   "risograph": {
    "clips": [
@@ -165,10 +231,16 @@
     "library/risograph/close.mp4",
     "library/risograph/reveal.mp4"
    ],
-   "source_morph": "00_orb -> 01_nautilus",
-   "autotune_score": 68.19,
+   "source_morph": "010_koi_fish -> 011_octopus",
+   "source_clip": {
+    "job": "e38ef555",
+    "shot": 1,
+    "from": "risograph/010_koi_fish.jpg",
+    "to": "risograph/011_octopus.jpg",
+    "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), 1024x576, 24 fps, no audio"
+   },
    "qa": true,
-   "checked": "generated 2026-10-22, pending Tys review"
+   "checked": "re-cut 2026-10-31 from the Cloud Final morph 010_koi_fish -> 011_octopus of the vibe's own stills (source_clip); contact sheet of the four cuts reviewed 2026-10-31"
   },
   "iridescent-glass": {
    "clips": [
@@ -177,10 +249,16 @@
     "library/iridescent-glass/close.mp4",
     "library/iridescent-glass/reveal.mp4"
    ],
-   "source_morph": "00_orb -> 01_nautilus",
-   "autotune_score": 95.67,
+   "source_morph": "116_lunar_rover -> 117_astronaut_glove",
+   "source_clip": {
+    "job": "4b735507",
+    "shot": 2,
+    "from": "iridescent-glass/116_lunar_rover.jpg",
+    "to": "iridescent-glass/117_astronaut_glove.jpg",
+    "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), 1024x576, 24 fps, no audio"
+   },
    "qa": true,
-   "checked": "generated 2026-10-22, pending Tys review"
+   "checked": "re-cut 2026-10-31 from the Cloud Final morph 116_lunar_rover -> 117_astronaut_glove of the vibe's own stills (source_clip); contact sheet of the four cuts reviewed 2026-10-31"
   },
   "ink-wash": {
    "clips": [
@@ -189,10 +267,16 @@
     "library/ink-wash/close.mp4",
     "library/ink-wash/reveal.mp4"
    ],
-   "source_morph": "00_orb -> 01_nautilus",
-   "autotune_score": 85.71,
+   "source_morph": "122_crane -> 123_dragon",
+   "source_clip": {
+    "job": "21e2aa7b",
+    "shot": 1,
+    "from": "ink-wash/122_crane.jpg",
+    "to": "ink-wash/123_dragon.jpg",
+    "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), 1024x576, 24 fps, no audio"
+   },
    "qa": true,
-   "checked": "generated 2026-10-22, pending Tys review"
+   "checked": "re-cut 2026-10-31 from the Cloud Final morph 122_crane -> 123_dragon of the vibe's own stills (source_clip); contact sheet of the four cuts reviewed 2026-10-31"
   },
   "cyberspace-95": {
    "clips": [
@@ -201,10 +285,16 @@
     "library/cyberspace-95/close.mp4",
     "library/cyberspace-95/reveal.mp4"
    ],
-   "source_morph": "00_orb -> 01_nautilus",
-   "autotune_score": 82.53,
+   "source_morph": "127_wireframe_phoenix -> 128_wireframe_whale",
+   "source_clip": {
+    "job": "5e8470dc",
+    "shot": 0,
+    "from": "cyberspace-95/127_wireframe_phoenix.jpg",
+    "to": "cyberspace-95/128_wireframe_whale.jpg",
+    "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), 1024x576, 24 fps, no audio"
+   },
    "qa": true,
-   "checked": "generated 2026-10-22, pending Tys review"
+   "checked": "re-cut 2026-10-31 from the Cloud Final morph 127_wireframe_phoenix -> 128_wireframe_whale of the vibe's own stills (source_clip); contact sheet of the four cuts reviewed 2026-10-31"
   },
   "wet-paint": {
    "clips": [
@@ -225,10 +315,16 @@
     "library/shadow-self/close.mp4",
     "library/shadow-self/reveal.mp4"
    ],
-   "source_morph": "00_orb -> 01_nautilus",
-   "autotune_score": 75.73,
+   "source_morph": "156_dragon -> 157_griffin",
+   "source_clip": {
+    "job": "b90b9735",
+    "shot": 0,
+    "from": "shadow-self/156_dragon.jpg",
+    "to": "shadow-self/157_griffin.jpg",
+    "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), 1024x576, 24 fps, no audio"
+   },
    "qa": true,
-   "checked": "generated 2026-10-22, pending Tys review"
+   "checked": "re-cut 2026-10-31 from the Cloud Final morph 156_dragon -> 157_griffin of the vibe's own stills (source_clip); contact sheet of the four cuts reviewed 2026-10-31"
   },
   "botanical": {
    "clips": [
@@ -237,10 +333,16 @@
     "library/botanical/close.mp4",
     "library/botanical/reveal.mp4"
    ],
-   "source_morph": "00_orb -> 01_nautilus",
-   "autotune_score": 69.8,
+   "source_morph": "005_dahlia -> 010_protea",
+   "source_clip": {
+    "job": "340d1cb9",
+    "shot": 5,
+    "from": "botanical/005_dahlia.jpg",
+    "to": "botanical/010_protea.jpg",
+    "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), 1024x576, 24 fps, no audio"
+   },
    "qa": true,
-   "checked": "generated 2026-10-22, pending Tys review"
+   "checked": "re-cut 2026-10-31 from the Cloud Final morph 005_dahlia -> 010_protea of the vibe's own stills (source_clip); contact sheet of the four cuts reviewed 2026-10-31"
   },
   "cosmic": {
    "clips": [
@@ -249,9 +351,16 @@
     "library/cosmic/close.mp4",
     "library/cosmic/reveal.mp4"
    ],
-   "source_morph": "00_orb_iridescent -> 01_crescent_moon_oil_slick",
+   "source_morph": "109_cratered_moon -> 111_eclipse_disc",
+   "source_clip": {
+    "job": "a24fc8c8",
+    "shot": 3,
+    "from": "cosmic/109_cratered_moon.jpg",
+    "to": "cosmic/111_eclipse_disc.jpg",
+    "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), 1024x576, 24 fps, no audio"
+   },
    "qa": true,
-   "checked": "regenerated 2026-10-23 from the vibe's own stills, pending Tys review"
+   "checked": "re-cut 2026-10-31 from the Cloud Final morph 109_cratered_moon -> 111_eclipse_disc of the vibe's own stills (source_clip); contact sheet of the four cuts reviewed 2026-10-31"
   },
   "liquid-gold": {
    "clips": [
@@ -260,9 +369,16 @@
     "library/liquid-gold/close.mp4",
     "library/liquid-gold/reveal.mp4"
    ],
-   "source_morph": "00_droplet_mercury -> 01_crown_splash_mercury",
+   "source_morph": "173_lion_head -> 174_dragon",
+   "source_clip": {
+    "job": "45b4eb51",
+    "shot": 1,
+    "from": "liquid-gold/173_lion_head.jpg",
+    "to": "liquid-gold/174_dragon.jpg",
+    "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), 1024x576, 24 fps, no audio"
+   },
    "qa": true,
-   "checked": "regenerated 2026-10-23 from the vibe's own stills, pending Tys review"
+   "checked": "re-cut 2026-10-31 from the Cloud Final morph 173_lion_head -> 174_dragon of the vibe's own stills (source_clip); contact sheet of the four cuts reviewed 2026-10-31"
   },
   "paper-summer": {
    "clips": [
@@ -304,9 +420,16 @@
     "library/ocean/close.mp4",
     "library/ocean/reveal.mp4"
    ],
-   "source_morph": "00_jellyfish_iridescent -> 01_spiral_seashell_iridescent",
+   "source_morph": "06_manta_ray_chrome -> 002_sea_anemone",
+   "source_clip": {
+    "job": "cacf1c61",
+    "shot": 3,
+    "from": "ocean/06_manta_ray_chrome.jpg",
+    "to": "ocean/002_sea_anemone.jpg",
+    "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), 1024x576, 24 fps, no audio"
+   },
    "qa": true,
-   "checked": "regenerated 2026-10-23 from the vibe's own stills, pending Tys review"
+   "checked": "re-cut 2026-10-31 from the Cloud Final morph 06_manta_ray_chrome -> 002_sea_anemone of the vibe's own stills (source_clip); contact sheet of the four cuts reviewed 2026-10-31"
   },
   "none": {
    "clips": [
@@ -315,10 +438,34 @@
     "library/none/close.mp4",
     "library/none/reveal.mp4"
    ],
-   "source_morph": "00_orb -> 01_nautilus",
-   "autotune_score": 100.0,
+   "source_morph": "004_sea_turtle -> 005_betta_fish",
+   "source_clip": {
+    "job": "690d9b97",
+    "shot": 7,
+    "from": "none/004_sea_turtle.jpg",
+    "to": "none/005_betta_fish.jpg",
+    "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), 1024x576, 24 fps, no audio"
+   },
    "qa": true,
-   "checked": "generated 2026-10-29 (70.9 s, temporal QA 100), frames checked by eye"
+   "checked": "re-cut 2026-10-31 from the Cloud Final morph 004_sea_turtle -> 005_betta_fish of the vibe's own stills (source_clip); contact sheet of the four cuts reviewed 2026-10-31"
+  },
+  "black": {
+   "clips": [
+    "library/black/wide.mp4",
+    "library/black/medium.mp4",
+    "library/black/close.mp4",
+    "library/black/reveal.mp4"
+   ],
+   "source_morph": "00_rose_black_glass -> 05_lotus_black_glass",
+   "source_clip": {
+    "job": "4ab7c8ca",
+    "shot": 1,
+    "from": "black/00_rose_black_glass.jpg",
+    "to": "black/05_lotus_black_glass.jpg",
+    "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), 1024x576, 24 fps, no audio"
+   },
+   "qa": true,
+   "checked": "re-cut 2026-10-31 from the Cloud Final morph 00_rose_black_glass -> 05_lotus_black_glass of the vibe's own stills (source_clip); contact sheet of the four cuts reviewed 2026-10-31"
   }
  }
 }

@@ -1465,6 +1465,18 @@
    "noun": "butterfly",
    "finish": "faceted polygons, pixelated textures",
    "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "low-poly/031_cube.jpg",
+   "noun": "cube",
+   "finish": "faceted polygons, pixelated textures",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4047, 1024x576, prompt configs/still_prompts.json low-poly prefix and subject sentence, grown 2026-10-25"
+  },
+  {
+   "file": "low-poly/032_trefoil_knot.jpg",
+   "noun": "trefoil knot",
+   "finish": "faceted polygons, pixelated textures",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4048, 1024x576, prompt configs/still_prompts.json low-poly prefix and subject sentence, grown 2026-10-25"
   }
  ],
  "odd-machine": [
@@ -3277,6 +3289,18 @@
    "noun": "unicorn horn",
    "finish": "sumi-e ink on rice paper",
    "source": "Z-Image Turbo (Apache 2.0), seed 232365932, 1024x576, prompt configs/still_prompts.json ink-wash prefix and subject sentence, grown 2026-10-28"
+  },
+  {
+   "file": "ink-wash/122_crane.jpg",
+   "noun": "crane",
+   "finish": "sumi-e ink on rice paper",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1727890442, 1024x576, prompt configs/still_prompts.json ink-wash prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "ink-wash/123_dragon.jpg",
+   "noun": "dragon",
+   "finish": "sumi-e ink on rice paper",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1727890443, 1024x576, prompt configs/still_prompts.json ink-wash prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
   }
  ],
  "cyberspace-95": [

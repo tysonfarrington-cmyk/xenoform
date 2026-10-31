@@ -45,7 +45,7 @@ Autotune results in `configs/autotune.json` win over a registry `ltx` block. Bac
 
 - `ui_static/objects/<id>/`: 12 stills (orb, nautilus, lotus, torus knot, jellyfish, crystal, feather, mobius ribbon, DNA helix, seed pod, conch, butterfly) in the vibe's material (`black` has 17), then the stills the finished videos show, listed after them in `objects.json`. Simple mode chains them as A->B morphs. Generated with Z-Image Turbo (`scripts/vibe_objects/gen_extended.py`, prompts in `extended_prompts.json`).
 - `ui_static/vibes/<id>.jpg`: the picker thumbnail.
-- `ui_static/library/<id>/{wide,medium,close,reveal}.mp4`: the pre-rendered default clip pack, cut from a hand-checked orb -> nautilus morph. `configs/clip_pack.json` records each clip's autotune score and QA result. Everything is generated locally, so nothing needs fetching.
+- `ui_static/library/<id>/{wide,medium,close,reveal}.mp4`: the pre-rendered default clip pack: 22 vibes are cut from a Cloud Final morph of their own stills (`scripts/vibe_objects/strip_from_clip.py`, 31 Oct 2026), the other six from a hand-checked LTX 0.9.5 morph rendered locally (orb -> nautilus for lava-obsidian, odd-machine and wet-paint). `configs/clip_pack.json` records which (`source_clip` names the Cloud job and shot) and each clip's QA result. Everything ships in the repo, so nothing needs fetching.
 
 ## Real-world subjects: anchor stills
 
