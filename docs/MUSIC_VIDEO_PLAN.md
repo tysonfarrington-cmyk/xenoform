@@ -227,7 +227,8 @@ video, and it is built last because it stands on all the others.
 2. Breathe default: decided 31 Oct, off until Tys has judged the sheets; the drop treatment stays on ("auto").
 3. Credits: the judged Cloud sets for backdrops and for Breathe, and later a whole song on Cloud. None is spent
    until he says so; Draft sheets come first and are free.
-4. Wet paint and the pink odd-machine: hidden from the featured cards (still in the registry), or left as they are?
+4. Wet paint and the pink odd-machine: decided 31 Oct, off the featured cards, kept in the registry (the assets
+   session lands it).
 
 ## 9. Working rules for every session
 
