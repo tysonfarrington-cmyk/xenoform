@@ -1,18 +1,18 @@
 {
  "version": 1,
- "note": "Settings: one object standing in a place that suits the vibe, the object still the hero, large and readable, the place behind it in soft focus (Tys, 30 Oct: \"the blank background really kills these ones ... maybe bigger objects?\"). Each place is the phrase the prompt puts after the object (\"One single scarab cast in solid polished gold, on wind-rippled sand dunes at dusk.\"), so it starts with its preposition. No people, no text, no signage, no second creature. A vibe without a list draws on the default list. Grown with `xenoform stills grow <vibe> --kind setting`, listed with kind: setting and the place on the row, and used by the Simple make body's backdrop choice (places).",
+ "note": "Settings: one object standing in a place that suits the vibe, the object still the hero, large and readable, the place behind it in soft focus (Tys, 30 Oct: \"the blank background really kills these ones ... maybe bigger objects?\"). Each place is the phrase the prompt puts after the object (\"One single scarab cast in solid polished gold, on wind-rippled sand dunes at dusk.\"), so it starts with its preposition. No people, no text, no signage, no second creature; a pier, a rooftop or a beach is named empty, and a pavement is avoided: on the 31 Oct proof the neon street and subway steps put blurred passers-by in the bokeh five times in six whatever the words said (Z-Image Turbo runs without a negative), while the alley, the pier, the rooftop, the car park, the bridge, the loading dock and the fire escape came out empty. A vibe without a list draws on the default list. Grown with `xenoform stills grow <vibe> --kind setting`, listed with kind: setting and the place on the row, and used by the Simple make body's backdrop choice (places).",
  "default": [
   "on a stone ledge in soft light",
   "on a weathered wooden table by a window",
-  "on a sandy shore at dusk",
+  "on an empty sandy shore at dusk",
   "on a mossy rock in a quiet forest",
   "on a polished floor in an empty hall",
-  "on a rooftop at dusk, the city blurred behind"
+  "on an empty rooftop at dusk, the city blurred behind"
  ],
  "vibes": {
   "none": [
    "on mossy rocks beside a forest stream",
-   "on a sandy beach at golden hour",
+   "on an empty sandy beach at golden hour",
    "on a weathered wooden table by a sunlit window",
    "on a stone ledge in an old library",
    "on a workbench in a dusty workshop",
@@ -31,14 +31,14 @@
    "on a terrace above a hazy amber valley at dusk"
   ],
   "neon-noir": [
-   "on a rain-slick street at night, neon lights blurred behind",
-   "in a narrow alley at night, puddles mirroring magenta and cyan neon",
-   "on a wet rooftop at night, a blurred city skyline glowing behind",
-   "on the wet steps of a subway entrance at night",
-   "on a wet pier at night, neon reflections on black water",
-   "under a bridge at night, rain falling through magenta and cyan light",
-   "on the rain-beaded bonnet of a black car in a neon-lit street",
-   "in a flooded car park at night under magenta and sodium light"
+   "on a puddled loading dock at night under magenta and cyan neon tubes",
+   "in a narrow empty alley at night, puddles mirroring magenta and cyan neon",
+   "on a wet empty rooftop at night, a blurred city skyline glowing behind",
+   "on a wet fire escape above a neon alley at night",
+   "on an empty wet pier at night, neon reflections on black water",
+   "under an empty bridge at night, rain falling through magenta and cyan light",
+   "on the rain-beaded bonnet of a parked black car in a deserted neon-lit street",
+   "in an empty flooded car park at night under magenta and sodium light"
   ],
   "black": [
    "on wet black obsidian under drifting mist",
