@@ -507,6 +507,14 @@ def pair_kinds(a: dict | None, b: dict | None) -> tuple[str, str]:
     return tuple("scene" if str((row or {}).get("kind") or "") == "scene" else "object" for row in (a, b))
 
 
+def guide_compression(kinds: tuple[str, str] | None, value) -> tuple[int, int]:
+    """The ``img_compression`` of a morph's two guide stills, start and end: ``value`` for an object, 0 for a scene. The
+    compression is the freedom the morph takes from the guide, and a wide frame loses its texture to it at once: the
+    Draft rule since 26 Oct, and the Final and Cloud rule since 31 Oct (LTX-2.5's loose 30 used to reach scenes too)."""
+    kinds = tuple(kinds) if kinds else ("object", "object")
+    return tuple(0 if k == "scene" else int(value) for k in kinds[:2])
+
+
 def prompt_for(vibe: str, engine: str = "ltx095", kinds: tuple[str, str] | None = None, style: str = "melt") -> str:
     """One prompt per vibe and style, not per pair: the two guide stills carry the objects.
 

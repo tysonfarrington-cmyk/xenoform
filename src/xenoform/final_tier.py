@@ -132,14 +132,25 @@ def gen_length(seconds: float) -> int:
     return int(min(121, max(25, n)))
 
 
+def guides_of(img_compression) -> tuple[int, int]:
+    """``img_compression`` as the (start, end) pair the two guide stills take: one number for both, or a pair
+    (``morph_pass.guide_compression``: a scene's side stays uncompressed)."""
+    if isinstance(img_compression, (tuple, list)):
+        a, b = (list(img_compression) + [18, 18])[:2]
+        return int(a), int(b)
+    return int(img_compression), int(img_compression)
+
+
 def graph(prompt: str, *, length: int, seed: int, upscale: bool = True, prefix: str = "xenoform/final",
           width: int = RENDER_W, height: int = RENDER_H, out_w: int = OUT_W, out_h: int = OUT_H,
-          img_compression: int = 18, end_strength: float = 1.0, negative: str | None = None) -> dict:
-    """ComfyUI API graph for one LTX-2.3 first/last-frame morph. Images go in nodes 100 and 101."""
+          img_compression: int | tuple[int, int] = 18, end_strength: float = 1.0, negative: str | None = None) -> dict:
+    """ComfyUI API graph for one LTX-2.3 first/last-frame morph. Images go in nodes 100 and 101. ``img_compression``
+    is one number for both guides or a (start, end) pair."""
     if width % 64 or height % 64:
         raise ValueError(f"LTX-2.3 two-stage needs multiples of 64 (stage 1 is half size, a multiple of 32); got {width}x{height}.")
     if (length - 1) % 8:
         raise ValueError(f"LTX frame counts are 8k+1; got {length}.")
+    comp_a, comp_b = guides_of(img_compression)
     g: dict = {}
 
     def n(i, cls, **inp):
@@ -154,8 +165,8 @@ def graph(prompt: str, *, length: int, seed: int, upscale: bool = True, prefix: 
     n(7, "EmptyLTXVLatentVideo", width=width // 2, height=height // 2, length=length, batch_size=1)
     n(100, "LoadImage", image="a.png")
     n(101, "LoadImage", image="b.png")
-    n(102, "LTXVPreprocess", image=["100", 0], img_compression=int(img_compression))
-    n(103, "LTXVPreprocess", image=["101", 0], img_compression=int(img_compression))
+    n(102, "LTXVPreprocess", image=["100", 0], img_compression=comp_a)
+    n(103, "LTXVPreprocess", image=["101", 0], img_compression=comp_b)
 
     def guides(base: int, pos, neg, lat):
         n(base, "LTXVAddGuide", positive=pos, negative=neg, vae=["1", 2], latent=lat, image=["102", 0], frame_idx=0, strength=1.0)
@@ -242,17 +253,22 @@ def final_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
     client = client or _client(cfg)
     size = sizes(vertical)
     if vertical:
-        from xenoform.portrait import PROMPT_SUFFIX, portrait_stills
+        from xenoform.portrait import portrait_stills, suffix_for
 
         if relay:  # a clip's frames (clip_cut) are portrait already and fill it: relay=False keeps them as they are
             stills = portrait_stills(stills, Path(work), background=(state or {}).get("still_background"))
     from xenoform.guardrails import guard_prompt, negative_for
 
+    def kinds_of(i: int) -> tuple[str, str]:
+        # a clips cut (clip_cut: its own prompt, the clip frames as its stills) keeps the object pair's suffix and guides
+        return ("object", "object") if prompt_text else mp.pair_kinds(stills[i], stills[i + 1])
+
     def prompt_for_pair(i: int) -> str:  # a pair that touches a scene gets the scene prompt (morph_pass.prompt_for)
         style = styles[i] if styles and i < len(styles) else "melt"
-        text = prompt_text or mp.prompt_for(vibe, "ltx25", mp.pair_kinds(stills[i], stills[i + 1]), style=style)
-        if vertical:
-            text = text.rstrip() + PROMPT_SUFFIX
+        kinds = kinds_of(i)
+        text = prompt_text or mp.prompt_for(vibe, "ltx25", kinds, style=style)
+        if vertical:  # the portrait sentence is the object pair's: a scene pair keeps its wide frame (portrait.suffix_for)
+            text = text.rstrip() + suffix_for(kinds)
         return guard_prompt(text, state)
 
     prompt = prompt_for_pair(0) if len(stills) > 1 else guard_prompt(mp.prompt_for(vibe, "ltx25"), state)
@@ -274,17 +290,21 @@ def final_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
 
     def one(i: int, shot: dict, with_upscale: bool) -> Path:
         length = gen_length(float(shot.get("render_s") or shot["seconds"]))
+        kinds = kinds_of(i)
         if name == "ltx25":
             # the loose LTX-2.5 morph (cloud_final: the end guide at 0.6, compression 30, the lead sentence) at 576x1024;
-            # the clips are scaled to the output size after the loop, no model upscale
+            # the clips are scaled to the output size after the loop, no model upscale. A scene's guide stays uncompressed.
+            knobs = {**tune, **cloud_final.LOOSE}
+            knobs["img_compression"] = mp.guide_compression(kinds, knobs["img_compression"])
             g = cloud_final.graph_for("ltx25", cloud_final.lead(stills[i].get("noun"), stills[i + 1].get("noun")) + prompt_for_pair(i),
                                       negative=negative, length=length,
                                       seed=int(seed) + i, width=render[0], height=render[1], prefix=f"xenoform/final{i:02d}",
-                                      **{**tune, **cloud_final.LOOSE})
+                                      **knobs)
             a_node, b_node, out_node = "6", "7", "19"
         else:
+            knobs = {**tune, "img_compression": mp.guide_compression(kinds, tune.get("img_compression", 18))}
             g = graph(prompt_for_pair(i), negative=negative, length=length, seed=int(seed) + i, upscale=with_upscale,
-                      width=size["render"][0], height=size["render"][1], out_w=size["out"][0], out_h=size["out"][1], **tune)
+                      width=size["render"][0], height=size["render"][1], out_w=size["out"][0], out_h=size["out"][1], **knobs)
             a_node, b_node, out_node = "100", "101", "28"
         wf = client.workflows.from_json(g)
         wf.set_input(a_node, "image", asset(stills[i]["path"]))

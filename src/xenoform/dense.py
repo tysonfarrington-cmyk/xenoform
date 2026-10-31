@@ -1549,11 +1549,14 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
 
 
 def ground_is_black(stills: list[dict], *, luma: float = 16.0) -> bool:
-    """True when the first still's border (the ground the morph sits on) is already near black."""
+    """True when the first object still's border (the ground the morph sits on) is already near black. A scene has no
+    ground (a "mix" cut opens on one, and its dusk sky once decided the crush for every object after it), so the test reads
+    the chain's first object; a chain of scenes alone is never crushed (``portrait.black_stills`` passes scenes through)."""
     try:
-        from xenoform.portrait import load_rgb
+        from xenoform.portrait import FRAME_KINDS, kind_of, load_rgb
 
-        img = load_rgb(Path(stills[0]["path"]))
+        first = next(s for s in stills if kind_of(s) not in FRAME_KINDS)
+        img = load_rgb(Path(first["path"]))
     except Exception:
         return False
     h, w = img.shape[:2]
