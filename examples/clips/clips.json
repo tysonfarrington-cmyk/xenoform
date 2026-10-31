@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "note": "Finished clips cut from the author's videos, shipped as 960x540 copies (the 1080p masters stay on the author's machine). Transcoded with ffmpeg: scale=960:540:flags=lanczos, libx264 -preset slow -crf 24 -profile:v high, yuv420p, AAC 96 kb/s 48 kHz, +faststart.",
+  "clips": [
+    {
+      "id": "gold-outro",
+      "file": "gold_outro.mp4",
+      "title": "The gold outro of Glitch Out",
+      "vibe": "liquid-gold",
+      "seconds": 12.14,
+      "px": [960, 540],
+      "song": "glitch-out",
+      "song_from": 226.08,
+      "song_from_note": "derived: the clip is 12.13 s and ends where the song does, at 238.21 s",
+      "morphs": [
+        "liquid-gold-phoenix-to-lion-head",
+        "liquid-gold-lion-head-to-dragon",
+        "liquid-gold-dragon-to-eagle",
+        "liquid-gold-eagle-to-infinity-knot",
+        "liquid-gold-infinity-knot-to-scarab-beetle",
+        "liquid-gold-scarab-beetle-to-koi",
+        "liquid-gold-koi-to-gargoyle-head"
+      ],
+      "title_at_s": 5.25,
+      "title_note": "the title lands over the eagle becoming the infinity knot (song 231.33 s)",
+      "tier": "cloud",
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json",
+      "job": "45b4eb51",
+      "tys": "30 Oct 12:16 pm: \"the gold outro part i love, from around 3:46ish - i think we can also use that as a clip as well so make that a little standalone clip for me with the music as well\"",
+      "credit": "Made by the author with Xenoform: seven Cloud Final morphs (LTX-2.5 22B distilled, open weights, LTX-2.x Community License Agreement of 11 August 2026, run on Comfy Cloud) between the author's own Z-Image Turbo stills, with the end of \"Glitch Out\" (made by the author with Suno)."
+    }
+  ]
+}

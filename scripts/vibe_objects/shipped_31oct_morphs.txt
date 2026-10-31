@@ -1,0 +1,5 @@
+# The three stills the loved morphs (examples/morphs) begin or end on that no published cut shows.
+# python scripts/vibe_objects/ship_grown.py --list scripts/vibe_objects/shipped_31oct_morphs.txt --grown work/ui/objects
+bioluminescent/123_koi.jpg
+iridescent-glass/118_brass_orrery.jpg
+origami-noir/001_praying_mantis.jpg

@@ -1,0 +1,12 @@
+Glitch Out, the whole song, where every beat turns one thing into the next: glowing jellyfish, a smoke dragon, gold beetles, kintsugi masks, a unicorn and a gold eagle.
+
+Every shot was made with Xenoform, my open-source music video director built on ComfyUI. It reads the song's beats, sections and drop, splits the stems, plans the shots, and renders a chain of LTX-2.5 morphs (open weights) that land on the music. No stock footage, no hand animation.
+
+How it works (1:44): https://youtu.be/x_zMu29HfDA
+Full walkthrough (8 min): https://youtu.be/xpUb5XcHtlQ
+Code (MIT): https://github.com/tysonfarrington-cmyk/xenoform
+
+Music: "Glitch Out" by Tys (made with Suno).
+Visuals: Xenoform, rendered with the open-weights LTX-2.5 22B distilled model on Comfy Cloud's GPUs.
+
+#OpenSourceHiggsfield #ComfyUI #AIMusicVideo

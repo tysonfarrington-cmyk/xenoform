@@ -6,8 +6,12 @@ own GPU, how a still earns its place, and how the chain draws on it.
 
 ## Two sets, one pool
 
-- **Shipped** (`src/xenoform/ui_static/objects/<vibe>/`, listed in `objects.json`): the seed set in the repo, twelve a vibe,
-  made once with Z-Image Turbo and kept small so a clone stays light.
+- **Shipped** (`src/xenoform/ui_static/objects/<vibe>/`, listed in `objects.json`): the seed set in the repo, twelve a vibe
+  made once with Z-Image Turbo, then the stills the finished videos show (31 Oct 2026: 367 more in 22 vibes, same file
+  names as on the machine that grew them, so a pinned chain or a chain preset reproduces on a fresh clone). Each row
+  names its model, seed and prompt file. On a machine that has grown the same still, the catalogue lists the grown copy
+  once and hides the shipped twin (same file name, or the same picture under the same noun); culling the grown jpg
+  keeps it culled.
 - **Grown here** (`work/ui/objects/<vibe>/`, listed in `stills.json`): what this machine has rendered. Not in the repo.
   `XENO_STILLS` moves the folder.
 
@@ -124,6 +128,15 @@ and the pick is pinned: the make body's `chain_pins` (`{"3": "cosmic/042_wolf_sk
 slot) reaches `pick_stills(pins=)`, which holds every pinned slot and fills the rest exactly as above from the pool
 without the pinned stills, so nothing appears twice; the scene slots of a Mix cut move around the pins. A pin past the
 chain's end, a file the library no longer has, or a file pinned twice is dropped. The record lists `pins` and `pinned`.
+
+**Loved chains.** `configs/chain_presets.json` (`xenoform.presets`, `GET /api/presets`) keeps the chains the author loved
+as presets: a vibe, the idea line they were made with, the stills pinned slot by slot (they are among the shipped
+stills, under the file names a recipe or a pin uses) and the settings they were loved with: morph style, timing, effects,
+look, foreshadow, the four knobs and the Backdrop (Plain: every loved chain was made on the vibe's own studio ground, so a
+vibe that has grown twelve places does not turn one into a chain of places by itself). The chips under the idea line
+(Vibe step) apply one in a click: the vibe, the line, the pins and the Fine-tune rows. It never sets the tier and never starts a Make, so a preset made on Cloud Final spends
+nothing until you tick the credits and Make yourself. A missing or bad file means no chips; a pin whose still is
+nowhere is dropped and the others hold. A recipe code carries none of this (it has no pins); the preset does.
 
 **Changing it after the cut.** The shots lane's *Swap an object* (`POST /api/jobs/<id>/swap` with `slot` and `file`,
 `dense.swap_still`) replaces one still of a finished Draft cut: the two morphs that touch it are rendered again through

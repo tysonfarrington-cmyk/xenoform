@@ -1,0 +1,7 @@
+# The four stills two library strips (configs/clip_pack.json `source_clip`) begin and end on that no published cut shows:
+# the low-poly cube to trefoil knot and the ink-wash crane to dragon.
+# python scripts/vibe_objects/ship_grown.py --list scripts/vibe_objects/shipped_31oct_strips.txt --grown work/ui/objects
+low-poly/031_cube.jpg
+low-poly/032_trefoil_knot.jpg
+ink-wash/122_crane.jpg
+ink-wash/123_dragon.jpg

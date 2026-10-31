@@ -1,0 +1,12 @@
+Drop in a song, pick a vibe, and Xenoform makes a music video where every beat is a transformation: one object morphs into the next, right on the music.
+
+Xenoform is an open-source music video director built on ComfyUI. It reads the song's beats, sections and drop, splits the stems, plans the shots, and renders a chain of LTX-Video morphs, then lets you edit the result like a timeline. Open weights by default, all local, built on the Comfy Python SDK, with MIDI and an MCP server so any AI can direct it.
+
+Code (MIT): https://github.com/tysonfarrington-cmyk/xenoform
+Full walkthrough: FULL_WALKTHROUGH_URL
+
+Entry for the Open Source Higgsfield contest (Open Weights Only, LTX bonus). #OpenSourceHiggsfield
+
+Music: "Glitch Out" by Tys (made with Suno).
+The outputs in this video were rendered with Cloud Final: the open-weights LTX-2.5 22B distilled model on Comfy Cloud's GPUs. The same model runs locally with Final.
+Voice: synthetic narration (Kokoro, af_heart).

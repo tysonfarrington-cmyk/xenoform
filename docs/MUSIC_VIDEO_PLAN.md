@@ -237,6 +237,16 @@ video, and it is built last because it stands on all the others.
    long morphs. No vibe ships settings yet, so default output is unchanged. Keep 12, or never switch by itself?
 6. The 24 proof settings (8 each for none, liquid-gold and neon-noir, in the library folder under
    Desktop/xeno_backdrops_31oct): into the main library as the first places, or left out?
+7. Assets: landed 31 Oct as 39791dd (1230 passed on its tree). The repo grew by about 90 MB net, not the 70
+   estimated; the parts the plan asked for add to 90. Left out: the 235 MB masters (13 silent 540p excerpts stand
+   in), the raw clips beyond the 38 loved ones and the strips, partner-node reels, the nine uncredited Suno demos,
+   the overnight run media.
+8. Assets questions: (a) wet-paint keeps its old strip, though a Cloud morph is ready for it (c7b83789 shot 1);
+   lava-obsidian and odd-machine still show orb to nautilus; re-cut those three? (b) neon-night.jpg and poster.jpg
+   stay origin unrecorded. (c) Nine stills held back for a look: cosmic rocket and ringed planet fail the banned
+   noun test; Taj Mahal, three helmets, lightning bolt, piano puddle, hermit crab want a look (sheet: Desktop/xeno_assets_31oct/held_back_stills_sheet.jpg). (d) Comfy Cloud output
+   terms are unchecked, and CREDITS and LICENCES say so. (e) The Loved chains chips are their own row under the
+   idea line, not entries in ideas.json.
 
 ## 9. Working rules for every session
 

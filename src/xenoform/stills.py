@@ -40,6 +40,7 @@ Nothing here touches ComfyUI's process. ``XENO_STILLS`` moves the local set (tes
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
@@ -137,14 +138,68 @@ def grown() -> dict[str, list[dict]]:
     return out
 
 
+def _norm(file) -> str:
+    return str(file or "").replace("\\", "/")
+
+
+def _grown_names() -> set[str]:
+    """Every file name the local index (``stills.json``) lists, a culled one too: ``grown()`` drops a row whose jpg is
+    gone, but the index keeps it, and that is how a still the author culled stays culled when the repo ships a copy."""
+    return {_norm(r.get("file")) for rows in _read_json(index_path(), {}).values() for r in rows if isinstance(r, dict)}
+
+
+_HASHES: dict[tuple[str, int, int], str] = {}
+
+
+def _sha1(path: Path) -> str:
+    """The hash of a still's bytes, remembered by (path, size, mtime) so a library is read once, not on every call."""
+    try:
+        st = path.stat()
+        key = (str(path), st.st_size, st.st_mtime_ns)
+        if key not in _HASHES:
+            _HASHES[key] = hashlib.sha1(path.read_bytes()).hexdigest()
+        return _HASHES[key]
+    except OSError:
+        return ""
+
+
+def _without_twins(rows: list[dict], mine: list[dict], marked: set[str], base: Path) -> list[dict]:
+    """The shipped ``rows`` of one vibe without the ones this machine already has as grown stills (``mine``): the repo
+    ships copies of the stills the finished cuts show, under the same file name, so a pin or a recipe names the same
+    file everywhere, and on the machine that grew them each would be listed twice. A shipped row is a twin when the
+    local index lists its file name (a culled one too, so a cull holds), or when a grown row of the same noun holds the
+    same picture under another name (same bytes). Only a noun match is ever hashed."""
+    if not marked and not mine:
+        return list(rows)
+    names = {_norm(g.get("file")) for g in mine}
+    by_noun: dict[str, list[dict]] = {}
+    for g in mine:
+        by_noun.setdefault(str(g.get("noun") or "").strip().lower(), []).append(g)
+    keep = []
+    for r in rows:
+        name = _norm(r.get("file"))
+        if name in names or name in marked:
+            continue
+        mates = by_noun.get(str(r.get("noun") or "").strip().lower()) or []
+        mine_sha = _sha1(SHIPPED / name) if mates else ""
+        if mine_sha and any(_sha1(base / _norm(g.get("file"))) == mine_sha for g in mates):
+            continue
+        keep.append(r)
+    return keep
+
+
 def catalogue(shipped_rows: dict[str, list[dict]] | None = None) -> dict[str, list[dict]]:
     """Every vibe's pool as the chain sees it: the shipped rows first, then the grown ones, each with ``path``.
-    ``shipped_rows`` replaces ``objects.json`` (morph_pass passes its own ``manifest()``, which tests patch)."""
+    ``shipped_rows`` replaces ``objects.json`` (morph_pass passes its own ``manifest()``, which tests patch).
+    A shipped row whose picture this machine has grown itself is listed once, as the grown row (``_without_twins``)."""
     out: dict[str, list[dict]] = {}
-    for vibe, rows in (shipped() if shipped_rows is None else shipped_rows).items():
-        out[vibe] = [{**r, "path": str(SHIPPED / r["file"]), "shipped": True} for r in rows]
     base = root()
-    for vibe, rows in grown().items():
+    local = grown()
+    marked = _grown_names()
+    for vibe, rows in (shipped() if shipped_rows is None else shipped_rows).items():
+        out[vibe] = [{**r, "path": str(SHIPPED / r["file"]), "shipped": True}
+                     for r in _without_twins(rows, local.get(vibe) or [], marked, base)]
+    for vibe, rows in local.items():
         out.setdefault(vibe, []).extend({**r, "path": str(base / r["file"]), "shipped": False} for r in rows)
     return out
 

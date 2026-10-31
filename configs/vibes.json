@@ -543,7 +543,8 @@
     "feedback": 0.2,
     "dance_fx": "bloom-rush"
    },
-   "featured": 10,
+   "featured": 0,
+   "taste": "Tys, 29 Oct 5:20 pm, on the first montage: its colours are \"pretty terrible\". Off the featured cards on 31 Oct 2026; the entry, its stills, strip, card and example cut stay, so it still works when chosen by name.",
    "v6_gate": {
     "subjects": [
      "a glass heart sculpture",
@@ -594,7 +595,7 @@
     "grain": 0.4,
     "dance_fx": "noir-glow"
    },
-   "featured": 11,
+   "featured": 10,
    "v6_gate": {
     "subjects": [
      "a glass heart sculpture",
@@ -644,7 +645,7 @@
     "chaos": 0.1,
     "dance_fx": "bloom-rush"
    },
-   "featured": 12,
+   "featured": 11,
    "v6_gate": {
     "subjects": [
      "a glass heart sculpture",
@@ -933,7 +934,8 @@
     "dark"
    ],
    "ready": true,
-   "featured": 0
+   "featured": 0,
+   "taste": "Out of the 29 Oct montage after Tys's notes (the pink one). It was never a featured card (it sits behind More vibes); the entry, its stills, strip and card stay, so it still works when chosen by name."
   },
   {
    "id": "brutalist",
@@ -1286,7 +1288,7 @@
     "chaos": 0.3,
     "dance_fx": "off"
    },
-   "featured": 13
+   "featured": 12
   }
  ]
 }

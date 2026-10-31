@@ -1,0 +1,714 @@
+{
+ "version": 1,
+ "note": "The seed each object and texture of plan.json was made with (the run's objects/<name>.png.json). Z-Image Turbo, GGUF Q8_0, 1024x576, 9 steps, the prompt of plan.json (plus prompt_add for a reroll). `how`: planned (the plan's seed), retry (the plan's seed + 1000, after the still gate refused the first), reroll (the review's seed and added sentence, cull.json).",
+ "objects": {
+  "orb": {
+   "seed": 1001,
+   "planned": 1001,
+   "how": "planned",
+   "kind": "object"
+  },
+  "soap_orb": {
+   "seed": 1002,
+   "planned": 1002,
+   "how": "planned",
+   "kind": "object"
+  },
+  "droplet": {
+   "seed": 1003,
+   "planned": 1003,
+   "how": "planned",
+   "kind": "object"
+  },
+  "crown_splash": {
+   "seed": 1004,
+   "planned": 1004,
+   "how": "planned",
+   "kind": "object"
+  },
+  "pearl": {
+   "seed": 1005,
+   "planned": 1005,
+   "how": "planned",
+   "kind": "object"
+  },
+  "egg": {
+   "seed": 1006,
+   "planned": 1006,
+   "how": "planned",
+   "kind": "object"
+  },
+  "apple": {
+   "seed": 1007,
+   "planned": 1007,
+   "how": "planned",
+   "kind": "object"
+  },
+  "pomegranate": {
+   "seed": 1008,
+   "planned": 1008,
+   "how": "planned",
+   "kind": "object"
+  },
+  "sea_urchin": {
+   "seed": 1009,
+   "planned": 1009,
+   "how": "planned",
+   "kind": "object"
+  },
+  "dandelion": {
+   "seed": 1010,
+   "planned": 1010,
+   "how": "planned",
+   "kind": "object"
+  },
+  "disco_ball": {
+   "seed": 1011,
+   "planned": 1011,
+   "how": "planned",
+   "kind": "object"
+  },
+  "ringed_planet": {
+   "seed": 1012,
+   "planned": 1012,
+   "how": "planned",
+   "kind": "object"
+  },
+  "crescent_moon": {
+   "seed": 1013,
+   "planned": 1013,
+   "how": "planned",
+   "kind": "object"
+  },
+  "pocket_watch": {
+   "seed": 1014,
+   "planned": 1014,
+   "how": "planned",
+   "kind": "object"
+  },
+  "compass": {
+   "seed": 3015,
+   "planned": 1015,
+   "how": "reroll",
+   "kind": "object",
+   "prompt_add": "The compass face is completely blank and smooth with only a needle, no letters, no numbers, no markings."
+  },
+  "gear": {
+   "seed": 1016,
+   "planned": 1016,
+   "how": "planned",
+   "kind": "object"
+  },
+  "rocket": {
+   "seed": 3017,
+   "planned": 1017,
+   "how": "reroll",
+   "kind": "object",
+   "prompt_add": "A classic retro V-2 style rocket with four large swept tail fins, pointing diagonally upward to the upper right, mid-flight, a short glossy liquid trail behind it."
+  },
+  "lightbulb": {
+   "seed": 1018,
+   "planned": 1018,
+   "how": "planned",
+   "kind": "object"
+  },
+  "vacuum_tube": {
+   "seed": 1019,
+   "planned": 1019,
+   "how": "planned",
+   "kind": "object"
+  },
+  "candle": {
+   "seed": 1020,
+   "planned": 1020,
+   "how": "planned",
+   "kind": "object"
+  },
+  "key": {
+   "seed": 1021,
+   "planned": 1021,
+   "how": "planned",
+   "kind": "object"
+  },
+  "feather": {
+   "seed": 1022,
+   "planned": 1022,
+   "how": "planned",
+   "kind": "object"
+  },
+  "quartz": {
+   "seed": 1023,
+   "planned": 1023,
+   "how": "planned",
+   "kind": "object"
+  },
+  "crystal_cluster": {
+   "seed": 1024,
+   "planned": 1024,
+   "how": "planned",
+   "kind": "object"
+  },
+  "gem": {
+   "seed": 1025,
+   "planned": 1025,
+   "how": "planned",
+   "kind": "object"
+  },
+  "hourglass": {
+   "seed": 3026,
+   "planned": 1026,
+   "how": "reroll",
+   "kind": "object",
+   "prompt_add": "An upright classic hourglass standing vertically, two bulbs joined at a narrow waist, seen from the side."
+  },
+  "spinning_top": {
+   "seed": 1027,
+   "planned": 1027,
+   "how": "planned",
+   "kind": "object"
+  },
+  "wine_glass": {
+   "seed": 1028,
+   "planned": 1028,
+   "how": "planned",
+   "kind": "object"
+  },
+  "erlenmeyer": {
+   "seed": 1029,
+   "planned": 1029,
+   "how": "planned",
+   "kind": "object"
+  },
+  "perfume_flask": {
+   "seed": 1030,
+   "planned": 1030,
+   "how": "planned",
+   "kind": "object"
+  },
+  "tuning_fork": {
+   "seed": 1031,
+   "planned": 1031,
+   "how": "planned",
+   "kind": "object"
+  },
+  "metronome": {
+   "seed": 3032,
+   "planned": 1032,
+   "how": "reroll",
+   "kind": "object",
+   "prompt_add": "A classic upright pyramid-shaped metronome with its pendulum arm swung to one side, mid-swing."
+  },
+  "chess_knight": {
+   "seed": 1033,
+   "planned": 1033,
+   "how": "planned",
+   "kind": "object"
+  },
+  "chess_pawn": {
+   "seed": 1034,
+   "planned": 1034,
+   "how": "planned",
+   "kind": "object"
+  },
+  "obelisk": {
+   "seed": 1035,
+   "planned": 1035,
+   "how": "planned",
+   "kind": "object"
+  },
+  "bell": {
+   "seed": 1036,
+   "planned": 1036,
+   "how": "planned",
+   "kind": "object"
+  },
+  "horn": {
+   "seed": 3037,
+   "planned": 1037,
+   "how": "reroll",
+   "kind": "object",
+   "prompt_add": "Side view of a long curved spiral horn, its full curving length visible from tip to bell."
+  },
+  "trumpet": {
+   "seed": 1038,
+   "planned": 1038,
+   "how": "planned",
+   "kind": "object"
+  },
+  "vintage_mic": {
+   "seed": 1039,
+   "planned": 1039,
+   "how": "planned",
+   "kind": "object"
+  },
+  "tarot_card": {
+   "seed": 1040,
+   "planned": 1040,
+   "how": "planned",
+   "kind": "object"
+  },
+  "playing_card": {
+   "seed": 1041,
+   "planned": 1041,
+   "how": "planned",
+   "kind": "object"
+  },
+  "dice": {
+   "seed": 1042,
+   "planned": 1042,
+   "how": "planned",
+   "kind": "object"
+  },
+  "cube": {
+   "seed": 1043,
+   "planned": 1043,
+   "how": "planned",
+   "kind": "object"
+  },
+  "pyramid": {
+   "seed": 1044,
+   "planned": 1044,
+   "how": "planned",
+   "kind": "object"
+  },
+  "dodecahedron": {
+   "seed": 1045,
+   "planned": 1045,
+   "how": "planned",
+   "kind": "object"
+  },
+  "torus_knot": {
+   "seed": 1046,
+   "planned": 1046,
+   "how": "planned",
+   "kind": "object"
+  },
+  "mobius": {
+   "seed": 1047,
+   "planned": 1047,
+   "how": "planned",
+   "kind": "object"
+  },
+  "dna_helix": {
+   "seed": 1048,
+   "planned": 1048,
+   "how": "planned",
+   "kind": "object"
+  },
+  "nautilus": {
+   "seed": 1049,
+   "planned": 1049,
+   "how": "planned",
+   "kind": "object"
+  },
+  "conch": {
+   "seed": 1050,
+   "planned": 1050,
+   "how": "planned",
+   "kind": "object"
+  },
+  "butterfly": {
+   "seed": 1051,
+   "planned": 1051,
+   "how": "planned",
+   "kind": "object"
+  },
+  "swallow": {
+   "seed": 1052,
+   "planned": 1052,
+   "how": "planned",
+   "kind": "object"
+  },
+  "manta_ray": {
+   "seed": 1053,
+   "planned": 1053,
+   "how": "planned",
+   "kind": "object"
+  },
+  "dragonfly": {
+   "seed": 1054,
+   "planned": 1054,
+   "how": "planned",
+   "kind": "object"
+  },
+  "jellyfish": {
+   "seed": 1055,
+   "planned": 1055,
+   "how": "planned",
+   "kind": "object"
+  },
+  "koi": {
+   "seed": 1056,
+   "planned": 1056,
+   "how": "planned",
+   "kind": "object"
+  },
+  "rose": {
+   "seed": 1057,
+   "planned": 1057,
+   "how": "planned",
+   "kind": "object"
+  },
+  "lotus": {
+   "seed": 1058,
+   "planned": 1058,
+   "how": "planned",
+   "kind": "object"
+  },
+  "mushroom": {
+   "seed": 1059,
+   "planned": 1059,
+   "how": "planned",
+   "kind": "object"
+  },
+  "leaf": {
+   "seed": 1060,
+   "planned": 1060,
+   "how": "planned",
+   "kind": "object"
+  },
+  "pine_cone": {
+   "seed": 1061,
+   "planned": 1061,
+   "how": "planned",
+   "kind": "object"
+  },
+  "snowflake": {
+   "seed": 1062,
+   "planned": 1062,
+   "how": "planned",
+   "kind": "object"
+  },
+  "paper_plane": {
+   "seed": 1063,
+   "planned": 1063,
+   "how": "planned",
+   "kind": "object"
+  },
+  "origami_crane": {
+   "seed": 1064,
+   "planned": 1064,
+   "how": "planned",
+   "kind": "object"
+  },
+  "airship": {
+   "seed": 1065,
+   "planned": 1065,
+   "how": "planned",
+   "kind": "object"
+  },
+  "sputnik": {
+   "seed": 1066,
+   "planned": 1066,
+   "how": "planned",
+   "kind": "object"
+  },
+  "film_reel": {
+   "seed": 1067,
+   "planned": 1067,
+   "how": "planned",
+   "kind": "object"
+  },
+  "vinyl_record": {
+   "seed": 1068,
+   "planned": 1068,
+   "how": "planned",
+   "kind": "object"
+  },
+  "rotary_phone": {
+   "seed": 1069,
+   "planned": 1069,
+   "how": "planned",
+   "kind": "object"
+  },
+  "padlock": {
+   "seed": 1070,
+   "planned": 1070,
+   "how": "planned",
+   "kind": "object"
+  },
+  "horseshoe_magnet": {
+   "seed": 1071,
+   "planned": 1071,
+   "how": "planned",
+   "kind": "object"
+  },
+  "anchor": {
+   "seed": 1072,
+   "planned": 1072,
+   "how": "planned",
+   "kind": "object"
+  },
+  "crown": {
+   "seed": 1073,
+   "planned": 1073,
+   "how": "planned",
+   "kind": "object"
+  },
+  "umbrella": {
+   "seed": 1074,
+   "planned": 1074,
+   "how": "planned",
+   "kind": "object"
+  },
+  "droplet_swarm": {
+   "seed": 1101,
+   "planned": 1101,
+   "how": "planned",
+   "kind": "object"
+  },
+  "ribbon_twist": {
+   "seed": 1102,
+   "planned": 1102,
+   "how": "planned",
+   "kind": "object"
+  },
+  "torus": {
+   "seed": 1103,
+   "planned": 1103,
+   "how": "planned",
+   "kind": "object"
+  },
+  "violin": {
+   "seed": 1301,
+   "planned": 1301,
+   "how": "planned",
+   "kind": "object"
+  },
+  "harp": {
+   "seed": 1302,
+   "planned": 1302,
+   "how": "planned",
+   "kind": "object"
+  },
+  "saxophone": {
+   "seed": 1303,
+   "planned": 1303,
+   "how": "planned",
+   "kind": "object"
+  },
+  "french_horn": {
+   "seed": 1304,
+   "planned": 1304,
+   "how": "planned",
+   "kind": "object"
+  },
+  "snare_drum": {
+   "seed": 3305,
+   "planned": 1305,
+   "how": "reroll",
+   "kind": "object",
+   "prompt_add": "The drumsticks are also made of the same black iridescent liquid metal, nothing wooden, no natural wood colour anywhere."
+  },
+  "alarm_clock": {
+   "seed": 1306,
+   "planned": 1306,
+   "how": "planned",
+   "kind": "object"
+  },
+  "mantel_clock": {
+   "seed": 1307,
+   "planned": 1307,
+   "how": "planned",
+   "kind": "object"
+  },
+  "sundial": {
+   "seed": 1308,
+   "planned": 1308,
+   "how": "planned",
+   "kind": "object"
+  },
+  "astrolabe": {
+   "seed": 1309,
+   "planned": 1309,
+   "how": "planned",
+   "kind": "object"
+  },
+  "skeleton_key": {
+   "seed": 1310,
+   "planned": 1310,
+   "how": "planned",
+   "kind": "object"
+  },
+  "scallop_shell": {
+   "seed": 1311,
+   "planned": 1311,
+   "how": "planned",
+   "kind": "object"
+  },
+  "spiral_seashell": {
+   "seed": 1312,
+   "planned": 1312,
+   "how": "planned",
+   "kind": "object"
+  },
+  "sand_dollar": {
+   "seed": 1313,
+   "planned": 1313,
+   "how": "planned",
+   "kind": "object"
+  },
+  "amethyst_geode": {
+   "seed": 1314,
+   "planned": 1314,
+   "how": "planned",
+   "kind": "object"
+  },
+  "fluorite_octahedron": {
+   "seed": 1315,
+   "planned": 1315,
+   "how": "planned",
+   "kind": "object"
+  },
+  "satellite_dish": {
+   "seed": 1316,
+   "planned": 1316,
+   "how": "planned",
+   "kind": "object"
+  },
+  "space_probe": {
+   "seed": 3317,
+   "planned": 1317,
+   "how": "reroll",
+   "kind": "object",
+   "prompt_add": "Voyager-style probe: a central polygonal body with a white-less dark dish facing the viewer at three-quarter angle, two long thin booms reaching out sideways and a small round instrument pod on one boom."
+  },
+  "solar_satellite": {
+   "seed": 1318,
+   "planned": 1318,
+   "how": "planned",
+   "kind": "object"
+  },
+  "chess_rook": {
+   "seed": 3319,
+   "planned": 1319,
+   "how": "reroll",
+   "kind": "object",
+   "prompt_add": "The rook is a short squat cylindrical castle tower with a flat crenellated battlement top of square notches; no cross, no crown, no ball on top."
+  },
+  "chess_queen": {
+   "seed": 3320,
+   "planned": 1320,
+   "how": "reroll",
+   "kind": "object",
+   "prompt_add": "The queen is tall and slender with a flared coronet of small round beads around the top and a single small sphere at the very top; no cross."
+  },
+  "chess_king": {
+   "seed": 1321,
+   "planned": 1321,
+   "how": "planned",
+   "kind": "object"
+  },
+  "chess_bishop": {
+   "seed": 3322,
+   "planned": 1322,
+   "how": "reroll",
+   "kind": "object",
+   "prompt_add": "The bishop has a smooth teardrop mitre-shaped head with a single diagonal slit cut into it and a tiny ball on top; no cross, no crown."
+  },
+  "gear_train": {
+   "seed": 1323,
+   "planned": 1323,
+   "how": "planned",
+   "kind": "object"
+  },
+  "clockwork": {
+   "seed": 1324,
+   "planned": 1324,
+   "how": "planned",
+   "kind": "object"
+  },
+  "acorn": {
+   "seed": 1325,
+   "planned": 1325,
+   "how": "planned",
+   "kind": "object"
+  },
+  "maple_seed": {
+   "seed": 1326,
+   "planned": 1326,
+   "how": "planned",
+   "kind": "object"
+  },
+  "lotus_seedpod": {
+   "seed": 1327,
+   "planned": 1327,
+   "how": "planned",
+   "kind": "object"
+  },
+  "sunflower_head": {
+   "seed": 1328,
+   "planned": 1328,
+   "how": "planned",
+   "kind": "object"
+  },
+  "seed_pod_burst": {
+   "seed": 1329,
+   "planned": 1329,
+   "how": "planned",
+   "kind": "object"
+  },
+  "hot_air_balloon": {
+   "seed": 1330,
+   "planned": 1330,
+   "how": "planned",
+   "kind": "object"
+  },
+  "tesla_coil": {
+   "seed": 3331,
+   "planned": 1331,
+   "how": "reroll",
+   "kind": "object",
+   "prompt_add": "A tall cylindrical tesla coil column with tightly wound coil rings, topped by a large smooth donut-shaped toroid ring, with glossy liquid tendrils arcing off the toroid."
+  },
+  "tex_flow": {
+   "seed": 1201,
+   "planned": 1201,
+   "how": "planned",
+   "kind": "texture"
+  },
+  "tex_ferro_spikes": {
+   "seed": 1202,
+   "planned": 1202,
+   "how": "planned",
+   "kind": "texture"
+  },
+  "tex_chrome_ripples": {
+   "seed": 1203,
+   "planned": 1203,
+   "how": "planned",
+   "kind": "texture"
+  },
+  "tex_mercury_beads": {
+   "seed": 1204,
+   "planned": 1204,
+   "how": "planned",
+   "kind": "texture"
+  },
+  "tex_oil_swirl": {
+   "seed": 1205,
+   "planned": 1205,
+   "how": "planned",
+   "kind": "texture"
+  },
+  "tex_pour": {
+   "seed": 3206,
+   "planned": 1206,
+   "how": "reroll",
+   "kind": "texture",
+   "prompt_add": "Pure black background and dark surroundings, only the liquid is lit."
+  },
+  "tex_iridescent_waves": {
+   "seed": 1207,
+   "planned": 1207,
+   "how": "planned",
+   "kind": "texture"
+  },
+  "tex_glass_melt": {
+   "seed": 1208,
+   "planned": 1208,
+   "how": "planned",
+   "kind": "texture"
+  }
+ }
+}

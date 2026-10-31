@@ -89,7 +89,7 @@ def test_graph_chains_stills_and_validates_against_the_installed_node():
 def test_black_vibe_pool_and_demo_chain():
     pools = json.loads((ROOT / "src/xenoform/ui_static/objects/objects.json").read_text(encoding="utf-8"))
     black = pools["black"]
-    assert len(black) == 17 and len({item["noun"] for item in black}) == 17
+    assert len(black) >= 17 and len({item["noun"] for item in black}) == len(black)  # the original 17, then the stills the cuts show
     assert tuple(item["noun"] for item in black[:5]) == cm.BLACK_CHAIN
     for item in black:
         assert (ROOT / "src/xenoform/ui_static/objects" / item["file"]).is_file()

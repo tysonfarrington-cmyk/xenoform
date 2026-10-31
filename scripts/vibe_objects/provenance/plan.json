@@ -1,0 +1,2577 @@
+{
+ "materials": {
+  "gr": "glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen",
+  "chrome": "mirror-polished liquid chrome metal reflecting soft teal and violet light",
+  "mercury": "bright liquid mercury quicksilver with a wet beaded silver surface",
+  "black_glass": "molten glossy black obsidian glass with a deep violet inner glow",
+  "oil_slick": "glossy black liquid metal covered in a swirling oil-slick rainbow film",
+  "iridescent": "pearlescent iridescent liquid metal shifting between violet, teal and gold"
+ },
+ "set": "single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands",
+ "objects": [
+  {
+   "name": "orb",
+   "prompt": "a perfect sphere, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1001,
+   "silhouette": "round",
+   "pose": "hero"
+  },
+  {
+   "name": "soap_orb",
+   "prompt": "a wobbling liquid sphere mid-ripple, slightly squashed, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1002,
+   "silhouette": "round",
+   "pose": "mid_action"
+  },
+  {
+   "name": "droplet",
+   "prompt": "a single heavy teardrop falling, tip stretched upward, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1003,
+   "silhouette": "drop",
+   "pose": "mid_action"
+  },
+  {
+   "name": "crown_splash",
+   "prompt": "a crown splash with beaded rim droplets flying outward, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1004,
+   "silhouette": "crown",
+   "pose": "mid_action"
+  },
+  {
+   "name": "pearl",
+   "prompt": "a large round pearl resting on nothing, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1005,
+   "silhouette": "round",
+   "pose": "hero"
+  },
+  {
+   "name": "egg",
+   "prompt": "an egg tilted at an angle, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1006,
+   "silhouette": "oval",
+   "pose": "hero"
+  },
+  {
+   "name": "apple",
+   "prompt": "an apple with a short stem, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1007,
+   "silhouette": "round",
+   "pose": "hero"
+  },
+  {
+   "name": "pomegranate",
+   "prompt": "a pomegranate with a crown-shaped top, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1008,
+   "silhouette": "round",
+   "pose": "hero"
+  },
+  {
+   "name": "sea_urchin",
+   "prompt": "a spiky sea urchin, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1009,
+   "silhouette": "spiky_round",
+   "pose": "hero"
+  },
+  {
+   "name": "dandelion",
+   "prompt": "a dandelion seed head, a few seeds drifting away, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1010,
+   "silhouette": "spiky_round",
+   "pose": "mid_action"
+  },
+  {
+   "name": "disco_ball",
+   "prompt": "a faceted mirror ball, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1011,
+   "silhouette": "round",
+   "pose": "hero"
+  },
+  {
+   "name": "ringed_planet",
+   "prompt": "a small planet with a thin tilted ring, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1012,
+   "silhouette": "wide_ring",
+   "pose": "hero"
+  },
+  {
+   "name": "crescent_moon",
+   "prompt": "a crescent moon shape, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1013,
+   "silhouette": "crescent",
+   "pose": "hero"
+  },
+  {
+   "name": "pocket_watch",
+   "prompt": "an open pocket watch with a blank dial and no numerals, chain trailing, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1014,
+   "silhouette": "round",
+   "pose": "hero"
+  },
+  {
+   "name": "compass",
+   "prompt": "a round brass-style compass with a blank face and a needle, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1015,
+   "silhouette": "round",
+   "pose": "hero"
+  },
+  {
+   "name": "gear",
+   "prompt": "a single thick toothed gear cog, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1016,
+   "silhouette": "round_toothed",
+   "pose": "hero"
+  },
+  {
+   "name": "rocket",
+   "prompt": "a slender V-2 style rocket with four swept fins, nose tilted 30 degrees, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1017,
+   "silhouette": "tall_narrow",
+   "pose": "mid_action"
+  },
+  {
+   "name": "lightbulb",
+   "prompt": "a vintage Edison light bulb with a coiled filament and screw base, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1018,
+   "silhouette": "bulb",
+   "pose": "hero"
+  },
+  {
+   "name": "vacuum_tube",
+   "prompt": "a vintage radio vacuum tube, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1019,
+   "silhouette": "tall_round",
+   "pose": "hero"
+  },
+  {
+   "name": "candle",
+   "prompt": "a tall candle with a small flame, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1020,
+   "silhouette": "tall_narrow",
+   "pose": "hero"
+  },
+  {
+   "name": "key",
+   "prompt": "an ornate antique key with a looped bow, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1021,
+   "silhouette": "tall_narrow",
+   "pose": "mid_action"
+  },
+  {
+   "name": "feather",
+   "prompt": "a single long feather curving gently, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1022,
+   "silhouette": "tall_narrow",
+   "pose": "mid_action"
+  },
+  {
+   "name": "quartz",
+   "prompt": "a single pointed quartz crystal, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1023,
+   "silhouette": "tall_narrow",
+   "pose": "hero"
+  },
+  {
+   "name": "crystal_cluster",
+   "prompt": "a cluster of pointed crystals, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1024,
+   "silhouette": "spiky_cluster",
+   "pose": "hero"
+  },
+  {
+   "name": "gem",
+   "prompt": "a brilliant-cut gemstone, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1025,
+   "silhouette": "diamond",
+   "pose": "hero"
+  },
+  {
+   "name": "hourglass",
+   "prompt": "an hourglass tipped on its side mid-turn, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1026,
+   "silhouette": "hourglass",
+   "pose": "mid_action"
+  },
+  {
+   "name": "spinning_top",
+   "prompt": "a spinning top leaning as it spins, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1027,
+   "silhouette": "top",
+   "pose": "mid_action"
+  },
+  {
+   "name": "wine_glass",
+   "prompt": "an empty wine glass, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1028,
+   "silhouette": "goblet",
+   "pose": "hero"
+  },
+  {
+   "name": "erlenmeyer",
+   "prompt": "an Erlenmeyer laboratory flask, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1029,
+   "silhouette": "cone",
+   "pose": "hero"
+  },
+  {
+   "name": "perfume_flask",
+   "prompt": "an ornate perfume bottle with a round stopper, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1030,
+   "silhouette": "tall_round",
+   "pose": "hero"
+  },
+  {
+   "name": "tuning_fork",
+   "prompt": "a tuning fork, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1031,
+   "silhouette": "tall_narrow",
+   "pose": "hero"
+  },
+  {
+   "name": "metronome",
+   "prompt": "a pyramid metronome with its arm swung to one side, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1032,
+   "silhouette": "triangle",
+   "pose": "mid_action"
+  },
+  {
+   "name": "chess_knight",
+   "prompt": "a chess knight piece, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1033,
+   "silhouette": "tall_narrow",
+   "pose": "hero"
+  },
+  {
+   "name": "chess_pawn",
+   "prompt": "a chess pawn piece, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1034,
+   "silhouette": "tall_narrow",
+   "pose": "hero"
+  },
+  {
+   "name": "obelisk",
+   "prompt": "a small obelisk, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1035,
+   "silhouette": "tall_narrow",
+   "pose": "hero"
+  },
+  {
+   "name": "bell",
+   "prompt": "a hand bell tilted mid-swing, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1036,
+   "silhouette": "bell",
+   "pose": "mid_action"
+  },
+  {
+   "name": "horn",
+   "prompt": "a gramophone horn, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1037,
+   "silhouette": "cone",
+   "pose": "hero"
+  },
+  {
+   "name": "trumpet",
+   "prompt": "a trumpet, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1038,
+   "silhouette": "wide_band",
+   "pose": "hero"
+  },
+  {
+   "name": "vintage_mic",
+   "prompt": "a vintage ribbon microphone, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1039,
+   "silhouette": "tall_round",
+   "pose": "hero"
+  },
+  {
+   "name": "tarot_card",
+   "prompt": "a blank tarot card standing upright, slightly curled, blank face with an empty ornate border, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1040,
+   "silhouette": "tall_rect",
+   "pose": "hero"
+  },
+  {
+   "name": "playing_card",
+   "prompt": "a blank playing card spinning in mid-air, edge partly turned, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1041,
+   "silhouette": "tall_rect",
+   "pose": "mid_action"
+  },
+  {
+   "name": "dice",
+   "prompt": "a single die tumbling in mid-air, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1042,
+   "silhouette": "cube",
+   "pose": "mid_action"
+  },
+  {
+   "name": "cube",
+   "prompt": "a rounded cube, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1043,
+   "silhouette": "cube",
+   "pose": "hero"
+  },
+  {
+   "name": "pyramid",
+   "prompt": "a small pyramid, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1044,
+   "silhouette": "triangle",
+   "pose": "hero"
+  },
+  {
+   "name": "dodecahedron",
+   "prompt": "a dodecahedron, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1045,
+   "silhouette": "round",
+   "pose": "hero"
+  },
+  {
+   "name": "torus_knot",
+   "prompt": "a torus knot, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1046,
+   "silhouette": "ring",
+   "pose": "hero"
+  },
+  {
+   "name": "mobius",
+   "prompt": "a Moebius strip, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1047,
+   "silhouette": "ring",
+   "pose": "hero"
+  },
+  {
+   "name": "dna_helix",
+   "prompt": "a double helix spiral, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1048,
+   "silhouette": "tall_narrow",
+   "pose": "hero"
+  },
+  {
+   "name": "nautilus",
+   "prompt": "a nautilus shell, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1049,
+   "silhouette": "spiral",
+   "pose": "hero"
+  },
+  {
+   "name": "conch",
+   "prompt": "a conch shell, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1050,
+   "silhouette": "spiral",
+   "pose": "hero"
+  },
+  {
+   "name": "butterfly",
+   "prompt": "a butterfly with wings half open, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1051,
+   "silhouette": "wide_wings",
+   "pose": "mid_action"
+  },
+  {
+   "name": "swallow",
+   "prompt": "a swallow in flight, wings swept back, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1052,
+   "silhouette": "bird",
+   "pose": "mid_action"
+  },
+  {
+   "name": "manta_ray",
+   "prompt": "a manta ray gliding, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1053,
+   "silhouette": "wide_wings",
+   "pose": "mid_action"
+  },
+  {
+   "name": "dragonfly",
+   "prompt": "a dragonfly, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1054,
+   "silhouette": "wide_wings",
+   "pose": "hero"
+  },
+  {
+   "name": "jellyfish",
+   "prompt": "a jellyfish with trailing tendrils, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1055,
+   "silhouette": "dome_tendrils",
+   "pose": "mid_action"
+  },
+  {
+   "name": "koi",
+   "prompt": "a koi fish curving mid-swim, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1056,
+   "silhouette": "wide_oval",
+   "pose": "mid_action"
+  },
+  {
+   "name": "rose",
+   "prompt": "a single rose bloom with a short stem, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1057,
+   "silhouette": "round_petals",
+   "pose": "hero"
+  },
+  {
+   "name": "lotus",
+   "prompt": "a lotus flower, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1058,
+   "silhouette": "round_petals",
+   "pose": "hero"
+  },
+  {
+   "name": "mushroom",
+   "prompt": "a single mushroom, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1059,
+   "silhouette": "mushroom",
+   "pose": "hero"
+  },
+  {
+   "name": "leaf",
+   "prompt": "a single leaf drifting, slightly curled, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1060,
+   "silhouette": "lens",
+   "pose": "mid_action"
+  },
+  {
+   "name": "pine_cone",
+   "prompt": "a pine cone, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1061,
+   "silhouette": "oval",
+   "pose": "hero"
+  },
+  {
+   "name": "snowflake",
+   "prompt": "a six-armed snowflake, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1062,
+   "silhouette": "star",
+   "pose": "hero"
+  },
+  {
+   "name": "paper_plane",
+   "prompt": "a paper plane in flight, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1063,
+   "silhouette": "triangle",
+   "pose": "mid_action"
+  },
+  {
+   "name": "origami_crane",
+   "prompt": "an origami crane, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1064,
+   "silhouette": "bird",
+   "pose": "hero"
+  },
+  {
+   "name": "airship",
+   "prompt": "a small vintage airship, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1065,
+   "silhouette": "wide_oval",
+   "pose": "hero"
+  },
+  {
+   "name": "sputnik",
+   "prompt": "a Sputnik-style satellite sphere with four long antennae, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1066,
+   "silhouette": "spiky_round",
+   "pose": "hero"
+  },
+  {
+   "name": "film_reel",
+   "prompt": "an old film reel, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1067,
+   "silhouette": "round",
+   "pose": "hero"
+  },
+  {
+   "name": "vinyl_record",
+   "prompt": "a vinyl record tilted, slight wobble, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1068,
+   "silhouette": "round",
+   "pose": "mid_action"
+  },
+  {
+   "name": "rotary_phone",
+   "prompt": "a vintage rotary telephone with a blank dial, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1069,
+   "silhouette": "round",
+   "pose": "hero"
+  },
+  {
+   "name": "padlock",
+   "prompt": "a padlock, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1070,
+   "silhouette": "tall_rect",
+   "pose": "hero"
+  },
+  {
+   "name": "horseshoe_magnet",
+   "prompt": "a horseshoe magnet, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1071,
+   "silhouette": "arch",
+   "pose": "hero"
+  },
+  {
+   "name": "anchor",
+   "prompt": "a ship's anchor, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1072,
+   "silhouette": "tall_narrow",
+   "pose": "hero"
+  },
+  {
+   "name": "crown",
+   "prompt": "a crown, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1073,
+   "silhouette": "wide_spiky",
+   "pose": "hero"
+  },
+  {
+   "name": "umbrella",
+   "prompt": "an open umbrella tilted, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands.",
+   "seed": 1074,
+   "silhouette": "dome",
+   "pose": "mid_action"
+  },
+  {
+   "name": "droplet_swarm",
+   "seed": 1101,
+   "silhouette": "cloud",
+   "pose": "mid_action",
+   "prompt": "a loose swirling cloud of hundreds of small round droplets of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, scattered in mid-air and streaming in a spiral, slight motion blur, wet viscous reflections, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands"
+  },
+  {
+   "name": "ribbon_twist",
+   "seed": 1102,
+   "silhouette": "wide_band",
+   "pose": "mid_action",
+   "prompt": "a single twisting ribbon of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, folding over itself in mid-air like poured liquid, droplets flying off its edge, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands"
+  },
+  {
+   "name": "torus",
+   "seed": 1103,
+   "silhouette": "ring",
+   "pose": "hero",
+   "prompt": "a smooth ring torus, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples, tilted at an angle, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands"
+  },
+  {
+   "name": "violin",
+   "seed": 1301,
+   "silhouette": "new",
+   "pose": "hero",
+   "prompt": "a violin standing upright, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands."
+  },
+  {
+   "name": "harp",
+   "seed": 1302,
+   "silhouette": "new",
+   "pose": "hero",
+   "prompt": "a concert harp, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands."
+  },
+  {
+   "name": "saxophone",
+   "seed": 1303,
+   "silhouette": "new",
+   "pose": "hero",
+   "prompt": "a saxophone, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands."
+  },
+  {
+   "name": "french_horn",
+   "seed": 1304,
+   "silhouette": "new",
+   "pose": "hero",
+   "prompt": "a coiled french horn, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands."
+  },
+  {
+   "name": "snare_drum",
+   "seed": 1305,
+   "silhouette": "new",
+   "pose": "hero",
+   "prompt": "a snare drum with crossed drumsticks, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands."
+  },
+  {
+   "name": "alarm_clock",
+   "seed": 1306,
+   "silhouette": "new",
+   "pose": "hero",
+   "prompt": "a twin-bell alarm clock with a blank face and no numbers, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands."
+  },
+  {
+   "name": "mantel_clock",
+   "seed": 1307,
+   "silhouette": "new",
+   "pose": "hero",
+   "prompt": "an ornate mantel clock with a blank dial, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands."
+  },
+  {
+   "name": "sundial",
+   "seed": 1308,
+   "silhouette": "new",
+   "pose": "hero",
+   "prompt": "a sundial, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands."
+  },
+  {
+   "name": "astrolabe",
+   "seed": 1309,
+   "silhouette": "new",
+   "pose": "hero",
+   "prompt": "an astrolabe of nested rings, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands."
+  },
+  {
+   "name": "skeleton_key",
+   "seed": 1310,
+   "silhouette": "new",
+   "pose": "hero",
+   "prompt": "an ornate skeleton key, tilted diagonally, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands."
+  },
+  {
+   "name": "scallop_shell",
+   "seed": 1311,
+   "silhouette": "new",
+   "pose": "hero",
+   "prompt": "a scallop seashell, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands."
+  },
+  {
+   "name": "spiral_seashell",
+   "seed": 1312,
+   "silhouette": "new",
+   "pose": "hero",
+   "prompt": "a long spiral seashell, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands."
+  },
+  {
+   "name": "sand_dollar",
+   "seed": 1313,
+   "silhouette": "new",
+   "pose": "hero",
+   "prompt": "a sand dollar, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands."
+  },
+  {
+   "name": "amethyst_geode",
+   "seed": 1314,
+   "silhouette": "new",
+   "pose": "hero",
+   "prompt": "a split-open geode full of crystals, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands."
+  },
+  {
+   "name": "fluorite_octahedron",
+   "seed": 1315,
+   "silhouette": "new",
+   "pose": "hero",
+   "prompt": "an octahedral crystal, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands."
+  },
+  {
+   "name": "satellite_dish",
+   "seed": 1316,
+   "silhouette": "new",
+   "pose": "hero",
+   "prompt": "a satellite dish antenna, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands."
+  },
+  {
+   "name": "space_probe",
+   "seed": 1317,
+   "silhouette": "new",
+   "pose": "hero",
+   "prompt": "a deep-space probe with a large dish and long booms, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands."
+  },
+  {
+   "name": "solar_satellite",
+   "seed": 1318,
+   "silhouette": "new",
+   "pose": "hero",
+   "prompt": "a satellite with wide solar panel wings, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands."
+  },
+  {
+   "name": "chess_rook",
+   "seed": 1319,
+   "silhouette": "new",
+   "pose": "hero",
+   "prompt": "a chess rook piece, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands."
+  },
+  {
+   "name": "chess_queen",
+   "seed": 1320,
+   "silhouette": "new",
+   "pose": "hero",
+   "prompt": "a chess queen piece, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands."
+  },
+  {
+   "name": "chess_king",
+   "seed": 1321,
+   "silhouette": "new",
+   "pose": "hero",
+   "prompt": "a chess king piece, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands."
+  },
+  {
+   "name": "chess_bishop",
+   "seed": 1322,
+   "silhouette": "new",
+   "pose": "hero",
+   "prompt": "a chess bishop piece, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands."
+  },
+  {
+   "name": "gear_train",
+   "seed": 1323,
+   "silhouette": "new",
+   "pose": "hero",
+   "prompt": "three interlocking gears of different sizes, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands."
+  },
+  {
+   "name": "clockwork",
+   "seed": 1324,
+   "silhouette": "new",
+   "pose": "hero",
+   "prompt": "an exposed clockwork movement with gears and springs, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands."
+  },
+  {
+   "name": "acorn",
+   "seed": 1325,
+   "silhouette": "new",
+   "pose": "hero",
+   "prompt": "an acorn with its cap, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands."
+  },
+  {
+   "name": "maple_seed",
+   "seed": 1326,
+   "silhouette": "new",
+   "pose": "hero",
+   "prompt": "a winged maple seed spinning in mid-air, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands."
+  },
+  {
+   "name": "lotus_seedpod",
+   "seed": 1327,
+   "silhouette": "new",
+   "pose": "hero",
+   "prompt": "a lotus seed pod, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands."
+  },
+  {
+   "name": "sunflower_head",
+   "seed": 1328,
+   "silhouette": "new",
+   "pose": "hero",
+   "prompt": "a sunflower seed head, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands."
+  },
+  {
+   "name": "seed_pod_burst",
+   "seed": 1329,
+   "silhouette": "new",
+   "pose": "hero",
+   "prompt": "a bursting seed pod with seeds flying out, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands."
+  },
+  {
+   "name": "hot_air_balloon",
+   "seed": 1330,
+   "silhouette": "new",
+   "pose": "hero",
+   "prompt": "a hot air balloon, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands."
+  },
+  {
+   "name": "tesla_coil",
+   "seed": 1331,
+   "silhouette": "new",
+   "pose": "hero",
+   "prompt": "a tesla coil tower with a crackling spark ball, sculpted entirely from glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, wet viscous reflections, subtle surface ripples and tiny beaded droplets clinging to its edges, single object centred with generous margin, floating in a black void with a soft teal glow halo behind it, dramatic rim light from upper left, faint reflection below, macro product photograph, 85mm, ultra detailed, plain blank surfaces, no text, no lettering, no numbers, no logos, no people, no hands."
+  }
+ ],
+ "textures": [
+  {
+   "name": "tex_flow",
+   "mat": "gr",
+   "seed": 1201,
+   "prompt": "extreme close-up macro of a slowly flowing surface of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, viscous rivers, folds and ripples filling the entire frame edge to edge, rim light catching the crests, no objects, ultra detailed, no text, no people"
+  },
+  {
+   "name": "tex_ferro_spikes",
+   "mat": "gr",
+   "seed": 1202,
+   "prompt": "a dense field of sharp ferrofluid spikes rising from a pool of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen, filling the frame, dramatic rim light, black background behind, ultra detailed, no text, no people"
+  },
+  {
+   "name": "tex_chrome_ripples",
+   "mat": "chrome",
+   "seed": 1203,
+   "prompt": "concentric ripples spreading across a mirror-smooth pool of mirror-polished liquid chrome metal reflecting soft teal and violet light, seen at a low angle, filling the frame, black sky above, ultra detailed, no text, no people"
+  },
+  {
+   "name": "tex_mercury_beads",
+   "mat": "mercury",
+   "seed": 1204,
+   "prompt": "hundreds of round beads of bright liquid mercury quicksilver with a wet beaded silver surface rolling and merging on a black glass surface, macro, shallow depth of field, ultra detailed, no text, no people"
+  },
+  {
+   "name": "tex_oil_swirl",
+   "mat": "oil_slick",
+   "seed": 1205,
+   "prompt": "extreme close-up of glossy black liquid metal covered in a swirling oil-slick rainbow film, swirling marbled flow filling the entire frame, no objects, ultra detailed, no text, no people"
+  },
+  {
+   "name": "tex_pour",
+   "mat": "gr",
+   "seed": 1206,
+   "prompt": "a thick glossy stream of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen pouring from above and folding onto itself in a pool, splashes, black void, rim light, ultra detailed, no text, no people"
+  },
+  {
+   "name": "tex_iridescent_waves",
+   "mat": "iridescent",
+   "seed": 1207,
+   "prompt": "slow rolling waves of pearlescent iridescent liquid metal shifting between violet, teal and gold filling the frame, soft caustic highlights, macro, no objects, ultra detailed, no text, no people"
+  },
+  {
+   "name": "tex_glass_melt",
+   "mat": "black_glass",
+   "seed": 1208,
+   "prompt": "molten glossy black obsidian glass with a deep violet inner glow slowly melting and dripping in thick strands, filling the frame, rim light, black void, ultra detailed, no text, no people"
+  }
+ ],
+ "recipes": {
+  "ribbon": {
+   "L": 137,
+   "mid": [
+    [
+     "pour",
+     64,
+     0.35
+    ]
+   ],
+   "end": [
+    [
+     128,
+     1.0
+    ],
+    [
+     136,
+     1.0
+    ]
+   ],
+   "verb": "melts into a twisting ribbon of liquid metal which swells, folds and hardens into"
+  },
+  "droplet_burst": {
+   "L": 137,
+   "mid": [
+    [
+     "splash",
+     72,
+     0.35
+    ],
+    [
+     "splash",
+     96,
+     0.35
+    ]
+   ],
+   "end": [
+    [
+     128,
+     1.0
+    ],
+    [
+     136,
+     1.0
+    ]
+   ],
+   "verb": "shatters into hundreds of glossy liquid droplets that burst outward in a crown splash, hang in the air, and stream back together, fusing into"
+  },
+  "spike_burst": {
+   "L": 137,
+   "mid": [
+    [
+     "spike",
+     64,
+     0.35
+    ],
+    [
+     "spike",
+     88,
+     0.4
+    ]
+   ],
+   "end": [
+    [
+     128,
+     1.0
+    ],
+    [
+     136,
+     1.0
+    ]
+   ],
+   "verb": "sprouts sharp magnetic spikes that grow longer with every pulse, then whip and curl into"
+  },
+  "grow": {
+   "L": 121,
+   "mid": [
+    [
+     "ripple",
+     32,
+     0.35
+    ],
+    [
+     "ripple",
+     64,
+     0.35
+    ]
+   ],
+   "end": [
+    [
+     104,
+     1.0
+    ],
+    [
+     120,
+     1.0
+    ]
+   ],
+   "verb": "breathes and ripples, then grows up out of its own surface and rises into"
+  },
+  "gather": {
+   "L": 137,
+   "mid": [],
+   "end": [
+    [
+     128,
+     1.0
+    ],
+    [
+     136,
+     1.0
+    ]
+   ],
+   "verb": "swirls, the droplets streaming inward and merging into each other until they gather and fuse into"
+  },
+  "burst_out": {
+   "L": 137,
+   "mid": [
+    [
+     "splash",
+     48,
+     0.3
+    ]
+   ],
+   "end": [
+    [
+     128,
+     0.9
+    ],
+    [
+     136,
+     0.9
+    ]
+   ],
+   "verb": "bursts apart into hundreds of glossy droplets that scatter and swirl outward into"
+  },
+  "hero3": {
+   "L": 217,
+   "mid": [
+    [
+     "splash",
+     48,
+     0.35
+    ],
+    [
+     "pour",
+     144,
+     0.35
+    ]
+   ],
+   "midB": [
+    [
+     96,
+     0.4
+    ]
+   ],
+   "end": [
+    [
+     200,
+     1.0
+    ],
+    [
+     216,
+     1.0
+    ]
+   ],
+   "verb": "shatters into glossy droplets that burst outward and fuse into",
+   "verb2": "then melts into a twisting ribbon of liquid metal which swells and hardens into"
+  }
+ },
+ "guide_videos": {
+  "swarm": [
+   [
+    "ovg_swarm_in.mp4@0@17",
+    24,
+    0.25
+   ],
+   [
+    "ovg_swarm_in.mp4@16@17",
+    48,
+    0.2
+   ]
+  ],
+  "swarmout": [
+   [
+    "ovg_swarm_out.mp4@0@17",
+    24,
+    0.25
+   ],
+   [
+    "ovg_swarm_out.mp4@16@17",
+    48,
+    0.2
+   ]
+  ],
+  "birdfly": [
+   [
+    "ovg_bird_butterfly.mp4@0@17",
+    24,
+    0.22
+   ],
+   [
+    "ovg_bird_butterfly.mp4@14@17",
+    56,
+    0.18
+   ]
+  ],
+  "rocketbulb": [
+   [
+    "ovg_rocket_bulb.mp4@0@17",
+    32,
+    0.22
+   ],
+   [
+    "ovg_rocket_bulb.mp4@14@17",
+    64,
+    0.18
+   ]
+  ],
+  "cardorb": [
+   [
+    "ovg_card_orb.mp4@0@17",
+    32,
+    0.22
+   ],
+   [
+    "ovg_card_orb.mp4@14@17",
+    64,
+    0.18
+   ]
+  ],
+  "bulbcard": [
+   [
+    "ovg_bulb_card.mp4@0@17",
+    32,
+    0.22
+   ],
+   [
+    "ovg_bulb_card.mp4@14@17",
+    64,
+    0.18
+   ]
+  ],
+  "droprocket": [
+   [
+    "ovg_drop_rocket.mp4@0@17",
+    32,
+    0.22
+   ],
+   [
+    "ovg_drop_rocket.mp4@14@17",
+    64,
+    0.18
+   ]
+  ],
+  "dropring": [
+   [
+    "ovg_drop_ring.mp4@0@17",
+    32,
+    0.22
+   ],
+   [
+    "ovg_drop_ring.mp4@16@17",
+    64,
+    0.18
+   ]
+  ],
+  "keyfeather": [
+   [
+    "ovg_key_feather.mp4@0@17",
+    32,
+    0.22
+   ],
+   [
+    "ovg_key_feather.mp4@14@17",
+    64,
+    0.18
+   ]
+  ]
+ },
+ "names": {
+  "orb": "perfect liquid sphere",
+  "soap_orb": "soap orb",
+  "droplet": "single teardrop",
+  "crown_splash": "crown splash",
+  "pearl": "pearl",
+  "egg": "egg",
+  "apple": "apple",
+  "pomegranate": "pomegranate",
+  "sea_urchin": "sea urchin",
+  "dandelion": "dandelion",
+  "disco_ball": "disco ball",
+  "ringed_planet": "ringed planet",
+  "crescent_moon": "crescent moon",
+  "pocket_watch": "pocket watch",
+  "compass": "compass",
+  "gear": "gear",
+  "rocket": "rocket",
+  "lightbulb": "vintage light bulb",
+  "vacuum_tube": "vacuum tube",
+  "candle": "candle",
+  "key": "key",
+  "feather": "feather",
+  "quartz": "quartz",
+  "crystal_cluster": "crystal cluster",
+  "gem": "gem",
+  "hourglass": "hourglass",
+  "spinning_top": "spinning top",
+  "wine_glass": "wine glass",
+  "erlenmeyer": "erlenmeyer flask",
+  "perfume_flask": "perfume flask",
+  "tuning_fork": "tuning fork",
+  "metronome": "metronome",
+  "chess_knight": "chess knight piece",
+  "chess_pawn": "chess pawn",
+  "obelisk": "obelisk",
+  "bell": "bell",
+  "horn": "horn",
+  "trumpet": "trumpet",
+  "vintage_mic": "vintage mic",
+  "tarot_card": "blank tarot card",
+  "playing_card": "playing card",
+  "dice": "dice",
+  "cube": "cube",
+  "pyramid": "pyramid",
+  "dodecahedron": "dodecahedron",
+  "torus_knot": "torus knot",
+  "mobius": "mobius",
+  "dna_helix": "double helix",
+  "nautilus": "nautilus",
+  "conch": "conch",
+  "butterfly": "butterfly",
+  "swallow": "swallow",
+  "manta_ray": "manta ray",
+  "dragonfly": "dragonfly",
+  "jellyfish": "jellyfish",
+  "koi": "koi",
+  "rose": "rose",
+  "lotus": "lotus",
+  "mushroom": "mushroom",
+  "leaf": "leaf",
+  "pine_cone": "pine cone",
+  "snowflake": "snowflake",
+  "paper_plane": "paper plane",
+  "origami_crane": "origami crane",
+  "airship": "airship",
+  "sputnik": "sputnik",
+  "film_reel": "film reel",
+  "vinyl_record": "vinyl record",
+  "rotary_phone": "rotary phone",
+  "padlock": "padlock",
+  "horseshoe_magnet": "horseshoe magnet",
+  "anchor": "anchor",
+  "crown": "crown",
+  "umbrella": "umbrella",
+  "droplet_swarm": "swirling cloud of droplets",
+  "ribbon_twist": "twisting liquid ribbon",
+  "torus": "smooth ring torus",
+  "violin": "violin",
+  "harp": "harp",
+  "saxophone": "saxophone",
+  "french_horn": "french horn",
+  "snare_drum": "snare drum",
+  "alarm_clock": "alarm clock",
+  "mantel_clock": "mantel clock",
+  "sundial": "sundial",
+  "astrolabe": "astrolabe",
+  "skeleton_key": "skeleton key",
+  "scallop_shell": "scallop shell",
+  "spiral_seashell": "spiral seashell",
+  "sand_dollar": "sand dollar",
+  "amethyst_geode": "amethyst geode",
+  "fluorite_octahedron": "fluorite octahedron",
+  "satellite_dish": "satellite dish",
+  "space_probe": "space probe",
+  "solar_satellite": "solar satellite",
+  "chess_rook": "chess rook piece",
+  "chess_queen": "chess queen piece",
+  "chess_king": "chess king piece",
+  "chess_bishop": "chess bishop piece",
+  "gear_train": "set of interlocking gears",
+  "clockwork": "clockwork",
+  "acorn": "acorn",
+  "maple_seed": "winged maple seed",
+  "lotus_seedpod": "lotus seedpod",
+  "sunflower_head": "sunflower head",
+  "seed_pod_burst": "bursting seed pod",
+  "hot_air_balloon": "hot air balloon",
+  "tesla_coil": "tesla coil"
+ },
+ "clips": [
+  {
+   "id": "m00_rocket_to_lightbulb_gr",
+   "A": "rocket",
+   "B": "lightbulb",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed": 8000
+  },
+  {
+   "id": "m01_lightbulb_to_tarot_card_gr",
+   "A": "lightbulb",
+   "B": "tarot_card",
+   "recipe": "droplet_burst",
+   "material": "gr",
+   "guide": null,
+   "seed": 8007
+  },
+  {
+   "id": "m02_tarot_card_to_orb_gr",
+   "A": "tarot_card",
+   "B": "orb",
+   "recipe": "droplet_burst",
+   "material": "gr",
+   "guide": null,
+   "seed": 8014
+  },
+  {
+   "id": "m03_droplet_to_rocket_gr",
+   "A": "droplet",
+   "B": "rocket",
+   "recipe": "grow",
+   "material": "gr",
+   "guide": null,
+   "seed": 8021
+  },
+  {
+   "id": "m04_droplet_to_torus_knot_gr",
+   "A": "droplet",
+   "B": "torus_knot",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed": 8028
+  },
+  {
+   "id": "m05_droplet_swarm_to_orb_gr_g",
+   "A": "droplet_swarm",
+   "B": "orb",
+   "recipe": "gather",
+   "material": "gr",
+   "guide": "swarm",
+   "seed": 8035
+  },
+  {
+   "id": "m06_swallow_to_butterfly_gr_g",
+   "A": "swallow",
+   "B": "butterfly",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": "birdfly",
+   "seed": 8042
+  },
+  {
+   "id": "m07_rocket_to_lightbulb_chrome_g",
+   "A": "rocket",
+   "B": "lightbulb",
+   "recipe": "ribbon",
+   "material": "chrome",
+   "guide": "rocketbulb",
+   "seed": 8049
+  },
+  {
+   "id": "m08_tarot_card_to_orb_mercury_g",
+   "A": "tarot_card",
+   "B": "orb",
+   "recipe": "droplet_burst",
+   "material": "mercury",
+   "guide": "cardorb",
+   "seed": 8056
+  },
+  {
+   "id": "m09_lightbulb_to_tarot_card_oil_slick_g",
+   "A": "lightbulb",
+   "B": "tarot_card",
+   "recipe": "ribbon",
+   "material": "oil_slick",
+   "guide": "bulbcard",
+   "seed": 8063
+  },
+  {
+   "id": "m10_orb_to_rocket_iridescent_g",
+   "A": "orb",
+   "B": "rocket",
+   "recipe": "grow",
+   "material": "iridescent",
+   "guide": "droprocket",
+   "seed": 8070
+  },
+  {
+   "id": "m11_droplet_to_torus_black_glass_g",
+   "A": "droplet",
+   "B": "torus",
+   "recipe": "ribbon",
+   "material": "black_glass",
+   "guide": "dropring",
+   "seed": 8077
+  },
+  {
+   "id": "m12_sea_urchin_to_dandelion_gr",
+   "A": "sea_urchin",
+   "B": "dandelion",
+   "recipe": "spike_burst",
+   "material": "gr",
+   "guide": null,
+   "seed": 8084
+  },
+  {
+   "id": "m13_torus_knot_to_mobius_chrome",
+   "A": "torus_knot",
+   "B": "mobius",
+   "recipe": "ribbon",
+   "material": "chrome",
+   "guide": null,
+   "seed": 8091
+  },
+  {
+   "id": "m14_mobius_to_dna_helix_iridescent",
+   "A": "mobius",
+   "B": "dna_helix",
+   "recipe": "ribbon",
+   "material": "iridescent",
+   "guide": null,
+   "seed": 8098
+  },
+  {
+   "id": "m15_nautilus_to_conch_gr",
+   "A": "nautilus",
+   "B": "conch",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed": 8105
+  },
+  {
+   "id": "m16_conch_to_horn_mercury",
+   "A": "conch",
+   "B": "horn",
+   "recipe": "ribbon",
+   "material": "mercury",
+   "guide": null,
+   "seed": 8112
+  },
+  {
+   "id": "m17_butterfly_to_dragonfly_oil_slick",
+   "A": "butterfly",
+   "B": "dragonfly",
+   "recipe": "ribbon",
+   "material": "oil_slick",
+   "guide": null,
+   "seed": 8119
+  },
+  {
+   "id": "m18_dragonfly_to_feather_gr",
+   "A": "dragonfly",
+   "B": "feather",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed": 8126
+  },
+  {
+   "id": "m19_feather_to_leaf_iridescent",
+   "A": "feather",
+   "B": "leaf",
+   "recipe": "ribbon",
+   "material": "iridescent",
+   "guide": null,
+   "seed": 8133
+  },
+  {
+   "id": "m20_leaf_to_rose_black_glass",
+   "A": "leaf",
+   "B": "rose",
+   "recipe": "ribbon",
+   "material": "black_glass",
+   "guide": null,
+   "seed": 8140
+  },
+  {
+   "id": "m21_rose_to_lotus_gr",
+   "A": "rose",
+   "B": "lotus",
+   "recipe": "droplet_burst",
+   "material": "gr",
+   "guide": null,
+   "seed": 8147
+  },
+  {
+   "id": "m22_lotus_to_jellyfish_iridescent",
+   "A": "lotus",
+   "B": "jellyfish",
+   "recipe": "ribbon",
+   "material": "iridescent",
+   "guide": null,
+   "seed": 8154
+  },
+  {
+   "id": "m23_koi_to_manta_ray_gr",
+   "A": "koi",
+   "B": "manta_ray",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed": 8161
+  },
+  {
+   "id": "m24_manta_ray_to_swallow_chrome",
+   "A": "manta_ray",
+   "B": "swallow",
+   "recipe": "ribbon",
+   "material": "chrome",
+   "guide": null,
+   "seed": 8168
+  },
+  {
+   "id": "m25_dandelion_to_snowflake_iridescent",
+   "A": "dandelion",
+   "B": "snowflake",
+   "recipe": "droplet_burst",
+   "material": "iridescent",
+   "guide": null,
+   "seed": 8175
+  },
+  {
+   "id": "m26_snowflake_to_crystal_cluster_black_glass",
+   "A": "snowflake",
+   "B": "crystal_cluster",
+   "recipe": "spike_burst",
+   "material": "black_glass",
+   "guide": null,
+   "seed": 8182
+  },
+  {
+   "id": "m27_quartz_to_obelisk_black_glass",
+   "A": "quartz",
+   "B": "obelisk",
+   "recipe": "ribbon",
+   "material": "black_glass",
+   "guide": null,
+   "seed": 8189
+  },
+  {
+   "id": "m28_gem_to_dodecahedron_chrome",
+   "A": "gem",
+   "B": "dodecahedron",
+   "recipe": "droplet_burst",
+   "material": "chrome",
+   "guide": null,
+   "seed": 8196
+  },
+  {
+   "id": "m29_dodecahedron_to_cube_mercury",
+   "A": "dodecahedron",
+   "B": "cube",
+   "recipe": "ribbon",
+   "material": "mercury",
+   "guide": null,
+   "seed": 8203
+  },
+  {
+   "id": "m30_pyramid_to_obelisk_gr",
+   "A": "pyramid",
+   "B": "obelisk",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed": 8210
+  },
+  {
+   "id": "m31_pocket_watch_to_compass_gr",
+   "A": "pocket_watch",
+   "B": "compass",
+   "recipe": "droplet_burst",
+   "material": "gr",
+   "guide": null,
+   "seed": 8217
+  },
+  {
+   "id": "m32_compass_to_gear_chrome",
+   "A": "compass",
+   "B": "gear",
+   "recipe": "spike_burst",
+   "material": "chrome",
+   "guide": null,
+   "seed": 8224
+  },
+  {
+   "id": "m33_gear_to_film_reel_oil_slick",
+   "A": "gear",
+   "B": "film_reel",
+   "recipe": "ribbon",
+   "material": "oil_slick",
+   "guide": null,
+   "seed": 8231
+  },
+  {
+   "id": "m34_film_reel_to_vinyl_record_gr",
+   "A": "film_reel",
+   "B": "vinyl_record",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed": 8238
+  },
+  {
+   "id": "m35_vinyl_record_to_ringed_planet_iridescent",
+   "A": "vinyl_record",
+   "B": "ringed_planet",
+   "recipe": "droplet_burst",
+   "material": "iridescent",
+   "guide": null,
+   "seed": 8245
+  },
+  {
+   "id": "m36_ringed_planet_to_crescent_moon_gr",
+   "A": "ringed_planet",
+   "B": "crescent_moon",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed": 8252
+  },
+  {
+   "id": "m37_crescent_moon_to_horseshoe_magnet_mercury",
+   "A": "crescent_moon",
+   "B": "horseshoe_magnet",
+   "recipe": "ribbon",
+   "material": "mercury",
+   "guide": null,
+   "seed": 8259
+  },
+  {
+   "id": "m38_key_to_padlock_chrome",
+   "A": "key",
+   "B": "padlock",
+   "recipe": "ribbon",
+   "material": "chrome",
+   "guide": null,
+   "seed": 8266
+  },
+  {
+   "id": "m39_key_to_feather_gr_g",
+   "A": "key",
+   "B": "feather",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": "keyfeather",
+   "seed": 8273
+  },
+  {
+   "id": "m40_bell_to_lightbulb_gr",
+   "A": "bell",
+   "B": "lightbulb",
+   "recipe": "droplet_burst",
+   "material": "gr",
+   "guide": null,
+   "seed": 8280
+  },
+  {
+   "id": "m41_vacuum_tube_to_lightbulb_oil_slick",
+   "A": "vacuum_tube",
+   "B": "lightbulb",
+   "recipe": "ribbon",
+   "material": "oil_slick",
+   "guide": null,
+   "seed": 8287
+  },
+  {
+   "id": "m42_candle_to_lightbulb_gr",
+   "A": "candle",
+   "B": "lightbulb",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed": 8294
+  },
+  {
+   "id": "m43_hourglass_to_wine_glass_black_glass",
+   "A": "hourglass",
+   "B": "wine_glass",
+   "recipe": "ribbon",
+   "material": "black_glass",
+   "guide": null,
+   "seed": 8301
+  },
+  {
+   "id": "m44_wine_glass_to_erlenmeyer_mercury",
+   "A": "wine_glass",
+   "B": "erlenmeyer",
+   "recipe": "ribbon",
+   "material": "mercury",
+   "guide": null,
+   "seed": 8308
+  },
+  {
+   "id": "m45_erlenmeyer_to_perfume_flask_iridescent",
+   "A": "erlenmeyer",
+   "B": "perfume_flask",
+   "recipe": "droplet_burst",
+   "material": "iridescent",
+   "guide": null,
+   "seed": 8315
+  },
+  {
+   "id": "m46_pearl_to_egg_iridescent",
+   "A": "pearl",
+   "B": "egg",
+   "recipe": "ribbon",
+   "material": "iridescent",
+   "guide": null,
+   "seed": 8322
+  },
+  {
+   "id": "m47_egg_to_orb_gr",
+   "A": "egg",
+   "B": "orb",
+   "recipe": "droplet_burst",
+   "material": "gr",
+   "guide": null,
+   "seed": 8329
+  },
+  {
+   "id": "m48_apple_to_pomegranate_oil_slick",
+   "A": "apple",
+   "B": "pomegranate",
+   "recipe": "droplet_burst",
+   "material": "oil_slick",
+   "guide": null,
+   "seed": 8336
+  },
+  {
+   "id": "m49_paper_plane_to_origami_crane_chrome",
+   "A": "paper_plane",
+   "B": "origami_crane",
+   "recipe": "ribbon",
+   "material": "chrome",
+   "guide": null,
+   "seed": 8343
+  },
+  {
+   "id": "m50_origami_crane_to_swallow_gr",
+   "A": "origami_crane",
+   "B": "swallow",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed": 8350
+  },
+  {
+   "id": "m51_sputnik_to_sea_urchin_gr",
+   "A": "sputnik",
+   "B": "sea_urchin",
+   "recipe": "spike_burst",
+   "material": "gr",
+   "guide": null,
+   "seed": 8357
+  },
+  {
+   "id": "m52_umbrella_to_jellyfish_black_glass",
+   "A": "umbrella",
+   "B": "jellyfish",
+   "recipe": "ribbon",
+   "material": "black_glass",
+   "guide": null,
+   "seed": 8364
+  },
+  {
+   "id": "m53_crown_to_crown_splash_gr",
+   "A": "crown",
+   "B": "crown_splash",
+   "recipe": "droplet_burst",
+   "material": "gr",
+   "guide": null,
+   "seed": 8371
+  },
+  {
+   "id": "m54_crown_splash_to_droplet_mercury",
+   "A": "crown_splash",
+   "B": "droplet",
+   "recipe": "gather",
+   "material": "mercury",
+   "guide": null,
+   "seed": 8378
+  },
+  {
+   "id": "m55_chess_pawn_to_chess_knight_chrome",
+   "A": "chess_pawn",
+   "B": "chess_knight",
+   "recipe": "ribbon",
+   "material": "chrome",
+   "guide": null,
+   "seed": 8385
+  },
+  {
+   "id": "m56_metronome_to_tuning_fork_gr",
+   "A": "metronome",
+   "B": "tuning_fork",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed": 8392
+  },
+  {
+   "id": "m57_anchor_to_key_oil_slick",
+   "A": "anchor",
+   "B": "key",
+   "recipe": "ribbon",
+   "material": "oil_slick",
+   "guide": null,
+   "seed": 8399
+  },
+  {
+   "id": "m58_disco_ball_to_orb_chrome",
+   "A": "disco_ball",
+   "B": "orb",
+   "recipe": "droplet_burst",
+   "material": "chrome",
+   "guide": null,
+   "seed": 8406
+  },
+  {
+   "id": "m59_mushroom_to_umbrella_gr",
+   "A": "mushroom",
+   "B": "umbrella",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed": 8413
+  },
+  {
+   "id": "m60_spinning_top_to_hourglass_iridescent",
+   "A": "spinning_top",
+   "B": "hourglass",
+   "recipe": "ribbon",
+   "material": "iridescent",
+   "guide": null,
+   "seed": 8420
+  },
+  {
+   "id": "m61_airship_to_rocket_gr",
+   "A": "airship",
+   "B": "rocket",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed": 8427
+  },
+  {
+   "id": "m62_ribbon_twist_to_orb_gr",
+   "A": "ribbon_twist",
+   "B": "orb",
+   "recipe": "gather",
+   "material": "gr",
+   "guide": null,
+   "seed": 8434
+  },
+  {
+   "id": "m63_orb_to_droplet_swarm_iridescent_g",
+   "A": "orb",
+   "B": "droplet_swarm",
+   "recipe": "burst_out",
+   "material": "iridescent",
+   "guide": "swarmout",
+   "seed": 8441
+  },
+  {
+   "id": "m64_butterfly_to_dragonfly_gr",
+   "A": "butterfly",
+   "B": "dragonfly",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed": 8448
+  },
+  {
+   "id": "m65_hourglass_to_pocket_watch_chrome",
+   "A": "hourglass",
+   "B": "pocket_watch",
+   "recipe": "ribbon",
+   "material": "chrome",
+   "guide": null,
+   "seed": 8455
+  },
+  {
+   "id": "m66_pocket_watch_to_compass_chrome",
+   "A": "pocket_watch",
+   "B": "compass",
+   "recipe": "droplet_burst",
+   "material": "chrome",
+   "guide": null,
+   "seed": 8462
+  },
+  {
+   "id": "m67_gear_to_film_reel_chrome",
+   "A": "gear",
+   "B": "film_reel",
+   "recipe": "ribbon",
+   "material": "chrome",
+   "guide": null,
+   "seed": 8469
+  },
+  {
+   "id": "m68_crystal_cluster_to_quartz_black_glass",
+   "A": "crystal_cluster",
+   "B": "quartz",
+   "recipe": "ribbon",
+   "material": "black_glass",
+   "guide": null,
+   "seed": 8476
+  },
+  {
+   "id": "m69_obelisk_to_pyramid_black_glass",
+   "A": "obelisk",
+   "B": "pyramid",
+   "recipe": "droplet_burst",
+   "material": "black_glass",
+   "guide": null,
+   "seed": 8483
+  },
+  {
+   "id": "m70_bell_to_horn_mercury",
+   "A": "bell",
+   "B": "horn",
+   "recipe": "ribbon",
+   "material": "mercury",
+   "guide": null,
+   "seed": 8490
+  },
+  {
+   "id": "m71_horn_to_trumpet_mercury",
+   "A": "horn",
+   "B": "trumpet",
+   "recipe": "ribbon",
+   "material": "mercury",
+   "guide": null,
+   "seed": 8497
+  },
+  {
+   "id": "m72_trumpet_to_vintage_mic_mercury",
+   "A": "trumpet",
+   "B": "vintage_mic",
+   "recipe": "droplet_burst",
+   "material": "mercury",
+   "guide": null,
+   "seed": 8504
+  },
+  {
+   "id": "m73_vintage_mic_to_vinyl_record_mercury",
+   "A": "vintage_mic",
+   "B": "vinyl_record",
+   "recipe": "ribbon",
+   "material": "mercury",
+   "guide": null,
+   "seed": 8511
+  },
+  {
+   "id": "m74_acorn_to_pine_cone_iridescent",
+   "A": "acorn",
+   "B": "pine_cone",
+   "recipe": "ribbon",
+   "material": "iridescent",
+   "guide": null,
+   "seed": 8518
+  },
+  {
+   "id": "m75_pine_cone_to_dandelion_iridescent",
+   "A": "pine_cone",
+   "B": "dandelion",
+   "recipe": "spike_burst",
+   "material": "iridescent",
+   "guide": null,
+   "seed": 8525
+  },
+  {
+   "id": "m76_dandelion_to_lotus_iridescent",
+   "A": "dandelion",
+   "B": "lotus",
+   "recipe": "droplet_burst",
+   "material": "iridescent",
+   "guide": null,
+   "seed": 8532
+  },
+  {
+   "id": "m77_orb_to_ringed_planet_oil_slick",
+   "A": "orb",
+   "B": "ringed_planet",
+   "recipe": "grow",
+   "material": "oil_slick",
+   "guide": null,
+   "seed": 8539
+  },
+  {
+   "id": "m78_ringed_planet_to_crescent_moon_oil_slick",
+   "A": "ringed_planet",
+   "B": "crescent_moon",
+   "recipe": "ribbon",
+   "material": "oil_slick",
+   "guide": null,
+   "seed": 8546
+  },
+  {
+   "id": "m79_crescent_moon_to_sputnik_oil_slick",
+   "A": "crescent_moon",
+   "B": "sputnik",
+   "recipe": "ribbon",
+   "material": "oil_slick",
+   "guide": null,
+   "seed": 8553
+  },
+  {
+   "id": "m80_sputnik_to_sea_urchin_oil_slick",
+   "A": "sputnik",
+   "B": "sea_urchin",
+   "recipe": "spike_burst",
+   "material": "oil_slick",
+   "guide": null,
+   "seed": 8560
+  },
+  {
+   "id": "m81_chess_knight_to_chess_bishop_chrome",
+   "A": "chess_knight",
+   "B": "chess_bishop",
+   "recipe": "ribbon",
+   "material": "chrome",
+   "guide": null,
+   "seed": 8567
+  },
+  {
+   "id": "m82_chess_bishop_to_chess_queen_chrome",
+   "A": "chess_bishop",
+   "B": "chess_queen",
+   "recipe": "ribbon",
+   "material": "chrome",
+   "guide": null,
+   "seed": 8574
+  },
+  {
+   "id": "m83_chess_queen_to_chess_king_chrome",
+   "A": "chess_queen",
+   "B": "chess_king",
+   "recipe": "ribbon",
+   "material": "chrome",
+   "guide": null,
+   "seed": 8581
+  },
+  {
+   "id": "m84_skeleton_key_to_clockwork_gr",
+   "A": "skeleton_key",
+   "B": "clockwork",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed": 8588
+  },
+  {
+   "id": "m85_clockwork_to_gear_train_gr",
+   "A": "clockwork",
+   "B": "gear_train",
+   "recipe": "spike_burst",
+   "material": "gr",
+   "guide": null,
+   "seed": 8595
+  },
+  {
+   "id": "m86_gear_train_to_alarm_clock_gr",
+   "A": "gear_train",
+   "B": "alarm_clock",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed": 8602
+  },
+  {
+   "id": "m87_alarm_clock_to_astrolabe_gr",
+   "A": "alarm_clock",
+   "B": "astrolabe",
+   "recipe": "droplet_burst",
+   "material": "gr",
+   "guide": null,
+   "seed": 8609
+  },
+  {
+   "id": "m88_astrolabe_to_ringed_planet_gr",
+   "A": "astrolabe",
+   "B": "ringed_planet",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed": 8616
+  },
+  {
+   "id": "m89_violin_to_harp_gr",
+   "A": "violin",
+   "B": "harp",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed": 8623
+  },
+  {
+   "id": "m90_saxophone_to_french_horn_chrome",
+   "A": "saxophone",
+   "B": "french_horn",
+   "recipe": "ribbon",
+   "material": "chrome",
+   "guide": null,
+   "seed": 8630
+  },
+  {
+   "id": "m91_scallop_shell_to_spiral_seashell_iridescent",
+   "A": "scallop_shell",
+   "B": "spiral_seashell",
+   "recipe": "ribbon",
+   "material": "iridescent",
+   "guide": null,
+   "seed": 8637
+  },
+  {
+   "id": "m92_sand_dollar_to_snowflake_mercury",
+   "A": "sand_dollar",
+   "B": "snowflake",
+   "recipe": "droplet_burst",
+   "material": "mercury",
+   "guide": null,
+   "seed": 8644
+  },
+  {
+   "id": "m93_amethyst_geode_to_fluorite_octahedron_black_glass",
+   "A": "amethyst_geode",
+   "B": "fluorite_octahedron",
+   "recipe": "spike_burst",
+   "material": "black_glass",
+   "guide": null,
+   "seed": 8651
+  },
+  {
+   "id": "m94_satellite_dish_to_space_probe_chrome",
+   "A": "satellite_dish",
+   "B": "space_probe",
+   "recipe": "ribbon",
+   "material": "chrome",
+   "guide": null,
+   "seed": 8658
+  },
+  {
+   "id": "m95_solar_satellite_to_dragonfly_gr",
+   "A": "solar_satellite",
+   "B": "dragonfly",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed": 8665
+  },
+  {
+   "id": "m96_maple_seed_to_feather_iridescent",
+   "A": "maple_seed",
+   "B": "feather",
+   "recipe": "ribbon",
+   "material": "iridescent",
+   "guide": null,
+   "seed": 8672
+  },
+  {
+   "id": "m97_lotus_seedpod_to_sunflower_head_oil_slick",
+   "A": "lotus_seedpod",
+   "B": "sunflower_head",
+   "recipe": "droplet_burst",
+   "material": "oil_slick",
+   "guide": null,
+   "seed": 8679
+  },
+  {
+   "id": "m98_seed_pod_burst_to_dandelion_gr",
+   "A": "seed_pod_burst",
+   "B": "dandelion",
+   "recipe": "gather",
+   "material": "gr",
+   "guide": null,
+   "seed": 8686
+  },
+  {
+   "id": "m99_hot_air_balloon_to_lightbulb_gr",
+   "A": "hot_air_balloon",
+   "B": "lightbulb",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed": 8693
+  },
+  {
+   "id": "m100_tesla_coil_to_lightbulb_black_glass",
+   "A": "tesla_coil",
+   "B": "lightbulb",
+   "recipe": "spike_burst",
+   "material": "black_glass",
+   "guide": null,
+   "seed": 8700
+  },
+  {
+   "id": "m101_snare_drum_to_vinyl_record_gr",
+   "A": "snare_drum",
+   "B": "vinyl_record",
+   "recipe": "droplet_burst",
+   "material": "gr",
+   "guide": null,
+   "seed": 8707
+  },
+  {
+   "id": "m102_sundial_to_pocket_watch_mercury",
+   "A": "sundial",
+   "B": "pocket_watch",
+   "recipe": "ribbon",
+   "material": "mercury",
+   "guide": null,
+   "seed": 8714
+  },
+  {
+   "id": "m103_mantel_clock_to_hourglass_iridescent",
+   "A": "mantel_clock",
+   "B": "hourglass",
+   "recipe": "droplet_burst",
+   "material": "iridescent",
+   "guide": null,
+   "seed": 8721
+  },
+  {
+   "id": "m104_chess_rook_to_obelisk_gr",
+   "A": "chess_rook",
+   "B": "obelisk",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed": 8728
+  }
+ ],
+ "deadline": "06:45",
+ "prompt_tpl": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A {A} made of {M} {verb} a {B}, made of the same {M}. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+ "tex_prompt": "One continuous slow-motion macro shot, no cuts, steady camera. {P} The liquid keeps flowing and moving the whole time, real fluid physics, viscous wet reflections. No text.",
+ "hero_tpl": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A {A} made of {M} {verb} a {B}, which {verb2} a {C}, all made of the same {M}. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+ "heroes": [
+  {
+   "id": "h00_droplet_to_rocket_to_lightbulb_gr",
+   "A": "droplet",
+   "B": "rocket",
+   "C": "lightbulb",
+   "recipe": "hero3",
+   "material": "gr",
+   "guide": null,
+   "seed": 9300,
+   "res": [
+    896,
+    512
+   ],
+   "hero": true
+  },
+  {
+   "id": "h01_lightbulb_to_tarot_card_to_orb_gr",
+   "A": "lightbulb",
+   "B": "tarot_card",
+   "C": "orb",
+   "recipe": "hero3",
+   "material": "gr",
+   "guide": null,
+   "seed": 9311,
+   "res": [
+    896,
+    512
+   ],
+   "hero": true
+  },
+  {
+   "id": "h02_droplet_swarm_to_butterfly_to_swallow_gr",
+   "A": "droplet_swarm",
+   "B": "butterfly",
+   "C": "swallow",
+   "recipe": "hero3",
+   "material": "gr",
+   "guide": null,
+   "seed": 9322,
+   "res": [
+    896,
+    512
+   ],
+   "hero": true
+  },
+  {
+   "id": "h03_sea_urchin_to_dandelion_to_snowflake_iridescent",
+   "A": "sea_urchin",
+   "B": "dandelion",
+   "C": "snowflake",
+   "recipe": "hero3",
+   "material": "iridescent",
+   "guide": null,
+   "seed": 9333,
+   "res": [
+    896,
+    512
+   ],
+   "hero": true
+  },
+  {
+   "id": "h04_nautilus_to_conch_to_horn_mercury",
+   "A": "nautilus",
+   "B": "conch",
+   "C": "horn",
+   "recipe": "hero3",
+   "material": "mercury",
+   "guide": null,
+   "seed": 9344,
+   "res": [
+    896,
+    512
+   ],
+   "hero": true
+  },
+  {
+   "id": "h05_torus_knot_to_mobius_to_dna_helix_chrome",
+   "A": "torus_knot",
+   "B": "mobius",
+   "C": "dna_helix",
+   "recipe": "hero3",
+   "material": "chrome",
+   "guide": null,
+   "seed": 9355,
+   "res": [
+    896,
+    512
+   ],
+   "hero": true
+  },
+  {
+   "id": "h06_crown_to_crown_splash_to_droplet_gr",
+   "A": "crown",
+   "B": "crown_splash",
+   "C": "droplet",
+   "recipe": "hero3",
+   "material": "gr",
+   "guide": null,
+   "seed": 9366,
+   "res": [
+    896,
+    512
+   ],
+   "hero": true
+  },
+  {
+   "id": "h07_pocket_watch_to_gear_to_compass_chrome",
+   "A": "pocket_watch",
+   "B": "gear",
+   "C": "compass",
+   "recipe": "hero3",
+   "material": "chrome",
+   "guide": null,
+   "seed": 9377,
+   "res": [
+    896,
+    512
+   ],
+   "hero": true
+  },
+  {
+   "id": "h08_rose_to_lotus_to_jellyfish_black_glass",
+   "A": "rose",
+   "B": "lotus",
+   "C": "jellyfish",
+   "recipe": "hero3",
+   "material": "black_glass",
+   "guide": null,
+   "seed": 9388,
+   "res": [
+    896,
+    512
+   ],
+   "hero": true
+  },
+  {
+   "id": "h09_orb_to_ringed_planet_to_crescent_moon_oil_slick",
+   "A": "orb",
+   "B": "ringed_planet",
+   "C": "crescent_moon",
+   "recipe": "hero3",
+   "material": "oil_slick",
+   "guide": null,
+   "seed": 9399,
+   "res": [
+    896,
+    512
+   ],
+   "hero": true
+  }
+ ],
+ "chains": {
+  "ch1_gr_origin": {
+   "material": "gr",
+   "items": [
+    "droplet",
+    "rocket",
+    "lightbulb",
+    "tarot_card",
+    "orb"
+   ],
+   "clips": [
+    "m03_droplet_to_rocket_gr",
+    "m00_rocket_to_lightbulb_gr",
+    "m01_lightbulb_to_tarot_card_gr",
+    "m02_tarot_card_to_orb_gr"
+   ]
+  },
+  "ch2_gr_flight": {
+   "material": "gr",
+   "items": [
+    "origami_crane",
+    "swallow",
+    "butterfly",
+    "dragonfly",
+    "feather"
+   ],
+   "clips": [
+    "m50_origami_crane_to_swallow_gr",
+    "m06_swallow_to_butterfly_gr_g",
+    "m64_butterfly_to_dragonfly_gr",
+    "m18_dragonfly_to_feather_gr"
+   ]
+  },
+  "ch3_chrome_time": {
+   "material": "chrome",
+   "items": [
+    "hourglass",
+    "pocket_watch",
+    "compass",
+    "gear",
+    "film_reel"
+   ],
+   "clips": [
+    "m65_hourglass_to_pocket_watch_chrome",
+    "m66_pocket_watch_to_compass_chrome",
+    "m32_compass_to_gear_chrome",
+    "m67_gear_to_film_reel_chrome"
+   ]
+  },
+  "ch4_glass_crystal": {
+   "material": "black_glass",
+   "items": [
+    "snowflake",
+    "crystal_cluster",
+    "quartz",
+    "obelisk",
+    "pyramid"
+   ],
+   "clips": [
+    "m26_snowflake_to_crystal_cluster_black_glass",
+    "m68_crystal_cluster_to_quartz_black_glass",
+    "m27_quartz_to_obelisk_black_glass",
+    "m69_obelisk_to_pyramid_black_glass"
+   ]
+  },
+  "ch5_mercury_sound": {
+   "material": "mercury",
+   "items": [
+    "bell",
+    "horn",
+    "trumpet",
+    "vintage_mic",
+    "vinyl_record"
+   ],
+   "clips": [
+    "m70_bell_to_horn_mercury",
+    "m71_horn_to_trumpet_mercury",
+    "m72_trumpet_to_vintage_mic_mercury",
+    "m73_vintage_mic_to_vinyl_record_mercury"
+   ]
+  },
+  "ch6_iri_bloom": {
+   "material": "iridescent",
+   "items": [
+    "acorn",
+    "pine_cone",
+    "dandelion",
+    "lotus",
+    "jellyfish"
+   ],
+   "clips": [
+    "m74_acorn_to_pine_cone_iridescent",
+    "m75_pine_cone_to_dandelion_iridescent",
+    "m76_dandelion_to_lotus_iridescent",
+    "m22_lotus_to_jellyfish_iridescent"
+   ]
+  },
+  "ch7_oil_cosmos": {
+   "material": "oil_slick",
+   "items": [
+    "orb",
+    "ringed_planet",
+    "crescent_moon",
+    "sputnik",
+    "sea_urchin"
+   ],
+   "clips": [
+    "m77_orb_to_ringed_planet_oil_slick",
+    "m78_ringed_planet_to_crescent_moon_oil_slick",
+    "m79_crescent_moon_to_sputnik_oil_slick",
+    "m80_sputnik_to_sea_urchin_oil_slick"
+   ]
+  },
+  "ch8_chrome_chess": {
+   "material": "chrome",
+   "items": [
+    "chess_pawn",
+    "chess_knight",
+    "chess_bishop",
+    "chess_queen",
+    "chess_king"
+   ],
+   "clips": [
+    "m55_chess_pawn_to_chess_knight_chrome",
+    "m81_chess_knight_to_chess_bishop_chrome",
+    "m82_chess_bishop_to_chess_queen_chrome",
+    "m83_chess_queen_to_chess_king_chrome"
+   ]
+  },
+  "ch9_gr_clockwork": {
+   "material": "gr",
+   "items": [
+    "skeleton_key",
+    "clockwork",
+    "gear_train",
+    "alarm_clock",
+    "astrolabe",
+    "ringed_planet"
+   ],
+   "clips": [
+    "m84_skeleton_key_to_clockwork_gr",
+    "m85_clockwork_to_gear_train_gr",
+    "m86_gear_train_to_alarm_clock_gr",
+    "m87_alarm_clock_to_astrolabe_gr",
+    "m88_astrolabe_to_ringed_planet_gr"
+   ]
+  }
+ },
+ "queue": [
+  "m03_droplet_to_rocket_gr",
+  "m00_rocket_to_lightbulb_gr",
+  "m01_lightbulb_to_tarot_card_gr",
+  "m02_tarot_card_to_orb_gr",
+  "m04_droplet_to_torus_knot_gr",
+  "m05_droplet_swarm_to_orb_gr_g",
+  "m06_swallow_to_butterfly_gr_g",
+  "h00_droplet_to_rocket_to_lightbulb_gr",
+  "m50_origami_crane_to_swallow_gr",
+  "m64_butterfly_to_dragonfly_gr",
+  "m18_dragonfly_to_feather_gr",
+  "h01_lightbulb_to_tarot_card_to_orb_gr",
+  "m07_rocket_to_lightbulb_chrome_g",
+  "m08_tarot_card_to_orb_mercury_g",
+  "m09_lightbulb_to_tarot_card_oil_slick_g",
+  "m10_orb_to_rocket_iridescent_g",
+  "m89_violin_to_harp_gr",
+  "m90_saxophone_to_french_horn_chrome",
+  "m65_hourglass_to_pocket_watch_chrome",
+  "m66_pocket_watch_to_compass_chrome",
+  "m32_compass_to_gear_chrome",
+  "m67_gear_to_film_reel_chrome",
+  "h02_droplet_swarm_to_butterfly_to_swallow_gr",
+  "m11_droplet_to_torus_black_glass_g",
+  "m12_sea_urchin_to_dandelion_gr",
+  "m13_torus_knot_to_mobius_chrome",
+  "m14_mobius_to_dna_helix_iridescent",
+  "m91_scallop_shell_to_spiral_seashell_iridescent",
+  "m92_sand_dollar_to_snowflake_mercury",
+  "m26_snowflake_to_crystal_cluster_black_glass",
+  "m68_crystal_cluster_to_quartz_black_glass",
+  "m27_quartz_to_obelisk_black_glass",
+  "m69_obelisk_to_pyramid_black_glass",
+  "h03_sea_urchin_to_dandelion_to_snowflake_iridescent",
+  "m15_nautilus_to_conch_gr",
+  "m16_conch_to_horn_mercury",
+  "m17_butterfly_to_dragonfly_oil_slick",
+  "m93_amethyst_geode_to_fluorite_octahedron_black_glass",
+  "m94_satellite_dish_to_space_probe_chrome",
+  "m70_bell_to_horn_mercury",
+  "m71_horn_to_trumpet_mercury",
+  "m72_trumpet_to_vintage_mic_mercury",
+  "m73_vintage_mic_to_vinyl_record_mercury",
+  "h04_nautilus_to_conch_to_horn_mercury",
+  "m19_feather_to_leaf_iridescent",
+  "m20_leaf_to_rose_black_glass",
+  "m21_rose_to_lotus_gr",
+  "m22_lotus_to_jellyfish_iridescent",
+  "m95_solar_satellite_to_dragonfly_gr",
+  "m96_maple_seed_to_feather_iridescent",
+  "m74_acorn_to_pine_cone_iridescent",
+  "m75_pine_cone_to_dandelion_iridescent",
+  "m76_dandelion_to_lotus_iridescent",
+  "h05_torus_knot_to_mobius_to_dna_helix_chrome",
+  "m23_koi_to_manta_ray_gr",
+  "m24_manta_ray_to_swallow_chrome",
+  "m25_dandelion_to_snowflake_iridescent",
+  "m97_lotus_seedpod_to_sunflower_head_oil_slick",
+  "m98_seed_pod_burst_to_dandelion_gr",
+  "m77_orb_to_ringed_planet_oil_slick",
+  "m78_ringed_planet_to_crescent_moon_oil_slick",
+  "m79_crescent_moon_to_sputnik_oil_slick",
+  "m80_sputnik_to_sea_urchin_oil_slick",
+  "h06_crown_to_crown_splash_to_droplet_gr",
+  "m28_gem_to_dodecahedron_chrome",
+  "m29_dodecahedron_to_cube_mercury",
+  "m30_pyramid_to_obelisk_gr",
+  "m99_hot_air_balloon_to_lightbulb_gr",
+  "m100_tesla_coil_to_lightbulb_black_glass",
+  "m55_chess_pawn_to_chess_knight_chrome",
+  "m81_chess_knight_to_chess_bishop_chrome",
+  "m82_chess_bishop_to_chess_queen_chrome",
+  "m83_chess_queen_to_chess_king_chrome",
+  "h07_pocket_watch_to_gear_to_compass_chrome",
+  "m31_pocket_watch_to_compass_gr",
+  "m33_gear_to_film_reel_oil_slick",
+  "m34_film_reel_to_vinyl_record_gr",
+  "m101_snare_drum_to_vinyl_record_gr",
+  "m102_sundial_to_pocket_watch_mercury",
+  "m84_skeleton_key_to_clockwork_gr",
+  "m85_clockwork_to_gear_train_gr",
+  "m86_gear_train_to_alarm_clock_gr",
+  "m87_alarm_clock_to_astrolabe_gr",
+  "m88_astrolabe_to_ringed_planet_gr",
+  "h08_rose_to_lotus_to_jellyfish_black_glass",
+  "m35_vinyl_record_to_ringed_planet_iridescent",
+  "m36_ringed_planet_to_crescent_moon_gr",
+  "m37_crescent_moon_to_horseshoe_magnet_mercury",
+  "m38_key_to_padlock_chrome",
+  "m103_mantel_clock_to_hourglass_iridescent",
+  "m104_chess_rook_to_obelisk_gr",
+  "h09_orb_to_ringed_planet_to_crescent_moon_oil_slick",
+  "m39_key_to_feather_gr_g",
+  "m40_bell_to_lightbulb_gr",
+  "m41_vacuum_tube_to_lightbulb_oil_slick",
+  "m42_candle_to_lightbulb_gr",
+  "m43_hourglass_to_wine_glass_black_glass",
+  "m44_wine_glass_to_erlenmeyer_mercury",
+  "m45_erlenmeyer_to_perfume_flask_iridescent",
+  "m46_pearl_to_egg_iridescent",
+  "m47_egg_to_orb_gr",
+  "m48_apple_to_pomegranate_oil_slick",
+  "m49_paper_plane_to_origami_crane_chrome",
+  "m51_sputnik_to_sea_urchin_gr",
+  "m52_umbrella_to_jellyfish_black_glass",
+  "m53_crown_to_crown_splash_gr",
+  "m54_crown_splash_to_droplet_mercury",
+  "m56_metronome_to_tuning_fork_gr",
+  "m57_anchor_to_key_oil_slick",
+  "m58_disco_ball_to_orb_chrome",
+  "m59_mushroom_to_umbrella_gr",
+  "m60_spinning_top_to_hourglass_iridescent",
+  "m61_airship_to_rocket_gr",
+  "m62_ribbon_twist_to_orb_gr",
+  "m63_orb_to_droplet_swarm_iridescent_g"
+ ]
+}
