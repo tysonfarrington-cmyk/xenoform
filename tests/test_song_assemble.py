@@ -116,6 +116,22 @@ def test_the_composite_is_what_the_timeline_and_edit_in_resolve_read(mini):
     assert any("Passage 2 · drop · Liquid gold" in n for n in names) and any("Passage 1" in n for n in names)
 
 
+def test_a_window_a_few_frames_short_does_not_pull_the_song_early(mini):
+    """A window's cut can come out a frame or three short (a QA lag fix drops its trailing held frames): its own last
+    frame fills the gap, so the windows after it still play over their own seconds of the song and the song keeps every
+    frame (the first Glitch Out drifted 10 frames by its end before this)."""
+    a, b = mini["cuts"][1], mini["cuts"][2]
+    job = mini["jobs"] / "job1aaaa" / "xenoform.mp4"
+    _clip(job, "green", (b - a) - 3 / 24.0)  # three frames short
+    rec = song_assemble.assemble(mini["folder"], mini["jobs"], qa=False)
+    out = mini["folder"] / "xenoform.mp4"
+    assert song_assemble.probe(out)["frames"] == 576 and rec["assembly"]["frames"] == 576
+    assert [w["padded_frames"] for w in rec["assembly"]["windows"]] == [0, 3, 0]
+    just_before, just_after = _frame(out, b - 1.5 / 24), _frame(out, b + 1.5 / 24)
+    assert just_before[..., 1].mean() > 80 > just_before[..., 2].mean()  # the green window's last frame, held
+    assert just_after[..., 2].mean() > 150 > just_after[..., 1].mean()   # the blue window on its own first frame
+
+
 def test_a_shifted_stretch_is_checked_against_its_window(mini):
     rec = song_run.load(mini["folder"])
     rec["windows"][1]["shift_beats"] = 4  # four beats later in a cut that has no picture after its slot

@@ -153,8 +153,8 @@ def place(a: dict, b: dict, want: float, beats: list[float], *, pin: bool, perio
         pos = bar_pos(t)
         return "beat 1" if pos == 1 else "beat 3" if pos == 3 else "the nearest beat"
 
-    if not near:  # the two windows were made end to end: the cut is where they meet, on the plan's own beat
-        meet = min(max(want, b0), a1)
+    if not near:  # the two windows were made end to end: the cut is where they meet, on the plan's own beat (an outgoing
+        meet = min(max(want, b0), a1 + PAD_S)  # window a few frames short is padded to it, not cut early)
         return {"at": round(meet, 4), "want": round(want, 4), "why": reason(meet), "beat": bar_pos(meet), "pinned": pin,
                 "met": True}
     if pin:
@@ -171,13 +171,14 @@ def place(a: dict, b: dict, want: float, beats: list[float], *, pin: bool, perio
 
 
 def check(order: list[dict], cuts: list[float], period: float) -> list[str]:
-    """The window checked (montage_check): each slot plays a stretch its cut has, its shift applied; the problems as
-    sentences ([] when every slot is covered)."""
+    """The window checked (montage_check): each slot plays a stretch its cut has, its shift applied (a cut that came out
+    up to ``PAD_S`` short at its end is held on its last frame); the problems as sentences ([] when every slot is
+    covered)."""
     bad = []
     for k, s in enumerate(order):
         a, b = cuts[k], cuts[k + 1]
         c0, c1 = shifted(s, period)
-        if a < c0 - 0.01 or b > c1 + 0.01:
+        if a < c0 - 0.01 or b > c1 + PAD_S + 0.01:
             shift = f", shifted {s['shift_beats']:+.0f} beats" if s.get("shift_beats") else ""
             bad.append(f"window {s['window'] + 1} runs {c0:.2f} to {c1:.2f} in the song{shift}; its slot asks {a:.2f} to {b:.2f}")
     return bad
@@ -332,9 +333,13 @@ def _flash_rules(shots: list[dict], rec: dict, beats: list[float]) -> list | Non
     return pacing.flash_rules(shots, FPS, beats, breathe=pacing.amount_of(rec.get("breathe")))
 
 
+PAD_S = 0.25  # a window cut up to this short (a QA lag fix drops trailing held frames) is padded with its last frame
+
+
 def lay_picture(order: list[dict], cuts: list[float], size: tuple[int, int], dest: Path, period: float) -> int:
-    """The windows' stretches end to end, silent, at ``FPS`` and ``size``, each frame-exact (``trim`` on the frames the
-    slot plays). Returns the frame count."""
+    """The windows' stretches end to end, silent, at ``FPS`` and ``size``, each frame-exact: ``trim`` on exactly the
+    frames the slot plays, a window that came out a frame or three short padded with its own last frame first (else
+    every window after it would play that much early against the song). Returns the frame count."""
     w, h = size
     frames = [int(round(c * FPS)) for c in cuts]
     args: list[str] = []
@@ -347,7 +352,8 @@ def lay_picture(order: list[dict], cuts: list[float], size: tuple[int, int], des
         f0 = int(round((cuts[k] - c0) * FPS))
         args += ["-i", str(s["mp4"])]
         idx = len(parts)
-        parts.append(f"[{idx}:v]fps={FPS},trim=start_frame={f0}:end_frame={f0 + n},setpts=PTS-STARTPTS,"
+        parts.append(f"[{idx}:v]fps={FPS},tpad=stop_mode=clone:stop_duration={PAD_S},trim=start_frame={f0}:end_frame={f0 + n},"
+                     f"setpts=PTS-STARTPTS,"
                      f"scale={w}:{h}:force_original_aspect_ratio=increase:flags=lanczos,crop={w}:{h},setsar=1,format=yuv420p[v{idx}]")
     graph = ";".join(parts) + ";" + "".join(f"[v{i}]" for i in range(len(parts))) + f"concat=n={len(parts)}:v=1:a=0[pic]"
     _run([*args, "-filter_complex", graph, "-map", "[pic]", "-an", "-c:v", "libx264", "-crf", "12", "-preset", "veryfast",
@@ -515,11 +521,20 @@ def assemble(folder: Path, jobs: Path, *, report: Callable[[str, float, str], No
                        "loudness": {"target": TARGET_LUFS, "gain_db": made["gain_db"], **level},
                        "tame": made["tame"], "title": {"text": title.get("text"), "at": title.get("at")},
                        "qa": _qa_summary(qa_rep), "windows": [{"window": s["window"], "job": s["job"], "song_start": s["offset"],
-                                                                "seconds": round(s["seconds"], 3), "shift_beats": s["shift_beats"]}
-                                                               for s in order]}
+                                                                "seconds": round(s["seconds"], 3), "shift_beats": s["shift_beats"],
+                                                                "padded_frames": _short(s, cuts, k, period)}
+                                                               for k, s in enumerate(order)]}
     song_run.save(folder, song_run.stamp(rec, status="done"))
     say("done", 1.0, f"The whole song is laid together: {int(video_s // 60)}:{int(video_s % 60):02d}")
     return rec
+
+
+def _short(slot: dict, cuts: list[float], k: int, period: float) -> int:
+    """How many frames the slot's window lacked at its end (padded with its last frame by ``lay_picture``)."""
+    c0, _ = shifted(slot, period)
+    f0 = int(round((cuts[k] - c0) * FPS))
+    n = int(round(cuts[k + 1] * FPS)) - int(round(cuts[k] * FPS))
+    return max(0, f0 + n - int(slot["info"]["frames"]))
 
 
 def _song_beats(rec: dict, order: list[dict]) -> list[float]:
