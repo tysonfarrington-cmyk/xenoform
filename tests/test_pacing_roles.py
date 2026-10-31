@@ -174,3 +174,19 @@ def test_the_modes_and_an_old_record():
     assert pacing.breathe_of({"breathe": "on"}) and not pacing.breathe_of({"breathe": "off"})
     assert pacing.recut_modes({}) == {"breathe": False, "drop_mode": "off"}  # a record from before the two keys
     assert pacing.recut_modes({"breathe": True, "drop_mode": "max"}) == {"breathe": True, "drop_mode": "max"}
+
+
+def test_a_capped_plan_spends_its_budget_rather_than_landing_under_it():
+    """The budget's doublings halve a whole role's shots at once, so they could land far under the cap (a whole Glitch
+    Out on Draft, capped at the chain's 60 morphs, got 45 on a plain Make); what still fits is given back, the role
+    that wants it most first, and the calm passages still give up their morphs first."""
+    song = _whole("glitch-out")
+    for extra in ({}, {"breathe": True}):
+        shots, plan = dense.shots_for(_make_body(song, max_shots=60, **extra), song, None, drop=139.71)
+        assert 57 <= len(shots) <= 60, (extra, len(shots))
+        by: dict[str, list[float]] = {}
+        for s in shots:
+            by.setdefault(s["section"], []).append(float(s["seconds"]))
+        assert max(by["calm"]) > max(by["drop"]) and sum(by["calm"]) / len(by["calm"]) > sum(by["drop"]) / len(by["drop"])
+    small, _ = dense.shots_for(_make_body(song, max_shots=20), song, None, drop=139.71)
+    assert len(small) <= 20

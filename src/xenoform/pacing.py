@@ -447,6 +447,24 @@ def song_plan(duration: float, beats: list, sections: list[dict], drop: float | 
         r = min(cands, key=lambda x: (PRIORITY.get(x, 1.0) + math.log2(steps[x] / max(1, base[x])), PRIORITY.get(x, 1.0)))
         steps[r] *= 2
         cuts = cut(steps)
+    # a doubling halves a whole role's shots at once, so the loop can land well under the budget (a whole Glitch Out on
+    # Draft: 45 shots of the 60 it may have): give back what still fits, the role that wants it most first
+    for _ in range(96):
+        if len(cuts) >= limit:
+            break
+        back = sorted((r for r in present if steps.get(r, 0) > base.get(r, 0)),
+                      key=lambda x: (PRIORITY.get(x, 1.0) - math.log2(steps[x] / max(1, base[x])), PRIORITY.get(x, 1.0)),
+                      reverse=True)
+        given = False
+        for r in back:
+            trial = dict(steps)
+            trial[r] = max(base[r], trial[r] // 2)
+            more = cut(trial)
+            if len(cuts) < len(more) <= limit:
+                steps, cuts, given = trial, more, True
+                break
+        if not given:
+            break
     if target and len(cuts) < min(hard, int(target)):  # more forms asked for than the plan makes: the drops get them first
         ceiling = min(hard, int(target) + max(1, int(target) // 10))
         for _ in range(96):
