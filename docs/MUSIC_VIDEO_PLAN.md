@@ -384,6 +384,11 @@ same composite byte for byte; the suite green with the fake split.
     rules do not see (pocket watch, chalice, plague mask, gauntlet and glove, heart, brain, femur, plain solids);
     a curated clip set rather than the whole pack in order; the title for these tracks; portrait by Fast Final
     (about an hour) for anything shared.
+    Fixed 1 Nov as 8ebffd6: a window keeps the rest it ends on through QA; the assembly checks each window by its
+    own picture frames and holds a short one on its last frame up to the larger of a bar and the planned rest plus
+    a beat, refusing beyond that with a line that says the limit; the main drop run is the heaviest by heat times
+    length and the chosen vibe owns it (ZedsDead v1: Ferrofluid moves to the 23.7 s run at 2:25). Still open: a
+    rest inside a window is smoothed by the lag fix within a shot.
 
 ## 9. Working rules for every session
 
