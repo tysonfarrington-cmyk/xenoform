@@ -167,6 +167,7 @@ def test_a_clips_song_is_laid_together_with_its_title_and_opens_in_resolve(tmp_p
     assert a["windows"][0]["padded_frames"] == 0 and a["seconds"] == pytest.approx(length, abs=1 / 24)
     comp = json.loads((folder / "simple" / "simple.json").read_text(encoding="utf-8"))
     assert comp["mode"] == "song" and comp["source"] == "clips" and comp["own_clips"] == _pack(3)
+    assert [s["song_passage"] for s in comp["shots"]] == [0, 0, 1, 1]  # each shot in its own passage of the song
     assert comp["pacing"]["passages"] and comp["pacing"]["line"].endswith("one Make")
     view = lane.build(comp, "song0clp")
     assert view["mode"] == "song" and view["source"] == "clips" and view["shots"][0]["own"]

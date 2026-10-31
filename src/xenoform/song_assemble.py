@@ -132,7 +132,7 @@ def slots(rec: dict, jobs: Path) -> list[dict]:
                     "role": str(w.get("role") or ""), "mp4": mp4, "record": cut, "info": info, "offset": offset,
                     "seconds": picture, "sound_s": float(info["seconds"]), "frames": int(round(picture * FPS)),
                     "end": offset + picture, "bounds": bounds, "shift_beats": shift, "start": float(w["start"]),
-                    "want_end": float(w["end"]), "rest_s": rest_s})
+                    "want_end": float(w["end"]), "rest_s": rest_s, "whole": bool(w.get("whole"))})
     return out
 
 
@@ -252,6 +252,8 @@ def song_shots(order: list[dict], cuts: list[float], rec: dict, period: float) -
     passage, window, job and vibe, its morph pointing into the song's stills (each window's in turn), the first shot of
     every window after the first a hard cut (``cut_in``). Returns the shots, the stills and the styles a shot."""
     shots, stills, styles = [], [], []
+    # a window that is the whole song (a clips song): each shot names the song's passage its own plan passage is
+    by_plan = {int(p.get("plan_passage", p["index"])): int(p["index"]) for p in rec["passages"]}
     for k, s in enumerate(order):
         cut = s["record"]
         c0, _ = shifted(s, period)
@@ -273,7 +275,8 @@ def song_shots(order: list[dict], cuts: list[float], rec: dict, period: float) -
             row["frames"] = int(round(row["end"] * FPS)) - int(round(row["start"] * FPS))
             m = int(sh.get("morph", sh.get("clip", i)) or 0)
             row["morph"] = base + m
-            row.update({"window": s["window"], "song_passage": s["passage"], "job": s["job"], "vibe": look.get("vibe") or cut.get("vibe") or "",
+            mine_p = by_plan.get(int(sh.get("passage") or 0), s["passage"]) if s.get("whole") else s["passage"]
+            row.update({"window": s["window"], "song_passage": mine_p, "job": s["job"], "vibe": look.get("vibe") or cut.get("vibe") or "",
                         "look_name": look.get("name") or "", "shot_in_window": i})
             row.pop("clip", None)
             if first and k > 0:
