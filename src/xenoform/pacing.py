@@ -796,16 +796,25 @@ def shot_intensity(s: dict, intensity: float, breathe: bool | float, drops: bool
     return round(max(0.0, min(1.0, fx)), 3)
 
 
+def song_context(state: dict | None) -> dict | None:
+    """A whole song's window (``song_plan.KEY``): its place in the song (where it starts, the passage's span, the song's
+    first drop, the calm passages and scenes before it, the style its drop run opens on, its turn), or None."""
+    raw = (state or {}).get("song_passage")
+    return raw if isinstance(raw, dict) else None
+
+
 def shape(shots: list[dict], macros: dict, *, breathe: bool | float, drop_mode: str, house: dict | None = None,
           look: str = "", look_auto: bool = True, effects: list | None = None, timing: str = "smooth",
-          beats: list | None = None) -> dict:
+          beats: list | None = None, song: dict | None = None) -> dict:
     """Lay the profile over the cut's shots, in place (a deep copy of the plan's): the work ``dense.apply_macros`` did
     for the whole cut, a shot at a time (its Chaos and Intensity, the punches and stutters by its Chaos, its wobble),
     then Breathe's per-passage timing (``timing`` {"mode"}: ``morph_timing.plan`` keeps it where the timeline says
     nothing), its one effect (``fx_names``) and, with the Look on Auto, no flash look before the first drop
     (``dance_fx``). The cut's own Timing and Effects win when they are set, except that full Breathe's scenes carry
     none of the effects (they play in the builds and the drops) and never a flash look. ``breathe`` is the amount
-    (``profile_at``). Returns what it did, for the record."""
+    (``profile_at``). ``song`` (a whole song's window, ``song_context``): the passage's span, the first drop, the calm
+    passages before it and its effect turn are the song's, so the window shapes as the song's passage. Returns what it
+    did, for the record."""
     amount = amount_of(breathe)
     bold = boldness(amount)
     breathe = amount > 0
@@ -821,15 +830,22 @@ def shape(shots: list[dict], macros: dict, *, breathe: bool | float, drop_mode: 
         starts.setdefault(p, float(s.get("start") or 0.0))
         ends[p] = float(s.get("end") or 0.0)
     first_drop = min((float(s.get("start") or 0.0) for s in shots if s.get("section") in ("drop", "drop_late")), default=None)
+    calm_seen, turn = 0, 0
+    if song:  # the window is one passage of a song: its span, the song's first drop, the calm passages before it
+        off = float(song.get("offset") or 0.0)
+        for p in starts:
+            starts[p] = float(song.get("passage_start", off)) - off
+            ends[p] = float(song.get("passage_end", off + ends[p])) - off
+        first_drop = None if song.get("first_drop") is None else float(song["first_drop"]) - off
+        calm_seen, turn = int(song.get("calm_seen") or 0), int(song.get("turn") or 0)
     user_effects = [e for e in (effects or []) if e != "smear"]
     third = {}
-    calm_seen = 0
     for p in sorted(set(passages)):
         role = next((str(s.get("section") or "") for s, q in zip(shots, passages) if q == p), "")
         if role in ("calm", "sustain"):  # the second calm passage of every three takes one, the first stays plain
             third[p] = THIRD_EFFECTS[(calm_seen // 3) % len(THIRD_EFFECTS)] if calm_seen % 3 == 1 else None
             calm_seen += 1
-    order = {p: k for k, p in enumerate(sorted(set(passages)))}
+    order = {p: k + turn for k, p in enumerate(sorted(set(passages)))}
     counts: dict[str, dict] = {"timing": {}, "effects": {}, "looks": 0}
     for i, (s, p) in enumerate(zip(shots, passages)):
         role = str(s.get("section") or "")
@@ -993,18 +1009,23 @@ def styles(shots: list[dict], state: dict, drop: float | None = None, *, period:
     entries = [i for i, s in enumerate(shots) if s.get("event") == "drop"] if drops else []
     main = next((k for k, i in enumerate(entries) if drop is not None and abs(float(shots[i].get("start") or 0.0) - float(drop)) < 0.06), 0)
     opens = {i: ("shatter" if (k - main) % 2 == 0 else "spin") for k, i in enumerate(entries)}
+    song = song_context(state)  # a whole song's window: its run opens as the song counts them, its scene takes its turn
+    if song and song.get("opens") in ("shatter", "spin"):
+        opens = {i: str(song["opens"]) for i in entries}
     if breathe:
         bold = boldness(breathe_amount(state))
         passages = passage_of(shots)
         beat = float(period) if period else _period_of(shots)
         starts: dict[int, float] = {}
         offset: dict[int, int] = {}
-        seen: dict[str, int] = {}
+        seen: dict[str, int] = dict(song.get("role_seen") or {}) if song else {}
         for i, (s, p) in enumerate(zip(shots, passages)):
             role = str(s.get("section") or "")
             if p not in starts and bold >= 0.5 and role in SCENE_ROLES:  # full Breathe: a scene is one look, the
                 offset[p] = seen.get(role, 0)  # next passage of its role the next style in turn
                 seen[role] = offset[p] + 1
+            if p not in starts and song:  # the song's passage starts where it does, before the window when cut in two
+                starts[p] = float(song.get("passage_start", song.get("offset") or 0.0)) - float(song.get("offset") or 0.0)
             starts.setdefault(p, float(s.get("start") or 0.0))
             cycle = (PROFILE.get(role) or {}).get("styles") or ("melt",)
             if i in opens and p not in offset and opens[i] in cycle:  # a drop's looks turn on from the style it opened on

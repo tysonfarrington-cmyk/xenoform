@@ -800,7 +800,7 @@ def plan_summary(duration: float, beats: list, energy: str = "dense", tier: str 
     (``shots_for``, ``clip_plan``, ``fit_chain``), so the count and the clock the desk shows are the cut's; without
     them it is the older estimate on the demo1 plan."""
     duration = float(duration)
-    long_song = duration > LONG_SONG_S
+    long_song = long_cut(state, duration)
     plan: dict = {}
     if state is not None and sections:
         body = {**state, "energy_preset": energy, "quality_tier": tier}
@@ -1127,12 +1127,23 @@ def taste_shots(shots: list[dict], state: dict, m: dict, wobble_house: dict | No
     from xenoform import taste as _taste
 
     did: dict = {}
+    win = song_window(state)  # a whole song's window: the opener and the first drop are the song's, not the window's
+    if win is not None:
+        fd = win.get("first_drop")
+        off = float(win.get("offset") or 0.0)
+        opener_at = _taste.opener_shots(shots, None if fd is None else float(fd) - off) if win.get("opener") else []
+        if fd is not None:
+            flash_at = [i for i, s in enumerate(shots) if off + float(s.get("start") or 0.0) < float(fd) - 1e-6]
+        else:
+            flash_at = _taste.before_drop(shots, None) if win.get("opener") else []
+    else:
+        opener_at, flash_at = None, None
     got = _taste.opener()
     if got is not None and calm is not None and len(calm) == len(shots):
         knobs = {**(m or {}), "intensity": got[0]}
         _shape_knobs(calm, state, knobs, wobble_house, look=look, beats=beats)
         lowered = 0
-        for i in _taste.opener_shots(shots, drop):
+        for i in (_taste.opener_shots(shots, drop) if opener_at is None else opener_at):
             want = float(calm[i].get("fx_intensity", 1.0))
             if float(shots[i].get("fx_intensity", 1.0)) > want + 1e-9:
                 shots[i]["fx_intensity"] = round(want, 3)
@@ -1144,7 +1155,7 @@ def taste_shots(shots: list[dict], state: dict, m: dict, wobble_house: dict | No
     if _taste.flash_looks():
         calmed = 0
         vibe = str((state or {}).get("vibe") or "")
-        for i in _taste.before_drop(shots, drop):
+        for i in (_taste.before_drop(shots, drop) if flash_at is None else flash_at):
             mine = str(shots[i].get("dance_fx") or look or "")
             if not mine:
                 continue
@@ -1158,7 +1169,8 @@ def taste_shots(shots: list[dict], state: dict, m: dict, wobble_house: dict | No
                                                 f"play{'' if calmed != 1 else 's'} a calm look instead of a flash")
     names = [n for n in _E.names_of(state) if n != "smear"]
     if names:
-        did.update({k: v for k, v in _taste.effects_by_shot(shots, names, stills).items() if v})
+        turn = int(win.get("turn") or 0) if win is not None else None  # a window takes its passage's turn in the song
+        did.update({k: v for k, v in _taste.effects_by_shot(shots, names, stills, turn=turn).items() if v})
     return did
 
 
@@ -1176,7 +1188,7 @@ def _shape_knobs(shots: list[dict], state: dict, m: dict, wobble_house: dict | N
         return None
     return _pc.shape(shots, m, breathe=_pc.breathe_amount(state), drop_mode=_pc.drop_mode_of(state), house=wobble_house,
                      look=str(look or ""), look_auto=dance_fx_choice(state) == "auto", effects=_E.names_of(state),
-                     timing=_mt.normal(state.get("morph_timing")), beats=list(beats or []))
+                     timing=_mt.normal(state.get("morph_timing")), beats=list(beats or []), song=song_window(state))
 
 
 def drop_treated(state: dict, shots: list[dict]) -> bool:
@@ -1310,20 +1322,57 @@ def _analysis_sections(directed: dict) -> list[dict]:
 PLAN_KEYS = ("section", "boundary", "heat", "drop_run", "passage", "rest", "rest_s", "event", "ramp")  # what custom_shots does not carry
 
 
+def song_window(state: dict | None) -> dict | None:
+    """The whole-song maker's window (``song_plan.KEY`` in the body: its stretch of the song plan and its place in the
+    song, docs/SONG.md), or None for any other Make."""
+    raw = (state or {}).get("song_passage")
+    return raw if isinstance(raw, dict) else None
+
+
+def long_cut(state: dict | None, duration: float) -> bool:
+    """A music-video cut (one morph a shot from a chain, no object twice): a song over ``LONG_SONG_S``, and every window
+    of a whole song, however short its passage (an intro of 7 s is still the song's intro)."""
+    return float(duration or 0.0) > LONG_SONG_S or song_window(state) is not None
+
+
 def paced(state: dict, directed: dict) -> bool:
     """True when the Make is planned by the pacing engine (``pacing.song_plan``): a Dense cut of a song over
-    ``LONG_SONG_S`` with sections, unless it is shaped as before (``pacing.legacy``) or carries its own cut plan."""
+    ``LONG_SONG_S`` with sections, unless it is shaped as before (``pacing.legacy``) or carries its own cut plan; and a
+    whole song's window, which plays its stretch of the song's plan."""
     from xenoform import pacing as _pc
 
+    if song_window(state) is not None and not state.get("cut_plan"):
+        return True
     return (not _pc.legacy(state) and not state.get("cut_plan") and options(state)["energy"] == "dense"
             and float(directed.get("duration") or 0.0) > LONG_SONG_S and len(_analysis_sections(directed)) >= 2)
 
 
+def _window_plan(state: dict, directed: dict) -> dict | None:
+    """A whole song's window plays the song plan's own shots for its passage (the plan made once over the whole song,
+    so the bar lines, the ramp into the next drop and the looks are the song's), laid on the window's length."""
+    import copy as _copy
+
+    win = song_window(state)
+    plan = (win or {}).get("plan")
+    if not isinstance(plan, dict) or not plan.get("shots"):
+        return None
+    plan = _copy.deepcopy(plan)
+    duration = float(directed.get("duration") or 0.0)
+    last = plan["shots"][-1]
+    if duration > 0 and abs(float(last["end"]) - duration) < 0.5:  # the trimmed file's own length, to the sample
+        last["end"] = round(duration, 4)
+    return plan
+
+
 def song_plan_for(state: dict, directed: dict, drop: float | None) -> dict:
     """The pacing engine's plan for this Make: the roles always run, and a requested Forms count, an off-centre Speed
-    and the guardrail's budget (``form_budget``, forms per 20 s) scale it by role instead of replacing it."""
+    and the guardrail's budget (``form_budget``, forms per 20 s) scale it by role instead of replacing it. A whole
+    song's window takes its stretch of the song plan as it is (``_window_plan``)."""
     from xenoform import pacing as _pc
 
+    given = _window_plan(state, directed)
+    if given is not None:
+        return given
     duration = float(directed.get("duration") or 0.0)
     beats = list(directed.get("beats") or [])
     sections = _analysis_sections(directed)
@@ -1527,7 +1576,7 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     work.mkdir(parents=True, exist_ok=True)
     shots, plan = shots_for(state, directed, Path(audio_path))
     duration = float(directed.get("duration") or 0.0)
-    long_song = duration > LONG_SONG_S and not plan.get("stills") and not state.get("cut_plan")
+    long_song = long_cut(state, duration) and not plan.get("stills") and not state.get("cut_plan")
     pre_notes: list[dict] = []  # what the plan decided before the render; folded into the record's notes below
     chain: dict = {}
     line_notes: list[dict] = []
@@ -1942,7 +1991,10 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
                                                          "performer", "performer_style", "foreshadow", "scene_stills", "chain_pins",
                                                          "morph_style", "morph_timing", "effects", "boundary_smear", "backdrop")},
                             # the shape the cut was made in, so a re-cut starts there (a record without them: both off)
-                            "breathe": _pc.breathe_amount(state), "drop_mode": _pc.drop_mode_of(state)},
+                            "breathe": _pc.breathe_amount(state), "drop_mode": _pc.drop_mode_of(state),
+                            # a whole song's window: its place in the song, so a re-cut of it stays the song's passage
+                            **({"song_passage": {k: v for k, v in song_window(state).items() if k != "plan"}}
+                               if song_window(state) is not None else {})},
             "pacing": _pc.record(plan, shots, state, window_of(state, duration)),
             "roles": plan.get("roles"), "performer": performer_info, "own": own_info,
             "handoffs_s": [s["start"] for s in shots] + [shots[-1]["end"]], "fallbacks": notes,
@@ -2002,7 +2054,7 @@ def chain_preview(directed: dict, state: dict, audio_path: Path) -> dict:
     state = _idea.shape_state(state)  # the idea line's Scenes and Polly choices, read by the rules (no model here)
     shots, plan = shots_for(state, directed, Path(audio_path))
     duration = float(directed.get("duration") or shots[-1]["end"])
-    long_song = duration > LONG_SONG_S and not plan.get("stills")
+    long_song = long_cut(state, duration) and not plan.get("stills")
     chain: dict = {}
     # record=False: the preview shows the picks the render will make; only the render marks them used
     if long_song:
@@ -2131,7 +2183,8 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
     from xenoform import boundary_fx as _B
 
     drop = rec.get("drop")
-    if drop is None and shots:  # a record from before the drop was written down: the song's own drop, as the dense plan finds it
+    if drop is None and shots and song_window(state) is None:  # a record from before the drop was written down: the
+        # song's own drop, as the dense plan finds it (a whole song's window says where its drop is, or that it has none)
         try:
             drop = find_drop(audio, list(rec.get("beats") or []), float(shots[-1].get("end") or 0.0))
         except Exception:
