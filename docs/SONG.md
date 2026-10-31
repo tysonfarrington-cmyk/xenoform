@@ -51,8 +51,11 @@ hit) is a Make: **Fine-tune → Length → Whole song**, then **Make the whole s
    end to end by song time, so its picture plays over the very seconds it was made on and its beat FX land on the
    song's own hits; each cut on a beat of the song's grid (`place`, montage.py's rules: a passage's start is pinned on
    its beat; inside a passage cut in two the cut goes where the outgoing morph lands, then on beat 1, then on beat 3,
-   only where both windows have picture); a window that plays a stretch shifted by whole beats is checked against its
-   picture first (`check`, montage_check.py's test); the flash tame once over the whole when Breathe is on (each
+   only where both windows have picture); every window checked by its own picture frames, never its file's length
+   (`check`, montage_check.py's test: a window's sound runs its passage's whole length even when its picture came out
+   short), a picture short of its slot held on its last frame for the whole shortfall, up to a bar, and the assembly
+   refused past that with the window to make again; a window that plays a stretch shifted by whole beats must have the
+   picture for it; the laid picture counted frame for frame against the song; the flash tame once over the whole when Breathe is on (each
    passage's rule, `pacing.flash_rules`); the title on the song's last hit (the last bar line with the song's loudest
    onset and level, at least 3 s from the end: 3:51 on Glitch Out, where the hand-made video put it), the shot dimmed
    under it; the song itself as the sound at -16 LUFS (a fixed gain from its measured loudness and a delay-compensated
@@ -105,7 +108,13 @@ and states, the estimate, the video once laid together), `POST /api/song/<id>/st
   why: "a passage starts: pinned on its beat", "the outgoing morph lands", "beat 1", "beat 3", "the nearest beat"),
   the loudness (the gain, the integrated loudness and true peak measured on the file), the tame (frames, flashes,
   tamed, kept), the title, the QA summary (flash frames, the worst 8 bars, off-beat cuts) and each window's job, song
-  start, length and shift. An assembly that cannot run says why in `assembly.error` and writes nothing else.
+  start, picture length and frames, sound length, shift and the frames its last picture was held for
+  (`padded_frames`). An assembly that cannot run says why in `assembly.error` and writes nothing else.
+
+A window's QA (`post_qa`) leaves the rest it closes on alone: held frames at a cut's end are a hold by design, not lag
+(they count neither as duplicates nor as a short freeze), and a lag fix that does run on a window holds its last
+picture on to the picture's own end, so it keeps every frame it had. Before 1 Nov a fix could cut that rest away: a
+ZedsDead intro came out 243 frames for its 292, and its song played 1.8 s early from there until it was laid again.
 
 Beside it: `xenoform.mp4` (the song), `simple/simple.json` (`mode` "song": every shot in song time with its passage,
 window, job and vibe, a window's first shot a hard cut; the timeline, Edit in Resolve and My videos read it, the
@@ -126,5 +135,10 @@ and open from the song's timeline.
 - **Shift a stretch**: set `shift_beats` on a window in `song.json` (whole beats; positive plays a later stretch of the
   cut) and re-assemble. The window is checked first: a window is made exactly as long as its passage, so a shift only
   fits where the window has picture to spare, and one that runs out is refused with the times it asks for.
+- **A window refused as short**: "window 1 (intro, passage 1) has 230 frames of picture for the 292 its slot plays: 62
+  short (2.58 s), more than a bar (1.67 s) to hold on its last frame; make that passage again". Resume does not run a
+  window that is done: make the whole song again from the desk. Every morph already rendered comes from the morph
+  cache (the second plain Glitch Out rendered 6 of its 86), so it costs the windows' Makes around them, and a window's
+  QA no longer cuts its rest away.
 - **Run a window again**: Resume after a failure or a stop queues every window not done; a window that renders again
   takes its morphs from the cache.

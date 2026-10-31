@@ -22,10 +22,14 @@ LENGTH = 24.0
 COLOURS = ("red", "green", "blue")
 
 
-def _clip(path: Path, colour: str, seconds: float) -> None:
+def _clip(path: Path, colour: str, seconds: float, sound: float | None = None) -> None:
+    """A finished window's cut: ``seconds`` of picture in one colour, with ``sound`` seconds of sound when given (a
+    window's own sound runs its passage's whole length even when its picture came out short)."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", f"color=c={colour}:s=320x180:r=24:d={seconds}",
-                    "-c:v", "libx264", "-pix_fmt", "yuv420p", str(path)], check=True)
+    audio = ["-f", "lavfi", "-i", f"sine=frequency=330:duration={sound}"] if sound else []
+    maps = ["-map", "0:v", "-map", "1:a", "-c:a", "aac"] if sound else []
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", f"color=c={colour}:s=320x180:r=24:d={seconds}", *audio,
+                    *maps, "-c:v", "libx264", "-pix_fmt", "yuv420p", str(path)], check=True)
 
 
 @pytest.fixture()
@@ -130,6 +134,34 @@ def test_a_window_a_few_frames_short_does_not_pull_the_song_early(mini):
     just_before, just_after = _frame(out, b - 1.5 / 24), _frame(out, b + 1.5 / 24)
     assert just_before[..., 1].mean() > 80 > just_before[..., 2].mean()  # the green window's last frame, held
     assert just_after[..., 2].mean() > 150 > just_after[..., 1].mean()   # the blue window on its own first frame
+
+
+def test_a_window_49_frames_short_is_held_and_the_song_stays_in_sync(mini):
+    """A ZedsDead intro (1 Nov) closed on a rest its QA lag fix cut away: 243 frames of picture against its 12.16 s of
+    sound, and the file's length read as the sound's, so the windows after it played 1.8 s early. Its own frames are what
+    counts: the picture is held on its last frame for all 49, and every window after it is on its own seconds."""
+    a, b = mini["cuts"][1], mini["cuts"][2]
+    job = mini["jobs"] / "job1aaaa" / "xenoform.mp4"
+    _clip(job, "green", (b - a) - 49 / 24.0, sound=b - a)  # 49 frames short; its sound runs the whole passage
+    info = song_assemble.probe(job)
+    assert abs(info["seconds"] - (b - a)) < 0.05 and info["frames"] == int(round((b - a) * 24)) - 49
+    rec = song_assemble.assemble(mini["folder"], mini["jobs"], qa=False)
+    out = mini["folder"] / "xenoform.mp4"
+    assert song_assemble.probe(out)["frames"] == 576 and rec["assembly"]["frames"] == 576
+    assert [w["padded_frames"] for w in rec["assembly"]["windows"]] == [0, 49, 0]
+    assert [c["at"] for c in rec["assembly"]["cuts"]] == [round(a, 4), round(b, 4)]  # no cut moved early
+    held, after = _frame(out, b - 1.0), _frame(out, b + 1.5 / 24)
+    assert held[..., 1].mean() > 80 > held[..., 2].mean()  # the green window's last frame, held to its passage's end
+    assert after[..., 2].mean() > 150 > after[..., 1].mean()  # the blue window on its own first frame, on time
+
+
+def test_a_window_more_than_a_bar_short_is_refused_with_a_clear_line(mini):
+    a, b = mini["cuts"][1], mini["cuts"][2]
+    _clip(mini["jobs"] / "job1aaaa" / "xenoform.mp4", "green", (b - a) - 70 / 24.0, sound=b - a)  # a bar is 64 at 90 BPM
+    with pytest.raises(song_assemble.AssemblyError, match="70 short .* more than a bar .* make that passage again"):
+        song_assemble.assemble(mini["folder"], mini["jobs"], qa=False)
+    error = song_run.load(mini["folder"])["assembly"]["error"]
+    assert "window 2 (drop, passage 2)" in error and not (mini["folder"] / "xenoform.mp4").exists()
 
 
 def test_a_shifted_stretch_is_checked_against_its_window(mini):
