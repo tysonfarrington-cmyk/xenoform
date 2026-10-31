@@ -58,7 +58,7 @@ backdrops ("morph an entire scene, not just a shape").
 | 5 | The whole-song music video: passages become window Makes, queued, assembled on the beat into one cut | song-plan | Opus 5.5 | song_plan.py, batch.py, dense.py, ui.py, app.js | 2 merged, Tys's go |
 
 Each session works in its own worktree and branch cut from `contest-rc2`, commits as Owly, never pushes. The
-orchestrator merges the branches into `contest-rc2` as each reports (3 landed first, 31 Oct, as 91fd5d2; a builder still running merges `contest-rc2` into its branch before it reports, so 1 and 4 land in the order they finish), then 2, then 5, running the
+orchestrator merges the branches into `contest-rc2` as each reported (31 Oct: 3 as 91fd5d2, 4 as 39791dd, 1 with 0 as 99d4d95, each builder merging `contest-rc2` into its branch first), then 2, then 5, running the
 whole suite after each merge. Tys's desks 47320 and 47321 are never restarted without his word.
 
 ## 2. Stage 0: roles that are true
@@ -247,6 +247,15 @@ video, and it is built last because it stands on all the others.
    noun test; Taj Mahal, three helmets, lightning bolt, piano puddle, hermit crab want a look (sheet: Desktop/xeno_assets_31oct/held_back_stills_sheet.jpg). (d) Comfy Cloud output
    terms are unchecked, and CREDITS and LICENCES say so. (e) The Loved chains chips are their own row under the
    idea line, not entries in ideas.json.
+9. Pacing: landed 31 Oct as 99d4d95 (1294 passed on its tree). Breathe stays off by default; every preset carries
+   Breathe off and Drops off, so a loved chain re-makes as it was cut (confirm). Flash frames in the worst 8 bars:
+   1:45 window 142 today, 138 plain now, 39 Breathe; 0:00 window 151, 69, 13 with none in the intro. Open: may a
+   whole song pass 60 Draft morphs (one per 4 s holds the density; builds run 14.3 looks a minute, grooves 4.9);
+   the desk drop card says the big moment is 1:31 while the prototype window now centres on the main drop run at
+   2:21 (make them agree). Left for later: a hero object pinned at drops (only the fresh family is), a title on
+   the last hit, handoff kinds at 21 percent against the montage 36, a window that starts inside a drop run opens
+   on an event. Proof: Desktop/xeno_pacing_31oct (two side by sides with the song, six Draft cuts with sheets,
+   the whole song planned three ways, pacing_proof.py under docs/demo/tools).
 
 ## 9. Working rules for every session
 
