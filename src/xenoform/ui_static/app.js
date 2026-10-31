@@ -1576,6 +1576,14 @@ const SHAPE_NOTES = {
   "max": "Drops on Max: every drop gets the main drop's full treatment.",
   "off": "Drops off: one drop, as the cut was made before.",
 };
+// A clips cut takes the same Shape (xenoform.clip_cut, 1 Nov): its rests are film playing, never a held frame, and its
+// drops open on a hard cut to a fresh film
+const SHAPE_NOTES_CLIPS = {
+  ...SHAPE_NOTES,
+  "breathe-on": "Breathe: the calm passages become scenes. One film a passage, three or four bars a clip, each morph landing on the next clip's first frame and handing over to it moving: the film never stops, no effects and no flash; the builds tighten from two bars a shot to one; the drops cut as hard as ever.",
+  "breathe-off": "Breathe off: one timing all through, a morph between every two clips.",
+  "auto": "Drops on Auto: every drop opens on a cut on the beat to a fresh film, with a punch and a stutter; the build's last four bars ramp into it, the loudest drops cut faster.",
+};
 // Breathe as the body sends it (xenoform.pacing.amount_of): true from the Shape row's On (the bold profile, 1.0), a recipe's
 // own amount 0..1 as it came, false when off
 function breatheValue(easy) {
@@ -1587,12 +1595,13 @@ function breatheValue(easy) {
 function shapeRow(easy) {
   const breathe = !!breatheValue(easy);
   const drops = DROP_MODES.includes(easy.dropMode) ? easy.dropMode : "auto";
+  const notes = morphSource(easy) === "clips" ? SHAPE_NOTES_CLIPS : SHAPE_NOTES;
   const chip = (act, value, label, on, note) => `<button type="button" class="chip${on ? " on" : ""}" data-act="${act}" data-value="${esc(value)}" aria-pressed="${on ? "true" : "false"}" title="${esc(note)}">${esc(label)}</button>`;
   return `<div class="simple-seg shape-row"><span>Shape</span><div class="toggle chips" role="group" aria-label="The cut's shape: Breathe and the drops">
-      ${chip("easy-breathe", "on", "Breathe", breathe, SHAPE_NOTES["breathe-on"])}${chip("easy-breathe", "off", "Breathe off", !breathe, SHAPE_NOTES["breathe-off"])}
+      ${chip("easy-breathe", "on", "Breathe", breathe, notes["breathe-on"])}${chip("easy-breathe", "off", "Breathe off", !breathe, notes["breathe-off"])}
       <span class="chip-gap" aria-hidden="true"></span>
-      ${DROP_MODES.map((m) => chip("easy-drops", m, `Drops ${m === "auto" ? "Auto" : m === "max" ? "Max" : "off"}`, drops === m, SHAPE_NOTES[m])).join("")}</div></div>
-      <p class="note shape-note">${esc(`${SHAPE_NOTES[breathe ? "breathe-on" : "breathe-off"]} ${SHAPE_NOTES[drops]}`)}</p>`;
+      ${DROP_MODES.map((m) => chip("easy-drops", m, `Drops ${m === "auto" ? "Auto" : m === "max" ? "Max" : "off"}`, drops === m, notes[m])).join("")}</div></div>
+      <p class="note shape-note">${esc(`${notes[breathe ? "breathe-on" : "breathe-off"]} ${notes[drops]}`)}</p>`;
 }
 
 // TouchDesigner-style effects (xenoform.effects), any of them at once, after the Look and riding the kick and the
@@ -2536,7 +2545,7 @@ function shotsLane(easy) {
     const held = o.play === "hold";
     const edited = held || !!o.look || o.fx_intensity != null || !!o.timing || !!o.grade || Array.isArray(o.effects) || o.source != null || !!o.drop;
     const label = s.to ? `${s.from} → ${s.to}` : s.from;
-    const marks = `${s.style && s.style !== "melt" ? ` · ${morphStyleLabel(s.style)}` : ""}${o.timing ? ` · ${MORPH_TIMING_LABELS[o.timing] || o.timing}` : ""}${s.pinned ? " · pinned" : ""}${s.swapped ? " · swapped" : ""}${held ? " · held" : ""}${o.look ? ` · look ${o.look}` : ""}${o.fx_intensity != null ? ` · FX ${o.fx_intensity}` : ""}${o.grade ? " · colour" : ""}${Array.isArray(o.effects) ? ` · effects ${o.effects.length ? o.effects.join("+") : "none"}` : ""}${s.rerendered ? " · re-rendered" : ""}${s.generated != null ? " · generated" : ""}${s.dream != null ? " · dream" : ""}${s.performer ? " · Polly" : ""}${s.own ? " · your clip" : ""}${s.event === "drop" ? ` · opens drop ${Number(s.drop_run) + 1} (heat ${Number(s.heat).toFixed(1)})` : ""}${s.rest ? ` · rests ${s.rest} beats on what it arrives at` : ""}`;
+    const marks = `${s.style && s.style !== "melt" ? ` · ${morphStyleLabel(s.style)}` : ""}${o.timing ? ` · ${MORPH_TIMING_LABELS[o.timing] || o.timing}` : ""}${s.pinned ? " · pinned" : ""}${s.swapped ? " · swapped" : ""}${held ? " · held" : ""}${o.look ? ` · look ${o.look}` : ""}${o.fx_intensity != null ? ` · FX ${o.fx_intensity}` : ""}${o.grade ? " · colour" : ""}${Array.isArray(o.effects) ? ` · effects ${o.effects.length ? o.effects.join("+") : "none"}` : ""}${s.rerendered ? " · re-rendered" : ""}${s.generated != null ? " · generated" : ""}${s.dream != null ? " · dream" : ""}${s.performer ? " · Polly" : ""}${s.own ? " · your clip" : ""}${s.event === "drop" ? ` · opens drop ${Number(s.drop_run) + 1} (heat ${Number(s.heat).toFixed(1)})` : ""}${s.rest ? (s.own ? ` · the film plays on ${s.rest} beats` : ` · rests ${s.rest} beats on what it arrives at`) : ""}`;
     const title = `Shot ${s.index + 1} · ${clockText(s.start)} · ${s.seconds} s${s.section ? ` · ${s.section}` : ""}${s.transition ? ` · ${s.transition}` : ""}${label ? ` · ${label}` : ""}${marks}`;
     const pick = swapping && s.still != null;
     const act = pick ? `data-act="easy-swap-pick" data-slot="${s.still}" data-at="${s.start}"` : songCut ? `data-act="easy-seek" data-at="${s.start}"` : `data-act="easy-tl-shot" data-index="${s.index}" data-at="${s.start}"`;

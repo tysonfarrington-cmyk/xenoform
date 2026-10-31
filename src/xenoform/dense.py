@@ -1405,6 +1405,17 @@ def song_plan_for(state: dict, directed: dict, drop: float | None) -> dict:
     return plan
 
 
+def shots_of(plan: dict, duration: float) -> list[dict]:
+    """A pacing plan's shots as a Make takes them: validated and framed (``custom_shots``), each with the plan's own keys
+    (``PLAN_KEYS``: its role, passage, heat, run, rest, event, ramp)."""
+    shots = custom_shots(plan, duration)
+    for shot, raw in zip(shots, plan.get("shots") or []):
+        for key in PLAN_KEYS:
+            if raw.get(key) is not None and raw.get(key) != "":
+                shot[key] = raw[key]
+    return shots
+
+
 def shots_for(state: dict, directed: dict, audio_path: Path | None, *, drop: float | None = None) -> tuple[list[dict], dict]:
     """Validated shots plus the plan they came from. ``drop`` (seconds) stands in for the song's own when the caller
     has it and no audio (the desk's estimate)."""
@@ -1417,12 +1428,7 @@ def shots_for(state: dict, directed: dict, audio_path: Path | None, *, drop: flo
     beats = list(directed.get("beats") or [])
     if paced(state, directed):
         plan = song_plan_for(state, directed, drop if drop is not None else find_drop(audio_path, beats, duration))
-        shots = custom_shots(plan, duration)
-        for shot, raw in zip(shots, plan.get("shots") or []):
-            for key in PLAN_KEYS:
-                if raw.get(key) is not None and raw.get(key) != "":
-                    shot[key] = raw[key]
-        return shots, plan
+        return shots_of(plan, duration), plan
     opt = options(state)
     n = morph_count(state)
     speed = macros(state)["speed"]
@@ -2175,15 +2181,21 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
     m = _taste.cap_macros(macros(state), state)  # as the Make capped them
     vibe = str(rec.get("vibe") or state.get("vibe") or "")
     look_preset = beatfx.resolve_dance_preset(opt["dance_fx"], vibe, hp)
+    from xenoform import clip_cut
+
+    clips_cut = str(rec.get("source") or "") == clip_cut.SOURCE  # a clips cut: its clips are what the taste rules read
     shaped = shape_shots(shots, state, m, hp if rec.get("vertical_house") else None, look=look_preset,
-                         beats=list(rec.get("beats") or []), stills=list(rec.get("stills") or []), house=hp,
+                         beats=list(rec.get("beats") or []),
+                         stills=clip_cut.nouns(shots) if clips_cut else list(rec.get("stills") or []), house=hp,
                          drop=rec.get("drop"))
     from xenoform import effects as _E
 
     effect_names = _E.names_of(state)
     smear = _E.smear_setting(state)
+    # the vibe's premium transitions are an object cut's (a clips cut hands over between films as its Make did: none)
     transitions = boundary_transitions(shots, vibe, seed=int(rec.get("seed") or 0), smear=smear,
-                                       per_run=drop_treated(state, shots)) if rec.get("plan_name") == "story" else None
+                                       per_run=drop_treated(state, shots)) \
+        if rec.get("plan_name") == "story" and not clips_cut else None
     from xenoform import boundary_fx as _B
 
     drop = rec.get("drop")

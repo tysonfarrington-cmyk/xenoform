@@ -906,7 +906,9 @@ def shape(shots: list[dict], macros: dict, *, breathe: bool | float, drop_mode: 
                 if calm:
                     s["dance_fx"] = calm
                     counts["looks"] += 1
-            if role not in ("drop", "drop_late") and _fit_rest(s, period):
+            # a rest is a held frame: never on film (your clip plays on; a clips cut's morph hands over to the clip it
+            # lands on, clip_cut.hand_over), only on a morph that arrives at an object
+            if role not in ("drop", "drop_late") and not (s.get("own") or s.get("clip_morph")) and _fit_rest(s, period):
                 counts["long_rests"] = counts.get("long_rests", 0) + 1
         if drops:  # the drop treatment, over the profile: the entries and the ramps into them
             _treat(s, timing=timing, user_effects=user_effects, intensity=intensity, breathe=prof is not None, counts=counts,
