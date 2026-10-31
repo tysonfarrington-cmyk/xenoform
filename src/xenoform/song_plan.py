@@ -424,15 +424,18 @@ def _user_preset(state: dict, loaded: list[dict]) -> dict | None:
 def look_of_preset(preset: dict, state: dict) -> dict:
     """A passage's look from a loved chain: its vibe, line, pins, style, timing, effects, look, foreshadow, backdrop and
     knobs (over the song's), its seed. The Shape stays the song's."""
-    from xenoform import presets
+    from xenoform import presets, vibes
 
     body = presets.body(preset)
     knobs = dict(state.get("macros") or {}) if isinstance(state.get("macros"), dict) else {}
     knobs.update(body["macros"])
+    row = next((r for r in vibes.catalog() if r["id"] == body["vibe"]), {})
     return {"vibe": body["vibe"], "preset": preset["id"], "name": preset["name"], "idea": body["idea"],
             "pins": dict(body["chain_pins"]), "morph_style": body["morph_style"], "morph_timing": body["morph_timing"],
             "effects": list(body["effects"]), "dance_fx": body["dance_fx"], "foreshadow": body["foreshadow"],
-            "backdrop": body["backdrop"], "macros": knobs, "seed": int(body["seed"]), "why": "a loved chain"}
+            "backdrop": body["backdrop"], "macros": knobs, "seed": int(body["seed"]), "why": "a loved chain",
+            "line": str(preset.get("line") or ""), "palette": str(row.get("palette") or ""),
+            "register": str(row.get("register") or "")}
 
 
 def look_of_vibe(row: dict, state: dict, *, why: str, pins: dict | None = None) -> dict:
