@@ -1482,6 +1482,15 @@ label.easy-paid { display: block; margin: 0.4rem 0 0.2rem; font-size: 0.86em; op
 .shots-lane .passage i { font-style: normal; }
 .shots-lane .passage:hover, .shots-lane .passage:focus-visible { background: hsl(var(--hue, 260) 35% 40%); outline: none; }
 .shots-lane .drop-mark { position: absolute; top: -2px; width: 2px; height: 18px; background: #ff4d6d; pointer-events: none; }
+/* Whole song (docs/SONG.md): the passages over the shots, a look each, their window's state */
+.shots-lane .song-passages { height: 26px; margin: 0 0 4px; }
+.shots-lane .song-passages .passage { height: 24px; line-height: 24px; font-size: 11px; border-right: 1px solid rgba(0, 0, 0, .55); background: hsl(var(--hue, 260) 18% 24%); }
+.shots-lane .song-passages .passage.is-done { background: hsl(var(--hue, 260) 32% 34%); }
+.shots-lane .song-passages .passage.is-running { box-shadow: inset 0 -3px 0 hsl(var(--hue, 260) 75% 62%); }
+.shots-lane .song-passages .passage.is-error { background: hsl(0 45% 34%); }
+.song-lane .lane-track { padding-top: 2px; }
+.song-happen li, .song-list li { font-size: 12px; margin: 2px 0; }
+.song-list { padding-left: 1.2em; margin: 4px 0 8px; }
 .shots-lane .tl-drawer { margin-top: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; display: flex; flex-direction: column; gap: 6px; }
 .shots-lane .tl-drawer-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
 .shots-lane .tl-drawer-head .text { margin-left: auto; }

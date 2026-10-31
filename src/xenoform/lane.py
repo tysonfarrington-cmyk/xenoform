@@ -136,6 +136,11 @@ def build(info: dict, video_id: str = "") -> dict:
             row["event"] = str(s["event"])
         if s.get("rest"):
             row.update({"rest": int(s["rest"]), "rest_s": round(float(s.get("rest_s") or 0.0), 3)})
+        if s.get("job"):  # a whole song's shot (song_assemble): the window that made it, its job and its look
+            row.update({"window": int(s.get("window") or 0), "job": str(s["job"]), "vibe": str(s.get("vibe") or ""),
+                        "song_passage": int(s.get("song_passage") or 0)})
+            if s.get("cut_in"):
+                row["cut_in"] = True
         t = transitions[i] if i < len(transitions) else None
         if isinstance(t, dict) and t.get("kind"):
             row["transition"] = str(t["kind"])
@@ -161,7 +166,7 @@ def build(info: dict, video_id: str = "") -> dict:
         if i > 0:
             prev = rows[i - 1]
             hard = any(prev.get(k) for k in ("hold", "performer", "own")) or prev.get("generated") is not None \
-                or any(row.get(k) for k in ("performer", "own")) or row.get("generated") is not None \
+                or any(row.get(k) for k in ("performer", "own", "cut_in")) or row.get("generated") is not None \
                 or prev.get("dream") is not None or row.get("dream") is not None
             if row.get("generated") is not None and prev.get("generated") == row.get("generated"):
                 hard = bool(prev.get("hold"))  # inside one run the joins are morph landings
@@ -224,6 +229,11 @@ def build(info: dict, video_id: str = "") -> dict:
                    "pinned": k in pinned, "swapped": k in swapped} for k, f in enumerate(files)]
     # only a Draft cut swaps and re-renders: a Fast Final or Cloud Final record says tier "draft" too, with its flag
     draft = str(info.get("tier") or "draft") != "final" and not info.get("fast") and not info.get("cloud")
+    song = info.get("song") if str(info.get("mode") or "") == "song" and isinstance(info.get("song"), dict) else None
+    if song is not None:  # a whole song (song_assemble): its passages are edited on their own timelines, then laid in again
+        out = build({**info, "mode": "", "song": None, "clips": []}, video_id)
+        out.update({"mode": "song", "song": song, "swappable": False, "editable": False, "rerenderable": False})
+        return out
     return {"id": video_id, "duration": round(duration, 3), "shots": rows, "sections": sections, "overlays": overlays,
             "morphs": len(set(assign)) if assign else len(rows), "objects": len(set(stills)), "plan": str(info.get("plan_name") or ""),
             "pace": str(((info.get("recut_state") or {}).get("pace")) or ""), "engine": str(info.get("engine") or ""),

@@ -804,12 +804,13 @@ def shot_nouns(shots: list[dict], stills: list) -> list[tuple[str, str]]:
     return out
 
 
-def effects_by_shot(shots: list[dict], names: list[str], stills: list | None = None) -> dict:
+def effects_by_shot(shots: list[dict], names: list[str], stills: list | None = None, turn: int | None = None) -> dict:
     """The cut's effects a shot at a time, in place (``fx_names``, the field the compositor and the timeline read): with
     ``one-effect`` and more than one effect chosen, each passage plays one in turn (a cut with no passages takes them in
-    even runs); with ``no-kaleido-on-living`` a shot that morphs a living thing plays another of the chosen effects instead
-    of the kaleido, or none. A shot that already says its own (Breathe's profile, the timeline) keeps it, the kaleido
-    still stepping aside. Returns what it did."""
+    even runs; a whole song's window, one passage, takes its passage's ``turn`` in the song); with
+    ``no-kaleido-on-living`` a shot that morphs a living thing plays another of the chosen effects instead of the kaleido,
+    or none. A shot that already says its own (Breathe's profile, the timeline) keeps it, the kaleido still stepping
+    aside. Returns what it did."""
     names = [n for n in names if n != "smear"]
     did = {"turns": 0, "kaleido": 0}
     if not names:
@@ -818,8 +819,8 @@ def effects_by_shot(shots: list[dict], names: list[str], stills: list | None = N
 
     each = one_effect()
     passages = _pc.passage_of(shots)
-    order = {p: k for k, p in enumerate(sorted(set(passages)))}
-    single = len(order) == 1
+    order = {p: k + int(turn or 0) for k, p in enumerate(sorted(set(passages)))}
+    single = len(order) == 1 and turn is None
     if each is not None and len(names) > each:
         for i, (s, p) in enumerate(zip(shots, passages)):
             if "fx_names" in s:
