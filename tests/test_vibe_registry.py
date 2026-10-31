@@ -1,6 +1,7 @@
 """The extended vibe registry, its assets, anchor stills and shot QA."""
 
 import json
+import re
 from pathlib import Path
 
 import numpy as np
@@ -108,7 +109,28 @@ def test_ui_lists_every_vibe():
         if listed:
             assert f"vibes/{vid}.jpg" in page
     featured = [v for v in REG["vibes"] if v.get("featured", 0) > 0]
-    assert len(featured) == 13 and all(f'"id": "{v["id"]}"' in app for v in featured)  # twelve vibes and None
+    assert len(featured) == 12 and all(f'"id": "{v["id"]}"' in app for v in featured)  # eleven vibes and None
+    # the fallback list in app.js is the featured row too: Wet paint moved to the legacy list on 31 Oct, the registry keeps it
+    fallback = app.split("const V6_VIBES = [", 1)[1].split("const VIBES_LEGACY", 1)[0]
+    assert sorted(re.findall(r'"id": "([a-z0-9-]+)"', fallback)) == sorted(v["id"] for v in featured)
+    assert 'id: "wet-paint"' in app and 'id: "odd-machine"' in app
+
+
+def test_wet_paint_and_the_odd_machine_are_off_the_featured_cards_and_whole_in_the_registry():
+    """Tys, 31 Oct: off the featured cards, kept in the registry. Their entry, pool, strip, card and (wet paint) example cut stay,
+    and the desk still lists them, behind More vibes, so they work when chosen by name."""
+    from xenoform import vibes
+
+    by_id = {v["id"]: v for v in ALL}
+    for vid in ("wet-paint", "odd-machine"):
+        v = by_id[vid]
+        assert v.get("ready", True) and v.get("featured", 0) == 0 and v["taste"], vid
+        assert vid not in [f["id"] for f in vibes.featured()] and vibes.get(vid)["id"] == vid
+        row = next(r for r in vibes.catalog() if r["id"] == vid)
+        assert row["legacy"] is True and row["featured"] == 0 and row["has_still"] and row["has_library"] and row["pool"] == vid
+        assert (STATIC / "vibes" / f"{vid}.jpg").stat().st_size > 20_000 and len(vibes.pools() & {vid}) == 1
+    assert vibes.example("wet-paint")["url"] == "/examples/cuts/wet-paint.mp4" and vibes.example("odd-machine") == {}
+    assert [r["id"] for r in vibes.catalog() if not r["legacy"]] == [f["id"] for f in vibes.featured()] and len(vibes.featured()) == 12
 
 
 def test_morph_pass_uses_the_registry():

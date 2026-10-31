@@ -803,3 +803,35 @@ body[data-knobs="folded"] .easy-done > .easy-side .knobs-fold { float: none; mar
 .shots-lane .lane-shots .shot.held { background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.22) 0 3px, transparent 3px 7px),
   linear-gradient(to top, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0) 55%), var(--thumb, none); }
 .shots-lane .lane-shots .shot.dropped { background: repeating-linear-gradient(135deg, rgba(255, 90, 90, 0.55) 0 2px, transparent 2px 5px); }
+
+/* ---------------------------------------------------------------- example cuts (31 Oct 2026)
+   A finished 15 s cut in a vibe (examples/cuts): a play badge in the corner of the vibe card, the layer it opens, and the
+   chips under the showcase reel. The badge is a span in the card (a button cannot hold a button). */
+.vibe-eg {
+  position: absolute; top: 8px; left: 8px; z-index: 2; display: grid; place-items: center; width: 24px; height: 24px; padding-left: 2px;
+  border-radius: 50%; font-size: 10px; line-height: 1; color: #fff; cursor: pointer; background: rgba(8, 8, 12, 0.62);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.28), 0 2px 8px rgba(0, 0, 0, 0.5); opacity: 0.86;
+  transition: opacity var(--x-t-fast) var(--x-ease), background var(--x-t-fast) var(--x-ease), transform var(--x-t-fast) var(--x-ease);
+}
+@media (hover: hover) { .vibe-eg { opacity: 0; } .vibe-card:hover .vibe-eg, .vibe-eg:focus-visible { opacity: 1; } }
+.vibe-eg:hover { background: var(--x-accent); transform: scale(1.08); }
+.vibe-eg:focus-visible { outline: 2px solid var(--x-accent-hi, #a99bff); outline-offset: 2px; }
+.example-modal {
+  position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 16px; background: rgba(4, 4, 8, 0.78);
+}
+.example-card {
+  display: flex; flex-direction: column; gap: 10px; width: min(380px, 100%); max-height: 100%; padding: 12px; overflow: auto;
+  background: var(--x-surface-2); border: 1px solid var(--x-line-3, var(--x-line)); border-radius: 12px; box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+}
+.example-card video { display: block; width: 100%; max-height: 68vh; aspect-ratio: 9 / 16; object-fit: contain; border-radius: 8px; background: #000; }
+.example-line { margin: 0; font-size: 12.5px; color: var(--x-text-2); }
+.example-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.showcase-vibes { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px; }
+
+/* ---------------------------------------------------------------- loved chains (31 Oct 2026)
+   The chain presets as chips under the idea line: a round thumbnail of the first pinned still, the name. */
+.preset-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.preset-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.preset-chip { display: inline-flex; align-items: center; gap: 7px; padding-left: 4px; }
+.preset-chip img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; background: var(--x-surface-3, #1d1d26); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14); }
+.preset-note { margin: 4px 0 0; }

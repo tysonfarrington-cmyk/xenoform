@@ -1,0 +1,281 @@
+{
+ "aspect": "9:16",
+ "song_start": 0.0,
+ "title": 231.33,
+ "seconds": 238.208,
+ "gain_db": -2.05,
+ "slots": [
+  {
+   "label": "o1_glow_sea_intro",
+   "job": "57770f69",
+   "song_in": 0.0,
+   "song_out": 16.417,
+   "cut_in": 0.0,
+   "frames": 394
+  },
+  {
+   "label": "s1_shadow_dragon",
+   "job": "b753f298",
+   "song_in": 16.417,
+   "song_out": 28.917,
+   "cut_in": 2.417,
+   "frames": 300
+  },
+  {
+   "label": "o2_botanical_wild",
+   "job": "933592da",
+   "song_in": 28.917,
+   "song_out": 40.292,
+   "cut_in": 2.583,
+   "frames": 273
+  },
+  {
+   "label": "o3_ocean_reef",
+   "job": "bf55c48d",
+   "song_in": 40.292,
+   "song_out": 49.542,
+   "cut_in": 3.458,
+   "frames": 222
+  },
+  {
+   "label": "a07_ice_norse@169",
+   "job": "51c65cff",
+   "song_in": 49.542,
+   "song_out": 57.583,
+   "cut_in": 9.292,
+   "frames": 193
+  },
+  {
+   "label": "n1_origami_icons@169",
+   "job": "b289bdb5",
+   "song_in": 57.583,
+   "song_out": 62.833,
+   "cut_in": 5.583,
+   "frames": 126
+  },
+  {
+   "label": "n2_deepsea_glow",
+   "job": "7b4eca5a",
+   "song_in": 62.833,
+   "song_out": 66.792,
+   "cut_in": 2.583,
+   "frames": 95
+  },
+  {
+   "label": "a10_brutalist_wonders",
+   "job": "784ef8ba",
+   "song_in": 66.792,
+   "song_out": 71.375,
+   "cut_in": 0.875,
+   "frames": 110
+  },
+  {
+   "label": "o5_gold_insects",
+   "job": "e48aad36",
+   "song_in": 71.375,
+   "song_out": 78.083,
+   "cut_in": 2.708,
+   "frames": 161
+  },
+  {
+   "label": "a12_botanical_myth",
+   "job": "83437186",
+   "song_in": 78.083,
+   "song_out": 83.417,
+   "cut_in": 1.75,
+   "frames": 128
+  },
+  {
+   "label": "a13_cosmic_clear",
+   "job": "7fb64022",
+   "song_in": 83.417,
+   "song_out": 91.958,
+   "cut_in": 1.5,
+   "frames": 205
+  },
+  {
+   "label": "a14_neon_beasts",
+   "job": "855a1aa4",
+   "song_in": 91.958,
+   "song_out": 97.25,
+   "cut_in": 2.625,
+   "frames": 127
+  },
+  {
+   "label": "a15_ferro_symbols",
+   "job": "8f7b322a",
+   "song_in": 97.25,
+   "song_out": 106.417,
+   "cut_in": 2.583,
+   "frames": 220
+  },
+  {
+   "label": "a16_kintsugi_masks",
+   "job": "6e57b338",
+   "song_in": 106.417,
+   "song_out": 111.25,
+   "cut_in": 1.917,
+   "frames": 116
+  },
+  {
+   "label": "a17_ocean_clear",
+   "job": "a449f5ee",
+   "song_in": 111.25,
+   "song_out": 119.792,
+   "cut_in": 1.333,
+   "frames": 205
+  },
+  {
+   "label": "chrome_beasts_shatter",
+   "job": "0e324f6b",
+   "song_in": 119.792,
+   "song_out": 122.417,
+   "cut_in": 8.542,
+   "frames": 63
+  },
+  {
+   "label": "deepsea_fish_clear",
+   "job": "1d9c5314",
+   "song_in": 122.417,
+   "song_out": 126.333,
+   "cut_in": 11.167,
+   "frames": 94
+  },
+  {
+   "label": "shadow_magic_melt",
+   "job": "6b6b91e3",
+   "song_in": 126.333,
+   "song_out": 131.625,
+   "cut_in": 11.75,
+   "frames": 127
+  },
+  {
+   "label": "origami_fold_smooth",
+   "job": "43b90c81",
+   "song_in": 131.625,
+   "song_out": 135.542,
+   "cut_in": 20.375,
+   "frames": 94
+  },
+  {
+   "label": "b_neon_tarot",
+   "job": "92ba27d5",
+   "song_in": 135.542,
+   "song_out": 141.0,
+   "cut_in": 4.292,
+   "frames": 131
+  },
+  {
+   "label": "botanical_clear_bloom",
+   "job": "5b974778",
+   "song_in": 141.0,
+   "song_out": 149.125,
+   "cut_in": 2.5,
+   "frames": 195
+  },
+  {
+   "label": "cosmic_bloom_beat@169",
+   "job": "78f86592",
+   "song_in": 149.125,
+   "song_out": 151.75,
+   "cut_in": 0.125,
+   "frames": 63
+  },
+  {
+   "label": "riso_fold_snap@169",
+   "job": "e38ef555",
+   "song_in": 151.75,
+   "song_out": 159.625,
+   "cut_in": 0.083,
+   "frames": 189
+  },
+  {
+   "label": "b_kintsugi_symbols",
+   "job": "9183588e",
+   "song_in": 159.625,
+   "song_out": 164.208,
+   "cut_in": 2.375,
+   "frames": 110
+  },
+  {
+   "label": "b_y2k_symbols",
+   "job": "5c2cd237",
+   "song_in": 164.208,
+   "song_out": 170.333,
+   "cut_in": 1.708,
+   "frames": 147
+  },
+  {
+   "label": "b_cyber_beasts",
+   "job": "9aec81ee",
+   "song_in": 170.333,
+   "song_out": 174.292,
+   "cut_in": 2.667,
+   "frames": 95
+  },
+  {
+   "label": "black_flowers_melt",
+   "job": "f7009789",
+   "song_in": 174.292,
+   "song_out": 182.167,
+   "cut_in": 15.292,
+   "frames": 189
+  },
+  {
+   "label": "b_shadow_mythic",
+   "job": "04a4f861",
+   "song_in": 182.167,
+   "song_out": 191.125,
+   "cut_in": 2.583,
+   "frames": 215
+  },
+  {
+   "label": "b2_cosmic_more",
+   "job": "9ffac573",
+   "song_in": 191.125,
+   "song_out": 197.042,
+   "cut_in": 1.958,
+   "frames": 142
+  },
+  {
+   "label": "b_marble_icons",
+   "job": "69a587c5",
+   "song_in": 197.042,
+   "song_out": 203.167,
+   "cut_in": 2.292,
+   "frames": 147
+  },
+  {
+   "label": "b3_ferro_beasts",
+   "job": "285e5fb5",
+   "song_in": 203.167,
+   "song_out": 210.417,
+   "cut_in": 3.0,
+   "frames": 174
+  },
+  {
+   "label": "glass_space_bloom@169",
+   "job": "4b735507",
+   "song_in": 210.417,
+   "song_out": 216.917,
+   "cut_in": 0.167,
+   "frames": 156
+  },
+  {
+   "label": "ocean_bloom_beat",
+   "job": "3899769a",
+   "song_in": 216.917,
+   "song_out": 224.125,
+   "cut_in": 8.667,
+   "frames": 173
+  },
+  {
+   "label": "gold_finale_clear@169",
+   "job": "45b4eb51",
+   "song_in": 224.125,
+   "song_out": 238.19,
+   "cut_in": 0.542,
+   "frames": 338
+  }
+ ]
+}

@@ -1,47 +1,55 @@
 {
   "video": "showcase.mp4",
   "poster": "showcase.jpg",
-  "seconds": 20.0,
-  "tempo": 143.961,
+  "seconds": 19.708,
+  "tempo": 90.0,
+  "size": [
+    1024,
+    576
+  ],
+  "track": "glitch_out.mp3",
+  "track_start": 115.833,
   "cuts": [
     0.0,
-    3.418,
-    8.669,
-    12.17,
-    15.671,
-    20.0
+    3.958,
+    7.875,
+    11.833,
+    15.792,
+    19.708
   ],
   "shots": [
     {
-      "clip": "h08_rose_to_lotus_to_jellyfish_black_glass.mp4",
+      "clip": "black-rose-to-lotus.mp4",
       "start": 0.0,
-      "end": 3.418,
-      "source_in": 2.583
+      "end": 3.958,
+      "source_in": 0.042
     },
     {
-      "clip": "h02_droplet_swarm_to_butterfly_to_swallow_gr.mp4",
-      "start": 3.418,
-      "end": 8.669,
-      "source_in": 1.645
+      "clip": "bioluminescent-seahorse-to-koi-fish.mp4",
+      "start": 3.958,
+      "end": 7.875,
+      "source_in": 0.062
     },
     {
-      "clip": "m02_tarot_card_to_orb_gr.mp4",
-      "start": 8.669,
-      "end": 12.17,
-      "source_in": 0.75
+      "clip": "shadow-self-dragon-to-griffin.mp4",
+      "start": 7.875,
+      "end": 11.833,
+      "source_in": 0.042
     },
     {
-      "clip": "m13_torus_knot_to_mobius_chrome.mp4",
-      "start": 12.17,
-      "end": 15.671,
-      "source_in": 0.75
+      "clip": "iridescent-glass-lunar-rover-to-astronaut-glove.mp4",
+      "start": 11.833,
+      "end": 15.792,
+      "source_in": 0.041
     },
     {
-      "clip": "m22_lotus_to_jellyfish_iridescent.mp4",
-      "start": 15.671,
-      "end": 20.0,
-      "source_in": 0.335
+      "clip": "liquid-gold-infinity-knot-to-scarab-beetle.mp4",
+      "start": 15.792,
+      "end": 19.708,
+      "source_in": 0.063
     }
   ],
-  "note": "Pre-rendered on an RTX 3080 Ti with open weights (LTX 0.9.5 morphs). Plays instantly; no GPU needed."
+  "note": "Pre-rendered with Cloud Final: five of the loved morphs (examples/morphs), LTX-2.5 22B distilled (open weights) run on Comfy Cloud, each cut to six beats of Glitch Out from 1:55.8, so the 1:59 drop lands on the second cut. Plays instantly; no GPU needed.",
+  "shot_beats": 6,
+  "credit": "Made by the author with Xenoform. Pictures: LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between the author's own Z-Image Turbo stills. Sound: Glitch Out by the author, made with Suno (examples/songs/glitch_out.mp3)."
 }

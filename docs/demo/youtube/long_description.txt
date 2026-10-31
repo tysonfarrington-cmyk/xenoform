@@ -1,0 +1,24 @@
+The full tour of Xenoform, the open-source music video director built on ComfyUI: drop in a song, pick a vibe, and one object morphs into the next on every beat.
+
+It covers the song and vibe, the idea line, Make, the morph engine (five morph styles, three timings, effects that ride the kick), editing on the timeline, your own film clips, sharing, and how it is built underneath: stems, the shot plan, LTX-Video morphs through the Comfy Python SDK, MIDI and an MCP server. Open weights by default, all local.
+
+Code (MIT): https://github.com/tysonfarrington-cmyk/xenoform
+The 2-minute demo: DEMO_VIDEO_URL
+
+Chapters
+0:00 What it is
+0:30 Song and vibe
+1:09 What it morphs through
+1:59 Make
+2:46 The engine
+4:03 The timeline
+5:00 Your clips
+5:36 Share
+6:02 Under the hood
+7:15 How it's built
+
+#OpenSourceHiggsfield
+
+Music: "Glitch Out" by Tys (made with Suno).
+The outputs in this video were rendered with Cloud Final: the open-weights LTX-2.5 22B distilled model on Comfy Cloud's GPUs. The same model runs locally with Final. Film clips: public-domain films from archive.org (the free film pack; credits in the repo's CREDITS.md).
+Voice: synthetic narration (Kokoro, af_heart).

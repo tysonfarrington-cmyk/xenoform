@@ -91,6 +91,9 @@ def test_run_simple_reuses_a_morph_loop_for_a_long_song(tmp_path, monkeypatch):
 
     pool = [{"path": f"s{i}.png", "file": f"s{i}.png", "noun": f"n{i}"} for i in range(12)]
     monkeypatch.setattr(dense, "stills_for", lambda state, n: ("ocean", [pool[i % 12] for i in range(n)]))
+    from xenoform import morph_pass as mp
+    real = mp.manifest()  # the cap is the pool's size minus one: the fake hands out twelve, so the pool is the original twelve
+    monkeypatch.setattr(mp, "manifest", lambda: {**real, "ocean": real["ocean"][:12]})
 
     def fake_mock_clips(shots, stills, work, w, h):
         rendered["shots"] = shots

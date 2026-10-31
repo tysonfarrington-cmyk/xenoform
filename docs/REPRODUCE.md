@@ -39,7 +39,7 @@ On Windows the same two commands are `.venv\Scripts\python.exe -m pip install -e
 The desk is a song, a vibe and Make. Leave everything in the **Fine-tune** drawer at its default: that is the `demo_house` profile from `configs/defaults_demo.json`, the look used in the demo video.
 
 1. Song: **Bundled demo** (or one of the bundled songs' chips, or drop your own file).
-2. Vibe: **Liquid chrome** (`chrome-mercury`, the first featured card) gives the chrome-pour chain; any of the 12 featured vibes works the same way.
+2. Vibe: **Liquid chrome** (`chrome-mercury`, the first featured card) gives the chrome-pour chain; any of the 11 featured vibes works the same way.
 3. **Make**. The stills cut plays within seconds, then the GPU pass replaces it with LTX 0.9.5 morphs from still to still. On an RTX 3080 Ti a 20 s clip with 7 morphs takes about a minute warm, about two minutes if ComfyUI has just had another model loaded. A full song keeps two bars a shot (a bar on the drop) with one morph per shot and no object twice; Draft affords 48 morphs, Final 12 and Cloud Final 16, and past that the song is re-planned with fewer, longer shots. A four-minute song on Draft is about 20 minutes, and the panel beside Make shows the shot count, morph count and estimate before you press it. For a quick result set **Length** to 60 s in the Fine-tune drawer: a one-minute cut centred on the drop, about six minutes.
 
 What the defaults give you, and where each one lives:

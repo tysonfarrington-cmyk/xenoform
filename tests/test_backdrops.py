@@ -359,7 +359,8 @@ def test_kind_counts_and_nouns_tell_settings_apart():
     _grown_setting("cosmic", "000_owl.jpg", "owl", "on a rooftop at dusk")
     assert S.kind_of({"kind": "setting"}) == "setting" and S.kind_of({"kind": "scene"}) == "scene" and S.kind_of({}) == "object"
     assert S.kind_of({"kind": "weird"}) == "object"
-    assert S.counts("cosmic") == {"shipped": 12, "grown": 0, "own": 0, "scenes": 0, "settings": 1, "total": 13}
+    n = len(S.shipped()["cosmic"])  # the repo ships more than its first twelve now (the stills the finished cuts show)
+    assert S.counts("cosmic") == {"shipped": n, "grown": 0, "own": 0, "scenes": 0, "settings": 1, "total": n + 1}
     assert S.setting_nouns_in("cosmic") == {"owl"} and "owl" not in S.nouns_in("cosmic") - {"owl"}
     assert S.grown()["cosmic"][0]["place"] == "on a rooftop at dusk"
 

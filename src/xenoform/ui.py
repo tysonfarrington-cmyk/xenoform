@@ -481,6 +481,34 @@ def create_app(cfg: dict | None = None):
             "looks": [{"id": k, "note": v} for k, v in {**_dance.PRESET_NOTES, **_effects_looks()}.items()],
         }
 
+    @app.get("/api/examples/cuts")
+    def example_cuts_route() -> dict:
+        """The finished example cuts (``examples/cuts/cuts.json``): one a vibe, about 15 s of a 30 s Cloud Final cut at
+        540p, silent, each with its recipe code and credit. The vibe cards and the showcase read the ``example`` url
+        that ``GET /api/vibes`` carries; this is the whole manifest for anything else (a gallery, a script)."""
+        from xenoform import vibes as _vibes
+
+        keys = ("id", "vibe", "title", "url", "song", "song_label", "morphs", "seconds", "px", "tier", "idea", "recipe", "credit")
+        return {"cuts": [{k: row.get(k) for k in keys} for row in _vibes.examples()]}
+
+    @app.get("/examples/cuts/{name}")
+    def example_cut(name: str) -> FileResponse:
+        from xenoform import vibes as _vibes
+
+        if not any(row["file"] == name for row in _vibes.examples()):  # only what cuts.json lists, never a path
+            raise HTTPException(404, "No such example cut")
+        return FileResponse(_vibes.cuts_dir() / name, media_type="video/mp4")
+
+    @app.get("/api/presets")
+    def presets_route() -> dict:
+        """The chain presets (``configs/chain_presets.json``), the loved chains as one click: each a vibe, an idea line, the
+        stills pinned slot by slot and the settings the chain was loved with, with a ``thumb`` for its chip and its Make
+        ``body`` (``chain_pins``, ``morph_style``, ``morph_timing``, ``effects``, ``dance_fx``, ``foreshadow``, ``macros``,
+        ``seed``: never the tier, so applying one spends nothing). A missing or bad file means none."""
+        from xenoform import presets as _presets
+
+        return {"presets": [_presets.public(p) for p in _presets.load()]}
+
     @app.post("/api/analyze")
     async def analyze(file: UploadFile = File(...)) -> dict:
         import librosa

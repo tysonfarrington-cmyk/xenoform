@@ -213,7 +213,8 @@ def test_the_desk_previews_the_chain_with_pins_and_serves_the_library_thumbnails
     assert client.get("/api/stills/thumb?file=cosmic/nope.jpg").status_code == 404
     assert client.get("/api/stills/thumb?file=C:/Windows/win.ini").status_code == 404
     rows = client.get("/api/stills?vibe=cosmic").json()["rows"]
-    assert len(rows) == 12 and rows[0]["thumb"] == "/api/stills/thumb?file=" + rows[0]["file"] and all(r["kind"] == "object" for r in rows)
+    objects = [r for r in S.shipped()["cosmic"] if S.kind_of(r) == "object"]
+    assert len(rows) == len(objects) and rows[0]["thumb"] == "/api/stills/thumb?file=" + rows[0]["file"] and all(r["kind"] == "object" for r in rows)
     assert "rows" not in client.get("/api/stills").json()
 
 

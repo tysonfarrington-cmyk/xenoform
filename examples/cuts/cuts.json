@@ -1,0 +1,951 @@
+{
+  "version": 1,
+  "note": "Example cuts, one per featured vibe: 540x960 excerpts of about 15 s of the 30 s Cloud Final cuts made on 29 October 2026 (the ten example cuts and the three showcase cuts of the walkthroughs), cut on shot boundaries and silent. `recipe` is the cut's recipe code (xf1.; paste it into the desk to remix; the chain's pins are not in a recipe: `chain_files` lists the stills in order, `chain` their nouns, `chain_not_shipped` the ones left out of the repo for a taste flag, none of them inside an excerpt); its song label is neutral where the song is not bundled. `song` is the bundled song's id (examples/songs/songs.json) or null. `source` names the job folder and the window scripts/cut_examples.py cut (ffmpeg: scale 540:960 lanczos, libx264 slow high, crf per file, no audio, faststart); `excerpt.card_s` is the second of the full cut the vibe card (ui_static/vibes/<id>.jpg) was taken from.",
+  "cuts": [
+    {
+      "id": "none",
+      "vibe": "none",
+      "file": "none.mp4",
+      "title": "None: a finished cut",
+      "song": "hip-hop-boom-bap",
+      "song_label": "Hip hop, boom bap",
+      "audio": false,
+      "recipe": "xf1.eNoNykEKgDAMBdGrhKwUXCiCoCfwGq0NKmhSbKsL8e7-3WOYlx1PPE7dwA0LGESTwCs875E2iw15s5O8i1T1LSVaSq6x7FiKBrkel-VCyAjLYSXAN6ymwt8PUM0ceQ",
+      "seed": 2727,
+      "tier": "cloud",
+      "aspect": "9:16",
+      "morphs": 16,
+      "idea": "underwater",
+      "chain": [
+        "seashell",
+        "coral",
+        "pearl oyster",
+        "seahorse",
+        "seahorse",
+        "sea turtle",
+        "betta fish",
+        "jellyfish",
+        "octopus",
+        "manta ray",
+        "starfish",
+        "pufferfish",
+        "anglerfish",
+        "humpback whale",
+        "koi",
+        "hermit crab",
+        "cuttlefish"
+      ],
+      "chain_files": [
+        "none/100_seashell.jpg",
+        "none/101_coral.jpg",
+        "none/102_pearl_oyster.jpg",
+        "none/09_seahorse.jpg",
+        "none/003_seahorse.jpg",
+        "none/004_sea_turtle.jpg",
+        "none/005_betta_fish.jpg",
+        "none/103_jellyfish.jpg",
+        "none/104_octopus.jpg",
+        "none/105_manta_ray.jpg",
+        "none/106_starfish.jpg",
+        "none/107_pufferfish.jpg",
+        "none/108_anglerfish.jpg",
+        "none/111_humpback_whale.jpg",
+        "none/112_koi.jpg",
+        "none/113_hermit_crab.jpg",
+        "none/114_cuttlefish.jpg"
+      ],
+      "chain_not_shipped": [
+        "none/113_hermit_crab.jpg"
+      ],
+      "excerpt": {
+        "from_s": 11.667,
+        "to_s": 27.104,
+        "shots": 10,
+        "card_s": 17.0
+      },
+      "source": {
+        "job": "0c3864af",
+        "from_s": 11.667,
+        "to_s": 27.104,
+        "seconds": 30.0,
+        "px": [
+          1080,
+          1920
+        ]
+      },
+      "px": [
+        540,
+        960
+      ],
+      "fps": 24,
+      "seconds": 15.44,
+      "credit": "Made by the author with Xenoform on 29 October 2026: a Cloud Final cut (LTX-2.5 22B distilled, open weights, run on Comfy Cloud) in the None vibe, from the vibe's stills (CREDITS.md); this file is 15.4 s of the 30 s cut, picture only. The song was \"Hip hop, boom bap\" (examples/songs), made by the author with Suno; it is not in this file.",
+      "crf": 27,
+      "bytes": 1088032
+    },
+    {
+      "id": "neon-noir",
+      "vibe": "neon-noir",
+      "file": "neon-noir.mp4",
+      "title": "Neon noir: a finished cut",
+      "song": null,
+      "song_label": "Suno demo, liquid drum and bass, an earlier take (not bundled)",
+      "audio": false,
+      "recipe": "xf1.eNoNzEEKAjEMBdCrfLJSqKAIgnMNTxAnQYqdBNvGjczdze6t3o-YFrovlxsV0qSoDU2_0o8wh-jmBa1-ogqkxwY2wZPHKCko91a1Y_JbcbieMbDGPOYwc1ibh6S_aVO3k3nttP8BHpEkCA",
+      "seed": 2727,
+      "tier": "cloud",
+      "aspect": "9:16",
+      "morphs": 9,
+      "idea": "",
+      "chain": [
+        "horned demon skull",
+        "iron crown of thorns",
+        "plague doctor mask",
+        "tarnished silver chalice",
+        "candelabra of black wax",
+        "raven skull",
+        "cracked chapel bell",
+        "dragon scale shield",
+        "runed elven crown",
+        "dragon claw holding a gem"
+      ],
+      "chain_files": [
+        "neon-noir/074_horned_demon_skull.jpg",
+        "neon-noir/080_iron_crown_of_thorns.jpg",
+        "neon-noir/086_plague_doctor_mask.jpg",
+        "neon-noir/092_tarnished_silver_chalice.jpg",
+        "neon-noir/104_candelabra_of_black_wax.jpg",
+        "neon-noir/110_raven_skull.jpg",
+        "neon-noir/122_cracked_chapel_bell.jpg",
+        "neon-noir/073_dragon_scale_shield.jpg",
+        "neon-noir/079_runed_elven_crown.jpg",
+        "neon-noir/085_dragon_claw_holding_a_gem.jpg"
+      ],
+      "chain_not_shipped": [],
+      "excerpt": {
+        "from_s": 0.0,
+        "to_s": 13.667,
+        "shots": 3,
+        "card_s": 0.4
+      },
+      "source": {
+        "job": "e649e412",
+        "from_s": 0.0,
+        "to_s": 13.667,
+        "seconds": 30.0,
+        "px": [
+          1080,
+          1920
+        ]
+      },
+      "px": [
+        540,
+        960
+      ],
+      "fps": 24,
+      "seconds": 13.67,
+      "credit": "Made by the author with Xenoform on 29 October 2026: a Cloud Final cut (LTX-2.5 22B distilled, open weights, run on Comfy Cloud) in the Neon noir vibe, from the vibe's stills (CREDITS.md); this file is 13.7 s of the 30 s cut, picture only. The song was one of the author's Suno demos that is not bundled; it is not in this file.",
+      "crf": 30,
+      "bytes": 1328419
+    },
+    {
+      "id": "liquid-gold",
+      "vibe": "liquid-gold",
+      "file": "liquid-gold.mp4",
+      "title": "Molten gold: a finished cut",
+      "song": "ambient",
+      "song_label": "Ambient",
+      "audio": false,
+      "recipe": "xf1.eNqrVkpUslKytDI0U9JRSgUyU1LzilOB7HQg2zE3KTM1r0RBw9hAoVghubREEyhRApRIzskvTQGyy4DsnMzC0swU3fT8nBSlWgBHahZ4",
+      "seed": 2727,
+      "tier": "cloud",
+      "aspect": "9:16",
+      "morphs": 12,
+      "idea": "",
+      "chain": [
+        "gargoyle head",
+        "chained grimoire",
+        "throne of bones",
+        "raven skull",
+        "skull crowned with candles",
+        "enchanted rose under glass",
+        "runed elven crown",
+        "giant acorn with a tiny door",
+        "dragon skull with curling horns",
+        "dragon claw holding a gem",
+        "crystal orb on a claw stand",
+        "jewelled dragon egg",
+        "bird skull"
+      ],
+      "chain_files": [
+        "liquid-gold/077_gargoyle_head.jpg",
+        "liquid-gold/083_chained_grimoire.jpg",
+        "liquid-gold/095_throne_of_bones.jpg",
+        "liquid-gold/101_raven_skull.jpg",
+        "liquid-gold/112_skull_crowned_with_candles.jpg",
+        "liquid-gold/076_enchanted_rose_under_glass.jpg",
+        "liquid-gold/082_runed_elven_crown.jpg",
+        "liquid-gold/088_giant_acorn_with_a_tiny_door.jpg",
+        "liquid-gold/094_dragon_skull_with_curling_horns.jpg",
+        "liquid-gold/100_dragon_claw_holding_a_gem.jpg",
+        "liquid-gold/105_crystal_orb_on_a_claw_stand.jpg",
+        "liquid-gold/111_jewelled_dragon_egg.jpg",
+        "liquid-gold/021_bird_skull.jpg"
+      ],
+      "chain_not_shipped": [],
+      "excerpt": {
+        "from_s": 8.083,
+        "to_s": 23.5,
+        "shots": 7,
+        "card_s": 15.0
+      },
+      "source": {
+        "job": "7cdc5b35",
+        "from_s": 8.083,
+        "to_s": 23.5,
+        "seconds": 30.0,
+        "px": [
+          1080,
+          1920
+        ]
+      },
+      "px": [
+        540,
+        960
+      ],
+      "fps": 24,
+      "seconds": 15.42,
+      "credit": "Made by the author with Xenoform on 29 October 2026: a Cloud Final cut (LTX-2.5 22B distilled, open weights, run on Comfy Cloud) in the Molten gold vibe, from the vibe's stills (CREDITS.md); this file is 15.4 s of the 30 s cut, picture only. The song was \"Ambient\" (examples/songs), made by the author with Suno; it is not in this file.",
+      "crf": 29,
+      "bytes": 1365411
+    },
+    {
+      "id": "chrome-mercury",
+      "vibe": "chrome-mercury",
+      "file": "chrome-mercury.mp4",
+      "title": "Liquid chrome: a finished cut",
+      "song": null,
+      "song_label": "Suno demo, techno (not bundled)",
+      "audio": false,
+      "recipe": "xf1.eNqrVkpUslKytDI0U9JRSgUyU1LzilOB7HQgO7g0L18hJTU3X0ehJDU5A8jRMDZQKFZILi3RBCopASpJzskvTQGyy0DsjKL83FTd3NSi5NKiSqVaAKCZG0Y",
+      "seed": 2727,
+      "tier": "cloud",
+      "aspect": "9:16",
+      "morphs": 9,
+      "idea": "",
+      "chain": [
+        "raven skull",
+        "throne of bones",
+        "skull crowned with candles",
+        "ritual dagger with a bone hilt",
+        "potion bottle of swirling light",
+        "griffin statue",
+        "elven chainmail gauntlet",
+        "floating island with a tiny castle",
+        "enchanted rose under glass",
+        "dna helix"
+      ],
+      "chain_files": [
+        "chrome-mercury/085_raven_skull.jpg",
+        "chrome-mercury/091_throne_of_bones.jpg",
+        "chrome-mercury/100_skull_crowned_with_candles.jpg",
+        "chrome-mercury/106_ritual_dagger_with_a_bone_hilt.jpg",
+        "chrome-mercury/074_potion_bottle_of_swirling_light.jpg",
+        "chrome-mercury/084_griffin_statue.jpg",
+        "chrome-mercury/096_elven_chainmail_gauntlet.jpg",
+        "chrome-mercury/105_floating_island_with_a_tiny_castle.jpg",
+        "chrome-mercury/117_enchanted_rose_under_glass.jpg",
+        "chrome-mercury/08_dna_helix.jpg"
+      ],
+      "chain_not_shipped": [],
+      "excerpt": {
+        "from_s": 14.0,
+        "to_s": 30.0,
+        "shots": 4,
+        "card_s": 23.5
+      },
+      "source": {
+        "job": "dad92e3f",
+        "from_s": 14.0,
+        "to_s": 30.0,
+        "seconds": 30.0,
+        "px": [
+          1080,
+          1920
+        ]
+      },
+      "px": [
+        540,
+        960
+      ],
+      "fps": 24,
+      "seconds": 16.0,
+      "credit": "Made by the author with Xenoform on 29 October 2026: a Cloud Final cut (LTX-2.5 22B distilled, open weights, run on Comfy Cloud) in the Liquid chrome vibe, from the vibe's stills (CREDITS.md); this file is 16.0 s of the 30 s cut, picture only. The song was one of the author's Suno demos that is not bundled; it is not in this file.",
+      "crf": 27,
+      "bytes": 1384891
+    },
+    {
+      "id": "porcelain-kintsugi",
+      "vibe": "porcelain-kintsugi",
+      "file": "porcelain-kintsugi.mp4",
+      "title": "Porcelain & gold: a finished cut",
+      "song": null,
+      "song_label": "Suno demo, breakbeat (not bundled)",
+      "audio": false,
+      "recipe": "xf1.eNoNykEKgCAQAMCvLHsqMCiCIL_RC0wXEU1D1y7R39vbHOZFgxp3vWyokISOciOxFx89F3B0FQVnJRNPMgzDOkMD23mUxbJsKt2JH_FdqqVkQp5iyNy6D_j9dVEeDA",
+      "seed": 2727,
+      "tier": "cloud",
+      "aspect": "9:16",
+      "morphs": 10,
+      "idea": "",
+      "chain": [
+        "crescent moon",
+        "orb",
+        "torus knot",
+        "mobius strip",
+        "dodecahedron",
+        "gyroid",
+        "torus",
+        "crystal",
+        "faceted gem",
+        "snowflake",
+        "torus knot"
+      ],
+      "chain_files": [
+        "porcelain-kintsugi/000_crescent_moon.jpg",
+        "porcelain-kintsugi/00_orb.jpg",
+        "porcelain-kintsugi/03_torus_knot.jpg",
+        "porcelain-kintsugi/003_mobius_strip.jpg",
+        "porcelain-kintsugi/004_dodecahedron.jpg",
+        "porcelain-kintsugi/035_gyroid.jpg",
+        "porcelain-kintsugi/052_torus.jpg",
+        "porcelain-kintsugi/05_crystal.jpg",
+        "porcelain-kintsugi/002_faceted_gem.jpg",
+        "porcelain-kintsugi/001_snowflake.jpg",
+        "porcelain-kintsugi/03_torus_knot.jpg"
+      ],
+      "chain_not_shipped": [],
+      "excerpt": {
+        "from_s": 0.0,
+        "to_s": 15.75,
+        "shots": 4,
+        "card_s": 5.6
+      },
+      "source": {
+        "job": "18dcd1a8",
+        "from_s": 0.0,
+        "to_s": 15.75,
+        "seconds": 30.0,
+        "px": [
+          1080,
+          1920
+        ]
+      },
+      "px": [
+        540,
+        960
+      ],
+      "fps": 24,
+      "seconds": 15.75,
+      "credit": "Made by the author with Xenoform on 29 October 2026: a Cloud Final cut (LTX-2.5 22B distilled, open weights, run on Comfy Cloud) in the Porcelain & gold vibe, from the vibe's stills (CREDITS.md); this file is 15.8 s of the 30 s cut, picture only. The song was one of the author's Suno demos that is not bundled; it is not in this file.",
+      "crf": 25,
+      "bytes": 1092135
+    },
+    {
+      "id": "bioluminescent",
+      "vibe": "bioluminescent",
+      "file": "bioluminescent.mp4",
+      "title": "Deep-sea glow: a finished cut",
+      "song": "liquid-dnb",
+      "song_label": "Liquid drum and bass",
+      "audio": false,
+      "recipe": "xf1.eNoNykEKg0AMRuGrhKwqdNFSKOgZeolxEkpAI51MdCHevf_u4_FOLjzxOD3ffGcFRT0U_sIf-6UJScuVigvNJYJurwcF1ewDLsOVLtqO0rUhdIS6bCnwDs-2Lbmaa1T1ztcfFjAiMg",
+      "seed": 2727,
+      "tier": "cloud",
+      "aspect": "9:16",
+      "morphs": 9,
+      "idea": "underwater",
+      "chain": [
+        "seashell",
+        "coral",
+        "pearl oyster",
+        "sea turtle",
+        "cuttlefish",
+        "humpback whale",
+        "anglerfish",
+        "manta ray",
+        "starfish",
+        "pufferfish"
+      ],
+      "chain_files": [
+        "bioluminescent/116_seashell.jpg",
+        "bioluminescent/117_coral.jpg",
+        "bioluminescent/118_pearl_oyster.jpg",
+        "bioluminescent/034_sea_turtle.jpg",
+        "bioluminescent/062_cuttlefish.jpg",
+        "bioluminescent/063_humpback_whale.jpg",
+        "bioluminescent/065_anglerfish.jpg",
+        "bioluminescent/119_manta_ray.jpg",
+        "bioluminescent/120_starfish.jpg",
+        "bioluminescent/121_pufferfish.jpg"
+      ],
+      "chain_not_shipped": [],
+      "excerpt": {
+        "from_s": 5.5,
+        "to_s": 19.167,
+        "shots": 4,
+        "card_s": 13.1
+      },
+      "source": {
+        "job": "d2f19f7a",
+        "from_s": 5.5,
+        "to_s": 19.167,
+        "seconds": 30.0,
+        "px": [
+          1080,
+          1920
+        ]
+      },
+      "px": [
+        540,
+        960
+      ],
+      "fps": 24,
+      "seconds": 13.67,
+      "credit": "Made by the author with Xenoform on 29 October 2026: a Cloud Final cut (LTX-2.5 22B distilled, open weights, run on Comfy Cloud) in the Deep-sea glow vibe, from the vibe's stills (CREDITS.md); this file is 13.7 s of the 30 s cut, picture only. The song was \"Liquid drum and bass\" (examples/songs), made by the author with Suno; it is not in this file.",
+      "crf": 27,
+      "bytes": 1377326
+    },
+    {
+      "id": "risograph",
+      "vibe": "risograph",
+      "file": "risograph.mp4",
+      "title": "Risograph: a finished cut",
+      "song": "hip-hop-boom-bap",
+      "song_label": "Hip hop, boom bap",
+      "audio": false,
+      "recipe": "xf1.eNqrVkpUslKytDI0U9JRSgUyU1LzilOB7HQg2yOzQCEjv0BHISk_P1chKbFAQcPYQKFYIbm0RBOopASoJDknvzQFyC4Dsosyi_PTixILMpRqAQneGQA",
+      "seed": 2727,
+      "tier": "cloud",
+      "aspect": "9:16",
+      "morphs": 16,
+      "idea": "",
+      "chain": [
+        "thorned black rose",
+        "horned demon skull",
+        "gas mask",
+        "hourglass of black sand",
+        "ritual dagger with a bone hilt",
+        "bone flute",
+        "crystal orb on a claw stand",
+        "kraken tentacle",
+        "mandrake root",
+        "potion bottle of swirling light",
+        "dragon scale shield",
+        "dragon skull with curling horns",
+        "floating island with a tiny castle",
+        "antler",
+        "brain",
+        "deer skull",
+        "femur bone"
+      ],
+      "chain_files": [
+        "risograph/066_thorned_black_rose.jpg",
+        "risograph/078_horned_demon_skull.jpg",
+        "risograph/084_gas_mask.jpg",
+        "risograph/090_hourglass_of_black_sand.jpg",
+        "risograph/096_ritual_dagger_with_a_bone_hilt.jpg",
+        "risograph/102_bone_flute.jpg",
+        "risograph/060_crystal_orb_on_a_claw_stand.jpg",
+        "risograph/071_kraken_tentacle.jpg",
+        "risograph/077_mandrake_root.jpg",
+        "risograph/089_potion_bottle_of_swirling_light.jpg",
+        "risograph/095_dragon_scale_shield.jpg",
+        "risograph/101_dragon_skull_with_curling_horns.jpg",
+        "risograph/107_floating_island_with_a_tiny_castle.jpg",
+        "risograph/026_antler.jpg",
+        "risograph/056_brain.jpg",
+        "risograph/057_deer_skull.jpg",
+        "risograph/058_femur_bone.jpg"
+      ],
+      "chain_not_shipped": [],
+      "excerpt": {
+        "from_s": 0.0,
+        "to_s": 15.667,
+        "shots": 6,
+        "card_s": 3.8
+      },
+      "source": {
+        "job": "00ac3e00",
+        "from_s": 0.0,
+        "to_s": 15.667,
+        "seconds": 30.0,
+        "px": [
+          1080,
+          1920
+        ]
+      },
+      "px": [
+        540,
+        960
+      ],
+      "fps": 24,
+      "seconds": 15.67,
+      "credit": "Made by the author with Xenoform on 29 October 2026: a Cloud Final cut (LTX-2.5 22B distilled, open weights, run on Comfy Cloud) in the Risograph vibe, from the vibe's stills (CREDITS.md); this file is 15.7 s of the 30 s cut, picture only. The song was \"Hip hop, boom bap\" (examples/songs), made by the author with Suno; it is not in this file.",
+      "crf": 27,
+      "bytes": 1154176
+    },
+    {
+      "id": "iridescent-glass",
+      "vibe": "iridescent-glass",
+      "file": "iridescent-glass.mp4",
+      "title": "Iridescent glass: a finished cut",
+      "song": null,
+      "song_label": "Suno demo, synthwave (not bundled)",
+      "audio": false,
+      "recipe": "xf1.eNoNylEKgCAMANCrjH0VGBRBkNfoBOKGCabQtIjo7u3vfbwXHVpc7bSgQVYSZ2F1UG8tFyA-igF5ct1vdzF08wgCvtVeV9XlU2mkvtTxjMTiOdchJCeC3w9IIR1t",
+      "seed": 2727,
+      "tier": "cloud",
+      "aspect": "9:16",
+      "morphs": 16,
+      "idea": "",
+      "chain": [
+        "horned demon skull",
+        "dented knight's helm",
+        "cracked chapel bell",
+        "tarnished silver chalice",
+        "phoenix feather",
+        "winged helm",
+        "dragon skull with curling horns",
+        "floating island with a tiny castle",
+        "dragon scale shield",
+        "dna helix",
+        "antler",
+        "anatomical heart",
+        "moth with stained-glass wings",
+        "melting pocket watch",
+        "seashell holding a tiny city",
+        "candle with a flame of water",
+        "hourglass holding a sea"
+      ],
+      "chain_files": [
+        "iridescent-glass/061_horned_demon_skull.jpg",
+        "iridescent-glass/073_dented_knight_s_helm.jpg",
+        "iridescent-glass/084_cracked_chapel_bell.jpg",
+        "iridescent-glass/096_tarnished_silver_chalice.jpg",
+        "iridescent-glass/054_phoenix_feather.jpg",
+        "iridescent-glass/060_winged_helm.jpg",
+        "iridescent-glass/083_dragon_skull_with_curling_horns.jpg",
+        "iridescent-glass/089_floating_island_with_a_tiny_castle.jpg",
+        "iridescent-glass/095_dragon_scale_shield.jpg",
+        "iridescent-glass/08_dna_helix.jpg",
+        "iridescent-glass/020_antler.jpg",
+        "iridescent-glass/031_anatomical_heart.jpg",
+        "iridescent-glass/063_moth_with_stained_glass_wings.jpg",
+        "iridescent-glass/075_melting_pocket_watch.jpg",
+        "iridescent-glass/080_seashell_holding_a_tiny_city.jpg",
+        "iridescent-glass/086_candle_with_a_flame_of_water.jpg",
+        "iridescent-glass/092_hourglass_holding_a_sea.jpg"
+      ],
+      "chain_not_shipped": [],
+      "excerpt": {
+        "from_s": 0.0,
+        "to_s": 15.667,
+        "shots": 6,
+        "card_s": 6.2
+      },
+      "source": {
+        "job": "fbd103a4",
+        "from_s": 0.0,
+        "to_s": 15.667,
+        "seconds": 30.0,
+        "px": [
+          1080,
+          1920
+        ]
+      },
+      "px": [
+        540,
+        960
+      ],
+      "fps": 24,
+      "seconds": 15.67,
+      "credit": "Made by the author with Xenoform on 29 October 2026: a Cloud Final cut (LTX-2.5 22B distilled, open weights, run on Comfy Cloud) in the Iridescent glass vibe, from the vibe's stills (CREDITS.md); this file is 15.7 s of the 30 s cut, picture only. The song was one of the author's Suno demos that is not bundled; it is not in this file.",
+      "crf": 29,
+      "bytes": 1396765
+    },
+    {
+      "id": "ink-wash",
+      "vibe": "ink-wash",
+      "file": "ink-wash.mp4",
+      "title": "Ink & paper: a finished cut",
+      "song": null,
+      "song_label": "Suno demo, slow heavy riff (not bundled)",
+      "audio": false,
+      "recipe": "xf1.eNoNyksKgCAQANCrDLMqMCiCIK_RCSTHlEwhf0R092b3Fu9FhRJXOS0okJiaQiL2wd5KiKDpigKSjw0sqfrA7YyBbh4hwV5yzzfz3X0sml3ZLpxDU8ni9wMMDRv-",
+      "seed": 2727,
+      "tier": "cloud",
+      "aspect": "9:16",
+      "morphs": 16,
+      "idea": "",
+      "chain": [
+        "black iron lantern",
+        "tarnished silver chalice",
+        "iron crown of thorns",
+        "reliquary holding a skull",
+        "skull crowned with candles",
+        "griffin statue",
+        "winged helm",
+        "mermaid's trident",
+        "runed elven crown",
+        "unicorn horn",
+        "dna helix",
+        "antler",
+        "hourglass holding a sea",
+        "piano melting into a puddle",
+        "chess knight made of smoke",
+        "staircase looping into itself",
+        "skeleton key"
+      ],
+      "chain_files": [
+        "ink-wash/070_black_iron_lantern.jpg",
+        "ink-wash/076_tarnished_silver_chalice.jpg",
+        "ink-wash/092_iron_crown_of_thorns.jpg",
+        "ink-wash/098_reliquary_holding_a_skull.jpg",
+        "ink-wash/104_skull_crowned_with_candles.jpg",
+        "ink-wash/069_griffin_statue.jpg",
+        "ink-wash/075_winged_helm.jpg",
+        "ink-wash/097_mermaid_s_trident.jpg",
+        "ink-wash/103_runed_elven_crown.jpg",
+        "ink-wash/109_unicorn_horn.jpg",
+        "ink-wash/08_dna_helix.jpg",
+        "ink-wash/025_antler.jpg",
+        "ink-wash/066_hourglass_holding_a_sea.jpg",
+        "ink-wash/078_piano_melting_into_a_puddle.jpg",
+        "ink-wash/083_chess_knight_made_of_smoke.jpg",
+        "ink-wash/100_staircase_looping_into_itself.jpg",
+        "ink-wash/018_skeleton_key.jpg"
+      ],
+      "chain_not_shipped": [
+        "ink-wash/078_piano_melting_into_a_puddle.jpg"
+      ],
+      "excerpt": {
+        "from_s": 0.0,
+        "to_s": 15.333,
+        "shots": 7,
+        "card_s": 0.4
+      },
+      "source": {
+        "job": "d4ed04ab",
+        "from_s": 0.0,
+        "to_s": 15.333,
+        "seconds": 30.0,
+        "px": [
+          1080,
+          1920
+        ]
+      },
+      "px": [
+        540,
+        960
+      ],
+      "fps": 24,
+      "seconds": 15.33,
+      "credit": "Made by the author with Xenoform on 29 October 2026: a Cloud Final cut (LTX-2.5 22B distilled, open weights, run on Comfy Cloud) in the Ink & paper vibe, from the vibe's stills (CREDITS.md); this file is 15.3 s of the 30 s cut, picture only. The song was one of the author's Suno demos that is not bundled; it is not in this file.",
+      "crf": 27,
+      "bytes": 1437561
+    },
+    {
+      "id": "cyberspace-95",
+      "vibe": "cyberspace-95",
+      "file": "cyberspace-95.mp4",
+      "title": "Cyberspace 1995: a finished cut",
+      "song": null,
+      "song_label": "Suno demo, psytrance (not bundled)",
+      "audio": false,
+      "recipe": "xf1.eNqrVkpUslKytDI0U9JRSgUyU1LzilOB7HQgO7g0L18hJTU3X0ehoLiypCgxLzlVQcPYQKFYIbm0RBOoqgSoKjknvzQFyC4DsSuTUouKCxKTU3UtTZVqAewZG6g",
+      "seed": 2727,
+      "tier": "cloud",
+      "aspect": "9:16",
+      "morphs": 16,
+      "idea": "",
+      "chain": [
+        "ritual dagger with a bone hilt",
+        "cracked chapel bell",
+        "tattered war banner",
+        "gargoyle head",
+        "horned demon skull",
+        "executioner's axe",
+        "reaper's scythe",
+        "potion bottle of swirling light",
+        "dwarven war hammer",
+        "unicorn horn",
+        "dragon scale shield",
+        "dna helix",
+        "antler",
+        "anatomical heart",
+        "bird skull",
+        "moth with stained-glass wings",
+        "hourglass holding a sea"
+      ],
+      "chain_files": [
+        "cyberspace-95/064_ritual_dagger_with_a_bone_hilt.jpg",
+        "cyberspace-95/069_cracked_chapel_bell.jpg",
+        "cyberspace-95/075_tattered_war_banner.jpg",
+        "cyberspace-95/092_gargoyle_head.jpg",
+        "cyberspace-95/098_horned_demon_skull.jpg",
+        "cyberspace-95/102_executioner_s_axe.jpg",
+        "cyberspace-95/108_reaper_s_scythe.jpg",
+        "cyberspace-95/068_potion_bottle_of_swirling_light.jpg",
+        "cyberspace-95/074_dwarven_war_hammer.jpg",
+        "cyberspace-95/085_unicorn_horn.jpg",
+        "cyberspace-95/107_dragon_scale_shield.jpg",
+        "cyberspace-95/08_dna_helix.jpg",
+        "cyberspace-95/026_antler.jpg",
+        "cyberspace-95/038_anatomical_heart.jpg",
+        "cyberspace-95/049_bird_skull.jpg",
+        "cyberspace-95/065_moth_with_stained_glass_wings.jpg",
+        "cyberspace-95/082_hourglass_holding_a_sea.jpg"
+      ],
+      "chain_not_shipped": [],
+      "excerpt": {
+        "from_s": 5.917,
+        "to_s": 21.25,
+        "shots": 8,
+        "card_s": 11.3
+      },
+      "source": {
+        "job": "a56d1354",
+        "from_s": 5.917,
+        "to_s": 21.25,
+        "seconds": 30.0,
+        "px": [
+          1080,
+          1920
+        ]
+      },
+      "px": [
+        540,
+        960
+      ],
+      "fps": 24,
+      "seconds": 15.33,
+      "credit": "Made by the author with Xenoform on 29 October 2026: a Cloud Final cut (LTX-2.5 22B distilled, open weights, run on Comfy Cloud) in the Cyberspace 1995 vibe, from the vibe's stills (CREDITS.md); this file is 15.3 s of the 30 s cut, picture only. The song was one of the author's Suno demos that is not bundled; it is not in this file.",
+      "crf": 34,
+      "bytes": 1235424
+    },
+    {
+      "id": "wet-paint",
+      "vibe": "wet-paint",
+      "file": "wet-paint.mp4",
+      "title": "Wet paint: a finished cut",
+      "song": null,
+      "song_label": "Suno demo, bass music (not bundled)",
+      "audio": false,
+      "recipe": "xf1.eNoNyjEKgDAMAMCvhEwKFRRBsN_wBbUNUrCtkEQH8e9mu-FeDOhx9dOCDsmYqDKZD_OmtUGi0hzsgRmKco7QzSMwRJXemliLZ9Nkvs0PyXCFXAW_H4zrGpY",
+      "seed": 2727,
+      "tier": "cloud",
+      "aspect": "9:16",
+      "morphs": 16,
+      "idea": "",
+      "chain": [
+        "crescent moon",
+        "spiral galaxy",
+        "asteroid",
+        "orb",
+        "torus knot",
+        "mobius strip",
+        "dodecahedron",
+        "cube",
+        "mobius",
+        "trefoil knot",
+        "crystal",
+        "faceted gem",
+        "amethyst geode",
+        "snowflake",
+        "frost fern",
+        "crescent moon",
+        "asteroid"
+      ],
+      "chain_files": [
+        "wet-paint/000_crescent_moon.jpg",
+        "wet-paint/060_spiral_galaxy.jpg",
+        "wet-paint/061_asteroid.jpg",
+        "wet-paint/00_orb.jpg",
+        "wet-paint/03_torus_knot.jpg",
+        "wet-paint/003_mobius_strip.jpg",
+        "wet-paint/004_dodecahedron.jpg",
+        "wet-paint/042_cube.jpg",
+        "wet-paint/047_mobius.jpg",
+        "wet-paint/056_trefoil_knot.jpg",
+        "wet-paint/05_crystal.jpg",
+        "wet-paint/002_faceted_gem.jpg",
+        "wet-paint/036_amethyst_geode.jpg",
+        "wet-paint/001_snowflake.jpg",
+        "wet-paint/052_frost_fern.jpg",
+        "wet-paint/000_crescent_moon.jpg",
+        "wet-paint/061_asteroid.jpg"
+      ],
+      "chain_not_shipped": [],
+      "excerpt": {
+        "from_s": 0.0,
+        "to_s": 15.583,
+        "shots": 6,
+        "card_s": 6.2
+      },
+      "source": {
+        "job": "3991568a",
+        "from_s": 0.0,
+        "to_s": 15.583,
+        "seconds": 30.0,
+        "px": [
+          1080,
+          1920
+        ]
+      },
+      "px": [
+        540,
+        960
+      ],
+      "fps": 24,
+      "seconds": 15.58,
+      "credit": "Made by the author with Xenoform on 29 October 2026: a Cloud Final cut (LTX-2.5 22B distilled, open weights, run on Comfy Cloud) in the Wet paint vibe, from the vibe's stills (CREDITS.md); this file is 15.6 s of the 30 s cut, picture only. The song was one of the author's Suno demos that is not bundled; it is not in this file.",
+      "crf": 28,
+      "bytes": 1404315
+    },
+    {
+      "id": "shadow-self",
+      "vibe": "shadow-self",
+      "file": "shadow-self.mp4",
+      "title": "Shadow self: a finished cut",
+      "song": null,
+      "song_label": "Suno demo, heavy riff (not bundled)",
+      "audio": false,
+      "recipe": "xf1.eNoNyksKgCAQANCrDLMqMCiCIK_RCUTHDMyB_EREd292b_FeNKhx1dOCCknoKGUS7-KtJgZHJysIZNoD1-E9dPMIGWwtvbQizUauTtzEORjH95Apevx-wyEbVA",
+      "seed": 2727,
+      "tier": "cloud",
+      "aspect": "9:16",
+      "morphs": 8,
+      "idea": "",
+      "chain": [
+        "notched greatsword",
+        "gas mask",
+        "throne of bones",
+        "candelabra of black wax",
+        "enchanted rose under glass",
+        "giant acorn with a tiny door",
+        "phoenix feather",
+        "kraken tentacle",
+        "dragon claw holding a gem"
+      ],
+      "chain_files": [
+        "shadow-self/073_notched_greatsword.jpg",
+        "shadow-self/084_gas_mask.jpg",
+        "shadow-self/096_throne_of_bones.jpg",
+        "shadow-self/107_candelabra_of_black_wax.jpg",
+        "shadow-self/067_enchanted_rose_under_glass.jpg",
+        "shadow-self/083_giant_acorn_with_a_tiny_door.jpg",
+        "shadow-self/089_phoenix_feather.jpg",
+        "shadow-self/101_kraken_tentacle.jpg",
+        "shadow-self/112_dragon_claw_holding_a_gem.jpg"
+      ],
+      "chain_not_shipped": [],
+      "excerpt": {
+        "from_s": 3.583,
+        "to_s": 17.25,
+        "shots": 4,
+        "card_s": 9.4
+      },
+      "source": {
+        "job": "b4fd5b3f",
+        "from_s": 3.583,
+        "to_s": 17.25,
+        "seconds": 30.0,
+        "px": [
+          1080,
+          1920
+        ]
+      },
+      "px": [
+        540,
+        960
+      ],
+      "fps": 24,
+      "seconds": 13.67,
+      "credit": "Made by the author with Xenoform on 29 October 2026: a Cloud Final cut (LTX-2.5 22B distilled, open weights, run on Comfy Cloud) in the Shadow self vibe, from the vibe's stills (CREDITS.md); this file is 13.7 s of the 30 s cut, picture only. The song was one of the author's Suno demos that is not bundled; it is not in this file.",
+      "crf": 27,
+      "bytes": 1076000
+    },
+    {
+      "id": "botanical",
+      "vibe": "botanical",
+      "file": "botanical.mp4",
+      "title": "Bloom timelapse: a finished cut",
+      "song": "ambient",
+      "song_label": "Ambient",
+      "audio": false,
+      "recipe": "xf1.eNqrVkpUslKytDI0U9JRSgUyU1LzilOB7HQg2zE3KTM1r0RBw9hAoVghubREEyhRApRIzskvTQGyy4DspPySxLzM5MQcpVoAGvMVyg",
+      "seed": 2727,
+      "tier": "cloud",
+      "aspect": "9:16",
+      "morphs": 12,
+      "idea": "",
+      "chain": [
+        "jellyfish",
+        "conch",
+        "scallop shell",
+        "barnacle cluster",
+        "sea sponge",
+        "nautilus",
+        "butterfly",
+        "cicada",
+        "praying mantis",
+        "firefly",
+        "stag beetle",
+        "chameleon",
+        "bumblebee"
+      ],
+      "chain_files": [
+        "botanical/04_jellyfish.jpg",
+        "botanical/10_conch.jpg",
+        "botanical/045_scallop_shell.jpg",
+        "botanical/054_barnacle_cluster.jpg",
+        "botanical/062_sea_sponge.jpg",
+        "botanical/01_nautilus.jpg",
+        "botanical/11_butterfly.jpg",
+        "botanical/034_cicada.jpg",
+        "botanical/036_praying_mantis.jpg",
+        "botanical/038_firefly.jpg",
+        "botanical/055_stag_beetle.jpg",
+        "botanical/056_chameleon.jpg",
+        "botanical/057_bumblebee.jpg"
+      ],
+      "chain_not_shipped": [],
+      "excerpt": {
+        "from_s": 13.5,
+        "to_s": 28.667,
+        "shots": 7,
+        "card_s": 18.8
+      },
+      "source": {
+        "job": "ec770cb9",
+        "from_s": 13.5,
+        "to_s": 28.667,
+        "seconds": 30.0,
+        "px": [
+          1080,
+          1920
+        ]
+      },
+      "px": [
+        540,
+        960
+      ],
+      "fps": 24,
+      "seconds": 15.17,
+      "credit": "Made by the author with Xenoform on 29 October 2026: a Cloud Final cut (LTX-2.5 22B distilled, open weights, run on Comfy Cloud) in the Bloom timelapse vibe, from the vibe's stills (CREDITS.md); this file is 15.2 s of the 30 s cut, picture only. The song was \"Ambient\" (examples/songs), made by the author with Suno; it is not in this file.",
+      "crf": 27,
+      "bytes": 1340591
+    }
+  ]
+}

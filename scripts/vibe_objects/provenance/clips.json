@@ -1,0 +1,5261 @@
+{
+ "version": 1,
+ "note": "The LTX-2.3 clips of the run that reached a file: ltx-2.3-22b-distilled-fp8 two-stage with the x2 spatial upscaler (ov_lib.ltx23), guides as listed (image or video@skip@frames, frame index, strength), the prompt as sent. `takes` are every render of the clip (the run tried the plan's seed, then +500); `gate_ok` is the run's own motion gate on the kept take. The clips are not in the repo.",
+ "clips": [
+  {
+   "id": "h00_droplet_to_rocket_to_lightbulb_gr",
+   "from": "droplet",
+   "via": "rocket",
+   "to": "lightbulb",
+   "recipe": "hero3",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 9300,
+   "seed_used": 9900,
+   "res": [
+    896,
+    512
+   ],
+   "fps": 24,
+   "frames": 217,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A single teardrop made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen shatters into glossy droplets that burst outward and fuse into a rocket, which then melts into a twisting ribbon of liquid metal which swells and hardens into a vintage light bulb, all made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_droplet_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_splash.png",
+     48,
+     0.35
+    ],
+    [
+     "ov_rocket_gr.png",
+     96,
+     0.4
+    ],
+    [
+     "g2_pour.png",
+     144,
+     0.35
+    ],
+    [
+     "ov_lightbulb_gr.png",
+     200,
+     1.0
+    ],
+    [
+     "ov_lightbulb_gr.png",
+     216,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 179.2,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 9300,
+     "ok": true,
+     "why": []
+    },
+    {
+     "seed": 9400,
+     "ok": false,
+     "why": [
+      "midcut"
+     ]
+    },
+    {
+     "seed": 9900,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": [
+    9300
+   ]
+  },
+  {
+   "id": "h01_lightbulb_to_tarot_card_to_orb_gr",
+   "from": "lightbulb",
+   "via": "tarot_card",
+   "to": "orb",
+   "recipe": "hero3",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 9311,
+   "seed_used": 9811,
+   "res": [
+    896,
+    512
+   ],
+   "fps": 24,
+   "frames": 217,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A vintage light bulb made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen shatters into glossy droplets that burst outward and fuse into a blank tarot card, which then melts into a twisting ribbon of liquid metal which swells and hardens into a perfect liquid sphere, all made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_lightbulb_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_splash.png",
+     48,
+     0.35
+    ],
+    [
+     "ov_tarot_card_gr.png",
+     96,
+     0.4
+    ],
+    [
+     "g2_pour.png",
+     144,
+     0.35
+    ],
+    [
+     "ov_orb_gr.png",
+     200,
+     1.0
+    ],
+    [
+     "ov_orb_gr.png",
+     216,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 190.6,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 9311,
+     "ok": false,
+     "why": [
+      "midcut"
+     ]
+    },
+    {
+     "seed": 9811,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "h02_droplet_swarm_to_butterfly_to_swallow_gr",
+   "from": "droplet_swarm",
+   "via": "butterfly",
+   "to": "swallow",
+   "recipe": "hero3",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 9322,
+   "seed_used": 9322,
+   "res": [
+    896,
+    512
+   ],
+   "fps": 24,
+   "frames": 217,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A swirling cloud of droplets made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen shatters into glossy droplets that burst outward and fuse into a butterfly, which then melts into a twisting ribbon of liquid metal which swells and hardens into a swallow, all made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_droplet_swarm_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_splash.png",
+     48,
+     0.35
+    ],
+    [
+     "ov_butterfly_gr.png",
+     96,
+     0.4
+    ],
+    [
+     "g2_pour.png",
+     144,
+     0.35
+    ],
+    [
+     "ov_swallow_gr.png",
+     200,
+     1.0
+    ],
+    [
+     "ov_swallow_gr.png",
+     216,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 306.6,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 9322,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "h03_sea_urchin_to_dandelion_to_snowflake_iridescent",
+   "from": "sea_urchin",
+   "via": "dandelion",
+   "to": "snowflake",
+   "recipe": "hero3",
+   "material": "iridescent",
+   "guide": null,
+   "seed_planned": 9333,
+   "seed_used": 9333,
+   "res": [
+    896,
+    512
+   ],
+   "fps": 24,
+   "frames": 217,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A sea urchin made of pearlescent iridescent liquid metal shifting between violet, teal and gold shatters into glossy droplets that burst outward and fuse into a dandelion, which then melts into a twisting ribbon of liquid metal which swells and hardens into a snowflake, all made of the same pearlescent iridescent liquid metal shifting between violet, teal and gold. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_sea_urchin_iridescent.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_splash_iridescent.png",
+     48,
+     0.35
+    ],
+    [
+     "ov_dandelion_iridescent.png",
+     96,
+     0.4
+    ],
+    [
+     "ov_mid_pour_iridescent.png",
+     144,
+     0.35
+    ],
+    [
+     "ov_snowflake_iridescent.png",
+     200,
+     1.0
+    ],
+    [
+     "ov_snowflake_iridescent.png",
+     216,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 299.0,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 9333,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "h04_nautilus_to_conch_to_horn_mercury",
+   "from": "nautilus",
+   "via": "conch",
+   "to": "horn",
+   "recipe": "hero3",
+   "material": "mercury",
+   "guide": null,
+   "seed_planned": 9344,
+   "seed_used": 9344,
+   "res": [
+    896,
+    512
+   ],
+   "fps": 24,
+   "frames": 217,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A nautilus made of bright liquid mercury quicksilver with a wet beaded silver surface shatters into glossy droplets that burst outward and fuse into a conch, which then melts into a twisting ribbon of liquid metal which swells and hardens into a horn, all made of the same bright liquid mercury quicksilver with a wet beaded silver surface. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_nautilus_mercury.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_splash_mercury.png",
+     48,
+     0.35
+    ],
+    [
+     "ov_conch_mercury.png",
+     96,
+     0.4
+    ],
+    [
+     "ov_mid_pour_mercury.png",
+     144,
+     0.35
+    ],
+    [
+     "ov_horn_mercury.png",
+     200,
+     1.0
+    ],
+    [
+     "ov_horn_mercury.png",
+     216,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 299.1,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 9344,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "h05_torus_knot_to_mobius_to_dna_helix_chrome",
+   "from": "torus_knot",
+   "via": "mobius",
+   "to": "dna_helix",
+   "recipe": "hero3",
+   "material": "chrome",
+   "guide": null,
+   "seed_planned": 9355,
+   "seed_used": 9355,
+   "res": [
+    896,
+    512
+   ],
+   "fps": 24,
+   "frames": 217,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A torus knot made of mirror-polished liquid chrome metal reflecting soft teal and violet light shatters into glossy droplets that burst outward and fuse into a mobius, which then melts into a twisting ribbon of liquid metal which swells and hardens into a double helix, all made of the same mirror-polished liquid chrome metal reflecting soft teal and violet light. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_torus_knot_chrome.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_splash_chrome.png",
+     48,
+     0.35
+    ],
+    [
+     "ov_mobius_chrome.png",
+     96,
+     0.4
+    ],
+    [
+     "ov_mid_pour_chrome.png",
+     144,
+     0.35
+    ],
+    [
+     "ov_dna_helix_chrome.png",
+     200,
+     1.0
+    ],
+    [
+     "ov_dna_helix_chrome.png",
+     216,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 299.1,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 9355,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "h06_crown_to_crown_splash_to_droplet_gr",
+   "from": "crown",
+   "via": "crown_splash",
+   "to": "droplet",
+   "recipe": "hero3",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 9366,
+   "seed_used": 9866,
+   "res": [
+    896,
+    512
+   ],
+   "fps": 24,
+   "frames": 217,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A crown made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen shatters into glossy droplets that burst outward and fuse into a crown splash, which then melts into a twisting ribbon of liquid metal which swells and hardens into a single teardrop, all made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_crown_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_splash.png",
+     48,
+     0.35
+    ],
+    [
+     "ov_crown_splash_gr.png",
+     96,
+     0.4
+    ],
+    [
+     "g2_pour.png",
+     144,
+     0.35
+    ],
+    [
+     "ov_droplet_gr.png",
+     200,
+     1.0
+    ],
+    [
+     "ov_droplet_gr.png",
+     216,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 182.4,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 9366,
+     "ok": false,
+     "why": [
+      "midcut"
+     ]
+    },
+    {
+     "seed": 9866,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "h07_pocket_watch_to_gear_to_compass_chrome",
+   "from": "pocket_watch",
+   "via": "gear",
+   "to": "compass",
+   "recipe": "hero3",
+   "material": "chrome",
+   "guide": null,
+   "seed_planned": 9377,
+   "seed_used": 9377,
+   "res": [
+    896,
+    512
+   ],
+   "fps": 24,
+   "frames": 217,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A pocket watch made of mirror-polished liquid chrome metal reflecting soft teal and violet light shatters into glossy droplets that burst outward and fuse into a gear, which then melts into a twisting ribbon of liquid metal which swells and hardens into a compass, all made of the same mirror-polished liquid chrome metal reflecting soft teal and violet light. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_pocket_watch_chrome.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_splash_chrome.png",
+     48,
+     0.35
+    ],
+    [
+     "ov_gear_chrome.png",
+     96,
+     0.4
+    ],
+    [
+     "ov_mid_pour_chrome.png",
+     144,
+     0.35
+    ],
+    [
+     "ov_compass_chrome.png",
+     200,
+     1.0
+    ],
+    [
+     "ov_compass_chrome.png",
+     216,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 327.2,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 9377,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "h08_rose_to_lotus_to_jellyfish_black_glass",
+   "from": "rose",
+   "via": "lotus",
+   "to": "jellyfish",
+   "recipe": "hero3",
+   "material": "black_glass",
+   "guide": null,
+   "seed_planned": 9388,
+   "seed_used": 9388,
+   "res": [
+    896,
+    512
+   ],
+   "fps": 24,
+   "frames": 217,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A rose made of molten glossy black obsidian glass with a deep violet inner glow shatters into glossy droplets that burst outward and fuse into a lotus, which then melts into a twisting ribbon of liquid metal which swells and hardens into a jellyfish, all made of the same molten glossy black obsidian glass with a deep violet inner glow. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_rose_black_glass.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_splash_black_glass.png",
+     48,
+     0.35
+    ],
+    [
+     "ov_lotus_black_glass.png",
+     96,
+     0.4
+    ],
+    [
+     "ov_mid_pour_black_glass.png",
+     144,
+     0.35
+    ],
+    [
+     "ov_jellyfish_black_glass.png",
+     200,
+     1.0
+    ],
+    [
+     "ov_jellyfish_black_glass.png",
+     216,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 322.3,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 9388,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "h09_orb_to_ringed_planet_to_crescent_moon_oil_slick",
+   "from": "orb",
+   "via": "ringed_planet",
+   "to": "crescent_moon",
+   "recipe": "hero3",
+   "material": "oil_slick",
+   "guide": null,
+   "seed_planned": 9399,
+   "seed_used": 9399,
+   "res": [
+    896,
+    512
+   ],
+   "fps": 24,
+   "frames": 217,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A perfect liquid sphere made of glossy black liquid metal covered in a swirling oil-slick rainbow film shatters into glossy droplets that burst outward and fuse into a ringed planet, which then melts into a twisting ribbon of liquid metal which swells and hardens into a crescent moon, all made of the same glossy black liquid metal covered in a swirling oil-slick rainbow film. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_orb_oil_slick.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_splash_oil_slick.png",
+     48,
+     0.35
+    ],
+    [
+     "ov_ringed_planet_oil_slick.png",
+     96,
+     0.4
+    ],
+    [
+     "ov_mid_pour_oil_slick.png",
+     144,
+     0.35
+    ],
+    [
+     "ov_crescent_moon_oil_slick.png",
+     200,
+     1.0
+    ],
+    [
+     "ov_crescent_moon_oil_slick.png",
+     216,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 272.9,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 9399,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m00_rocket_to_lightbulb_gr",
+   "from": "rocket",
+   "via": null,
+   "to": "lightbulb",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 8000,
+   "seed_used": 8000,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A rocket made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen melts into a twisting ribbon of liquid metal which swells, folds and hardens into a vintage light bulb, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_rocket_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_pour.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_lightbulb_gr.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_lightbulb_gr.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 245.1,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8000,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m01_lightbulb_to_tarot_card_gr",
+   "from": "lightbulb",
+   "via": null,
+   "to": "tarot_card",
+   "recipe": "droplet_burst",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 8007,
+   "seed_used": 8107,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A vintage light bulb made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen shatters into hundreds of glossy liquid droplets that burst outward in a crown splash, hang in the air, and stream back together, fusing into a blank tarot card, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_lightbulb_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_splash.png",
+     72,
+     0.35
+    ],
+    [
+     "g2_splash.png",
+     96,
+     0.35
+    ],
+    [
+     "ov_tarot_card_gr.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_tarot_card_gr.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 289.8,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8007,
+     "ok": true,
+     "why": []
+    },
+    {
+     "seed": 8107,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": [
+    8007
+   ]
+  },
+  {
+   "id": "m02_tarot_card_to_orb_gr",
+   "from": "tarot_card",
+   "via": null,
+   "to": "orb",
+   "recipe": "droplet_burst",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 8014,
+   "seed_used": 8014,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A blank tarot card made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen shatters into hundreds of glossy liquid droplets that burst outward in a crown splash, hang in the air, and stream back together, fusing into a perfect liquid sphere, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_tarot_card_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_splash.png",
+     72,
+     0.35
+    ],
+    [
+     "g2_splash.png",
+     96,
+     0.35
+    ],
+    [
+     "ov_orb_gr.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_orb_gr.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 243.6,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8014,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m03_droplet_to_rocket_gr",
+   "from": "droplet",
+   "via": null,
+   "to": "rocket",
+   "recipe": "grow",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 8021,
+   "seed_used": 8021,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 121,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A single teardrop made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen breathes and ripples, then grows up out of its own surface and rises into a rocket, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_droplet_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_ripple.png",
+     32,
+     0.35
+    ],
+    [
+     "g2_ripple.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_rocket_gr.png",
+     104,
+     1.0
+    ],
+    [
+     "ov_rocket_gr.png",
+     120,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 302.7,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8021,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m04_droplet_to_torus_knot_gr",
+   "from": "droplet",
+   "via": null,
+   "to": "torus_knot",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 8028,
+   "seed_used": 8028,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A single teardrop made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen melts into a twisting ribbon of liquid metal which swells, folds and hardens into a torus knot, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_droplet_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_pour.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_torus_knot_gr.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_torus_knot_gr.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 243.3,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8028,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m05_droplet_swarm_to_orb_gr_g",
+   "from": "droplet_swarm",
+   "via": null,
+   "to": "orb",
+   "recipe": "gather",
+   "material": "gr",
+   "guide": "swarm",
+   "seed_planned": 8035,
+   "seed_used": 8535,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A swirling cloud of droplets made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen swirls, the droplets streaming inward and merging into each other until they gather and fuse into a perfect liquid sphere, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_droplet_swarm_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "ovg_swarm_in.mp4@0@17",
+     24,
+     0.25
+    ],
+    [
+     "ovg_swarm_in.mp4@16@17",
+     48,
+     0.2
+    ],
+    [
+     "ov_orb_gr.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_orb_gr.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 97.7,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8035,
+     "ok": false,
+     "why": [
+      "static"
+     ]
+    },
+    {
+     "seed": 8535,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m06_swallow_to_butterfly_gr_g",
+   "from": "swallow",
+   "via": null,
+   "to": "butterfly",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": "birdfly",
+   "seed_planned": 8042,
+   "seed_used": 8042,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A swallow made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen melts into a twisting ribbon of liquid metal which swells, folds and hardens into a butterfly, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_swallow_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "ovg_bird_butterfly.mp4@0@17",
+     24,
+     0.22
+    ],
+    [
+     "ovg_bird_butterfly.mp4@14@17",
+     56,
+     0.18
+    ],
+    [
+     "g2_pour.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_butterfly_gr.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_butterfly_gr.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 278.1,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8042,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m07_rocket_to_lightbulb_chrome_g",
+   "from": "rocket",
+   "via": null,
+   "to": "lightbulb",
+   "recipe": "ribbon",
+   "material": "chrome",
+   "guide": "rocketbulb",
+   "seed_planned": 8049,
+   "seed_used": 8049,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A rocket made of mirror-polished liquid chrome metal reflecting soft teal and violet light melts into a twisting ribbon of liquid metal which swells, folds and hardens into a vintage light bulb, made of the same mirror-polished liquid chrome metal reflecting soft teal and violet light. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_rocket_chrome.png",
+     0,
+     1.0
+    ],
+    [
+     "ovg_rocket_bulb.mp4@0@17",
+     32,
+     0.22
+    ],
+    [
+     "ov_mid_pour_chrome.png",
+     64,
+     0.35
+    ],
+    [
+     "ovg_rocket_bulb.mp4@14@17",
+     64,
+     0.18
+    ],
+    [
+     "ov_lightbulb_chrome.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_lightbulb_chrome.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 309.4,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8049,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m08_tarot_card_to_orb_mercury_g",
+   "from": "tarot_card",
+   "via": null,
+   "to": "orb",
+   "recipe": "droplet_burst",
+   "material": "mercury",
+   "guide": "cardorb",
+   "seed_planned": 8056,
+   "seed_used": 8056,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A blank tarot card made of bright liquid mercury quicksilver with a wet beaded silver surface shatters into hundreds of glossy liquid droplets that burst outward in a crown splash, hang in the air, and stream back together, fusing into a perfect liquid sphere, made of the same bright liquid mercury quicksilver with a wet beaded silver surface. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_tarot_card_mercury.png",
+     0,
+     1.0
+    ],
+    [
+     "ovg_card_orb.mp4@0@17",
+     32,
+     0.22
+    ],
+    [
+     "ovg_card_orb.mp4@14@17",
+     64,
+     0.18
+    ],
+    [
+     "ov_mid_splash_mercury.png",
+     72,
+     0.35
+    ],
+    [
+     "ov_mid_splash_mercury.png",
+     96,
+     0.35
+    ],
+    [
+     "ov_orb_mercury.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_orb_mercury.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 274.7,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8056,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m09_lightbulb_to_tarot_card_oil_slick_g",
+   "from": "lightbulb",
+   "via": null,
+   "to": "tarot_card",
+   "recipe": "ribbon",
+   "material": "oil_slick",
+   "guide": "bulbcard",
+   "seed_planned": 8063,
+   "seed_used": 8063,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A vintage light bulb made of glossy black liquid metal covered in a swirling oil-slick rainbow film melts into a twisting ribbon of liquid metal which swells, folds and hardens into a blank tarot card, made of the same glossy black liquid metal covered in a swirling oil-slick rainbow film. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_lightbulb_oil_slick.png",
+     0,
+     1.0
+    ],
+    [
+     "ovg_bulb_card.mp4@0@17",
+     32,
+     0.22
+    ],
+    [
+     "ov_mid_pour_oil_slick.png",
+     64,
+     0.35
+    ],
+    [
+     "ovg_bulb_card.mp4@14@17",
+     64,
+     0.18
+    ],
+    [
+     "ov_tarot_card_oil_slick.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_tarot_card_oil_slick.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 274.8,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8063,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m100_tesla_coil_to_lightbulb_black_glass",
+   "from": "tesla_coil",
+   "via": null,
+   "to": "lightbulb",
+   "recipe": "spike_burst",
+   "material": "black_glass",
+   "guide": null,
+   "seed_planned": 8700,
+   "seed_used": 8700,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A tesla coil made of molten glossy black obsidian glass with a deep violet inner glow sprouts sharp magnetic spikes that grow longer with every pulse, then whip and curl into a vintage light bulb, made of the same molten glossy black obsidian glass with a deep violet inner glow. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_tesla_coil_black_glass.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_spike_black_glass.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_mid_spike_black_glass.png",
+     88,
+     0.4
+    ],
+    [
+     "ov_lightbulb_black_glass.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_lightbulb_black_glass.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 243.8,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8700,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m101_snare_drum_to_vinyl_record_gr",
+   "from": "snare_drum",
+   "via": null,
+   "to": "vinyl_record",
+   "recipe": "droplet_burst",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 8707,
+   "seed_used": 8707,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A snare drum made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen shatters into hundreds of glossy liquid droplets that burst outward in a crown splash, hang in the air, and stream back together, fusing into a vinyl record, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_snare_drum_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_splash.png",
+     72,
+     0.35
+    ],
+    [
+     "g2_splash.png",
+     96,
+     0.35
+    ],
+    [
+     "ov_vinyl_record_gr.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_vinyl_record_gr.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 251.1,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8707,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m102_sundial_to_pocket_watch_mercury",
+   "from": "sundial",
+   "via": null,
+   "to": "pocket_watch",
+   "recipe": "ribbon",
+   "material": "mercury",
+   "guide": null,
+   "seed_planned": 8714,
+   "seed_used": 8714,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A sundial made of bright liquid mercury quicksilver with a wet beaded silver surface melts into a twisting ribbon of liquid metal which swells, folds and hardens into a pocket watch, made of the same bright liquid mercury quicksilver with a wet beaded silver surface. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_sundial_mercury.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_pour_mercury.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_pocket_watch_mercury.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_pocket_watch_mercury.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 243.9,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8714,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m103_mantel_clock_to_hourglass_iridescent",
+   "from": "mantel_clock",
+   "via": null,
+   "to": "hourglass",
+   "recipe": "droplet_burst",
+   "material": "iridescent",
+   "guide": null,
+   "seed_planned": 8721,
+   "seed_used": 8721,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A mantel clock made of pearlescent iridescent liquid metal shifting between violet, teal and gold shatters into hundreds of glossy liquid droplets that burst outward in a crown splash, hang in the air, and stream back together, fusing into a hourglass, made of the same pearlescent iridescent liquid metal shifting between violet, teal and gold. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_mantel_clock_iridescent.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_splash_iridescent.png",
+     72,
+     0.35
+    ],
+    [
+     "ov_mid_splash_iridescent.png",
+     96,
+     0.35
+    ],
+    [
+     "ov_hourglass_iridescent.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_hourglass_iridescent.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 242.2,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8721,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m104_chess_rook_to_obelisk_gr",
+   "from": "chess_rook",
+   "via": null,
+   "to": "obelisk",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 8728,
+   "seed_used": 8728,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A chess rook piece made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen melts into a twisting ribbon of liquid metal which swells, folds and hardens into a obelisk, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_chess_rook_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_pour.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_obelisk_gr.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_obelisk_gr.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 241.0,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8728,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m10_orb_to_rocket_iridescent_g",
+   "from": "orb",
+   "via": null,
+   "to": "rocket",
+   "recipe": "grow",
+   "material": "iridescent",
+   "guide": "droprocket",
+   "seed_planned": 8070,
+   "seed_used": 8070,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 121,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A perfect liquid sphere made of pearlescent iridescent liquid metal shifting between violet, teal and gold breathes and ripples, then grows up out of its own surface and rises into a rocket, made of the same pearlescent iridescent liquid metal shifting between violet, teal and gold. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_orb_iridescent.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_ripple_iridescent.png",
+     32,
+     0.35
+    ],
+    [
+     "ovg_drop_rocket.mp4@0@17",
+     32,
+     0.22
+    ],
+    [
+     "ov_mid_ripple_iridescent.png",
+     64,
+     0.35
+    ],
+    [
+     "ovg_drop_rocket.mp4@14@17",
+     64,
+     0.18
+    ],
+    [
+     "ov_rocket_iridescent.png",
+     104,
+     1.0
+    ],
+    [
+     "ov_rocket_iridescent.png",
+     120,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 275.0,
+   "gate_ok": false,
+   "gate_why": [
+    "midcut",
+    "cut_early"
+   ],
+   "takes": [
+    {
+     "seed": 8070,
+     "ok": false,
+     "why": [
+      "midcut",
+      "cut_early"
+     ]
+    },
+    {
+     "seed": 8570,
+     "ok": false,
+     "why": [
+      "midcut",
+      "cut_early"
+     ]
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m11_droplet_to_torus_black_glass_g",
+   "from": "droplet",
+   "via": null,
+   "to": "torus",
+   "recipe": "ribbon",
+   "material": "black_glass",
+   "guide": "dropring",
+   "seed_planned": 8077,
+   "seed_used": 8077,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A single teardrop made of molten glossy black obsidian glass with a deep violet inner glow melts into a twisting ribbon of liquid metal which swells, folds and hardens into a smooth ring torus, made of the same molten glossy black obsidian glass with a deep violet inner glow. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_droplet_black_glass.png",
+     0,
+     1.0
+    ],
+    [
+     "ovg_drop_ring.mp4@0@17",
+     32,
+     0.22
+    ],
+    [
+     "ov_mid_pour_black_glass.png",
+     64,
+     0.35
+    ],
+    [
+     "ovg_drop_ring.mp4@16@17",
+     64,
+     0.18
+    ],
+    [
+     "ov_torus_black_glass.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_torus_black_glass.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 285.6,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8077,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m12_sea_urchin_to_dandelion_gr",
+   "from": "sea_urchin",
+   "via": null,
+   "to": "dandelion",
+   "recipe": "spike_burst",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 8084,
+   "seed_used": 8084,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A sea urchin made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen sprouts sharp magnetic spikes that grow longer with every pulse, then whip and curl into a dandelion, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_sea_urchin_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_spike2.png",
+     64,
+     0.35
+    ],
+    [
+     "g2_spike2.png",
+     88,
+     0.4
+    ],
+    [
+     "ov_dandelion_gr.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_dandelion_gr.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 300.6,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8084,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m13_torus_knot_to_mobius_chrome",
+   "from": "torus_knot",
+   "via": null,
+   "to": "mobius",
+   "recipe": "ribbon",
+   "material": "chrome",
+   "guide": null,
+   "seed_planned": 8091,
+   "seed_used": 8091,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A torus knot made of mirror-polished liquid chrome metal reflecting soft teal and violet light melts into a twisting ribbon of liquid metal which swells, folds and hardens into a mobius, made of the same mirror-polished liquid chrome metal reflecting soft teal and violet light. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_torus_knot_chrome.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_pour_chrome.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_mobius_chrome.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_mobius_chrome.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 244.5,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8091,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m14_mobius_to_dna_helix_iridescent",
+   "from": "mobius",
+   "via": null,
+   "to": "dna_helix",
+   "recipe": "ribbon",
+   "material": "iridescent",
+   "guide": null,
+   "seed_planned": 8098,
+   "seed_used": 8098,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A mobius made of pearlescent iridescent liquid metal shifting between violet, teal and gold melts into a twisting ribbon of liquid metal which swells, folds and hardens into a double helix, made of the same pearlescent iridescent liquid metal shifting between violet, teal and gold. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_mobius_iridescent.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_pour_iridescent.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_dna_helix_iridescent.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_dna_helix_iridescent.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 245.9,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8098,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m15_nautilus_to_conch_gr",
+   "from": "nautilus",
+   "via": null,
+   "to": "conch",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 8105,
+   "seed_used": 8105,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A nautilus made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen melts into a twisting ribbon of liquid metal which swells, folds and hardens into a conch, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_nautilus_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_pour.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_conch_gr.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_conch_gr.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 246.6,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8105,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m16_conch_to_horn_mercury",
+   "from": "conch",
+   "via": null,
+   "to": "horn",
+   "recipe": "ribbon",
+   "material": "mercury",
+   "guide": null,
+   "seed_planned": 8112,
+   "seed_used": 8112,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A conch made of bright liquid mercury quicksilver with a wet beaded silver surface melts into a twisting ribbon of liquid metal which swells, folds and hardens into a horn, made of the same bright liquid mercury quicksilver with a wet beaded silver surface. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_conch_mercury.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_pour_mercury.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_horn_mercury.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_horn_mercury.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 246.3,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8112,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m17_butterfly_to_dragonfly_oil_slick",
+   "from": "butterfly",
+   "via": null,
+   "to": "dragonfly",
+   "recipe": "ribbon",
+   "material": "oil_slick",
+   "guide": null,
+   "seed_planned": 8119,
+   "seed_used": 8119,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A butterfly made of glossy black liquid metal covered in a swirling oil-slick rainbow film melts into a twisting ribbon of liquid metal which swells, folds and hardens into a dragonfly, made of the same glossy black liquid metal covered in a swirling oil-slick rainbow film. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_butterfly_oil_slick.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_pour_oil_slick.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_dragonfly_oil_slick.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_dragonfly_oil_slick.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 310.0,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8119,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m18_dragonfly_to_feather_gr",
+   "from": "dragonfly",
+   "via": null,
+   "to": "feather",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 8126,
+   "seed_used": 8126,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A dragonfly made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen melts into a twisting ribbon of liquid metal which swells, folds and hardens into a feather, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_dragonfly_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_pour.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_feather_gr.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_feather_gr.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 245.1,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8126,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m19_feather_to_leaf_iridescent",
+   "from": "feather",
+   "via": null,
+   "to": "leaf",
+   "recipe": "ribbon",
+   "material": "iridescent",
+   "guide": null,
+   "seed_planned": 8133,
+   "seed_used": 8133,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A feather made of pearlescent iridescent liquid metal shifting between violet, teal and gold melts into a twisting ribbon of liquid metal which swells, folds and hardens into a leaf, made of the same pearlescent iridescent liquid metal shifting between violet, teal and gold. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_feather_iridescent.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_pour_iridescent.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_leaf_iridescent.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_leaf_iridescent.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 245.9,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8133,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m20_leaf_to_rose_black_glass",
+   "from": "leaf",
+   "via": null,
+   "to": "rose",
+   "recipe": "ribbon",
+   "material": "black_glass",
+   "guide": null,
+   "seed_planned": 8140,
+   "seed_used": 8140,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A leaf made of molten glossy black obsidian glass with a deep violet inner glow melts into a twisting ribbon of liquid metal which swells, folds and hardens into a rose, made of the same molten glossy black obsidian glass with a deep violet inner glow. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_leaf_black_glass.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_pour_black_glass.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_rose_black_glass.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_rose_black_glass.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 254.3,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8140,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m21_rose_to_lotus_gr",
+   "from": "rose",
+   "via": null,
+   "to": "lotus",
+   "recipe": "droplet_burst",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 8147,
+   "seed_used": 8147,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A rose made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen shatters into hundreds of glossy liquid droplets that burst outward in a crown splash, hang in the air, and stream back together, fusing into a lotus, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_rose_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_splash.png",
+     72,
+     0.35
+    ],
+    [
+     "g2_splash.png",
+     96,
+     0.35
+    ],
+    [
+     "ov_lotus_gr.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_lotus_gr.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 253.4,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8147,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m22_lotus_to_jellyfish_iridescent",
+   "from": "lotus",
+   "via": null,
+   "to": "jellyfish",
+   "recipe": "ribbon",
+   "material": "iridescent",
+   "guide": null,
+   "seed_planned": 8154,
+   "seed_used": 8154,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A lotus made of pearlescent iridescent liquid metal shifting between violet, teal and gold melts into a twisting ribbon of liquid metal which swells, folds and hardens into a jellyfish, made of the same pearlescent iridescent liquid metal shifting between violet, teal and gold. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_lotus_iridescent.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_pour_iridescent.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_jellyfish_iridescent.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_jellyfish_iridescent.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 251.5,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8154,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m23_koi_to_manta_ray_gr",
+   "from": "koi",
+   "via": null,
+   "to": "manta_ray",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 8161,
+   "seed_used": 8161,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A koi made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen melts into a twisting ribbon of liquid metal which swells, folds and hardens into a manta ray, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_koi_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_pour.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_manta_ray_gr.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_manta_ray_gr.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 253.1,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8161,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m24_manta_ray_to_swallow_chrome",
+   "from": "manta_ray",
+   "via": null,
+   "to": "swallow",
+   "recipe": "ribbon",
+   "material": "chrome",
+   "guide": null,
+   "seed_planned": 8168,
+   "seed_used": 8168,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A manta ray made of mirror-polished liquid chrome metal reflecting soft teal and violet light melts into a twisting ribbon of liquid metal which swells, folds and hardens into a swallow, made of the same mirror-polished liquid chrome metal reflecting soft teal and violet light. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_manta_ray_chrome.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_pour_chrome.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_swallow_chrome.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_swallow_chrome.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 241.9,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8168,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m25_dandelion_to_snowflake_iridescent",
+   "from": "dandelion",
+   "via": null,
+   "to": "snowflake",
+   "recipe": "droplet_burst",
+   "material": "iridescent",
+   "guide": null,
+   "seed_planned": 8175,
+   "seed_used": 8175,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A dandelion made of pearlescent iridescent liquid metal shifting between violet, teal and gold shatters into hundreds of glossy liquid droplets that burst outward in a crown splash, hang in the air, and stream back together, fusing into a snowflake, made of the same pearlescent iridescent liquid metal shifting between violet, teal and gold. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_dandelion_iridescent.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_splash_iridescent.png",
+     72,
+     0.35
+    ],
+    [
+     "ov_mid_splash_iridescent.png",
+     96,
+     0.35
+    ],
+    [
+     "ov_snowflake_iridescent.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_snowflake_iridescent.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 244.1,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8175,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m26_snowflake_to_crystal_cluster_black_glass",
+   "from": "snowflake",
+   "via": null,
+   "to": "crystal_cluster",
+   "recipe": "spike_burst",
+   "material": "black_glass",
+   "guide": null,
+   "seed_planned": 8182,
+   "seed_used": 8182,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A snowflake made of molten glossy black obsidian glass with a deep violet inner glow sprouts sharp magnetic spikes that grow longer with every pulse, then whip and curl into a crystal cluster, made of the same molten glossy black obsidian glass with a deep violet inner glow. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_snowflake_black_glass.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_spike_black_glass.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_mid_spike_black_glass.png",
+     88,
+     0.4
+    ],
+    [
+     "ov_crystal_cluster_black_glass.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_crystal_cluster_black_glass.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 249.6,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8182,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m27_quartz_to_obelisk_black_glass",
+   "from": "quartz",
+   "via": null,
+   "to": "obelisk",
+   "recipe": "ribbon",
+   "material": "black_glass",
+   "guide": null,
+   "seed_planned": 8189,
+   "seed_used": 8189,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A quartz made of molten glossy black obsidian glass with a deep violet inner glow melts into a twisting ribbon of liquid metal which swells, folds and hardens into a obelisk, made of the same molten glossy black obsidian glass with a deep violet inner glow. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_quartz_black_glass.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_pour_black_glass.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_obelisk_black_glass.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_obelisk_black_glass.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 246.5,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8189,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m28_gem_to_dodecahedron_chrome",
+   "from": "gem",
+   "via": null,
+   "to": "dodecahedron",
+   "recipe": "droplet_burst",
+   "material": "chrome",
+   "guide": null,
+   "seed_planned": 8196,
+   "seed_used": 8196,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A gem made of mirror-polished liquid chrome metal reflecting soft teal and violet light shatters into hundreds of glossy liquid droplets that burst outward in a crown splash, hang in the air, and stream back together, fusing into a dodecahedron, made of the same mirror-polished liquid chrome metal reflecting soft teal and violet light. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_gem_chrome.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_splash_chrome.png",
+     72,
+     0.35
+    ],
+    [
+     "ov_mid_splash_chrome.png",
+     96,
+     0.35
+    ],
+    [
+     "ov_dodecahedron_chrome.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_dodecahedron_chrome.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 243.1,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8196,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m29_dodecahedron_to_cube_mercury",
+   "from": "dodecahedron",
+   "via": null,
+   "to": "cube",
+   "recipe": "ribbon",
+   "material": "mercury",
+   "guide": null,
+   "seed_planned": 8203,
+   "seed_used": 8203,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A dodecahedron made of bright liquid mercury quicksilver with a wet beaded silver surface melts into a twisting ribbon of liquid metal which swells, folds and hardens into a cube, made of the same bright liquid mercury quicksilver with a wet beaded silver surface. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_dodecahedron_mercury.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_pour_mercury.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_cube_mercury.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_cube_mercury.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 243.3,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8203,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m30_pyramid_to_obelisk_gr",
+   "from": "pyramid",
+   "via": null,
+   "to": "obelisk",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 8210,
+   "seed_used": 8210,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A pyramid made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen melts into a twisting ribbon of liquid metal which swells, folds and hardens into a obelisk, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_pyramid_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_pour.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_obelisk_gr.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_obelisk_gr.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 242.6,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8210,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m31_pocket_watch_to_compass_gr",
+   "from": "pocket_watch",
+   "via": null,
+   "to": "compass",
+   "recipe": "droplet_burst",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 8217,
+   "seed_used": 8217,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A pocket watch made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen shatters into hundreds of glossy liquid droplets that burst outward in a crown splash, hang in the air, and stream back together, fusing into a compass, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_pocket_watch_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_splash.png",
+     72,
+     0.35
+    ],
+    [
+     "g2_splash.png",
+     96,
+     0.35
+    ],
+    [
+     "ov_compass_gr.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_compass_gr.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 240.9,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8217,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m32_compass_to_gear_chrome",
+   "from": "compass",
+   "via": null,
+   "to": "gear",
+   "recipe": "spike_burst",
+   "material": "chrome",
+   "guide": null,
+   "seed_planned": 8224,
+   "seed_used": 8224,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A compass made of mirror-polished liquid chrome metal reflecting soft teal and violet light sprouts sharp magnetic spikes that grow longer with every pulse, then whip and curl into a gear, made of the same mirror-polished liquid chrome metal reflecting soft teal and violet light. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_compass_chrome.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_spike_chrome.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_mid_spike_chrome.png",
+     88,
+     0.4
+    ],
+    [
+     "ov_gear_chrome.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_gear_chrome.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 252.8,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8224,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m33_gear_to_film_reel_oil_slick",
+   "from": "gear",
+   "via": null,
+   "to": "film_reel",
+   "recipe": "ribbon",
+   "material": "oil_slick",
+   "guide": null,
+   "seed_planned": 8231,
+   "seed_used": 8731,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A gear made of glossy black liquid metal covered in a swirling oil-slick rainbow film melts into a twisting ribbon of liquid metal which swells, folds and hardens into a film reel, made of the same glossy black liquid metal covered in a swirling oil-slick rainbow film. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_gear_oil_slick.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_pour_oil_slick.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_film_reel_oil_slick.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_film_reel_oil_slick.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 131.4,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8231,
+     "ok": false,
+     "why": [
+      "midcut"
+     ]
+    },
+    {
+     "seed": 8731,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m34_film_reel_to_vinyl_record_gr",
+   "from": "film_reel",
+   "via": null,
+   "to": "vinyl_record",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 8238,
+   "seed_used": 8238,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A film reel made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen melts into a twisting ribbon of liquid metal which swells, folds and hardens into a vinyl record, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_film_reel_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_pour.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_vinyl_record_gr.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_vinyl_record_gr.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 242.9,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8238,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m35_vinyl_record_to_ringed_planet_iridescent",
+   "from": "vinyl_record",
+   "via": null,
+   "to": "ringed_planet",
+   "recipe": "droplet_burst",
+   "material": "iridescent",
+   "guide": null,
+   "seed_planned": 8245,
+   "seed_used": 8245,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A vinyl record made of pearlescent iridescent liquid metal shifting between violet, teal and gold shatters into hundreds of glossy liquid droplets that burst outward in a crown splash, hang in the air, and stream back together, fusing into a ringed planet, made of the same pearlescent iridescent liquid metal shifting between violet, teal and gold. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_vinyl_record_iridescent.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_splash_iridescent.png",
+     72,
+     0.35
+    ],
+    [
+     "ov_mid_splash_iridescent.png",
+     96,
+     0.35
+    ],
+    [
+     "ov_ringed_planet_iridescent.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_ringed_planet_iridescent.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 238.7,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8245,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m36_ringed_planet_to_crescent_moon_gr",
+   "from": "ringed_planet",
+   "via": null,
+   "to": "crescent_moon",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 8252,
+   "seed_used": 8252,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A ringed planet made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen melts into a twisting ribbon of liquid metal which swells, folds and hardens into a crescent moon, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_ringed_planet_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_pour.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_crescent_moon_gr.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_crescent_moon_gr.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 241.5,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8252,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m37_crescent_moon_to_horseshoe_magnet_mercury",
+   "from": "crescent_moon",
+   "via": null,
+   "to": "horseshoe_magnet",
+   "recipe": "ribbon",
+   "material": "mercury",
+   "guide": null,
+   "seed_planned": 8259,
+   "seed_used": 8259,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A crescent moon made of bright liquid mercury quicksilver with a wet beaded silver surface melts into a twisting ribbon of liquid metal which swells, folds and hardens into a horseshoe magnet, made of the same bright liquid mercury quicksilver with a wet beaded silver surface. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_crescent_moon_mercury.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_pour_mercury.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_horseshoe_magnet_mercury.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_horseshoe_magnet_mercury.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 241.2,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8259,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m38_key_to_padlock_chrome",
+   "from": "key",
+   "via": null,
+   "to": "padlock",
+   "recipe": "ribbon",
+   "material": "chrome",
+   "guide": null,
+   "seed_planned": 8266,
+   "seed_used": 8766,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A key made of mirror-polished liquid chrome metal reflecting soft teal and violet light melts into a twisting ribbon of liquid metal which swells, folds and hardens into a padlock, made of the same mirror-polished liquid chrome metal reflecting soft teal and violet light. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_key_chrome.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_pour_chrome.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_padlock_chrome.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_padlock_chrome.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 72.4,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8266,
+     "ok": false,
+     "why": [
+      "static"
+     ]
+    },
+    {
+     "seed": 8766,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m39_key_to_feather_gr_g",
+   "from": "key",
+   "via": null,
+   "to": "feather",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": "keyfeather",
+   "seed_planned": 8273,
+   "seed_used": 8273,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A key made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen melts into a twisting ribbon of liquid metal which swells, folds and hardens into a feather, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_key_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "ovg_key_feather.mp4@0@17",
+     32,
+     0.22
+    ],
+    [
+     "g2_pour.png",
+     64,
+     0.35
+    ],
+    [
+     "ovg_key_feather.mp4@14@17",
+     64,
+     0.18
+    ],
+    [
+     "ov_feather_gr.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_feather_gr.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 270.8,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8273,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m40_bell_to_lightbulb_gr",
+   "from": "bell",
+   "via": null,
+   "to": "lightbulb",
+   "recipe": "droplet_burst",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 8280,
+   "seed_used": 8280,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A bell made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen shatters into hundreds of glossy liquid droplets that burst outward in a crown splash, hang in the air, and stream back together, fusing into a vintage light bulb, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_bell_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_splash.png",
+     72,
+     0.35
+    ],
+    [
+     "g2_splash.png",
+     96,
+     0.35
+    ],
+    [
+     "ov_lightbulb_gr.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_lightbulb_gr.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 243.3,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8280,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m41_vacuum_tube_to_lightbulb_oil_slick",
+   "from": "vacuum_tube",
+   "via": null,
+   "to": "lightbulb",
+   "recipe": "ribbon",
+   "material": "oil_slick",
+   "guide": null,
+   "seed_planned": 8287,
+   "seed_used": 8287,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A vacuum tube made of glossy black liquid metal covered in a swirling oil-slick rainbow film melts into a twisting ribbon of liquid metal which swells, folds and hardens into a vintage light bulb, made of the same glossy black liquid metal covered in a swirling oil-slick rainbow film. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_vacuum_tube_oil_slick.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_pour_oil_slick.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_lightbulb_oil_slick.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_lightbulb_oil_slick.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 241.3,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8287,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m42_candle_to_lightbulb_gr",
+   "from": "candle",
+   "via": null,
+   "to": "lightbulb",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 8294,
+   "seed_used": 8294,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A candle made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen melts into a twisting ribbon of liquid metal which swells, folds and hardens into a vintage light bulb, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_candle_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_pour.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_lightbulb_gr.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_lightbulb_gr.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 243.4,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8294,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m43_hourglass_to_wine_glass_black_glass",
+   "from": "hourglass",
+   "via": null,
+   "to": "wine_glass",
+   "recipe": "ribbon",
+   "material": "black_glass",
+   "guide": null,
+   "seed_planned": 8301,
+   "seed_used": 8301,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A hourglass made of molten glossy black obsidian glass with a deep violet inner glow melts into a twisting ribbon of liquid metal which swells, folds and hardens into a wine glass, made of the same molten glossy black obsidian glass with a deep violet inner glow. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_hourglass_black_glass.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_pour_black_glass.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_wine_glass_black_glass.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_wine_glass_black_glass.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 292.5,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8301,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m50_origami_crane_to_swallow_gr",
+   "from": "origami_crane",
+   "via": null,
+   "to": "swallow",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 8350,
+   "seed_used": 8350,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A origami crane made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen melts into a twisting ribbon of liquid metal which swells, folds and hardens into a swallow, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_origami_crane_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_pour.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_swallow_gr.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_swallow_gr.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 242.2,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8350,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m55_chess_pawn_to_chess_knight_chrome",
+   "from": "chess_pawn",
+   "via": null,
+   "to": "chess_knight",
+   "recipe": "ribbon",
+   "material": "chrome",
+   "guide": null,
+   "seed_planned": 8385,
+   "seed_used": 8385,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A chess pawn made of mirror-polished liquid chrome metal reflecting soft teal and violet light melts into a twisting ribbon of liquid metal which swells, folds and hardens into a chess knight piece, made of the same mirror-polished liquid chrome metal reflecting soft teal and violet light. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_chess_pawn_chrome.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_pour_chrome.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_chess_knight_chrome.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_chess_knight_chrome.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 242.3,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8385,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m64_butterfly_to_dragonfly_gr",
+   "from": "butterfly",
+   "via": null,
+   "to": "dragonfly",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 8448,
+   "seed_used": 8448,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A butterfly made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen melts into a twisting ribbon of liquid metal which swells, folds and hardens into a dragonfly, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_butterfly_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_pour.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_dragonfly_gr.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_dragonfly_gr.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 245.2,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8448,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m65_hourglass_to_pocket_watch_chrome",
+   "from": "hourglass",
+   "via": null,
+   "to": "pocket_watch",
+   "recipe": "ribbon",
+   "material": "chrome",
+   "guide": null,
+   "seed_planned": 8455,
+   "seed_used": 8455,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A hourglass made of mirror-polished liquid chrome metal reflecting soft teal and violet light melts into a twisting ribbon of liquid metal which swells, folds and hardens into a pocket watch, made of the same mirror-polished liquid chrome metal reflecting soft teal and violet light. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_hourglass_chrome.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_pour_chrome.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_pocket_watch_chrome.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_pocket_watch_chrome.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 245.6,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8455,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m66_pocket_watch_to_compass_chrome",
+   "from": "pocket_watch",
+   "via": null,
+   "to": "compass",
+   "recipe": "droplet_burst",
+   "material": "chrome",
+   "guide": null,
+   "seed_planned": 8462,
+   "seed_used": 8462,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A pocket watch made of mirror-polished liquid chrome metal reflecting soft teal and violet light shatters into hundreds of glossy liquid droplets that burst outward in a crown splash, hang in the air, and stream back together, fusing into a compass, made of the same mirror-polished liquid chrome metal reflecting soft teal and violet light. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_pocket_watch_chrome.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_splash_chrome.png",
+     72,
+     0.35
+    ],
+    [
+     "ov_mid_splash_chrome.png",
+     96,
+     0.35
+    ],
+    [
+     "ov_compass_chrome.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_compass_chrome.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 272.4,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8462,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m67_gear_to_film_reel_chrome",
+   "from": "gear",
+   "via": null,
+   "to": "film_reel",
+   "recipe": "ribbon",
+   "material": "chrome",
+   "guide": null,
+   "seed_planned": 8469,
+   "seed_used": 8469,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A gear made of mirror-polished liquid chrome metal reflecting soft teal and violet light melts into a twisting ribbon of liquid metal which swells, folds and hardens into a film reel, made of the same mirror-polished liquid chrome metal reflecting soft teal and violet light. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_gear_chrome.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_pour_chrome.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_film_reel_chrome.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_film_reel_chrome.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 247.4,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8469,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m68_crystal_cluster_to_quartz_black_glass",
+   "from": "crystal_cluster",
+   "via": null,
+   "to": "quartz",
+   "recipe": "ribbon",
+   "material": "black_glass",
+   "guide": null,
+   "seed_planned": 8476,
+   "seed_used": 8476,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A crystal cluster made of molten glossy black obsidian glass with a deep violet inner glow melts into a twisting ribbon of liquid metal which swells, folds and hardens into a quartz, made of the same molten glossy black obsidian glass with a deep violet inner glow. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_crystal_cluster_black_glass.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_pour_black_glass.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_quartz_black_glass.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_quartz_black_glass.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 247.5,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8476,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m69_obelisk_to_pyramid_black_glass",
+   "from": "obelisk",
+   "via": null,
+   "to": "pyramid",
+   "recipe": "droplet_burst",
+   "material": "black_glass",
+   "guide": null,
+   "seed_planned": 8483,
+   "seed_used": 8483,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A obelisk made of molten glossy black obsidian glass with a deep violet inner glow shatters into hundreds of glossy liquid droplets that burst outward in a crown splash, hang in the air, and stream back together, fusing into a pyramid, made of the same molten glossy black obsidian glass with a deep violet inner glow. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_obelisk_black_glass.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_splash_black_glass.png",
+     72,
+     0.35
+    ],
+    [
+     "ov_mid_splash_black_glass.png",
+     96,
+     0.35
+    ],
+    [
+     "ov_pyramid_black_glass.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_pyramid_black_glass.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 248.6,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8483,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m70_bell_to_horn_mercury",
+   "from": "bell",
+   "via": null,
+   "to": "horn",
+   "recipe": "ribbon",
+   "material": "mercury",
+   "guide": null,
+   "seed_planned": 8490,
+   "seed_used": 8990,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A bell made of bright liquid mercury quicksilver with a wet beaded silver surface melts into a twisting ribbon of liquid metal which swells, folds and hardens into a horn, made of the same bright liquid mercury quicksilver with a wet beaded silver surface. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_bell_mercury.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_pour_mercury.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_horn_mercury.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_horn_mercury.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 120.1,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8490,
+     "ok": false,
+     "why": [
+      "midcut",
+      "cut_early"
+     ]
+    },
+    {
+     "seed": 8990,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m71_horn_to_trumpet_mercury",
+   "from": "horn",
+   "via": null,
+   "to": "trumpet",
+   "recipe": "ribbon",
+   "material": "mercury",
+   "guide": null,
+   "seed_planned": 8497,
+   "seed_used": 8497,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A horn made of bright liquid mercury quicksilver with a wet beaded silver surface melts into a twisting ribbon of liquid metal which swells, folds and hardens into a trumpet, made of the same bright liquid mercury quicksilver with a wet beaded silver surface. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_horn_mercury.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_pour_mercury.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_trumpet_mercury.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_trumpet_mercury.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 255.3,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8497,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m72_trumpet_to_vintage_mic_mercury",
+   "from": "trumpet",
+   "via": null,
+   "to": "vintage_mic",
+   "recipe": "droplet_burst",
+   "material": "mercury",
+   "guide": null,
+   "seed_planned": 8504,
+   "seed_used": 9004,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A trumpet made of bright liquid mercury quicksilver with a wet beaded silver surface shatters into hundreds of glossy liquid droplets that burst outward in a crown splash, hang in the air, and stream back together, fusing into a vintage mic, made of the same bright liquid mercury quicksilver with a wet beaded silver surface. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_trumpet_mercury.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_splash_mercury.png",
+     72,
+     0.35
+    ],
+    [
+     "ov_mid_splash_mercury.png",
+     96,
+     0.35
+    ],
+    [
+     "ov_vintage_mic_mercury.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_vintage_mic_mercury.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 90.8,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8504,
+     "ok": false,
+     "why": [
+      "midcut",
+      "cut_early"
+     ]
+    },
+    {
+     "seed": 9004,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m73_vintage_mic_to_vinyl_record_mercury",
+   "from": "vintage_mic",
+   "via": null,
+   "to": "vinyl_record",
+   "recipe": "ribbon",
+   "material": "mercury",
+   "guide": null,
+   "seed_planned": 8511,
+   "seed_used": 8511,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A vintage mic made of bright liquid mercury quicksilver with a wet beaded silver surface melts into a twisting ribbon of liquid metal which swells, folds and hardens into a vinyl record, made of the same bright liquid mercury quicksilver with a wet beaded silver surface. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_vintage_mic_mercury.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_pour_mercury.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_vinyl_record_mercury.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_vinyl_record_mercury.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 255.9,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8511,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m74_acorn_to_pine_cone_iridescent",
+   "from": "acorn",
+   "via": null,
+   "to": "pine_cone",
+   "recipe": "ribbon",
+   "material": "iridescent",
+   "guide": null,
+   "seed_planned": 8518,
+   "seed_used": 8518,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A acorn made of pearlescent iridescent liquid metal shifting between violet, teal and gold melts into a twisting ribbon of liquid metal which swells, folds and hardens into a pine cone, made of the same pearlescent iridescent liquid metal shifting between violet, teal and gold. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_acorn_iridescent.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_pour_iridescent.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_pine_cone_iridescent.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_pine_cone_iridescent.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 262.6,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8518,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m75_pine_cone_to_dandelion_iridescent",
+   "from": "pine_cone",
+   "via": null,
+   "to": "dandelion",
+   "recipe": "spike_burst",
+   "material": "iridescent",
+   "guide": null,
+   "seed_planned": 8525,
+   "seed_used": 8525,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A pine cone made of pearlescent iridescent liquid metal shifting between violet, teal and gold sprouts sharp magnetic spikes that grow longer with every pulse, then whip and curl into a dandelion, made of the same pearlescent iridescent liquid metal shifting between violet, teal and gold. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_pine_cone_iridescent.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_spike_iridescent.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_mid_spike_iridescent.png",
+     88,
+     0.4
+    ],
+    [
+     "ov_dandelion_iridescent.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_dandelion_iridescent.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 262.5,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8525,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m76_dandelion_to_lotus_iridescent",
+   "from": "dandelion",
+   "via": null,
+   "to": "lotus",
+   "recipe": "droplet_burst",
+   "material": "iridescent",
+   "guide": null,
+   "seed_planned": 8532,
+   "seed_used": 8532,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A dandelion made of pearlescent iridescent liquid metal shifting between violet, teal and gold shatters into hundreds of glossy liquid droplets that burst outward in a crown splash, hang in the air, and stream back together, fusing into a lotus, made of the same pearlescent iridescent liquid metal shifting between violet, teal and gold. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_dandelion_iridescent.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_splash_iridescent.png",
+     72,
+     0.35
+    ],
+    [
+     "ov_mid_splash_iridescent.png",
+     96,
+     0.35
+    ],
+    [
+     "ov_lotus_iridescent.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_lotus_iridescent.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 247.8,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8532,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m77_orb_to_ringed_planet_oil_slick",
+   "from": "orb",
+   "via": null,
+   "to": "ringed_planet",
+   "recipe": "grow",
+   "material": "oil_slick",
+   "guide": null,
+   "seed_planned": 8539,
+   "seed_used": 8539,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 121,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A perfect liquid sphere made of glossy black liquid metal covered in a swirling oil-slick rainbow film breathes and ripples, then grows up out of its own surface and rises into a ringed planet, made of the same glossy black liquid metal covered in a swirling oil-slick rainbow film. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_orb_oil_slick.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_ripple_oil_slick.png",
+     32,
+     0.35
+    ],
+    [
+     "ov_mid_ripple_oil_slick.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_ringed_planet_oil_slick.png",
+     104,
+     1.0
+    ],
+    [
+     "ov_ringed_planet_oil_slick.png",
+     120,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 241.5,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8539,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m78_ringed_planet_to_crescent_moon_oil_slick",
+   "from": "ringed_planet",
+   "via": null,
+   "to": "crescent_moon",
+   "recipe": "ribbon",
+   "material": "oil_slick",
+   "guide": null,
+   "seed_planned": 8546,
+   "seed_used": 8546,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A ringed planet made of glossy black liquid metal covered in a swirling oil-slick rainbow film melts into a twisting ribbon of liquid metal which swells, folds and hardens into a crescent moon, made of the same glossy black liquid metal covered in a swirling oil-slick rainbow film. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_ringed_planet_oil_slick.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_pour_oil_slick.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_crescent_moon_oil_slick.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_crescent_moon_oil_slick.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 290.7,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8546,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m79_crescent_moon_to_sputnik_oil_slick",
+   "from": "crescent_moon",
+   "via": null,
+   "to": "sputnik",
+   "recipe": "ribbon",
+   "material": "oil_slick",
+   "guide": null,
+   "seed_planned": 8553,
+   "seed_used": 8553,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A crescent moon made of glossy black liquid metal covered in a swirling oil-slick rainbow film melts into a twisting ribbon of liquid metal which swells, folds and hardens into a sputnik, made of the same glossy black liquid metal covered in a swirling oil-slick rainbow film. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_crescent_moon_oil_slick.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_pour_oil_slick.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_sputnik_oil_slick.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_sputnik_oil_slick.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 239.7,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8553,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m80_sputnik_to_sea_urchin_oil_slick",
+   "from": "sputnik",
+   "via": null,
+   "to": "sea_urchin",
+   "recipe": "spike_burst",
+   "material": "oil_slick",
+   "guide": null,
+   "seed_planned": 8560,
+   "seed_used": 8560,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A sputnik made of glossy black liquid metal covered in a swirling oil-slick rainbow film sprouts sharp magnetic spikes that grow longer with every pulse, then whip and curl into a sea urchin, made of the same glossy black liquid metal covered in a swirling oil-slick rainbow film. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_sputnik_oil_slick.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_spike_oil_slick.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_mid_spike_oil_slick.png",
+     88,
+     0.4
+    ],
+    [
+     "ov_sea_urchin_oil_slick.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_sea_urchin_oil_slick.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 243.4,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8560,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m84_skeleton_key_to_clockwork_gr",
+   "from": "skeleton_key",
+   "via": null,
+   "to": "clockwork",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 8588,
+   "seed_used": 8588,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A skeleton key made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen melts into a twisting ribbon of liquid metal which swells, folds and hardens into a clockwork, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_skeleton_key_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_pour.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_clockwork_gr.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_clockwork_gr.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 243.1,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8588,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m85_clockwork_to_gear_train_gr",
+   "from": "clockwork",
+   "via": null,
+   "to": "gear_train",
+   "recipe": "spike_burst",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 8595,
+   "seed_used": 8595,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A clockwork made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen sprouts sharp magnetic spikes that grow longer with every pulse, then whip and curl into a set of interlocking gears, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_clockwork_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_spike2.png",
+     64,
+     0.35
+    ],
+    [
+     "g2_spike2.png",
+     88,
+     0.4
+    ],
+    [
+     "ov_gear_train_gr.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_gear_train_gr.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 244.2,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8595,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m86_gear_train_to_alarm_clock_gr",
+   "from": "gear_train",
+   "via": null,
+   "to": "alarm_clock",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 8602,
+   "seed_used": 8602,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A set of interlocking gears made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen melts into a twisting ribbon of liquid metal which swells, folds and hardens into a alarm clock, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_gear_train_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_pour.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_alarm_clock_gr.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_alarm_clock_gr.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 242.6,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8602,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m87_alarm_clock_to_astrolabe_gr",
+   "from": "alarm_clock",
+   "via": null,
+   "to": "astrolabe",
+   "recipe": "droplet_burst",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 8609,
+   "seed_used": 8609,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A alarm clock made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen shatters into hundreds of glossy liquid droplets that burst outward in a crown splash, hang in the air, and stream back together, fusing into a astrolabe, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_alarm_clock_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_splash.png",
+     72,
+     0.35
+    ],
+    [
+     "g2_splash.png",
+     96,
+     0.35
+    ],
+    [
+     "ov_astrolabe_gr.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_astrolabe_gr.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 243.8,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8609,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m88_astrolabe_to_ringed_planet_gr",
+   "from": "astrolabe",
+   "via": null,
+   "to": "ringed_planet",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 8616,
+   "seed_used": 8616,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A astrolabe made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen melts into a twisting ribbon of liquid metal which swells, folds and hardens into a ringed planet, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_astrolabe_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_pour.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_ringed_planet_gr.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_ringed_planet_gr.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 242.3,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8616,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m89_violin_to_harp_gr",
+   "from": "violin",
+   "via": null,
+   "to": "harp",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 8623,
+   "seed_used": 8623,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A violin made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen melts into a twisting ribbon of liquid metal which swells, folds and hardens into a harp, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_violin_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_pour.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_harp_gr.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_harp_gr.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 245.3,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8623,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m90_saxophone_to_french_horn_chrome",
+   "from": "saxophone",
+   "via": null,
+   "to": "french_horn",
+   "recipe": "ribbon",
+   "material": "chrome",
+   "guide": null,
+   "seed_planned": 8630,
+   "seed_used": 8630,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A saxophone made of mirror-polished liquid chrome metal reflecting soft teal and violet light melts into a twisting ribbon of liquid metal which swells, folds and hardens into a french horn, made of the same mirror-polished liquid chrome metal reflecting soft teal and violet light. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_saxophone_chrome.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_pour_chrome.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_french_horn_chrome.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_french_horn_chrome.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 245.2,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8630,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m91_scallop_shell_to_spiral_seashell_iridescent",
+   "from": "scallop_shell",
+   "via": null,
+   "to": "spiral_seashell",
+   "recipe": "ribbon",
+   "material": "iridescent",
+   "guide": null,
+   "seed_planned": 8637,
+   "seed_used": 8637,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A scallop shell made of pearlescent iridescent liquid metal shifting between violet, teal and gold melts into a twisting ribbon of liquid metal which swells, folds and hardens into a spiral seashell, made of the same pearlescent iridescent liquid metal shifting between violet, teal and gold. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_scallop_shell_iridescent.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_pour_iridescent.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_spiral_seashell_iridescent.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_spiral_seashell_iridescent.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 246.3,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8637,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m92_sand_dollar_to_snowflake_mercury",
+   "from": "sand_dollar",
+   "via": null,
+   "to": "snowflake",
+   "recipe": "droplet_burst",
+   "material": "mercury",
+   "guide": null,
+   "seed_planned": 8644,
+   "seed_used": 8644,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A sand dollar made of bright liquid mercury quicksilver with a wet beaded silver surface shatters into hundreds of glossy liquid droplets that burst outward in a crown splash, hang in the air, and stream back together, fusing into a snowflake, made of the same bright liquid mercury quicksilver with a wet beaded silver surface. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_sand_dollar_mercury.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_splash_mercury.png",
+     72,
+     0.35
+    ],
+    [
+     "ov_mid_splash_mercury.png",
+     96,
+     0.35
+    ],
+    [
+     "ov_snowflake_mercury.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_snowflake_mercury.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 247.1,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8644,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m93_amethyst_geode_to_fluorite_octahedron_black_glass",
+   "from": "amethyst_geode",
+   "via": null,
+   "to": "fluorite_octahedron",
+   "recipe": "spike_burst",
+   "material": "black_glass",
+   "guide": null,
+   "seed_planned": 8651,
+   "seed_used": 8651,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A amethyst geode made of molten glossy black obsidian glass with a deep violet inner glow sprouts sharp magnetic spikes that grow longer with every pulse, then whip and curl into a fluorite octahedron, made of the same molten glossy black obsidian glass with a deep violet inner glow. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_amethyst_geode_black_glass.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_spike_black_glass.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_mid_spike_black_glass.png",
+     88,
+     0.4
+    ],
+    [
+     "ov_fluorite_octahedron_black_glass.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_fluorite_octahedron_black_glass.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 262.3,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8651,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m95_solar_satellite_to_dragonfly_gr",
+   "from": "solar_satellite",
+   "via": null,
+   "to": "dragonfly",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 8665,
+   "seed_used": 8665,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A solar satellite made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen melts into a twisting ribbon of liquid metal which swells, folds and hardens into a dragonfly, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_solar_satellite_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_pour.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_dragonfly_gr.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_dragonfly_gr.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 300.4,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8665,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m96_maple_seed_to_feather_iridescent",
+   "from": "maple_seed",
+   "via": null,
+   "to": "feather",
+   "recipe": "ribbon",
+   "material": "iridescent",
+   "guide": null,
+   "seed_planned": 8672,
+   "seed_used": 8672,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A winged maple seed made of pearlescent iridescent liquid metal shifting between violet, teal and gold melts into a twisting ribbon of liquid metal which swells, folds and hardens into a feather, made of the same pearlescent iridescent liquid metal shifting between violet, teal and gold. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_maple_seed_iridescent.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_pour_iridescent.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_feather_iridescent.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_feather_iridescent.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 263.4,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8672,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m97_lotus_seedpod_to_sunflower_head_oil_slick",
+   "from": "lotus_seedpod",
+   "via": null,
+   "to": "sunflower_head",
+   "recipe": "droplet_burst",
+   "material": "oil_slick",
+   "guide": null,
+   "seed_planned": 8679,
+   "seed_used": 8679,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A lotus seedpod made of glossy black liquid metal covered in a swirling oil-slick rainbow film shatters into hundreds of glossy liquid droplets that burst outward in a crown splash, hang in the air, and stream back together, fusing into a sunflower head, made of the same glossy black liquid metal covered in a swirling oil-slick rainbow film. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_lotus_seedpod_oil_slick.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_mid_splash_oil_slick.png",
+     72,
+     0.35
+    ],
+    [
+     "ov_mid_splash_oil_slick.png",
+     96,
+     0.35
+    ],
+    [
+     "ov_sunflower_head_oil_slick.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_sunflower_head_oil_slick.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 243.6,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8679,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m98_seed_pod_burst_to_dandelion_gr",
+   "from": "seed_pod_burst",
+   "via": null,
+   "to": "dandelion",
+   "recipe": "gather",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 8686,
+   "seed_used": 8686,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A bursting seed pod made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen swirls, the droplets streaming inward and merging into each other until they gather and fuse into a dandelion, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_seed_pod_burst_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "ov_dandelion_gr.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_dandelion_gr.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 241.4,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8686,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  },
+  {
+   "id": "m99_hot_air_balloon_to_lightbulb_gr",
+   "from": "hot_air_balloon",
+   "via": null,
+   "to": "lightbulb",
+   "recipe": "ribbon",
+   "material": "gr",
+   "guide": null,
+   "seed_planned": 8693,
+   "seed_used": 8693,
+   "res": [
+    768,
+    448
+   ],
+   "fps": 24,
+   "frames": 137,
+   "prompt": "One continuous unbroken slow-motion macro shot with no cuts, steady locked camera, everything in constant fluid motion. A hot air balloon made of glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen melts into a twisting ribbon of liquid metal which swells, folds and hardens into a vintage light bulb, made of the same glossy black iridescent ferrofluid liquid metal with purple, teal and gold thin-film sheen. Real fluid physics, surface tension, viscous wet reflections, tiny beaded droplets, the same material throughout, single object centred, pure black void background with a soft teal glow halo, dramatic rim light from upper left. No text.",
+   "guides": [
+    [
+     "ov_hot_air_balloon_gr.png",
+     0,
+     1.0
+    ],
+    [
+     "g2_pour.png",
+     64,
+     0.35
+    ],
+    [
+     "ov_lightbulb_gr.png",
+     128,
+     1.0
+    ],
+    [
+     "ov_lightbulb_gr.png",
+     136,
+     1.0
+    ]
+   ],
+   "model": "ltx-2.3-22b-distilled-fp8 2-stage + x2 latent upscaler",
+   "compute_s": 242.4,
+   "gate_ok": true,
+   "gate_why": [],
+   "takes": [
+    {
+     "seed": 8693,
+     "ok": true,
+     "why": []
+    }
+   ],
+   "rejected_takes": []
+  }
+ ],
+ "not_rendered": [
+  {
+   "id": "m81_chess_knight_to_chess_bishop_chrome",
+   "why": "missing ov_chess_bishop_chrome.png,ov_chess_bishop_chrome.png"
+  },
+  {
+   "id": "m82_chess_bishop_to_chess_queen_chrome",
+   "why": "missing ov_chess_bishop_chrome.png,ov_chess_queen_chrome.png,ov_chess_queen_chrome.png"
+  },
+  {
+   "id": "m83_chess_queen_to_chess_king_chrome",
+   "why": "missing ov_chess_queen_chrome.png,ov_chess_king_chrome.png,ov_chess_king_chrome.png"
+  },
+  {
+   "id": "m94_satellite_dish_to_space_probe_chrome",
+   "why": "missing ov_satellite_dish_chrome.png,ov_space_probe_chrome.png,ov_space_probe_chrome.png"
+  }
+ ]
+}
