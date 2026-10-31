@@ -157,6 +157,11 @@ def collecting():
         _LINES.reset(token)
 
 
+def current() -> list[dict] | None:
+    """The lines the running Make has gathered so far (None outside one)."""
+    return _LINES.get()
+
+
 def say(rid: str | list[str], text: str) -> str:
     """A ``[taste]`` line: the sentence, then the rule (or rules) it speaks for in brackets."""
     ids = [rid] if isinstance(rid, str) else list(rid)
@@ -214,8 +219,25 @@ def _family(noun: str) -> str:
         return ""
 
 
+_JOINS = re.compile(r"\s(?:with|holding|of|on|in|under|from|made|full|into|topped|carved|crowned|perched|curled|mid)\s")
+
+
+def head_of(text: str) -> str:
+    """The head of a described noun, as plain words: what it is before what it has (``dragon skull with curling horns``
+    is a ``dragon skull``), the way ``stills.noun_keys`` reads one."""
+    return _JOINS.split(" " + words_of(text) + " ", maxsplit=1)[0].strip()
+
+
 def _matches(r: dict, text: str) -> bool:
-    return any(_has(w, text) for w in r.get("words") or []) and not any(_has(x, text) for x in r.get("except") or [])
+    """A rule's words in ``text`` (plain words), none of its ``except`` phrases there. A rule with ``head: true`` reads
+    only the noun's head and wants a word at its end: ``ram golden horn`` is a horn, ``horned demon skull`` and ``dragon
+    skull with curling horns`` are skulls."""
+    if r.get("head"):
+        head = head_of(text)
+        hit = any(f" {head}".endswith(f" {words_of(w)}") for w in r.get("words") or [] if words_of(w))
+    else:
+        hit = any(_has(w, text) for w in r.get("words") or [])
+    return hit and not any(_has(x, text) for x in r.get("except") or [])
 
 
 def ban_for(noun: Any, family: str | None = None) -> dict | None:
@@ -803,8 +825,9 @@ def effects_by_shot(shots: list[dict], names: list[str], stills: list | None = N
             s["fx_names"] = rest
             did["kaleido"] += 1
         if did["kaleido"]:
-            note("no-kaleido-on-living", f"the kaleido steps aside on {did['kaleido']} shot{'s' if did['kaleido'] != 1 else ''} "
-                                         f"that morph a living thing")
+            n = did["kaleido"]
+            note("no-kaleido-on-living", f"the kaleido steps aside on {n} shot{'s' if n != 1 else ''} that "
+                                         f"morph{'' if n != 1 else 's'} a living thing")
     return did
 
 

@@ -282,19 +282,22 @@ def nouns_for(vibe: str, count: int, have: set[str] | None = None, seed: int | N
     """``count`` subjects for ``vibe`` from the catalogue's families, weighted by the vibe's entry (else the
     defaults), skipping ``have`` and the banned props. Weighted sampling without replacement, so a core family
     leads but never crowds the others out."""
+    from xenoform import taste as _taste
+
     data = subjects()
     fams = data.get("families") or {}
     entry = (data.get("vibes") or {}).get(vibe) or {}
     weights = dict(entry.get("weights") or data.get("default_weights") or {})
     for fam in entry.get("avoid") or []:
         weights.pop(fam, None)
+    weights = _taste.family_weights(weights)  # the taste file: natural and iconic families weigh more, banned ones are out
     have = {h.lower() for h in (have or set())}
     rng = random.Random(seed)
     pool = []
     for fam, w in weights.items():
         for noun in (fams.get(fam) or {}).get("nouns") or []:
             noun = str(noun).strip().lower()
-            if noun in have or not _ok_noun(noun):
+            if noun in have or not _ok_noun(noun) or not _taste.noun_ok(noun, fam):
                 continue
             pool.append((rng.random() ** (1.0 / max(float(w), 0.01)), noun))
     pool.sort(reverse=True)
@@ -409,6 +412,9 @@ def family_for_cut(vibe: str, words: set[str] | None = None, seed: int | None = 
         return named
     entry = (data.get("vibes") or {}).get(vibe) or {}
     weights = dict(entry.get("weights") or data.get("default_weights") or {})
+    from xenoform import taste as _taste
+
+    weights = _taste.family_weights(weights)  # natural and iconic first, banned families out (unchanged with no taste file)
     if not weights:
         return ""
     top = max(weights.values())
@@ -421,12 +427,14 @@ def family_for_cut(vibe: str, words: set[str] | None = None, seed: int | None = 
 def family_nouns(vibe: str, family: str, count: int, have: set[str] | None = None) -> list[str]:
     """``count`` nouns of ``family`` the vibe does not have yet, in catalogue order (the idea line's family grown
     for the cut, so its objects belong together)."""
+    from xenoform import taste as _taste
+
     row = (subjects().get("families") or {}).get(family) or {}
     have = {h.lower() for h in (have or set())}
     out = []
     for noun in row.get("nouns") or []:
         noun = str(noun).strip().lower()
-        if noun not in have and _ok_noun(noun):
+        if noun not in have and _ok_noun(noun) and _taste.noun_ok(noun, family):  # never grow what the taste file bans
             out.append(noun)
         if len(out) >= count:
             break

@@ -2962,6 +2962,10 @@ def _run_job(job_id: str, audio_path: Path, body: dict, cfg: dict, out: Path, ca
                 log.exception("post QA")
         with _LOCK:
             job = _JOBS[job_id]
+            taste_lines = list(result.get("taste_lines") or []) if isinstance(result, dict) else []
+            if taste_lines:  # what the taste file did in the Make (the pick, the kinds, the looks), after the body's own lines
+                gr = job.setdefault("guardrails", {"applied": [], "warnings": [], "messages": []})
+                gr.setdefault("messages", []).extend(line for line in taste_lines if line not in gr["messages"])
             if qa_report is not None:
                 job["qa"] = qa_report
                 gr = job.setdefault("guardrails", {"applied": [], "warnings": [], "messages": []})
@@ -3078,10 +3082,12 @@ def _pool_count(body: dict) -> int | None:
     """The stills a Make of ``body`` may draw on (the asked vibe's and the pool it borrows), as job_timing counts them."""
     try:
         from xenoform import morph_pass as _mp
+        from xenoform import taste as _taste
 
         cat = _mp.catalogue()
         pool_vibe, asked = _mp.vibe_for(body), str(body.get("vibe") or "")
-        n = len(cat.get(pool_vibe) or []) + (len(cat.get(asked) or []) if asked and asked != pool_vibe else 0)
+        rows = list(cat.get(pool_vibe) or []) + (list(cat.get(asked) or []) if asked and asked != pool_vibe else [])
+        n = len(_taste.usable(rows))  # the taste file's bans and one-still-an-object off first, as the Make counts them
         return n or None
     except Exception:
         return None

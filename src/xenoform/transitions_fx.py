@@ -635,7 +635,17 @@ def guard(kinds: Sequence[str], *, expert: bool = False, seed: int = 0, cap: int
     used: dict[str, int] = {}
     overflow: dict[str, int] = {}
     out, msgs = [], []
+    from xenoform import taste as _taste
+
+    once = _taste.kind_limits()["no_repeat"] and not expert  # the taste file's no-kind-twice: never the kind just used
+    repicked = 0
     for k in kinds:
+        if once and out:
+            last = next((x for x in reversed(out) if x in TRANSITIONS and x not in EXEMPT_FROM_CAP), None)
+            if last is not None and k == last:
+                # the premium kind just used comes again at the next boundary: another premium pick, or a clean cut
+                k = pick_premium({**used, last: cap}, rng, max_per_type=cap, allowed=allowed, banned=banned)
+                repicked += 1
         nk = k
         if k in CLASSIC and not classic_ok:
             nk = pick_premium(used, rng, max_per_type=cap, allowed=allowed, banned=banned)
@@ -656,6 +666,10 @@ def guard(kinds: Sequence[str], *, expert: bool = False, seed: int = 0, cap: int
     for kind, n in overflow.items():
         tail = "boundary is a clean beat cut" if n == 1 else "boundaries are clean beat cuts"
         msgs.append(f"{kind} already used {cap}x; {n} more {tail}")
+    if repicked:
+        line = f"{repicked} premium transition{'s' if repicked != 1 else ''} picked again: never the kind just used"
+        msgs.append(line + " (taste)")
+        _taste.note("no-kind-twice", line)
     return out, msgs
 
 

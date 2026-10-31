@@ -684,13 +684,18 @@ def long_song_chain(state: dict, directed: dict, audio_path: Path, shots: list[d
     asked = str(state.get("vibe") or "")
     choice = _scenes_choice(state)
 
+    from xenoform import taste as _taste
+
     def pool_count() -> int:
         # the rows the scenes choice and the Backdrop let the cut draw on (objects or settings, scenes alone, both); a vibe
-        # asked for scenes or places it has none of falls back to its objects, as the pick does
+        # asked for scenes or places it has none of falls back to its objects, as the pick does. The taste file's bans,
+        # its one-still-an-object and its runs come off first (taste.usable), so a pool they shrink plans fewer morphs
+        # rather than repeat a still
         cat = _catalogue()
         rows = list(cat.get(pool_vibe) or []) + (list(cat.get(asked) or []) if asked and asked != pool_vibe else [])
         backdrop = _backdrop_choice(state, rows)
-        return len(_rows_of_kind(rows, choice, backdrop)) or len(_rows_of_kind(rows, "off", "plain")) or len(rows)
+        return len(_taste.usable(_rows_of_kind(rows, choice, backdrop))) or len(_taste.usable(_rows_of_kind(rows, "off", "plain"))) \
+            or len(_taste.usable(rows))
 
     pool_n = pool_count()
     tier = "cloud" if opt["cloud"] else opt["tier"]
@@ -1071,10 +1076,87 @@ def story_plan(duration: float, beats: list, sections: list[dict], drop: float |
 
 
 def shape_shots(shots: list[dict], state: dict, m: dict, wobble_house: dict | None, *, look: str = "",
-                beats: list | None = None) -> dict | None:
+                beats: list | None = None, stills: list | None = None, house: dict | None = None,
+                drop: float | None = None) -> dict | None:
     """The knobs on the cut's shots, in place, the same for a Make and a re-cut: ``apply_macros`` for a cut shaped as
     before (``pacing.legacy``) or one with no section roles, else the pacing engine's profile (``pacing.shape``: each
-    passage's Chaos, Intensity, timing, one effect and look). Returns what the profile did (None: the knobs alone)."""
+    passage's Chaos, Intensity, timing, one effect and look). Returns what the profile did (None: the knobs alone).
+
+    Then the taste file's rules a shot at a time (``taste_shots``): the opener at the quiet Intensity, no flash look
+    before the first drop, the effects one at a time and the kaleido off living things. ``stills`` (rows, or the
+    record's files), the ``house`` and the plan's ``drop`` are what those read; nothing changes with no taste file."""
+    import copy as _copy
+
+    from xenoform import taste as _taste
+
+    cap = _taste.opener()
+    calm = None
+    if cap is not None:
+        try:
+            loud = float((m or {}).get("intensity", 0.5)) > cap[0] + 1e-9
+        except (TypeError, ValueError):
+            loud = False
+        calm = _copy.deepcopy(shots) if loud else None  # the same shots shaped at the opener's Intensity, below
+    shaped = _shape_knobs(shots, state, m, wobble_house, look=look, beats=beats)
+    if _taste.active():
+        taste_shots(shots, state, m, wobble_house, look=look, beats=beats, stills=stills, house=house, drop=drop, calm=calm)
+    return shaped
+
+
+def taste_shots(shots: list[dict], state: dict, m: dict, wobble_house: dict | None, *, look: str = "",
+                beats: list | None = None, stills: list | None = None, house: dict | None = None,
+                drop: float | None = None, calm: list[dict] | None = None) -> dict:
+    """The taste file's per-shot rules on shaped shots, in place (``shape_shots`` calls it for a Make and a re-cut alike):
+
+    - ``quiet-opener``: the opener's shots (``taste.opener_shots``) play no hotter than the knobs at its Intensity would
+      shape them (``calm``, the same shots shaped with the Intensity capped);
+    - ``no-flash-before-drop``: a shot before the first drop whose look is a flash look plays the calm look instead
+      (``beatfx.resolve_dance_preset`` with ``before_drop``), the house look's opening flash its VJ preset;
+    - ``one-effect`` and ``no-kaleido-on-living``: the cut's effects take turns, and step aside from the kaleido on a shot
+      that morphs a living thing (``taste.effects_by_shot``).
+
+    Returns what it did."""
+    from xenoform import effects as _E
+    from xenoform import taste as _taste
+
+    did: dict = {}
+    got = _taste.opener()
+    if got is not None and calm is not None and len(calm) == len(shots):
+        knobs = {**(m or {}), "intensity": got[0]}
+        _shape_knobs(calm, state, knobs, wobble_house, look=look, beats=beats)
+        lowered = 0
+        for i in _taste.opener_shots(shots, drop):
+            want = float(calm[i].get("fx_intensity", 1.0))
+            if float(shots[i].get("fx_intensity", 1.0)) > want + 1e-9:
+                shots[i]["fx_intensity"] = round(want, 3)
+                lowered += 1
+        if lowered:
+            did["opener"] = lowered
+            _taste.note("quiet-opener", f"the opener's {lowered} shot{'s' if lowered != 1 else ''} at Intensity {got[0]:.2f}: "
+                                        f"a quiet hook")
+    if _taste.flash_looks():
+        calmed = 0
+        vibe = str((state or {}).get("vibe") or "")
+        for i in _taste.before_drop(shots, drop):
+            mine = str(shots[i].get("dance_fx") or look or "")
+            if not mine:
+                continue
+            instead = beatfx.resolve_dance_preset(mine, vibe, house, before_drop=True, index=i)
+            if instead != mine:
+                shots[i]["dance_fx"] = instead
+                calmed += 1
+        if calmed:
+            did["looks"] = calmed
+            _taste.note("no-flash-before-drop", f"{calmed} shot{'s' if calmed != 1 else ''} before the first drop "
+                                                f"play{'' if calmed != 1 else 's'} a calm look instead of a flash")
+    names = [n for n in _E.names_of(state) if n != "smear"]
+    if names:
+        did.update({k: v for k, v in _taste.effects_by_shot(shots, names, stills).items() if v})
+    return did
+
+
+def _shape_knobs(shots: list[dict], state: dict, m: dict, wobble_house: dict | None, *, look: str = "",
+                 beats: list | None = None) -> dict | None:
     from xenoform import effects as _E
     from xenoform import morph_timing as _mt
     from xenoform import pacing as _pc
@@ -1116,12 +1198,20 @@ def tame_rules(state: dict, shots: list[dict], fps: int, beats: list | None) -> 
 
 
 def foreshadow_mode(opt: dict, vibe: str, state: dict) -> str:
-    """The foreshadow layer's mode for the cut; Breathe never slices (the strips read as the bar wipe Tys tired of)."""
+    """The foreshadow layer's mode for the cut; Breathe never slices (the strips read as the bar wipe Tys tired of), and
+    neither does any cut under the taste file's ``no-slices``."""
     from xenoform import foreshadow as _fs
     from xenoform import pacing as _pc
+    from xenoform import taste as _taste
 
     mode = _fs.mode_for(opt["foreshadow"], vibe)
-    return "trace" if mode == "slices" and _pc.breathe_of(state) else mode
+    if mode == "slices" and _pc.breathe_of(state):
+        return "trace"
+    instead = _taste.slices_instead() if mode == "slices" else ""
+    if instead:
+        _taste.note("no-slices", f"the sliced foreshadow draws bars: the {instead} instead")
+        return instead
+    return mode
 
 
 BLOCKY = {"datamosh": "chroma-split"}  # the blocky transitions and what stands in for them while the smear is off
@@ -1370,10 +1460,27 @@ def _draft_clips(shots, stills, work, cfg, seed, vibe, client, cancel, state=Non
                         size=size, styles=styles, prompt=prompt, negative=negative)
 
 
+def _gathers_taste(fn: Callable) -> Callable:
+    """Run ``fn`` (a Make, a re-cut) gathering the ``[taste]`` lines the taste file's hooks note on the way
+    (``taste.collecting``); ``fn`` writes them into its record."""
+    import functools
+
+    @functools.wraps(fn)
+    def run(*args, **kwargs):
+        from xenoform import taste as _taste
+
+        with _taste.collecting():
+            return fn(*args, **kwargs)
+
+    return run
+
+
+@_gathers_taste
 def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg: dict, state: dict,
                report: Callable[[str, float, str], None], *, cancel: Callable[[], bool] | None = None,
                client=None, engine: str | None = None) -> dict:
-    """Plan, render on open weights, then compose with the beat FX at the chosen aspect."""
+    """Plan, render on open weights, then compose with the beat FX at the chosen aspect. The taste file's hooks
+    (xenoform.taste) say what they did as ``[taste]`` lines, kept in the record's ``taste`` block."""
     from xenoform import idea as _idea
     from xenoform import morph_pass as _mp
 
@@ -1445,7 +1552,9 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     vibe, stills = (vibe, stills) if long_song else stills_for({**state, "cut_plan": plan if plan.get("stills") else None}, len(shots) + 1,
                                                                 **_scene_kw(state, shots, len(shots) + 1))
     repeat_note = ""
-    unique = len({str(s.get("path")) for s in stills})
+    from xenoform import taste as _taste
+
+    unique = _taste.distinct(stills)  # by file, and by object when the taste file says no object twice
     if unique < len(stills) and not plan.get("stills") and not long_song:
         # guardrail no_repeat: the still pool wrapped. Use fewer, longer morphs so no still repeats.
         n = max(1, unique - 1)
@@ -1658,6 +1767,10 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     # and played 1:1 like a performer shot. The own images already lead the morph chain (state["morph_targets"]).
     own_info: dict = {"clips": 0, "images": len([p for p in (state.get("morph_targets") or []) if p]), "slots": [], "notes": []}
     own_clips = [c for c in (state.get("own_clips") or []) if isinstance(c, dict) and c.get("path")]
+    if own_clips and _taste.no_mix():  # clips or objects, never both (the guardrail says so first; a caller past it too)
+        _taste.note("clips-or-objects", f"an object cut takes no clips: {len(own_clips)} clip{'s' if len(own_clips) != 1 else ''} "
+                                        f"left out")
+        own_clips = []
     if own_clips:
         from xenoform import own_media
 
@@ -1706,13 +1819,15 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
         size = (540, 960)  # Draft: the morphs are 512x288 upscales anyway; the look pass runs 4x faster here
     report("assemble", 0.6, "Cutting to the beat" + (" with beat FX" if opt["fx"] else ""))
     tmp = Path(out_path).with_name(Path(out_path).stem + ".simple.mp4")
-    m = macros(state)
+    m = _taste.cap_macros(macros(state), state)  # the taste file's caps (Chaos under Breathe); the knobs as set without one
     import copy as _copy
 
     plan_shots = _copy.deepcopy(shots)  # before the macros: a re-cut starts from here
     look_preset = beatfx.resolve_dance_preset(opt["dance_fx"], vibe, hp)
-    # the knobs, or for a paced cut each passage's profile (pacing.shape): the same helper a re-cut calls
-    shaped = shape_shots(shots, state, m, hp if vertical_house else None, look=look_preset, beats=directed.get("beats") or [])
+    # the knobs, or for a paced cut each passage's profile (pacing.shape): the same helper a re-cut calls; then the taste
+    # file's per-shot rules (a quiet opener, no flash look before the first drop, one effect at a time)
+    shaped = shape_shots(shots, state, m, hp if vertical_house else None, look=look_preset, beats=directed.get("beats") or [],
+                         stills=stills, house=hp, drop=plan.get("drop"))
     if shaped:
         notes.append({"pacing": shaped})
     # when the change happens inside each morph (morph_timing): Smooth as the model made it, On the beat, or Snap
@@ -1821,6 +1936,10 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
             "window": window_of(state, duration)}
     if made.get("tame"):
         info["pacing"]["tame"] = made["tame"]
+    if _taste.active():  # what the taste file did in this Make, as [taste] lines (none in the record without the file)
+        info["taste"] = _taste.record(_taste.current())
+        for line in info["taste"]["lines"]:
+            log.info("%s", line)
     (work / "simple.json").write_text(json.dumps(info, indent=1, default=str), encoding="utf-8")
     return info
 
@@ -1928,6 +2047,7 @@ def stills_animatic(directed: dict, state: dict, audio_path: Path, out_path: Pat
             "size": f"{w}x{h}", "fps": fps}
 
 
+@_gathers_taste
 def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Callable[[str, float, str], None] | None = None,
                      cfg: dict | None = None) -> dict:
     """Re-compose a finished Simple job from its cached morphs with new knobs, look, orbit or beat FX, and with the
@@ -1937,7 +2057,11 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
     the knob keys (``macros``, ``dance_fx``, ...) and, when the timeline sends them, ``shot_overrides`` and
     ``boundary_overrides`` (whole maps: each replaces the record's; absent, the record's are kept, so a re-cut with new
     knobs keeps every timeline edit). The job's ``xenoform.mp4`` is replaced (``publish_file``) and the updated record
-    returned."""
+    returned. The taste file's rules apply as they do in a Make, through the same helpers (the kinds, the looks, the
+    effects, the foreshadow, the knobs); the timeline's own picks stay the user's. What they did is the record's
+    ``taste_recut`` block."""
+    from xenoform import taste as _taste
+
     job_dir = Path(job_dir)
     work = job_dir / "simple"
     rec_path = work / "simple.json"
@@ -1965,11 +2089,12 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
 
     shots = _copy.deepcopy(shots)
     n = len(shots)
-    m = macros(state)
+    m = _taste.cap_macros(macros(state), state)  # as the Make capped them
     vibe = str(rec.get("vibe") or state.get("vibe") or "")
     look_preset = beatfx.resolve_dance_preset(opt["dance_fx"], vibe, hp)
     shaped = shape_shots(shots, state, m, hp if rec.get("vertical_house") else None, look=look_preset,
-                         beats=list(rec.get("beats") or []))
+                         beats=list(rec.get("beats") or []), stills=list(rec.get("stills") or []), house=hp,
+                         drop=rec.get("drop"))
     from xenoform import effects as _E
 
     effect_names = _E.names_of(state)
@@ -2049,6 +2174,8 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
             pace["line"] = _pc.summary_line(record_shots, breathe=pace["breathe"], drop=drop,
                                             song_start=float((rec.get("window") or {}).get("song_start") or 0.0))
         rec["pacing"] = pace
+    if _taste.active():  # what the taste file did in this re-cut (the Make's own block stays as it was)
+        rec["taste_recut"] = _taste.record(_taste.current())
     rec_path.write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
     return rec
 

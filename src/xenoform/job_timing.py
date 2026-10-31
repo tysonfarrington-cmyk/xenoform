@@ -112,10 +112,12 @@ def plan_for(features: dict | None, body: dict | None, audio_path=None) -> dict[
         pool = None
         try:  # the vibe's pool caps the morphs (no object twice), so the estimate counts it
             from xenoform import morph_pass as _mp
+            from xenoform import taste as _taste
 
             cat = _mp.catalogue()
             pool_vibe, asked = _mp.vibe_for(body), str(body.get("vibe") or "")
-            pool = len(cat.get(pool_vibe) or []) + (len(cat.get(asked) or []) if asked and asked != pool_vibe else 0)
+            rows = list(cat.get(pool_vibe) or []) + (list(cat.get(asked) or []) if asked and asked != pool_vibe else [])
+            pool = len(_taste.usable(rows))  # as the Make counts it: the taste file's bans off first
         except Exception:
             pool = None
         # options() folds Fast and Cloud into tier "draft" with a flag; the plan wants the real tier (its cost and cap)

@@ -1,6 +1,6 @@
 {
  "version": 1,
- "note": "Tys's standing rules as data (docs/TASTE.md says what each one does, why, and the day it came from). Every rule has an id, a kind, its data and a one-line reason. The app reads this file at every Make and re-cut (a change needs no restart); a missing or broken file means no rules at all. To drop a rule, delete it or give it \"off\": true. Kinds: subject (stills whose noun holds one of the words are never picked by the app), family (whole catalogue families never picked), run (at most max stills of the group in one cut), look (a look kept but demoted: a note, the back of the pool, or an effect that steps aside), limit (a cap on a knob or a picker), weight (the order families are drawn in).",
+ "note": "Tys's standing rules as data (docs/TASTE.md says what each one does, why, and the day it came from). Every rule has an id, a kind, its data and a one-line reason. The app reads this file at every Make and re-cut (a change needs no restart); a missing or broken file means no rules at all. To drop a rule, delete it or give it \"off\": true. Kinds: subject (stills whose noun holds one of the words, as whole words, are never picked by the app; except spares a phrase; head: true reads only the noun's head, so a skull with horns is a skull), family (whole catalogue families never picked), run (at most max stills of the group in one cut), look (a look kept but demoted: a note, the back of the pool, or an effect that steps aside), limit (a cap on a knob or a picker), weight (the order families are drawn in).",
  "rules": [
   {"id": "no-cups-or-jugs", "kind": "subject", "since": "2026-10-29",
    "words": ["cup", "cups", "teacup", "teacups", "mug", "mugs", "jug", "jugs", "pitcher", "pitchers", "tankard"],
@@ -44,7 +44,7 @@
   {"id": "no-sphinx-or-snake", "kind": "subject", "since": "2026-10-30",
    "words": ["sphinx", "snake", "snakes", "cobra", "anubis", "pharaoh", "ankh"],
    "reason": "The neon Egypt look with the sphinx and the snake is out; the scarab stays, it is a favourite."},
-  {"id": "no-plain-horn", "kind": "subject", "since": "2026-10-30",
+  {"id": "no-plain-horn", "kind": "subject", "since": "2026-10-30", "head": true,
    "words": ["horn", "horns"],
    "except": ["unicorn horn", "french horn"],
    "reason": "A horn turned up at random among the chrome relics (the ram's golden horns) and read as plain."},
@@ -85,7 +85,7 @@
    "reason": "White flashes are intense enough to be rare accents: no flash look before the first drop, the first one arrives with it."},
   {"id": "no-slices", "kind": "limit", "since": "2026-10-30", "foreshadow": "slices", "instead": "trace",
    "reason": "The sliced foreshadow draws bars, part of the repeated bar transition he grew tired of; the trace does the same job."},
-  {"id": "no-kind-twice", "kind": "limit", "since": "2026-10-25", "handoffs": "no_repeat",
+  {"id": "no-kind-twice", "kind": "limit", "since": "2026-10-30", "handoffs": "no_repeat",
    "reason": "No transition type twice in a row: the same handoff again and again is what made the bars repetitive."},
   {"id": "wipes-a-quarter", "kind": "limit", "since": "2026-10-30", "handoff": "wipe", "share": 0.25,
    "reason": "The strip wipe was overused; the montage kept wipes under a quarter of its handoffs."},

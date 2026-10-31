@@ -59,6 +59,7 @@ BANNED = ["teacup", "pitcher", "coffee mug", "ship wheel", "steering wheel", "va
           "ram horn", "lightning bolt", "dna helix", "anatomical heart", "glass anatomical heart", "top hat",
           "pendulum clock", "wine glass", "kettle", "cocktail shaker"]
 SPARED = ["pitcher plant", "buttercup", "unicorn horn", "starry wizard hat", "lightning-struck tower", "horned demon skull",
+          "dragon skull with curling horns", "mechanical heart with pistons", "mended heart",
           "scarab beetle", "serpent", "moai head", "stonehenge", "jellyfish", "rose", "lotus", "nautilus", "phoenix",
           "dragon", "koi", "manta ray", "orchid", "pocket watch", "chess knight", "cupola", "wheelbarrow"]
 

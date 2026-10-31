@@ -3445,8 +3445,10 @@ function guardDetails(job) {
   const lines = guardLines((job && job.guardrails && job.guardrails.messages) || []);
   if (!lines.length) return "";
   const qa = lines.filter((m) => m.startsWith("[qa]")).length;
-  const clamps = lines.length - qa;
-  const head = [clamps ? `${clamps} setting${clamps === 1 ? "" : "s"} adjusted` : "", qa ? `${qa} check${qa === 1 ? "" : "s"} flagged` : ""].filter(Boolean).join(" · ");
+  const taste = lines.filter((m) => m.startsWith("[taste]")).length;  // what Tys's taste file did (configs/taste.json)
+  const clamps = lines.length - qa - taste;
+  const head = [clamps ? `${clamps} setting${clamps === 1 ? "" : "s"} adjusted` : "", taste ? `${taste} taste note${taste === 1 ? "" : "s"}` : "",
+    qa ? `${qa} check${qa === 1 ? "" : "s"} flagged` : ""].filter(Boolean).join(" · ");
   return `<details class="guardnotes"><summary>Guardrails: ${esc(head)}</summary><ul>${lines.map((m) => `<li>${esc(m)}</li>`).join("")}</ul></details>`;
 }
 // The knobs column folds to a slim tab on the cut's screen (remembered), so the video and the timeline get the width.

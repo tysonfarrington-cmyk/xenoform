@@ -96,7 +96,7 @@ NO_KIND_ROLES = ("intro", "build", "outro")  # Breathe: plain handoffs here (the
 
 
 def _pick_paced(shots: list[dict], macros: dict | None, beats, fps: int, *, seed: int, premium: list | None, smear: str,
-                breathe: bool) -> list[dict | None]:
+                breathe: bool, limits: dict | None = None) -> list[dict | None]:
     """``pick`` for a cut the pacing engine shaped (``pacing.shape``): each passage takes the share of its handoffs its
     own Chaos asks for (a shot's ``chaos``: the knob, capped by the passage under Breathe, lifted in a drop by its heat;
     none in an intro, a build or an outro under Breathe); a drop run's first handoff and every planted ``event`` come
@@ -165,7 +165,10 @@ def _pick_paced(shots: list[dict], macros: dict | None, beats, fps: int, *, seed
     chosen = sorted(set(chosen))
     smear = smear_of(smear)
     smear_cap = 0 if smear == "off" else max(1, len(chosen) // SMEAR_SHARE) if smear == "sparing" else len(chosen)
-    wipe_cap = int(WIPE_SHARE * (n - 1))
+    lim = limits or {}
+    # the taste file's numbers when it gives them (wipes-a-quarter, strobe-at-full-heat), the pacing engine's own otherwise
+    wipe_cap = int((WIPE_SHARE if lim.get("wipe_share") is None else float(lim["wipe_share"])) * (n - 1))
+    strobe_heat = 1.0 if lim.get("strobe_heat") is None else float(lim["strobe_heat"])
     rot = int(seed) % len(KINDS)
     uses = {k: 0 for k in KINDS}
     assigned: dict[int, str] = {}
@@ -175,7 +178,7 @@ def _pick_paced(shots: list[dict], macros: dict | None, beats, fps: int, *, seed
         t = float(shots[i].get("start") or 0.0)
         prefer = PREFER["drop"] if entry(i) else PREFER.get(role(i), PREFER_DEFAULT)
         return [k for k in prefer if k not in exclude
-                and (k != "strobe" or (heat(i) >= 1.0 and event(i) and all(abs(t - ts) >= STROBE_GAP_S for ts in strobe_times)))
+                and (k != "strobe" or (heat(i) >= strobe_heat and event(i) and all(abs(t - ts) >= STROBE_GAP_S for ts in strobe_times)))
                 and (k != "wipe" or uses["wipe"] < wipe_cap)
                 and (k != "smear" or (uses["smear"] < smear_cap and not entry(i)))]
 
@@ -217,9 +220,45 @@ def pick(shots: list[dict], macros: dict | None, beats, fps: int, *, seed: int =
     of a short cut), and on such a plan the wipes from the drop on are irises. ``smear`` (``SMEAR``) is the blocky smear:
     "off" (the default since 28 Oct) leaves it to the timeline, "sparing" allows one handoff in ``SMEAR_SHARE`` and
     never the drop, "on" lets it in like the other kinds. ``paced`` (``{"breathe": bool}``, a cut the pacing engine
-    shaped) picks by passage instead (``_pick_paced``)."""
-    if paced is not None:
-        return _pick_paced(shots, macros, beats, fps, seed=seed, premium=premium, smear=smear, breathe=bool(paced.get("breathe")))
+    shaped) picks by passage instead (``_pick_paced``).
+
+    The taste file's limits on the kinds (``taste.kind_limits``) apply to both: wipes at most a share of the handoffs
+    (``wipes-a-quarter``), the strobe only on a boundary at full heat (``strobe-at-full-heat``: the main drop; a shot's
+    ``heat``, else 1 for the drop boundary), and never the kind just used, which both pickers already keep. What they
+    changed is said as a ``[taste]`` line; the kinds are as before with no taste file."""
+    from xenoform import taste as _taste
+
+    lim = _taste.kind_limits() if _taste.active() else None
+    if not lim or (lim.get("wipe_share") is None and lim.get("strobe_heat") is None):
+        lim = None
+
+    def run(limits: dict | None) -> list[dict | None]:
+        if paced is not None:
+            return _pick_paced(shots, macros, beats, fps, seed=seed, premium=premium, smear=smear,
+                               breathe=bool(paced.get("breathe")), limits=limits)
+        return _pick(shots, macros, beats, fps, seed=seed, premium=premium, drop=drop, smear=smear, limits=limits)
+
+    out = run(lim)
+    if lim is not None:
+        plain = run(None)
+        if plain != out:
+            def count(picks: list, kind: str) -> int:
+                return sum(1 for p in picks if p and p.get("kind") == kind)
+
+            bits = []
+            if count(plain, "wipe") > count(out, "wipe"):
+                bits.append(f"wipes {count(plain, 'wipe')} to {count(out, 'wipe')} of {max(0, len(shots) - 1)} handoffs")
+            if count(plain, "strobe") > count(out, "strobe"):
+                bits.append(f"strobes {count(plain, 'strobe')} to {count(out, 'strobe')}, only at full heat")
+            ids = (["wipes-a-quarter"] if any(b.startswith("wipes") for b in bits) else []) + \
+                  (["strobe-at-full-heat"] if any(b.startswith("strobes") for b in bits) else [])
+            if bits:
+                _taste.note(ids, "handoff kinds: " + "; ".join(bits))
+    return out
+
+
+def _pick(shots: list[dict], macros: dict | None, beats, fps: int, *, seed: int = 0, premium: list | None = None,
+          drop: float | None = None, smear: str = "off", limits: dict | None = None) -> list[dict | None]:
     smear = smear_of(smear)
     n = len(shots)
     out: list[dict | None] = [None] * n
@@ -271,12 +310,23 @@ def pick(shots: list[dict], macros: dict | None, beats, fps: int, *, seed: int =
         return PREFER.get(str(shots[i].get("section") or ""), PREFER_DEFAULT)
 
     smear_cap = 0 if smear == "off" else max(1, len(chosen) // SMEAR_SHARE) if smear == "sparing" else len(chosen)
+    lim = limits or {}
+    wipe_cap = None if lim.get("wipe_share") is None else int(float(lim["wipe_share"]) * (n - 1))
+    strobe_heat = lim.get("strobe_heat")
+
+    def heat_at(i: int) -> float:  # a shot's own heat (a paced plan), else the drop boundary is the main drop's
+        try:
+            return float(shots[i]["heat"]) if shots[i].get("heat") is not None else (1.0 if kind_of(i) == "drop" else 0.0)
+        except (TypeError, ValueError):
+            return 0.0
 
     def allowed_for(i: int, exclude: set) -> list[str]:
         t = float(shots[i].get("start") or 0.0)
         prefer = prefer_for(i)
         return [k for k in prefer if k not in exclude
-                and (k != "strobe" or (chaos > STROBE_MIN_CHAOS and all(abs(t - ts) >= STROBE_GAP_S for ts in strobe_times)))
+                and (k != "strobe" or (chaos > STROBE_MIN_CHAOS and all(abs(t - ts) >= STROBE_GAP_S for ts in strobe_times)
+                                       and (strobe_heat is None or heat_at(i) >= float(strobe_heat))))
+                and (k != "wipe" or wipe_cap is None or uses["wipe"] < wipe_cap)
                 and (k != "smear" or (uses["smear"] < smear_cap and not (smear == "sparing" and kind_of(i) == "drop")))]
 
     def take(i: int, kind: str) -> None:
