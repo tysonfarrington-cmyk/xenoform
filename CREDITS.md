@@ -17,9 +17,11 @@ No picture or clip in this repo is a CC BY work that needs a credit line, so non
 
 | Files | Credit |
 | --- | --- |
-| The 20 extended vibes and `black.jpg` | Written by the same local Z-Image Turbo and LTX-Video 0.9.5 runs as the stills and clip packs above (commits `9c50818`, `43c626b` and later). Author's own output. |
-| `paper-summer.jpg`, `bloom.jpg`, `ocean.jpg`, `cosmic.jpg` | Replaced on 23 October 2026 by the first still of each vibe's pool (see the stills table above: author's own regrades; source stills origin unrecorded). |
-| `liquid-gold.jpg`, `neon-night.jpg` | JPEG comment `Lavc60.31.102` (ffmpeg) only. They arrived in the first snapshot commit (`68790ba`) with no generation script or seed in the repo. Origin unrecorded. |
+| `chrome-mercury.jpg`, `neon-noir.jpg`, `porcelain-kintsugi.jpg`, `bioluminescent.jpg`, `risograph.jpg`, `iridescent-glass.jpg`, `liquid-gold.jpg`, `ink-wash.jpg`, `cyberspace-95.jpg`, `wet-paint.jpg`, `shadow-self.jpg`, `botanical.jpg`, `none.jpg` (the 13 featured vibes) | Re-cut on 29 October 2026 (commit `06cf7bb`) from one frame of each vibe's Cloud Final example cut (LTX-2.5 22B distilled, open weights, run on Comfy Cloud, from the vibe's own stills): the centre square of the 9:16 frame on its own blurred ground, 1280x800. The picks (job and second) are in `scripts/vibe_objects/picks_thumbs.json` and, as `excerpt.card_s`, in `examples/cuts/cuts.json`; `scripts/vibe_objects/make_card.py` cuts them. Author's own output. |
+| `black.jpg`, `brutalist.jpg`, `cosmic.jpg`, `ferrofluid.jpg`, `ice-crystal.jpg`, `low-poly.jpg`, `ocean.jpg`, `origami-noir.jpg`, `porcelain-marble.jpg`, `y2k-chrome.jpg` | Re-cut on 31 October 2026 the same way from one frame of a 16:9 Cloud Final montage render of each vibe (the jobs and seconds are in `scripts/vibe_objects/picks_cards.json`). Author's own output. |
+| `paper-summer.jpg`, `bloom.jpg` | Replaced on 23 October 2026 by the first still of each vibe's pool (see the stills table above; bloom's source stills are author's own regrades with origin unrecorded). |
+| `lava-obsidian.jpg`, `odd-machine.jpg` | Written by the local Z-Image Turbo and LTX-Video 0.9.5 runs of the stills and clip packs above (commits `9c50818`, `43c626b` and later). Author's own output. |
+| `neon-night.jpg` | JPEG comment `Lavc60.31.102` (ffmpeg) only. It arrived in the first snapshot commit (`68790ba`) with no generation script or seed in the repo. Origin unrecorded. |
 
 ## Default clip packs (`src/xenoform/ui_static/library/<vibe>/{wide,medium,close,reveal}.{mp4,jpg}`)
 
@@ -35,11 +37,12 @@ No picture or clip in this repo is a CC BY work that needs a credit line, so non
 | `src/xenoform/ui_static/showcase/showcase.mp4`, `.jpg`, `.json` | Rebuilt on 31 October 2026 by `scripts/build_showcase.py` from five of the loved morphs in `examples/morphs/` (Cloud Final: LTX-2.5 22B distilled, open weights, LTX-2.x Community License Agreement of 11 August 2026, run on Comfy Cloud, between the author's own stills), each cut to six beats of "Glitch Out" (`examples/songs/glitch_out.mp3`, made by the author with Suno) from 1:55.8, so the 1:59 drop lands on a cut. The reel it replaced (19 October 2026, five clips cut to the bars of `examples/demo.wav`) was made of LTX-2.3 22B distilled clips rendered locally, under the LTX-2 Community License Agreement of 5 January 2026; its record said LTX-Video 0.9.5, which was wrong. It is in the git history. Author's own output. |
 | `src/xenoform/ui_static/poster.jpg` | JPEG comment `Lavc60.31.102` only; first snapshot commit. Origin unrecorded. |
 
-## Loved morphs and clips (`examples/morphs/`, `examples/clips/`)
+## Loved morphs, clips and example cuts (`examples/morphs/`, `examples/clips/`, `examples/cuts/`)
 
 | Files | Credit |
 | --- | --- |
 | `examples/morphs/*.mp4` (38 raw clips) and `examples/morphs/morphs.json` | The raw Cloud Final clips of the morphs the author named as loved, made on 29 and 30 October 2026: LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, each between two stills of the shipped pools (the stills are credited above), no audio. `morphs.json` records the pair, the seed, the style, the timing, the effects, the look and the knobs of each, and the author's words about it. Author's own output. Comfy Cloud's own terms for what its GPUs render were not checked in this audit. |
+| `examples/cuts/*.mp4` (13 excerpts) and `examples/cuts/cuts.json` | About 15 s of each of the thirteen 30 s Cloud Final cuts made on 29 October 2026 for the walkthroughs (the ten example cuts and the three showcase cuts), one a featured vibe, 540x960, no audio (`scripts/cut_examples.py`): LTX-2.5 22B distilled (open weights, run on Comfy Cloud) between the vibe's own stills. Seven of the ten example cuts were made to Suno demos of the author's that are not bundled and not credited in this repo, so the excerpts carry no sound and the manifest and its recipe codes name none of those songs; the five whose songs are bundled say so (`song`). Author's own output. |
 | `examples/clips/gold_outro.mp4` | The gold outro of the "Glitch Out" music video (phoenix, lion head, dragon, eagle on the infinity knot, scarab, koi; 12 s), a 960x540 copy of the 1080p clip the author cut from the video: the same Cloud Final morphs as above, with the song's last seconds ("Glitch Out", made by the author with Suno). Author's own output. |
 
 ## NASA library (`assets/library/manifest.json`)

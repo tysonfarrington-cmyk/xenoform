@@ -19,6 +19,7 @@ OBJECTS = Path(__file__).resolve().parent / "ui_static" / "objects" / "objects.j
 ORIGINAL = ("liquid-gold", "paper-summer", "bloom", "neon-night", "ocean", "cosmic", "black")
 LIBRARY = Path(__file__).resolve().parent / "ui_static" / "library"
 STILLS = Path(__file__).resolve().parent / "ui_static" / "vibes"
+CUTS = Path(__file__).resolve().parents[2] / "examples" / "cuts"  # the example cuts: cuts.json and one mp4 a vibe
 
 # The seven originals' desk metadata (name, one line, palette, register, tone). The server owns this table;
 # app.js keeps a copy only as the offline fallback. The look prompts stay in morph_pass / configs/autotune.json.
@@ -127,8 +128,47 @@ def library_for(vibe: str) -> str:
     return borrowed if borrowed and has_library(borrowed) else ""
 
 
-def _row(meta: dict, *, featured: int, legacy: bool) -> dict:
+def cuts_dir() -> Path:
+    """The folder of example cuts: ``examples/cuts`` beside the repo's configs, or ``XENO_CUTS`` (tests point it at a temp dir)."""
+    return Path(os.environ.get("XENO_CUTS") or CUTS)
+
+
+@lru_cache(maxsize=4)
+def _load_cuts(folder: str, stamp: tuple) -> tuple:
+    try:
+        data = json.loads((Path(folder) / "cuts.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return ()
+    return tuple(row for row in (data.get("cuts") or []) if isinstance(row, dict) and row.get("vibe") and row.get("file"))
+
+
+def examples() -> list[dict]:
+    """The example cuts whose file is on disk, each a manifest row plus ``url`` (what ``ui.py`` serves it under), in
+    manifest order. A missing or bad ``cuts.json`` means none; one a vibe is the manifest's business, the first row wins."""
+    folder = cuts_dir()
+    try:
+        st = (folder / "cuts.json").stat()
+    except OSError:
+        return []
+    stamp = (st.st_mtime_ns, st.st_size)
+    out, seen = [], set()
+    for row in _load_cuts(str(folder), stamp):
+        name = str(row["file"])
+        if row["vibe"] in seen or "/" in name or "\\" in name or not (folder / name).is_file():
+            continue
+        seen.add(row["vibe"])
+        out.append({**row, "url": f"/examples/cuts/{name}"})
+    return out
+
+
+def example(vibe: str) -> dict:
+    """The example cut of ``vibe`` (``examples()`` row), or ``{}``."""
+    return next((row for row in examples() if row["vibe"] == vibe), {})
+
+
+def _row(meta: dict, *, featured: int, legacy: bool, eg: dict[str, str] | None = None) -> dict:
     vid = str(meta["id"])
+    eg = {row["vibe"]: row["url"] for row in examples()} if eg is None else eg
     return {
         "id": vid,
         "name": str(meta.get("name") or vid),
@@ -144,6 +184,7 @@ def _row(meta: dict, *, featured: int, legacy: bool) -> dict:
         "pool": pool(vid),
         "has_library": has_library(vid),
         "library": library_for(vid),
+        "example": str(eg.get(vid) or ""),  # a finished 15 s cut in this vibe (examples/cuts), "" when it has none
         "legacy": bool(legacy),
         "tags": list(meta.get("tags") or ()),
     }
@@ -155,15 +196,16 @@ def catalog() -> list[dict]:
     Non-featured rows carry ``legacy: true`` (Simple shows them behind "More vibes")."""
     rows: list[dict] = []
     seen: set[str] = set()
+    eg = {row["vibe"]: row["url"] for row in examples()}
     for v in featured():
-        rows.append(_row(v, featured=int(v.get("featured") or 0), legacy=False))
+        rows.append(_row(v, featured=int(v.get("featured") or 0), legacy=False, eg=eg))
         seen.add(v["id"])
     for meta in ORIGINAL_META:
         if meta["id"] not in seen:
-            rows.append(_row(meta, featured=0, legacy=True))
+            rows.append(_row(meta, featured=0, legacy=True, eg=eg))
             seen.add(meta["id"])
     for v in extended():
         if v["id"] not in seen:
-            rows.append(_row(v, featured=0, legacy=True))
+            rows.append(_row(v, featured=0, legacy=True, eg=eg))
             seen.add(v["id"])
     return rows

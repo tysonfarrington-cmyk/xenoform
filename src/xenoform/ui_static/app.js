@@ -629,9 +629,21 @@ function waveBars() {
 }
 
 const SHOWCASE = { video: "/static/showcase/showcase.mp4", poster: "/static/showcase/showcase.jpg" };
+const SHOWCASE_NOTE = "Made earlier with the same engine on Comfy Cloud (LTX-2.5, open weights), five of the morphs the author loved cut to six beats of Glitch Out each. Back to the song, pick a vibe, then Make: a 30 s cut takes a few minutes on a 12 GB GPU, a full song about twenty, each Polly shot about eight.";
+
+// The example cut of the vibe being shown in the showcase (GET /api/vibes carries each vibe's `example` url), or null for the reel.
+function showcaseExample() {
+  const id = state && state.easy && state.easy.showcaseVibe;
+  const vibe = id ? vibeById(id) : null;
+  return vibe && vibe.example ? vibe : null;
+}
 
 function easyMedia() {
   if (state.easy && state.easy.showcase) {
+    const eg = showcaseExample();
+    if (eg) {
+      return `<video id="player" playsinline autoplay loop controls preload="auto" poster="${esc(media(eg.still))}" src="${esc(media(eg.example))}"></video>`;
+    }
     return `<video id="player" playsinline autoplay controls preload="auto" poster="${esc(media(SHOWCASE.poster))}" src="${esc(media(SHOWCASE.video))}"></video>`;
   }
   if (state.easy && state.easy.playedHere) {
@@ -666,6 +678,7 @@ function vibeCards(easy, compact, which) {
     return `<button type="button" class="vibe-card${vibe.dark ? " is-dark" : ""}${on ? " on" : ""}${compact ? " is-mini" : ""}" role="radio" aria-checked="${on ? "true" : "false"}" tabindex="${on || (!easy.vibe && vibe.id === VIBES[0].id) ? "0" : "-1"}" data-act="easy-vibe" data-vibe="${esc(vibe.id)}">
       <span class="vibe-thumb" style="background-image:url(${esc(media(vibe.still))})"></span>
       ${on && !compact ? '<span class="vibe-tick" aria-hidden="true">✓</span>' : ""}
+      ${vibe.example && !compact ? `<span class="vibe-eg" role="button" tabindex="0" data-act="vibe-example" data-vibe="${esc(vibe.id)}" title="Watch a finished cut in this vibe" aria-label="Watch a finished ${esc(vibe.name)} cut">&#9654;</span>` : ""}
       <span class="vibe-meta"><strong>${esc(vibe.name)}</strong>${compact ? "" : `<em>${esc(tone)}</em>`}</span>
     </button>`;
   }).join("");
@@ -716,9 +729,81 @@ function dropCard() {
   </section>`;
 }
 
-// The showcase's side column: it is not his render, so no knobs, no re-cut, no share. One way on.
+// An example cut: about 15 s of a finished Cloud Final cut in a vibe (GET /api/vibes carries the url as `example`, from
+// examples/cuts). It opens in its own layer over the desk, so a redraw of the vibe grid under it leaves it playing.
+const EXAMPLE_LINE = "about 15 s of a finished Cloud Final cut in this vibe, picture only (the song is not in the file).";
+function closeExample() {
+  const box = document.getElementById("xeno-example");
+  if (box) box.remove();
+}
+function openExample(vibeId) {
+  const vibe = vibeById(vibeId);
+  if (!vibe || !vibe.example) return;
+  closeExample();
+  const box = document.createElement("div");
+  box.id = "xeno-example";
+  box.className = "example-modal";
+  box.dataset.act = "example-backdrop";
+  box.setAttribute("role", "dialog");
+  box.setAttribute("aria-modal", "true");
+  box.setAttribute("aria-label", `${vibe.name}: a finished cut`);
+  box.innerHTML = `<div class="example-card">
+      <video playsinline autoplay loop muted controls preload="auto" poster="${esc(media(vibe.still))}" src="${esc(media(vibe.example))}"></video>
+      <p class="example-line"><strong>${esc(vibe.name)}</strong> &middot; ${esc(EXAMPLE_LINE)}</p>
+      <div class="example-actions">
+        <button type="button" class="generate" data-act="example-use" data-vibe="${esc(vibe.id)}">Use this vibe</button>
+        <button type="button" class="ghost" data-act="example-close">Close</button>
+      </div>
+    </div>`;
+  document.body.appendChild(box);
+  const use = box.querySelector("[data-act=example-use]");
+  if (use) use.focus();
+}
+// Pick the vibe an example shows (from its layer or from the showcase), as a click on its card would, and leave the showcase.
+function useExampleVibe(id) {
+  if (!id || !state || !state.easy) return;
+  if (id !== (state.easy.vibe || "")) {  // the pins name one vibe's stills: another vibe starts unpinned
+    state.easy.pins = {};
+    state.easy.chainPick = null;
+  }
+  state.easy.vibe = id;
+  state.easy.note = "";
+  if (state.easy.phase === "showcase" || state.easy.phase === "result") setEasyPhase("choose");
+  render();
+  const next = document.querySelector(`[data-act=easy-vibe][data-vibe="${id}"]`);
+  if (next) next.focus();
+}
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && document.getElementById("xeno-example")) {
+    closeExample();
+    return;
+  }
+  const badge = event.target && event.target.closest ? event.target.closest(".vibe-eg") : null;
+  if (badge && (event.key === "Enter" || event.key === " ")) {  // the badge is a span in a card: it is not a button for the keyboard
+    event.preventDefault();
+    event.stopPropagation();
+    openExample(badge.dataset.vibe || "");
+  }
+}, true);
+
+// The showcase's side column: it is not his render, so no knobs, no re-cut, no share. One way on. Under the reel, a
+// finished cut in each vibe that has one (examples/cuts): a chip swaps it into the player, and Use it for my own goes back
+// to the song with that vibe picked.
 function showcaseAside() {
+  const shown = (state && state.easy && state.easy.showcaseVibe) || "";
+  const cuts = VIBES.filter((vibe) => vibe.example);
+  const picked = shown ? vibeById(shown) : null;
+  const gallery = cuts.length
+    ? `<h3>Finished cuts, one a vibe</h3>
+        <p class="note">About 15 s of each of the cuts made on Cloud Final for the walkthroughs. Picture only.</p>
+        <div class="toggle chips showcase-vibes" role="group" aria-label="Finished cuts">
+          <button type="button" class="chip${shown ? "" : " on"}" data-act="easy-showcase-vibe" data-vibe="" aria-pressed="${shown ? "false" : "true"}">The reel</button>
+          ${cuts.map((vibe) => `<button type="button" class="chip${shown === vibe.id ? " on" : ""}" data-act="easy-showcase-vibe" data-vibe="${esc(vibe.id)}" aria-pressed="${shown === vibe.id ? "true" : "false"}">${esc(vibe.name)}</button>`).join("")}
+        </div>
+        ${picked ? `<button type="button" class="ghost easy-row" data-act="easy-showcase-use" data-vibe="${esc(picked.id)}">Make my own in ${esc(picked.name)}</button>` : ""}`
+    : "";
   return `<aside class="panel easy-side">
+        ${gallery}
         <h3>Make your own</h3>
         <p class="note">This reel was made earlier with the same engine. Back to the song, pick a vibe, then Make: a 30 s cut takes a few minutes on a 12 GB GPU, a full song about twenty.</p>
         <button type="button" class="generate easy-row" data-act="easy-again">Back to the song</button>
@@ -4250,9 +4335,10 @@ document.addEventListener("click", async (event) => {
     }
   } else if (act === "easy-download") {
     if (state.easy && state.easy.showcase) {
+      const eg = showcaseExample();  // the example cut on show, else the reel
       const link = document.createElement("a");
-      link.href = media(SHOWCASE.video);
-      link.download = "xenoform-showcase.mp4";
+      link.href = media(eg ? eg.example : SHOWCASE.video);
+      link.download = eg ? `xenoform-${eg.id}-example.mp4` : "xenoform-showcase.mp4";
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -4328,10 +4414,29 @@ document.addEventListener("click", async (event) => {
     setEasyPhase("choose");
     state.easy.note = "Stopped. Anything still queued on the GPU was cancelled.";
     render();
+  } else if (act === "vibe-example") {
+    openExample(el.dataset.vibe || "");
+  } else if (act === "example-close") {
+    closeExample();
+  } else if (act === "example-backdrop") {
+    if (event.target === el) closeExample();  // a click on the dark around the card, not on the video's own controls
+  } else if (act === "example-use") {
+    closeExample();
+    useExampleVibe(el.dataset.vibe || "");
+  } else if (act === "easy-showcase-vibe") {
+    state.easy.showcaseVibe = el.dataset.vibe || "";
+    const eg = showcaseExample();
+    state.easy.note = eg ? `${eg.name}: ${EXAMPLE_LINE}` : SHOWCASE_NOTE;
+    render();
+    const shown = document.getElementById("player");
+    if (shown && shown.play) shown.play().catch(() => {});
+  } else if (act === "easy-showcase-use") {
+    useExampleVibe(el.dataset.vibe || "");
   } else if (act === "easy-showcase") {
     state.easy.playedHere = false;
+    state.easy.showcaseVibe = "";
     setEasyPhase("showcase");
-    state.easy.note = "Made earlier with the same engine on one RTX 3080 Ti, open weights, cut to the bar of our own track. Back to the song, pick a vibe, then Make: a 30 s cut takes a few minutes on a 12 GB GPU, a full song about twenty, each Polly shot about eight.";
+    state.easy.note = SHOWCASE_NOTE;
     render();
     const player = document.getElementById("player");
     if (player && player.play) player.play().catch(() => {});
