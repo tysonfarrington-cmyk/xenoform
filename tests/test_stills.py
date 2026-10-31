@@ -58,7 +58,7 @@ def _seed_set(monkeypatch, vibe: str = "cosmic", n: int = 12) -> int:
 
 def test_catalogue_merges_shipped_and_grown_and_drops_deleted_files():
     n = len(L.shipped()["cosmic"])
-    assert L.counts("cosmic") == {"shipped": n, "grown": 0, "own": 0, "scenes": 0, "total": n}
+    assert L.counts("cosmic") == {"shipped": n, "grown": 0, "own": 0, "scenes": 0, "settings": 0, "total": n}
     _grown("cosmic", "000_astrolabe.jpg", "astrolabe")
     _grown("cosmic", "001_gone.jpg", "gone")
     (L.root() / "cosmic" / "001_gone.jpg").unlink()  # deleting the jpg is the cull
@@ -94,7 +94,7 @@ def test_a_shipped_copy_of_a_grown_still_is_listed_once_as_the_grown_row():
     rows = L.catalogue()["ocean"]
     hits = [r for r in rows if r["file"] == twin["file"]]
     assert len(rows) == len(ship) and len(hits) == 1 and not hits[0]["shipped"] and hits[0].get("own")
-    assert L.counts("ocean") == {"shipped": len(ship) - 1, "grown": 0, "own": 1, "scenes": 0, "total": len(ship)}
+    assert L.counts("ocean") == {"shipped": len(ship) - 1, "grown": 0, "own": 1, "scenes": 0, "settings": 0, "total": len(ship)}
     assert len(mp.catalogue()["ocean"]) == len(ship)  # the chain's pool is the deduplicated one
     _, picked = mp.pick_stills({"vibe": "ocean", "chain_pins": {"1": twin["file"]}}, 4, record=False)
     assert picked[1]["file"] == twin["file"] and picked[1]["pinned"] and len({p["file"] for p in picked}) == 4

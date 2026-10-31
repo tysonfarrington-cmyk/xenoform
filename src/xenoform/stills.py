@@ -26,6 +26,16 @@ morph scenes and not only objects (the make body's ``scene_stills``: "mix" lands
 "only" draws on scenes alone). A scene skips the object-shaped checks (no centred-subject size, no backdrop drift,
 no cropped edge, no zoom) and keeps the soft and duplicate checks.
 
+A third kind, **settings** (``kind="setting"``, 31 Oct): one object standing in a place that suits the vibe (the gold
+scarab on dusk dunes, the black glass rose on wet obsidian under mist, a lantern on a rain-slick street), the object
+still the hero, large and readable, the place soft behind it, for Tys's "the blank background really kills these ones ...
+maybe bigger objects?". The places come from ``configs/settings.json`` (a list per vibe, else the default), the prompt
+from the vibe's ``setting`` template in ``still_prompts.json`` (else the ``default`` one), the subject sentence first,
+since with the style first Z-Image drew a statue or a blob beside the creature. A setting is checked like a scene (no
+backdrop, size or cropped check; soft and duplicate stay), is not graded (the prompt carries the vibe's colour), and is
+zoomed in on when its hero is small (``normalise_scale`` with the setting ``fill``). Its row carries the object as
+``noun`` and the ``place``; the make body's ``backdrop`` "places" draws on them (``morph_pass.backdrop_choice``).
+
 Nothing here touches ComfyUI's process. ``XENO_STILLS`` moves the local set (tests point it at a temp dir).
 """
 from __future__ import annotations
@@ -51,6 +61,7 @@ GRAPH = ROOT / "workflows" / "zimage_t2i_api.json"
 SUBJECTS = ROOT / "configs" / "subjects.json"
 PROMPTS = ROOT / "configs" / "still_prompts.json"
 SCENES = ROOT / "configs" / "scenes.json"
+SETTINGS = ROOT / "configs" / "settings.json"
 VIBES_JSON = ROOT / "configs" / "vibes.json"
 W, H = 1024, 576
 JPG_QUALITY = 92
@@ -65,7 +76,9 @@ MAX_GROW = 120           # stills one grow request renders
 MIN_POOL = 3             # grown stills a vibe with no shipped ones needs before it stops borrowing a pool
 DEFAULT_GROW = 36
 DEFAULT_GROW_SCENES = 8  # scenes one chip grows: the vibe's list is six to eight wide frames, a second pass varies the seed
-KINDS = ("object", "scene")
+DEFAULT_GROW_SETTINGS = 8  # settings one chip grows: eight objects, each in the next of the vibe's places
+KINDS = ("object", "scene", "setting")
+WHOLE_FRAME = ("scene", "setting")  # kinds whose frame is the picture: no backdrop, size or cropped check, never graded
 # a scene is a whole frame: the wide-frame tail every scene prompt ends on when a vibe has no ``scene`` prefix
 SCENE_TAIL = ("a wide scene filling the whole frame edge to edge, no single centred object, no people, no faces, no text, "
               "no letters, no watermark, crisp focus, high detail.")
@@ -192,30 +205,39 @@ def catalogue(shipped_rows: dict[str, list[dict]] | None = None) -> dict[str, li
 
 
 def kind_of(row: dict) -> str:
-    """``"scene"`` for a scene row, ``"object"`` for everything else (the shipped rows carry no kind)."""
-    return "scene" if str((row or {}).get("kind") or "") == "scene" else "object"
+    """``"scene"`` for a scene row, ``"setting"`` for an object standing in a place, ``"object"`` for everything else (the
+    shipped rows carry no kind)."""
+    kind = str((row or {}).get("kind") or "")
+    return kind if kind in ("scene", "setting") else "object"
 
 
 def counts(vibe: str | None = None) -> dict:
-    """``shipped`` / ``grown`` / ``own`` / ``scenes`` / ``total`` for one vibe, or ``{vibe: counts}`` for all
-    (``grown`` is the objects grown here; scenes are counted apart)."""
+    """``shipped`` / ``grown`` / ``own`` / ``scenes`` / ``settings`` / ``total`` for one vibe, or ``{vibe: counts}`` for
+    all (``grown`` is the objects grown here; scenes and settings are counted apart)."""
     cat = catalogue()
     if vibe is not None:
         rows = cat.get(vibe) or []
         n_ship = sum(1 for r in rows if r.get("shipped"))
         n_own = sum(1 for r in rows if r.get("own"))
         n_scene = sum(1 for r in rows if kind_of(r) == "scene")
-        return {"shipped": n_ship, "grown": len(rows) - n_ship - n_own - n_scene, "own": n_own, "scenes": n_scene, "total": len(rows)}
+        n_setting = sum(1 for r in rows if kind_of(r) == "setting")
+        return {"shipped": n_ship, "grown": len(rows) - n_ship - n_own - n_scene - n_setting, "own": n_own, "scenes": n_scene,
+                "settings": n_setting, "total": len(rows)}
     return {v: counts(v) for v in cat}
 
 
 def nouns_in(vibe: str) -> set[str]:
-    """The object nouns a vibe has (scenes apart: a scene and an object may share a word)."""
+    """The object nouns a vibe has (scenes and settings apart: a scene, a setting and an object may share a word)."""
     return {str(r.get("noun") or "").lower() for r in catalogue().get(vibe) or [] if kind_of(r) == "object"}
 
 
 def scene_nouns_in(vibe: str) -> set[str]:
     return {str(r.get("noun") or "").lower() for r in catalogue().get(vibe) or [] if kind_of(r) == "scene"}
+
+
+def setting_nouns_in(vibe: str) -> set[str]:
+    """The objects a vibe already has standing in a place (the same object may also be a plain still)."""
+    return {str(r.get("noun") or "").lower() for r in catalogue().get(vibe) or [] if kind_of(r) == "setting"}
 
 
 # ------------------------------------------------------------------------------------------------ usage
@@ -471,6 +493,100 @@ def scene_nouns_for(vibe: str, count: int, have: set[str] | None = None, seed: i
     return out[:count]
 
 
+PLACE_LIMIT = 100  # a place is a phrase ("on the polished stone floor of an ancient temple, shafts of warm light")
+
+
+def setting_subjects() -> dict:
+    return _read_json(SETTINGS, {})
+
+
+def clean_place(text: str) -> str:
+    """A place as the prompt puts it after the object: one line, no quotes or braces, ``PLACE_LIMIT`` characters."""
+    low = re.sub(r"[^A-Za-z0-9 ,\-']+", " ", str(text or ""))
+    return clip_words(re.sub(r"\s+", " ", low).strip(" ,"), PLACE_LIMIT)
+
+
+def place_list(vibe: str) -> list[str]:
+    """The vibe's places from ``configs/settings.json`` (else the default list), cleaned, in order."""
+    data = setting_subjects()
+    raw = (data.get("vibes") or {}).get(vibe) or data.get("default") or []
+    out: list[str] = []
+    for item in raw:
+        place = clean_place(item)
+        if place and place not in out:
+            out.append(place)
+    return out
+
+
+# Which places suit which things, by the words a place is made of: a seahorse belongs in the rock pool and a typewriter in
+# the library, not the other way round (a random pairing reads as a random object, the complaint that never stopped).
+_WATER = ("shore", "beach", "pool", "lake", "sea", "water", "pier", "river", "kelp", "coral", "ocean", "underwater", "trench",
+          "abyss", "anemones", "flooded")
+_GREEN = ("meadow", "forest", "garden", "moss", "greenhouse", "ferns", "dew", "grass", "rainforest", "leaves", "flowers", "stream")
+_WORK = ("workshop", "workbench", "table", "library", "gallery", "hangar", "steel", "platform", "windowsill", "window", "ledge")
+_WILD = ("rocks", "hillside", "dunes", "desert", "cave", "stones", "basalt", "obsidian", "earth", "snowy", "sand", "salt flat", "valley")
+_STREET = ("street", "alley", "rooftop", "subway", "bridge", "car", "city", "skyline")
+_ANCIENT = ("temple", "ruin", "chapel", "corridor", "staircase", "steps", "arched", "plinth", "candlelit", "hall", "terrace")
+PLACE_WORDS = {
+    "sea-creatures": _WATER, "shells-and-corals": _WATER, "weather-and-liquid": _WATER + _WILD,
+    "insects-and-small-creatures": _GREEN + _WILD, "birds-and-beasts": _WILD + _GREEN, "living-things": _WILD + _GREEN,
+    "flowers": _GREEN, "pods-and-cones": _GREEN, "fruit-and-food": _GREEN + _WORK,
+    "celestial-bodies": _WILD, "crystals-and-minerals": _WILD, "solids-and-knots": _WILD + _WORK,
+    "intricate-machines": _WORK + _STREET, "machine-parts": _WORK + _STREET, "time-and-navigation": _WORK,
+    "musical-instruments": _WORK + _ANCIENT, "retro-tech": _WORK, "vehicles-and-craft": _STREET + _WILD, "toys-and-games": _WORK,
+    "big-iconic": _WILD + _STREET, "grimdark": _ANCIENT, "high-fantasy": _ANCIENT + _WILD, "anatomy-and-bones": _ANCIENT,
+    "strange-and-surreal": _ANCIENT + _WILD, "keys-and-curios": _ANCIENT + _WORK, "vessels-and-tableware": _WORK,
+    "lamps-and-lanterns": _STREET + _WORK, "origami-and-paper": _WORK, "knots-and-textiles": _WORK, "architectural-fragments": _ANCIENT,
+}
+
+
+def place_fit(noun: str, place: str) -> int:
+    """How well ``place`` suits ``noun``: the place words of the noun's family (``PLACE_WORDS``) found in the place."""
+    words = PLACE_WORDS.get(family_of(noun)) or ()
+    low = f" {str(place).lower()} "
+    return sum(1 for w in words if w in low)
+
+
+def places_for(vibe: str, count: int, *, start: int = 0, seed: int | None = None, nouns: list[str] | None = None) -> list[str]:
+    """``count`` places for ``vibe``'s next settings: the list in order (shuffled by ``seed``), from ``start`` (how many
+    settings the vibe has, so a second grow moves on to the places the first did not reach), round again when the list
+    runs out. With the ``nouns`` they are for, each takes the free place that suits it best (``place_fit``: the shell
+    to the shore, the compass to the table), the order breaking a tie, every place used once before any twice.
+    Deterministic for the same arguments: the desk plans a grow and then grows it, and both must agree."""
+    rows = place_list(vibe)
+    if not rows or count <= 0:
+        return []
+    if seed is not None:
+        random.Random(seed).shuffle(rows)
+    order = [rows[(int(start) + i) % len(rows)] for i in range(len(rows))]
+    if not nouns:
+        return [order[i % len(order)] for i in range(int(count))]
+    out: list[str] = [""] * int(count)
+    for lo in range(0, int(count), len(order)):  # a lap of the list at a time: every place once before any twice
+        lap = list(range(lo, min(int(count), lo + len(order))))
+        free = list(order)
+        noun = lambda i: nouns[i] if i < len(nouns) else ""  # noqa: E731
+        fits = [i for i in lap if any(place_fit(noun(i), p) for p in free)]
+        for i in fits + [i for i in lap if i not in fits]:  # the things a place suits choose first, the rest take what is left
+            best = max(range(len(free)), key=lambda k: (place_fit(noun(i), free[k]), -k))
+            out[i] = free.pop(best)
+    return out
+
+
+# the words that put an object on a studio ground: a setting's prompt and its morph keep the vibe's material and light but
+# drop these, since the place is the ground now ("plain dark grey backdrop" under a scarab on the dunes)
+GROUND_WORDS = ("backdrop", "void", "no floor", "studio", "seamless", "on pure black", "black background")  # not "on black":
+# neon noir's "reflections on black wet asphalt" is a street, the very place its settings stand in
+
+
+def place_look(look: str) -> str:
+    """A vibe's look without its ground: the comma clauses that name a backdrop, a void or a studio go, the rest (the
+    material, the light, the colour) stays."""
+    parts = [p.strip() for p in str(look or "").split(",")]
+    kept = [p for p in parts if p and not any(w in p.lower() for w in GROUND_WORDS)]
+    return ", ".join(kept).strip().rstrip(".")
+
+
 def own_nouns(text: str | list) -> list[str]:
     """The shapes typed into the desk ("a brass astrolabe, wolf skull"): distinct, cleaned, at most MAX_OWN."""
     parts = text if isinstance(text, list) else re.split(r"[,\n;]+", str(text))
@@ -496,12 +612,49 @@ def _vibe_meta(vibe: str) -> dict:
     return next((x for x in items if x.get("id") == vibe), {})
 
 
-def prompt_for(vibe: str, noun: str, kind: str = "object") -> str:
+SETTING_DEFAULT = ("One single {noun}{made}, {place}. Close-up cinematic shot from a low camera angle, one single object towering "
+                   "large in the foreground and filling two thirds of the frame height, centred and whole, {look}the place "
+                   "stretching out behind it in soft focus, shallow depth of field, crisp focus on the object, high detail, no text, "
+                   "no letters, no logos, no people, no faces.")  # the ``default`` row of still_prompts.json, when it is missing
+SETTING_PLACE = "in a place that suits it"  # a setting with no place given and a vibe with no list
+
+
+def setting_prompt(vibe: str, noun: str, place: str | None = None) -> str:
+    """A setting's prompt: the vibe's ``setting`` template (still_prompts.json), else the ``default`` one with the vibe's
+    material and its look without the ground words, the object and the place put in. The subject sentence leads: with
+    the vibe's style first and the subject last, Z-Image drew a gold statue with a tiny dragonfly at its feet, or a pair
+    of gold legs for "the subject cast in gold, towering" (31 Oct trials); the noun first kept the creature every time."""
+    data = prompts()
+    tmpl = str((data.get(vibe) or {}).get("setting") or "").strip()
+    if not tmpl:
+        tmpl = str((data.get("default") or {}).get("setting") or SETTING_DEFAULT).strip()
+        meta = _vibe_meta(vibe)
+        material = str(meta.get("material") or "").strip()
+        look = str(meta.get("look") or "").strip()
+        if not look:
+            try:
+                from xenoform.morph_pass import VIBE_LOOK  # the original five carry their look there, not in the registry
+
+                look = str(VIBE_LOOK.get(vibe) or "")
+            except Exception:  # pragma: no cover - the registry is always importable in the app
+                look = ""
+        look = place_look(look)
+        tmpl = tmpl.replace("{made}", f" made of {material}" if material else "").replace("{look}", f"{look}, " if look else "")
+    place = clean_place(place) if place else ""
+    if not place:
+        places = place_list(vibe)
+        place = places[0] if places else SETTING_PLACE
+    return re.sub(r"\s+", " ", tmpl.replace("{noun}", str(noun).strip()).replace("{place}", place)).strip()
+
+
+def prompt_for(vibe: str, noun: str, kind: str = "object", place: str | None = None) -> str:
     """The still's prompt: the pool's own style prefix and subject sentence when the vibe has one, else the
     vibe's ``still_style`` with a plain subject sentence in its material. A scene takes the vibe's ``scene``
     prefix (wide frame, the vibe's material and light, no centred object, no people, no text) and the subject as a
     sentence ("Dark shore under a star field, seen wide."); a vibe without one gets its ``look`` in front of the
-    wide-frame tail."""
+    wide-frame tail. A setting is the object ``noun`` standing in ``place`` (``setting_prompt``)."""
+    if kind == "setting":
+        return setting_prompt(vibe, noun, place)
     row = prompts().get(vibe) or {}
     if kind == "scene":
         prefix = str(row.get("scene") or "").strip()
@@ -571,6 +724,61 @@ def _sharpness(g: np.ndarray) -> float:
     return float(lap.var())
 
 
+def _box_blur(a: np.ndarray, k: int) -> np.ndarray:
+    """A ``k`` x ``k`` mean over each channel (edges reflected), OpenCV when present, else summed-area tables."""
+    try:
+        import cv2  # type: ignore
+
+        return cv2.blur(np.ascontiguousarray(a, dtype=np.float32), (k, k), borderType=cv2.BORDER_REFLECT)
+    except Exception:  # pragma: no cover - OpenCV is a dependency
+        r = k // 2
+        pad = [(r, r), (r, r)] + [(0, 0)] * (a.ndim - 2)
+        p = np.pad(a.astype(np.float64), pad, mode="reflect")
+        c = p.cumsum(0).cumsum(1)
+        c = np.pad(c, [(1, 0), (1, 0)] + [(0, 0)] * (a.ndim - 2))
+        h, w = a.shape[:2]
+        s = c[k:k + h, k:k + w] - c[:h, k:k + w] - c[k:k + h, :w] + c[:h, :w]
+        return (s / (k * k)).astype(np.float32)
+
+
+def hero_box(im: Path | str | Image.Image) -> tuple[float, float, float, float] | None:
+    """The box (x0, y0, x1, y1, fractions of the frame) of a setting's hero: the object in focus in front of a soft
+    place. A setting has no plain ground for ``features`` to subtract, so this reads where the picture is sharp and
+    stands out of its own surroundings, weighted toward the centre the prompt puts the object at, and keeps the
+    strongest blob. It errs large (the in-focus ground at the object's feet joins it), so a zoom it drives under-zooms
+    rather than crops the object. None when nothing stands out."""
+    a = _small(im)
+    h, w = a.shape[:2]
+    g = _grey(a)
+    lap = np.zeros_like(g)
+    lap[1:-1, 1:-1] = np.abs(-4 * g[1:-1, 1:-1] + g[:-2, 1:-1] + g[2:, 1:-1] + g[1:-1, :-2] + g[1:-1, 2:])
+    energy = _box_blur(lap, 9)
+    contrast = _box_blur(np.abs(a - _box_blur(a, 41)).mean(axis=2), 5)
+    yy, xx = np.mgrid[0:h, 0:w]
+    prior = np.exp(-(((xx - w / 2) / (0.42 * w)) ** 2 + ((yy - h / 2) / (0.55 * h)) ** 2))
+    e = energy / (float(np.percentile(energy, 99)) + 1e-6)
+    c = contrast / (float(np.percentile(contrast, 99)) + 1e-6)
+    score = (0.6 * np.clip(e, 0, 1.5) + 0.4 * np.clip(c, 0, 1.5)) * prior
+    mask = score > max(0.18, float(np.percentile(score, 80)))
+    try:
+        import cv2  # type: ignore
+
+        mask = cv2.morphologyEx(mask.astype(np.uint8), cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8), iterations=2) > 0
+        n, labels = cv2.connectedComponents(mask.astype(np.uint8))
+        if n > 1:  # the blob carrying the most of the score
+            mass = np.bincount(labels.ravel(), weights=score.ravel(), minlength=n)
+            mass[0] = 0.0
+            mask = labels == int(np.argmax(mass))
+    except Exception:  # pragma: no cover - OpenCV is a dependency; the whole mask then stands for the blob
+        pass
+    if not mask.any():
+        return None
+    rows_sum, cols_sum = mask.sum(axis=1), mask.sum(axis=0)
+    rows = np.where(rows_sum > 0.02 * rows_sum.max())[0]
+    cols = np.where(cols_sum > 0.02 * cols_sum.max())[0]
+    return (float(cols[0]) / w, float(rows[0]) / h, float(cols[-1] + 1) / w, float(rows[-1] + 1) / h)
+
+
 def features(path: Path | str) -> dict:
     """One still's measures: border colour, subject area and bounding box, edges the subject touches,
     sharpness, and the small grey copy the duplicate check correlates."""
@@ -630,30 +838,32 @@ def check(path: Path | str, prof: dict, *, extra_greys: list | None = None, kind
     smallest or twice the largest, the subject may touch one edge (none, when the pool is a clean void; any, when
     the pool's own stills are scene-like), sharpness must reach a third of the pool's median, and a still that
     correlates with a member above ``DUPLICATE_NCC`` is the same object again. A scene (``kind="scene"``) is a
-    whole frame with no backdrop and no centred subject, so only soft and duplicate apply to it."""
+    whole frame with no backdrop and no centred subject, so only soft and duplicate apply to it; a setting (an object
+    standing in a place) is a whole frame too, its place reaching every edge, so it is checked the same way."""
     f = features(path)
     why: list[str] = []
     drift = 0.0
-    if kind == "scene":
+    whole = kind in WHOLE_FRAME
+    if whole:
         pass  # no backdrop, size or cropped check: the frame is the picture
     elif prof.get("border") is not None:
         drift = float(np.abs(f["border"] - prof["border"]).mean())
         if drift > max(BACKDROP_FLOOR, 3.0 * float(prof.get("spread") or 0.0)):
             why.append("backdrop")
     # a backdrop the smooth fit cannot describe (side bars, a cluttered room, a table edge) is structure, not a gradient
-    if kind != "scene" and f["residual"] > max(RESIDUAL_FLOOR, 3.0 * float(prof.get("residual") or 0.0)) and "backdrop" not in why:
+    if not whole and f["residual"] > max(RESIDUAL_FLOOR, 3.0 * float(prof.get("residual") or 0.0)) and "backdrop" not in why:
         why.append("backdrop")
     # size holds the pool's scale loosely: a pool's own twelve already span three to four times in area, and a morph
     # between a small and a large object is a zoom, not a fault; what it catches is the frame-filler and the speck
     amin, amax = prof.get("area") or (None, None)
     lo = max(0.03, 0.4 * amin) if amin is not None else 0.03
     hi = min(0.85, 2.0 * amax) if amax is not None else 0.85
-    if kind != "scene" and not lo <= f["area"] <= hi:
+    if not whole and not lo <= f["area"] <= hi:
         why.append("size")
     # a pool whose own stills reach two or more edges (smoke, rain, wet reflections: neon-noir) is scene-like, and
     # the mask cannot tell object from backdrop at the frame edge there, so the cropped check steps aside for it
     pool_edges = int(prof.get("edges") or 0)
-    if kind != "scene" and f["edges"] > (4 if pool_edges >= 2 else 1):
+    if not whole and f["edges"] > (4 if pool_edges >= 2 else 1):
         why.append("cropped")
     if prof.get("sharp") is not None and f["sharp"] < 0.3 * float(prof["sharp"]):
         why.append("soft")
@@ -709,13 +919,29 @@ def grade(im: Image.Image, vibe: str) -> Image.Image:
 SUBJECT_MIN = 0.45   # of the frame height: a subject smaller than this is zoomed in on
 SUBJECT_TARGET = 0.62
 ZOOM_MAX = 2.2
+# The fill target: how much of the frame height a still's subject is zoomed up to when it is under the kind's minimum.
+# A setting's object is the hero of a whole picture, so it is held bigger than a plain object (Tys, 30 Oct: "maybe bigger
+# objects?"), and its zoom is gentler, since a crop of a place loses the place and the hero box errs large.
+FILL = {"object": SUBJECT_TARGET, "setting": 0.74}
+FILL_MIN = {"object": SUBJECT_MIN, "setting": 0.55}
+FILL_ZOOM_MAX = {"object": ZOOM_MAX, "setting": 1.5}
 
 
-def normalise_scale(im: Image.Image) -> Image.Image:
+def normalise_scale(im: Image.Image, kind: str = "object", fill: float | None = None) -> Image.Image:
     """A small subject is zoomed in on so every still in a pool sits at a similar scale: a typed octopus a quarter
     the size of the typed key beside it made the morph between them a zoom (the 25 Oct judge panel). The zoom is a
     centred crop on the subject's box, never a zoom out (padding a gradient backdrop would show a seam), capped at
-    ``ZOOM_MAX``, and only when the box is under ``SUBJECT_MIN`` of the frame height."""
+    ``ZOOM_MAX``, and only when the box is under ``SUBJECT_MIN`` of the frame height.
+
+    A setting (``kind="setting"``) finds its hero with ``hero_box`` (its place is no plain ground) and is zoomed to its
+    ``FILL`` target when the hero is under ``FILL_MIN``, at most ``FILL_ZOOM_MAX``, only when the box holds the frame's
+    centre (the prompt centres the object: a sharp corner is not the hero) and never so far that the box leaves the
+    crop. ``fill`` replaces the kind's target."""
+    if kind == "setting":
+        return _fill_setting(im, float(fill) if fill is not None else FILL["setting"])
+    if kind == "scene":
+        return im
+    target = float(fill) if fill is not None else SUBJECT_TARGET
     w, h = im.size
     a = _small(im) if isinstance(im, Image.Image) else _small(Path(str(im)))
     sh, sw = a.shape[:2]
@@ -728,7 +954,7 @@ def normalise_scale(im: Image.Image) -> Image.Image:
     box_h = (rows[-1] - rows[0] + 1) / sh
     if box_h >= SUBJECT_MIN or box_h <= 0:
         return im
-    zoom = min(ZOOM_MAX, SUBJECT_TARGET / box_h)
+    zoom = min(ZOOM_MAX, target / box_h)
     cw, ch = w / zoom, h / zoom
     cx = (cols[0] + cols[-1] + 1) / 2 / sw * w
     cy = (rows[0] + rows[-1] + 1) / 2 / sh * h
@@ -737,11 +963,36 @@ def normalise_scale(im: Image.Image) -> Image.Image:
     return im.crop((int(round(left)), int(round(top)), int(round(left + cw)), int(round(top + ch)))).resize((w, h), Image.LANCZOS)
 
 
+def _fill_setting(im: Image.Image, target: float) -> Image.Image:
+    """``normalise_scale`` for a setting: a crop on the hero, zoomed to ``target`` of the frame height."""
+    box = hero_box(im)
+    if box is None:
+        return im
+    x0, y0, x1, y1 = box
+    bw, bh = x1 - x0, y1 - y0
+    centred = x0 <= 0.5 <= x1 and y0 - 0.15 <= 0.5 <= y1 + 0.15  # the centre column, and near the middle row
+    if bh >= FILL_MIN["setting"] or bh <= 0 or not centred:
+        return im
+    zoom = min(FILL_ZOOM_MAX["setting"], target / bh, 1.0 / max(bw, 1e-3), 1.0 / max(bh, 1e-3))
+    if zoom <= 1.02:
+        return im
+    w, h = im.size
+    cw, ch = w / zoom, h / zoom
+    cx, cy = (x0 + x1) / 2 * w, (y0 + y1) / 2 * h
+    left = min(max(0.0, cx - cw / 2), w - cw)
+    top = min(max(0.0, cy - ch / 2), h - ch)
+    return im.crop((int(round(left)), int(round(top)), int(round(left + cw)), int(round(top + ch)))).resize((w, h), Image.LANCZOS)
+
+
 # ------------------------------------------------------------------------------------------------ ingest
 
 
-def _next_index(folder: Path) -> int:
-    nums = [int(m.group(1)) for p in folder.glob("*.jpg") if (m := re.match(r"^(\d+)_", p.name))]
+def _next_index(folder: Path, listed: list[dict] | None = None) -> int:
+    """The next free number in ``folder``: past every jpg there and every row ``stills.json`` still lists for it, so a
+    number whose file was culled is never handed out again (a re-grown "015_skeleton_key.jpg" once brought the culled
+    one's row, noun and place back to life, 31 Oct)."""
+    names = [p.name for p in folder.glob("*.jpg")] + [Path(str(r.get("file") or "")).name for r in (listed or [])]
+    nums = [int(m.group(1)) for name in names if (m := re.match(r"^(\d+)_", name))]
     return (max(nums) + 1) if nums else 0
 
 
@@ -749,13 +1000,14 @@ def pool_profile(vibe: str, kind: str = "object") -> dict:
     """The profile a candidate for ``vibe`` is checked against: the look (backdrop, size, edges, sharpness) comes
     from the shipped stills alone, so a batch cannot drag the vibe's look toward itself import by import; the
     duplicate check sees every object still, shipped or grown. A vibe with no shipped stills profiles on what it
-    has. A scene candidate (``kind="scene"``) takes the pool's sharpness and is a duplicate only of another scene."""
+    has. A scene candidate (``kind="scene"``) takes the pool's sharpness and is a duplicate only of another scene; a
+    setting likewise of another setting."""
     rows = catalogue().get(vibe) or []
     objects = [r for r in rows if kind_of(r) == "object"]
     anchor = [r["path"] for r in objects if r.get("shipped")] or [r["path"] for r in objects]
     prof = profile(anchor)
-    if kind == "scene":
-        prof["greys"] = [features(r["path"])["grey"] for r in rows if kind_of(r) == "scene"]
+    if kind in WHOLE_FRAME:
+        prof["greys"] = [features(r["path"])["grey"] for r in rows if kind_of(r) == kind]
         return prof
     extra = [features(r["path"])["grey"] for r in objects if not r.get("shipped")] if prof["n"] else []
     prof["greys"] = list(prof.get("greys") or []) + extra
@@ -764,18 +1016,22 @@ def pool_profile(vibe: str, kind: str = "object") -> dict:
 
 def ingest(vibe: str, source: Path | str, noun: str, *, prof: dict | None = None, own: bool = False,
            origin: str = "Z-Image Turbo (Apache 2.0), grown on this machine", extra_greys: list | None = None,
-           seed: int | None = None, keep_rejects: bool = True, kind: str = "object") -> dict:
+           seed: int | None = None, keep_rejects: bool = True, kind: str = "object", place: str | None = None) -> dict:
     """One candidate into the vibe's local set: graded if the vibe grades, checked against the pool, then
     either written as the next numbered jpg and listed in ``stills.json`` (``kept`` True) or set aside under
     ``rejected/`` with its reasons in the name. Returns the verdict with ``file`` when kept. A scene is neither
-    graded nor zoomed (the frame is the picture) and the row carries ``kind: "scene"``."""
+    graded nor zoomed (the frame is the picture) and the row carries ``kind: "scene"``. A setting is not graded either
+    (its prompt carries the vibe's colour, and the grade's tinted backdrop would wash its place), is zoomed to its fill
+    target when its object is small, and its row carries ``kind: "setting"`` and the ``place``."""
     folder = root() / vibe
     folder.mkdir(parents=True, exist_ok=True)
-    kind = "scene" if kind == "scene" else "object"
+    kind = kind if kind in KINDS else "object"
     prof = prof if prof is not None else pool_profile(vibe, kind)
     im = Image.open(source).convert("RGB")
-    if kind != "scene":
+    if kind == "object":
         im = normalise_scale(grade(im, vibe))
+    elif kind == "setting":
+        im = normalise_scale(im, "setting")
     if im.size != (W, H):
         im = im.resize((W, H), Image.LANCZOS)
     tmp = folder / f"_candidate_{slug(noun)}.jpg"
@@ -793,7 +1049,7 @@ def ingest(vibe: str, source: Path | str, noun: str, *, prof: dict | None = None
             tmp.unlink(missing_ok=True)
         verdict["kept"] = False
         return verdict
-    n = _next_index(folder)
+    n = _next_index(folder, _read_json(index_path(), {}).get(vibe))
     dest = folder / f"{n:03d}_{slug(noun)}.jpg"
     os.replace(tmp, dest)
     rel = str(dest.relative_to(root())).replace("\\", "/")
@@ -801,8 +1057,10 @@ def ingest(vibe: str, source: Path | str, noun: str, *, prof: dict | None = None
            "qa": {k: verdict[k] for k in ("backdrop", "residual", "area", "edges", "sharp", "dup")}}
     if own:
         row["own"] = True
-    if kind == "scene":
-        row["kind"] = "scene"
+    if kind in WHOLE_FRAME:
+        row["kind"] = kind
+    if kind == "setting" and place:
+        row["place"] = clean_place(place)
     if seed is not None:
         row["seed"] = int(seed)
     idx = _read_json(index_path(), {})
@@ -816,20 +1074,20 @@ def import_folder(vibe: str, folder: Path | str, *, origin: str = "", own: bool 
                   progress: Callable | None = None, kind: str = "object") -> dict:
     """Every png or jpg in ``folder`` as a candidate for ``vibe`` (the noun from the file name, a leading
     number and a reject's reason suffix dropped): the same checks and grade as a grown still, so a vibe's
-    ``rejected/`` folder can be run again after the checks change. ``kind="scene"`` imports them as scenes.
-    Returns the tally."""
+    ``rejected/`` folder can be run again after the checks change. ``kind="scene"`` imports them as scenes,
+    ``kind="setting"`` as settings (the noun is the object; the place is not known). Returns the tally."""
     folder = Path(folder)
-    kind = "scene" if kind == "scene" else "object"
+    kind = kind if kind in KINDS else "object"
     files = sorted(p for p in folder.iterdir() if p.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp"})
     prof = pool_profile(vibe, kind)
-    have = scene_nouns_in(vibe) if kind == "scene" else nouns_in(vibe)
+    have = scene_nouns_in(vibe) if kind == "scene" else setting_nouns_in(vibe) if kind == "setting" else nouns_in(vibe)
     greys: list = []
     out = {"vibe": vibe, "kind": kind, "asked": len(files), "kept": 0, "rejected": {}, "rejected_n": 0, "skipped": 0, "files": []}
     reasons = "|".join(REASONS + ("render",))
     for i, p in enumerate(files):
         stem = re.sub(rf"(_(?:{reasons}))+$", "", re.sub(r"^\d+[_\- ]*", "", p.stem))  # a reject's name carries its reasons
         noun = clean_noun(stem.replace("_", " "), SCENE_NOUN_LIMIT if kind == "scene" else 40)
-        if not _ok_noun(noun) or (noun in have and not own and kind != "scene"):
+        if not _ok_noun(noun) or (noun in have and not own and kind == "object"):
             out["skipped"] += 1
             continue
         v = ingest(vibe, p, noun, prof=prof, own=own, origin=origin or f"Z-Image Turbo (Apache 2.0), imported from {folder.name}", extra_greys=greys, kind=kind)
@@ -871,21 +1129,34 @@ def plan(vibe: str, count: int | None = None, *, nouns: list[str] | None = None,
          kind: str = "object") -> dict:
     """What a grow would render: the nouns and prompts, before any GPU work (the desk shows it, tests use it).
     ``kind="scene"`` plans scene subjects (``DEFAULT_GROW_SCENES`` of them, from ``configs/scenes.json``; typed
-    ``nouns`` are scene subjects too, never "own")."""
-    kind = "scene" if kind == "scene" else "object"
-    own = bool(own) and kind != "scene"
-    count = max(1, min(int(count or (DEFAULT_GROW_SCENES if kind == "scene" else DEFAULT_GROW)), MAX_GROW))
+    ``nouns`` are scene subjects too, never "own"). ``kind="setting"`` plans objects (typed ``nouns``, else the vibe's
+    families as an object grow draws them, skipping the ones already standing in a place) and gives each the next of
+    the vibe's places (``places_for``, from ``configs/settings.json``), ``DEFAULT_GROW_SETTINGS`` of them."""
+    kind = kind if kind in KINDS else "object"
+    own = bool(own) and kind == "object"
+    default = {"scene": DEFAULT_GROW_SCENES, "setting": DEFAULT_GROW_SETTINGS}.get(kind, DEFAULT_GROW)
+    count = max(1, min(int(count or default), MAX_GROW))
+    places: list[str] = []
     if own:
         picked = own_nouns(nouns or [])
     elif kind == "scene":
         picked = [clean_noun(n, SCENE_NOUN_LIMIT) for n in (nouns or []) if clean_noun(n, SCENE_NOUN_LIMIT)] \
             or scene_nouns_for(vibe, count, have=scene_nouns_in(vibe), seed=seed)
         picked = picked[:MAX_GROW]
+    elif kind == "setting":
+        picked = [clean_noun(n) for n in (nouns or []) if clean_noun(n)] \
+            or nouns_for(vibe, count, have=setting_nouns_in(vibe), seed=seed)
+        picked = picked[:MAX_GROW]
+        places = places_for(vibe, len(picked), start=counts(vibe).get("settings", 0), seed=seed, nouns=picked)
     else:
         picked = [clean_noun(n) for n in (nouns or []) if clean_noun(n)] or nouns_for(vibe, count, have=nouns_in(vibe), seed=seed)
         picked = picked[:MAX_GROW]
-    return {"vibe": vibe, "kind": kind, "nouns": picked, "prompts": [prompt_for(vibe, n, kind) for n in picked], "own": bool(own),
-            "seconds": estimate_seconds(len(picked)), "have": counts(vibe)}
+    prompts_ = [prompt_for(vibe, n, kind, place=places[i] if places else None) for i, n in enumerate(picked)]
+    out = {"vibe": vibe, "kind": kind, "nouns": picked, "prompts": prompts_, "own": bool(own),
+           "seconds": estimate_seconds(len(picked)), "have": counts(vibe)}
+    if kind == "setting":
+        out["places"] = places
+    return out
 
 
 def _client(cfg: dict | None):
@@ -901,13 +1172,17 @@ def grow(vibe: str, count: int | None = None, *, nouns: list[str] | None = None,
     pool, keep the good ones. Every prompt is queued at once and collected in order; ``progress(done, total,
     kept)`` after each; ``cancel()`` true stops collecting (queued renders still finish on the GPU, unused).
     ``kind="scene"`` renders scenes through the same graph (the scene prompt, the relaxed checks, ``kind`` on the
-    row). Returns the tally: ``asked``, ``made``, ``kept``, ``rejected`` by reason, ``files``, ``seconds``."""
-    kind = "scene" if kind == "scene" else "object"
+    row); ``kind="setting"`` renders each object in its planned place (``plan``'s ``places``, on the row too).
+    Returns the tally: ``asked``, ``made``, ``kept``, ``rejected`` by reason, ``files``, ``seconds``."""
+    kind = kind if kind in KINDS else "object"
     p = plan(vibe, count, nouns=nouns, own=own, seed=seed, kind=kind)
     own = p["own"]
     picked = p["nouns"]
+    places = list(p.get("places") or [])
     out = {"vibe": vibe, "kind": kind, "own": bool(own), "asked": len(picked), "made": 0, "kept": 0, "rejected": {}, "rejected_n": 0,
            "files": [], "seconds": 0.0, "nouns": picked}
+    if places:
+        out["places"] = places
     if not picked:
         out["note"] = "nothing to render: no subjects left for this vibe" if not own else "type a shape or two first"
         return out
@@ -916,19 +1191,20 @@ def grow(vibe: str, count: int | None = None, *, nouns: list[str] | None = None,
     base_seed = int(seed) if seed is not None else random.randrange(1, 2**31)
     jobs = []
     for i, noun in enumerate(picked):
+        place = places[i] if i < len(places) else None
         wf = client.workflows.from_file(str(GRAPH))
-        wf.set_input(N_TEXT, "text", prompt_for(vibe, noun, kind))
+        wf.set_input(N_TEXT, "text", prompt_for(vibe, noun, kind, place=place))
         wf.set_input(N_SEED, "seed", base_seed + i)
         wf.set_input(N_SIZE, "width", W)
         wf.set_input(N_SIZE, "height", H)
         wf.set_input(N_SAVE, "filename_prefix", f"xenoform/stills/{vibe}")
-        jobs.append((noun, base_seed + i, client.submit(wf)))
+        jobs.append((noun, base_seed + i, client.submit(wf), place))
     prof = pool_profile(vibe, kind)
     greys: list = []
     incoming = root() / vibe / "_incoming"
     incoming.mkdir(parents=True, exist_ok=True)
     kept_paths = []
-    for k, (noun, sd, job) in enumerate(jobs):
+    for k, (noun, sd, job, place) in enumerate(jobs):
         if cancel and cancel():
             out["note"] = "stopped"
             break
@@ -945,7 +1221,7 @@ def grow(vibe: str, count: int | None = None, *, nouns: list[str] | None = None,
                 progress(k + 1, len(jobs), out["kept"])
             continue
         out["made"] += 1
-        v = ingest(vibe, src, noun, prof=prof, own=own, extra_greys=greys, seed=sd, kind=kind)
+        v = ingest(vibe, src, noun, prof=prof, own=own, extra_greys=greys, seed=sd, kind=kind, place=place)
         src.unlink(missing_ok=True)
         if v["kept"]:
             greys.append(v["grey"])
@@ -963,7 +1239,8 @@ def grow(vibe: str, count: int | None = None, *, nouns: list[str] | None = None,
     except OSError:
         pass
     if sheet and kept_paths:
-        out["sheet"] = str(contact_sheet(kept_paths, root() / vibe / ("scenes.jpg" if kind == "scene" else "sheet.jpg")))
+        name = {"scene": "scenes.jpg", "setting": "settings.jpg"}.get(kind, "sheet.jpg")
+        out["sheet"] = str(contact_sheet(kept_paths, root() / vibe / name))
     out["seconds"] = round(time.time() - t0, 1)
     return out
 

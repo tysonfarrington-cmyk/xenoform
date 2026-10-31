@@ -114,7 +114,7 @@ function shortcutLabel() {
 }
 
 // The last session's vibe and Fine-tune choices survive a reload or a desk restart (the song cannot: uploads live on the server).
-const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow", "scenes", "pins", "feelSig", "batchN", "batchVary", "morphSource", "scenesChosen", "morphStyle", "morphTiming", "effects"];
+const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow", "scenes", "pins", "feelSig", "batchN", "batchVary", "morphSource", "scenesChosen", "morphStyle", "morphTiming", "effects", "backdrop"];
 // The Model row's tiers as the desk names them (quality_tier: draft, fast, final, cloud)
 const TIER_LABEL = { draft: "Draft", fast: "Fast Final", final: "Final", cloud: "Cloud Final" };
 function saveEasy() {
@@ -208,6 +208,9 @@ function payload() {
     scene_stills: (state.easy && state.easy.scenes) || "off",
     // a Scenes choice made by hand: Off then stays Off when the idea line names a place (idea.shape_state)
     scenes_chosen: !!(state.easy && state.easy.scenesChosen),
+    // Backdrop (morph_pass.backdrop_choice): what the morphs stand on, "plain" / "places" (stills.kind "setting") / "scenes";
+    // "auto" lets the vibe decide (places once it has twelve)
+    backdrop: (state.easy && state.easy.backdrop) || "auto",
     // The Chain row's pins: chain slot -> still file; the pick holds them and fills the rest (morph_pass.pins_of)
     chain_pins: (state.easy && state.easy.pins) || {},
     stem_orbit: !(state.easy && state.easy.stemOrbit === false),
@@ -995,7 +998,7 @@ function renderEasy() {
         ${timingRow(easy.morphTiming || "smooth", "easy-morph-timing")}
         ${effectsRow(easy.effects, "easy-effect")}
         ${lookRow(easy.danceFx || "auto", "easy-look")}
-        ${(state.lane && state.lane.source === "clips") || morphSource(easy) === "clips" ? "" : `${foreshadowRow(easy)}${scenesRow(easy)}<p class="note">Scenes applies to the next render, not the re-cut: a re-cut keeps this cut's stills.</p>`}
+        ${(state.lane && state.lane.source === "clips") || morphSource(easy) === "clips" ? "" : `${foreshadowRow(easy)}${scenesRow(easy)}${backdropRow(easy)}<p class="note">Scenes and Backdrop apply to the next render, not the re-cut: a re-cut keeps this cut's stills.</p>`}
         <button type="button" class="generate easy-row" data-act="easy-recut-knobs"${easy.showcase || !easyVideoId() ? " disabled" : ""}>${pendingCount(easy) ? `Apply ${pendingCount(easy)} change${pendingCount(easy) === 1 ? "" : "s"}` : "Re-cut with these knobs"}</button>
         <p class="note">Re-composes the same morphs with the knobs, the look and the orbit as they are now, and with the timeline's edits. No GPU, no new pictures: a fraction of the render time.</p>
         ${renderRow(easy)}
@@ -1050,7 +1053,7 @@ function renderEasy() {
         <p class="note morph-timing-note">${esc(MORPH_TIMING_NOTES[easy.morphTiming || "smooth"] || "")}</p>
         ${effectsRow(easy.effects, "easy-effect")}
         ${lookRow(easy.danceFx || "auto", "easy-look")}
-        ${morphSource(easy) === "objects" ? `${foreshadowRow(easy)}${scenesRow(easy)}` : ""}
+        ${morphSource(easy) === "objects" ? `${foreshadowRow(easy)}${scenesRow(easy)}${backdropRow(easy)}` : ""}
         <p class="note look-note">${esc(lookNote(easy.danceFx || "auto"))}</p>
       </section>
       ${fineTune(easy)}
@@ -1193,7 +1196,8 @@ function fineTune(easy) {
     setTimeout(() => { loadStills(true).finally(() => { state.stillsLoading = false; }); }, 0);
   }
   const bits = [easy.aspect || "9:16", (easy.energyPreset || "dense") === "dense" ? "Dense" : "Flow", TIER_LABEL[easy.tier] || "Draft",
-    lookLabel(easy.danceFx || "auto"), easy.scenes && easy.scenes !== "off" ? `Scenes ${easy.scenes}` : ""].filter(Boolean);
+    lookLabel(easy.danceFx || "auto"), easy.scenes && easy.scenes !== "off" ? `Scenes ${easy.scenes}` : "",
+    easy.backdrop ? `Backdrop ${easy.backdrop}` : ""].filter(Boolean);
   return `<details class="fine-tune" id="fine-tune"${open ? " open" : ""}>
       <summary>Fine-tune <small>${esc(bits.join(" · "))}</small></summary>
       ${simpleOptions(easy)}
@@ -1369,7 +1373,8 @@ function stillsCount(easy) {
   const have = (lib.counts || {})[easy.vibe] || { shipped: 0, grown: 0, own: 0, total: 0 };
   const vibe = vibeById(easy.vibe);
   const name = (vibe && vibe.name) || easy.vibe || "this vibe";
-  const parts = [`${have.shipped} shipped`, `${have.grown} grown here`, have.own ? `${have.own} of your own` : "", have.scenes ? `${have.scenes} scenes` : ""].filter(Boolean);
+  const parts = [`${have.shipped} shipped`, `${have.grown} grown here`, have.own ? `${have.own} of your own` : "", have.scenes ? `${have.scenes} scenes` : "",
+    have.settings ? `${have.settings} in places` : ""].filter(Boolean);
   const left = lib.vibe === easy.vibe && lib.subjects_left != null ? ` · ${lib.subjects_left} subjects left to render` : "";
   return `${name}: ${parts.join(" · ")}${left}`;
 }
@@ -1378,7 +1383,7 @@ function stillsStatus(easy) {
   if (job.status === "running" || job.status === "starting") {
     const eta = Number(job.eta_s || 0) - (Date.now() / 1000 - Number(job.started || 0));
     const left = eta > 0 ? `about ${clockText(eta)} left` : (job.done ? "finishing" : "loading the model, the first render takes longer");
-    return `Growing ${job.kind === "scene" ? "scenes for " : ""}${job.vibe}: ${job.done || 0} of ${job.asked || 0} rendered · kept ${job.kept || 0} · ${left}`;
+    return `Growing ${job.kind === "scene" ? "scenes for " : job.kind === "setting" ? "places for " : ""}${job.vibe}: ${job.done || 0} of ${job.asked || 0} rendered · kept ${job.kept || 0} · ${left}`;
   }
   if (easy.stillsNote) return easy.stillsNote;
   if (job.status === "done" && job.note) return `${job.vibe}: ${job.note}`;
@@ -1391,15 +1396,17 @@ function stillsRow(easy) {
   const running = job.status === "running" || job.status === "starting";
   const grow = Number(lib.default_grow || 36);
   const growScenes = Number(lib.default_grow_scenes || 8);
+  const growPlaces = Number(lib.default_grow_settings || 8);
   const status = stillsStatus(easy);
   // the status sits on its own fixed line and the explanation never swaps for it, so the row keeps its height while a
   // grow runs; loadStills rewrites just this line every few seconds (stillsStatus) instead of redrawing the desk
-  const note = `Every still is rendered on this GPU (Z-Image Turbo, about ${Math.round(Number(lib.seconds_per_still || 6))} s each), checked against the vibe's own pool (backdrop, size, cropped, soft, duplicate) and kept under the work folder; delete a jpg there to drop it. Your own shapes go first in the chain. Scenes are wide frames in the vibe's light (a dark shore, a corridor of mirrors); the Scenes row morphs them in.`;
+  const note = `Every still is rendered on this GPU (Z-Image Turbo, about ${Math.round(Number(lib.seconds_per_still || 6))} s each), checked against the vibe's own pool (backdrop, size, cropped, soft, duplicate) and kept under the work folder; delete a jpg there to drop it. Your own shapes go first in the chain. Scenes are wide frames in the vibe's light (a dark shore, a corridor of mirrors); the Scenes row morphs them in. Places are objects standing in a place that suits the vibe (the gold scarab on dusk dunes); the Backdrop row stands the morphs in them.`;
   return `<div class="simple-seg own-row library-row"><span>Library</span>
       <span class="library-count" id="library-count">${esc(stillsCount(easy))}</span>
       <span class="library-status" id="library-status" aria-live="polite">${esc(status)}</span>
       <button type="button" class="ghost" data-act="easy-grow"${running || !easy.vibe ? " disabled" : ""} title="Render ${grow} new objects for this vibe on this GPU">Grow ${grow} more</button>
       <button type="button" class="ghost chip" data-act="easy-grow-scenes"${running || !easy.vibe ? " disabled" : ""} title="Render ${growScenes} wide scenes for this vibe on this GPU; the Scenes row below morphs them in">Grow ${growScenes} scenes</button>
+      <button type="button" class="ghost chip" data-act="easy-grow-settings"${running || !easy.vibe ? " disabled" : ""} title="Render ${growPlaces} objects for this vibe on this GPU, each standing in one of its places; the Backdrop row below stands the morphs in them (your own shapes, typed beside, are the objects placed)">Grow ${growPlaces} places</button>
       <label class="ghost cloud-toggle">Your own shapes <input type="text" id="easy-own-shapes" value="${esc(easy.ownShapes || "")}" spellcheck="false" aria-label="Your own shapes, comma-separated" placeholder="a brass astrolabe, a wolf skull"></label>
       <button type="button" class="ghost" data-act="easy-make-shapes"${running || !easy.vibe ? " disabled" : ""} title="Render the shapes you typed in this vibe's material">Make them</button>
       ${running ? '<button type="button" class="ghost" data-act="easy-grow-stop">Stop</button>' : ""}
@@ -1623,7 +1630,7 @@ function chainKey() {
   const m = window.XENO_MACROS ? window.XENO_MACROS() : null;
   const counts = (state.stills && state.stills.counts && state.stills.counts[e.vibe]) || null;
   return JSON.stringify([e.song, state.audioId, e.vibe, e.idea || "", e.scenes || "off", !!e.scenesChosen, e.energyPreset, e.tier, e.aspect, easyLength(e), e.lengthStart,
-    e.morphs, e.ownFolder, e.ownId, e.pins || {}, m && m.speed, counts]);
+    e.morphs, e.ownFolder, e.ownId, e.pins || {}, m && m.speed, counts, e.backdrop || "auto"]);
 }
 function scheduleChain(key) {
   if (chainTimer) clearTimeout(chainTimer);
@@ -1674,12 +1681,14 @@ function libraryPicker(vibe, act, slot, used) {
   if (!rows.length) return `<p class="note">The ${esc(vibe)} library is empty: grow some stills on the Library row first.</p>`;
   const tile = (r) => {
     const taken = used.has(r.file);
-    return `<button type="button" class="lib-thumb${taken ? " taken" : ""}${r.kind === "scene" ? " is-scene" : ""}" data-act="${act}" data-slot="${slot}" data-file="${esc(r.file)}"${taken ? " disabled" : ""} title="${esc(r.noun + (r.kind === "scene" ? " (scene)" : "") + (taken ? " · already in the chain" : ""))}"><img src="${esc(media(r.thumb))}" alt="" loading="lazy"><i>${esc(r.noun)}</i></button>`;
+    return `<button type="button" class="lib-thumb${taken ? " taken" : ""}${r.kind === "scene" ? " is-scene" : ""}" data-act="${act}" data-slot="${slot}" data-file="${esc(r.file)}"${taken ? " disabled" : ""} title="${esc(r.noun + (r.kind === "scene" ? " (scene)" : r.kind === "setting" ? " (in a place)" : "") + (taken ? " · already in the chain" : ""))}"><img src="${esc(media(r.thumb))}" alt="" loading="lazy"><i>${esc(r.noun)}</i></button>`;
   };
-  const objects = rows.filter((r) => r.kind !== "scene");
+  const objects = rows.filter((r) => r.kind !== "scene" && r.kind !== "setting");
+  const places = rows.filter((r) => r.kind === "setting");
   const scenes = rows.filter((r) => r.kind === "scene");
   return `<div class="lib-picker">
       ${objects.length ? `<div class="lib-group"><span>Objects</span><div class="lib-tiles">${objects.map(tile).join("")}</div></div>` : ""}
+      ${places.length ? `<div class="lib-group"><span>In places</span><div class="lib-tiles">${places.map(tile).join("")}</div></div>` : ""}
       ${scenes.length ? `<div class="lib-group"><span>Scenes</span><div class="lib-tiles">${scenes.map(tile).join("")}</div></div>` : ""}
     </div>`;
 }
@@ -1698,7 +1707,7 @@ function chainRow(easy) {
   else if (have.error) strip = `<p class="note">${esc(have.error)}</p>`;
   else {
     const slots = (have.stills || []).map((s) => {
-      const title = `${s.index + 1}. ${s.noun}${s.kind === "scene" ? " (scene)" : ""}${s.user ? " (your image)" : ""}${s.pinned ? " · pinned, click × to let the pick choose" : " · click to choose another"}`;
+      const title = `${s.index + 1}. ${s.noun}${s.kind === "scene" ? " (scene)" : s.kind === "setting" ? " (in a place)" : ""}${s.user ? " (your image)" : ""}${s.pinned ? " · pinned, click × to let the pick choose" : " · click to choose another"}`;
       return `<div class="chain-slot${s.pinned ? " pinned" : ""}${s.kind === "scene" ? " is-scene" : ""}${easy.chainPick === s.index ? " picking" : ""}">
           <button type="button" class="chain-pick" data-act="easy-chain-slot" data-slot="${s.index}" title="${esc(title)}" aria-label="${esc(title)}">${s.thumb ? `<img src="${esc(media(s.thumb))}" alt="" loading="lazy">` : `<span class="chain-user">yours</span>`}<i>${esc(s.noun)}</i></button>
           ${s.pinned ? `<button type="button" class="unpin" data-act="easy-unpin" data-slot="${s.index}" title="Unpin: let the pick choose this slot" aria-label="Unpin slot ${s.index + 1}">×</button>` : ""}
@@ -1769,6 +1778,35 @@ function scenesRow(easy) {
   const why = fromLine ? " Your line names a place, so its scenes are mixed in; pick Off to keep objects only." : "";
   return `${simpleSeg("easy-scenes", current, [["off", "Off"], ["mix", "Mix"], ["only", "Only"]], "Scenes")}
       <p class="note">${esc((SCENES_NOTES[current] || SCENES_NOTES.off) + why + none)}</p>`;
+}
+
+// Backdrop: what the morphs stand on (morph_pass.backdrop_choice). Plain is each object on the vibe's own studio ground,
+// as every cut has been; Places stands each object in a place that suits the vibe (stills kind "setting", grown with
+// "Grow 8 places" on the Library row), the object still the hero and big in the frame; Scenes is wide frames alone (the
+// Scenes row's Only). Untouched, a vibe with twelve places or more cuts in Places. Mix on the Scenes row still lands a
+// scene on each passage change, whatever the Backdrop puts between. The make body carries it as backdrop; the record
+// says which stills stood in a place, and a re-cut keeps them.
+const BACKDROPS = ["plain", "places", "scenes"];
+const PLACES_DEFAULT_MIN = 12;  // morph_pass.PLACES_DEFAULT_MIN
+const BACKDROP_NOTES = {
+  plain: "Each object on the vibe's own studio ground, as every cut has been.",
+  places: "Each object standing in a place that suits the vibe (the gold scarab on dusk dunes, the black glass rose on wet obsidian under mist), the object still the hero; the place shifts with it as it changes.",
+  scenes: "Wide frames alone, no object: every morph travels between places in the vibe's light (the same as Scenes Only).",
+};
+function backdropRow(easy) {
+  const have = ((state.stills || {}).counts || {})[easy.vibe] || {};
+  const places = Number(have.settings || 0);
+  const chosen = BACKDROPS.includes(easy.backdrop) ? easy.backdrop : "";
+  const auto = easy.scenes === "only" ? "scenes" : places >= PLACES_DEFAULT_MIN ? "places" : "plain";
+  const current = chosen || auto;
+  const why = chosen ? "" : current === "places" ? ` This vibe has ${places} places, so its cuts stand in them; pick Plain for the studio ground.`
+    : current === "plain" ? ` Places come in by themselves once this vibe has ${PLACES_DEFAULT_MIN}${places ? ` (it has ${places})` : ""}.` : "";
+  const none = current === "places" && easy.vibe && state.stills && !places
+    ? " This vibe has no places yet: grow some on the Library row first, or the cut stays plain." : "";
+  const few = current === "places" && places > 0 && places < PLACES_DEFAULT_MIN
+    ? ` With ${places} places the cut makes fewer, longer morphs; grow more for faster morphing.` : "";
+  return `${simpleSeg("easy-backdrop", current, [["plain", "Plain"], ["places", "Places"], ["scenes", "Scenes"]], "Backdrop")}
+      <p class="note">${esc((BACKDROP_NOTES[current] || BACKDROP_NOTES.plain) + why + none + few)}</p>`;
 }
 
 function machineRows(easy) {
@@ -2479,6 +2517,7 @@ function applySimpleRecipe(recipe) {
   easy.morphTiming = recipe.morph_timing || "smooth";
   easy.effects = Array.isArray(recipe.effects) ? recipe.effects.filter((x) => EFFECTS.includes(x)) : [];
   easy.scenes = ["off", "mix", "only"].includes(recipe.scene_stills) ? recipe.scene_stills : "off";
+  easy.backdrop = BACKDROPS.includes(recipe.backdrop) ? recipe.backdrop : "";
   easy.lengthS = Number(recipe.length_s || 0);
   easy.performer = Number(recipe.performer || 0);
   easy.performerStyle = recipe.performer_style || "auto";
@@ -4057,6 +4096,8 @@ document.addEventListener("click", async (event) => {
     growStills(false);
   } else if (act === "easy-grow-scenes") {
     growStills(false, "scene");
+  } else if (act === "easy-grow-settings") {
+    growStills(false, "setting");
   } else if (act === "easy-make-shapes") {
     growStills(true);
   } else if (act === "easy-grow-stop") {
@@ -4275,6 +4316,9 @@ document.addEventListener("click", async (event) => {
   } else if (act === "easy-scenes") {
     state.easy.scenes = ["off", "mix", "only"].includes(el.dataset.value) ? el.dataset.value : "off";
     state.easy.scenesChosen = true;  // picked by hand: the idea line no longer turns Off into Mix
+    render();
+  } else if (act === "easy-backdrop") {
+    state.easy.backdrop = BACKDROPS.includes(el.dataset.value) ? el.dataset.value : "";  // picked by hand: the vibe's default steps aside
     render();
   } else if (act === "easy-source") {
     const from = morphSource(state.easy);
@@ -5387,11 +5431,15 @@ async function loadStills(force) {
 async function growStills(own, kind) {
   if (!state.easy || !state.easy.vibe) return;
   const scenes = kind === "scene";
+  const places = kind === "setting";  // objects standing in the vibe's places: the shapes typed beside are the ones placed
   const body = { vibe: state.easy.vibe, own: !!own && !scenes, kind: scenes ? "scene" : "object" };
-  if (own && !scenes) body.nouns = state.easy.ownShapes || "";
+  if (places) {
+    Object.assign(body, { kind: "setting", own: false, count: Number((state.stills && state.stills.default_grow_settings) || 8) });
+    if ((state.easy.ownShapes || "").trim()) body.nouns = state.easy.ownShapes;
+  } else if (own && !scenes) body.nouns = state.easy.ownShapes || "";
   else if (scenes) body.count = Number((state.stills && state.stills.default_grow_scenes) || 8);
   else body.count = Number((state.stills && state.stills.default_grow) || 36);
-  state.easy.stillsNote = own && !scenes ? "Rendering your shapes..." : scenes ? "Queueing the scenes..." : "Queueing the renders...";
+  state.easy.stillsNote = places ? "Queueing the places..." : own && !scenes ? "Rendering your shapes..." : scenes ? "Queueing the scenes..." : "Queueing the renders...";
   render();
   const response = await api("/api/stills/grow", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   const data = await response.json().catch(() => ({}));

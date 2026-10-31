@@ -543,6 +543,34 @@ def test_the_strip_cutter_makes_four_cuts_a_poster_each_and_a_fresh_pack_entry(t
         assert p.stat().st_size > strip.MIN_POSTER, p.name
 
 
+def test_shipping_a_grown_still_keeps_its_kind_and_the_catalogue_leaves_a_setting_alone():
+    """A scene or a setting stays one when it ships (the catalogue tells them by ``kind``), and a grown setting of the same
+    noun as a shipped object never hides it: the dedupe only drops a shipped row the machine grew itself, same bytes."""
+    from PIL import Image
+
+    from xenoform import stills
+
+    ship = _script("ship_grown", ROOT / "scripts" / "vibe_objects" / "ship_grown.py")
+    base = {"file": "ocean/050_lighthouse.jpg", "noun": "lighthouse", "made": "2026-10-30", "seed": 11}
+    obj = ship.shipped_row("ocean", dict(base), "iridescent glass")
+    assert obj == {"file": "ocean/050_lighthouse.jpg", "noun": "lighthouse", "finish": "iridescent glass", "source":
+                   "Z-Image Turbo (Apache 2.0), seed 11, 1024x576, prompt configs/still_prompts.json ocean prefix and subject sentence, grown 2026-10-30"}
+    scene = ship.shipped_row("ocean", dict(base, kind="scene"), "x")
+    setting = ship.shipped_row("ocean", dict(base, kind="setting", place="on a quiet shore"), "x")
+    assert scene["kind"] == "scene" and "scene prefix" in scene["source"] and "place" not in scene
+    assert setting["kind"] == "setting" and setting["place"] == "on a quiet shore" and "setting template, place on a quiet shore" in setting["source"]
+    cat = stills.catalogue({"ocean": [obj, scene, setting]})["ocean"]
+    assert [stills.kind_of(r) for r in cat] == ["object", "scene", "setting"] and all(r["shipped"] for r in cat)
+    # a grown setting with a shipped object's noun (other bytes) lives beside it: nothing is hidden, the kind is read
+    pool = stills.shipped()["ocean"]
+    (stills.root() / "ocean").mkdir(parents=True, exist_ok=True)
+    Image.new("RGB", (1024, 576), (10, 40, 60)).save(stills.root() / "ocean" / "900_place.jpg", quality=90)
+    stills._write_json(stills.index_path(), {"ocean": [{"file": "ocean/900_place.jpg", "noun": pool[0]["noun"], "kind": "setting", "place": "on a shore", "source": "t"}]})
+    rows = stills.catalogue()["ocean"]
+    assert len(rows) == len(pool) + 1 and [r["shipped"] for r in rows].count(False) == 1 and stills.kind_of(rows[-1]) == "setting"
+    assert stills.counts("ocean") == {"shipped": len(pool), "grown": 0, "own": 0, "scenes": 0, "settings": 1, "total": len(pool) + 1}
+
+
 def test_credits_and_docs_say_what_the_strips_are():
     credits = (ROOT / "CREDITS.md").read_text(encoding="utf-8")
     row = next(line for line in credits.splitlines() if line.startswith("| The 22 vibes "))

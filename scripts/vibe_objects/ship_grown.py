@@ -4,7 +4,7 @@ The grown set (``work/ui/objects``, git-ignored) holds every still the app has r
 screen in a finished cut, a pinned chain or a loved morph are copied byte for byte (same file name, so a pin, a
 recipe or a chain preset names the same file on both sides) into ``ui_static/objects/<vibe>/`` and get one row
 each in ``objects.json``: ``file``, ``noun``, ``finish``, ``source`` (model, seed, prompt file, date) and, for a
-wide frame, ``kind: "scene"``. Rows are appended after the vibe's existing ones, so ``00_orb`` and ``01_nautilus``
+wide frame, ``kind: "scene"`` (an object standing in a place keeps ``kind: "setting"`` and its ``place``). Rows are appended after the vibe's existing ones, so ``00_orb`` and ``01_nautilus``
 (which ``make_library.py`` reads) stay first. On a machine that has the same file in its grown set,
 ``stills.catalogue`` lists the grown copy and hides the shipped twin.
 
@@ -64,6 +64,7 @@ def v2_seed(v2: Path | None, vibe: str, noun: str) -> int | None:
 def source_of(vibe: str, row: dict, v2: Path | None) -> str:
     made = str(row.get("made") or "")
     scene = row.get("kind") == "scene"
+    setting = row.get("kind") == "setting"
     seed = row.get("seed")
     imported = str(row.get("source") or "").startswith(f"{MODEL}, imported from")
     if imported:
@@ -72,9 +73,21 @@ def source_of(vibe: str, row: dict, v2: Path | None) -> str:
         return text + (f"{SIZE[0]}x{SIZE[1]}, scripts/vibe_objects/gen_v2.py (the vibe's featured_prompts.json prefix and subject "
                        f"sentence), made 2026-10-24, imported into the grown set {made}")
     text = f"{MODEL}, seed {seed}, " if seed is not None else f"{MODEL}, seed unrecorded, "
-    prompt = f"configs/still_prompts.json {vibe}" + (" scene prefix" if scene else " prefix and subject sentence")
+    kind = " scene prefix" if scene else (" setting template" + (f", place {row['place']}" if row.get("place") else "")) if setting else " prefix and subject sentence"
+    prompt = f"configs/still_prompts.json {vibe}{kind}"
     own = ", typed in the desk as an own shape" if row.get("own") else ""
     return f"{text}{SIZE[0]}x{SIZE[1]}, prompt {prompt}{own}, grown {made}"
+
+
+def shipped_row(vibe: str, row: dict, finish: str, v2: Path | None = None) -> dict:
+    """The ``objects.json`` row of a grown still. A scene or a setting keeps its ``kind`` (and a setting its ``place``) when it
+    ships: the catalogue tells them from objects by it, and a pin, a recipe or a chain preset names the file either way."""
+    new = {"file": row["file"], "noun": str(row.get("noun") or ""), "finish": finish, "source": source_of(vibe, row, v2)}
+    if row.get("kind") in ("scene", "setting"):
+        new["kind"] = row["kind"]
+    if row.get("kind") == "setting" and row.get("place"):
+        new["place"] = row["place"]
+    return new
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -123,9 +136,7 @@ def main(argv: list[str] | None = None) -> int:
         if f in listed:
             skipped += 1
             continue
-        new = {"file": f, "noun": noun, "finish": finish[vibe], "source": source_of(vibe, row, v2)}
-        if row.get("kind") == "scene":
-            new["kind"] = "scene"
+        new = shipped_row(vibe, row, finish[vibe], v2)
         if not args.dry:
             dest.parent.mkdir(parents=True, exist_ok=True)
             if not dest.is_file():

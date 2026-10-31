@@ -54,6 +54,11 @@ def build(info: dict, video_id: str = "") -> dict:
     files = [str(f) for f in (info.get("stills") or [])]
     stills = [noun_of(s) for s in files]
     scene_files = {str(f) for f in (info.get("scene_files") or [])}
+    setting_files = {str(f) for f in (info.get("setting_files") or [])}  # the stills that stood in a place
+
+    def kind_of(f: str) -> str:
+        return "scene" if f in scene_files else "setting" if f in setting_files else "object"
+
     pinned = {int(k) for k in (info.get("pinned") or []) if str(k).lstrip("-").isdigit()}
     swapped = {int(s["slot"]) for s in (info.get("swaps") or []) if isinstance(s, dict) and "slot" in s}
     chain = info.get("chain") or {}
@@ -109,7 +114,7 @@ def build(info: dict, video_id: str = "") -> dict:
             row["plays"] = int(s["plays"])
         if stills and not (s.get("performer") or s.get("own") or gen or s.get("dream")):
             # the chain slots the shot's morph leaves and lands on: a swap on the lane names the landing still
-            row.update({"from_still": a, "still": b, "to_file": files[b], "to_kind": "scene" if files[b] in scene_files else "object",
+            row.update({"from_still": a, "still": b, "to_file": files[b], "to_kind": kind_of(files[b]),
                         "pinned": b in pinned, "swapped": b in swapped, "morph": m})
         if not (s.get("performer") or s.get("own")):
             row["style"] = styles[i] if i < len(styles) and styles[i] else "melt"
@@ -176,7 +181,7 @@ def build(info: dict, video_id: str = "") -> dict:
             sections.append({"section": r["section"], "start": r["start"], "end": r["end"]})
         elif sections and r["section"] == sections[-1]["section"]:
             sections[-1]["end"] = r["end"]
-    chain_rows = [{"index": k, "file": f, "noun": stills[k], "kind": "scene" if f in scene_files else "object",
+    chain_rows = [{"index": k, "file": f, "noun": stills[k], "kind": kind_of(f),
                    "pinned": k in pinned, "swapped": k in swapped} for k, f in enumerate(files)]
     # only a Draft cut swaps and re-renders: a Fast Final or Cloud Final record says tier "draft" too, with its flag
     draft = str(info.get("tier") or "draft") != "final" and not info.get("fast") and not info.get("cloud")

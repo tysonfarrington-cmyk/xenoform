@@ -3,8 +3,11 @@
 The vibe stills are 16:9: one object on a plain (mostly black) ground. For a native
 vertical render each still is re-laid on a portrait canvas of its own background with
 the whole object centred, scaled to fit (wide shapes fit the width, tall ones the
-height), edges feathered into the ground. A still that is a full-frame scene rather than
-an object on a ground is centre-cropped instead. numpy + ffmpeg only, CPU, free.
+height), edges feathered into the ground. A scene (``kind`` "scene", a full frame with no
+centred object) is centre-cropped instead, by its kind, and a setting (an object standing in
+a place) is cropped around its object; an object still whose subject fills the frame anyway
+is cropped the same way. The black crush (``black_stills``) is for an object's ground and
+leaves a scene or a setting as it is. numpy + ffmpeg only, CPU, free.
 """
 
 from __future__ import annotations
@@ -18,6 +21,29 @@ PROMPT_SUFFIX = (" Vertical 9:16 portrait framing: one object centred in the fra
                  "empty background above and below it, locked-off camera.")
 FILL_W, FILL_H = 0.95, 0.72  # the padded object box fills at most this share; min() of the two keeps it whole
 STILL_W, STILL_H = 720, 1280
+FRAME_KINDS = ("scene", "setting")  # kinds whose whole frame is the picture: cropped for portrait, never re-laid or crushed
+SETTING_SUFFIX = (" Vertical 9:16 portrait framing: the object whole and large in the middle of the frame, its place around it, "
+                  "locked-off camera.")
+
+
+def kind_of(row: dict | None) -> str:
+    """A still row's kind as the portrait pass reads it (``stills.kind_of``)."""
+    from xenoform.stills import kind_of as _kind
+
+    return _kind(row or {})
+
+
+def suffix_for(kinds: tuple[str, str] | None) -> str:
+    """The portrait sentence a vertical Final or Cloud morph of a pair with these kinds ends on: ``PROMPT_SUFFIX`` for
+    two objects; nothing for a pair that touches a scene, whose wide frame "one object centred, empty background above
+    and below it" contradicts (31 Oct: the scene pairs of the five Cloud scene cuts were sent with it); for a pair in a
+    place (a setting), the object whole in the middle with its place around it (``SETTING_SUFFIX``)."""
+    kinds = tuple(kinds) if kinds else ("object", "object")
+    if any(k == "scene" for k in kinds):
+        return ""
+    if any(k == "setting" for k in kinds):
+        return SETTING_SUFFIX
+    return PROMPT_SUFFIX
 
 
 def _ffmpeg() -> str:
@@ -73,14 +99,30 @@ def subject_box(img: np.ndarray, bg: np.ndarray, thresh: float = 28.0) -> tuple[
     return int(cols[0]), int(rows[0]), int(cols[-1]) + 1, int(rows[-1]) + 1
 
 
-def frame_portrait(img: np.ndarray, w: int = STILL_W, h: int = STILL_H) -> np.ndarray:
+def frame_portrait(img: np.ndarray, w: int = STILL_W, h: int = STILL_H, kind: str = "object") -> np.ndarray:
+    """The still laid out for a portrait render. A scene (``kind``) is centre-cropped: its whole frame is the picture,
+    and cutting a "subject" out of it and pasting it on its border colour would leave a box on a flat ground. A setting
+    is cropped too, its place left as it is, the window centred on its hero (``stills.hero_box``). An object is re-laid
+    whole on a canvas of its own ground; one whose subject box covers over 92 % of both axes anyway (rain or smoke to
+    every edge, or a kindless full frame) is cropped like a scene."""
     from xenoform.beatfx import crop_box, resize
 
     sh, sw = img.shape[:2]
+    if kind in FRAME_KINDS:
+        cx = 0.5
+        if kind == "setting":
+            from PIL import Image
+
+            from xenoform.stills import hero_box
+
+            hero = hero_box(Image.fromarray(np.ascontiguousarray(img, dtype=np.uint8)))
+            cx = (hero[0] + hero[2]) / 2 if hero else 0.5
+        x, y, cw, ch = crop_box(sw, sh, "9:16", cx, 0.5)
+        return resize(img[y:y + ch, x:x + cw], w, h)
     bg = background(img)
     box = subject_box(img, bg)
     if box is None or ((box[2] - box[0]) > 0.92 * sw and (box[3] - box[1]) > 0.92 * sh):
-        x, y, cw, ch = crop_box(sw, sh, "9:16", 0.5, 0.5)  # a scene, not an object on a ground
+        x, y, cw, ch = crop_box(sw, sh, "9:16", 0.5, 0.5)  # no object on a ground to re-lay: the frame itself
         return resize(img[y:y + ch, x:x + cw], w, h)
     x0, y0, x1, y1 = box
     pad = int(round(0.06 * max(x1 - x0, y1 - y0)))
@@ -119,9 +161,14 @@ def black_ground(img: np.ndarray, thresh: float = 24.0) -> np.ndarray:
 
 
 def black_stills(stills: list[dict], work: Path) -> list[dict]:
-    """The stills with their ground forced to pure black (cached in ``work/black``)."""
+    """The stills with their ground forced to pure black (cached in ``work/black``). A scene has no ground to crush (the
+    house rule is about an object's ground; crushing a dusk shore to black cut its sky out), so it passes through as it
+    is, without the ``black_ground`` mark."""
     out, done = [], {}
     for s in stills:
+        if kind_of(s) in FRAME_KINDS:
+            out.append(dict(s))
+            continue
         src = Path(s["path"])
         if src not in done:
             dest = Path(work) / "black" / f"{src.stem}_black.png"
@@ -134,8 +181,9 @@ def black_stills(stills: list[dict], work: Path) -> list[dict]:
 
 def portrait_stills(stills: list[dict], work: Path, w: int = STILL_W, h: int = STILL_H,
                     background: str | None = None) -> list[dict]:
-    """The same stills, re-laid for portrait (cached in ``work/portrait``). background="black" crushes the ground first."""
-    if background == "black" and not all(s.get("black_ground") for s in stills):
+    """The same stills, re-laid for portrait (cached in ``work/portrait``). background="black" crushes the ground first.
+    Each still is laid out by its kind (``frame_portrait``)."""
+    if background == "black" and not all(s.get("black_ground") or kind_of(s) in FRAME_KINDS for s in stills):
         stills = black_stills(stills, work)
     out, done = [], {}
     for s in stills:
@@ -143,7 +191,7 @@ def portrait_stills(stills: list[dict], work: Path, w: int = STILL_W, h: int = S
         if src not in done:
             dest = Path(work) / "portrait" / f"{src.stem}_{w}x{h}.png"
             if not dest.is_file():
-                save_png(frame_portrait(load_rgb(src), w, h), dest)
+                save_png(frame_portrait(load_rgb(src), w, h, kind=kind_of(s)), dest)
             done[src] = dest
         out.append({**s, "path": str(done[src]), "portrait": True})
     return out
