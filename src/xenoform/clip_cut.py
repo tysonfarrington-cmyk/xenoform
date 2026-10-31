@@ -65,6 +65,10 @@ FPS = 24                 # the shots' frames are counted at this rate (cloud_mor
 CUT_BEATS = 4            # a paced clips cut: no shot under a bar, but in a hot drop run's first two bars
 FRESH_BACK = 3           # a fresh film is none of the last three shown (pacing.fresh_at_drops' window)
 SLOW_MIN = 0.5           # a clip shot longer than its clip plays it slowed, never slower than this, before it holds
+STILL_MOTION = 4.0       # a film moving less than this (``motion``) reads as a still picture when held for bars: seven of
+                         # the film pack's 24 (the Moon's face and its stars, Nosferatu rising, Caligari's two, the
+                         # Haxan sabbath, the city of tomorrow), which go to the short shots instead
+HOLD_BEATS = 8           # a shot this long or longer holds its film (two bars)
 MEAN_SHOT_MAX_S = 8.0    # no-clip-twice never cuts the plan past one shot in this many seconds: a folder too small
                          # for the song lets a clip come back (a later stretch) rather than hold one for half a minute
 MONO_COLOUR = 6.0        # a clip whose colour varies less than this (Hasler and Suesstrunk's spread of the two
@@ -356,17 +360,54 @@ def hand_over(shots: list[dict], kind: list[str], period: float, beats: list | N
     return _frames(_regroup(out)), kd
 
 
-def assign(shots: list[dict], kind: list[str], clips: list[dict], *, scenes: bool = False) -> list[dict]:
+_MOTION: dict[tuple, float] = {}
+
+
+def motion(path: str | Path) -> float | None:
+    """How much a clip's picture moves: the mean change from frame to frame, four frames a second on a 64x36 grey copy,
+    over the whole clip (the film pack runs from 1.5, Nosferatu rising, to 25, the Odessa steps); None when it will not
+    read. Measured once a file."""
+    import subprocess
+
+    import numpy as np
+
+    from xenoform.video import ffmpeg_bin
+
+    p = Path(str(path))
+    try:
+        st = p.stat()
+        key = (str(p), st.st_size, st.st_mtime_ns)
+    except OSError:
+        return None
+    if key in _MOTION:
+        return _MOTION[key]
+    try:
+        raw = subprocess.run([ffmpeg_bin(), "-v", "error", "-i", str(p), "-an", "-vf", "fps=4,scale=64:36,format=gray",
+                              "-f", "rawvideo", "-"], capture_output=True, check=True).stdout
+        g = np.frombuffer(raw, np.uint8).reshape(-1, 36, 64).astype(np.float32)
+    except Exception:
+        return None
+    if len(g) < 2:
+        return None
+    got = round(float(np.abs(np.diff(g, axis=0)).mean()), 3)
+    _MOTION[key] = got
+    return got
+
+
+def assign(shots: list[dict], kind: list[str], clips: list[dict], *, scenes: bool = False, hold_s: float = 0.0) -> list[dict]:
     """The clip each clip shot plays, and the clips each morph runs between: ``slots``' shape, a clip shot's slot with its
     ``family`` and ``cut`` (it opens with a hard cut), a shot that carries a clip on (``cont``) the clip before it.
     Unused clips first, in the folder's order, so a clip comes back (a later stretch, ``turn``) only once every clip has
     played; a cut on an event goes to a fresh film (none of the last ``FRESH_BACK``); under full Breathe (``scenes``) a
-    scene passage holds one film, the one with the most clips left (not the film of the scene before, where another
-    will do); a clip long enough for its shot before one that is not; no clip right after one of its own film outside a
-    scene, where another will do."""
+    scene passage holds one film, the one with the most clips left (the most that move, then not the film of the scene
+    before, where another will do); a clip long enough for its shot before one that is not; a shot held ``hold_s`` or
+    longer on a film that moves (``motion`` of ``STILL_MOTION`` and over: a still film held for bars reads as a frozen
+    picture, and goes where the cut moves fast instead); no clip right after one of its own film outside a scene, where
+    another will do."""
     from xenoform import pacing
 
     fam = [family_of(c) for c in clips]
+    still = [(m := motion(c["path"])) is not None and m < STILL_MOTION for c in clips] if hold_s > 0 else [False] * len(clips)
     used = [0] * len(clips)
     shown: list[int] = []
     passages = pacing.passage_of(shots)
@@ -391,22 +432,26 @@ def assign(shots: list[dict], kind: list[str], clips: list[dict], *, scenes: boo
         scene = scenes and str(s.get("section") or "") in pacing.SCENE_ROLES and s.get("drop_run") is None
         p = passages[i]
         if scene and p not in scene_film:
-            left = {}
+            left: dict = {}
+            moving: dict = {}
             for c, f in enumerate(fam):
                 if not used[c]:
                     left[f] = left.get(f, 0) + 1
+                    moving[f] = moving.get(f, 0) + int(not still[c])
             want = sum(1 for j, kk in enumerate(kind) if kk == "clip" and passages[j] == p)
             if left:
-                scene_film[p] = max(sorted(left), key=lambda f: (min(left[f], want), f != before, left[f]))
+                scene_film[p] = max(sorted(left), key=lambda f: (min(left[f], want), min(moving[f], want), f != before, left[f]))
                 before = scene_film[p]
         recent = {fam[c] for c in shown[-FRESH_BACK:]}
         last = fam[shown[-1]] if shown else ""
+        held = hold_s > 0 and need >= hold_s - 1e-3
 
         def rank(c: int) -> tuple:
             have = float(clips[c].get("seconds") or 0.0)
             return (used[c],
                     have < 0.8 * need,  # a clip that would play under 0.8x for this shot only when no other will do
                     (fam[c] != scene_film[p]) if scene and p in scene_film else (fam[c] in recent) if cut else (fam[c] == last),
+                    held and still[c],  # a held shot on a film that moves
                     have < need - 0.05,
                     c)
 
@@ -516,7 +561,7 @@ def arrange(shots: list[dict], plan: dict, clips: list[dict], state: dict, beats
         longest = max(MEAN_SHOT_MAX_S, lengths[int(0.75 * (len(lengths) - 1))]) if lengths else 0.0
         laid, kind = thin(laid, kind, int(limit), period, floor=floor, longest_s=longest)
     scenes = pacing.boldness(pacing.breathe_amount(state)) >= 0.5
-    sl = assign(laid, kind, clips, scenes=scenes)
+    sl = assign(laid, kind, clips, scenes=scenes, hold_s=HOLD_BEATS * period)
     snap_runs(laid, kind, state)
     return {"shots": laid, "slots": sl, "paced": True,
             "clip_shots": sum(1 for x in sl if x["kind"] == "clip" and not x.get("cont"))}

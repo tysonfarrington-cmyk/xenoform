@@ -116,7 +116,9 @@ What a clips cut does with the pacing engine (`clip_cut`, the same for a clips s
   the span the song gives it.
 - **Under Breathe a calm passage holds one film** (the film the pack says a clip is from) for three or four bars a clip,
   cut on the bar, with no effects and no boundary kinds, Chaos 0.15; builds tighten from two bars a shot to one; the
-  flash tame applies.
+  flash tame applies. A shot held two bars or longer plays a film that moves (`clip_cut.motion`): a film whose own
+  picture barely moves (the Moon's face, Caligari's stairs, the city of tomorrow) held for bars reads as a frozen
+  picture, so it goes to the short shots of the drops and builds, where it flashes by.
 - **No shot under a bar** but in a hot drop run's first two bars: the plan's two-beat slivers fold into a neighbour.
 - The record carries the pacing block (passages, runs, rests, the line), and the timeline's re-cut obeys the same rules.
   Breathe off with Drops off is the clips cut as it was made before, byte for byte (`tests/test_clips_legacy.py`).

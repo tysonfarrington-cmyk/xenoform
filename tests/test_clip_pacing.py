@@ -211,6 +211,27 @@ def test_a_clip_is_never_shown_twice_while_others_wait():
     assert len({sl["clip"] for sl in used[:8]}) == 8 and max(sl["turn"] for sl in used) >= 1  # all eight, then returns
 
 
+def test_a_held_shot_plays_a_film_that_moves(tmp_path):
+    from xenoform.video import write_mp4
+
+    def reel(name: str, moving: bool) -> dict:
+        rng = np.random.default_rng(3)
+        base = rng.integers(0, 255, size=(36, 64, 3)).astype(np.uint8)
+        frames = [np.roll(base, 4 * k, axis=1) if moving else base for k in range(72)]
+        write_mp4(tmp_path / name, frames, 24)
+        return {"path": str(tmp_path / name), "seconds": 3.0, "family": name}
+
+    clips = [reel("01_still.mp4", False), reel("02_moving.mp4", True), reel("03_moving.mp4", True)]
+    assert clip_cut.motion(clips[0]["path"]) < clip_cut.STILL_MOTION <= clip_cut.motion(clips[1]["path"])
+    shots = [{"start": 0.0, "end": 1.0, "passage": 0, "section": "drop"},
+             {"start": 1.0, "end": 2.0, "passage": 0, "section": "drop"},
+             {"start": 2.0, "end": 6.0, "passage": 0, "section": "calm"}]
+    held = clip_cut.assign(shots, ["clip", "morph", "clip"], clips, hold_s=3.0)
+    assert held[0]["clip"] == 0 and held[2]["clip"] == 1  # the still film flashes by in the short shot, the hold moves
+    first = clip_cut.assign(list(reversed([dict(s, start=s["start"]) for s in shots])), ["clip", "morph", "clip"], clips, hold_s=3.0)
+    assert first[0]["clip"] == 1  # a hold first takes a moving film, even before the folder's first clip
+
+
 def test_a_legacy_shape_is_laid_out_as_before():
     song = _window("glitch-out", 125.0, 30.0)
     lay = _lay(song, _pack(4), 14.71, breathe=False, drop_mode="off")
