@@ -256,8 +256,29 @@ def test_a_paced_window_plans_on_the_songs_own_beats(tmp_path, monkeypatch):
                                     tmp_path / f"features_{paced}.json", tmp_path / "cache")
         if paced:
             assert cut["beats"][:4] == [0.0, 0.5, 1.0, 1.5] and len(cut["beats"]) == 16 and cut["tempo"] == 120.0
-            assert [(s["label"], s["start"], s["end"]) for s in cut["sections"]] == [("calm", 0.0, 6.0), ("drop", 6.0, 8.0)]
+            # the song's own roles where the window sits (the calm half is the song's intro), not judged inside 8 s
+            assert [(s["role"], s["start"], s["end"]) for s in cut["sections"]][0] == ("intro", 0.0, 6.0)
+            assert [s["start"] for s in cut["sections"]] == [0.0, 6.0] and cut["sections"][-1]["end"] == 8.0
             assert made["beats"] == cut["beats"] and made["tempo"] == 120.0 and made["sections"] == cut["sections"]
         else:
             assert cut["beats"][:3] == [0.0, 0.25, 0.5] and cut["tempo"] == 240.0  # the old cut: its own analysis
             assert not turbo.window_path(Path(wav)).exists() and made["tempo"] == 240.0
+
+
+def test_a_window_keeps_the_songs_roles_where_it_sits():
+    """Roles judged inside 30 s made Glitch Out's quiet opening a build (the loudest stretch inside the window) and
+    opened every window on an intro and closed it on an outro, wherever it sat; a paced window keeps the whole song's
+    roles, cut to it. Breathe off with Drops off keeps the analysis as it was."""
+    from xenoform import ui as ui_mod
+
+    f = _features("glitch-out")
+    audio = SONGS / "glitch_out.mp3"
+    win, at, _ = ui_mod._window_features(f, audio, 30.0, 0.0, paced=True)
+    assert [s["role"] for s in win["sections"]] == ["intro", "calm", "calm"] and at == 0.0
+    win, at, drop = ui_mod._window_features(f, audio, 30.0, 105.0, paced=True)
+    assert [s["role"] for s in win["sections"]] == ["build", "release", "drop", "build"] and abs(at - 104.4583) < 1e-3
+    shots, plan = dense.shots_for(_make_body(win, breathe=True), win, None, drop=drop)
+    assert [p["role"] for p in plan["passages"]] == ["build", "release", "drop", "build"]
+    assert next(s for s in shots if s.get("event") == "drop")["start"] == pytest.approx(119.79 - at, abs=0.05)  # 1:59.8
+    old, _, _ = ui_mod._window_features(f, audio, 30.0, 105.0, paced=False)
+    assert old["sections"] and not any("role" in s for s in old["sections"])

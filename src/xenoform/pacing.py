@@ -262,6 +262,28 @@ def main_drop(features: dict, drop: float | None) -> float | None:
     return round(float(main["start"]), 4) if main is not None else drop
 
 
+def given_roles(sections: list[dict]) -> bool:
+    """True when the sections already carry the song's own roles (a Length window cut from them): not refined again."""
+    return bool(sections) and all(str(s.get("role") or "") for s in sections)
+
+
+def song_roles(features: dict, drop: float | None = None) -> list[dict]:
+    """The whole song's story roles as ``song_plan`` derives them (the passages, refined for the drops, the run that
+    holds ``drop`` split there), for a Length window to keep: cut to the window (``ui._window_features``) they say what
+    the song is doing there, where roles judged inside 30 s would call its loudest stretch a build, its first an intro
+    and its last an outro. ``[]`` when the song has fewer than two sections."""
+    from xenoform import dense
+
+    duration = float(features.get("duration") or 0.0)
+    sections = dense._analysis_sections(features)
+    if duration <= 0 or len(sections) < 2:
+        return []
+    grid = grid_for(list(features.get("beats") or []), duration, features.get("tempo"))
+    period = _median_gap(grid) or 0.5
+    rows = dense._story_roles(sections, duration, min_len=max(6.0, 8 * period))
+    return split_at_drop(refine_roles(rows, sections, period=period), drop, period)
+
+
 # ------------------------------------------------------------------------------------------------ the plan
 
 
@@ -295,7 +317,7 @@ def song_plan(duration: float, beats: list, sections: list[dict], drop: float | 
         # every drop run is its own passage with its heat; the song's drop (beatfx.drop_time, the biggest rise, which can
         # sit on the riser two beats early) only says which run is the main one, and the record's drop is that run's
         # first beat, where the analysis put the drop
-        rows = split_at_drop(refine_roles(rows, sections, period=period), drop, period)
+        rows = split_at_drop(rows if given_roles(sections) else refine_roles(rows, sections, period=period), drop, period)
         main = drop_runs(rows, drop, period, drop_mode)
         runs = [r for r in rows if r["role"] == "drop"]
         drop = min(grid, key=lambda b: abs(b - float(main["start"]))) if main is not None else None

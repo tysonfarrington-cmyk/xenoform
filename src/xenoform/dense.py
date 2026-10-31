@@ -920,6 +920,11 @@ def _story_roles(sections: list[dict], duration: float, min_len: float = 6.0) ->
     rows = [dict(sec) for sec in sections if float(sec.get("end", 0)) > float(sec.get("start", 0))]
     if not rows:
         return [{"start": 0.0, "end": float(duration), "label": "calm", "level": 0.5, "role": "calm"}]
+    if all(str(r.get("role") or "") in STORY_BEATS for r in rows):
+        # the song's own roles, cut to a Length window (ui._window_features): kept as the whole song has them, not
+        # judged again against the window's own loudest
+        return [{"label": str(r.get("label") or r["role"]), "start": float(r["start"]), "end": float(r["end"]),
+                 "level": float(r.get("level") or 0.0), "role": str(r["role"])} for r in rows]
     # The analyser slices finely (a run of 2 s "drop" spans): merge same-label neighbours, then fold anything
     # shorter than ``min_len`` into the neighbour whose level is closer, so a section is a passage, not a bar.
     top0 = max(float(r.get("level") or 0.0) for r in rows) or 1.0

@@ -3122,13 +3122,29 @@ def _window_features(features: dict, audio: Path | None, length_s: float, length
     if earlier:
         start = max(earlier)
     end = start + length_s
+    rows = features.get("analysis_sections") if features.get("analysis_sections") is not None else features.get("sections")
+    if paced and rows:  # the song's own roles where the window sits in them, not roles judged inside the window
+        from xenoform import pacing as _pacing
+
+        try:
+            rows = _pacing.song_roles(features, drop) or rows
+        except Exception:
+            log.exception("the song's roles for the window")
     features["beats"] = [round(b - start, 4) for b in beats if start <= b < end]
     features["duration"] = length_s
-    rows = features.get("analysis_sections") if features.get("analysis_sections") is not None else features.get("sections")
-    features["sections"] = [{**s, "start": round(max(0.0, float(s.get("start") or 0.0) - start), 4),
-                             "end": round(min(length_s, float(s.get("end") or 0.0) - start), 4)}
-                            for s in (rows or [])
-                            if float(s.get("end") or 0.0) > start and float(s.get("start") or 0.0) < end]
+    cut = [{**s, "start": round(max(0.0, float(s.get("start") or 0.0) - start), 4),
+            "end": round(min(length_s, float(s.get("end") or 0.0) - start), 4)}
+           for s in (rows or []) if float(s.get("end") or 0.0) > start and float(s.get("start") or 0.0) < end]
+    if paced and len(cut) > 1 and all(s.get("role") for s in cut):  # a role clipped under two beats at an edge folds in
+        gaps = sorted(y - x for x, y in zip(beats, beats[1:]) if y > x)
+        two = 2.0 * (gaps[len(gaps) // 2] if gaps else 0.5)
+        if cut[0]["end"] - cut[0]["start"] < two:
+            cut[1]["start"] = cut[0]["start"]
+            cut = cut[1:]
+        if len(cut) > 1 and cut[-1]["end"] - cut[-1]["start"] < two:
+            cut[-2]["end"] = cut[-1]["end"]
+            cut = cut[:-1]
+    features["sections"] = cut
     features.pop("analysis_sections", None)
     inside = drop is not None and start <= float(drop) < end
     return features, start, (round(float(drop) - start, 4) if inside else None)
