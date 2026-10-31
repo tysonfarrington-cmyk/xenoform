@@ -630,6 +630,8 @@ def _shot_frames(clip: Path, shot: dict, si: int, n0: int, total: int, *, aspect
     if len(frames) == 0:
         raise RuntimeError(f"Shot {si + 1} came back with no frames.")
     a, b = shot_centres(frames) if aspect != "16:9" else ((0.5, 0.5), (0.5, 0.5))
+    if "setting" in (shot.get("still_kinds") or ()):  # an object in a place: the brightest thing is its sky or a neon, and
+        a, b = (0.5, 0.5), (0.5, 0.5)                 # the setting prompt centres the object, so the crop stays centred
     if shot.get("hold"):
         b = a  # a held shot never leaves its first frame, so the reframe does not drift either
     prog = pos = None

@@ -29,6 +29,7 @@ FADE_S = 0.3        # a morph landing fades the layer out over the head of the n
 MIN_LEAD_FRAMES = 6
 FOLLOW = 0.3        # the stem is eased through a one-pole follower per frame, so a spiky lane cannot strobe the layer
 MODE_GAIN = {"trace": 1.0, "negative": 0.6, "slices": 1.0, "silhouette": 0.85}  # a bright ghost on a dark vibe needs less
+PLAIN_GROUND_MODES = ("trace", "silhouette")  # the modes that outline an object against its ground: none for a setting
 
 try:
     import cv2  # type: ignore
@@ -130,25 +131,35 @@ def plan(shots: list[dict], clips: list, beats, fps: int, mode: str, p: dict, *,
     def held(i: int) -> bool:  # the timeline's Hold: the shot shows its first frame throughout, and the join after it is a cut
         return 0 <= i < len(shots) and bool(shots[i].get("hold"))
 
+    def in_place(i: int, which: str) -> bool:
+        # the trace and the silhouette outline an object against its ground; a setting's frame (an object standing in a
+        # place, ``still_kinds`` from dense.stamp_still_kinds) has no ground to read, so its edges would trace the whole
+        # place: that handoff stays plain
+        if mode not in PLAIN_GROUND_MODES or not 0 <= i < len(shots):
+            return False
+        kinds = list(shots[i].get("still_kinds") or [])
+        return bool(kinds) and kinds[0 if which == "first" else -1] == "setting"
+
     for si, shot in enumerate(shots):
         n = int(shot.get("frames") or 0)
         entry: dict = {"mode": mode, "lead": 0, "echo": 0, "target": None, "prev": None}
         if si + 1 < len(shots) and si + 1 < len(clips) and n > 0:
             which = "first" if (hard(si + 1) or held(si) or held(si + 1)) else "last"
-            tgt = frame(si + 1, which)
+            tgt = None if in_place(si + 1, which) else frame(si + 1, which)
             if tgt is not None:
                 entry["target"] = tgt
                 entry["lead"] = int(min(lead, max(MIN_LEAD_FRAMES, n // 2)))
                 entry["which"] = which
         if si > 0 and si - 1 < len(clips) and n > 0 and (hard(si) or hard(si - 1) or held(si - 1)):
-            prev = frame(si - 1, "first" if held(si - 1) else "last")  # across a hard cut: the object that just left echoes out for a beat
+            which = "first" if held(si - 1) else "last"  # across a hard cut: the object that just left echoes out for a beat
+            prev = None if in_place(si - 1, which) else frame(si - 1, which)
             if prev is not None:
                 entry["prev"] = prev
                 entry["echo"] = int(min(echo, max(2, n // 3)))
         elif si > 0 and si < len(clips) and n > 0:
             # a morph landing: the layer was showing where this shot will land, and it must not vanish on the frame
             # of the handoff, so it fades out over the head of the shot (a third of a second)
-            prev = frame(si, "last")
+            prev = None if in_place(si, "last") else frame(si, "last")
             if prev is not None:
                 entry["prev"] = prev
                 entry["echo"] = int(min(max(2, int(round(FADE_S * fps))), max(2, n // 3)))

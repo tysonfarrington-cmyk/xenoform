@@ -129,10 +129,11 @@ def build_parser() -> argparse.ArgumentParser:
     lib_sub = lib.add_subparsers(dest="stills_cmd", required=True)
     grow_p = lib_sub.add_parser("grow", help="Render new stills for a vibe (Z-Image Turbo through ComfyUI); keep the ones that pass the checks.")
     grow_p.add_argument("vibe")
-    grow_p.add_argument("--count", type=int, default=None, help="Catalogue subjects to render (default 36, or 8 scenes; about 6 s each).")
+    grow_p.add_argument("--count", type=int, default=None, help="Catalogue subjects to render (default 36, or 8 scenes or settings; about 6 s each).")
     grow_p.add_argument("--nouns", default="", help="Your own shapes instead, comma-separated: rendered in the vibe's material, first in the chain.")
-    grow_p.add_argument("--kind", choices=("object", "scene"), default="object",
-                        help="scene: wide frames in the vibe's material (configs/scenes.json) for the Simple cut's scene_stills mix / only.")
+    grow_p.add_argument("--kind", choices=("object", "scene", "setting"), default="object",
+                        help="scene: wide frames in the vibe's material (configs/scenes.json) for the Simple cut's scene_stills mix / only; "
+                             "setting: one object standing in each of the vibe's places (configs/settings.json) for the backdrop places.")
     grow_p.add_argument("--seed", type=int, default=None)
     grow_p.add_argument("--plan", action="store_true", help="Print the subjects and prompts; render nothing.")
     _add_config(grow_p)
@@ -140,7 +141,8 @@ def build_parser() -> argparse.ArgumentParser:
     imp_p.add_argument("vibe")
     imp_p.add_argument("folder")
     imp_p.add_argument("--own", action="store_true", help="List them as your own shapes (first in the chain).")
-    imp_p.add_argument("--kind", choices=("object", "scene"), default="object", help="scene: import them as scenes (the relaxed checks).")
+    imp_p.add_argument("--kind", choices=("object", "scene", "setting"), default="object",
+                       help="scene or setting: import them as scenes or as objects in a place (the relaxed checks).")
     _add_config(imp_p)
     status_p = lib_sub.add_parser("status", help="Stills per vibe: shipped, grown here, your own.")
     _add_config(status_p)
@@ -338,7 +340,7 @@ def _dispatch(args, cfg: dict) -> None:
         if args.stills_cmd == "status":
             for vibe, c in sorted(stills.counts().items()):
                 print(f"{vibe:20s} shipped {c['shipped']:3d}   grown here {c['grown']:3d}   own {c['own']:3d}   "
-                      f"scenes {c.get('scenes', 0):3d}   total {c['total']:3d}")
+                      f"scenes {c.get('scenes', 0):3d}   settings {c.get('settings', 0):3d}   total {c['total']:3d}")
             print(f"local stills: {stills.root()}")
         elif args.stills_cmd == "import":
             if not Path(args.folder).is_dir():
@@ -347,10 +349,10 @@ def _dispatch(args, cfg: dict) -> None:
             print("\n" + stills.summary_line(res) + (f" · skipped {res['skipped']} (banned or already in the pool)" if res.get("skipped") else ""))
         else:
             kind = str(args.kind or "object")
-            own = bool(args.nouns.strip()) and kind != "scene"  # typed nouns with --kind scene are scene subjects
+            own = bool(args.nouns.strip()) and kind == "object"  # typed nouns with --kind scene / setting are its subjects
             nouns = stills.own_nouns(args.nouns) if own else ([n for n in args.nouns.split(",") if n.strip()] or None)
-            count = args.count or (stills.DEFAULT_GROW_SCENES if kind == "scene" else stills.DEFAULT_GROW)
-            what = "scenes" if kind == "scene" else "stills"
+            count = args.count or {"scene": stills.DEFAULT_GROW_SCENES, "setting": stills.DEFAULT_GROW_SETTINGS}.get(kind, stills.DEFAULT_GROW)
+            what = {"scene": "scenes", "setting": "settings"}.get(kind, "stills")
             if args.plan:
                 p = stills.plan(args.vibe, count, nouns=nouns, own=own, seed=args.seed, kind=kind)
                 for noun, prompt in zip(p["nouns"], p["prompts"]):
