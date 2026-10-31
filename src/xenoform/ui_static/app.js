@@ -1240,7 +1240,7 @@ function songPlanFacts(easy) {
     rows.push(["Passages", clips ? `${s.passages}, one clips cut over them` : `${s.passages}${s.windows !== s.passages ? ` in ${s.windows} Makes` : ""}, a look each`]);
     rows.push(["Morphs", clips ? `${s.morphs} between your clips, on the beat` : `${s.morphs} on the beat (at most ${s.window_cap} a Make${s.cap && s.cap !== "auto" ? `, capped at ${s.cap}` : ""})`]);
     for (const [tier, label] of [["draft", "Draft"], ["fast", "Fast Final"], ["final", "Final"], ["cloud", "Cloud Final"]]) {
-      rows.push([label, songTierText(s, tier)]);
+      if (!(clips && tier === "cloud")) rows.push([label, songTierText(s, tier)]);  // a clips cut has no Cloud path
     }
     if (s.title && s.title.at != null) rows.push(["Title", `on the last hit, ${clockText(s.title.at)}`]);
   } else {
