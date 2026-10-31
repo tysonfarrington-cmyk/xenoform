@@ -358,6 +358,7 @@ def seed(work_ui: Path, *, dry_run: bool = False, limit: int | None = None,
         if not simple.is_dir():
             continue
         clips += [p for p in sorted(simple.glob("*.mp4")) if CLIP_RE.match(p.name)]
+    keys: set[tuple[str, str]] = set()
     for clip in clips[: limit or None]:
         out["seen"] += 1
         got = key_from_clip(clip)
@@ -366,6 +367,11 @@ def seed(work_ui: Path, *, dry_run: bool = False, limit: int | None = None,
             continue
         key, eng, parts = got
         out["engines"][eng] = out["engines"].get(eng, 0) + 1
+        if (eng, key) in keys:  # the same request rendered twice: the second render is what the cache saves
+            out["repeats"] = out.get("repeats", 0) + 1
+            out["repeats_by_engine"] = {**out.get("repeats_by_engine", {}), eng: out.get("repeats_by_engine", {}).get(eng, 0) + 1}
+            continue
+        keys.add((eng, key))
         if lookup(eng, key) is not None:
             out["had"] += 1
             continue

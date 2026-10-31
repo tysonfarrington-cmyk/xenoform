@@ -25,7 +25,6 @@ for what the pick and the pickers did, kept in the record's ``taste`` block and 
 from __future__ import annotations
 
 import contextvars
-import copy
 import json
 import logging
 import os
@@ -384,11 +383,11 @@ def note_dropped(dropped: list[tuple[dict, dict]], vibe: str) -> None:
     for row, r in dropped:
         by.setdefault(r["id"], []).append(_row_noun(row))
     parts = []
-    for rid, nouns in by.items():
+    for rid, nouns in by.items():  # each rule with the objects it kept out, so the line says which did what
         names = list(dict.fromkeys(nouns))
-        parts.append(f"{', '.join(names[:5])}{', ...' if len(names) > 5 else ''}")
+        parts.append(f"{rid}: {', '.join(names[:6])}{', ...' if len(names) > 6 else ''}")
     n = len(dropped)
-    note(list(by), f"{n} {vibe} still{'s' if n != 1 else ''} left out of the pick: " + "; ".join(parts))
+    note(list(by), f"{n} {vibe} still{'s' if n != 1 else ''} left out of the pick; " + "; ".join(parts))
 
 
 def _palette_rule() -> dict | None:

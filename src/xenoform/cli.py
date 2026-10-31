@@ -396,6 +396,9 @@ def _dispatch(args, cfg: dict) -> None:
             print(f"  skipped {n}: {why}")
         for eng, n in res["engines"].items():
             print(f"  {eng}: {n}")
+        if res.get("repeats"):
+            print(f"  {res['repeats']} were the same request rendered again: "
+                  + ", ".join(f"{e} {n}" for e, n in res["repeats_by_engine"].items()))
         return
 
     if args.cmd == "midi":

@@ -334,10 +334,13 @@ def test_the_jobs_on_disk_seed_the_cache_and_a_draft_then_hits(tmp_path):
     shutil.rmtree(mc.root())  # a machine whose cache is empty: only the job's clips are left
     (job / "notes.txt").write_text("not a clip", encoding="utf-8")
     (job / "cloud_full00.mp4").write_bytes(b"a scaled copy, not a morph")  # the scaled copies stay out
+    twin = work_ui / "jobs" / "efgh5678" / "simple"  # a second job that rendered the same request again
+    twin.mkdir(parents=True)
+    shutil.copyfile(job / "local00.mp4", twin / "local00.mp4")
     dry = mc.seed(work_ui, dry_run=True)
-    assert dry["seen"] == 2 and dry["kept"] == 2 and not (mc.root() / "ltx095").exists()
+    assert dry["seen"] == 3 and dry["kept"] == 2 and dry["repeats"] == 1 and not (mc.root() / "ltx095").exists()
     got = mc.seed(work_ui)
-    assert got["kept"] == 2 and got["engines"] == {"ltx095": 2}
+    assert got["kept"] == 2 and got["engines"] == {"ltx095": 3} and got["repeats"] == 1  # the engines count every clip read
     assert mc.seed(work_ui)["had"] == 2  # a second seed keeps nothing twice
     again = FakeComfy()
     cloud_morph._local_clips(_shots(2), st, tmp_path / "new", {}, 7, "none", client=again, styles=["melt", "melt"])
