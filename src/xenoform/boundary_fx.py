@@ -91,8 +91,113 @@ def smear_of(value) -> str:
     return v if v in SMEAR else "off"
 
 
+WIPE_SHARE = 0.25        # a paced cut: wipes at most a quarter of its handoffs (the repeated strip-wipe "bar", Tys 30 Oct)
+NO_KIND_ROLES = ("intro", "build", "outro")  # Breathe: plain handoffs here (the montage's intro, builds and outro had none)
+
+
+def _pick_paced(shots: list[dict], macros: dict | None, beats, fps: int, *, seed: int, premium: list | None, smear: str,
+                breathe: bool) -> list[dict | None]:
+    """``pick`` for a cut the pacing engine shaped (``pacing.shape``): each passage takes the share of its handoffs its
+    own Chaos asks for (a shot's ``chaos``: the knob, capped by the passage under Breathe, lifted in a drop by its heat;
+    none in an intro, a build or an outro under Breathe); a drop run's first handoff and every planted ``event`` come
+    first; wipes stay at most ``WIPE_SHARE`` of all the handoffs; the strobe only in a run at full heat and two seconds
+    from the last one; never the kind just used; the premium transitions keep their boundaries."""
+    n = len(shots)
+    out: list[dict | None] = [None] * n
+    if n < 2:
+        return out
+    p = params(macros)
+    period = _beat_period(beats)
+    prem = list(premium or [])
+
+    def role(i: int) -> str:
+        return str(shots[i].get("section") or "")
+
+    def heat(i: int) -> float:
+        try:
+            return float(shots[i].get("heat") or 0.0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    def entry(i: int) -> bool:
+        return str(shots[i].get("boundary") or "") == "drop"
+
+    def event(i: int) -> bool:
+        return entry(i) or bool(shots[i].get("event"))
+
+    def share_at(i: int) -> float:
+        if breathe and role(i) in NO_KIND_ROLES:
+            return 0.0
+        try:
+            c = float(shots[i].get("chaos", p["chaos"]))
+        except (TypeError, ValueError):
+            c = p["chaos"]
+        return share(c)
+
+    cand = []
+    for i in range(1, n):
+        if i < len(prem) and isinstance(prem[i], dict) and bool(prem[i].get("kind")):
+            continue  # the vibe's premium transition keeps its boundary
+        if int(shots[i].get("frames") or 0) < 2 * MIN_HALF or int(shots[i - 1].get("frames") or 0) < 2 * MIN_HALF:
+            continue
+        cand.append(i)
+    if not cand:
+        return out
+    chosen = [i for i in cand if event(i) and share_at(i) > 0]  # an event dressed first, unless Chaos asks for none
+    groups: dict = {}
+    for i in cand:
+        groups.setdefault(shots[i].get("passage", role(i)), []).append(i)
+    for idx in groups.values():
+        want = int(round(max(share_at(i) for i in idx) * len(idx)))
+        have = [i for i in idx if i in chosen]
+        rest = [i for i in idx if i not in chosen]
+        need = want - len(have)
+        if need > 0 and rest:
+            take = sorted({int(round(x)) for x in np.linspace(0, len(rest) - 1, min(need, len(rest)))})
+            chosen += [rest[j] for j in take]
+    chosen = sorted(set(chosen))
+    smear = smear_of(smear)
+    smear_cap = 0 if smear == "off" else max(1, len(chosen) // SMEAR_SHARE) if smear == "sparing" else len(chosen)
+    wipe_cap = int(WIPE_SHARE * (n - 1))
+    rot = int(seed) % len(KINDS)
+    uses = {k: 0 for k in KINDS}
+    assigned: dict[int, str] = {}
+    strobe_times: list[float] = []
+
+    def allowed_for(i: int, exclude: set) -> list[str]:
+        t = float(shots[i].get("start") or 0.0)
+        prefer = PREFER["drop"] if entry(i) else PREFER.get(role(i), PREFER_DEFAULT)
+        return [k for k in prefer if k not in exclude
+                and (k != "strobe" or (heat(i) >= 1.0 and event(i) and all(abs(t - ts) >= STROBE_GAP_S for ts in strobe_times)))
+                and (k != "wipe" or uses["wipe"] < wipe_cap)
+                and (k != "smear" or (uses["smear"] < smear_cap and not entry(i)))]
+
+    last = None
+    for i in chosen:  # left to right: the strobe's two seconds and "never the kind just used" read in time
+        opts = allowed_for(i, {last} if last else set())
+        if not opts:
+            continue
+        prefer = PREFER["drop"] if entry(i) else PREFER.get(role(i), PREFER_DEFAULT)
+        kind = opts[0] if event(i) else min(opts, key=lambda k: (uses[k], (prefer.index(k) + rot) % len(KINDS)))
+        assigned[i] = kind
+        uses[kind] += 1
+        last = kind
+        if kind == "strobe":
+            strobe_times.append(float(shots[i].get("start") or 0.0))
+    for i in sorted(assigned):
+        kind = assigned[i]
+        t = float(shots[i].get("start") or 0.0)
+        win = max(2 * MIN_HALF, int(round(BEATS[kind] * period * fps)))
+        tail = max(MIN_HALF, min(win // 2, int(shots[i - 1]["frames"]) // 2))
+        head = max(MIN_HALF, min(win - win // 2, int(shots[i]["frames"]) // 2))
+        variant = ("iris" if role(i) in IRIS_ROLES else "strips") if kind == "wipe" else ""
+        out[i] = {"kind": kind, "frames": tail + head, "tail": tail, "head": head, "section": role(i),
+                  "boundary": str(shots[i].get("boundary") or ""), "stem": STEM[kind], "variant": variant, "t": round(t, 3)}
+    return out
+
+
 def pick(shots: list[dict], macros: dict | None, beats, fps: int, *, seed: int = 0, premium: list | None = None,
-         drop: float | None = None, smear: str = "off") -> list[dict | None]:
+         drop: float | None = None, smear: str = "off", paced: dict | None = None) -> list[dict | None]:
     """One entry per shot (None for a plain handoff): the kind at the boundary into that shot and its window.
 
     Chaos decides how many boundaries take a kind (``share``): the drop first, then the section switches, then an
@@ -104,7 +209,10 @@ def pick(shots: list[dict], macros: dict | None, beats, fps: int, *, seed: int =
     plan's drop time) marks the boundary nearest it as the drop when no shot carries a ``boundary`` key (the dense plan
     of a short cut), and on such a plan the wipes from the drop on are irises. ``smear`` (``SMEAR``) is the blocky smear:
     "off" (the default since 28 Oct) leaves it to the timeline, "sparing" allows one handoff in ``SMEAR_SHARE`` and
-    never the drop, "on" lets it in like the other kinds."""
+    never the drop, "on" lets it in like the other kinds. ``paced`` (``{"breathe": bool}``, a cut the pacing engine
+    shaped) picks by passage instead (``_pick_paced``)."""
+    if paced is not None:
+        return _pick_paced(shots, macros, beats, fps, seed=seed, premium=premium, smear=smear, breathe=bool(paced.get("breathe")))
     smear = smear_of(smear)
     n = len(shots)
     out: list[dict | None] = [None] * n

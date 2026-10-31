@@ -34,6 +34,14 @@ DROP_HALF_BARS = 8                # one drop (drop_mode "off"): the bars after t
 # tight the denser plan (dense.STORY_BEATS); both are copied here so the legacy story plan keeps its own tables.
 VISCOUS = {"intro": 8, "calm": 8, "sustain": 8, "build": 8, "release": 8, "drop": 4, "drop_late": 8, "outro": 8}
 TIGHT = {"intro": 8, "calm": 8, "sustain": 8, "build": 4, "release": 4, "drop": 2, "drop_late": 4, "outro": 8}
+# Breathe (plan section 3, the montage's numbers): a bar a shot almost everywhere (the montage played 9 to 10 morphs per 8
+# bars in every passage but the intro); what breathes is the timing, the effects, the chaos and the rests, not the cut
+BREATHE = {"intro": 4, "calm": 4, "sustain": 4, "build": 4, "release": 4, "drop": 4, "drop_late": 4, "outro": 8}
+BREATHE_FIRST = 2          # the intro's first shot is this many of its steps (two bars)
+BUILD_END_BARS = 2         # Breathe: a build's last two bars cut on the half bar
+REST_BEATS = 4             # the arrived object held this long at the intro's last shot and a calm passage's end
+REST_MAX = 8               # a rest is never longer
+REST_ROLES = ("intro", "calm", "sustain", "release")  # never in a drop
 # what gives up morphs first when the budget is short (lowest first) and gets them first when there are more to spend:
 # the calm passages breathe, the drops are the event. A role's step doubles when its priority plus the doublings it has
 # had is the lowest, so a tight budget lengthens the calm shots about a doubling and a half before the drops' first
@@ -328,30 +336,57 @@ def song_plan(duration: float, beats: list, sections: list[dict], drop: float | 
             return "drop_late"
         return "drop"
 
-    def cut(steps: dict) -> list[tuple[int, str, bool, int]]:
-        """(grid index, role, starts a passage, passage index) for every shot."""
-        out: list[tuple[int, str, bool, int]] = []
+    def zone(p: dict, k: int) -> tuple[str, str]:
+        """(role, part): the part is "end" over a Breathe build's last bars, which cut on the half bar."""
+        role = zone_role(p, k)
+        if breathe and role == "build" and k >= p["i1"] - BUILD_END_BARS * 4:
+            return role, "end"
+        return role, ""
+
+    def rest_of(pi: int, p: dict) -> int:
+        """Breathe: the beats the passage's last shot holds its arrived object (the intro's last shot, a calm passage's
+        end), never in a drop and never where the build ramps into a drop run."""
+        if not breathe or p["role"] not in REST_ROLES:
+            return 0
+        q = passages[pi + 1] if pi + 1 < len(passages) else None
+        if per_run and q is not None and "drop_run" in q:
+            return 0
+        return REST_BEATS if p["i1"] - p["i0"] >= REST_BEATS + MIN_BEATS else 0
+
+    def cut(steps: dict) -> list[tuple[int, str, bool, int, int]]:
+        """(grid index, role, starts a passage, passage index, rest beats) for every shot."""
+        out: list[tuple[int, str, bool, int, int]] = []
         for pi, p in enumerate(passages):
+            rest = rest_of(pi, p)
             k, first = p["i0"], True
-            end = p["i1"]
+            end = p["i1"] - rest
+            mine: list[list] = []
             while k < end and grid[k] < duration - 0.3:
-                role = zone_role(p, k)
-                out.append((k, role, first, pi))
+                role, part = zone(p, k)
+                mine.append([k, role, first, pi, 0])
                 step = steps[role]
+                if part == "end":
+                    step = max(MIN_BEATS, step // 2)
+                elif breathe and role == "intro" and first:
+                    step *= BREATHE_FIRST  # the intro opens on one long shot
                 nxt = k + step
                 if step % 4 == 0 and (nxt - phase) % 4:  # land the next cut on a bar line (the montage cut on beat 1)
                     bar = nxt - ((nxt - phase) % 4)
                     nxt = bar if bar >= k + MIN_BEATS else bar + 4
-                # a change of zone inside the passage (the drop's late bars) starts on its own beat, unless that would
-                # leave a sliver of a shot before it
-                change = next((j for j in range(k + 1, min(nxt, end)) if zone_role(p, j) != role), None)
+                # a change of zone inside the passage (the drop's late bars, a build's last ones) starts on its own beat,
+                # unless that would leave a sliver of a shot before it
+                change = next((j for j in range(k + 1, min(nxt, end)) if zone(p, j) != (role, part)), None)
                 if change is not None and change - k >= MIN_BEATS:
                     nxt = change
                 if nxt < end and end - nxt < MIN_BEATS:
                     nxt = end  # a sliver at the passage end folds into the shot before it
                 k, first = nxt, False
+            if mine and rest:
+                mine[-1][4] = rest  # the last shot runs on over the rest
+            out.extend(tuple(x) for x in mine)
         return out
 
+    table = dict(BREATHE) if breathe else table
     steps = _role_steps(table)
     present = sorted({zone_role(p, k) for p in passages for k in range(p["i0"], max(p["i0"] + 1, p["i1"]))
                       if k < len(grid)})
@@ -382,14 +417,20 @@ def song_plan(duration: float, beats: list, sections: list[dict], drop: float | 
                     break
             if not taken or len(cuts) >= int(target):
                 break
-    times = [grid[k] if n else 0.0 for n, (k, _, _, _) in enumerate(cuts)] + [duration]
+    times = [grid[k] if n else 0.0 for n, (k, *_rest) in enumerate(cuts)] + [duration]
     shots = []
-    for n, ((k, role, starts, pi), b) in enumerate(zip(cuts, times[1:])):
+    for n, ((k, role, starts, pi, rest), b) in enumerate(zip(cuts, times[1:])):
         a = times[n]
         seconds = b - a
         if seconds < 0.3:
             continue
         p = passages[pi]
+        rest_s = 0.0
+        if rest:
+            j = p["i1"] - rest
+            rest_s = b - grid[j] if 0 <= j < len(grid) and grid[j] > a else 0.0
+            if seconds - rest_s < MIN_BEATS * period * 0.9:  # no room for the morph: no rest
+                rest, rest_s = 0, 0.0
         render_s = dense._render_s(seconds, SPEED.get(role, 1.25))
         effects = []
         on_beat = abs(grid[k] - a) < 1e-3
@@ -401,6 +442,8 @@ def song_plan(duration: float, beats: list, sections: list[dict], drop: float | 
                 "effects": effects, "section": role, "passage": pi}
         if "drop_run" in p:
             shot.update({"drop_run": p["drop_run"], "heat": p["heat"]})
+        if rest:  # Breathe: the morph plays over the first part, then the arrived object dwells (pacing.rest_indices)
+            shot.update({"rest": int(rest), "rest_s": round(rest_s, 4)})
         if starts and n > 0:
             if ("drop_run" in p) or (drop is not None and abs(a - drop) < 1e-3):
                 kind = "drop"  # every drop run opens on a drop boundary (one drop, as before, with Drops off)
@@ -425,4 +468,288 @@ def song_plan(duration: float, beats: list, sections: list[dict], drop: float | 
                       "heat": float(r["heat"]), "level": round(float(r.get("level") or 0.0), 3), "main": bool(r.get("main"))}
                      for r in runs],
             "steps": {k: v for k, v in steps.items() if k in present}, "grid": len(grid), "bar_phase": phase,
-            "drop_mode": drop_mode}
+            "drop_mode": drop_mode, "breathe": bool(breathe), "period": round(period, 4)}
+
+
+# ------------------------------------------------------------------------------------------------ the profile
+#
+# One table drives Breathe and the drops (plan section 3; montage_rules.md section 5, what survived eleven rounds of
+# Tys's notes): a passage's timing, morph style, its one effect, the Look, a Chaos cap, its Intensity, the share of its
+# handoffs that take a boundary kind and its flash budget. Written into the shots as fields the timeline already reads
+# (``timing``, ``fx_names``, ``dance_fx``, ``fx_intensity``, ``chaos``), after the plan and before the timeline's own
+# overrides, by ``shape``, which ``dense.run_simple`` and ``dense.recut_from_cache`` both call: a re-cut changes Breathe
+# and the Drops with no GPU wherever the shot lengths stay (the morph styles are rendered, so they wait for a Make).
+
+FLASH_LOOKS = ("cyan-flash", "negative-rush")   # flash looks: none before the first drop (the montage's F4)
+CALM_LOOK = "cool-echo"                          # the house VJ look, what a flash look stands down to
+DROP_CHAOS = 0.45                                # a drop's Chaos cap; a run's heat lifts the knob toward it
+PROFILE: dict[str, dict] = {
+    # role: timing, styles in turn, its one effect, Chaos cap, Intensity (the knob's 0.5 maps to it), boundary kinds,
+    # flash frames per 8 bars the tame lets through
+    "intro": {"timing": "smooth", "styles": ("bloom", "melt"), "effect": None, "chaos": 0.15, "intensity": 0.5,
+              "kinds": False, "flash": 0},
+    "calm": {"timing": "beat", "styles": ("melt", "bloom"), "effect": "third", "chaos": 0.4, "intensity": 0.8,
+             "kinds": True, "flash": 16},
+    "sustain": {"timing": "beat", "styles": ("melt", "bloom"), "effect": "third", "chaos": 0.4, "intensity": 0.8,
+                "kinds": True, "flash": 16},
+    "build": {"timing": "beat", "styles": ("fold", "bloom"), "effect": "dither", "chaos": 0.4, "intensity": 0.6,
+              "kinds": False, "flash": 24},
+    "drop": {"timing": "snap", "styles": ("shatter", "spin", "bloom"), "effect": "dither-feedback", "chaos": DROP_CHAOS,
+             "intensity": 1.0, "kinds": True, "flash": 40},
+    "drop_late": {"timing": "beat", "styles": ("melt", "spin"), "effect": "slitscan", "chaos": 0.4, "intensity": 0.9,
+                  "kinds": True, "flash": 40},
+    "release": {"timing": "beat", "styles": ("melt",), "effect": "dither", "chaos": 0.4, "intensity": 0.9,
+                "kinds": True, "flash": 40},
+    "outro": {"timing": "smooth", "styles": ("melt",), "effect": None, "chaos": 0.4, "intensity": 1.0, "kinds": False,
+              "flash": 0},
+}
+BUILD_TOP = 1.0          # a build's Intensity ramps to this by its end
+THIRD_EFFECTS = ("slitscan", "dither")  # one calm passage in three takes one of these, in turn
+
+
+def paced_shots(shots: list[dict]) -> bool:
+    """True when the shots came from the pacing engine (they carry their passage)."""
+    return any(s.get("passage") is not None for s in shots or [])
+
+
+def passage_of(shots: list[dict]) -> list[int]:
+    """Each shot's passage: the plan's own, else a run of one section (a record from before the pacing engine)."""
+    out: list[int] = []
+    for i, s in enumerate(shots):
+        if s.get("passage") is not None:
+            out.append(int(s["passage"]))
+        elif i and s.get("section") == shots[i - 1].get("section") and not s.get("boundary"):
+            out.append(out[-1])
+        else:
+            out.append((out[-1] + 1) if out else 0)
+    return out
+
+
+def _heat(s: dict) -> float:
+    if s.get("heat") is not None:
+        return float(s["heat"])
+    return 1.0 if str(s.get("section") or "") == "drop" else 0.0  # an older story plan: its one drop is the main one
+
+
+def _knob(m: dict, key: str, default: float) -> float:
+    try:
+        return max(0.0, min(1.0, float((m or {}).get(key, default))))
+    except (TypeError, ValueError):
+        return default
+
+
+CALM_KNOB = 0.15  # Chaos at or under this is a calm cut by choice (boundary_fx.ON_CHAOS): no lift, the drops included
+
+
+def shot_chaos(s: dict, chaos: float, breathe: bool, drops: bool) -> float:
+    """The Chaos a shot runs at: the knob, capped by its passage under Breathe, and in a drop run lifted toward the drop's
+    cap by the run's heat (the drop is the most active part; never past the cap unless the knob already is, and not
+    at all when the knob asks for a calm cut)."""
+    role = str(s.get("section") or "")
+    c = float(chaos)
+    if breathe and role in PROFILE:
+        c = min(c, PROFILE[role]["chaos"])
+    if drops and role in ("drop", "drop_late") and float(chaos) > CALM_KNOB:
+        cap = PROFILE[role]["chaos"] if breathe else DROP_CHAOS
+        if c < cap:
+            c = c + (cap - c) * _heat(s)
+    return round(max(0.0, min(1.0, c)), 3)
+
+
+def shot_intensity(s: dict, intensity: float, breathe: bool, drops: bool, pos: float = 0.0) -> float:
+    """A shot's beat-FX intensity (``fx_intensity``): Breathe maps the knob's 0.5 to its passage's Intensity (a build
+    ramping from its own to ``BUILD_TOP`` by ``pos``, 0..1 through the passage); without Breathe it is the knob's
+    (x1.6) and a drop run lifts it toward full by its heat."""
+    role = str(s.get("section") or "")
+    if breathe and role in PROFILE:
+        base = PROFILE[role]["intensity"]
+        if role == "build":
+            base = base + (BUILD_TOP - base) * max(0.0, min(1.0, pos))
+        fx = base * 2.0 * float(intensity)
+    else:
+        fx = 1.6 * float(intensity)
+        if drops and role in ("drop", "drop_late"):
+            fx = fx + (1.0 - min(1.0, fx)) * _heat(s)
+    return round(max(0.0, min(1.0, fx)), 3)
+
+
+def shape(shots: list[dict], macros: dict, *, breathe: bool, drop_mode: str, house: dict | None = None,
+          look: str = "", look_auto: bool = True, effects: list | None = None, timing: str = "smooth",
+          beats: list | None = None) -> dict:
+    """Lay the profile over the cut's shots, in place (a deep copy of the plan's): the work ``dense.apply_macros`` did
+    for the whole cut, a shot at a time (its Chaos and Intensity, the punches and stutters by its Chaos, its wobble),
+    then Breathe's per-passage timing (``timing`` {"mode"}: ``morph_timing.plan`` keeps it where the timeline says
+    nothing), its one effect (``fx_names``) and, with the Look on Auto, no flash look before the first drop
+    (``dance_fx``). The cut's own Timing and Effects win when they are set. Returns what it did, for the record."""
+    m = macros or {}
+    chaos, intensity = _knob(m, "chaos", 0.3), _knob(m, "intensity", 0.5)
+    drops = drop_mode in ("auto", "max")
+    wob_off = bool(house and ((house.get("look") or {}).get("character_wobble") is False))
+    period = _median_gap(sorted(float(b) for b in beats or [])) if beats and len(beats) > 2 else _period_of(shots)
+    passages = passage_of(shots)
+    starts: dict[int, float] = {}
+    ends: dict[int, float] = {}
+    for s, p in zip(shots, passages):
+        starts.setdefault(p, float(s.get("start") or 0.0))
+        ends[p] = float(s.get("end") or 0.0)
+    first_drop = min((float(s.get("start") or 0.0) for s in shots if s.get("section") in ("drop", "drop_late")), default=None)
+    user_effects = [e for e in (effects or []) if e != "smear"]
+    third = {}
+    calm_seen = 0
+    for p in sorted(set(passages)):
+        role = next((str(s.get("section") or "") for s, q in zip(shots, passages) if q == p), "")
+        if role in ("calm", "sustain"):  # the second calm passage of every three takes one, the first stays plain
+            third[p] = THIRD_EFFECTS[(calm_seen // 3) % len(THIRD_EFFECTS)] if calm_seen % 3 == 1 else None
+            calm_seen += 1
+    order = {p: k for k, p in enumerate(sorted(set(passages)))}
+    counts: dict[str, dict] = {"timing": {}, "effects": {}, "looks": 0}
+    for i, (s, p) in enumerate(zip(shots, passages)):
+        role = str(s.get("section") or "")
+        prof = PROFILE.get(role) if breathe else None
+        if not breathe:  # a rest is Breathe's: without it the shot plays its morph over its whole length
+            s.pop("rest", None)
+            s.pop("rest_s", None)
+        span = max(1e-6, ends[p] - starts[p])
+        pos = (float(s.get("start") or 0.0) - starts[p]) / span
+        c = shot_chaos(s, chaos, breathe, drops)
+        s["fx_intensity"] = round(min(1.0, float(s.get("fx_intensity", 1.0)) * shot_intensity(s, intensity, breathe, drops, pos)), 3)
+        s["chaos"] = c
+        wob = 0.0 if wob_off else max(0.0, c - 0.4)
+        if wob:
+            s["wobble"] = round(max(float(s.get("wobble") or 0.0), wob), 3)
+        kept = []
+        for fx in s.get("effects") or []:  # the knob's rules (apply_macros), at this shot's Chaos
+            kind = fx.get("type")
+            if kind == "punch":
+                kept.append({**fx, "strength": round(min(1.0, float(fx.get("strength", 0.5)) * (0.2 + 1.4 * c)), 3)})
+            elif kind in ("stutter", "hold", "skip", "reverse"):
+                if c < 0.2:
+                    continue
+                if kind == "stutter" and c > 0.6:
+                    fx = {**fx, "repeat": min(8, int(fx.get("repeat", 3)) + (4 if c > 0.85 else 2))}
+                kept.append(fx)
+            else:
+                kept.append(fx)
+        s["effects"] = kept
+        if prof is None:
+            continue
+        if timing == "smooth":  # the cut's Timing left on its default: the passage times its morphs
+            mode = prof["timing"]
+            if role == "drop" and _heat(s) < 0.5:
+                mode = "beat"
+            if mode != "smooth":
+                s["timing"] = {"mode": mode}
+            counts["timing"][mode] = counts["timing"].get(mode, 0) + 1
+        if user_effects:  # the cut's own effects, one at a time, a passage each in turn
+            pick = user_effects[order[p] % len(user_effects)]
+        else:
+            rule = prof["effect"]
+            if rule == "third":
+                pick = third.get(p)
+            elif rule == "dither-feedback":  # a drop's first 8 bars hit with dither, the rest trail feedback
+                pick = "dither" if pos * span < 8 * 4 * period - 1e-6 else "feedback"
+            else:
+                pick = rule
+        s["fx_names"] = [pick] if pick else []
+        if pick:
+            counts["effects"][pick] = counts["effects"].get(pick, 0) + 1
+        if look_auto and (first_drop is None or float(s.get("start") or 0.0) < first_drop - 1e-6):
+            calm = _calm_look(look, i, house)
+            if calm:
+                s["dance_fx"] = calm
+                counts["looks"] += 1
+    return counts
+
+
+def _period_of(shots: list[dict]) -> float:
+    """The beat period a plan's shots were cut on (their rests say it), else 120 bpm's."""
+    for s in shots:
+        if s.get("rest") and s.get("rest_s"):
+            return float(s["rest_s"]) / float(s["rest"])
+    return 0.5
+
+
+def _calm_look(look: str, index: int, house: dict | None) -> str:
+    """The look a shot before the first drop takes instead of a flash look, or "" to keep the cut's: a flash preset
+    stands down to the house VJ look, and the house look's own opening role (the cyan flash on a cut's first shot) to
+    its VJ preset."""
+    look = str(look or "")
+    if look in FLASH_LOOKS:
+        return CALM_LOOK
+    if look == "house" and index == 0:
+        vj = str((((house or {}).get("dance_fx") or {}).get("vj") or {}).get("preset") or CALM_LOOK)
+        return vj if vj not in FLASH_LOOKS else CALM_LOOK
+    return ""
+
+
+def styles(shots: list[dict], state: dict, drop: float | None = None) -> list[str] | None:
+    """The morph style a shot for a paced cut with the Morph row on Auto (None: ``morph_style.for_cut`` decides, as
+    before). Breathe takes its passage's styles in turn (bloom and melt in the intro, melt and bloom in the grooves,
+    fold and bloom in a build, shatter, spin and bloom in a drop, melt in the outro); without it the Auto rules stand."""
+    from xenoform import morph_style as MS
+
+    state = state or {}
+    given = state.get("morph_styles")
+    if isinstance(given, list) and given and len(given) == len(shots):
+        return None
+    if MS.normal(state.get("morph_style") or "auto") != "auto" or not paced_shots(shots):
+        return None
+    if not breathe_of(state):
+        return None
+    passages = passage_of(shots)
+    out: list[str] = []
+    seen: dict[int, int] = {}
+    for s, p in zip(shots, passages):
+        role = str(s.get("section") or "")
+        cycle = (PROFILE.get(role) or {}).get("styles") or ("melt",)
+        k = seen.get(p, 0)
+        seen[p] = k + 1
+        out.append(cycle[k % len(cycle)])
+    return out
+
+
+# ------------------------------------------------------------------------------------------------ the record
+
+
+def clock(seconds: float) -> str:
+    """1:59 for 119.8 s."""
+    s = int(round(max(0.0, float(seconds))))
+    return f"{s // 60}:{s % 60:02d}"
+
+
+def summary_line(shots: list[dict], *, breathe: bool, song_start: float = 0.0, drop: float | None = None) -> str:
+    """What the plan did, in a line for the Make's report: "3 drops, the main at 1:59; 6 passages; 4 rests" (song
+    time: a Length cut counts from where it sits in the song; the main drop is the run that opens at ``drop``, the
+    plan's)."""
+    entries = [s for i, s in enumerate(shots) if str(s.get("boundary") or "") == "drop" or (
+        s.get("drop_run") is not None and (i == 0 or shots[i - 1].get("drop_run") != s.get("drop_run")))]
+    runs = {s.get("drop_run") for s in shots if s.get("drop_run") is not None}
+    n = len(runs) or len(entries)
+    main = None
+    if drop is not None:
+        main = next((s for s in entries if abs(float(s.get("start") or 0.0) - float(drop)) < 0.06), None)
+    main = main or next((s for s in entries if float(s.get("heat") or 0.0) >= 1.0), None) or (entries[0] if entries else None)
+    parts = []
+    if n:
+        parts.append(f"{n} drop{'s' if n != 1 else ''}, the main at {clock(song_start + float(main['start']))}" if main else
+                     f"{n} drop{'s' if n != 1 else ''}")
+    else:
+        parts.append("no drop")
+    parts.append(f"{len(set(passage_of(shots)))} passages")
+    if breathe:
+        rests = sum(1 for s in shots if s.get("rest"))
+        parts.append(f"{rests} rest{'s' if rests != 1 else ''}")
+    return "; ".join(parts)
+
+
+def record(plan: dict, shots: list[dict], state: dict, window: dict | None = None) -> dict:
+    """The record's ``pacing`` block: the shape the cut was made in, its passages and drop runs, the rests and the line
+    the Make reported."""
+    out = {"breathe": breathe_of(state), "drop_mode": drop_mode_of(state)}
+    if not paced_shots(shots):
+        return out
+    start = float((window or {}).get("song_start") or 0.0)
+    out.update({"passages": list(plan.get("passages") or []), "runs": list(plan.get("runs") or []),
+                "rests": sum(1 for s in shots if s.get("rest")), "steps": dict(plan.get("steps") or {}),
+                "line": summary_line(shots, breathe=out["breathe"], song_start=start, drop=plan.get("drop"))})
+    return out

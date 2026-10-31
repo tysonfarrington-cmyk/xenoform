@@ -658,7 +658,7 @@ def create_app(cfg: dict | None = None):
         # answer "No such video." to Re-cut with these knobs on any cut made before the restart, 28 Oct)
         job, folder = _cut_job_for_edit(job_id, "re-cut")
         overrides = {k: body.get(k) for k in ("macros", "dance_fx", "stem_orbit", "beat_fx", "end_card", "beat_overlay", "foreshadow",
-                                              "morph_timing", "effects", "boundary_smear") if k in body}
+                                              "morph_timing", "effects", "boundary_smear", "breathe", "drop_mode") if k in body}
         # the timeline's per-shot and per-boundary overrides (docs/TIMELINE.md): whole maps, each replacing the record's
         for key in ("shot_overrides", "boundary_overrides"):
             if key in body and isinstance(body.get(key), (dict, list)):
@@ -2927,6 +2927,9 @@ def _run_job(job_id: str, audio_path: Path, body: dict, cfg: dict, out: Path, ca
                 job["detail"] = f"{kind} ready in {result['seconds']:.1f}s"
                 if result.get("cached_keyframes"):
                     job["detail"] += f" · {result['cached_keyframes']} cached"
+                if result.get("plan_line"):  # what the pacing engine planned (pacing.summary_line)
+                    job["detail"] += f" · {result['plan_line']}"
+                    job["plan_line"] = result["plan_line"]
                 job["seconds"] = result["seconds"]
             if isinstance(result, dict) and result.get("warning"):
                 job["detail"] = result["warning"]

@@ -50,6 +50,18 @@ def _timing(value) -> str:
     return normal(value)
 
 
+def _breathe(state: dict) -> bool:
+    from xenoform.pacing import breathe_of
+
+    return breathe_of(state)
+
+
+def _drop_mode(state: dict) -> str:
+    from xenoform.pacing import drop_mode_of
+
+    return drop_mode_of(state)
+
+
 def _clean(state: dict) -> dict:
     out = {
         "vibe": str(state.get("vibe") or "")[:40],
@@ -67,6 +79,8 @@ def _clean(state: dict) -> dict:
         "style": _style(state.get("morph_style")),  # how the morphs change (morph_style)
         "timing": _timing(state.get("morph_timing")),  # when the change happens inside each morph (morph_timing)
         "effects": _effects(state),  # the TouchDesigner-style effects and the blocky smear (xenoform.effects)
+        "breathe": _breathe(state),  # the shape (xenoform.pacing): Breathe, and how the drops hit
+        "drops": _drop_mode(state),
     }
     song = str(state.get("song") or "")[:80]
     if song:
@@ -79,10 +93,12 @@ def _clean(state: dict) -> dict:
 
 _SHORT = {"vibe": "v", "idea": "i", "seed": "s", "energy": "e", "aspect": "a", "tier": "t", "fx": "f",
           "overlay": "o", "card": "c", "song": "g", "plan": "p", "vertical": "vm", "morphs": "n", "foreshadow": "fs",
-          "style": "ms", "timing": "mt", "effects": "ef"}
+          "style": "ms", "timing": "mt", "effects": "ef", "breathe": "br", "drops": "dm"}
+# a code from before the shape keys made its cut with Breathe off and the Drops off (the cut as it was), so those are
+# the codec's defaults: a new code carries the shape it was made in, an old one decodes to the cut it made
 _DEFAULTS = {"idea": "", "seed": 2727, "energy": "flow", "aspect": "16:9", "tier": "draft", "fx": True,
              "overlay": False, "card": False, "vertical": "auto", "morphs": "auto", "foreshadow": "auto", "style": "auto",
-             "timing": "smooth", "effects": []}
+             "timing": "smooth", "effects": [], "breathe": False, "drops": "off"}
 
 
 def encode(state: dict) -> str:
@@ -112,10 +128,12 @@ def decode(code: str) -> dict:
                     "beat_overlay": data.get("overlay"), "end_card": data.get("card"), "song": data.get("song"),
                     "vertical_mode": data.get("vertical"), "cut_plan": data.get("plan"),
                     "morph_count": data.get("morphs"), "foreshadow": data.get("foreshadow"), "morph_style": data.get("style"),
-                    "morph_timing": data.get("timing"), "effects": data.get("effects")})
+                    "morph_timing": data.get("timing"), "effects": data.get("effects"),
+                    "breathe": data.get("breathe"), "drop_mode": data.get("drops")})
     state = {"vibe": clean["vibe"], "idea": clean["idea"], "seed": clean["seed"], "energy_preset": clean["energy"],
              "aspect": clean["aspect"], "quality_tier": clean["tier"], "beat_fx": clean["fx"],
-             "beat_overlay": clean["overlay"], "end_card": clean["card"], "song": clean.get("song", "")}
+             "beat_overlay": clean["overlay"], "end_card": clean["card"], "song": clean.get("song", ""),
+             "breathe": clean["breathe"], "drop_mode": clean["drops"]}
     if clean["morphs"] != "auto":
         state["morph_count"] = clean["morphs"]
     if clean["vertical"] != "auto":

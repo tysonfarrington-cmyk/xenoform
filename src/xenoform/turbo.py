@@ -799,6 +799,8 @@ def _run_turbo(
         "checkpoint": manifest["checkpoint"],
         "warning": warning,
         "quality": "turbo",
+        # what the pacing engine planned, in a line ("3 drops, the main at 1:59; 6 passages; 4 rests"), for the job
+        "plan_line": str(((morph_info or {}).get("pacing") or {}).get("line") or "") if isinstance(morph_info, dict) else "",
     }
 
 

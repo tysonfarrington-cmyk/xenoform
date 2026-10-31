@@ -66,9 +66,11 @@ def plan(shots: list[dict], mode: str, beats: list[float], drop: float | None = 
     downbeats = beats[::4]
     counts: dict[str, int] = {}
     for i, s in enumerate(shots):
-        s.pop("timing", None)
+        prior = s.pop("timing", None)
         own = (overrides or {}).get(i) or (overrides or {}).get(str(i)) or {}
-        m = normal(own.get("timing")) if own.get("timing") else mode
+        # the pacing engine's per-passage timing (pacing.shape: ``{"mode"}`` alone) stands where the timeline says nothing
+        preset = prior.get("mode") if isinstance(prior, dict) and not prior.get("hits") else None
+        m = normal(own.get("timing")) if own.get("timing") else normal(preset) if preset else mode
         if m == "smooth" or _skip(s):
             continue
         a, b = float(s.get("start") or 0.0), float(s.get("end") or 0.0)

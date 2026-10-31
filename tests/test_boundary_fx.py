@@ -301,9 +301,12 @@ def test_run_simple_records_the_kinds_and_the_lane_names_them(tmp_path, monkeypa
     monkeypatch.setattr("xenoform.portrait.black_stills", lambda stills, work: stills)
     monkeypatch.setattr("xenoform.portrait.portrait_stills", lambda stills, work, w=720, h=1280, background=None: stills)
     beats = [i * 0.5 for i in range(16)]
+    # the knob's rule as it was (Breathe and the Drops off): Chaos 1 dresses every handoff (the pacing engine's own
+    # rules, a wipe in four at most and the strobe only at full heat, are pinned in test_pacing_breathe)
     wild = dense.run_simple({"duration": 8.0, "beats": beats}, DEMO, tmp_path / "x.mp4", tmp_path, {},
                             {"vibe": "black", "aspect": "16:9", "dance_fx": "off", "stem_orbit": False, "boundary_smear": "on",
-                             "macros": {"chaos": 1.0, "intensity": 1.0}}, lambda *a: None, engine="mock")
+                             "macros": {"chaos": 1.0, "intensity": 1.0}, "breathe": False, "drop_mode": "off"},
+                            lambda *a: None, engine="mock")
     kinds = [e["kind"] if e else None for e in seen["boundary_fx"]]
     assert kinds[0] is None and all(kinds[1:]) and set(kinds[1:]) == set(B.KINDS) and kinds[4] == "strobe"
     assert wild["boundary_fx"] == seen["boundary_fx"] and wild["handoffs"]["boundaries"] == n - 1
