@@ -371,6 +371,19 @@ same composite byte for byte; the suite green with the fake split.
     (c) the whole-noun test lets near-repeats through (dragon and origami dragon, rose and enchanted rose, glove
     and helmet); (d) should a whole song always tame, even with Breathe off; (e) should the QA lag fix skip song
     windows (it reads Breathe rests as freezes and cut windows short before aeb1b41).
+14. Demos of 1 Nov on the ZedsDead tracks (Desktop/xeno_demos_1nov: v1 Ferrofluid 16:9 with Breathe and plain, v2
+    Molten gold 9:16 with Breathe, v2 from the film pack with Breathe and plain). Found: a whole song can drift out
+    of sync by seconds when a window ends on a rest, because the window QA lag fix drops trailing held frames and
+    the assembly pads at most 0.25 s and checks the sound length rather than the picture (demo 2 ran 1.8 s early
+    from passage 2; repaired by hand; the fix is with the whole-song builder). The chosen vibe took the loudest
+    5 s run while the 24 s run after it went to a drawn vibe: decided 1 Nov, the main drop run is the heaviest by
+    heat times length and the chosen vibe owns it. Clips: the pacing engine reaches clips as the shot plan only
+    (73 shots under Breathe against 89), with no effects and no tame, and the rests freeze film (51 s of still
+    picture against 28); a clips cut renders a morph between clips (36 morphs, about 5 min). For Tys: Breathe and
+    the drops for clips, or rests off for clips; repeats by head noun (five skulls, three dragons); the objects the
+    rules do not see (pocket watch, chalice, plague mask, gauntlet and glove, heart, brain, femur, plain solids);
+    a curated clip set rather than the whole pack in order; the title for these tracks; portrait by Fast Final
+    (about an hour) for anything shared.
 
 ## 9. Working rules for every session
 
