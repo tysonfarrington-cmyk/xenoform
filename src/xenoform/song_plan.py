@@ -10,8 +10,8 @@ profile table's: the beats a shot its role takes. The song's total is the sum of
 
 Every passage gets its own look, drawn by taste (``looks``):
 
-- no vibe twice in the song (``taste.fresh_vibes``), the vibe you chose on the main drop (the moment the song is built
-  on), the loved chains (``presets``) on the passages they fit (the opener on the intro, the finale on the outro, the
+- no vibe twice in the song (``taste.fresh_vibes``), the vibe you chose on the main drop run (``main_run``: the heaviest
+  drop run by heat times length, the stretch the song is built on), the loved chains (``presets``) on the passages they fit (the opener on the intro, the finale on the outro, the
   calm ones on the grooves, the ones on the beat on the drops), the rest the featured vibes in their order, the quiet
   ones on the quiet passages and the loud ones on the drops and builds;
 - the intro and the outro one long look each (one vibe, one family under full Breathe, a passage of their own);
@@ -209,9 +209,11 @@ def passages_of(plan: dict, tier: str) -> tuple[list[dict], list[dict]]:
         start, end = float(shots[idx[0]]["start"]), float(shots[idx[-1]]["end"])
         row = {"index": len(passages), "plan_passage": pi, "role": str(p.get("role") or ""), "start": round(start, 4),
                "end": round(end, 4), "seconds": round(end - start, 3), "morphs": len(idx), "windows": []}
-        for key in ("drop_run", "heat", "main"):
+        for key in ("drop_run", "heat"):
             if p.get(key) is not None:
                 row[key] = p[key]
+        if p.get("main"):
+            row["drop_at"] = True  # the run the song's drop opens (the pacing engine's main run: the drop's event is here)
         parts = split(idx, shots, cap, grid, phase)
         for j, part in enumerate(parts):
             w0, w1 = float(shots[part[0]]["start"]), float(shots[part[-1]]["end"])
@@ -220,7 +222,24 @@ def passages_of(plan: dict, tier: str) -> tuple[list[dict], list[dict]]:
                             "start": round(w0, 4), "end": round(w1, 4), "length_s": round(w1 - w0, 4),
                             "morphs": len(part), "shot_idx": part})
         passages.append(row)
+    main = main_run(passages)
+    for row in passages:
+        if row["index"] == main:
+            row["main"] = True
     return passages, windows
+
+
+def main_run(passages: list[dict]) -> int | None:
+    """The song's main drop run, the one the vibe you chose owns: the heaviest drop run by its heat times its length,
+    not the loudest moment alone (decided 1 Nov: on ZedsDead the drop's own run was 5.3 s at 2:20 and the 23.7 s run
+    right after it went to a vibe drawn by taste). A tie goes to the run the song's drop opens, then to the earlier.
+    The index of that passage, None when the song has no drop run."""
+    runs = [p for p in passages if p.get("drop_run") is not None]
+    if not runs:
+        return None
+    best = max(runs, key=lambda p: (round(float(p.get("heat") or 0.0) * float(p.get("seconds") or 0.0), 2),
+                                    bool(p.get("drop_at")), -int(p["index"])))
+    return int(best["index"])
 
 
 def first_drop(plan: dict) -> float | None:

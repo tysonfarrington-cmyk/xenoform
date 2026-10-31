@@ -14,8 +14,11 @@ hit) is a Make: **Fine-tune → Length → Whole song**, then **Make the whole s
    line). The song's total is the sum of its passages: the per-Make caps (Draft's 60 on a four-minute song, Cloud's 16 a
    Make) guard one Make and do not cap the song. Glitch Out at Breathe 1.0 is 14 passages and 78 morphs, at Breathe
    off 86.
-2. **Draws a look a passage, by taste** (`song_plan.looks`). The vibe you chose takes the main drop, the moment the
-   song is built on (or, when the body is a loved chain you applied, the passage that chain fits). The loved chains
+2. **Draws a look a passage, by taste** (`song_plan.looks`). The vibe you chose owns the main drop run, the stretch
+   the song is built on: the heaviest drop run by its heat times its length (`song_plan.main_run`, decided 1 Nov), not
+   only the run the song's loudest moment opens, which keeps the drop's event (on ZedsDead v1 that run is 5.3 s at
+   2:20 and the 23.7 s run after it is now the main); a tie goes to the run the drop opens. When the body is a loved
+   chain you applied, that chain goes on the passage it fits instead. The loved chains
    (`configs/chain_presets.json`) take the passages they fit: the opener (glow sea) the intro, the finale (the gold) the
    outro, the calm ones (smooth, Chaos 0.2 and under: the black glass rose, the smoke dragon) the grooves, the ones on
    the beat (Chaos 0.4 and over: the glass hand, the origami icons) the drops and builds; a chain keeps its own style,
