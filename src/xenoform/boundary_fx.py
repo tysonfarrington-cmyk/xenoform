@@ -122,8 +122,15 @@ def _pick_paced(shots: list[dict], macros: dict | None, beats, fps: int, *, seed
     def entry(i: int) -> bool:
         return str(shots[i].get("boundary") or "") == "drop"
 
-    def event(i: int) -> bool:
-        return entry(i) or bool(shots[i].get("event"))
+    def held(i: int) -> bool:
+        return i < len(prem) and isinstance(prem[i], dict) and bool(prem[i].get("kind"))
+
+    # a run whose first handoff carries the vibe's premium drop transition takes its boundary kind on the next one
+    follow = {i + 1 for i in range(1, n - 1) if entry(i) and held(i) and shots[i + 1].get("drop_run") is not None
+              and shots[i + 1].get("drop_run") == shots[i].get("drop_run")}
+
+    def event(i: int) -> bool:  # a drop run's first handoff (or the next one), or a long run's planted kind
+        return entry(i) or i in follow or str(shots[i].get("event") or "") == "kind"
 
     def share_at(i: int) -> float:
         if breathe and role(i) in NO_KIND_ROLES:

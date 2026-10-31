@@ -615,14 +615,25 @@ def _merge_to(shots: list[dict], n: int, protected: bool = False) -> list[dict]:
     def entry(k: int) -> bool:
         return 0 <= k < len(shots) and str(shots[k].get("boundary") or "") == "drop"
 
+    def rank(k: int) -> float:
+        # the role's place in the queue, weighed by how long the shot already is against the cut's mean: a calm shot
+        # gives up its morph first, but not until it is a slideshow (about four times the mean before a drop's shot)
+        mean = max(1e-3, sum(secs(q) for q in range(len(shots))) / len(shots))
+        return MERGE_RANK.get(str(shots[k].get("section") or ""), 1) + 2.0 * math.log2(max(secs(k), 0.05) / mean)
+
+    def partners(i: int, keep_entries: bool) -> list[int]:
+        options = [k for k in (i - 1, i + 1) if 0 <= k < len(shots)]
+        if keep_entries:  # never fold a drop run's first shot into the shot before it (the merged shot takes the earlier's place)
+            options = [k for k in options if not (k == i + 1 and entry(i + 1)) and not (k == i - 1 and entry(i))]
+        return options
+
     while len(shots) > n:
         if protected:
-            i = min(range(len(shots)), key=lambda k: (MERGE_RANK.get(str(shots[k].get("section") or ""), 1), secs(k)))
-            options = [k for k in (i - 1, i + 1) if 0 <= k < len(shots)]
-            # never fold a drop run's first shot into the shot before it (the merged shot takes the earlier one's place)
-            options = [k for k in options if not (k == i + 1 and entry(i + 1)) and not (k == i - 1 and entry(i))] or options
+            order = sorted(range(len(shots)), key=lambda k: (rank(k), secs(k)))
+            i = next((k for k in order if partners(k, True)), order[0])
+            options = partners(i, True) or partners(i, False)
             same = [k for k in options if shots[k].get("passage", -1) == shots[i].get("passage", -2)]
-            j = min(same or options, key=lambda k: (MERGE_RANK.get(str(shots[k].get("section") or ""), 1), secs(k)))
+            j = min(same or options, key=lambda k: (rank(k), secs(k)))
         elif (i := min(range(len(shots)), key=secs)) == 0:
             j = 1
         elif i == len(shots) - 1:
@@ -1056,14 +1067,21 @@ def shape_shots(shots: list[dict], state: dict, m: dict, wobble_house: dict | No
     from xenoform import pacing as _pc
 
     if _pc.legacy(state) or not any(s.get("section") for s in shots):
-        for s in shots:  # a rest is Breathe's: the shot plays its morph over its whole length without it
-            s.pop("rest", None)
-            s.pop("rest_s", None)
+        for s in shots:  # a rest is Breathe's and an event the drop treatment's: a cut shaped as before has neither
+            for key in ("rest", "rest_s", "event", "ramp"):
+                s.pop(key, None)
         apply_macros(shots, m, wobble_house)
         return None
     return _pc.shape(shots, m, breathe=_pc.breathe_of(state), drop_mode=_pc.drop_mode_of(state), house=wobble_house,
                      look=str(look or ""), look_auto=dance_fx_choice(state) == "auto", effects=_E.names_of(state),
                      timing=_mt.normal(state.get("morph_timing")), beats=list(beats or []))
+
+
+def drop_treated(state: dict, shots: list[dict]) -> bool:
+    """True when the cut's drop runs get the drop treatment (``drop_mode`` auto or max on a paced plan)."""
+    from xenoform import pacing as _pc
+
+    return _pc.drop_mode_of(state) in ("auto", "max") and any(s.get("drop_run") is not None for s in shots)
 
 
 def paced_kinds(state: dict, shots: list[dict]) -> dict | None:
@@ -1087,10 +1105,13 @@ def foreshadow_mode(opt: dict, vibe: str, state: dict) -> str:
 BLOCKY = {"datamosh": "chroma-split"}  # the blocky transitions and what stands in for them while the smear is off
 
 
-def boundary_transitions(shots: list[dict], vibe: str, *, seed: int = 0, smear: str = "off") -> list[dict | None]:
+def boundary_transitions(shots: list[dict], vibe: str, *, seed: int = 0, smear: str = "off",
+                         per_run: bool = False) -> list[dict | None]:
     """One premium transition per section boundary (the vibe's recommendation for drop / switch / silence),
     capped at two uses per type by the guardrail; everything else is a clean handoff. One entry per shot. With the
-    blocky smear off (``smear``, boundary_fx.SMEAR; the default), a vibe's datamosh is a chromatic split instead."""
+    blocky smear off (``smear``, boundary_fx.SMEAR; the default), a vibe's datamosh is a chromatic split instead.
+    ``per_run`` (the drop treatment): the guard counts the drop transition's cap a run, so every drop run opens on the
+    vibe's drop transition; the other boundaries keep the cut's cap."""
     from xenoform import boundary_fx as _B
     from xenoform import transitions_fx as T
 
@@ -1102,7 +1123,17 @@ def boundary_transitions(shots: list[dict], vibe: str, *, seed: int = 0, smear: 
     kinds = ["match-cut" if k == "scene-morph" else k for k in kinds]
     if _B.smear_of(smear) == "off":
         kinds = [BLOCKY.get(k, k) for k in kinds]
-    kinds, _msgs = T.guard(kinds, seed=seed)
+    if per_run:
+        runs = [k for k, i in enumerate(idx) if shots[i].get("boundary") == "drop"]
+        rest = [k for k in range(len(idx)) if k not in set(runs)]
+        guarded = list(kinds)
+        for k, v in zip(rest, T.guard([kinds[k] for k in rest], seed=seed)[0]):
+            guarded[k] = v
+        for k in runs:  # a passage of its own: its cap is counted in it
+            guarded[k] = T.guard([kinds[k]], seed=seed + k)[0][0]
+        kinds = guarded
+    else:
+        kinds, _msgs = T.guard(kinds, seed=seed)
     out: list[dict | None] = [None] * len(shots)
     for i, kind in zip(idx, kinds):
         if kind in T.EXEMPT_FROM_CAP:
@@ -1188,8 +1219,10 @@ def song_plan_for(state: dict, directed: dict, drop: float | None) -> dict:
     if budget > 0:  # the morph_density guardrail's budget, spent by role inside the planner
         allowed = max(1, int(round(duration / 20.0 * budget)))
         cap = min(cap, allowed) if cap else allowed
+    env = stem_env_for(state)  # the split stems' strong drum hits: a ramp into a drop cuts on them (none from the mix)
+    hits = list(env.get("drum_strong") or []) if env and not str(env.get("engine") or "").startswith("mix") else None
     kw = dict(max_shots=cap, breathe=_pc.breathe_of(state), drop_mode=_pc.drop_mode_of(state), pace=story_pace(state),
-              tempo=directed.get("tempo"))
+              tempo=directed.get("tempo"), hits=hits)
     plan = _pc.song_plan(duration, beats, sections, drop, **kw)
     n = morph_count(state)
     speed = macros(state)["speed"]
@@ -1382,6 +1415,9 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
         repeat_note = (f"Only {unique} distinct stills in the {vibe} pool: {len(shots)} longer morphs instead of "
                        f"repeating stills. Add stills (or pick a bigger vibe) for faster morphing.")
         report("restyle", 0.05, repeat_note)
+    fresh_moved = 0
+    if drop_treated(state, shots):  # a new look on every drop run's first beat: a fresh object family lands there
+        stills, fresh_moved = _pc.fresh_at_drops(stills, shots, chain.get("assign") if long_song else None)
     from xenoform import guardrails as _guard
 
     hp = house(state, cfg)
@@ -1413,6 +1449,8 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
         size = (int(fmt.get("width") or size[0]), int(fmt.get("height") or size[1]))  # the house output size (1080x1920)
     fps = int(fmt.get("fps") or beatfx.FPS) if vertical_house else beatfx.FPS
     notes: list[dict] = list(line_notes) + list(pre_notes)
+    if fresh_moved:
+        notes.append({"fresh_at_drops": fresh_moved})  # stills moved so a drop run opens on a new object family
     scene_files = [s["file"] for s in stills if s.get("kind") == "scene"]  # which stills of the chain are scenes
     if scene_choice != "off" and not scene_files:
         notes.append({"scenes": f"{scene_choice} asked, but the {vibe} pool has no scenes yet: objects only "
@@ -1639,7 +1677,8 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
 
     effect_names = _E.names_of(state)
     smear = _E.smear_setting(state)
-    transitions = boundary_transitions(shots, vibe, seed=seed, smear=smear) if plan.get("name") == "story" else None
+    transitions = boundary_transitions(shots, vibe, seed=seed, smear=smear, per_run=drop_treated(state, shots)) \
+        if plan.get("name") == "story" else None
     # the boundary kinds (boundary_fx): Chaos decides how many handoffs smear, strobe, wipe or rip their colours apart;
     # the vibe's premium picks keep their boundaries, except the drop past Chaos 0.7, which the strobe takes
     from xenoform import boundary_fx as _B
@@ -1770,6 +1809,10 @@ def chain_preview(directed: dict, state: dict, audio_path: Path) -> dict:
         shots, plan, chain, _ = long_song_chain(state, directed, Path(audio_path), shots, plan, options(state), grow=False)
         vibe, pool = stills_for({**state, "cut_plan": None}, chain["morphs"] + 1, record=False,
                                 **_scene_kw(state, shots, chain["morphs"] + 1, chain["assign"]))
+        if drop_treated(state, shots):  # the same new look on each drop run the render gives it
+            from xenoform import pacing as _pc
+
+            pool = _pc.fresh_at_drops(pool, shots, chain["assign"])[0]
         picks = [pool[ci] for ci in chain["assign"]]
     else:
         vibe, pool = stills_for({**state, "cut_plan": plan if plan.get("stills") else None}, len(shots) + 1, record=False,
@@ -1869,7 +1912,8 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
 
     effect_names = _E.names_of(state)
     smear = _E.smear_setting(state)
-    transitions = boundary_transitions(shots, vibe, seed=int(rec.get("seed") or 0), smear=smear) if rec.get("plan_name") == "story" else None
+    transitions = boundary_transitions(shots, vibe, seed=int(rec.get("seed") or 0), smear=smear,
+                                       per_run=drop_treated(state, shots)) if rec.get("plan_name") == "story" else None
     from xenoform import boundary_fx as _B
 
     drop = rec.get("drop")

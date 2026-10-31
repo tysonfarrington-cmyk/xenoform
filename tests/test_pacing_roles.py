@@ -117,13 +117,22 @@ def test_the_estimate_plans_with_the_makes_planner(monkeypatch):
         summary = dense.plan_summary(song["duration"], song["beats"], "dense", tier, "9:16", drop=139.71, pool=pool,
                                      sections=song["sections"], state=body)
         assert (summary["shots"], summary["morphs"], summary["plan_name"]) == (len(shots), chain["morphs"], "story")
-    # the job clock plans the same cut (its features are the trimmed window's own analysis)
+    # the job clock plans the same cut (its features are the trimmed window's own analysis), on the same chain
     win = _window("glitch-out", 105.0, 30.0)
     body = _make_body(win, vibe="cosmic", length_s=30)
     timed = job_timing.plan_for(win, body)
-    shots, _ = dense.shots_for(body, win, None)
-    per = dense.estimate(len(shots), "draft", clip_s=dense.clip_plan(shots, 30.0, win["beats"], pool=12)["clip_s"])["gpu_seconds"]
+    shots, chain = _fitted(body, win, None, 12, "draft")
+    per = dense.estimate(chain["morphs"], "draft", clip_s=chain["clip_s"])["gpu_seconds"]
     assert timed["morphs"] == pytest.approx(per, abs=1)
+
+
+def _fitted(body: dict, directed: dict, drop, pool, tier: str):
+    """The shots and chain a Make of ``body`` gets (the planner, then the chain's cap and merge), as run_simple does."""
+    shots, plan = dense.shots_for(body, directed, None, drop=drop)
+    chain = dense.clip_plan(shots, directed["duration"], directed["beats"], pool=pool, tier=tier)
+    if not chain["fits"]:
+        shots, plan, chain = dense.fit_chain(body, directed, None, chain, pool, tier, drop=drop)
+    return shots, chain
 
 
 def test_the_desk_estimate_reads_the_loaded_song():
@@ -140,8 +149,8 @@ def test_the_desk_estimate_reads_the_loaded_song():
     win, start, drop = ui._window_features(feats, ui._AUDIO["song-glitch-out"], 30.0, 105)
     assert start == pytest.approx(104.4583, abs=0.01)
     body = _make_body(win)
-    shots, _ = dense.shots_for(body, win, None, drop=drop)
-    assert plan["shots"] == len(shots)
+    shots, chain = _fitted(body, win, drop, ui._pool_count(body), "draft")
+    assert plan["shots"] == len(shots) and plan["morphs"] == chain["morphs"]
     grid = client.get("/api/simple/options?duration=239&energy=dense&tier=draft&bpm=90&aspect=9:16&length=30").json()["plan"]
     assert grid["plan_name"].startswith("dense")  # no song loaded: the BPM grid estimate, as before
 

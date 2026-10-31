@@ -152,6 +152,12 @@ def bar_phase(grid: list[float], anchors: list[tuple[float, float]], first_beat:
 LATE_BARS = 16      # a drop run's bars before its tail is drop_late (the role used to start 8 bars after ONE drop time)
 HEAT_FLOOR = 0.2    # the quietest drop run still runs a little hot
 QUIET_END = 0.6     # a last passage under this share of the loudest is the outro, whatever its label
+# the drop treatment (plan section 3): what every drop run gets, scaled by its heat
+ENTRY_BARS = 2      # a hot run's first bars cut on the half bar (the only 2-beat shots a run has)
+ENTRY_HEAT = 0.8    # ...from this heat
+RAMP_BARS = 4       # the bars before a run that ramp into it: shots halved, Intensity up, dither in, a longer foreshadow
+EVENT_BARS = 8      # a long run plants an event (a style change or a boundary kind) every this many bars
+HIT_SNAP_S = 0.09   # a drum hit this close to a beat makes it a ramp's cut (stem_react's drum_strong)
 
 
 def refine_roles(rows: list[dict], sections: list[dict], *, period: float) -> list[dict]:
@@ -265,7 +271,8 @@ def _role_steps(table: dict, scale: float = 1.0) -> dict:
 
 def song_plan(duration: float, beats: list, sections: list[dict], drop: float | None = None, *,
               max_shots: int | None = None, target: int | None = None, breathe: bool = False,
-              drop_mode: str = DROP_MODE_DEFAULT, pace: str = "viscous", tempo: float | None = None) -> dict:
+              drop_mode: str = DROP_MODE_DEFAULT, pace: str = "viscous", tempo: float | None = None,
+              hits: list | None = None) -> dict:
     """The music-video cut for a whole song or a window of one, with roles, on the beat grid (``grid_for``).
 
     Every passage (a run of one role, its start pinned on the beat the analysis put it) cuts on the bar lines at its
@@ -336,12 +343,37 @@ def song_plan(duration: float, beats: list, sections: list[dict], drop: float | 
             return "drop_late"
         return "drop"
 
+    for pi, p in enumerate(passages):  # the passages that ramp into a drop run (the drop treatment)
+        p["into_run"] = bool(per_run and pi + 1 < len(passages) and "drop_run" in passages[pi + 1] and "drop_run" not in p)
+    hit_times = sorted(float(h) for h in hits or [])
+    squeeze = {"on": False}  # a cap under the passages' own count: the half-bar parts give their cuts back
+
     def zone(p: dict, k: int) -> tuple[str, str]:
-        """(role, part): the part is "end" over a Breathe build's last bars, which cut on the half bar."""
+        """(role, part). The drop treatment's parts: "entry", a hot run's first bars on the half bar; "ramp", the bars
+        before a run, on the half bar. Breathe's: "end", a build's last bars on the half bar."""
         role = zone_role(p, k)
+        if squeeze["on"]:
+            return role, ""
+        if per_run and "drop_run" in p and p["heat"] >= ENTRY_HEAT and k < p["i0"] + ENTRY_BARS * 4 and role == "drop":
+            return role, "entry"
+        if p["into_run"] and k >= p["i1"] - RAMP_BARS * 4:
+            return role, "ramp"
         if breathe and role == "build" and k >= p["i1"] - BUILD_END_BARS * 4:
             return role, "end"
         return role, ""
+
+    def on_hit(j: int) -> bool:
+        if not hit_times or not 0 <= j < len(grid):
+            return False
+        t = grid[j]
+        lo, hi = 0, len(hit_times)
+        while lo < hi:
+            mid = (lo + hi) // 2
+            if hit_times[mid] < t:
+                lo = mid + 1
+            else:
+                hi = mid
+        return any(abs(hit_times[q] - t) <= HIT_SNAP_S for q in (lo - 1, lo) if 0 <= q < len(hit_times))
 
     def rest_of(pi: int, p: dict) -> int:
         """Breathe: the beats the passage's last shot holds its arrived object (the intro's last shot, a calm passage's
@@ -365,14 +397,21 @@ def song_plan(duration: float, beats: list, sections: list[dict], drop: float | 
                 role, part = zone(p, k)
                 mine.append([k, role, first, pi, 0])
                 step = steps[role]
-                if part == "end":
+                if part in ("end", "entry", "ramp"):  # half the passage's step, never under two beats
                     step = max(MIN_BEATS, step // 2)
                 elif breathe and role == "intro" and first:
                     step *= BREATHE_FIRST  # the intro opens on one long shot
                 nxt = k + step
-                if step % 4 == 0 and (nxt - phase) % 4:  # land the next cut on a bar line (the montage cut on beat 1)
+                # land the next cut on a bar line (the montage cut on beat 1); a drop run counts its bars from its own
+                # first beat, pinned where the drop hits
+                if step % 4 == 0 and (nxt - phase) % 4 and not (per_run and "drop_run" in p):
                     bar = nxt - ((nxt - phase) % 4)
                     nxt = bar if bar >= k + MIN_BEATS else bar + 4
+                if part == "ramp" and hit_times and not on_hit(nxt):
+                    # a ramp cuts on the drum's strong hits where the stems have them (stem_react drum_strong)
+                    near = [j for j in (nxt - 1, nxt + 1) if k + MIN_BEATS <= j < end and on_hit(j)]
+                    if near:
+                        nxt = near[0]
                 # a change of zone inside the passage (the drop's late bars, a build's last ones) starts on its own beat,
                 # unless that would leave a sliver of a shot before it
                 change = next((j for j in range(k + 1, min(nxt, end)) if zone(p, j) != (role, part)), None)
@@ -390,6 +429,8 @@ def song_plan(duration: float, beats: list, sections: list[dict], drop: float | 
     steps = _role_steps(table)
     present = sorted({zone_role(p, k) for p in passages for k in range(p["i0"], max(p["i0"] + 1, p["i1"]))
                       if k < len(grid)})
+    if len(cut({r: MAX_BEATS for r in steps})) > limit:
+        squeeze["on"] = True  # a cap under what the passages and the treatment's parts need: the parts give way first
     cuts = cut(steps)
     base = dict(steps)
     for _ in range(96):  # the budget, spent by role: the calm passages give up morphs first
@@ -397,6 +438,10 @@ def song_plan(duration: float, beats: list, sections: list[dict], drop: float | 
             break
         cands = [r for r in present if steps.get(r, 0) < MAX_BEATS]
         if not cands:
+            if not squeeze["on"]:  # still over: the half-bar parts (entries, ramps, build ends) give their cuts back
+                squeeze["on"] = True
+                cuts = cut(steps)
+                continue
             break
         r = min(cands, key=lambda x: (PRIORITY.get(x, 1.0) + math.log2(steps[x] / max(1, base[x])), PRIORITY.get(x, 1.0)))
         steps[r] *= 2
@@ -434,14 +479,37 @@ def song_plan(duration: float, beats: list, sections: list[dict], drop: float | 
         render_s = dense._render_s(seconds, SPEED.get(role, 1.25))
         effects = []
         on_beat = abs(grid[k] - a) < 1e-3
-        if drop is not None and abs(a - drop) < 1e-3:
+        entry = per_run and starts and "drop_run" in p  # a drop run's first beat: its event
+        part = zone(p, k)[1]
+        ramp = None
+        if part == "ramp":  # how far into the four bars before the run (0 at their start)
+            r0 = p["i1"] - RAMP_BARS * 4
+            ramp = round(max(0.0, min(0.999, (k - r0) / float(RAMP_BARS * 4))), 3)
+        if entry:  # the punch and the stutter on every run's first beat, as hard as the run is hot
+            heat = float(p["heat"])
+            effects.append({"type": "punch", "t": a, "strength": round(1.0 if heat >= ENTRY_HEAT else 0.6 + 0.4 * heat, 3)})
+            if heat >= 0.5:
+                effects.append({"type": "stutter", "t": a, "frames": 2, "repeat": 4})
+        elif drop is not None and abs(a - drop) < 1e-3:
             effects += [{"type": "punch", "t": a, "strength": 1.0}, {"type": "stutter", "t": a, "frames": 2, "repeat": 4}]
+        elif ramp is not None and on_beat:  # the ramp hits harder as it nears the drop
+            effects.append({"type": "punch", "t": a, "strength": round(0.4 + 0.4 * ramp, 3)})
         elif role in ("drop", "drop_late", "build") and on_beat:
             effects.append({"type": "punch", "t": a, "strength": 0.6 if role != "build" else 0.4})
         shot = {"start": round(a, 4), "end": round(b, 4), "render_s": render_s, "speed": round(render_s / seconds, 3),
                 "effects": effects, "section": role, "passage": pi}
         if "drop_run" in p:
             shot.update({"drop_run": p["drop_run"], "heat": p["heat"]})
+        if ramp is not None:
+            shot["ramp"] = ramp
+        if entry:
+            shot["event"] = "drop"
+        elif per_run and "drop_run" in p:  # a long run does not go flat: an event every EVENT_BARS bars of it
+            bars = (a - p["start"]) / (4 * period)
+            prev_bars = (times[n - 1] - p["start"]) / (4 * period) if n > 0 and cuts[n - 1][3] == pi else -1.0
+            mark = math.floor(bars / EVENT_BARS + 1e-6)
+            if mark >= 1 and math.floor(prev_bars / EVENT_BARS + 1e-6) < mark:
+                shot["event"] = "style" if mark % 2 else "kind"
         if rest:  # Breathe: the morph plays over the first part, then the arrived object dwells (pacing.rest_indices)
             shot.update({"rest": int(rest), "rest_s": round(rest_s, 4)})
         if starts and n > 0:
@@ -492,7 +560,7 @@ PROFILE: dict[str, dict] = {
              "kinds": True, "flash": 16},
     "sustain": {"timing": "beat", "styles": ("melt", "bloom"), "effect": "third", "chaos": 0.4, "intensity": 0.8,
                 "kinds": True, "flash": 16},
-    "build": {"timing": "beat", "styles": ("fold", "bloom"), "effect": "dither", "chaos": 0.4, "intensity": 0.6,
+    "build": {"timing": "beat", "styles": ("fold", "bloom"), "effect": "dither-end", "chaos": 0.4, "intensity": 0.6,
               "kinds": False, "flash": 24},
     "drop": {"timing": "snap", "styles": ("shatter", "spin", "bloom"), "effect": "dither-feedback", "chaos": DROP_CHAOS,
              "intensity": 1.0, "kinds": True, "flash": 40},
@@ -504,6 +572,7 @@ PROFILE: dict[str, dict] = {
               "flash": 0},
 }
 BUILD_TOP = 1.0          # a build's Intensity ramps to this by its end
+DITHER_BARS = 2          # a drop's first bars hit with dither (the ramp's last two lead in); feedback trails the rest
 THIRD_EFFECTS = ("slitscan", "dither")  # one calm passage in three takes one of these, in turn
 
 
@@ -631,34 +700,66 @@ def shape(shots: list[dict], macros: dict, *, breathe: bool, drop_mode: str, hou
             else:
                 kept.append(fx)
         s["effects"] = kept
-        if prof is None:
-            continue
-        if timing == "smooth":  # the cut's Timing left on its default: the passage times its morphs
-            mode = prof["timing"]
-            if role == "drop" and _heat(s) < 0.5:
-                mode = "beat"
-            if mode != "smooth":
-                s["timing"] = {"mode": mode}
-            counts["timing"][mode] = counts["timing"].get(mode, 0) + 1
-        if user_effects:  # the cut's own effects, one at a time, a passage each in turn
-            pick = user_effects[order[p] % len(user_effects)]
-        else:
-            rule = prof["effect"]
-            if rule == "third":
-                pick = third.get(p)
-            elif rule == "dither-feedback":  # a drop's first 8 bars hit with dither, the rest trail feedback
-                pick = "dither" if pos * span < 8 * 4 * period - 1e-6 else "feedback"
+        if prof is not None:
+            if timing == "smooth":  # the cut's Timing left on its default: the passage times its morphs
+                mode = prof["timing"]
+                if role == "drop" and _heat(s) < 0.5:
+                    mode = "beat"
+                if mode != "smooth":
+                    s["timing"] = {"mode": mode}
+                counts["timing"][mode] = counts["timing"].get(mode, 0) + 1
+            if user_effects:  # the cut's own effects, one at a time, a passage each in turn
+                pick = user_effects[order[p] % len(user_effects)]
             else:
-                pick = rule
-        s["fx_names"] = [pick] if pick else []
-        if pick:
-            counts["effects"][pick] = counts["effects"].get(pick, 0) + 1
-        if look_auto and (first_drop is None or float(s.get("start") or 0.0) < first_drop - 1e-6):
-            calm = _calm_look(look, i, house)
-            if calm:
-                s["dance_fx"] = calm
-                counts["looks"] += 1
+                rule = prof["effect"]
+                if rule == "third":
+                    pick = third.get(p)
+                elif rule == "dither-feedback":  # a drop's first 4 bars hit with dither, the rest trail feedback
+                    pick = "dither" if pos * span < DITHER_BARS * 4 * period - 1e-6 else "feedback"
+                elif rule == "dither-end":  # a build dithers as it ends (its last two bars)
+                    pick = "dither" if (1.0 - pos) * span <= BUILD_END_BARS * 4 * period + 1e-6 else None
+                else:
+                    pick = rule
+            s["fx_names"] = [pick] if pick else []
+            if pick:
+                counts["effects"][pick] = counts["effects"].get(pick, 0) + 1
+            if look_auto and (first_drop is None or float(s.get("start") or 0.0) < first_drop - 1e-6):
+                calm = _calm_look(look, i, house)
+                if calm:
+                    s["dance_fx"] = calm
+                    counts["looks"] += 1
+        if drops:  # the drop treatment, over the profile: the entries and the ramps into them
+            _treat(s, timing=timing, user_effects=user_effects, intensity=intensity, breathe=prof is not None, counts=counts,
+                   period=period)
     return counts
+
+
+def _treat(s: dict, *, timing: str, user_effects: list, intensity: float, breathe: bool, counts: dict,
+           period: float = 0.5) -> None:
+    """The drop treatment on one shot, in place (plan section 3). A run's first shot snaps (its punch and stutter are
+    the plan's). The four bars before a run ramp: their beat-FX Intensity rises to the knob's full by the drop, dither
+    comes in (unless the cut chose its own effects), and under Breathe the last bar snaps."""
+    if s.get("event") == "drop":
+        if timing == "smooth":
+            s["timing"] = {"mode": "snap"}
+            counts["timing"]["snap"] = counts["timing"].get("snap", 0) + 1
+        counts["entries"] = counts.get("entries", 0) + 1
+    ramp = s.get("ramp")
+    if ramp is None:
+        return
+    r = max(0.0, min(1.0, float(ramp)))
+    # how far up the ramp the shot ends (its last frames meet the drop at 1)
+    r_end = min(1.0, r + float(s.get("seconds") or 0.0) / max(1e-3, RAMP_BARS * 4 * float(period)))
+    r_end = 1.0 if r_end > 0.95 else r_end  # the shot that meets the drop
+    top = min(1.0, 2.0 * float(intensity))  # the knob's full: 1 at its default, none at 0
+    fx = float(s.get("fx_intensity") or 0.0)
+    if fx < top:
+        s["fx_intensity"] = round(fx + (top - fx) * r_end, 3)
+    if not user_effects and r >= 0.5:  # dither comes in over the ramp's last two bars, into the drop's first two
+        s["fx_names"] = ["dither"]
+    if breathe and timing == "smooth" and r >= 0.75:
+        s["timing"] = {"mode": "snap"}
+    counts["ramp"] = counts.get("ramp", 0) + 1
 
 
 def _period_of(shots: list[dict]) -> float:
@@ -694,18 +795,72 @@ def styles(shots: list[dict], state: dict, drop: float | None = None) -> list[st
         return None
     if MS.normal(state.get("morph_style") or "auto") != "auto" or not paced_shots(shots):
         return None
-    if not breathe_of(state):
+    breathe = breathe_of(state)
+    drops = drop_mode_of(state) in ("auto", "max")
+    if not breathe and not drops:
         return None
-    passages = passage_of(shots)
-    out: list[str] = []
-    seen: dict[int, int] = {}
-    for s, p in zip(shots, passages):
-        role = str(s.get("section") or "")
-        cycle = (PROFILE.get(role) or {}).get("styles") or ("melt",)
-        k = seen.get(p, 0)
-        seen[p] = k + 1
-        out.append(cycle[k % len(cycle)])
+    if breathe:
+        passages = passage_of(shots)
+        out: list[str] = []
+        seen: dict[int, int] = {}
+        for s, p in zip(shots, passages):
+            role = str(s.get("section") or "")
+            cycle = (PROFILE.get(role) or {}).get("styles") or ("melt",)
+            k = seen.get(p, 0)
+            seen[p] = k + 1
+            out.append(cycle[k % len(cycle)])
+    else:
+        m = state.get("macros") if isinstance(state.get("macros"), dict) else {}
+        out = MS.auto(shots, drop, _knob(m, "chaos", 0.3))
+    if drops:
+        # every run opens on a Shatter, a Spin when the run before it shattered (the main run always shatters)
+        entries = [i for i, s in enumerate(shots) if s.get("event") == "drop"]
+        main = next((k for k, i in enumerate(entries) if drop is not None and abs(float(shots[i].get("start") or 0.0) - float(drop)) < 0.06), 0)
+        for k, i in enumerate(entries):
+            out[i] = "shatter" if (k - main) % 2 == 0 else "spin"
+        for i, s in enumerate(shots):  # a long run's planted style event: a style its neighbours do not have
+            if s.get("event") == "style":
+                near = {out[i - 1] if i else "", out[i + 1] if i + 1 < len(out) else "", out[i]}
+                out[i] = next((st for st in ("spin", "bloom", "fold", "shatter") if st not in near), "spin")
     return out
+
+
+def fresh_at_drops(stills: list[dict], shots: list[dict], assign: list | None = None) -> tuple[list[dict], int]:
+    """A new look on every drop run's first beat (7 of the montage's 9 drops opened on a new look): the still a run's
+    first shot lands on comes from an object family the cut has not just shown; a later still of a fresh family swaps
+    into its slot, so no still repeats, and pinned stills, your images and scenes stay where they are. Returns the
+    stills and how many moved."""
+    from xenoform import stills as S
+
+    out = list(stills or [])
+
+    def fam(r: dict) -> str:
+        return str(r.get("family") or S.family_of(str(r.get("noun") or "")))
+
+    landing = []
+    for i, s in enumerate(shots or []):
+        if s.get("event") != "drop":
+            continue
+        m = int(assign[i]) if assign and i < len(assign) else int(s.get("clip", i))
+        landing.append(m + 1)
+    locked = set(landing)
+    moved = 0
+    for k in landing:
+        if not 0 < k < len(out):
+            continue
+        r = out[k]
+        if r.get("pinned") or r.get("user") or str(r.get("kind") or "") == "scene" or not fam(r):
+            continue
+        seen = {fam(out[j]) for j in range(max(0, k - 3), k)}
+        if fam(r) not in seen:
+            continue
+        j = next((j for j in range(k + 1, len(out)) if j not in locked and not out[j].get("pinned") and not out[j].get("user")
+                  and str(out[j].get("kind") or "") != "scene" and fam(out[j]) and fam(out[j]) not in seen), None)
+        if j is None:
+            continue
+        out[k], out[j] = out[j], out[k]
+        moved += 1
+    return out, moved
 
 
 # ------------------------------------------------------------------------------------------------ the record

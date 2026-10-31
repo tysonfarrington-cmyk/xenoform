@@ -78,8 +78,8 @@ def test_each_passage_takes_its_profile():
             assert s["fx_intensity"] == 1.0 and s["chaos"] > 0.3  # the drop lifted toward its cap by its heat
             assert s["timing"] == {"mode": "snap" if s["heat"] >= 0.5 else "beat"}
             assert s["fx_names"] in (["dither"], ["feedback"])
-        if role == "build":
-            assert s["fx_names"] == ["dither"] and 0.6 <= s["fx_intensity"] <= 1.0
+        if role == "build":  # a build dithers as it ends (its last two bars, or the ramp's into a drop run)
+            assert s["fx_names"] in ([], ["dither"]) and 0.6 <= s["fx_intensity"] <= 1.0
         if role == "outro":
             assert s["fx_names"] == [] and "timing" not in s
         assert len(s.get("fx_names") or []) <= 1  # one effect at a time
@@ -111,9 +111,13 @@ def test_without_breathe_only_the_drops_change():
     for s, k in zip(shots, knob):
         if s["section"] in ("drop", "drop_late"):
             assert s["fx_intensity"] >= k["fx_intensity"] and s["chaos"] >= k["chaos"]
+        elif s.get("ramp") is not None:  # the bars ramping into a run (the drop treatment)
+            assert s["fx_intensity"] >= k["fx_intensity"] and s["chaos"] == k["chaos"]
         else:
             assert (s["fx_intensity"], s["chaos"], s["effects"]) == (k["fx_intensity"], k["chaos"], k["effects"])
-        assert "timing" not in s and "fx_names" not in s and "rest" not in s
+        if s.get("event") != "drop":
+            assert "timing" not in s
+        assert "rest" not in s and ("fx_names" not in s or s.get("ramp") is not None)
 
 
 def test_the_handoff_kinds_follow_the_passages():
@@ -148,15 +152,18 @@ def test_the_plan_line_names_the_main_drop():
 
 
 def test_breathe_styles_by_passage():
-    shots, _ = _plan()
-    styles = pacing.styles(shots, {"breathe": True, "morph_style": "auto"})
+    shots, plan = _plan()
+    styles = pacing.styles(shots, {"breathe": True, "morph_style": "auto"}, plan["drop"])
     by = {}
     for s, st in zip(shots, styles):
-        by.setdefault(s["section"], set()).add(st)
+        if s.get("event") != "style":  # a long run's planted style change is any style its neighbours do not have
+            by.setdefault(s["section"], set()).add(st)
     assert by["intro"] <= {"bloom", "melt"} and by["drop"] <= {"shatter", "spin", "bloom"} and by["outro"] == {"melt"}
     assert styles[0] == "bloom"
     assert pacing.styles(shots, {"breathe": True, "morph_style": "spin"}) is None  # a style chosen by hand
-    assert pacing.styles(shots, {"breathe": False}) is None  # Auto's own rules
+    assert pacing.styles(shots, {"breathe": False, "drop_mode": "off"}) is None  # Auto's own rules
+    plain = pacing.styles(shots, {"breathe": False}, plan["drop"])  # Auto's rules with the drop runs opening on events
+    assert {plain[i] for i, s in enumerate(shots) if s.get("event") == "drop"} <= {"shatter", "spin"}
 
 
 def test_the_recipe_carries_the_shape_and_an_old_code_is_the_old_cut():
@@ -209,8 +216,8 @@ def test_breathe_re_cuts_with_no_gpu(tmp_path, monkeypatch):
     rec = dense.recut_from_cache(job, {"macros": {"intensity": 0.5, "chaos": 0.3}})
     assert any(s.get("rest") for s in seen[-1]) and any(s.get("fx_names") for s in seen[-1])
     assert rec["recut_state"]["breathe"] is True and "rest" in rec["pacing"]["line"]
-    rec = dense.recut_from_cache(job, {"breathe": False})  # Breathe off on the same morphs
-    assert not any(s.get("rest") for s in seen[-1]) and not any(s.get("fx_names") for s in seen[-1])
+    rec = dense.recut_from_cache(job, {"breathe": False})  # Breathe off on the same morphs (the Drops still on auto)
+    assert not any(s.get("rest") for s in seen[-1]) and not any(s.get("fx_names") for s in seen[-1] if s.get("ramp") is None)
     assert rec["recut_state"]["breathe"] is False and rec["pacing"]["breathe"] is False
     rec = dense.recut_from_cache(job, {"breathe": True, "drop_mode": "off"})
     assert any(s.get("rest") for s in seen[-1]) and rec["recut_state"]["drop_mode"] == "off"

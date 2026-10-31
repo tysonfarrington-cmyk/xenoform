@@ -83,4 +83,5 @@ def test_viscous_pace_cuts_the_drop_on_the_bar():
     by = {}
     for s in shots:
         by.setdefault(s["section"], []).append(round(s["end"] - s["start"], 2))
-    assert by["drop"][0] == 2.0 and max(by["calm"]) == 4.0  # a bar on the drop, two in the verses (120 bpm)
+    # the drop treatment: a hot run's first two bars on the half bar, then a bar a shot; two bars in the verses (120 bpm)
+    assert by["drop"][:4] == [1.0, 1.0, 1.0, 1.0] and by["drop"][4] == 2.0 and max(by["calm"]) == 4.0

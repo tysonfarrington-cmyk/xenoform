@@ -88,8 +88,10 @@ def test_a_short_pool_merges_the_calm_shots_first(monkeypatch):
     entries = _entries(merged)
     assert len(entries) == 5  # every drop run still opens on its own shot
     assert abs(sum(float(s["seconds"]) for s in merged) - song["duration"]) < 0.05
-    calm = [s for s in merged if s["section"] in ("calm", "intro", "outro")]
-    assert max(float(s["seconds"]) for s in calm) > max(float(s["seconds"]) for s in merged if s["section"] == "drop")
+    # 14 passages over 11 shots: the calm ones (intro, calm, release, outro: 5 of them) folded first, the drops kept
+    calm_passages = {s["passage"] for s in shots if s["section"] in ("calm", "intro", "outro", "release")}
+    assert len(calm_passages) == 5 and sum(1 for s in merged if s["section"] in ("calm", "intro", "outro", "release")) <= 2
+    assert sum(1 for s in merged if s["section"] in ("drop", "drop_late")) >= 5
 
 
 def test_merge_to_protected_keeps_the_drops():
