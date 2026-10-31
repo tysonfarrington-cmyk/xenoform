@@ -614,6 +614,45 @@ def create_app(cfg: dict | None = None):
             return None
         return {"features": win, "start": start, "drop": drop}
 
+    def _song_estimate(audio_id: str, song: str, song_cap: str = "", **knobs) -> dict | None:
+        """Whole song on the desk (Length: Whole song): the song's passages planned from the loaded song with the Shape
+        as set (``song_plan.plan`` without the looks), its morphs, the minutes on each tier and the Cloud credits; None
+        when Whole song is not chosen or no song is loaded; ``{"error"}`` when the song cannot be made whole."""
+        if str(song or "").strip().lower() not in ("1", "on", "true", "song", "whole"):
+            return None
+        if not audio_id or audio_id == "demo":
+            return None
+        with _LOCK:
+            feats = _FEATURES.get(audio_id)
+            audio = _AUDIO.get(audio_id)
+        if not feats or audio is None or not Path(audio).is_file():
+            return None
+        from xenoform import batch, dense, song_plan
+
+        body = {"energy_preset": "dense", "quality_tier": str(knobs.get("tier") or "draft"),
+                "aspect": str(knobs.get("aspect") or "16:9"), "vibe": str(knobs.get("vibe") or ""),
+                "macros": {"speed": max(0.0, min(1.0, float(knobs.get("speed") or 0.5)))}}
+        if knobs.get("breathe") not in (None, ""):
+            body["breathe"] = knobs["breathe"]
+        if knobs.get("drop_mode") not in (None, ""):
+            body["drop_mode"] = knobs["drop_mode"]
+        if song_cap not in (None, ""):
+            body[song_plan.CAP_KEY] = song_cap
+        try:
+            duration = float(feats.get("duration") or 0.0)
+            drop = dense.find_drop(Path(audio), list(feats.get("beats") or []), duration)
+            got = song_plan.plan(feats, body, drop=drop, pick=False, rates=batch.measured(work_dir() / "jobs"))
+        except song_plan.SongError as exc:
+            return {"error": str(exc)}
+        except Exception:
+            log.exception("whole song estimate")
+            return None
+        return {"morphs": got["morphs"], "passages": len(got["passages"]), "windows": len(got["windows"]),
+                "line": got["line"], "estimate": got["estimate"], "title": got["title"], "cap": got["cap"],
+                "window_cap": got["window_cap"], "duration": got["duration"],
+                "roles": [{"role": p["role"], "start": p["start"], "end": p["end"], "morphs": p["morphs"],
+                           "heat": p.get("heat"), "main": bool(p.get("main"))} for p in got["passages"]]}
+
     @app.post("/api/story")
     def story(body: dict) -> dict:
         """Turn a brief and the current song into scene cards. Offline unless XENO_LLM_URL is set."""
@@ -1712,7 +1751,8 @@ def create_app(cfg: dict | None = None):
     def simple_options(duration: float = 20.0, energy: str = "flow", tier: str = "draft", bpm: float = 120.0,
                        aspect: str = "16:9", vertical: str = "native", morphs: str = "auto", length: float = 0.0,
                        performer: int = 0, audio_id: str = "", length_start: str = "", breathe: str = "",
-                       drop_mode: str = "", speed: float = 0.5, vibe: str = "") -> dict:
+                       drop_mode: str = "", speed: float = 0.5, vibe: str = "", whole_song: str = "",
+                       song_cap: str = "") -> dict:
         from xenoform import cloud_final as _cloud_final
         from xenoform import dance_fx as _dance
         from xenoform import dense as _dense
@@ -1793,10 +1833,17 @@ def create_app(cfg: dict | None = None):
         cloud = {**_cloud_final.ready(), "max_morphs": _cloud_final.MAX_MORPHS, "model": _cloud_final.label(),
                  "render": "x".join(map(str, _cloud_final.RENDER_916 if aspect == "9:16" else _cloud_final.RENDER_169)),
                  "estimate": cloud_est}
-        if n_morphs > _cloud_final.MAX_MORPHS:
+        whole = _song_estimate(audio_id, whole_song, song_cap, tier=tier, aspect=aspect, breathe=breathe,
+                               drop_mode=drop_mode, speed=speed, vibe=vibe)
+        if n_morphs > _cloud_final.MAX_MORPHS and not (whole and whole.get("morphs")):
             cloud.update({"ready": False, "why": f"Cloud Final takes at most {_cloud_final.MAX_MORPHS} morphs; "
-                                                 "choose Length 60 s or fewer Forms."})
+                                                 "choose Length 60 s or fewer Forms, or Whole song (a Make a passage)."})
+        if whole and whole.get("morphs"):  # Whole song: every window is its own Make of at most 16 morphs
+            cloud["estimate"] = {**_cloud_final.estimate(min(_cloud_final.MAX_MORPHS, int(whole["morphs"]))),
+                                 "morphs": int(whole["morphs"]),
+                                 "seconds": int(((whole.get("estimate") or {}).get("tiers") or {}).get("cloud", {}).get("gpu_s") or 0)}
         return {
+            "song": whole,
             "plan": plan,
             "lengths": [0, 60, 30, 15],
             "performer": {"choices": list(_dense.PERFORMER_CHOICES), **(performer_status or {})},
@@ -2103,7 +2150,8 @@ def create_app(cfg: dict | None = None):
 
         if "runner" not in _batch:
             _batch["runner"] = batch.Runner(work_dir() / "batches", start=lambda body: _start_job(body)["id"],
-                                            job_of=_job_of, busy=_gpu_busy, cancel=_cancel_job)
+                                            job_of=_job_of, busy=_gpu_busy, cancel=_cancel_job,
+                                            on_closed=lambda b: _song_closed(b))
         return _batch["runner"]
 
     def _batch_view(b: dict) -> dict:
@@ -2219,6 +2267,137 @@ def create_app(cfg: dict | None = None):
             raise HTTPException(409, str(exc)) from exc
         return _batch_view(runner.get(batch_id) or b)
 
+    # Whole song (xenoform.song_plan, song_run, song_assemble; docs/SONG.md): the song's passages as window Makes queued
+    # one at a time through the Variations queue above, then laid together on the song's beat grid with no GPU.
+    _song_state: dict[str, dict] = {}  # song id -> the assembly running on this desk (progress, detail)
+
+    def _song_folder(song_id: str) -> Path:
+        return work_dir() / "jobs" / storage_id(song_id, fallback="")
+
+    def _song_rec(song_id: str) -> tuple[Path, dict]:
+        from xenoform import song_run
+
+        folder = _song_folder(song_id)
+        rec = song_run.load(folder)
+        if rec is None:
+            raise HTTPException(404, "No such song on this desk.")
+        return folder, rec
+
+    def _song_batch(rec: dict) -> dict | None:
+        bid = str(rec.get("batch") or "")
+        return _batches().get(bid) if bid else None
+
+    def _song_view(folder: Path, rec: dict) -> dict:
+        from xenoform import song_run
+
+        runner = _batches()
+        b = _song_batch(rec)
+        song_run.sync(rec, b)
+        elsewhere = bool(b) and not runner.mine(b) and runner._alive_elsewhere(b)
+        return song_run.view(rec, assembling=_song_state.get(rec["id"]), elsewhere=elsewhere)
+
+    def _song_closed(b: dict) -> None:
+        """The queue left a song's batch with nothing open: its record takes the windows' last states."""
+        from xenoform import batch, song_run
+
+        if b.get("vary") != batch.SONG or not b.get("song_id"):
+            return
+        folder = _song_folder(str(b["song_id"]))
+        rec = song_run.load(folder)
+        if rec is None:
+            return
+        song_run.sync(rec, b)
+        song_run.save(folder, song_run.stamp(rec, status=song_run.status_of(rec)))
+
+    @app.post("/api/song")
+    def song_make(body: dict) -> dict:
+        """Plan the whole song from the desk's make body (``body``; ``song_cap`` for ``song_morph_cap``), write its
+        record and queue its windows. Nothing renders here: the queue starts them one at a time on a free GPU."""
+        from xenoform import batch, dense, song_plan, song_run
+
+        make = dict(body.get("body") or {})
+        if body.get("song_cap") not in (None, ""):
+            make[song_plan.CAP_KEY] = body.get("song_cap")
+        audio_id = str(make.get("audio_id") or "")
+        with _LOCK:
+            audio_path = _AUDIO.get(audio_id) if audio_id and audio_id != "demo" else None
+        if audio_path is None or not Path(audio_path).is_file():
+            raise HTTPException(400, "Load a song before making the whole song.")
+        features = _features_for(audio_id)
+        if song_plan.tier_of(make) == "cloud" and not make.get("cloud_final_ok"):
+            raise HTTPException(400, "Cloud Final spends Comfy Cloud credits: tick \"Spend my Comfy Cloud credits\" to run it. "
+                                     "Nothing was queued.")
+        duration = float(features.get("duration") or 0.0)
+        drop = dense.find_drop(Path(audio_path), list(features.get("beats") or []), duration)
+        song_id = uuid.uuid4().hex[:8]
+        label = str(make.get("song") or "").strip() or "the song"
+        try:
+            song = song_plan.plan(features, make, drop=drop, song_id=song_id, label=label,
+                                  rates=batch.measured(work_dir() / "jobs"))
+        except song_plan.SongError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        folder = _song_folder(song_id)
+        rec = song_run.new(song, song_id=song_id, body=make, audio_id=audio_id, audio_path=audio_path, label=label)
+        song_run.save(folder, rec)
+        b = _batches().add_items(song_run.items(rec), vary=batch.SONG, song_id=song_id, song=label,
+                                 vibe=str(make.get("vibe") or ""), idea=str(make.get("idea") or ""), seconds=duration)
+        rec["batch"] = b["id"]
+        song_run.save(folder, rec)
+        return _song_view(folder, rec)
+
+    @app.get("/api/song")
+    def songs_index(limit: int = 12) -> dict:
+        """The whole songs on this desk, newest first."""
+        from xenoform import song_run
+
+        root = work_dir() / "jobs"
+        recs = []
+        for f in sorted(root.glob("*/" + song_run.FILE), key=lambda p: p.stat().st_mtime, reverse=True) if root.is_dir() else []:
+            rec = song_run.load(f.parent)
+            if rec is not None:
+                recs.append(_song_view(f.parent, rec))
+            if len(recs) >= max(1, min(int(limit), 100)):
+                break
+        return {"songs": recs}
+
+    @app.get("/api/song/{song_id}")
+    def song_get(song_id: str) -> dict:
+        folder, rec = _song_rec(song_id)
+        return _song_view(folder, rec)
+
+    @app.post("/api/song/{song_id}/stop")
+    def song_stop(song_id: str) -> dict:
+        """Stop the whole song: the windows still queued are cancelled and the one rendering is stopped; the done ones
+        stay, and Resume picks up from there."""
+        from xenoform import batch, song_run
+
+        folder, rec = _song_rec(song_id)
+        try:
+            b = _batches().cancel(str(rec.get("batch") or ""))
+        except KeyError as exc:
+            raise HTTPException(404, "This song's queue is gone.") from exc
+        except batch.Elsewhere as exc:
+            raise HTTPException(409, str(exc)) from exc
+        song_run.sync(rec, b)
+        song_run.save(folder, song_run.stamp(rec, status="stopped"))
+        return _song_view(folder, rec)
+
+    @app.post("/api/song/{song_id}/resume")
+    def song_resume(song_id: str) -> dict:
+        """Queue again every window not done (failed, stopped, cancelled); the done ones are kept."""
+        from xenoform import batch, song_run
+
+        folder, rec = _song_rec(song_id)
+        try:
+            b = _batches().resume(str(rec.get("batch") or ""))
+        except KeyError as exc:
+            raise HTTPException(404, "This song's queue is gone.") from exc
+        except batch.Elsewhere as exc:
+            raise HTTPException(409, str(exc)) from exc
+        song_run.sync(rec, b)
+        song_run.save(folder, song_run.stamp(rec, status=song_run.status_of(rec)))
+        return _song_view(folder, rec)
+
     @app.get("/api/videos/{video_id}/video")
     def video_file(video_id: str) -> FileResponse:
         return FileResponse(_video_dir(video_id) / "xenoform.mp4", media_type="video/mp4", headers={"Cache-Control": "no-store"})
@@ -2231,7 +2410,7 @@ def create_app(cfg: dict | None = None):
                          key=lambda p: (p / "xenoform.mp4").stat().st_mtime, reverse=True)
         for folder in folders[: max(1, min(int(limit), 200))]:
             meta = _read_meta(folder)
-            if not meta.get("simple"):
+            if not meta.get("simple") or meta.get("part_of"):  # a whole song's window shows under its song
                 continue
             simple = {}
             simple_file = folder / "simple" / "simple.json"
@@ -2289,13 +2468,15 @@ def create_app(cfg: dict | None = None):
                              section_min_seconds=float(cfg["analyze"]["section_min_seconds"]))
 
     def _trim_audio(audio_id: str, audio_path: Path, length_s: float, start_s: float | None = None,
-                    paced: bool = False) -> tuple[str, Path] | None:
+                    paced: bool = False, exact: bool = False) -> tuple[str, Path] | None:
         """A ``length_s`` cut of the song centred a little before its drop (or from ``start_s`` when the Make body
         names a window), snapped back to a beat, with short fades, registered as its own audio id (analysed like
         an upload). None when the song is already short. A ``paced`` Make (``pacing``) centres it on the song's main
         drop run (``pacing.main_drop``), which the drop time alone can miss by a build, and plans on the song's own
         beats, tempo and sections cut to the window (``_window_features``, as the Chain row previews it): 30 s analysed
-        alone can hear double time (Glitch Out's first 30 s, the first 14 of them without a beat, read as 180 bpm)."""
+        alone can hear double time (Glitch Out's first 30 s, the first 14 of them without a beat, read as 180 bpm).
+        ``exact`` (a whole song's window, ``song_plan``): the cut starts on ``start_s`` as given, its passage's first
+        beat, and fades only a hundredth of a second, so a drop's hit on its first frame stays whole."""
         try:
             features = _features_for(audio_id)
         except HTTPException:
@@ -2324,21 +2505,22 @@ def create_app(cfg: dict | None = None):
         if start_s is not None:
             start = max(0.0, min(float(start_s), dur - length_s))
         earlier = [b for b in beats if b <= start + 1e-6]
-        if earlier:
+        if earlier and not exact:
             start = max(earlier)  # start on a beat
         new_id = uuid.uuid4().hex[:10]
         dest = work_dir() / "uploads" / f"{new_id}.wav"
         dest.parent.mkdir(parents=True, exist_ok=True)
         from xenoform.video import ffmpeg_bin
 
-        fade_out = max(0.0, length_s - 0.4)
-        subprocess.run([ffmpeg_bin(), "-v", "error", "-y", "-ss", f"{start:.3f}", "-t", f"{length_s:.3f}", "-i", str(audio_path),
-                        "-af", f"afade=t=in:d=0.3,afade=t=out:st={fade_out:.3f}:d=0.4", "-ar", "48000", "-ac", "2", str(dest)],
-                       check=True)
+        fade = 0.01 if exact else 0.3
+        fade_out = max(0.0, length_s - (0.01 if exact else 0.4))
+        subprocess.run([ffmpeg_bin(), "-v", "error", "-y", "-ss", f"{start:.4f}", "-t", f"{length_s:.4f}", "-i", str(audio_path),
+                        "-af", f"afade=t=in:d={fade},afade=t=out:st={fade_out:.3f}:d={0.01 if exact else 0.4}", "-ar", "48000",
+                        "-ac", "2", str(dest)], check=True)
         features = _analyze_file(dest)
-        if paced and beats:  # the song's own grid and roles, where the window sits in them (the Chain row's own maths)
+        if (paced or exact) and beats:  # the song's own grid and roles, where the window sits in them (the Chain row's own maths)
             try:
-                win, _at, _drop = _window_features(song, Path(audio_path), length_s, start, paced=True)
+                win, _at, _drop = _window_features(song, Path(audio_path), length_s, start, paced=True, exact=exact)
                 features["beats"], features["sections"] = win["beats"], win["sections"]
                 if song.get("tempo"):
                     features["tempo"] = song["tempo"]
@@ -2387,7 +2569,8 @@ def create_app(cfg: dict | None = None):
                 start_s = None
             from xenoform import pacing as _pacing
 
-            trimmed = _trim_audio(audio_id, Path(audio_path), length_s, start_s, paced=not _pacing.legacy(body))
+            trimmed = _trim_audio(audio_id, Path(audio_path), length_s, start_s, paced=not _pacing.legacy(body),
+                                  exact=bool(body.get("length_exact")) and start_s is not None)
             if trimmed is not None:
                 source_path = Path(audio_path)
                 audio_id, audio_path = trimmed
@@ -3173,11 +3356,12 @@ def _pool_count(body: dict) -> int | None:
 
 
 def _window_features(features: dict, audio: Path | None, length_s: float, length_start=None,
-                     paced: bool = True) -> tuple[dict, float | None, float | None]:
+                     paced: bool = True, exact: bool = False) -> tuple[dict, float | None, float | None]:
     """The song's analysis cut to the window a Length Make trims (the maths of ``_trim_audio``: a little before the
     drop, or from ``length_start``, back to a beat), its beats and sections shifted, without trimming anything; plus
     the window's start in the song and the drop in window time. The whole song when no window applies. ``paced`` as
-    ``_trim_audio`` takes it (the window around the main drop run)."""
+    ``_trim_audio`` takes it (the window around the main drop run); ``exact`` starts on ``length_start`` as given (a
+    whole song's window)."""
     from xenoform import dense as _dense
 
     features = dict(features or {})
@@ -3204,7 +3388,7 @@ def _window_features(features: dict, audio: Path | None, length_s: float, length
         except (TypeError, ValueError):
             pass
     earlier = [b for b in beats if b <= start + 1e-6]
-    if earlier:
+    if earlier and not (exact and length_start not in (None, "")):
         start = max(earlier)
     end = start + length_s
     rows = features.get("analysis_sections") if features.get("analysis_sections") is not None else features.get("sections")
@@ -3256,6 +3440,9 @@ def _write_meta(folder: Path, body: dict, audio_id: str) -> str:
             "quality_tier": str(body.get("quality_tier") or "draft"),
             "recipe": encode({**body, "idea": body.get("idea") or body.get("brief") or ""}) if simple else "",
         }
+        part_of = (body.get("song_passage") or {}).get("song") if isinstance(body.get("song_passage"), dict) else ""
+        if part_of:  # a whole song's window: My videos lists the song, its passages open from the song's timeline
+            meta["part_of"] = str(part_of)
         (Path(folder) / "meta.json").write_text(json.dumps(meta, indent=1), encoding="utf-8")
         return meta["recipe"]
     except Exception:

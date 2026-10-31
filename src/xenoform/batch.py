@@ -17,6 +17,11 @@ one at Final" queues that variation's own body at Final with its chain pinned, a
 
 ``measured(jobs)`` reads the ``took.json`` beside every cut on this machine: what a second of video takes here at
 Draft, Fast Final, Final and Cloud Final, which the desk and the page show instead of a guess.
+
+A whole song (``song_plan``, docs/SONG.md) is a batch too (``vary`` "song"): its windows are the items, queued one at a
+time by the same rules (``add_items``). A window that fails is queued again once at the back of the queue (``RETRIES``);
+Resume queues every window not done (failed, stopped or cancelled), the finished ones kept; ``on_closed`` hears when a
+batch has nothing left open, so the desk can lay the song's windows together.
 """
 from __future__ import annotations
 
@@ -50,6 +55,8 @@ CLOSED = ("done", "error", "cancelled", "stopped")
 # ``beat`` while it is open, and an open batch whose beat is older than ``STALE_S`` has no desk alive running it.
 STALE_S = 60.0
 BEAT_S = 15.0
+SONG = "song"   # a whole song's batch: its items are the song's windows (song_plan)
+RETRIES = 1     # a song's window that fails is queued again this many times before it waits for Resume
 
 
 class Elsewhere(ValueError):
@@ -205,9 +212,10 @@ class Runner:
 
     def __init__(self, root: Path, start: Callable[[dict], str], job_of: Callable[[str], dict | None],
                  busy: Callable[[], str], cancel: Callable[[str], Any] | None = None, *, poll_s: float = 5.0,
-                 wait_s: float = 20.0):
+                 wait_s: float = 20.0, on_closed: Callable[[dict], Any] | None = None):
         self.root = Path(root)
         self._start, self._job_of, self._busy, self._cancel = start, job_of, busy, cancel
+        self._on_closed = on_closed
         self.poll_s, self.wait_s = poll_s, wait_s
         self._lock = threading.RLock()
         self._wake = threading.Event()
@@ -283,6 +291,27 @@ class Runner:
         self.wake()
         return copy.deepcopy(b)
 
+    def add_items(self, rows: list[dict], *, vary: str = SONG, **extra: Any) -> dict:
+        """Queue made bodies as one batch (a whole song's windows): each row a ``label``, a ``body`` and a ``kind``
+        (``window`` and the rest of the row ride along). ``extra`` goes on the record, as for ``add``."""
+        if not rows:
+            raise ValueError("Nothing to queue.")
+        now = time.time()
+        items = []
+        for k, row in enumerate(rows):
+            item = {key: copy.deepcopy(v) for key, v in row.items() if key not in ("k", "status")}
+            item.update({"k": k, "vary": vary, "kind": str(row.get("kind") or "window"), "label": str(row.get("label") or f"Part {k + 1}"),
+                         "status": "queued", "detail": "", "job_id": "", "queued_at": now, "attempts": 0})
+            items.append(item)
+        b = {"id": uuid.uuid4().hex[:8], "created": datetime.now().astimezone().isoformat(timespec="seconds"), "vary": vary,
+             "count": len(items), "song": "", "idea": "", "vibe": "", "length_s": 0.0, **extra, "items": items,
+             "owner": self.token, "beat": now}
+        with self._lock:
+            self._all()[b["id"]] = b
+            self.save(b)
+        self.wake()
+        return copy.deepcopy(b)
+
     def add_final(self, bid: str, k: int, pins: dict | None = None) -> dict:
         """Variation ``k`` again at Final, its chain pinned (``pins``: slot -> still file), queued after the Drafts."""
         with self._lock:
@@ -298,6 +327,7 @@ class Runner:
             item = {"k": len(b["items"]), "label": f"Final of {src['label']}", "vary": b["vary"], "kind": "final",
                     "of": src["k"], "body": body, "status": "queued", "detail": "", "job_id": "", "queued_at": time.time()}
             b["items"].append(item)
+            b.pop("closed", None)  # open again: its close is told again
             self.save(b)
         self.wake()
         return copy.deepcopy(item)
@@ -318,14 +348,18 @@ class Runner:
             return copy.deepcopy(b)
 
     def resume(self, bid: str) -> dict:
+        """Queue again what a desk restart stopped; for a whole song, every window not done (failed, stopped or
+        cancelled), the finished ones kept (their morphs are in the cache anyway)."""
         with self._lock:
             b = self._all().get(bid)
             if b is None:
                 raise KeyError("No such batch.")
             self._claim(b)  # Resume makes this desk the one that runs them
+            again = ("stopped", "error", "cancelled") if b.get("vary") == SONG else ("stopped",)
             for item in b["items"]:
-                if item["status"] == "stopped":
-                    item.update({"status": "queued", "detail": "", "job_id": "", "queued_at": time.time()})
+                if item["status"] in again:
+                    item.update({"status": "queued", "detail": "", "job_id": "", "queued_at": time.time(), "attempts": 0})
+            b.pop("closed", None)
             self.save(b)
         self.wake()
         return self.get(bid) or {}
@@ -346,14 +380,17 @@ class Runner:
 
     def step(self) -> str:
         """One pass: follow the running item, else start the next queued one if the GPU is free. Returns what
-        happened: "running", "finished", "waiting", "started", "refused" or "idle"."""
+        happened: "running", "finished", "waiting", "started", "refused" or "idle". A batch left with nothing open is
+        told to ``on_closed`` (outside the lock)."""
+        closed = None
         with self._lock:
             todo = self._open()
             self._heartbeat()
             if not todo:
                 return "idle"
             b, item = todo[0]
-            if item["status"] == "running":
+            finished = item["status"] == "running"
+            if finished:
                 job = self._job_of(item["job_id"]) or {"status": "error", "detail": "The cut's job record is gone."}
                 status = str(job.get("status") or "running")
                 if status == "done" and not job.get("took_s"):  # the pipeline said done; the desk's QA pass (CPU) is
@@ -367,8 +404,13 @@ class Runner:
                 item.update({"status": status if status in CLOSED else "error", "finished_at": time.time(),
                              "detail": str(job.get("error") or job.get("detail") or ""), "progress": 1.0 if status == "done" else item.get("progress"),
                              "took_s": round(float(job.get("took_s") or (time.time() - float(item.get("started_at") or time.time()))), 1)})
+                self._again(b, item)
                 self.save(b)
-                return "finished"
+                closed = self._closed(b)
+        if finished:
+            if closed is not None:
+                self._tell(closed)
+            return "finished"
         busy = self._busy()  # outside the lock: a slow ComfyUI must not hold up the desk's reads
         with self._lock:
             if item["status"] not in ("queued", "waiting"):  # cancelled meanwhile
@@ -383,11 +425,41 @@ class Runner:
             except Exception as exc:  # the desk refused (no song after a restart, a bad body): the next one runs
                 detail = getattr(exc, "detail", None) or str(exc)
                 item.update({"status": "error", "detail": str(detail), "finished_at": time.time()})
+                self._again(b, item)
                 self.save(b)
-                return "refused"
-            item.update({"status": "running", "job_id": job_id, "started_at": time.time(), "detail": "Starting", "progress": 0.0})
-            self.save(b)
-            return "started"
+                closed = self._closed(b)
+            else:
+                item.update({"status": "running", "job_id": job_id, "started_at": time.time(), "detail": "Starting", "progress": 0.0})
+                self.save(b)
+                return "started"
+        if closed is not None:
+            self._tell(closed)
+        return "refused"
+
+    def _again(self, b: dict, item: dict) -> None:
+        """A whole song's window that failed is queued again at the back, ``RETRIES`` times (its rendered morphs are in
+        the cache: the second go starts where the first stopped); the failed job is kept on the item."""
+        if b.get("vary") != SONG or item.get("status") != "error" or int(item.get("attempts") or 0) >= RETRIES:
+            return
+        item.setdefault("failed", []).append({"job_id": item.get("job_id") or "", "detail": item.get("detail") or ""})
+        item.update({"status": "queued", "attempts": int(item.get("attempts") or 0) + 1, "job_id": "", "queued_at": time.time(),
+                     "detail": f"Failed ({str(item.get('detail') or 'no reason given')[:120]}): queued again"})
+
+    def _closed(self, b: dict) -> dict | None:
+        """A copy of ``b`` when nothing of it is open any more (once: ``closed`` marks it), else None."""
+        if any(i.get("status") in OPEN for i in b.get("items") or []) or b.get("closed"):
+            return None
+        b["closed"] = time.time()
+        self.save(b)
+        return copy.deepcopy(b)
+
+    def _tell(self, b: dict) -> None:
+        if self._on_closed is None:
+            return
+        try:
+            self._on_closed(b)
+        except Exception:  # the listener's trouble (an assembly that fails to start) never stops the queue
+            log.exception("batch closed listener")
 
     def wake(self) -> None:
         with self._lock:
