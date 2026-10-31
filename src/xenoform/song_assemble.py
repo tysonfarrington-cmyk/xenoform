@@ -297,6 +297,16 @@ def composite(rec: dict, order: list[dict], cuts: list[float], *, video_s: float
         for sh_clip in cut.get("clips") or []:
             clips.append(str(sh_clip))
     first = order[0]["record"] if order else {}
+    out = _composite(rec, first, shots, stills, styles, clips, video_s=video_s, size=size, beats=beats)
+    if str(first.get("source") or "") == "clips":  # a clips song: one clips cut, laid with its title and its sound
+        out.update({"source": "clips", "own_clips": list(first.get("own_clips") or [])})
+        if isinstance(first.get("pacing"), dict):  # its passages, drop runs and rests are the one cut's
+            out["pacing"] = {**first["pacing"], **out["pacing"]}
+    return out
+
+
+def _composite(rec: dict, first: dict, shots: list[dict], stills: list[str], styles: list[str], clips: list[str], *,
+               video_s: float, size: tuple[int, int], beats: list[float]) -> dict:
     return {"mode": "song", "song_id": rec["id"], "engine": first.get("engine") or "", "tier": first.get("tier") or rec.get("tier"),
             "aspect": first.get("aspect") or rec.get("aspect"), "fast": bool(first.get("fast")), "cloud": bool(first.get("cloud")),
             "vibe": "", "vibes": [(p.get("look") or {}).get("vibe") or "" for p in rec["passages"]],

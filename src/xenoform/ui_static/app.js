@@ -1218,21 +1218,27 @@ function songCapRow(easy) {
 function songLengthNote(easy, secs) {
   const s = state.simpleOptions && state.simpleOptions.song;
   if (s && s.error) return s.error;
-  if (!s) return `Whole song (${clockText(secs)}): the song's passages, each its own Make on the beat, laid together. Planning it...`;
+  const clips = morphSource(easy) === "clips";  // a clips song (song_plan.clips_song): one clips cut over every passage
+  if (!s) return clips ? `Whole song (${clockText(secs)}): your clips as one cut over the song's passages, laid with the title on the last hit. Planning it...`
+    : `Whole song (${clockText(secs)}): the song's passages, each its own Make on the beat, laid together. Planning it...`;
+  if (clips) return `Whole song (${clockText(secs)}): your clips as one cut over the song's ${s.passages} passages, a morph between every two clips, cut on the beat and laid with the title on the last hit and the song at -16 LUFS. ${s.morphs} morphs in all; Draft ${songTierText(s, "draft")}.`;
   return `Whole song (${clockText(secs)}): ${s.passages} passages, each its own Make of at most ${s.window_cap} morphs on the beat, queued one after another on a free GPU and laid together on the song's beats. ${s.morphs} morphs in all; Draft ${songTierText(s, "draft")}.`;
 }
 function songMakeLine(easy) {
   const s = songEstimate();
   const tier = easy.tier || "draft";
-  if (!s) return "The whole song as its passages: a look a passage, drawn by taste, every cut on the beat.";
+  const clips = morphSource(easy) === "clips";
+  if (!s) return clips ? "The whole song in your clips: one cut over its passages, every cut on the beat." : "The whole song as its passages: a look a passage, drawn by taste, every cut on the beat.";
+  if (clips) return `${s.line}. ${TIER_LABEL[tier] || "Draft"}: ${songTierText(s, tier)}. Your clips, one cut over the whole song, each clip once, the title on the last hit.`;
   return `${s.line}. ${TIER_LABEL[tier] || "Draft"}: ${songTierText(s, tier)}. A look a passage, drawn by taste (no vibe twice, the loved chains where they fit), the title on the last hit.`;
 }
 function songPlanFacts(easy) {
   const s = songEstimate();
   const rows = [["Video", `${clockText(easySongSeconds())} (the whole song, in passages)`]];
   if (s) {
-    rows.push(["Passages", `${s.passages}${s.windows !== s.passages ? ` in ${s.windows} Makes` : ""}, a look each`]);
-    rows.push(["Morphs", `${s.morphs} on the beat (at most ${s.window_cap} a Make${s.cap && s.cap !== "auto" ? `, capped at ${s.cap}` : ""})`]);
+    const clips = morphSource(easy) === "clips";  // a clips song: one clips cut over every passage
+    rows.push(["Passages", clips ? `${s.passages}, one clips cut over them` : `${s.passages}${s.windows !== s.passages ? ` in ${s.windows} Makes` : ""}, a look each`]);
+    rows.push(["Morphs", clips ? `${s.morphs} between your clips, on the beat` : `${s.morphs} on the beat (at most ${s.window_cap} a Make${s.cap && s.cap !== "auto" ? `, capped at ${s.cap}` : ""})`]);
     for (const [tier, label] of [["draft", "Draft"], ["fast", "Fast Final"], ["final", "Final"], ["cloud", "Cloud Final"]]) {
       rows.push([label, songTierText(s, tier)]);
     }
@@ -1247,7 +1253,8 @@ function songPlanFacts(easy) {
 async function easySongMake() {
   const vibe = vibeById(state.easy.vibe);
   if (!vibe) return;
-  state.easy.note = "Planning the whole song: its passages, a look each, the objects. A few seconds.";
+  state.easy.note = morphSource(state.easy) === "clips" ? "Planning the whole song in your clips: its passages, one cut over them. A few seconds."
+    : "Planning the whole song: its passages, a look each, the objects. A few seconds.";
   render();
   state.brief = (state.easy.idea || "").trim() || vibe.line;
   state.palette = vibe.palette;
@@ -2395,6 +2402,10 @@ async function loadSimpleOptions() {
       // Whole song: the server plans the song's passages too (song_plan) and says the morphs, the minutes and the credits
       whole_song: wholeSong(easy) ? "1" : "",
       song_cap: wholeSong(easy) && easy.songCap ? String(easy.songCap) : "",
+      // a clips song plans on your clips (song_plan.clips_song): the folder or the files dropped
+      source: morphSource(easy),
+      own_folder: wholeSong(easy) && morphSource(easy) === "clips" ? easy.ownFolder || "" : "",
+      own_id: wholeSong(easy) && morphSource(easy) === "clips" ? easy.ownId || "" : "",
     });
     const res = await api(`/api/simple/options?${query.toString()}`);
     if (res.ok) {
@@ -4817,6 +4828,7 @@ document.addEventListener("click", async (event) => {
     state.easy.morphSource = to;
     if (to === "stems") loadStemsMode(false);
     render();
+    if (wholeSong(state.easy) && from !== to) loadSimpleOptions().then(render);  // a clips song plans on your clips
   } else if (act === "easy-stems-split") {
     loadStemsMode(true);
   } else if (act === "easy-stem-on" || act === "easy-stem-kind" || act === "easy-stem-lead" || act === "easy-stem-chainpins" || act === "easy-stem-pins-clear") {
@@ -5759,6 +5771,7 @@ async function uploadOwn(files) {
     : (n ? `${n} image${n === 1 ? "" : "s"} here. They lead the morphs, in name order.` : "No images came with those files. Clips go under Morph > Your clips.");
   if (left) state.easy.ownNote += ` ${left} left out: a cut takes ${clipsCut ? data.max_clips : data.max_images} at most.`;
   render();
+  if (clipsCut && wholeSong(state.easy)) loadSimpleOptions().then(render);  // a clips song is planned on these clips
 }
 
 // The Stems line under the song. Every song is split in the background (GET /api/stems/for/<id>), and stems you
@@ -6212,6 +6225,7 @@ async function pickFilmPack() {
     ? `The free film pack: ${pack.count} clips from ${pack.films} public-domain films. They play in turn, each morphing into the next.`
     : `The free film pack: ${count} of its ${pack.total} clips are here, and they play in turn, each morphing into the next. Download again in Setup & models fetches the rest.`;
   render();
+  if (wholeSong(state.easy)) loadSimpleOptions().then(render);  // a clips song is planned on the pack's clips
 }
 
 // The library counts and the running grow (GET /api/stills); polled every few seconds while a grow runs.

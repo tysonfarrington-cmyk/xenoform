@@ -100,12 +100,20 @@ def title_of(state: dict | None) -> str:
     return TITLE_DEFAULT if raw is None else str(raw).strip()[:40]
 
 
+def clips_song(state: dict | None) -> bool:
+    """A clips song (docs/SONG.md, Clips): the body cuts your clips (``clip_cut``), so the whole song is one clips Make
+    of every passage, laid with its title and its sound as any whole song is."""
+    from xenoform import clip_cut
+
+    return clip_cut.wants(state)
+
+
 def refuse(state: dict) -> str:
     """Why this body cannot be made as a whole song, or "" when it can."""
     from xenoform import stems_mode
 
-    if str(state.get("morph_source") or "").strip().lower() == "clips":
-        return "Whole song makes objects cuts: a clips cut is one Make (Length: Full song)."
+    if clips_song(state) and not [c for c in state.get("own_clips") or [] if isinstance(c, dict) and c.get("path")]:
+        return "A clips song needs your clips: choose a folder of clips (or the free film pack), then make the whole song."
     if stems_mode.wants(state):
         return "Whole song makes one picture: Stems mode layers its own cuts (Length: Full song)."
     if state.get("cut_plan"):
@@ -242,6 +250,38 @@ def main_run(passages: list[dict]) -> int | None:
     return int(best["index"])
 
 
+def clips_passages(full: dict, clips: list[dict], state: dict, features: dict) -> tuple[list[dict], list[dict]]:
+    """A clips song's passages and its one window. The passages are the song plan's (``passages_of``); the window is the
+    whole song, cut as one clips Make (``clip_cut.fit`` on the song plan, the passages its shots), so every passage is
+    in sync by the one picture's own frames and the morphs between passages are the cut's own. A passage's ``morphs``
+    are the morphs the cut plays in it."""
+    from xenoform import clip_cut, dense
+
+    a = analysis(features)
+    duration = a["duration"]
+    passages, _ = passages_of(full, "draft")
+    lay = clip_cut.fit(dense.shots_of(full, duration), full, clips, state, beats=a["beats"], duration=duration)
+    morphs: dict = {}
+    for s, sl in zip(lay["shots"], lay["slots"]):
+        if sl["kind"] == "morph":
+            morphs[s.get("passage")] = morphs.get(s.get("passage"), 0) + 1
+    for p in passages:
+        p["morphs"] = int(morphs.get(p["plan_passage"], 0))
+        p["windows"] = [0]
+    window = {"index": 0, "passage": 0, "part": 0, "parts": 1, "role": "whole song", "start": 0.0,
+              "end": round(duration, 4), "length_s": round(duration, 4), "morphs": sum(morphs.values()),
+              "shot_idx": list(range(len(full["shots"]))), "whole": True, "clips": len(clips),
+              "clip_shots": int(lay["clip_shots"])}
+    return passages, [window]
+
+
+def whole_plan(plan: dict) -> dict:
+    """The whole song plan as a window that is the whole song carries it (its shots as they are, the grid left behind)."""
+    out = {k: copy.deepcopy(v) for k, v in plan.items() if k not in ("grid_times", "cap")}
+    out["song"] = True
+    return out
+
+
 def first_drop(plan: dict) -> float | None:
     """When the song's first drop starts (its first shot of a drop role, or the plan's drop), song time."""
     for s in plan["shots"]:
@@ -309,6 +349,11 @@ def contexts(plan: dict, song: dict) -> list[dict]:
             role_seen[p["role"]] = role_seen.get(p["role"], 0) + 1
     out = []
     for w in song["windows"]:
+        if w.get("whole"):  # the whole song in one window (a clips song): no passage of its own, every passage its shots
+            out.append({"index": w["index"], "of": len(song["windows"]), "passage": 0, "passages": len(song["passages"]),
+                        "part": 0, "parts": 1, "role": "whole song", "offset": 0.0, "length_s": float(w["length_s"]),
+                        "first_drop": fd, "opener": True, "turn": 0, "opens": None, "whole": True})
+            continue
         p = song["passages"][w["passage"]]
         opens = next((entries[i] for i in w["shot_idx"] if i in entries), None)
         out.append({"index": w["index"], "of": len(song["windows"]), "passage": p["index"], "passages": len(song["passages"]),
@@ -546,17 +591,31 @@ def looks(passages: list[dict], state: dict, *, loaded: list[dict] | None = None
 
 def base_body(state: dict) -> dict:
     """The song's Make body as every window starts from it: the desk's body without the keys a window never carries,
-    a Dense objects cut with no end card, no performer and no grow (the looks are drawn from the library as it is)."""
+    a Dense objects cut with no end card, no performer and no grow (the looks are drawn from the library as it is). A
+    clips song's body is a clips cut of your clips (the clips and their folder ride along)."""
     out = {k: copy.deepcopy(v) for k, v in state.items() if k not in DROP_KEYS}
     out.update({"energy_preset": "dense", "end_card": False, "performer": 0, "auto_grow": False, "morph_count": "auto",
                 "cut_plan": None, "paid_cloud": False, "cloud_quality": False, "cloud_confirm": "", "mode": "simple",
                 "morph_source": "objects", "chain_pins": {}})
+    if clips_song(state):
+        out.update({k: copy.deepcopy(state[k]) for k in ("own_clips", "own_folder", "own_id") if state.get(k)})
+        out["morph_source"] = "clips"
     return out
+
+
+def clips_look(state: dict) -> dict:
+    """A clips song's one look: the vibe you chose over your clips (its colour pass, the knobs as set), every passage."""
+    from xenoform import vibes
+
+    chosen = str(state.get("vibe") or "")
+    row = next((r for r in vibes.catalog() if r["id"] == chosen), None) or {"id": chosen, "name": chosen or "your clips"}
+    return look_of_vibe(row, state, why="your clips: one cut over the whole song")
 
 
 def window_body(base: dict, look: dict, ctx: dict, plan: dict, w: dict, *, label: str, seed: int, song_id: str = "") -> dict:
     """One window's Make body: the song's, the passage's look over it, the window (``length_s``/``length_start``, exact:
-    the desk trims it where it says), its stretch of the song plan and its place in the song (``KEY``)."""
+    the desk trims it where it says; a window that is the whole song takes the song as it is, Length Full song), its
+    stretch of the song plan and its place in the song (``KEY``)."""
     b = copy.deepcopy(base)
     for key in ("vibe", "idea", "morph_style", "morph_timing", "effects", "dance_fx", "foreshadow", "backdrop", "macros"):
         if look.get(key) is not None:
@@ -569,9 +628,14 @@ def window_body(base: dict, look: dict, ctx: dict, plan: dict, w: dict, *, label
         b["brief"] = look.get("line") or b.get("brief") or ""
     b["chain_pins"] = dict(look.get("pins") or {})
     b["seed"] = int(look["seed"]) if look.get("seed") is not None else int(seed)
-    b["length_s"] = round(float(w["length_s"]), 4)
-    b["length_start"] = round(float(w["start"]), 4)
-    b["length_exact"] = True
+    if w.get("whole"):
+        b["length_s"] = 0
+        b.pop("length_start", None)
+        b.pop("length_exact", None)
+    else:
+        b["length_s"] = round(float(w["length_s"]), 4)
+        b["length_start"] = round(float(w["start"]), 4)
+        b["length_exact"] = True
     b[KEY] = {**ctx, "song": song_id, "plan": plan}
     b["song"] = label
     return b
@@ -776,6 +840,9 @@ def estimate(song: dict, *, aspect: str = "16:9", rates: dict | None = None) -> 
     clip = []
     for w in wins:
         beats = [b for b in song.get("beats") or []]
+        if w.get("clips"):  # a clips song's morphs render 1 to 3 s each (clip_cut.MORPH_RENDER_S)
+            clip.append(2)
+            continue
         clip.append(int(dense.clip_plan([{}] * max(1, int(w["morphs"])), float(w["length_s"]), beats)["clip_s"]))
     fixed = sum(job_timing.FIXED_S["analyze"] + job_timing.FIXED_S["draft"] + job_timing.FIXED_S["save"]
                 + job_timing.QA_BASE_S + job_timing.QA_S_PER_SONG_S * float(w["length_s"]) for w in wins)
@@ -815,7 +882,9 @@ def summary_line(song: dict) -> str:
     main = next((p for p in runs if p.get("main")), runs[0] if runs else None)
     bits = [f"{len(song['passages'])} passage{'s' if len(song['passages']) != 1 else ''}",
             f"{song['morphs']} morph{'s' if song['morphs'] != 1 else ''}"]
-    if len(song["windows"]) != len(song["passages"]):
+    if song.get("clips"):  # one clips Make of the whole song
+        bits[-1] += " between your clips, one Make"
+    elif len(song["windows"]) != len(song["passages"]):
         bits[-1] += f" in {len(song['windows'])} Makes"
     drops = f"{len(runs)} drop{'s' if len(runs) != 1 else ''}" + (f", the main at {pacing.clock(main['start'])}" if main else "")
     return ", ".join(bits) + "; " + (drops if runs else "no drop")
@@ -830,7 +899,8 @@ def plan(features: dict, state: dict, *, drop: float | None, song_id: str = "", 
         raise SongError(why)
     tier = tier_of(state)
     full = whole(features, state, drop)
-    passages, windows = passages_of(full, tier)
+    clips = [c for c in state.get("own_clips") or [] if isinstance(c, dict) and c.get("path")] if clips_song(state) else []
+    passages, windows = clips_passages(full, clips, state, features) if clips else passages_of(full, tier)
     a = analysis(features)
     song = {"duration": round(a["duration"], 3), "tempo": a["tempo"], "drop": full.get("drop"), "first_drop": first_drop(full),
             "breathe": pacing.breathe_amount(state), "drop_mode": pacing.drop_mode_of(state), "tier": tier,
@@ -838,14 +908,16 @@ def plan(features: dict, state: dict, *, drop: float | None, song_id: str = "", 
             "steps": dict(full.get("steps") or {}), "bar_phase": full.get("bar_phase"), "period": full.get("period"),
             "shots": len(full["shots"]), "passages": passages, "windows": windows, "beats": a["beats"],
             "title": {"text": title_of(state), "at": last_hit(features, full)}}
+    if clips:
+        song["clips"] = len(clips)
     song["morphs"] = sum(int(w["morphs"]) for w in windows)
     for w in windows:
-        w["plan"] = window_plan(full, song, w)
+        w["plan"] = whole_plan(full) if w.get("whole") else window_plan(full, song, w)
     ctxs = contexts(full, song)
     for w, ctx in zip(windows, ctxs):
         w["context"] = ctx
     if pick:
-        drawn = looks(passages, state)
+        drawn = [clips_look(state) for _ in passages] if clips else looks(passages, state)
         for p, look in zip(passages, drawn):
             p["look"] = look
         base = base_body(state)
@@ -854,10 +926,11 @@ def plan(features: dict, state: dict, *, drop: float | None, song_id: str = "", 
         for w, ctx in zip(windows, ctxs):
             p = passages[w["passage"]]
             part = f", part {w['part'] + 1} of {w['parts']}" if w["parts"] > 1 else ""
-            w["body"] = window_body(base, p["look"], ctx, w["plan"], w,
-                                    label=f"{name} · passage {p['index'] + 1} of {len(passages)}{part}",
+            where = "the whole song in your clips" if w.get("whole") else f"passage {p['index'] + 1} of {len(passages)}{part}"
+            w["body"] = window_body(base, p["look"], ctx, w["plan"], w, label=f"{name} · {where}",
                                     seed=seed0 + SEED_STEP * w["index"], song_id=song_id)
-        objects(song, features)
+        if not clips:  # a clips song shows your clips, no object (clip_cut picks them in the Make)
+            objects(song, features)
         song["morphs"] = sum(int(w["morphs"]) for w in windows)
     song["line"] = summary_line(song)
     song["estimate"] = estimate(song, aspect=song["aspect"], rates=rates)

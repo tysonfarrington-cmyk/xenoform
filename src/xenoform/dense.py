@@ -1124,10 +1124,13 @@ def taste_shots(shots: list[dict], state: dict, m: dict, wobble_house: dict | No
 
     Returns what it did."""
     from xenoform import effects as _E
+    from xenoform import pacing as _pc
     from xenoform import taste as _taste
 
     did: dict = {}
-    win = song_window(state)  # a whole song's window: the opener and the first drop are the song's, not the window's
+    # a whole song's passage: the opener and the first drop are the song's, not the window's (a window that is the
+    # whole song, a clips song, reads its own)
+    win = _pc.song_context(state)
     if win is not None:
         fd = win.get("first_drop")
         off = float(win.get("offset") or 0.0)
@@ -1188,7 +1191,7 @@ def _shape_knobs(shots: list[dict], state: dict, m: dict, wobble_house: dict | N
         return None
     return _pc.shape(shots, m, breathe=_pc.breathe_amount(state), drop_mode=_pc.drop_mode_of(state), house=wobble_house,
                      look=str(look or ""), look_auto=dance_fx_choice(state) == "auto", effects=_E.names_of(state),
-                     timing=_mt.normal(state.get("morph_timing")), beats=list(beats or []), song=song_window(state))
+                     timing=_mt.normal(state.get("morph_timing")), beats=list(beats or []), song=_pc.song_context(state))
 
 
 def drop_treated(state: dict, shots: list[dict]) -> bool:
@@ -1621,7 +1624,7 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     if _pc.paced_shots(shots):  # what the pacing engine planned, in a line (the record keeps it too)
         report("restyle", 0.05, _pc.summary_line(shots, breathe=_pc.breathe_of(state),
                                                  song_start=window_of(state, duration)["song_start"], drop=plan.get("drop"),
-                                                 song=song_window(state)))
+                                                 song=_pc.song_context(state)))
     vibe, stills = (vibe, stills) if long_song else stills_for({**state, "cut_plan": plan if plan.get("stills") else None}, len(shots) + 1,
                                                                 **_scene_kw(state, shots, len(shots) + 1))
     repeat_note = ""
@@ -2269,7 +2272,7 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
         if _pc.paced_shots(record_shots):
             pace["line"] = _pc.summary_line(record_shots, breathe=pace["breathe"], drop=drop,
                                             song_start=float((rec.get("window") or {}).get("song_start") or 0.0),
-                                            song=song_window(state))
+                                            song=_pc.song_context(state))
         rec["pacing"] = pace
     if _taste.active():  # what the taste file did in this re-cut (the Make's own block stays as it was)
         rec["taste_recut"] = _taste.record(_taste.current())

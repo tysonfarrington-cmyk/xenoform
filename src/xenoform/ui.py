@@ -614,6 +614,29 @@ def create_app(cfg: dict | None = None):
             return None
         return {"features": win, "start": start, "drop": drop}
 
+    _CLIP_SCANS: dict[tuple, list] = {}
+
+    def _estimate_clips(own_folder: str, own_id: str) -> list[dict]:
+        """Your clips for the desk's whole-song estimate (``_apply_own`` on the folder, or the files dropped), read once
+        a folder as it is (its time), since the estimate is asked at every Fine-tune change."""
+        folder = own_folder
+        if own_id:
+            with _LOCK:
+                dropped = _OWN.get(own_id)
+            if dropped is not None:
+                folder = str(dropped)
+        if not folder:
+            return []
+        try:
+            key = (str(Path(folder).resolve()), Path(folder).stat().st_mtime_ns)
+        except OSError:
+            return []
+        if key not in _CLIP_SCANS:
+            if len(_CLIP_SCANS) > 16:
+                _CLIP_SCANS.clear()
+            _CLIP_SCANS[key] = list(_apply_own({"own_folder": folder, "morph_source": "clips"}).get("own_clips") or [])
+        return list(_CLIP_SCANS[key])
+
     def _song_estimate(audio_id: str, song: str, song_cap: str = "", **knobs) -> dict | None:
         """Whole song on the desk (Length: Whole song): the song's passages planned from the loaded song with the Shape
         as set (``song_plan.plan`` without the looks), its morphs, the minutes on each tier and the Cloud credits; None
@@ -632,6 +655,9 @@ def create_app(cfg: dict | None = None):
         body = {"energy_preset": "dense", "quality_tier": str(knobs.get("tier") or "draft"),
                 "aspect": str(knobs.get("aspect") or "16:9"), "vibe": str(knobs.get("vibe") or ""),
                 "macros": {"speed": max(0.0, min(1.0, float(knobs.get("speed") or 0.5)))}}
+        if str(knobs.get("source") or "") == "clips":  # a clips song: planned on your clips, as the Make will plan it
+            body.update({"morph_source": "clips", "own_clips": _estimate_clips(str(knobs.get("own_folder") or ""),
+                                                                               str(knobs.get("own_id") or ""))})
         if knobs.get("breathe") not in (None, ""):
             body["breathe"] = knobs["breathe"]
         if knobs.get("drop_mode") not in (None, ""):
@@ -1755,7 +1781,7 @@ def create_app(cfg: dict | None = None):
                        aspect: str = "16:9", vertical: str = "native", morphs: str = "auto", length: float = 0.0,
                        performer: int = 0, audio_id: str = "", length_start: str = "", breathe: str = "",
                        drop_mode: str = "", speed: float = 0.5, vibe: str = "", whole_song: str = "",
-                       song_cap: str = "") -> dict:
+                       song_cap: str = "", source: str = "", own_folder: str = "", own_id: str = "") -> dict:
         from xenoform import cloud_final as _cloud_final
         from xenoform import dance_fx as _dance
         from xenoform import dense as _dense
@@ -1837,7 +1863,7 @@ def create_app(cfg: dict | None = None):
                  "render": "x".join(map(str, _cloud_final.RENDER_916 if aspect == "9:16" else _cloud_final.RENDER_169)),
                  "estimate": cloud_est}
         whole = _song_estimate(audio_id, whole_song, song_cap, tier=tier, aspect=aspect, breathe=breathe,
-                               drop_mode=drop_mode, speed=speed, vibe=vibe)
+                               drop_mode=drop_mode, speed=speed, vibe=vibe, source=source, own_folder=own_folder, own_id=own_id)
         if n_morphs > _cloud_final.MAX_MORPHS and not (whole and whole.get("morphs")):
             cloud.update({"ready": False, "why": f"Cloud Final takes at most {_cloud_final.MAX_MORPHS} morphs; "
                                                  "choose Length 60 s or fewer Forms, or Whole song (a Make a passage)."})
@@ -2374,6 +2400,8 @@ def create_app(cfg: dict | None = None):
         make = dict(body.get("body") or {})
         if body.get("song_cap") not in (None, ""):
             make[song_plan.CAP_KEY] = body.get("song_cap")
+        if song_plan.clips_song(make):  # a clips song plans on your clips: the folder (or the files dropped) read now
+            _apply_own(make)
         audio_id = str(make.get("audio_id") or "")
         with _LOCK:
             audio_path = _AUDIO.get(audio_id) if audio_id and audio_id != "demo" else None

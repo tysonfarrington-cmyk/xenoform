@@ -274,8 +274,8 @@ def test_the_window_bodies_are_exact_draft_objects_cuts(drop):
     assert len(set(seeds)) == len(seeds)
 
 
-def test_clips_and_stems_are_not_a_whole_song(drop):
-    with pytest.raises(song_plan.SongError):
+def test_stems_are_not_a_whole_song_and_clips_need_their_clips(drop):
+    with pytest.raises(song_plan.SongError, match="needs your clips"):  # a clips song takes clips (tests/test_song_clips.py)
         song_plan.plan(FEATURES, _state(morph_source="clips"), drop=drop)
     with pytest.raises(song_plan.SongError):
         song_plan.plan(FEATURES, _state(mode="stems", layers=[{"stem": "drums", "kind": "objects"}]), drop=drop)

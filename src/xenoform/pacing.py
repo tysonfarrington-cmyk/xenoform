@@ -798,9 +798,11 @@ def shot_intensity(s: dict, intensity: float, breathe: bool | float, drops: bool
 
 def song_context(state: dict | None) -> dict | None:
     """A whole song's window (``song_plan.KEY``): its place in the song (where it starts, the passage's span, the song's
-    first drop, the calm passages and scenes before it, the style its drop run opens on, its turn), or None."""
+    first drop, the calm passages and scenes before it, the style its drop run opens on, its turn), or None. A window
+    that is the whole song (a clips song is one Make of every passage: it carries no ``passage_start``) is shaped as
+    any cut is, passage by passage, so it is None here too."""
     raw = (state or {}).get("song_passage")
-    return raw if isinstance(raw, dict) else None
+    return raw if isinstance(raw, dict) and "passage_start" in raw else None
 
 
 def shape(shots: list[dict], macros: dict, *, breathe: bool | float, drop_mode: str, house: dict | None = None,
