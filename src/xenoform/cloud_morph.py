@@ -406,8 +406,8 @@ def chain_stills(state: dict, count: int, record: bool = True, scene_at: list[in
     if vibe_for(state) == "black":
         # The black chain is curated (rose -> jellyfish -> butterfly -> swallow -> drops), so a
         # story word must not rotate it. Every paid shot then starts from a still Tys has seen.
-        return pick_stills({key: state.get(key) for key in ("vibe", "palette", "preset", "scene_stills", "chain_pins")}, count,
-                           record=record, scene_at=scene_at)
+        return pick_stills({key: state.get(key) for key in ("vibe", "palette", "preset", "scene_stills", "backdrop", "chain_pins")},
+                           count, record=record, scene_at=scene_at)
     return pick_stills(state, count, record=record, scene_at=scene_at)
 
 
@@ -699,11 +699,13 @@ def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, cli
         wf.set_input("11", "steps", int(tune.get("steps", mp.STEPS)))
         if "cfg" in tune:
             wf.set_input("14", "cfg", float(tune["cfg"]))
-        if "img_compression" in tune:  # configs/autotune.json, per vibe (docs/AUTOTUNE.md)
+        if "img_compression" in tune or "scene" in kinds:  # configs/autotune.json, per vibe (docs/AUTOTUNE.md)
             # a scene guide stays uncompressed (node 8 preprocesses the start still, 21 the end): the compression is
-            # the freedom the morph takes from the guide, and a wide frame loses its texture to it at once
-            wf.set_input("8", "img_compression", 0 if kinds[0] == "scene" else int(tune["img_compression"]))
-            wf.set_input("21", "img_compression", 0 if kinds[1] == "scene" else int(tune["img_compression"]))
+            # the freedom the morph takes from the guide, and a wide frame loses its texture to it at once; an object's
+            # side keeps the vibe's value, else the graph's own 18
+            start, end = mp.guide_compression(kinds, int(tune.get("img_compression", 18)))
+            wf.set_input("8", "img_compression", start)
+            wf.set_input("21", "img_compression", end)
         if "guide_end_strength" in tune:
             wf.set_input("22", "strength", float(tune["guide_end_strength"]))
         wf.set_input("13", "noise_seed", int(seed) + i)

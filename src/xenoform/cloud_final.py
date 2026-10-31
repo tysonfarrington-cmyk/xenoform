@@ -92,17 +92,21 @@ def estimate(morphs: int, parallel: int = 3, scale_s: float = 3.0) -> dict:
 
 
 def graph(prompt: str, *, length: int, seed: int, width: int, height: int, negative: str | None = None,
-          img_compression: int = 18, end_strength: float = 1.0, prefix: str = "xenoform/cloud") -> dict:
-    """The LTX-2.5 first/last-frame morph graph with this shot's prompt, size, length and seed. Images go in 6 and 7."""
+          img_compression: int | tuple[int, int] = 18, end_strength: float = 1.0, prefix: str = "xenoform/cloud") -> dict:
+    """The LTX-2.5 first/last-frame morph graph with this shot's prompt, size, length and seed. Images go in 6 and 7.
+    ``img_compression`` is one number for both guides or a (start, end) pair (node 8 takes the start still, 21 the end)."""
+    from xenoform.final_tier import guides_of
+
     if width % 32 or height % 32:
         raise ValueError(f"LTX-2.5 needs multiples of 32; got {width}x{height}.")
     if (length - 1) % 8:
         raise ValueError(f"LTX frame counts are 8k+1; got {length}.")
+    comp_a, comp_b = guides_of(img_compression)
     g = json.loads(GRAPH.read_text(encoding="utf-8"))
     g["3"]["inputs"]["text"] = prompt
     g["4"]["inputs"]["text"] = negative or NEGATIVE
-    g["8"]["inputs"]["img_compression"] = int(img_compression)
-    g["21"]["inputs"]["img_compression"] = int(img_compression)
+    g["8"]["inputs"]["img_compression"] = comp_a
+    g["21"]["inputs"]["img_compression"] = comp_b
     g["9"]["inputs"].update({"width": int(width), "height": int(height), "length": int(length)})
     g["25"]["inputs"]["frames_number"] = int(length)
     g["22"]["inputs"]["strength"] = float(end_strength)
@@ -113,7 +117,7 @@ def graph(prompt: str, *, length: int, seed: int, width: int, height: int, negat
 
 
 def graph_for(name: str, prompt: str, *, length: int, seed: int, width: int, height: int, negative: str | None = None,
-              img_compression: int = 18, end_strength: float = 1.0, prefix: str = "xenoform/cloud") -> dict:
+              img_compression: int | tuple[int, int] = 18, end_strength: float = 1.0, prefix: str = "xenoform/cloud") -> dict:
     """The Cloud graph for ``name``: LTX-2.3's two-stage Final without its upscaler, or the LTX-2.5 morph graph."""
     if name == "ltx25":
         return graph(prompt, length=length, seed=seed, width=width, height=height, negative=negative,
@@ -179,20 +183,22 @@ def cloud_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
     backend = backend or cb.CloudBackend.from_config(cfg)
     work = Path(work)
     w, h = RENDER_916 if vertical else RENDER_169
-    if vertical:
-        from xenoform.portrait import PROMPT_SUFFIX, portrait_stills
+    from xenoform.portrait import portrait_stills, suffix_for
 
+    if vertical:
         stills = portrait_stills(stills, work, w, h, background=(state or {}).get("still_background"))
-    else:
-        PROMPT_SUFFIX = ""
     tune = final_tier.tuned(vibe)
     negative = negative_for(NEGATIVE, state)
 
     def job(i: int) -> dict:
         style = styles[i] if styles and i < len(styles) else "melt"
-        text = mp.prompt_for(vibe, "ltx25", mp.pair_kinds(stills[i], stills[i + 1]), style=style).rstrip() + PROMPT_SUFFIX
+        kinds = mp.pair_kinds(stills[i], stills[i + 1])
+        # the portrait sentence is the object pair's (portrait.suffix_for: a scene pair keeps its wide frame), and a scene's
+        # guide stays uncompressed on LTX-2.5's loose 30 as it does on the Draft (morph_pass.guide_compression)
+        text = mp.prompt_for(vibe, "ltx25", kinds, style=style).rstrip() + (suffix_for(kinds) if vertical else "")
         length = final_tier.gen_length(float(shots[i].get("render_s") or shots[i]["seconds"]))
-        knobs = {**tune, **LOOSE} if name == "ltx25" else tune
+        knobs = {**tune, **LOOSE} if name == "ltx25" else dict(tune)
+        knobs["img_compression"] = mp.guide_compression(kinds, knobs.get("img_compression", 18))
         if name == "ltx25":
             text = lead(stills[i].get("noun"), stills[i + 1].get("noun")) + text
         g = graph_for(name, guard_prompt(text, state), negative=negative, length=length, seed=int(seed) + i, width=w,

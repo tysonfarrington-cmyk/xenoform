@@ -1,14 +1,15 @@
 """Breathe off with Drops off is today's cut (docs/MUSIC_VIDEO_PLAN.md section 3: "Breathe off reproduces today's cut,
 the viscous table, one drop, so every existing record re-cuts the same").
 
-``tests/fixtures/legacy_cut.json`` was written by ``build_cases`` at commit b271454, before the pacing engine: for seven
-Makes on the bundled songs (the whole of Glitch Out on a big pool and on a shipped twelve-still pool, Glitch Out with
-Speed off-centre, Morphing Wobble whole and as a 30 s window, Ambient whole, the 20 s clip) it holds what the guardrail
-did to the body, the plan, the shots the compositor got with every field, the premium transitions and boundary kinds,
-the look, the record's chain and styles, and the source frame each output frame plays. The same Makes with
-``breathe: False`` and ``drop_mode: "off"`` must give exactly that, and a re-cut of the record (with and without the
-two keys in its ``recut_state``, as an old record has neither) must hand the compositor what it handed it then.
-Mock engine, the compositor a spy: no GPU, no ffmpeg."""
+``tests/fixtures/legacy_cut.json`` was written by ``build_cases`` on the mainline before the pacing engine (b271454) and
+is re-made on a scratch export of each mainline merged in since (contest-rc2 0ef7823, the backdrops stage, which gave
+each shot its ``still_kinds``): for seven Makes on the bundled songs (the whole of Glitch Out on a big pool and on a
+shipped twelve-still pool, Glitch Out with Speed off-centre, Morphing Wobble whole and as a 30 s window, Ambient whole,
+the 20 s clip) it holds what the guardrail did to the body, the plan, the shots the compositor got with every field, the
+premium transitions and boundary kinds, the look, the record's chain and styles, and the source frame each output frame
+plays. The same Makes with ``breathe: False`` and ``drop_mode: "off"`` must give exactly that, and a re-cut of the
+record (with and without the two keys in its ``recut_state``, as an old record has neither) must hand the compositor
+what it handed it then. Mock engine, the compositor a spy: no GPU, no ffmpeg."""
 from __future__ import annotations
 
 import copy

@@ -662,6 +662,31 @@ def guard(kinds: Sequence[str], *, expert: bool = False, seed: int = 0, cap: int
 _FUNCS.update({"cut": _cut, "match-cut": _match_cut, "flow-carry": _flow_carry, "depth-parallax": _depth_parallax,
                "lens-breath": _lens_breath, "chrome-refract": _chrome_refract, "echo-trail": _echo_trail})
 
+# The kinds that read the picture as a lit object on a dark ground: match-cut aligns the two subjects found by a luma mask
+# (``subject_box``), depth-parallax drifts by ``depth_proxy``. In a setting (an object standing in a place, stills kind
+# "setting") the brightest thing is a sky or a neon and the "depth" is the place's texture, so the boundary is handed off
+# plainly instead: the morph's own landing, which is continuous anyway.
+NEEDS_PLAIN_GROUND = ("match-cut", "depth-parallax")
+
+
+def kind_guard(transitions: list | None, shots: list[dict]) -> list | None:
+    """``transitions`` (one entry a shot: the transition into it, or None) with a ``NEEDS_PLAIN_GROUND`` kind dropped at a
+    boundary where either side's still is a setting (the shots' ``still_kinds``, ``dense.stamp_still_kinds``): the shot
+    before lands on one, or the shot after starts from one. A timeline pick (``user``) is the user's and stays. A shot
+    without ``still_kinds`` (a record from before 31 Oct) is read as objects, as it was cut."""
+    if not transitions:
+        return transitions
+    out = list(transitions)
+    for i in range(1, min(len(out), len(shots))):
+        t = out[i]
+        if not isinstance(t, dict) or t.get("kind") not in NEEDS_PLAIN_GROUND or t.get("user"):
+            continue
+        before = list(shots[i - 1].get("still_kinds") or [])
+        after = list(shots[i].get("still_kinds") or [])
+        if (before[-1:] == ["setting"]) or (after[:1] == ["setting"]):
+            out[i] = None
+    return out
+
 
 
 DEFAULT_INTENSITY = 0.5

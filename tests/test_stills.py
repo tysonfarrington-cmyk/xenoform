@@ -49,7 +49,7 @@ def _grown(vibe: str, name: str, noun: str, r: float = 0.18, **row) -> Path:
 
 
 def test_catalogue_merges_shipped_and_grown_and_drops_deleted_files():
-    assert L.counts("cosmic") == {"shipped": 12, "grown": 0, "own": 0, "scenes": 0, "total": 12}
+    assert L.counts("cosmic") == {"shipped": 12, "grown": 0, "own": 0, "scenes": 0, "settings": 0, "total": 12}
     _grown("cosmic", "000_astrolabe.jpg", "astrolabe")
     _grown("cosmic", "001_gone.jpg", "gone")
     (L.root() / "cosmic" / "001_gone.jpg").unlink()  # deleting the jpg is the cull

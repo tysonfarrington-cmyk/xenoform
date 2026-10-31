@@ -505,8 +505,9 @@ def grow_family_for_cut(state: dict, vibe: str, need: int, cfg: dict | None, rep
     from xenoform import morph_pass as _mp
     from xenoform import stills as _stills
 
-    if engine == "mock" or state.get("auto_grow") is False or _mp.scenes_choice(state) == "only":
+    if engine == "mock" or state.get("auto_grow") is False or _mp.scene_mode(state) == "only":
         return None  # a scenes-only cut draws on no object family
+    kind = "setting" if _mp.backdrop_choice(state) == "places" else "object"  # a cut in places grows its family in places
     # the family exactly as pick_stills will sort on it: looked up under the asked vibe (a vibe that borrows a pool
     # keeps its own weights), the idea's named family first, else the vibe's own with the seed turning a tie
     asked = str(state.get("vibe") or "") or vibe
@@ -520,21 +521,25 @@ def grow_family_for_cut(state: dict, vibe: str, need: int, cfg: dict | None, rep
         return None
     cat = _mp.catalogue()
     rows = list(cat.get(vibe) or []) + (list(cat.get(asked) or []) if asked != vibe else [])  # what the cut draws on
+    rows = [r for r in rows if _stills.kind_of(r) in (kind, "scene")]  # the family counted in the kind the cut stands on
     in_family = [r for r in rows if _stills.family_of(str(r.get("noun") or "")) == family]
     want = min(int(need), GROW_FOR_IDEA_MAX)
     if len(in_family) >= want:
         return None
-    have = _stills.nouns_in(vibe) | (_stills.nouns_in(asked) if asked != vibe else set())
+    nouns_in = _stills.setting_nouns_in if kind == "setting" else _stills.nouns_in
+    have = nouns_in(vibe) | (nouns_in(asked) if asked != vibe else set())
     nouns = _stills.family_nouns(vibe, family, want - len(in_family), have=have)
     if not nouns:
         return None
     try:
         if not _stills.available(cfg).get("ok"):
             return None
+        what = "objects in their places" if kind == "setting" else "objects"
         if report:
-            report("restyle", 0.03, f"Growing {len(nouns)} {family.replace('-', ' ')} objects for this idea (about {int(_stills.estimate_seconds(len(nouns)))} s)")
-        result = _stills.grow(vibe, len(nouns), nouns=nouns, cfg=cfg, sheet=False)
-        return {"family": family, "asked": len(nouns), "kept": result.get("kept", 0)}
+            report("restyle", 0.03, f"Growing {len(nouns)} {family.replace('-', ' ')} {what} for this idea (about {int(_stills.estimate_seconds(len(nouns)))} s)")
+        extra = {"kind": kind} if kind != "object" else {}  # an object grow calls grow() as before
+        result = _stills.grow(vibe, len(nouns), nouns=nouns, cfg=cfg, sheet=False, **extra)
+        return {"family": family, "asked": len(nouns), "kept": result.get("kept", 0), **extra}
     except Exception as exc:  # the cut goes on with the pool it has
         log.warning("grow for idea skipped: %s", exc)
         return None
@@ -588,10 +593,11 @@ def grow_for_idea(state: dict, vibe: str, cfg: dict | None, report: Callable | N
 
 def _scene_kw(state: dict, shots: list[dict], count: int, assign: list | None = None) -> dict:
     """``scene_at`` for ``stills_for`` (``morph_pass.scene_slots``: the stills of the chain that are scenes), only when
-    the scenes choice is on, so an object cut calls ``stills_for(state, count)`` exactly as before."""
+    the scenes choice is on (the Backdrop "scenes" is "only"), so an object cut calls ``stills_for(state, count)`` exactly
+    as before."""
     from xenoform import morph_pass as _mp
 
-    choice = _mp.scenes_choice(state)
+    choice = _mp.scene_mode(state)
     return {"scene_at": _mp.scene_slots(shots, count, choice, assign=assign)} if choice != "off" else {}
 
 
@@ -668,6 +674,7 @@ def long_song_chain(state: dict, directed: dict, audio_path: Path, shots: list[d
     shots on the bars and merged down to the count when the planner's roles still outnumber it. Returns
     ``(shots, plan, chain, notes)``."""
     from xenoform.morph_pass import catalogue as _catalogue, rows_of_kind as _rows_of_kind, scenes_choice as _scenes_choice
+    from xenoform.morph_pass import backdrop_choice as _backdrop_choice
     from xenoform.morph_pass import vibe_for as _vibe_for
 
     notes: list[dict] = []
@@ -678,11 +685,12 @@ def long_song_chain(state: dict, directed: dict, audio_path: Path, shots: list[d
     choice = _scenes_choice(state)
 
     def pool_count() -> int:
-        # the rows the scenes choice lets the cut draw on (objects alone, scenes alone, both); a vibe asked for scenes
-        # it has none of falls back to its objects, as the pick does
+        # the rows the scenes choice and the Backdrop let the cut draw on (objects or settings, scenes alone, both); a vibe
+        # asked for scenes or places it has none of falls back to its objects, as the pick does
         cat = _catalogue()
         rows = list(cat.get(pool_vibe) or []) + (list(cat.get(asked) or []) if asked and asked != pool_vibe else [])
-        return len(_rows_of_kind(rows, choice)) or len(rows)
+        backdrop = _backdrop_choice(state, rows)
+        return len(_rows_of_kind(rows, choice, backdrop)) or len(_rows_of_kind(rows, "off", "plain")) or len(rows)
 
     pool_n = pool_count()
     tier = "cloud" if opt["cloud"] else opt["tier"]
@@ -1323,13 +1331,30 @@ def write_chain(work: Path, stills: list[dict]) -> Path | None:
     line's stills are grown and picked, so the desk's making screen shows the chain Make made rather than the Chain
     row's pre-Make preview (which never has the rally car "car rally race" grows, 28 Oct). Never breaks a render."""
     rows = [{"noun": str(s.get("noun") or Path(str(s.get("file") or s.get("path") or "")).stem.split("_", 1)[-1].replace("_", " ")),
-             "kind": str(s.get("kind")) if str(s.get("kind") or "") in ("scene", "clip") else "object"} for s in stills or []]
+             "kind": str(s.get("kind")) if str(s.get("kind") or "") in ("scene", "setting", "clip") else "object"} for s in stills or []]
     try:
         path = Path(work) / CHAIN_FILE
         path.write_text(json.dumps(rows), encoding="utf-8")
         return path
     except OSError:
         return None
+
+
+def stamp_still_kinds(shots: list[dict], stills: list[dict]) -> list[dict]:
+    """Each chain shot's ``still_kinds``: the kinds of the two stills its morph runs between (object, scene or setting),
+    read by the layers that assume an object on a plain ground (the foreshadow trace and silhouette, the match-cut and
+    depth-parallax transitions, the brightness-centred crop), which step aside for a setting. A shot whose morph is not
+    in the chain is left as it is. The plan shots carry it into the record, so a re-cut reads it too."""
+    from xenoform import stills as _stills
+
+    for s in shots:
+        m = s.get("morph", s.get("clip"))
+        if m is None:
+            continue
+        m = int(m)
+        if 0 <= m < len(stills) - 1:
+            s["still_kinds"] = [_stills.kind_of(stills[m]), _stills.kind_of(stills[m + 1])]
+    return shots
 
 
 def _draft_clips(shots, stills, work, cfg, seed, vibe, client, cancel, state=None, report=None, size=None, styles=None,
@@ -1365,7 +1390,10 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
             else _idea.read(str(state["idea"]), str(state.get("vibe") or ""))
         state = _idea.shape_state(state, reading)
     opt = options(state)
-    scene_choice = _mp.scenes_choice(state)  # off / mix / only: whether the chain morphs scenes as well as objects
+    scene_choice = _mp.scene_mode(state)  # off / mix / only: whether the chain morphs scenes as well as objects
+    # plain / places / scenes: what the morphs stand on, decided once (a grow below must not flip a default half-way)
+    backdrop = _mp.backdrop_choice(state)
+    state = {**state, "backdrop": backdrop}
     work = Path(work) / "simple"
     work.mkdir(parents=True, exist_ok=True)
     shots, plan = shots_for(state, directed, Path(audio_path))
@@ -1466,6 +1494,12 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
                                 f"(Fine-tune > Library > Grow scenes, or xenoform stills grow {vibe} --kind scene)"})
     elif scene_files:
         report("restyle", 0.08, f"{len(scene_files)} scene{'s' if len(scene_files) != 1 else ''} in the chain ({scene_choice})")
+    setting_files = [s["file"] for s in stills if s.get("kind") == "setting"]  # which stills stand in a place
+    if backdrop == "places" and not setting_files:
+        notes.append({"backdrop": f"places asked, but the {vibe} pool has no settings yet: plain objects "
+                                  f"(Fine-tune > Library > Grow places, or xenoform stills grow {vibe} --kind setting)"})
+    elif setting_files:
+        report("restyle", 0.08, f"{len(setting_files)} object{'s' if len(setting_files) != 1 else ''} in their places")
     # how each morph changes (morph_style): the shot list a Final carries over from its prototype, the setting, or Auto
     # (Melt in the verses, Shatter on the drop, Bloom / Fold / Spin by the Chaos knob); a long song's chain morph takes
     # the style of the first shot that plays it
@@ -1576,6 +1610,7 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
         shot_styles = list(render_styles)
     for i, s in enumerate(shots):  # which morph each shot plays: a swap after the cut finds the two that touch a still
         s["morph"] = int(s.get("clip", i))
+    stamp_still_kinds(shots, stills)  # the kinds each shot morphs between, for the layers that want an object on a ground
     performer_info: dict = {"shots": 0, "slots": [], "notes": []}
     n_perf = opt.get("performer") or 0
     # a long song gets its slots as before; a short clip gets one only when the idea line asked for her ("girl
@@ -1695,6 +1730,9 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     boundary_fx = _B.pick(shots, m, directed.get("beats") or [], fps, seed=seed, premium=transitions, drop=plan.get("drop"),
                           smear=smear, paced=paced_kinds(state, shots))
     transitions = _B.clear_premium(transitions, boundary_fx)
+    from xenoform import transitions_fx as _T
+
+    transitions = _T.kind_guard(transitions, shots)  # a kind that wants an object on a ground: a plain handoff into a place
     if any(boundary_fx):
         notes.append({"boundary_fx": _B.info(boundary_fx)})
     if look_preset == "off" and not opt["stem_orbit"]:
@@ -1741,6 +1779,7 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
             "fx": opt["fx"], "overlay": made["overlay"], "end_card": card, "vibe": vibe,
             "stills": [s["file"] for s in stills], "shots": shots, "plan_name": plan.get("name", ""), "chain": chain or None,
             "scene_mode": scene_choice, "scene_files": scene_files,  # the scenes choice and which stills were scenes
+            "backdrop": backdrop, "setting_files": setting_files,  # what the morphs stood on and which stills stood in a place
             "idea": reading,  # what the idea line was read as (xenoform.idea), or None
             # the Chain row's pins (which slots the user chose), the still preparation a swap must repeat, the swaps so far
             "pins": {str(i): s["file"] for i, s in enumerate(stills) if s.get("pinned")},
@@ -1759,7 +1798,7 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
             "recut_state": {**{k: state.get(k) for k in ("vibe", "aspect", "quality_tier", "energy_preset", "dance_fx", "stem_orbit", "pace",
                                                          "beat_fx", "beat_overlay", "end_card", "stems_path", "macros", "still_background",
                                                          "performer", "performer_style", "foreshadow", "scene_stills", "chain_pins",
-                                                         "morph_style", "morph_timing", "effects", "boundary_smear")},
+                                                         "morph_style", "morph_timing", "effects", "boundary_smear", "backdrop")},
                             # the shape the cut was made in, so a re-cut starts there (a record without them: both off)
                             "breathe": _pc.breathe_of(state), "drop_mode": _pc.drop_mode_of(state)},
             "pacing": _pc.record(plan, shots, state, window_of(state, duration)),
@@ -1792,11 +1831,14 @@ def window_of(state: dict, duration: float) -> dict:
 
 
 def ground_is_black(stills: list[dict], *, luma: float = 16.0) -> bool:
-    """True when the first still's border (the ground the morph sits on) is already near black."""
+    """True when the first object still's border (the ground the morph sits on) is already near black. A scene has no
+    ground (a "mix" cut opens on one, and its dusk sky once decided the crush for every object after it), so the test reads
+    the chain's first object; a chain of scenes alone is never crushed (``portrait.black_stills`` passes scenes through)."""
     try:
-        from xenoform.portrait import load_rgb
+        from xenoform.portrait import FRAME_KINDS, kind_of, load_rgb
 
-        img = load_rgb(Path(stills[0]["path"]))
+        first = next(s for s in stills if kind_of(s) not in FRAME_KINDS)
+        img = load_rgb(Path(first["path"]))
     except Exception:
         return False
     h, w = img.shape[:2]
@@ -1942,6 +1984,9 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
                           premium=transitions, drop=drop, smear=smear,
                           paced=paced_kinds(state, shots))  # re-picked from the knobs as they are now: the same knobs give the same kinds
     transitions = _B.clear_premium(transitions, boundary_fx)
+    from xenoform import transitions_fx as _T
+
+    transitions = _T.kind_guard(transitions, shots)  # as the render did: a plain handoff into a place (a timeline pick stays)
     # the timeline: the maps sent replace the record's, the record's hold otherwise; a Cut handoff is a hold on the shot before
     so = shot_overrides_of(so_raw if so_raw is not None else rec.get("shot_overrides"), n)
     bo = boundary_overrides_of(bo_raw if bo_raw is not None else rec.get("boundary_overrides"), n)
@@ -2254,7 +2299,9 @@ def apply_timeline(shots: list[dict], so: dict[int, dict], bo: dict[int, dict], 
 # ---------------------------------------------------------------- the pair renderer on the timeline
 
 RERENDER_VARIANTS = {"auto": None, "object": ("object", "object"), "scene-object": ("scene", "object"),
-                     "object-scene": ("object", "scene"), "scene": ("scene", "scene")}
+                     "object-scene": ("object", "scene"), "scene": ("scene", "scene"),
+                     # a pair in a place (stills kind "setting"): the object changes while the place shifts with it
+                     "setting": ("setting", "setting"), "scene-setting": ("scene", "setting"), "setting-scene": ("setting", "scene")}
 RENDER_S_RANGE = (2, 5)
 INSERT_SECONDS = (5.0, 10.0, 15.0)
 INSERT_RANGE = (3.0, 20.0)
@@ -2388,7 +2435,7 @@ def rerender_morph(job_dir: Path, shot: int, *, seed: int | None = None, render_
         raise ValueError(f"No morph style called {style!r}; one of {', '.join(_ms.STYLES)}.")
     style = str(style).strip().lower() if style is not None else styles[j]
     scene_files = {str(f) for f in rec.get("scene_files") or []}
-    rows = _still_rows(files, scene_files)
+    rows = _still_rows(files, scene_files, {str(f) for f in rec.get("setting_files") or []})
     pair = [dict(rows[m]), dict(rows[m + 1])]
     kinds = RERENDER_VARIANTS[variant]
     if kinds:
@@ -2590,9 +2637,10 @@ def library_row(file: str) -> dict | None:
     return None
 
 
-def _still_rows(files: list[str], scene_files: set) -> list[dict]:
+def _still_rows(files: list[str], scene_files: set, setting_files: set | None = None) -> list[dict]:
     """The cut's stills as rows with paths: the library's row, else the file where the pools keep it (a still culled
-    from the library since the cut still morphs); a still gone from the machine is an error."""
+    from the library since the cut still morphs); a still gone from the machine is an error. The record's
+    ``scene_files`` and ``setting_files`` say which were scenes and which stood in a place."""
     from xenoform import morph_pass as _mp
     from xenoform import stills as _stills
     from xenoform.lane import noun_of
@@ -2609,6 +2657,8 @@ def _still_rows(files: list[str], scene_files: set) -> list[dict]:
             raise FileNotFoundError(f"The still {f} is no longer on this machine.")
         if f in scene_files:
             r = {**r, "kind": "scene"}
+        elif setting_files and f in setting_files:
+            r = {**r, "kind": "setting"}
         rows.append(r)
     return rows
 
@@ -2658,9 +2708,10 @@ def swap_still(job_dir: Path, slot: int, file: str, *, cfg: dict | None = None,
     if not shots or not clips or len(clips) != len(shots):
         raise FileNotFoundError("The cached morphs for this video are gone; render it again.")
     scene_files = {str(f) for f in rec.get("scene_files") or []}
+    setting_files = {str(f) for f in rec.get("setting_files") or []}
     shot_styles = _styles_of(rec)
     old = files[slot]
-    rows = _still_rows(files, scene_files)
+    rows = _still_rows(files, scene_files, setting_files)
     rows[slot] = dict(new)
     # the morphs that touch the slot: the one landing on it and the one leaving it, and the shots that play them
     touch = [m for m in (slot - 1, slot) if 0 <= m < n - 1]
@@ -2720,13 +2771,19 @@ def swap_still(job_dir: Path, slot: int, file: str, *, cfg: dict | None = None,
         new_clips[j] = str(dest)
     files[slot] = file
     scene_files.discard(old)
+    setting_files.discard(old)
     if _stills.kind_of(new) == "scene":
         scene_files.add(file)
+    elif _stills.kind_of(new) == "setting":
+        setting_files.add(file)
     for j, path in new_clips.items():
         clips[j] = path
+    for lst in (rec.get("plan_shots") or [], rec.get("shots") or []):  # the kinds the two touched shots now morph between
+        stamp_still_kinds([s for s in lst if isinstance(s, dict)], rows)
     from datetime import datetime
 
     rec.update({"stills": files, "scene_files": [f for f in files if f in scene_files], "clips": clips,
+                "setting_files": [f for f in files if f in setting_files],
                 "families": sorted({fam for fam in (_stills.family_of(str(r.get("noun") or "")) for r in rows) if fam}),
                 "swaps": swaps + [{"slot": slot, "from": old, "to": file, "morphs": sorted(targets), "shots": sorted(targets.values()),
                                    "clips": {str(j): p for j, p in new_clips.items()}, "seconds": round(time.perf_counter() - started, 2),
