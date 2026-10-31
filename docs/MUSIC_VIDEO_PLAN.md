@@ -58,7 +58,7 @@ backdrops ("morph an entire scene, not just a shape").
 | 5 | The whole-song music video: passages become window Makes, queued, assembled on the beat into one cut | song-plan | Opus 5.5 | song_plan.py, batch.py, dense.py, ui.py, app.js | 2 merged, Tys's go |
 
 Each session works in its own worktree and branch cut from `contest-rc2`, commits as Owly, never pushes. The
-orchestrator merges the branches into `contest-rc2` in the order 1 (with 0), 3, 4, then 2, then 5, running the
+orchestrator merges the branches into `contest-rc2` as each reports (3 landed first, 31 Oct, as 91fd5d2; a builder still running merges `contest-rc2` into its branch before it reports, so 1 and 4 land in the order they finish), then 2, then 5, running the
 whole suite after each merge. Tys's desks 47320 and 47321 are never restarted without his word.
 
 ## 2. Stage 0: roles that are true
@@ -226,9 +226,17 @@ video, and it is built last because it stands on all the others.
 1. Repo size: decided 31 Oct, the stills and the loved clips ship in the repo itself (about 70 MB).
 2. Breathe default: decided 31 Oct, off until Tys has judged the sheets; the drop treatment stays on ("auto").
 3. Credits: the judged Cloud sets for backdrops and for Breathe, and later a whole song on Cloud. None is spent
-   until he says so; Draft sheets come first and are free.
+   until he says so; Draft sheets come first and are free. The backdrops pick (31 Oct): the 6 scene pairs of job
+   5b974778 (botanical 9:16, which both old faults hit), about 24 to 36 credits; the 8 pairs of 87678e34 would
+   add 32 to 48; 44cc2f6e is skipped (its scenes come from an old idea line). Re-sending only the pairs needs a
+   small script, since no route re-renders a Cloud cut.
 4. Wet paint and the pink odd-machine: decided 31 Oct, off the featured cards, kept in the registry (the assets
    session lands it).
+5. Places by themselves: the backdrops stage (merged 31 Oct as 91fd5d2) moves a vibe to Places once it holds 12
+   settings (PLACES_DEFAULT_MIN); the builder chose 12 so a first grow of 8 does not turn a 30 s cut into five
+   long morphs. No vibe ships settings yet, so default output is unchanged. Keep 12, or never switch by itself?
+6. The 24 proof settings (8 each for none, liquid-gold and neon-noir, in the library folder under
+   Desktop/xeno_backdrops_31oct): into the main library as the first places, or left out?
 
 ## 9. Working rules for every session
 
