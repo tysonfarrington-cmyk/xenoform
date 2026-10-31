@@ -199,6 +199,81 @@ def test_a_realm_too_small_walks_on_rather_than_repeat(shipped, crafted):
     assert any("walks on" in line for line in taste.lines(got))
 
 
+# with MACHINES, the machines' realm a test library leans on: 39 stills, none banned, none of them an instrument
+MORE_MACHINES = ["hourglass", "pocket watch", "gyroscope", "compass", "sextant", "astrolabe", "telescope", "jukebox",
+                 "steam locomotive", "gear", "rotary telephone", "vacuum tube", "transistor radio", "theodolite", "tesla coil",
+                 "carburettor", "difference engine"]
+
+
+def _realm(noun: str) -> str:
+    return stills.realm_of(stills.family_of(noun))
+
+
+def test_a_default_cut_never_laps_a_realm_smaller_than_its_chain(shipped, crafted):
+    # the stems builder's case (31 Oct): no line, a pool of 40, the realm the pick lands on holds 9 stills and a default
+    # ten-morph cut wants 11 (the mainline walked the 9 again: the orb and the mobius twice)
+    rows = crafted("testvibe", SEA[:9] + MACHINES + MORE_MACHINES)
+    assert len(rows) >= stills.REALM_LIBRARY and all(_realm(n) in ("creatures", "machines") for n in SEA[:9] + MORE_MACHINES)
+    for seed in range(6):
+        with taste.collecting() as got:
+            _, picked = mp.pick_stills({"vibe": "testvibe", "seed": seed}, 11, record=False)
+        nouns = _nouns(picked)
+        assert len(set(nouns)) == len(nouns) == 11, (seed, nouns)
+        assert all(_realm(n) == "creatures" for n in nouns[:9]) and all(_realm(n) == "machines" for n in nouns[9:]), nouns
+        assert any("the creatures realm holds 9 different objects, fewer than the cut's 11" in line
+                   for line in taste.lines(got)), taste.lines(got)
+
+
+def test_a_second_still_of_one_object_does_not_fill_a_realm_out(shipped, crafted):
+    # 11 stills in the creatures realm, the jellyfish twice: 10 objects for an 11-still cut, so it walks on
+    crafted("testvibe", SEA[:10] + ["jellyfish"] + MACHINES + MORE_MACHINES)
+    with taste.collecting() as got:
+        _, picked = mp.pick_stills({"vibe": "testvibe", "seed": 0}, 11, record=False)
+    nouns = _nouns(picked)
+    assert len(set(nouns)) == len(nouns) == 11, nouns
+    assert nouns.count("jellyfish") == 1 and _realm(nouns[-1]) == "machines"
+    assert any("holds 10 different objects" in line for line in taste.lines(got))
+
+
+DARK = ["staircase looping into itself", "snail with a castle shell", "moon in a birdcage", "chess knight made of smoke",
+        "fish made of keys", "enchanted rose under glass", "runed elven crown", "jewelled dragon egg",
+        "dragon claw holding a gem", "crystal orb on a claw stand"]
+
+
+def test_the_bans_come_before_the_realm_is_chosen(shipped, crafted):
+    # the bioluminescent case (31 Oct): its default pick reached the DNA helix. Here the DNA helix and the anatomical
+    # heart open the dark fantasy realm the natural-first weight draws on; neither is ever picked, and nothing repeats
+    crafted("testvibe", ["dna helix", "anatomical heart"] + DARK + MACHINES + MORE_MACHINES)
+    for seed in range(6):
+        with taste.collecting() as got:
+            _, picked = mp.pick_stills({"vibe": "testvibe", "seed": seed}, 11, record=False)
+        nouns = _nouns(picked)
+        assert not {"dna helix", "anatomical heart"} & set(nouns), (seed, nouns)
+        assert len(set(nouns)) == len(nouns) == 11 and all(_realm(n) == "dark fantasy" for n in nouns[:10]), nouns
+        line = " ".join(taste.lines(got))
+        assert "no-black-heart-or-dna: dna helix, anatomical heart" in line
+    # a realm only its banned stills would fill out to a cut's worth (8 with them, 6 without) never carries the cut: the
+    # realm is chosen on the pool after the bans, so this cut is the machines' alone (counted before the bans, the dark
+    # fantasy realm would fit and, weighing more, come first)
+    rows = crafted("testvibe", ["dna helix", "anatomical heart"] + DARK[:6] + MACHINES + MORE_MACHINES)
+    dark = [r for r in rows if _realm(r["noun"]) == "dark fantasy"]
+    assert len(dark) == mp.THEME_CHAIN_MIN and taste.realm_weight(dark) >= taste.first_at()
+    for seed in range(4):
+        _, picked = mp.pick_stills({"vibe": "testvibe", "seed": seed}, 11, record=False)
+        nouns = _nouns(picked)
+        assert all(_realm(n) == "machines" for n in nouns) and len(set(nouns)) == 11, (seed, nouns)
+
+
+@pytest.mark.parametrize("vibe", ["liquid-gold", "bioluminescent"])
+def test_the_shipped_pools_default_picks_repeat_nothing_and_ban_nothing(shipped, vibe):
+    for count in (11, 13, 21):
+        for seed in range(8):
+            _, picked = mp.pick_stills({"vibe": vibe, "seed": seed}, count, record=False)
+            nouns = _nouns(picked)
+            assert len(set(nouns)) == len(nouns) == count, (vibe, count, seed, nouns)
+            assert not [n for n in nouns if taste.ban_for(n, stills.family_of(n))], (vibe, count, seed, nouns)
+
+
 def test_one_instrument_a_cut_no_musical_run(shipped, crafted):
     crafted("testvibe", ["grand piano", "violin", "electric guitar", "cello", "jellyfish", "koi", "owl", "lotus", "orchid",
                          "nautilus", "conch", "moth"])

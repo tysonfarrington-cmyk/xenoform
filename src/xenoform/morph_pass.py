@@ -494,13 +494,15 @@ def pick_stills(state: dict, count: int, record: bool = True, scene_at: list[int
     elif len(pool) >= stills.REALM_LIBRARY:
         # no line: the cut stays in one realm (creatures, garden, cosmos, machines, dark fantasy, home and craft) with
         # enough stills to carry it, the one this vibe has used least (the seed breaks a tie, so cuts take turns),
-        # family by family, so neighbours belong together
+        # family by family, so neighbours belong together. Under the taste file the realms are sized on the pool after
+        # its bans (screened above) and on what a cut may draw from them (``taste.usable``: one still an object, a run's
+        # one), so a realm the banned stills or a second still of one object would fill out never carries a cut alone
         by_realm: dict[str, list[dict]] = {}
         for r in pool:
             name = stills.realm_of(str(r.get("family") or ""))
             if name:
                 by_realm.setdefault(name, []).append(r)
-        fit = sorted(n for n, rows in by_realm.items() if len(rows) >= min(int(count), THEME_CHAIN_MIN))
+        fit = sorted(n for n, rows in by_realm.items() if len(_taste.usable(rows)) >= min(int(count), THEME_CHAIN_MIN))
         if fit:
             # the taste file's family weight: the realms of natural and iconic families take their turns first (creatures,
             # garden, cosmos, dark fantasy before the machines and the home); every realm as before with no taste file
@@ -515,25 +517,30 @@ def pick_stills(state: dict, count: int, record: bool = True, scene_at: list[int
             name = fresh[int(state.get("seed") or 0) % len(fresh)] if len(fresh) > 1 else fresh[0]
             fams = stills.REALMS[name]
             realm_pool = _taste.by_weight(sorted(by_realm[name], key=lambda r: fams.index(r.get("family"))))
-            if _taste.rule("no-object-twice") and len(realm_pool) < int(count):
-                # the taste file's no object twice: a realm too small for the cut walks on into the next realms (the natural
-                # and iconic ones first, the least used next) rather than lap its own stills
+            def short(rows: list[dict]) -> bool:  # fewer objects than the cut may show once each
+                return len(_taste.usable(rows)) < int(count)
+
+            if _taste.rule("no-object-twice") and short(realm_pool):
+                # the taste file's no object twice: a realm too small for the cut (a default ten-morph cut of liquid gold
+                # drew the nine stills of its cosmos and showed the orb and the mobius twice, 31 Oct) walks on into the
+                # next realms (the natural and iconic ones first, the least used next) rather than lap its own stills
                 top = _taste.first_at() or 0.0
                 order = sorted((n for n in by_realm if n != name),
                                key=lambda n: (0 if _taste.realm_weight(by_realm[n]) >= top else 1,
                                               sum(int(used.get(str(r.get("file")), 0)) for r in by_realm[n]) / len(by_realm[n]), n))
                 joined = []
                 for n2 in order:
-                    if len(realm_pool) >= int(count):
+                    if not short(realm_pool):
                         break
                     realm_pool = realm_pool + _taste.by_weight(sorted(by_realm[n2], key=lambda r, f=stills.REALMS[n2]: f.index(r.get("family"))))
                     joined.append(n2)
-                if len(realm_pool) < int(count):
+                if short(realm_pool):
                     realm_pool = realm_pool + [r for r in pool if not stills.realm_of(str(r.get("family") or ""))]
                 if joined:
-                    _taste.note("no-object-twice", f"the {name} realm holds {len(by_realm[name])} stills, fewer than the cut's "
-                                                   f"{int(count)}: it walks on into the {', then the '.join(joined)} realm "
-                                                   f"rather than repeat one")
+                    k = len(_taste.usable(by_realm[name]))
+                    _taste.note("no-object-twice", f"the {name} realm holds {k} different object{'s' if k != 1 else ''}, fewer "
+                                                   f"than the cut's {int(count)}: it walks on into the {', then the '.join(joined)} "
+                                                   f"realm rather than repeat one")
             pool = realm_pool
     if _taste.active():
         # what the taste file sends to the back (taste.settle): a second still of an object the cut has (no object twice),
