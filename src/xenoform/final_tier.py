@@ -19,9 +19,12 @@ The result says which shots fell back and why.
 
 from __future__ import annotations
 
+import logging
 import os
 from pathlib import Path
 from typing import Callable
+
+log = logging.getLogger("xenoform")
 
 CKPT = "ltx-2.3-22b-distilled-fp8.safetensors"
 TEXT_ENCODER = "gemma_3_12B_it_fp4_mixed.safetensors"
@@ -283,6 +286,9 @@ def final_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
         return assets[path]
 
     name = model()
+    from xenoform import morph_cache as mc
+
+    hits: list[int] = []  # the shots the morph cache answered
     if name == "ltx25":
         from xenoform import cloud_final
 
@@ -306,6 +312,12 @@ def final_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
             g = graph(prompt_for_pair(i), negative=negative, length=length, seed=int(seed) + i, upscale=with_upscale,
                       width=size["render"][0], height=size["render"][1], out_w=size["out"][0], out_h=size["out"][1], **knobs)
             a_node, b_node, out_node = "100", "101", "28"
+        dest = Path(work) / f"final{i:02d}.mp4"
+        # the morph cache first (morph_cache): the same request rendered before is copied, never sent to the GPU again
+        key = mc.key_for(g, {a_node: stills[i]["path"], b_node: stills[i + 1]["path"]}, name) if isinstance(g, dict) else None
+        if mc.get(name, key, dest):
+            hits.append(i)
+            return dest
         wf = client.workflows.from_json(g)
         wf.set_input(a_node, "image", asset(stills[i]["path"]))
         wf.set_input(b_node, "image", asset(stills[i + 1]["path"]))
@@ -315,8 +327,8 @@ def final_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
         outs = list(result.get_outputs(out_node)) or list(result.outputs)
         if not outs:
             raise RuntimeError(f"Final shot {i + 1} finished with no video.")
-        dest = Path(work) / f"final{i:02d}.mp4"
         next((o for o in outs if getattr(o, "type", None) == "video"), outs[0]).to_file(str(dest))
+        mc.put(name, key, dest)
         return dest
 
     clips: dict[int, Path] = {}
@@ -359,6 +371,10 @@ def final_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
         if draft is None:
             raise RuntimeError("Final tier failed and no Draft fallback was given.")
         clips.update(draft(need_draft))
+    if hits:  # the notes are the fallbacks (callers read their shots); the cache's answers go to the log
+        log.info("morph cache: %d of %d Final morphs kept from earlier renders, nothing rendered for them", len(hits), len(shots))
+        if report:
+            report("restyle", 0.87, f"Final: {len(hits)} of {len(shots)} morphs kept from earlier renders")
     ordered = [clips[i] for i in range(len(shots))]
     if name == "ltx25":  # 576x1024 to the output size with Lanczos; a Draft fallback takes Fast Final's upscaler
         ordered, up_notes = cloud_final.to_full_size(ordered, Path(work), size["out"], cfg, fallbacks=need_draft, client=client,

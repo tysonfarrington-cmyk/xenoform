@@ -17,6 +17,13 @@ def _no_taste_file(tmp_path_factory, monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _empty_morph_cache(tmp_path_factory, monkeypatch):
+    """A morph cache of its own for every test (xenoform.morph_cache), so a fake render never lands in work/ui and no
+    test is answered by another's clip."""
+    monkeypatch.setenv("XENO_MORPH_CACHE", str(tmp_path_factory.mktemp("morph_cache")))
+
+
+@pytest.fixture(autouse=True)
 def _final_on_ltx23(monkeypatch):
     """The Final tier's fakes were written for the LTX-2.3 graph (nodes 100/101/28); the default is LTX-2.5 where its
     files are on disk, so every test pins LTX-2.3 unless it sets XENO_FINAL_MODEL itself."""
