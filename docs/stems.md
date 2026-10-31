@@ -1,5 +1,8 @@
 # Stem-reactive engine (`xenoform.stem_react`)
 
+(A layer of picture a stem, objects or clips, laid over one another by prominence: that is Stems mode,
+[STEMS_MODE.md](STEMS_MODE.md).)
+
 Stems drive the picture. Each stem has its own job:
 
 | Stem | Drives |
