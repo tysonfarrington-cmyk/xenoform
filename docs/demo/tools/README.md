@@ -19,4 +19,5 @@ driven over the DevTools protocol (`shots.py`, `long_shots.py`, `to_mp4.py`, the
 | `bed.py` | A long bed from one song, played through and restarted, with a beat list that keeps the bar phase. |
 | `record_cards*.py`, `record_underhood.py`, `cards/` | The How it's built, end and Under the hood cards, cued to the sentences; `title.html` + `title_png.py` the montage's title. |
 | `qa_cut.py` | Length, black and frozen stretches, loudness and true peak, a contact sheet. |
+| `pacing_proof.py` | The pacing proof of 31 Oct (docs/MUSIC_VIDEO_PLAN.md section 3): `table`, Glitch Out cut whole three ways on the mock engine (today, a plain Make, Breathe) against the profile table, looks a minute, morphs per 8 bars, timing, style and effect mix, handoff kinds and the flash frames per 8 bars on the composed cut; `sheets`, local Draft Makes through a desk of 30 s windows, a timed tile sheet each and the cuts side by side. |
 | `glow_rebuild.sh` | The whole rebuild in order. |
