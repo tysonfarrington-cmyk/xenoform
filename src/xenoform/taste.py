@@ -417,6 +417,7 @@ def settle(pool: list[dict], *, vibe: str, taken: Iterable[str] = ()) -> list[di
     for r in pool:
         noun = words_of(_row_noun(r))
         why = ""
+        run = None
         if once and noun and noun in seen:
             why = "repeats"
         else:
@@ -429,8 +430,6 @@ def settle(pool: list[dict], *, vibe: str, taken: Iterable[str] = ()) -> list[di
                 if runs.get(run["id"], 0) >= cap:
                     why = "runs"
                     first_of.setdefault("runs", run["id"])
-                else:
-                    runs[run["id"]] = runs.get(run["id"], 0) + 1
             if not why and any(_matches(d, noun) for d in demote):
                 why = "demoted"
                 first_of.setdefault("demoted", demote[0]["id"])
@@ -443,6 +442,8 @@ def settle(pool: list[dict], *, vibe: str, taken: Iterable[str] = ()) -> list[di
             front.append(r)
             if noun:
                 seen.add(noun)
+            if run is not None:  # a run's place is taken only by a still that stays in front
+                runs[run["id"]] = runs.get(run["id"], 0) + 1
     if counts["repeats"]:
         note("no-object-twice", f"{counts['repeats']} still{'s' if counts['repeats'] != 1 else ''} of an object already in the cut "
                                 f"moved to the back of the {vibe} pool: no object twice")
