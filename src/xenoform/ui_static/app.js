@@ -1564,8 +1564,8 @@ function ideaReadingHtml(easy) {
   return body + foot;
 }
 // Loved chains: one chip each, a click sets what the chain was loved with (the Make body's keys, as the desk holds them):
-// the vibe, the idea line, the pinned stills slot by slot, the morph style, timing, effects, look, foreshadow and the four
-// knobs. Never the tier and never a render: a preset made on Cloud Final spends nothing until you tick the credits and Make.
+// the vibe, the idea line, the pinned stills slot by slot, the morph style, timing, effects, look, foreshadow, the Backdrop
+// (Plain) and the four knobs. Never the tier and never a render: a preset made on Cloud Final spends nothing until you tick the credits and Make.
 function presetApplied(easy) {  // the preset last applied, while the vibe and the pins are still its own
   const p = PRESETS.find((item) => item.id === easy.presetId);
   const same = p && easy.vibe === p.vibe && JSON.stringify(easy.pins || {}) === JSON.stringify(p.body.chain_pins || {});
@@ -1603,6 +1603,7 @@ function applyPreset(id) {
   easy.effects = Array.isArray(body.effects) ? body.effects.filter((x) => EFFECTS.includes(x)) : [];
   easy.danceFx = body.dance_fx || "auto";
   easy.foreshadow = body.foreshadow || "auto";
+  easy.backdrop = BACKDROPS.includes(body.backdrop) ? body.backdrop : "plain";  // the loved chains stood on the studio ground, whatever places this vibe has grown
   Object.entries(body.macros || {}).forEach(([key, value]) => { if (window.XENO_MACRO_SET) window.XENO_MACRO_SET(key, Number(value)); });
   easy.presetId = preset.id;  // the chip stays lit, and the note under the chips speaks, while the vibe and the pins are still the preset's
   easy.note = "";

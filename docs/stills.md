@@ -132,8 +132,9 @@ chain's end, a file the library no longer has, or a file pinned twice is dropped
 **Loved chains.** `configs/chain_presets.json` (`xenoform.presets`, `GET /api/presets`) keeps the chains the author loved
 as presets: a vibe, the idea line they were made with, the stills pinned slot by slot (they are among the shipped
 stills, under the file names a recipe or a pin uses) and the settings they were loved with: morph style, timing, effects,
-look, foreshadow and the four knobs. The chips under the idea line (Vibe step) apply one in a click: the vibe, the line,
-the pins and the Fine-tune rows. It never sets the tier and never starts a Make, so a preset made on Cloud Final spends
+look, foreshadow, the four knobs and the Backdrop (Plain: every loved chain was made on the vibe's own studio ground, so a
+vibe that has grown twelve places does not turn one into a chain of places by itself). The chips under the idea line
+(Vibe step) apply one in a click: the vibe, the line, the pins and the Fine-tune rows. It never sets the tier and never starts a Make, so a preset made on Cloud Final spends
 nothing until you tick the credits and Make yourself. A missing or bad file means no chips; a pin whose still is
 nowhere is dropped and the others hold. A recipe code carries none of this (it has no pins); the preset does.
 

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "note": "The loved chains as presets (31 Oct 2026): a vibe, an idea line, the stills pinned slot by slot (the Make body's chain_pins), and the settings the chain was loved with. A chip beside the idea line applies one in a click: vibe, line, pins, style, timing, effects, look, foreshadow and knobs, never the tier (they were made on Cloud Final; applying one spends nothing). `pins` slots start at 0; the slots a preset does not pin are picked as usual. `idea` is the line the job was made with (it steers the unpinned slots); `line` says what the chain is. `look` is what was asked for ('auto' resolves per vibe). `morphs` are the loved clips of its pairs (examples/morphs/morphs.json). `source` is the job it was taken from and the recipe code of that job (a recipe has no pins). No rules or bans here: those come with the taste file.",
+  "note": "The loved chains as presets (31 Oct 2026): a vibe, an idea line, the stills pinned slot by slot (the Make body's chain_pins), and the settings the chain was loved with. A chip beside the idea line applies one in a click: vibe, line, pins, style, timing, effects, look, foreshadow, knobs and the Backdrop (Plain: every loved chain was made on the vibe's own studio ground, before places existed), never the tier (they were made on Cloud Final; applying one spends nothing). `pins` slots start at 0; the slots a preset does not pin are picked as usual. `idea` is the line the job was made with (it steers the unpinned slots); `line` says what the chain is. `look` is what was asked for ('auto' resolves per vibe). `morphs` are the loved clips of its pairs (examples/morphs/morphs.json). `source` is the job it was taken from and the recipe code of that job (a recipe has no pins). No rules or bans here: those come with the taste file.",
   "presets": [
     {
       "id": "black-rose",
@@ -19,6 +19,7 @@
       "effects": [],
       "look": "auto",
       "foreshadow": "off",
+      "backdrop": "plain",
       "knobs": {
         "intensity": 0.5,
         "speed": 0.5,
@@ -64,6 +65,7 @@
       "effects": [],
       "look": "cool-echo",
       "foreshadow": "off",
+      "backdrop": "plain",
       "knobs": {
         "intensity": 0.5,
         "speed": 0.5,
@@ -105,6 +107,7 @@
       ],
       "look": "cool-echo",
       "foreshadow": "trace",
+      "backdrop": "plain",
       "knobs": {
         "intensity": 0.4,
         "speed": 0.5,
@@ -150,6 +153,7 @@
       ],
       "look": "cool-echo",
       "foreshadow": "trace",
+      "backdrop": "plain",
       "knobs": {
         "intensity": 1.0,
         "speed": 0.9,
@@ -194,6 +198,7 @@
       "effects": [],
       "look": "noir-glow",
       "foreshadow": "trace",
+      "backdrop": "plain",
       "knobs": {
         "intensity": 0.7,
         "speed": 0.5,
@@ -240,6 +245,7 @@
       "effects": [],
       "look": "auto",
       "foreshadow": "trace",
+      "backdrop": "plain",
       "knobs": {
         "intensity": 1.0,
         "speed": 0.9,
@@ -289,6 +295,7 @@
       "effects": [],
       "look": "auto",
       "foreshadow": "trace",
+      "backdrop": "plain",
       "knobs": {
         "intensity": 1.0,
         "speed": 0.9,
@@ -332,6 +339,7 @@
       "effects": [],
       "look": "auto",
       "foreshadow": "trace",
+      "backdrop": "plain",
       "knobs": {
         "intensity": 1.0,
         "speed": 0.9,
@@ -374,6 +382,7 @@
       ],
       "look": "auto",
       "foreshadow": "trace",
+      "backdrop": "plain",
       "knobs": {
         "intensity": 1.0,
         "speed": 0.9,

@@ -1,7 +1,8 @@
 """Chain presets: the loved chains as one click (``configs/chain_presets.json``; Stage 4 of docs/MUSIC_VIDEO_PLAN.md).
 
 A preset is a vibe, an idea line, the stills pinned slot by slot (the Make body's ``chain_pins``) and the settings the
-chain was loved with: morph style, timing, effects, look, foreshadow, the four knobs, the seed. The desk shows them as
+chain was loved with: morph style, timing, effects, look, foreshadow, the four knobs, the seed and the Backdrop (``plain``:
+every loved chain stood on the vibe's own studio ground, so a vibe that has grown places does not change it). The desk shows them as
 chips beside the idea line (``GET /api/presets``); a click sets the vibe, the line, the pins and the Fine-tune rows in one
 go, and never the tier (a preset made on Cloud Final does not tick the credits box: a Make is still the user's to start).
 
@@ -60,7 +61,7 @@ def _pin_exists(file: str) -> bool:
 
 def clean(row: dict) -> dict | None:
     """One preset as the desk can use it, or None when it is not one (no id, no name, or a vibe the registry does not know)."""
-    from xenoform import effects, morph_style, morph_timing, simple_recipe, vibes
+    from xenoform import effects, morph_pass, morph_style, morph_timing, simple_recipe, vibes
 
     pid = re.sub(r"[^a-z0-9-]+", "-", str(row.get("id") or "").lower()).strip("-")
     name = str(row.get("name") or "").strip()[:60]
@@ -77,6 +78,7 @@ def clean(row: dict) -> dict | None:
     timing = str(row.get("morph_timing") or "smooth").lower()
     look = str(row.get("look") or "auto")
     foreshadow = str(row.get("foreshadow") or "auto").lower()
+    backdrop = str(row.get("backdrop") or "plain").lower()  # every loved chain stood on the vibe's own studio ground
     knobs = {}
     for key in KNOBS:
         try:
@@ -100,6 +102,7 @@ def clean(row: dict) -> dict | None:
         "effects": [e for e in (row.get("effects") or []) if e in effects.NAMES] if isinstance(row.get("effects"), list) else [],
         "look": look if look in _looks() else "auto",
         "foreshadow": foreshadow if foreshadow in simple_recipe.FORESHADOW else "auto",
+        "backdrop": backdrop if backdrop in morph_pass.BACKDROPS else "plain",
         "knobs": knobs,
         "seed": seed,
         "engine": str(row.get("engine") or ""),
@@ -132,7 +135,7 @@ def get(preset_id: str) -> dict:
 
 def body(preset: dict) -> dict:
     """The Make-body keys a preset sets: ``vibe``, ``idea``, ``chain_pins`` (slot -> still), ``morph_style``, ``morph_timing``,
-    ``effects``, ``dance_fx`` (the look), ``foreshadow``, ``macros`` (the four knobs) and ``seed``. Not the tier, not the
+    ``effects``, ``dance_fx`` (the look), ``foreshadow``, ``backdrop``, ``macros`` (the four knobs) and ``seed``. Not the tier, not the
     song, not the length: a preset says what the cut is made of, not what it costs."""
     return {
         "vibe": preset["vibe"],
@@ -143,6 +146,7 @@ def body(preset: dict) -> dict:
         "effects": list(preset["effects"]),
         "dance_fx": preset["look"],
         "foreshadow": preset["foreshadow"],
+        "backdrop": preset["backdrop"],
         "macros": dict(preset["knobs"]),
         "seed": preset["seed"],
     }

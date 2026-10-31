@@ -28,6 +28,7 @@ def test_the_loved_chains_are_presets_whose_pins_are_shipped_stills():
         assert set(p["knobs"]) == set(presets.KNOBS)
         assert (p["morph_style"], p["morph_timing"], p["look"], p["foreshadow"], p["effects"]) == (
             row["morph_style"], row["morph_timing"], row["look"], row["foreshadow"], row["effects"]), p["id"]
+        assert p["backdrop"] == row["backdrop"] == "plain", p["id"]  # made before places existed: always the studio ground
     by = {p["id"]: p for p in got}
     # what he loved: the rose opens into the lotus in Bloom, smooth, no effects; the smoke dragon is melt in noir-glow
     rose = by["black-rose"]
@@ -43,7 +44,8 @@ def test_the_loved_chains_are_presets_whose_pins_are_shipped_stills():
 
 def test_a_preset_body_is_the_make_body_and_pins_hold_their_slots():
     body = presets.body(presets.get("black-rose"))
-    assert set(body) == {"vibe", "idea", "chain_pins", "morph_style", "morph_timing", "effects", "dance_fx", "foreshadow", "macros", "seed"}
+    assert set(body) == {"vibe", "idea", "chain_pins", "morph_style", "morph_timing", "effects", "dance_fx", "foreshadow", "backdrop", "macros", "seed"}
+    assert body["backdrop"] == "plain" and body["backdrop"] in mp.BACKDROPS  # every loved chain stood on the studio ground
     assert not {"quality_tier", "tier", "cloud_final_ok", "cloud_quality", "song", "audio_id", "length_s"} & set(body)  # it costs nothing
     assert body["vibe"] == "black" and body["dance_fx"] == "auto" and body["foreshadow"] == "off" and body["macros"]["glow"] == 0.6
     assert mp.pins_of(body) == {0: "black/11_droplet_black_glass.jpg", 1: "black/00_rose_black_glass.jpg",
@@ -70,8 +72,9 @@ def test_a_missing_or_bad_file_means_none_and_a_bad_field_falls_back(tmp_path, m
         {"id": "Fine One!", "name": "Fine", "vibe": "black", "pins": {"0": still, "1": "black/none.jpg", "x": still, "2": "../objects.json",
                                                                      "3": "C:/Windows/win.ini", "4": "/etc/passwd", "5": still},
          "morph_style": "wobble", "morph_timing": "fast", "effects": ["kaleido", "lasers"], "look": "plaid", "foreshadow": "slices?",
-         "knobs": {"chaos": "7", "glow": -2, "speed": "x"}, "seed": "abc", "tys": "not a list"},
+         "backdrop": "gardens", "knobs": {"chaos": "7", "glow": -2, "speed": "x"}, "seed": "abc", "tys": "not a list"},
         {"id": "fine-one", "name": "Duplicate id", "vibe": "black"},  # the first row of an id wins
+        {"id": "in-places", "name": "In places", "vibe": "black", "backdrop": "Places"},
         {"id": "no-vibe", "name": "Unknown vibe", "vibe": "not-a-vibe"},
         {"id": "", "name": "No id", "vibe": "black"},
         {"id": "no-name", "vibe": "black"},
@@ -79,7 +82,8 @@ def test_a_missing_or_bad_file_means_none_and_a_bad_field_falls_back(tmp_path, m
     ]
     bad.write_text(json.dumps({"presets": rows}), encoding="utf-8")
     got = presets.load()
-    assert [p["id"] for p in got] == ["fine-one"]
+    assert [p["id"] for p in got] == ["fine-one", "in-places"]
+    assert [q["backdrop"] for q in got] == ["plain", "places"]  # an unknown Backdrop falls back to Plain, a known one (any case) is kept
     p = got[0]
     assert p["pins"] == {"0": still, "5": still}  # a missing file, a path out of the folder, a drive and a slot that is no number are dropped
     assert (p["morph_style"], p["morph_timing"], p["effects"], p["look"], p["foreshadow"]) == ("auto", "smooth", ["kaleido"], "auto", "auto")
@@ -111,7 +115,7 @@ def test_a_chip_beside_the_idea_line_applies_a_preset_in_one_click_and_never_the
     assert 'data-act="easy-preset"' in chips and "starts no render and spends no credits" in chips
     apply = APP.split("function applyPreset(id) {", 1)[1].split("function ideaReadingLine(", 1)[0]
     for key in ("easy.vibe", "easy.idea", "easy.pins", "easy.morphStyle", "easy.morphTiming", "easy.effects", "easy.danceFx", "easy.foreshadow",
-                "XENO_MACRO_SET", "saveEasy()", "render()"):
+                "easy.backdrop", "XENO_MACRO_SET", "saveEasy()", "render()"):
         assert key in apply, key
     assert not any(word in apply for word in ("easy.tier", "cloudFinalOk", "cloudToken", "easyMake", "easy.cloud")), "a preset never touches the tier or starts a Make"
     assert 'act === "easy-preset"' in APP and ".preset-chip" in (ROOT / "src" / "xenoform" / "ui_static" / "desk.css").read_text(encoding="utf-8")
