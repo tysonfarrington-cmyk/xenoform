@@ -114,7 +114,7 @@ function shortcutLabel() {
 }
 
 // The last session's vibe and Fine-tune choices survive a reload or a desk restart (the song cannot: uploads live on the server).
-const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow", "scenes", "pins", "feelSig", "batchN", "batchVary", "morphSource", "scenesChosen", "morphStyle", "morphTiming", "effects", "backdrop", "breathe", "dropMode", "importFolder", "importKind"];
+const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow", "scenes", "pins", "feelSig", "batchN", "batchVary", "morphSource", "scenesChosen", "morphStyle", "morphTiming", "effects", "backdrop", "breathe", "dropMode", "stemRows", "importFolder", "importKind"];
 // The Model row's tiers as the desk names them (quality_tier: draft, fast, final, cloud)
 const TIER_LABEL = { draft: "Draft", fast: "Fast Final", final: "Final", cloud: "Cloud Final" };
 function saveEasy() {
@@ -227,7 +227,7 @@ function payload() {
     own_shapes: (state.easy && state.easy.ownShapes) || "",  // the shapes typed in Your own shapes: they lead this cut (morph_pass.pick_stills)
     own_id: (state.easy && state.easy.ownId) || "",
     // the clips in that folder are cut in only with Work in progress > Your clips on; the images always lead the chain
-    morph_source: morphSource(state.easy),  // objects or your clips, never both in one cut (xenoform.clip_cut)
+    morph_source: morphSource(state.easy) === "clips" ? "clips" : "objects",  // objects or your clips, never both in one cut (xenoform.clip_cut)
     // (the Director desk's scene_transitions rows are gone: the engine never read them, and the transition guard
     // reported one clamp line per boundary from them; per-boundary dressing is the timeline's, on the re-cut)
     idea:(state.easy && state.easy.idea) || "",
@@ -235,7 +235,7 @@ function payload() {
     cut_plan: (state.easy && (state.easy.cloud || state.easy.remixPlan) && (state.easy.cutPlan || state.easy.remixPlan)) || null,
     // (no video_model: the tier picks the engine; the Final is LTX-2.5 wherever its files are installed, LTX-2.3 otherwise)
     brief: state.brief || "",
-    mode: "simple",  // one desk, one engine: every Make is the Simple cut (dense.run_simple)
+    mode: "simple",  // one desk, one engine: every Make is the Simple cut (dense.run_simple); Stems overrides it below
     scenes: (state.scenes || []).map((scene) => ({
       index: scene.index,
       start: scene.start,
@@ -287,6 +287,8 @@ function payload() {
     treatment: state.treatment || "",
     guide_id: state.guideId || "",
     interpolate: !!state.interpolate,
+    // Stems (xenoform.stems_mode): a layer a stem that is on, each its own cut, laid together by prominence
+    ...(stemsMode(state.easy) ? { mode: "stems", layers: stemLayers(state.easy) } : {}),
   };
 }
 
@@ -1045,8 +1047,9 @@ function renderEasy() {
         <div class="vibe-grid" role="radiogroup" aria-label="Vibe">${vibeCards(easy, false, "featured")}</div>
         ${moreVibes(easy)}
         ${sourceRow(easy)}
-        ${morphSource(easy) === "objects" ? ideaBlock(easy) : ""}
+        ${morphSource(easy) !== "clips" ? ideaBlock(easy) : ""}
       </section>
+      ${stemsMode(easy) ? stemsStep(easy) : ""}
       <section class="panel span simple-knobs-panel" data-tour="easy-macros">
         <h3>Knobs</h3>
         <p class="note">Intensity is the beat pulse and flash. Speed is the cut density and the trail length. Chaos is the punches, stutters and how far the subject swings, and it wilds the cuts: wipes and chromatic rips at the handoffs as it climbs (the blocky smear too, sparingly, when Effects asks for it), strobe cuts past 0.7 (never two in two seconds), plain cuts at 0. Glow is the bloom. The look rides the vibe's own colours unless you pick one.</p>
@@ -1058,7 +1061,7 @@ function renderEasy() {
         ${shapeRow(easy)}
         ${effectsRow(easy.effects, "easy-effect")}
         ${lookRow(easy.danceFx || "auto", "easy-look")}
-        ${morphSource(easy) === "objects" ? `${foreshadowRow(easy)}${scenesRow(easy)}${backdropRow(easy)}` : ""}
+        ${morphSource(easy) !== "clips" ? `${foreshadowRow(easy)}${scenesRow(easy)}${backdropRow(easy)}` : ""}
         <p class="note look-note">${esc(lookNote(easy.danceFx || "auto"))}</p>
       </section>
       ${fineTune(easy)}
@@ -1206,7 +1209,7 @@ function fineTune(easy) {
   return `<details class="fine-tune" id="fine-tune"${open ? " open" : ""}>
       <summary>Fine-tune <small>${esc(bits.join(" · "))}</small></summary>
       ${simpleOptions(easy)}
-      ${morphSource(easy) === "objects" ? `${ownRow(easy)}${stillsRow(easy)}${chainRow(easy)}` : ""}
+      ${morphSource(easy) !== "clips" ? `${ownRow(easy)}${stillsRow(easy)}${chainRow(easy)}` : ""}
       ${beatOverlayRow(easy)}
       ${remixBox(easy)}
     </details>`;
@@ -1504,11 +1507,12 @@ function ideaBlock(easy) {
 // are doing objects just objects"): what a Make morphs through. Your clips play in turn, each morphing into the next
 // (xenoform.clip_cut); the idea line, the library, the Chain row, Scenes and Foreshadow belong to objects and step aside.
 function morphSource(easy) {
-  return easy && easy.morphSource === "clips" ? "clips" : "objects";
+  return easy && easy.morphSource === "clips" ? "clips" : easy && easy.morphSource === "stems" ? "stems" : "objects";
 }
 function sourceRow(easy) {
   const src = morphSource(easy);
-  const seg = simpleSeg("easy-source", src, [["objects", "Objects"], ["clips", "Your clips"]], "Morph");
+  const seg = simpleSeg("easy-source", src, [["objects", "Objects"], ["clips", "Your clips"], ["stems", "Stems"]], "Morph");
+  if (src === "stems") return `${seg}<p class="note">A layer for each stem you turn on, objects or clips, each cut on its own stem and laid over the others by how prominent you make it. The Stems step is below.</p>`;
   if (src !== "clips") return `${seg}<p class="note">The vibe's objects, or the things your line names, each turning into the next.</p>`;
   const has = !!(easy.ownFolder || easy.ownId);
   const note = easy.ownNote || (has ? "Your clips play in turn on the beat, each its busiest stretch, and every one morphs into the next. No objects, no stills."
@@ -2099,9 +2103,11 @@ async function loadSimpleOptions() {
 // no GPU) and the record keeps them. The GPU buttons (swap, re-render, generate here) post their own routes.
 const SECTION_HUES = { intro: 210, calm: 200, sustain: 190, build: 40, release: 60, drop: 350, drop_late: 20, outro: 230 };
 function timelineState(easy, lane) {
-  // the edits as the desk holds them before Apply, seeded from what the record persisted; a new cut starts afresh
-  if (!easy.tl || easy.tl.id !== lane.id) {
-    easy.tl = { id: lane.id, shots: JSON.parse(JSON.stringify(lane.shot_overrides || {})), bounds: JSON.parse(JSON.stringify(lane.boundary_overrides || {})) };
+  // the edits as the desk holds them before Apply, seeded from what the record persisted; a new cut starts afresh, and
+  // so does each layer of a Stems cut (its tl_key)
+  const key = lane.tl_key || lane.id;
+  if (!easy.tl || easy.tl.id !== key) {
+    easy.tl = { id: key, shots: JSON.parse(JSON.stringify(lane.shot_overrides || {})), bounds: JSON.parse(JSON.stringify(lane.boundary_overrides || {})) };
   }
   return easy.tl;
 }
@@ -2208,6 +2214,7 @@ function shotsLane(easy) {
     return `<div class="shots-lane" aria-label="Timeline"><p class="note">Reading the cut's shots...</p></div>`;
   }
   if (!lane.shots || !lane.shots.length) return lane.note ? `<p class="note">${esc(lane.note)}</p>` : "";
+  const layersBlock = lane.mode === "stems" ? stemsLaneBlock(easy, lane) : "";  // a Stems cut: its layers stacked over the timeline
   const total = Math.max(Number(lane.duration) || 0, 0.001);
   // Swap an object: in swap mode a click on a shot picks the still it lands on, and the library picker under the lane
   // replaces it (POST /api/jobs/<id>/swap: only the two morphs that touch that still are rendered again, the rest kept)
@@ -2316,7 +2323,8 @@ function shotsLane(easy) {
     : "";
   const drawer = swapping ? "" : timelineDrawer(easy, lane, tl, picked);
   return `<div class="shots-lane tl-panel${swapping ? " swapping" : ""}" aria-label="Timeline">
-      <div class="lane-head"><span>Timeline</span><span class="note">${esc(facts)} · ${hint}</span>${toggle}</div>
+      ${layersBlock}
+      <div class="lane-head"><span>Timeline${lane.mode === "stems" ? ` · ${esc(stemLabel(lane.layer))} layer` : ""}</span><span class="note">${esc(facts)} · ${hint}</span>${toggle}</div>
       <div class="lane-track" id="lane-track" data-total="${total}">
         <div class="lane-overlays">${overlays}</div>
         ${opening}
@@ -2446,7 +2454,7 @@ function timelineDrawer(easy, lane, tl, picked) {
 // Dream this span (xenoform.dream): Z-Image Turbo img2img over 1 to 3 s from this shot, every other frame (12 a second),
 // cut in like a generated run; on any cut, Draft or Final, over morphs, a generated run or an earlier dream.
 function dreamRow(lane, s, choices) {
-  if (lane.editable === false || s.performer || s.own) return "";
+  if (lane.editable === false || s.performer || s.own || lane.mode === "stems") return "";  // a Stems layer: not yet
   const lengths = choices.dream_seconds || [1, 2, 3];
   const perFrame = Number(choices.dream_s_per_frame) || 2.6;
   const est = (n) => clockText(46 + perFrame * n * 12);
@@ -2502,8 +2510,10 @@ async function applyTimeline() {
   const pick = state.easy.tlPick;
   const at = pick ? (lane.shots.find((x) => x.index === pick.index) || {}).start : null;
   const n = timelineDirty(state.easy, lane);
-  await postCutEdit(id, "recut", { shot_overrides: tl.shots, boundary_overrides: tl.bounds },
-    `Re-cutting from the cached morphs with ${n} timeline edit${n === 1 ? "" : "s"}`, at, "assemble");
+  const body = { shot_overrides: tl.shots, boundary_overrides: tl.bounds };
+  if (lane.mode === "stems") body.layer = lane.layer;  // a Stems cut: the edits are this layer's
+  await postCutEdit(id, "recut", body,
+    `Re-cutting ${lane.mode === "stems" ? `the ${lane.layer} layer ` : ""}from the cached morphs with ${n} timeline edit${n === 1 ? "" : "s"}`, at, "assemble");
 }
 // Re-render one shot's morph: the seed, length and prompt fields of the drawer, and ``style`` when a Morph chip asked
 // for another way the object changes (the shot keeps its own style otherwise).
@@ -2563,6 +2573,10 @@ async function loadLane(id) {
     const res = await api(`/api/videos/${encodeURIComponent(id)}/shots`);
     const data = res.ok ? await res.json() : { id, shots: [], note: "The cut's shots could not be read." };
     state.lane = Object.assign({ id }, data);
+    if (data && data.mode === "stems") {  // a Stems cut: the timeline shows one layer at a time (stemsLaneView)
+      state.stemsLane = Object.assign({ id }, data);
+      state.lane = stemsLaneView(state.stemsLane, state.easy && state.easy.stemsLayer);
+    }
   } catch (err) {
     state.lane = { id, shots: [], note: "The cut's shots could not be read." };
   }
@@ -2854,12 +2868,23 @@ function easyPlanFacts(easy) {
   rows.push(["Cut", dense ? (song ? (drops === "off" ? "Every two bars, every bar on the drop" : "On the bar; every drop opens on an event, the build ramping into it") : "Every bar, every half bar on the drop") : "On the bar"]);
   rows.push(["Shape", `${easy.breathe ? "Breathe" : "Breathe off"} · Drops ${drops === "auto" ? "Auto" : drops === "max" ? "Max" : "off"}`]);
   if (plan && plan.performer) rows.push(["Performer", `${plan.performer} shots of Polly (MiniMax H3)`]);
+  if (stemsMode(easy)) {
+    const on = stemLayers(easy);
+    rows.push(["Layers", on.length ? `${on.length}: ${on.map((l) => `${l.stem} (${l.kind === "clips" ? "clips" : "objects"})`).join(", ")}, each its own cut, laid together by prominence` : "None on yet: turn a stem on in the Stems step"]);
+  }
   rows.push(["Time", easyTimeFact()]);
   return rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("");
 }
 function easyTimeFact() {
   if (state.comfyOk === false) return "No render: ComfyUI is not answering, so Make plays the vibe's pictures in the browser";
   const plan = state.simpleOptions && state.simpleOptions.plan;
+  if (plan && plan.estimate && plan.estimate.seconds && state.easy && stemsMode(state.easy)) {
+    // Stems: every layer is a cut of its own, so the time (and on Cloud the credits) multiply by the layers that are on
+    const e = plan.estimate;
+    const n = Math.max(1, stemLayers(state.easy).length);
+    const where = state.easy.tier === "cloud" ? "on Comfy Cloud, a layer's credits each" : "on this GPU";
+    return `About ${clockText(n * e.seconds + 4 + 0.4 * easyVideoSeconds(state.easy))} ${where}: ${n} layer${n === 1 ? "" : "s"} of about ${clockText(e.seconds)} each (${clockText(e.gpu_seconds || 0)} morphs, ${clockText(e.look_seconds || 0)} look), then the layers laid together`;
+  }
   if (plan && plan.estimate && plan.estimate.seconds) {
     const e = plan.estimate;
     if ((state.easy && state.easy.tier) === "cloud") {
@@ -3010,9 +3035,11 @@ async function recutWithKnobs() {
     breathe: breatheValue(state.easy),  // the shape re-cuts too: the same shots, each passage's profile on or off
     drop_mode: state.easy.dropMode || "auto",
   };
-  if (state.easy.tl && state.easy.tl.id === id) {  // the timeline's edits waiting for Apply ride along with the knobs
+  const cutLane = state.lane && state.lane.id === id ? state.lane : null;
+  if (state.easy.tl && state.easy.tl.id === ((cutLane && cutLane.tl_key) || id)) {  // the timeline's edits waiting for Apply ride along with the knobs
     body.shot_overrides = state.easy.tl.shots;
     body.boundary_overrides = state.easy.tl.bounds;
+    if (cutLane && cutLane.mode === "stems") body.layer = cutLane.layer;  // a Stems cut: the edits are this layer's, the knobs every layer's
   }
   try {
     // the body went out as the fetch options once, so the desk sent a GET and got a 405 (26 Oct)
@@ -3042,8 +3069,11 @@ function cloudFinalRow(easy) {
   if (!info.ready) return `<p class="note cloud-final-note">${esc(info.why || "Cloud Final is not available on this desk.")}</p>`;
   const est = info.estimate || {};
   const about = est.seconds ? `, about ${clockText(Number(est.seconds))}` : "";
+  // Stems: every layer is a cut of its own, so the morphs (and the credits) are a layer's times the layers that are on
+  const layers = stemsMode(easy) ? Math.max(1, stemLayers(easy).length) : 1;
+  const count = layers > 1 && est.morphs ? `${est.morphs} a layer x ${layers} layers =` : "";
   return `<label class="addon cloud-final-ok"><input type="checkbox" data-act="easy-cloud-final-ok"${easy.cloudFinalOk ? " checked" : ""}>
-      Spend my Comfy Cloud credits: ${esc(String(est.morphs || "the"))} ${esc(info.model || "LTX")} morphs on Comfy Cloud, three at a time${esc(about)}.</label>
+      Spend my Comfy Cloud credits: ${count ? `${esc(count)} ${esc(String(layers * Number(est.morphs)))}` : esc(String(est.morphs || "the"))} ${esc(info.model || "LTX")} morphs on Comfy Cloud, three at a time${esc(about)}${layers > 1 ? " a layer" : ""}.</label>
     <p class="note">Open weights on Comfy's GPUs (${esc(info.model || "LTX")}, ${esc(info.render || "576x1024")}), scaled to full size here. At most ${esc(String(info.max_morphs || 16))} morphs a cut; a morph that fails on Cloud falls back to its Draft.</p>`;
 }
 
@@ -3069,6 +3099,14 @@ async function easyMake() {
     state.easy.note = "Your clips first: choose a folder of clips, or drop them on the Your clips row.";
     render();
     return;
+  }
+  if (stemsMode(state.easy)) {
+    const why = stemsMakeBlock(state.easy);
+    if (why) {
+      state.easy.note = why;
+      render();
+      return;
+    }
   }
   if (!state.paidCloud) state.easy.cloud = false;
   if (state.easy.cloud && !state.easy.cloudToken) {
@@ -4437,7 +4475,7 @@ document.addEventListener("click", async (event) => {
     render();
   } else if (act === "easy-source") {
     const from = morphSource(state.easy);
-    const to = el.dataset.value === "clips" ? "clips" : "objects";
+    const to = el.dataset.value === "clips" ? "clips" : el.dataset.value === "stems" ? "stems" : "objects";
     if (from !== to) {
       // Your images and Your clips each keep their own folder and note: the film pack picked for clips used to show
       // under Your images ("The free film pack: 24 clips ...") once the row went back to Objects
@@ -4449,7 +4487,42 @@ document.addEventListener("click", async (event) => {
       state.easy.ownNote = back.note || "";
     }
     state.easy.morphSource = to;
+    if (to === "stems") loadStemsMode(false);
     render();
+  } else if (act === "easy-stems-split") {
+    loadStemsMode(true);
+  } else if (act === "easy-stem-on" || act === "easy-stem-kind" || act === "easy-stem-lead" || act === "easy-stem-chainpins" || act === "easy-stem-pins-clear") {
+    const row = stemRow(state.easy, el.dataset.stem);
+    if (act === "easy-stem-on") {
+      if (!row.on && stemLayers(state.easy).length >= STEM_LAYER_MAX) {
+        state.easy.note = `Four layers at most: turn one off first.`;
+      } else row.on = !row.on;
+    } else if (act === "easy-stem-kind") {
+      row.kind = el.dataset.value === "clips" ? "clips" : "objects";
+      row.pins = {};  // a layer is objects or clips, never both: what it kept goes with the kind
+    } else if (act === "easy-stem-lead") {
+      const was = row.lead;
+      Object.values(state.easy.stemRows || {}).forEach((r) => { r.lead = false; });  // one lead a cut
+      row.lead = !was;
+    } else if (act === "easy-stem-chainpins") {
+      row.chainPins = !row.chainPins;
+    } else {
+      row.pins = {};
+    }
+    saveEasy();
+    render();
+  } else if (act === "easy-stems-layer") {
+    state.easy.stemsLayer = el.dataset.value || "";
+    if (state.stemsLane && state.lane && state.stemsLane.id === state.lane.id) state.lane = stemsLaneView(state.stemsLane, state.easy.stemsLayer);
+    state.easy.tlPick = null;
+    render();
+  } else if (act === "easy-stems-relay") {
+    const id = easyVideoId();
+    const mix = state.easy.stemsMix && state.easy.stemsMix.id === id ? state.easy.stemsMix : null;
+    if (id && mix) {
+      state.easy.stemsMix = null;
+      await postCutEdit(id, "composite", { prominence: mix.prominence, blend: mix.blend }, "Laying the layers together again (no GPU, no re-cut)", null, "assemble");
+    }
   } else if (act === "easy-orbit") {
     state.easy.stemOrbit = el.dataset.value !== "off";
     render();
@@ -4602,14 +4675,17 @@ document.addEventListener("click", async (event) => {
     }
     if (state.easy.resultVibe && vibeById(state.easy.resultVibe)) state.easy.vibe = state.easy.resultVibe;
     const cutLane = state.lane && state.lane.id === easyVideoId() ? state.lane : null;
-    if (cutLane && cutLane.source) state.easy.morphSource = cutLane.source === "clips" ? "clips" : "objects";  // a clips cut renders as one
+    const stemsCut = !!(cutLane && cutLane.mode === "stems");  // a Stems cut renders as one: its layers, each keeping its objects
+    if (stemsCut) state.easy.morphSource = "stems";
+    if (stemsCut && act === "easy-render-final") keepStemPins(state.easy, cutLane);
+    if (cutLane && cutLane.source && !stemsCut) state.easy.morphSource = cutLane.source === "clips" ? "clips" : "objects";  // a clips cut renders as one
     if (act === "easy-render-full") state.easy.lengthS = 0;
     else {
       state.easy.lengthS = Number(state.easy.madeLength) || 0;
       state.easy.tier = "final";
       // Final keeps the prototype's objects: every slot of this cut's chain (swaps included) is pinned, so the sharp
       // version morphs through the stills you approved instead of a fresh pick (the pick favours the least-used stills)
-      const lane = state.lane && state.lane.id === easyVideoId() ? state.lane : null;
+      const lane = state.lane && state.lane.id === easyVideoId() && state.lane.mode !== "stems" ? state.lane : null;  // a Stems cut keeps its layers' own (keepStemPins)
       const kept = lane && Array.isArray(lane.stills) ? lane.stills.filter((s) => s && s.file && s.index != null) : [];
       if (kept.length) {
         state.easy.pins = {};
@@ -4757,6 +4833,15 @@ document.addEventListener("input", (event) => {
     state.easy.ownFolder = target.value;
     state.easy.ownId = "";  // one source at a time: a typed folder replaces dropped files
     state.easy.ownNote = "";
+  } else if (target.classList && (target.classList.contains("stem-pro-in") || target.classList.contains("stem-mix-pro"))) {
+    // a Stems prominence: the Stems step's row, or on the cut's screen the mix waiting for Lay them again; the readout follows
+    const v = Math.round(Number(target.value) * 100) / 100;
+    if (target.classList.contains("stem-pro-in")) stemRow(state.easy, target.dataset.stem).prominence = v;
+    else stemsMixSet(state.lane, target.dataset.stem, "prominence", v);
+    const readout = target.parentElement && target.parentElement.querySelector("b");
+    if (readout) readout.textContent = v.toFixed(2);
+  } else if (target.classList && target.classList.contains("stem-folder")) {
+    stemRow(state.easy, target.dataset.stem).folder = target.value;
   }
 });
 
@@ -4768,6 +4853,20 @@ document.addEventListener("change", (event) => {
     render();
   } else if (target.id === "tl-fx" || (target.classList && target.classList.contains("tl-grade-in"))) {
     render();
+  } else if (target.classList && (target.classList.contains("stem-vibe") || target.classList.contains("stem-blend"))) {
+    const row = stemRow(state.easy, target.dataset.stem);
+    if (target.classList.contains("stem-vibe")) {
+      row.vibe = target.value || "";
+      row.pins = {};  // another vibe's pool: the stills it kept are not in it
+    } else row.blend = target.value || "screen";
+    saveEasy();
+    render();
+  } else if (target.classList && (target.classList.contains("stem-pro-in") || target.classList.contains("stem-folder"))) {
+    saveEasy();
+    if (target.classList.contains("stem-folder")) render();
+  } else if (target.classList && (target.classList.contains("stem-mix-pro") || target.classList.contains("stem-mix-blend"))) {
+    if (target.classList.contains("stem-mix-blend")) stemsMixSet(state.lane, target.dataset.stem, "blend", target.value || "screen");
+    render();  // the Lay them again button counts the changes
   } else if (target.dataset.act === "easy-cut-plan") {
     const file = target.files && target.files[0];
     if (!file) return;
@@ -5483,6 +5582,248 @@ async function clearOwnStems() {
   tellKnobsStems(state.stems);
   render();  // stemsLine() starts the poll when the split was queued again
   if (!ok) stemsTimer = setTimeout(() => { stemsTimer = null; loadStems(true); }, STEMS_NOTE_MS);
+}
+
+// ---------------------------------------------------------------- Stems mode (xenoform.stems_mode, docs/STEMS_MODE.md)
+// Tys, 31 Oct: "a mode where i can apply a certain object/clip to a individual stems, and have them maybe overlap ... a
+// setting for how dominant or prominent the stem is so if theres two scenes/stems running for example you can see both".
+// The third source beside Objects and Your clips. The Stems step: Split stems (POST /api/stems/split: the split on the
+// CPU, then each stem's activity, polled on GET /api/stems/status), then a row a stem: on or off, Objects or Clips (never
+// both in a layer), its vibe and the Chain row's pins or its folder of clips, how prominent it is, how it blends, and
+// whether its entrances and exits lead the passages. On the cut's screen the layers sit over the timeline, stacked with
+// their stems' envelopes: a tab a layer (its own timeline edits, re-cut alone), and prominence and blend laid again
+// with no GPU (POST /api/jobs/<id>/composite).
+const STEM_BLENDS = [["screen", "Screen"], ["normal", "Normal"], ["add", "Add"], ["lighten", "Lighten"], ["multiply", "Multiply"]];
+const STEM_LAYER_MAX = 4;
+const STEM_DEFAULT_ON = ["drums", "other"];
+const STEM_HUES = { drums: 350, bass: 40, other: 190, vocals: 280, sub: 20, mid: 150, high: 220 };
+let stemsModeTimer = null;
+let stemsModeAsking = false;
+
+function stemsMode(easy) {
+  return !!easy && easy.morphSource === "stems";
+}
+function stemLabel(stem) {
+  const s = String(stem || "");
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+function stemsSplitFor(id) {
+  return state && state.stemsSplit && state.stemsSplit.audioId === id ? state.stemsSplit : null;
+}
+function stemRow(easy, name) {
+  easy.stemRows = easy.stemRows || {};
+  if (!easy.stemRows[name]) {
+    easy.stemRows[name] = { on: STEM_DEFAULT_ON.includes(String(name).toLowerCase()), kind: "objects", vibe: "", chainPins: false,
+      folder: "", prominence: String(name).toLowerCase() === "drums" ? 0.8 : 0.6, blend: "screen", lead: false, pins: {} };
+  }
+  return easy.stemRows[name];
+}
+function stemNames() {
+  const st = state && stemsSplitFor(state.audioId);
+  return st && Array.isArray(st.stems) ? st.stems.map((r) => r.name) : [];
+}
+// The make body's layers: the rows that are on, in the split's order, at most four (stems_mode.layers_of checks them again)
+function stemLayers(easy) {
+  if (!easy) return [];
+  const names = stemNames();
+  const out = [];
+  (names.length ? names : Object.keys(easy.stemRows || {})).forEach((name) => {
+    const row = (easy.stemRows || {})[name];
+    if (!row || !row.on || out.length >= STEM_LAYER_MAX) return;
+    const layer = { stem: name, kind: row.kind === "clips" ? "clips" : "objects", prominence: Number(row.prominence), blend: row.blend || "screen", lead: !!row.lead };
+    if (layer.kind === "objects") {
+      layer.vibe = row.vibe || easy.vibe || "";
+      layer.pins = row.pins && Object.keys(row.pins).length ? row.pins : row.chainPins ? (easy.pins || {}) : {};
+    } else {
+      layer.clips_folder = row.folder || "";
+    }
+    out.push(layer);
+  });
+  return out;
+}
+// Why a Stems Make cannot start yet, in a sentence, or "" when it can
+function stemsMakeBlock(easy) {
+  const st = stemsSplitFor(state.audioId);
+  if (!st || st.status !== "done") return "The stems first: press Split stems in the Stems step (on the CPU, no GPU) and let it finish.";
+  const on = stemLayers(easy);
+  if (!on.length) return "Turn at least one stem on in the Stems step, then Make.";
+  const bare = on.find((l) => l.kind === "clips" && !l.clips_folder);
+  if (bare) return `The ${bare.stem} layer is clips: give it a folder of clips, or make it objects.`;
+  if ((easy.tier || "draft") === "cloud" && on.some((l) => l.kind === "clips")) {
+    return "Cloud Final morphs the library's objects, not your clips yet: make the clips layers objects, or pick Draft, Fast Final or Final.";
+  }
+  return "";
+}
+// A stem's envelope (filled) and, on the cut's screen, its layer's alpha (dashed), across the cut
+function stemSpark(env, alpha, hue, w = 240, h = 28) {
+  const pts = (arr) => (arr || []).map((v, i) => `${((i / Math.max(1, arr.length - 1)) * w).toFixed(1)},${(h - Math.max(0, Math.min(1, Number(v) || 0)) * (h - 2) - 1).toFixed(1)}`).join(" ");
+  const area = env && env.length ? `<polygon points="0,${h} ${pts(env)} ${w},${h}" fill="hsla(${hue},70%,60%,0.35)" stroke="hsla(${hue},70%,62%,0.9)" stroke-width="1" vector-effect="non-scaling-stroke"/>` : "";
+  const line = alpha && alpha.length ? `<polyline points="${pts(alpha)}" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="3 2" vector-effect="non-scaling-stroke"/>` : "";
+  return `<svg class="stem-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">${area}${line}</svg>`;
+}
+function stemsStatusText(st) {
+  if (!st || st.status === "none") return "Not split yet for this song.";
+  const engine = String(st.engine || "");
+  const who = engine.startsWith("demucs") ? "Demucs" : engine === "user" ? "your own stems" : engine === "fake" ? "the test split" : "the band split";
+  if (st.status === "done") return `${(st.stems || []).length} stems from ${who}: ${(st.stems || []).map((r) => r.name).join(", ")}.`;
+  if (st.status === "queued") return "Waiting for another song's split to finish (one at a time, on the CPU).";
+  if (st.status === "running") {
+    if (st.stage === "envelopes") return "Reading each stem's activity…";
+    return `Splitting with ${who} on the CPU: ${Math.round(100 * Number(st.progress || 0))} %${st.eta_s ? `, about ${clockText(Number(st.eta_s))} left` : ""}`;
+  }
+  if (st.status === "error") return `The split did not finish (${st.error || "an error"}).`;
+  return "Not split yet for this song.";
+}
+function stemRowHtml(easy, r) {
+  const row = stemRow(easy, r.name);
+  const name = esc(r.name);
+  const hue = STEM_HUES[String(r.name).toLowerCase()] != null ? STEM_HUES[String(r.name).toLowerCase()] : 260;
+  const silent = Number(r.active || 0) < 0.02;
+  const vibeOpts = [`<option value=""${row.vibe ? "" : " selected"}>The cut's vibe${easy.vibe ? ` (${esc((vibeById(easy.vibe) || {}).name || easy.vibe)})` : ""}</option>`]
+    .concat(VIBES.map((v) => `<option value="${esc(v.id)}"${row.vibe === v.id ? " selected" : ""}>${esc(v.name || v.id)}</option>`)).join("");
+  const pinned = row.pins ? Object.keys(row.pins).length : 0;
+  const what = row.kind === "clips"
+    ? `<label class="ghost cloud-toggle stem-folder-label">Clips folder <input type="text" class="stem-folder" data-stem="${name}" value="${esc(row.folder || "")}" spellcheck="false" placeholder="a folder of clips" aria-label="${name}: folder of clips"></label>`
+    : `<select class="stem-vibe" data-stem="${name}" aria-label="${name}: vibe">${vibeOpts}</select>
+       <button type="button" class="chip${row.chainPins ? " on" : ""}" data-act="easy-stem-chainpins" data-stem="${name}" aria-pressed="${row.chainPins ? "true" : "false"}" title="This layer holds the stills pinned on the Chain row (Fine-tune)">Chain row's pins</button>
+       ${pinned ? `<span class="note">keeps ${pinned} still${pinned === 1 ? "" : "s"} of the cut it came from</span> <button type="button" class="text" data-act="easy-stem-pins-clear" data-stem="${name}">Clear</button>` : ""}`;
+  return `<div class="stem-row${row.on ? "" : " off"}">
+      <div class="stem-name"><button type="button" class="chip${row.on ? " on" : ""}" data-act="easy-stem-on" data-stem="${name}" aria-pressed="${row.on ? "true" : "false"}">${row.on ? "On" : "Off"}</button><b>${esc(stemLabel(r.name))}</b></div>
+      <div class="stem-body">
+        ${stemSpark(r.envelope, null, hue)}
+        <p class="note stem-facts">${silent ? "Silent in this song: a layer here would never show." : `Plays ${Math.round(100 * Number(r.active || 0))} % of the song · ${Number(r.onsets || 0)} hits`}</p>
+        <div class="stem-ctl">
+          <div class="toggle" role="group" aria-label="${name}: objects or clips">
+            <button type="button" class="${row.kind === "clips" ? "" : "on"}" data-act="easy-stem-kind" data-stem="${name}" data-value="objects" aria-pressed="${row.kind === "clips" ? "false" : "true"}">Objects</button>
+            <button type="button" class="${row.kind === "clips" ? "on" : ""}" data-act="easy-stem-kind" data-stem="${name}" data-value="clips" aria-pressed="${row.kind === "clips" ? "true" : "false"}">Clips</button>
+          </div>
+          ${what}
+        </div>
+        <div class="stem-ctl">
+          <label class="stem-pro">Prominence <input type="range" class="stem-pro-in" min="0" max="1" step="0.05" value="${Number(row.prominence)}" data-stem="${name}" aria-label="${name}: prominence"><b>${Number(row.prominence).toFixed(2)}</b></label>
+          <label class="stem-blend-label">Blend <select class="stem-blend" data-stem="${name}" aria-label="${name}: blend">${STEM_BLENDS.map(([v, t]) => `<option value="${v}"${(row.blend || "screen") === v ? " selected" : ""}>${t}</option>`).join("")}</select></label>
+          <button type="button" class="chip${row.lead ? " on" : ""}" data-act="easy-stem-lead" data-stem="${name}" aria-pressed="${row.lead ? "true" : "false"}" title="Its entrances and exits become the passages for every layer">Lead</button>
+        </div>
+      </div>
+    </div>`;
+}
+function stemsStep(easy) {
+  const id = state.audioId;
+  const st = id ? stemsSplitFor(id) : null;
+  if (id && easy.song && !st && !stemsModeAsking) {
+    stemsModeAsking = true;
+    setTimeout(() => { stemsModeAsking = false; loadStemsMode(false); }, 0);
+  }
+  const head = `<div class="step-head"><h3>Stems</h3><span>A layer a stem, objects or clips, laid over one another</span></div>`;
+  if (!id || !easy.song) {
+    return `<section class="easy-step stems-step" data-tour="easy-stems">${head}<p class="note">Choose a song first: its stems are split on the CPU (no GPU, no queue).</p></section>`;
+  }
+  const busy = !!st && (st.status === "queued" || st.status === "running");
+  const pct = busy ? Math.round(100 * Number(st.progress || 0)) : st && st.status === "done" ? 100 : 0;
+  const split = `<div class="stems-split-row">
+      <button type="button" class="ghost" data-act="easy-stems-split"${busy ? " disabled" : ""}>${busy ? "Splitting…" : "Split stems"}</button>
+      <span class="stems-progress" aria-hidden="true"><span style="width:${pct}%"></span></span>
+      <span class="note" id="stems-mode-status">${esc(stemsStatusText(st))}</span>
+    </div>`;
+  if (!st || st.status !== "done") {
+    return `<section class="easy-step stems-step" data-tour="easy-stems">${head}${split}
+      <p class="note">Demucs separates the song into drums, bass, other and vocals (the band split where Demucs is not installed). Each stem you turn on becomes a layer, cut by the same planner on its own stem: it plays where its stem plays and fades where it rests.</p></section>`;
+  }
+  const rows = (st.stems || []).map((r) => stemRowHtml(easy, r)).join("");
+  const on = stemLayers(easy);
+  return `<section class="easy-step stems-step" data-tour="easy-stems">${head}${split}
+      <div class="stem-rows">${rows}</div>
+      <p class="note">${on.length} of ${STEM_LAYER_MAX} layers on${on.length ? `: ${esc(on.map((l) => l.stem).join(", "))}` : ""}. Where two stems play at once both show, each as prominent as you set it; a stem playing alone shows whole. Screen lays bright objects over one another without mud. A layer is objects or clips, never both; two layers may be one of each. Knobs, Shape and Look are one setting for every layer.</p>
+    </section>`;
+}
+async function loadStemsMode(start) {
+  if (stemsModeTimer) { clearTimeout(stemsModeTimer); stemsModeTimer = null; }
+  if (!state || !state.audioId || !state.easy || !state.easy.song) return;
+  const id = state.audioId;
+  const before = stemsSplitFor(id);
+  let st;
+  try {
+    const res = start
+      ? await api("/api/stems/split", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ audio_id: id }) })
+      : await api(`/api/stems/status?audio_id=${encodeURIComponent(id)}`);
+    const data = await res.json().catch(() => ({}));
+    st = res.ok ? data : { status: "error", error: data.detail || "the desk did not answer" };
+  } catch (err) {
+    st = { status: "error", error: "the desk did not answer" };
+  }
+  if (!state || state.audioId !== id) return;  // the song changed while we asked
+  st.audioId = id;
+  state.stemsSplit = st;
+  const busy = st.status === "queued" || st.status === "running";
+  if (busy && stemsMode(state.easy)) stemsModeTimer = setTimeout(() => { stemsModeTimer = null; loadStemsMode(false); }, 1500);
+  if (busy && before && before.status === st.status && before.stage === st.stage) {  // only the numbers move: in place
+    const line = document.getElementById("stems-mode-status");
+    if (line) line.textContent = stemsStatusText(st);
+    const bar = document.querySelector(".stems-progress span");
+    if (bar) bar.style.width = `${Math.round(100 * Number(st.progress || 0))}%`;
+    return;
+  }
+  render();
+}
+// The cut's screen: the timeline shows one layer of a Stems cut at a time (its own lane, its own edits)
+function stemsLaneView(data, want) {
+  const layers = (data && data.layers) || [];
+  const pick = layers.find((l) => l.stem === want) || layers[0];
+  if (!pick) return data;
+  return Object.assign({}, pick.lane || {}, {
+    id: data.id, mode: "stems", layer: pick.stem, layers, order: data.order || [], prominence: data.prominence || {}, blends: data.blends || {},
+    plan_line: data.plan_line || (pick.lane || {}).plan_line, version: data.version, composite_sha256: data.composite_sha256,
+  });
+}
+function stemsLaneBlock(easy, lane) {
+  const layers = lane.layers || [];
+  const mix = easy.stemsMix && easy.stemsMix.id === lane.id ? easy.stemsMix : { prominence: {}, blend: {} };
+  const tabs = layers.map((l) => `<button type="button" role="tab" class="tl-tab${l.stem === lane.layer ? " on" : ""}" data-act="easy-stems-layer" data-value="${esc(l.stem)}" aria-selected="${l.stem === lane.layer ? "true" : "false"}">${esc(stemLabel(l.stem))} · ${l.kind === "clips" ? "your clips" : esc(l.vibe || "objects")} · ${esc(String(l.shots))} shots</button>`).join("");
+  const rows = layers.map((l) => {
+    const pro = mix.prominence[l.stem] != null ? Number(mix.prominence[l.stem]) : Number(l.prominence);
+    const bl = mix.blend[l.stem] || l.blend || "screen";
+    const hue = STEM_HUES[String(l.stem).toLowerCase()] != null ? STEM_HUES[String(l.stem).toLowerCase()] : 260;
+    return `<div class="stem-lane-row${l.stem === lane.layer ? " on" : ""}">
+        <button type="button" class="text stem-lane-name" data-act="easy-stems-layer" data-value="${esc(l.stem)}">${esc(stemLabel(l.stem))}${l.lead ? " · lead" : ""}</button>
+        <div class="stem-lane-body">
+          ${stemSpark(l.envelope, l.alpha, hue)}
+          <div class="stem-ctl">
+            <label class="stem-pro">Prominence <input type="range" class="stem-mix-pro" min="0" max="1" step="0.05" value="${pro}" data-stem="${esc(l.stem)}" aria-label="${esc(l.stem)}: prominence"><b>${pro.toFixed(2)}</b></label>
+            <label class="stem-blend-label">Blend <select class="stem-mix-blend" data-stem="${esc(l.stem)}" aria-label="${esc(l.stem)}: blend">${STEM_BLENDS.map(([v, t]) => `<option value="${v}"${v === bl ? " selected" : ""}>${t}</option>`).join("")}</select></label>
+            <span class="note">${esc(String(l.shots))} shots${Number(l.silent_s) ? ` · silent ${Number(l.silent_s).toFixed(1)} s` : ""}${Number(l.drops_kept) ? ` · ${l.drops_kept} drop${Number(l.drops_kept) === 1 ? "" : "s"} carried` : ""}</span>
+          </div>
+        </div>
+      </div>`;
+  }).join("");
+  const dirty = Object.keys(mix.prominence).length + Object.keys(mix.blend).length;
+  return `<div class="stems-lane" aria-label="Layers">
+      <div class="lane-head"><span>Layers</span><span class="note">Each stem's activity (filled) and how visible its layer is (dashed). Bottom to top: ${esc((lane.order || []).join(" → "))}. A tab opens that layer's timeline: its edits re-cut that layer alone.</span></div>
+      <div class="tl-tabs" role="tablist">${tabs}</div>
+      ${rows}
+      <div class="lane-apply-row"><button type="button" class="ghost" data-act="easy-stems-relay"${dirty ? "" : " disabled"}>Lay them again${dirty ? ` · ${dirty} change${dirty === 1 ? "" : "s"}` : ""}</button>
+        <span class="note">Prominence and blend re-lay the layers in seconds: no GPU, no re-cut.</span></div>
+    </div>`;
+}
+function stemsMixSet(lane, stem, key, value) {
+  const easy = state.easy;
+  if (!easy || !lane) return;
+  if (!easy.stemsMix || easy.stemsMix.id !== lane.id) easy.stemsMix = { id: lane.id, prominence: {}, blend: {} };
+  const was = (lane.layers || []).find((l) => l.stem === stem) || {};
+  const same = key === "prominence" ? Math.abs(Number(value) - Number(was.prominence)) < 1e-3 : value === (was.blend || "screen");
+  if (same) delete easy.stemsMix[key][stem];
+  else easy.stemsMix[key][stem] = value;
+}
+// Render at Final from a Stems prototype: each layer keeps the stills it showed, as a plain Final keeps its chain
+function keepStemPins(easy, lane) {
+  Object.values(easy.stemRows || {}).forEach((r) => { r.on = false; });  // the layers the cut had, and only those
+  (lane.layers || []).forEach((l) => {
+    const row = stemRow(easy, l.stem);
+    const kept = l.lane && Array.isArray(l.lane.stills) ? l.lane.stills.filter((s) => s && s.file && s.index != null) : [];
+    row.pins = {};
+    kept.forEach((s) => { row.pins[String(s.index)] = s.file; });
+    Object.assign(row, { on: true, kind: l.kind === "clips" ? "clips" : "objects", prominence: Number(l.prominence), blend: l.blend || "screen", lead: !!l.lead });
+    if (l.vibe) row.vibe = l.vibe;
+  });
 }
 
 // The free film pack as this cut's clips (xenoform.film_pack): the folder Setup & models filled from archive.org. Whether

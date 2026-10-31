@@ -383,6 +383,9 @@ def pick_stills(state: dict, count: int, record: bool = True, scene_at: list[int
         scene_at = [free_slots.index(int(k)) for k in scene_at if int(k) in free_slots]
     # the objects this vibe has used least first (a cut never laps a library bigger than itself, and the next cut
     # opens on objects the last one left alone), shipped order within; rows remember the vibe they are used under
+    avoid_nouns = {str(n).strip().lower() for n in state.get("avoid_nouns") or []}  # a Stems layer: what the layers before
+    held_files |= {str(f) for f in state.get("avoid_stills") or []} | {str(r.get("file")) for under in (vibe, asked)  # it used,
+                   for r in cat.get(under) or [] if str(r.get("noun") or "").strip().lower() in avoid_nouns}  # by file and by name
     rows = [{**r, "_vibe": vibe} for r in stills.order_fresh(vibe, list(cat[vibe])) if str(r.get("file")) not in held_files]
     scene_rows = [r for r in rows if stills.kind_of(r) == "scene"]
     setting_rows = [r for r in rows if stills.kind_of(r) == "setting"]

@@ -91,6 +91,11 @@ def apply(body: dict | None, *, expert: bool | None = None, duration: float | No
                   " ".join(str(c.get("noun") or c.get("name") or "") for c in body.get("customs") or [] if isinstance(c, dict)))
     duration = float(duration if duration is not None else body.get("duration") or 0) or None
 
+    # stems mode: the layers validated, the [stems] line (stems_mode.guard; each layer's own body passes here too)
+    from xenoform import stems_mode as _stems_mode
+
+    _stems_mode.guard(body, rep)
+
     # shimmer: hard ban
     r = R.get("shimmer")
     if r:
