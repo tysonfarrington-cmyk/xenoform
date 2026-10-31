@@ -1,0 +1,2265 @@
+{
+  "version": 1,
+  "note": "The loved morphs: the raw Cloud Final clips of the morphs Tys named (his words are on each group), the only copies in open-weights quality (a seed does not bring a clip back: 10 of 30 identical reruns matched, so the clips are saved, not the seeds). Each plays from its `from` still to its `to` still, both shipped in src/xenoform/ui_static/objects, 24 fps, no audio. `style` is in the clip (the morph prompt's opening); `timing`, `effects`, `look`, `foreshadow` and `knobs` are what the cut did with it when it was composed (the raw clip has none of them). `seed` is the base seed 2727 plus the shot's index in its job. `effects` and `look` of `also_used_in` are those of the other job that used the same clip. The prompt is not stored per job: it is rebuilt from cloud_final.lead() and morph_pass.prompt_for(vibe, 'ltx25', kinds, style). `sha1` is the file's.",
+  "left_out": [
+    {
+      "job": "c71fcf69",
+      "shot": 3,
+      "why": "koi -> hermit crab: the end still is a hermit crab (a taste flag), left out until Tys says"
+    }
+  ],
+  "groups": [
+    {
+      "id": "black-glass-rose-to-lotus",
+      "title": "Black glass rose that opens into the lotus (vibe black, Bloom, smooth, no effects)",
+      "vibe": "black",
+      "tys": [
+        "29 Oct 6:26 pm: \"the rose i mean at 0:09 it sort of opens up\"",
+        "29 Oct 6:26 pm: \"lets use the liquid black opener and possibily that lotus flower or a variation on how that was done ... its kind of unique compared to the other objects we have? can we have more of them?\""
+      ],
+      "morphs": [
+        "black-rose-to-lotus",
+        "black-droplet-to-rose",
+        "black-lotus-to-jellyfish",
+        "black-rose-to-lotus-orchid-run",
+        "black-rose-to-lotus-flowers-run",
+        "black-rose-to-lotus-9x16"
+      ]
+    },
+    {
+      "id": "glowing-jellyfish-opener",
+      "title": "Glowing jellyfish that opens Glitch Out (YouTube thumbnail frame at 2.5 s)",
+      "vibe": "bioluminescent",
+      "tys": [
+        "30 Oct 4:23 pm: \"Yes, upload it public on Tyso with the jellyfish thumbnail and title 2, but first swap out the black and white film clip at 2:09.\""
+      ],
+      "morphs": [
+        "bioluminescent-siphonophore-to-jellyfish",
+        "bioluminescent-comb-jelly-to-siphonophore",
+        "bioluminescent-jellyfish-to-sea-turtle"
+      ]
+    },
+    {
+      "id": "deep-sea-fish-kaleido-feedback",
+      "title": "Deep-sea fish under kaleido + feedback",
+      "vibe": "bioluminescent",
+      "tys": [
+        "29 Oct 5:24 pm: \"those effects youure doing with the fish is cool but maybe give the fish a bit more airtime ... again at 0:44 give the fish a little bit more time, maybe have it linger with the effects a bit more like burn in\""
+      ],
+      "morphs": [
+        "bioluminescent-seahorse-to-koi-fish",
+        "bioluminescent-koi-fish-to-octopus",
+        "bioluminescent-pearl-oyster-to-koi",
+        "bioluminescent-seahorse-to-koi-fish-2",
+        "bioluminescent-jellyfish-to-seahorse"
+      ]
+    },
+    {
+      "id": "origami-noir",
+      "title": "Origami noir folds",
+      "vibe": "origami-noir",
+      "tys": [
+        "memory note: loved in the 29 Oct montage (Fold style, black paper and gold foil)"
+      ],
+      "morphs": [
+        "origami-noir-luna-moth-to-cicada",
+        "origami-noir-praying-mantis-to-luna-moth",
+        "origami-noir-cicada-to-feather",
+        "origami-noir-feather-to-penguin",
+        "origami-noir-tiger-to-crane",
+        "origami-noir-crane-to-wolf",
+        "origami-noir-wolf-to-dragon"
+      ]
+    },
+    {
+      "id": "shadow-self-dragon-in-smoke",
+      "title": "Shadow-self dragon in smoke (backlit silhouette)",
+      "vibe": "shadow-self",
+      "tys": [
+        "30 Oct 7:53 am: \"The dragon with the smoke, kind of iconic and cool as well.\"",
+        "30 Oct 12:16 pm: the smoke section opener must be \"clearly discernable\" (the bird that read as a bear), so the opener was rebuilt as the pinned dragon chain"
+      ],
+      "morphs": [
+        "shadow-self-dragon-to-griffin",
+        "shadow-self-griffin-to-serpent",
+        "shadow-self-dragon-to-griffin-shatter",
+        "shadow-self-dragon-to-griffin-9x16"
+      ]
+    },
+    {
+      "id": "iridescent-glass-hand",
+      "title": "Iridescent glass hand (the 'astronaut glove' still)",
+      "vibe": "iridescent-glass",
+      "tys": [
+        "30 Oct 7:53 am: \"The object should have some sort of symbolic element, like the hand. I quite like how you've done that.\""
+      ],
+      "morphs": [
+        "iridescent-glass-lunar-rover-to-astronaut-glove",
+        "iridescent-glass-astronaut-glove-to-brass-orrery",
+        "iridescent-glass-lunar-rover-to-astronaut-glove-9x16",
+        "iridescent-glass-astronaut-glove-to-brass-orrery-9x16"
+      ]
+    },
+    {
+      "id": "gold-beetle",
+      "title": "Gold scarab beetle (the demo and X cover)",
+      "vibe": "liquid-gold",
+      "tys": [
+        "30 Oct 2:21 pm: \"different thumbnails. for one use the beetle i like that one\"",
+        "30 Oct 2:43 pm (X cover): \"is it possible to change that thumbnail it lands on to the beatle\""
+      ],
+      "morphs": [
+        "liquid-gold-infinity-knot-to-scarab-beetle",
+        "liquid-gold-scarab-beetle-to-koi",
+        "liquid-gold-honeybee-to-scarab-beetle",
+        "liquid-gold-scarab-beetle-to-stag-beetle"
+      ]
+    },
+    {
+      "id": "gold-outro",
+      "title": "Gold outro (phoenix, lion, dragon, eagle on the infinity knot, scarab, koi) and its title",
+      "vibe": "liquid-gold",
+      "tys": [
+        "30 Oct 12:16 pm: \"the gold outro part i love, from around 3:46ish - i think we can also use that as a clip as well so make that a little standalone clip for me with the music as well\""
+      ],
+      "morphs": [
+        "liquid-gold-eagle-to-infinity-knot",
+        "liquid-gold-phoenix-to-lion-head",
+        "liquid-gold-lion-head-to-dragon",
+        "liquid-gold-dragon-to-eagle",
+        "liquid-gold-infinity-knot-to-scarab-beetle",
+        "liquid-gold-scarab-beetle-to-koi",
+        "liquid-gold-koi-to-gargoyle-head"
+      ]
+    }
+  ],
+  "morphs": [
+    {
+      "id": "black-rose-to-lotus",
+      "groups": [
+        "black-glass-rose-to-lotus"
+      ],
+      "file": "black-rose-to-lotus.mp4",
+      "vibe": "black",
+      "from": {
+        "file": "black/00_rose_black_glass.jpg",
+        "noun": "rose"
+      },
+      "to": {
+        "file": "black/05_lotus_black_glass.jpg",
+        "noun": "lotus"
+      },
+      "style": "bloom",
+      "timing": "smooth",
+      "effects": [],
+      "look": "auto",
+      "foreshadow": "off",
+      "knobs": {
+        "intensity": 0.5,
+        "speed": 0.5,
+        "chaos": 0.15,
+        "glow": 0.6
+      },
+      "seed": 2728,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 596910,
+      "sha1": "392a15c06c6a9cd9b0e24f4fd6e65fca9ff9d8d3",
+      "made": "2026-10-29",
+      "job": "4ab7c8ca",
+      "shot": 1,
+      "published": [],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "Black glass rose that opens into the lotus (vibe black, Bloom, smooth, no effects)",
+      "tys": [
+        "29 Oct 6:26 pm: \"the rose i mean at 0:09 it sort of opens up\"",
+        "29 Oct 6:26 pm: \"lets use the liquid black opener and possibily that lotus flower or a variation on how that was done ... its kind of unique compared to the other objects we have? can we have more of them?\""
+      ]
+    },
+    {
+      "id": "black-droplet-to-rose",
+      "groups": [
+        "black-glass-rose-to-lotus"
+      ],
+      "file": "black-droplet-to-rose.mp4",
+      "vibe": "black",
+      "from": {
+        "file": "black/11_droplet_black_glass.jpg",
+        "noun": "droplet"
+      },
+      "to": {
+        "file": "black/00_rose_black_glass.jpg",
+        "noun": "rose"
+      },
+      "style": "bloom",
+      "timing": "smooth",
+      "effects": [],
+      "look": "auto",
+      "foreshadow": "off",
+      "knobs": {
+        "intensity": 0.5,
+        "speed": 0.5,
+        "chaos": 0.15,
+        "glow": 0.6
+      },
+      "seed": 2727,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 327041,
+      "sha1": "c77577fde2e05134b15f61681c84cf04e1d55dc9",
+      "made": "2026-10-29",
+      "job": "4ab7c8ca",
+      "shot": 0,
+      "published": [],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "droplet -> rose"
+    },
+    {
+      "id": "black-lotus-to-jellyfish",
+      "groups": [
+        "black-glass-rose-to-lotus"
+      ],
+      "file": "black-lotus-to-jellyfish.mp4",
+      "vibe": "black",
+      "from": {
+        "file": "black/05_lotus_black_glass.jpg",
+        "noun": "lotus"
+      },
+      "to": {
+        "file": "black/01_jellyfish_black_glass.jpg",
+        "noun": "jellyfish"
+      },
+      "style": "bloom",
+      "timing": "smooth",
+      "effects": [],
+      "look": "auto",
+      "foreshadow": "off",
+      "knobs": {
+        "intensity": 0.5,
+        "speed": 0.5,
+        "chaos": 0.15,
+        "glow": 0.6
+      },
+      "seed": 2729,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 778899,
+      "sha1": "99d80492ab77f867f5293b4d3ac466d325f7c687",
+      "made": "2026-10-29",
+      "job": "4ab7c8ca",
+      "shot": 2,
+      "published": [],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "lotus -> jellyfish"
+    },
+    {
+      "id": "black-rose-to-lotus-orchid-run",
+      "groups": [
+        "black-glass-rose-to-lotus"
+      ],
+      "file": "black-rose-to-lotus-orchid-run.mp4",
+      "vibe": "black",
+      "from": {
+        "file": "black/00_rose_black_glass.jpg",
+        "noun": "rose"
+      },
+      "to": {
+        "file": "black/05_lotus_black_glass.jpg",
+        "noun": "lotus"
+      },
+      "style": "bloom",
+      "timing": "smooth",
+      "effects": [],
+      "look": "cool-echo",
+      "foreshadow": "off",
+      "knobs": {
+        "intensity": 0.5,
+        "speed": 0.5,
+        "chaos": 0.15,
+        "glow": 0.6
+      },
+      "seed": 2735,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 505169,
+      "sha1": "3a2e53fe25475cf3f40e21e392c91c90a736a926",
+      "made": "2026-10-30",
+      "job": "44bdaf09",
+      "shot": 8,
+      "published": [],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "same rose -> lotus at the end of the orchid run (cool-echo look)"
+    },
+    {
+      "id": "black-rose-to-lotus-flowers-run",
+      "groups": [
+        "black-glass-rose-to-lotus"
+      ],
+      "file": "black-rose-to-lotus-flowers-run.mp4",
+      "vibe": "black",
+      "from": {
+        "file": "black/00_rose_black_glass.jpg",
+        "noun": "rose"
+      },
+      "to": {
+        "file": "black/05_lotus_black_glass.jpg",
+        "noun": "lotus"
+      },
+      "style": "bloom",
+      "timing": "smooth",
+      "effects": [],
+      "look": "auto",
+      "foreshadow": "off",
+      "knobs": {
+        "intensity": 0.5,
+        "speed": 0.5,
+        "chaos": 0.15,
+        "glow": 0.6
+      },
+      "seed": 2734,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 644555,
+      "sha1": "4c845faa9a201810f1d2d4d60c72f03ec06c7c19",
+      "made": "2026-10-29",
+      "job": "41a86e55",
+      "shot": 7,
+      "published": [],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "same pair inside a flowers chain"
+    },
+    {
+      "id": "black-rose-to-lotus-9x16",
+      "groups": [
+        "black-glass-rose-to-lotus"
+      ],
+      "file": "black-rose-to-lotus-9x16.mp4",
+      "vibe": "black",
+      "from": {
+        "file": "black/00_rose_black_glass.jpg",
+        "noun": "rose"
+      },
+      "to": {
+        "file": "black/05_lotus_black_glass.jpg",
+        "noun": "lotus"
+      },
+      "style": "bloom",
+      "timing": "smooth",
+      "effects": [],
+      "look": "cool-echo",
+      "foreshadow": "off",
+      "knobs": {
+        "intensity": 0.5,
+        "speed": 0.5,
+        "chaos": 0.15,
+        "glow": 0.6
+      },
+      "seed": 2735,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "9:16",
+      "px": [
+        576,
+        1024
+      ],
+      "fps": 24,
+      "frames": 49,
+      "seconds": 2.04,
+      "bytes": 319039,
+      "sha1": "95372a3878d01a3371c11dd4b78734800eaa223d",
+      "made": "2026-10-30",
+      "job": "28f7148d",
+      "shot": 8,
+      "published": [],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "9:16, 2 s render (demo intro job)"
+    },
+    {
+      "id": "bioluminescent-siphonophore-to-jellyfish",
+      "groups": [
+        "glowing-jellyfish-opener"
+      ],
+      "file": "bioluminescent-siphonophore-to-jellyfish.mp4",
+      "vibe": "bioluminescent",
+      "from": {
+        "file": "bioluminescent/146_siphonophore.jpg",
+        "noun": "siphonophore"
+      },
+      "to": {
+        "file": "bioluminescent/04_jellyfish.jpg",
+        "noun": "jellyfish"
+      },
+      "style": "bloom",
+      "timing": "smooth",
+      "effects": [
+        "feedback"
+      ],
+      "look": "cool-echo",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 0.4,
+        "speed": 0.5,
+        "chaos": 0.15,
+        "glow": 0.55
+      },
+      "seed": 2728,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 49,
+      "seconds": 2.04,
+      "bytes": 451044,
+      "sha1": "a29254c6f9001bb60929a54330a5e32b33e2ae76",
+      "made": "2026-10-30",
+      "job": "07105596",
+      "shot": 1,
+      "published": [
+        {
+          "aspect": "16:9",
+          "slot": "o1_glow_sea_intro",
+          "song_s": [
+            2.72,
+            5.45
+          ]
+        }
+      ],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "Glowing jellyfish that opens Glitch Out (YouTube thumbnail frame at 2.5 s)",
+      "tys": [
+        "30 Oct 4:23 pm: \"Yes, upload it public on Tyso with the jellyfish thumbnail and title 2, but first swap out the black and white film clip at 2:09.\""
+      ]
+    },
+    {
+      "id": "bioluminescent-comb-jelly-to-siphonophore",
+      "groups": [
+        "glowing-jellyfish-opener"
+      ],
+      "file": "bioluminescent-comb-jelly-to-siphonophore.mp4",
+      "vibe": "bioluminescent",
+      "from": {
+        "file": "bioluminescent/145_comb_jelly.jpg",
+        "noun": "comb jelly"
+      },
+      "to": {
+        "file": "bioluminescent/146_siphonophore.jpg",
+        "noun": "siphonophore"
+      },
+      "style": "bloom",
+      "timing": "smooth",
+      "effects": [
+        "feedback"
+      ],
+      "look": "cool-echo",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 0.4,
+        "speed": 0.5,
+        "chaos": 0.15,
+        "glow": 0.55
+      },
+      "seed": 2727,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 49,
+      "seconds": 2.04,
+      "bytes": 422657,
+      "sha1": "faf73c6563f014c6f2efc1b58e81080e974b09a8",
+      "made": "2026-10-30",
+      "job": "07105596",
+      "shot": 0,
+      "published": [
+        {
+          "aspect": "16:9",
+          "slot": "o1_glow_sea_intro",
+          "song_s": [
+            0.0,
+            2.72
+          ]
+        }
+      ],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "comb jelly -> siphonophore (the 2.5 s frame is the end of this shot)"
+    },
+    {
+      "id": "bioluminescent-jellyfish-to-sea-turtle",
+      "groups": [
+        "glowing-jellyfish-opener"
+      ],
+      "file": "bioluminescent-jellyfish-to-sea-turtle.mp4",
+      "vibe": "bioluminescent",
+      "from": {
+        "file": "bioluminescent/04_jellyfish.jpg",
+        "noun": "jellyfish"
+      },
+      "to": {
+        "file": "bioluminescent/034_sea_turtle.jpg",
+        "noun": "sea turtle"
+      },
+      "style": "bloom",
+      "timing": "smooth",
+      "effects": [
+        "feedback"
+      ],
+      "look": "cool-echo",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 0.4,
+        "speed": 0.5,
+        "chaos": 0.15,
+        "glow": 0.55
+      },
+      "seed": 2729,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 49,
+      "seconds": 2.04,
+      "bytes": 496332,
+      "sha1": "0f1f62cad6be2bad1f5f1062063c1d211b2f2b68",
+      "made": "2026-10-30",
+      "job": "07105596",
+      "shot": 2,
+      "published": [
+        {
+          "aspect": "16:9",
+          "slot": "o1_glow_sea_intro",
+          "song_s": [
+            5.45,
+            8.17
+          ]
+        }
+      ],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "jellyfish -> sea turtle"
+    },
+    {
+      "id": "bioluminescent-seahorse-to-koi-fish",
+      "groups": [
+        "deep-sea-fish-kaleido-feedback"
+      ],
+      "file": "bioluminescent-seahorse-to-koi-fish.mp4",
+      "vibe": "bioluminescent",
+      "from": {
+        "file": "bioluminescent/010_seahorse.jpg",
+        "noun": "seahorse"
+      },
+      "to": {
+        "file": "bioluminescent/012_koi_fish.jpg",
+        "noun": "koi fish"
+      },
+      "style": "bloom",
+      "timing": "beat",
+      "effects": [
+        "feedback",
+        "kaleido"
+      ],
+      "look": "cool-echo",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 1.0,
+        "speed": 0.9,
+        "chaos": 0.9,
+        "glow": 0.85
+      },
+      "seed": 2733,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 909357,
+      "sha1": "199a223fa42c341b9a0f4fafaff43fcd8d7d713f",
+      "made": "2026-10-29",
+      "job": "a2d64f77",
+      "shot": 6,
+      "published": [],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "Deep-sea fish under kaleido + feedback",
+      "tys": [
+        "29 Oct 5:24 pm: \"those effects youure doing with the fish is cool but maybe give the fish a bit more airtime ... again at 0:44 give the fish a little bit more time, maybe have it linger with the effects a bit more like burn in\""
+      ],
+      "also_used_in": [
+        {
+          "job": "879f04fb",
+          "shot": 6,
+          "effects": [
+            "feedback"
+          ],
+          "look": "cool-echo",
+          "knobs": {
+            "intensity": 1.0,
+            "speed": 0.9,
+            "chaos": 0.45,
+            "glow": 0.85
+          },
+          "note": "seahorse -> koi fish",
+          "published": [
+            {
+              "aspect": "16:9",
+              "slot": "deepsea_fish_clear",
+              "song_s": [
+                125.92,
+                126.33
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bioluminescent-koi-fish-to-octopus",
+      "groups": [
+        "deep-sea-fish-kaleido-feedback"
+      ],
+      "file": "bioluminescent-koi-fish-to-octopus.mp4",
+      "vibe": "bioluminescent",
+      "from": {
+        "file": "bioluminescent/012_koi_fish.jpg",
+        "noun": "koi fish"
+      },
+      "to": {
+        "file": "bioluminescent/013_octopus.jpg",
+        "noun": "octopus"
+      },
+      "style": "bloom",
+      "timing": "beat",
+      "effects": [
+        "feedback",
+        "kaleido"
+      ],
+      "look": "cool-echo",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 1.0,
+        "speed": 0.9,
+        "chaos": 0.9,
+        "glow": 0.85
+      },
+      "seed": 2734,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 838919,
+      "sha1": "71512ae80673501ad52433a4ea35034e37c44b6b",
+      "made": "2026-10-29",
+      "job": "a2d64f77",
+      "shot": 7,
+      "published": [],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "koi fish -> octopus"
+    },
+    {
+      "id": "bioluminescent-pearl-oyster-to-koi",
+      "groups": [
+        "deep-sea-fish-kaleido-feedback"
+      ],
+      "file": "bioluminescent-pearl-oyster-to-koi.mp4",
+      "vibe": "bioluminescent",
+      "from": {
+        "file": "bioluminescent/118_pearl_oyster.jpg",
+        "noun": "pearl oyster"
+      },
+      "to": {
+        "file": "bioluminescent/123_koi.jpg",
+        "noun": "koi"
+      },
+      "style": "bloom",
+      "timing": "beat",
+      "effects": [
+        "kaleido"
+      ],
+      "look": "cool-echo",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 1.0,
+        "speed": 0.9,
+        "chaos": 0.9,
+        "glow": 0.85
+      },
+      "seed": 2729,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 1161647,
+      "sha1": "9b47de22b5b937cef39406ae02c97b8a5d5842e0",
+      "made": "2026-10-29",
+      "job": "c71fcf69",
+      "shot": 2,
+      "published": [],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "what Tys saw first: pearl oyster -> koi (kaleido only, cool-echo)"
+    },
+    {
+      "id": "bioluminescent-seahorse-to-koi-fish-2",
+      "groups": [
+        "deep-sea-fish-kaleido-feedback"
+      ],
+      "file": "bioluminescent-seahorse-to-koi-fish-2.mp4",
+      "vibe": "bioluminescent",
+      "from": {
+        "file": "bioluminescent/010_seahorse.jpg",
+        "noun": "seahorse"
+      },
+      "to": {
+        "file": "bioluminescent/012_koi_fish.jpg",
+        "noun": "koi fish"
+      },
+      "style": "bloom",
+      "timing": "beat",
+      "effects": [
+        "kaleido"
+      ],
+      "look": "cool-echo",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 1.0,
+        "speed": 0.9,
+        "chaos": 0.9,
+        "glow": 0.85
+      },
+      "seed": 2739,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 757638,
+      "sha1": "5e0641d3fdc9a380983a0cf85b5499523d396ae1",
+      "made": "2026-10-29",
+      "job": "c71fcf69",
+      "shot": 12,
+      "published": [],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "seahorse -> koi fish"
+    },
+    {
+      "id": "bioluminescent-jellyfish-to-seahorse",
+      "groups": [
+        "deep-sea-fish-kaleido-feedback"
+      ],
+      "file": "bioluminescent-jellyfish-to-seahorse.mp4",
+      "vibe": "bioluminescent",
+      "from": {
+        "file": "bioluminescent/04_jellyfish.jpg",
+        "noun": "jellyfish"
+      },
+      "to": {
+        "file": "bioluminescent/010_seahorse.jpg",
+        "noun": "seahorse"
+      },
+      "style": "bloom",
+      "timing": "beat",
+      "effects": [
+        "feedback"
+      ],
+      "look": "cool-echo",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 1.0,
+        "speed": 0.9,
+        "chaos": 0.45,
+        "glow": 0.85
+      },
+      "seed": 2732,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 679371,
+      "sha1": "350309740a98f2042c2b1aa0e7f4f20d6dd78127",
+      "made": "2026-10-30",
+      "job": "879f04fb",
+      "shot": 5,
+      "published": [
+        {
+          "aspect": "16:9",
+          "slot": "deepsea_fish_clear",
+          "song_s": [
+            123.33,
+            125.92
+          ]
+        }
+      ],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "published version (feedback, no kaleido): jellyfish -> seahorse"
+    },
+    {
+      "id": "origami-noir-luna-moth-to-cicada",
+      "groups": [
+        "origami-noir"
+      ],
+      "file": "origami-noir-luna-moth-to-cicada.mp4",
+      "vibe": "origami-noir",
+      "from": {
+        "file": "origami-noir/005_luna_moth.jpg",
+        "noun": "luna moth"
+      },
+      "to": {
+        "file": "origami-noir/012_cicada.jpg",
+        "noun": "cicada"
+      },
+      "style": "fold",
+      "timing": "smooth",
+      "effects": [],
+      "look": "auto",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 1.0,
+        "speed": 0.9,
+        "chaos": 0.45,
+        "glow": 0.85
+      },
+      "seed": 2736,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 882487,
+      "sha1": "a76a640c2896c95492105104cd7f2d3830d8b89c",
+      "made": "2026-10-29",
+      "job": "7103fca3",
+      "shot": 9,
+      "published": [
+        {
+          "aspect": "16:9",
+          "slot": "origami_fold_smooth",
+          "song_s": [
+            132.92,
+            133.83
+          ]
+        }
+      ],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "Origami noir folds",
+      "tys": [
+        "memory note: loved in the 29 Oct montage (Fold style, black paper and gold foil)"
+      ]
+    },
+    {
+      "id": "origami-noir-praying-mantis-to-luna-moth",
+      "groups": [
+        "origami-noir"
+      ],
+      "file": "origami-noir-praying-mantis-to-luna-moth.mp4",
+      "vibe": "origami-noir",
+      "from": {
+        "file": "origami-noir/001_praying_mantis.jpg",
+        "noun": "praying mantis"
+      },
+      "to": {
+        "file": "origami-noir/005_luna_moth.jpg",
+        "noun": "luna moth"
+      },
+      "style": "fold",
+      "timing": "smooth",
+      "effects": [],
+      "look": "auto",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 1.0,
+        "speed": 0.9,
+        "chaos": 0.45,
+        "glow": 0.85
+      },
+      "seed": 2735,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 958851,
+      "sha1": "0df4de7fc1046eb11ec22243ea7ec08e32c8fa98",
+      "made": "2026-10-29",
+      "job": "7103fca3",
+      "shot": 8,
+      "published": [],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "praying mantis -> luna moth"
+    },
+    {
+      "id": "origami-noir-cicada-to-feather",
+      "groups": [
+        "origami-noir"
+      ],
+      "file": "origami-noir-cicada-to-feather.mp4",
+      "vibe": "origami-noir",
+      "from": {
+        "file": "origami-noir/012_cicada.jpg",
+        "noun": "cicada"
+      },
+      "to": {
+        "file": "origami-noir/06_feather.jpg",
+        "noun": "feather"
+      },
+      "style": "fold",
+      "timing": "smooth",
+      "effects": [],
+      "look": "auto",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 1.0,
+        "speed": 0.9,
+        "chaos": 0.45,
+        "glow": 0.85
+      },
+      "seed": 2737,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 758791,
+      "sha1": "dc588eaa8773f2545b382f75e45e69235db4762d",
+      "made": "2026-10-29",
+      "job": "7103fca3",
+      "shot": 10,
+      "published": [
+        {
+          "aspect": "16:9",
+          "slot": "origami_fold_smooth",
+          "song_s": [
+            133.83,
+            135.17
+          ]
+        }
+      ],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "cicada -> feather"
+    },
+    {
+      "id": "origami-noir-feather-to-penguin",
+      "groups": [
+        "origami-noir"
+      ],
+      "file": "origami-noir-feather-to-penguin.mp4",
+      "vibe": "origami-noir",
+      "from": {
+        "file": "origami-noir/06_feather.jpg",
+        "noun": "feather"
+      },
+      "to": {
+        "file": "origami-noir/024_penguin.jpg",
+        "noun": "penguin"
+      },
+      "style": "fold",
+      "timing": "smooth",
+      "effects": [],
+      "look": "auto",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 1.0,
+        "speed": 0.9,
+        "chaos": 0.45,
+        "glow": 0.85
+      },
+      "seed": 2738,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 620386,
+      "sha1": "2cacea89f3160e4492cc9e17432f02792ecdfb57",
+      "made": "2026-10-29",
+      "job": "7103fca3",
+      "shot": 11,
+      "published": [
+        {
+          "aspect": "16:9",
+          "slot": "origami_fold_smooth",
+          "song_s": [
+            135.17,
+            135.54
+          ]
+        }
+      ],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "feather -> penguin"
+    },
+    {
+      "id": "origami-noir-tiger-to-crane",
+      "groups": [
+        "origami-noir"
+      ],
+      "file": "origami-noir-tiger-to-crane.mp4",
+      "vibe": "origami-noir",
+      "from": {
+        "file": "origami-noir/056_origami_tiger.jpg",
+        "noun": "origami tiger"
+      },
+      "to": {
+        "file": "origami-noir/057_origami_crane.jpg",
+        "noun": "origami crane"
+      },
+      "style": "fold",
+      "timing": "beat",
+      "effects": [],
+      "look": "auto",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 1.0,
+        "speed": 0.9,
+        "chaos": 0.4,
+        "glow": 0.85
+      },
+      "seed": 2728,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 1172749,
+      "sha1": "de8004c25386eedcb948b5b14338377db0ab2790",
+      "made": "2026-10-30",
+      "job": "b289bdb5",
+      "shot": 1,
+      "published": [
+        {
+          "aspect": "16:9",
+          "slot": "n1_origami_icons",
+          "song_s": [
+            57.58,
+            58.17
+          ]
+        },
+        {
+          "aspect": "9:16",
+          "slot": "n1_origami_icons@169",
+          "song_s": [
+            57.58,
+            58.17
+          ]
+        }
+      ],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "icons run: tiger -> crane (published slot n1_origami_icons)"
+    },
+    {
+      "id": "origami-noir-crane-to-wolf",
+      "groups": [
+        "origami-noir"
+      ],
+      "file": "origami-noir-crane-to-wolf.mp4",
+      "vibe": "origami-noir",
+      "from": {
+        "file": "origami-noir/057_origami_crane.jpg",
+        "noun": "origami crane"
+      },
+      "to": {
+        "file": "origami-noir/058_origami_wolf.jpg",
+        "noun": "origami wolf"
+      },
+      "style": "fold",
+      "timing": "beat",
+      "effects": [],
+      "look": "auto",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 1.0,
+        "speed": 0.9,
+        "chaos": 0.4,
+        "glow": 0.85
+      },
+      "seed": 2729,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 816433,
+      "sha1": "31d849075a31262cf8f5a1acd4e600779f19c921",
+      "made": "2026-10-30",
+      "job": "b289bdb5",
+      "shot": 2,
+      "published": [
+        {
+          "aspect": "16:9",
+          "slot": "n1_origami_icons",
+          "song_s": [
+            58.17,
+            60.92
+          ]
+        },
+        {
+          "aspect": "9:16",
+          "slot": "n1_origami_icons@169",
+          "song_s": [
+            58.17,
+            60.92
+          ]
+        }
+      ],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "crane -> wolf"
+    },
+    {
+      "id": "origami-noir-wolf-to-dragon",
+      "groups": [
+        "origami-noir"
+      ],
+      "file": "origami-noir-wolf-to-dragon.mp4",
+      "vibe": "origami-noir",
+      "from": {
+        "file": "origami-noir/058_origami_wolf.jpg",
+        "noun": "origami wolf"
+      },
+      "to": {
+        "file": "origami-noir/009_origami_dragon.jpg",
+        "noun": "origami dragon"
+      },
+      "style": "fold",
+      "timing": "beat",
+      "effects": [],
+      "look": "auto",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 1.0,
+        "speed": 0.9,
+        "chaos": 0.4,
+        "glow": 0.85
+      },
+      "seed": 2730,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 876158,
+      "sha1": "d3e3592901b1440fb84cc33da3a840c404b28f0b",
+      "made": "2026-10-30",
+      "job": "b289bdb5",
+      "shot": 3,
+      "published": [
+        {
+          "aspect": "16:9",
+          "slot": "n1_origami_icons",
+          "song_s": [
+            60.92,
+            62.83
+          ]
+        },
+        {
+          "aspect": "9:16",
+          "slot": "n1_origami_icons@169",
+          "song_s": [
+            60.92,
+            62.83
+          ]
+        }
+      ],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "wolf -> origami dragon"
+    },
+    {
+      "id": "shadow-self-dragon-to-griffin",
+      "groups": [
+        "shadow-self-dragon-in-smoke"
+      ],
+      "file": "shadow-self-dragon-to-griffin.mp4",
+      "vibe": "shadow-self",
+      "from": {
+        "file": "shadow-self/156_dragon.jpg",
+        "noun": "dragon"
+      },
+      "to": {
+        "file": "shadow-self/157_griffin.jpg",
+        "noun": "griffin"
+      },
+      "style": "melt",
+      "timing": "smooth",
+      "effects": [],
+      "look": "noir-glow",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 0.7,
+        "speed": 0.5,
+        "chaos": 0.15,
+        "glow": 0.7
+      },
+      "seed": 2727,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 1265347,
+      "sha1": "cc4062e0a39901b77ce84fdeafdf66761593ebd0",
+      "made": "2026-10-30",
+      "job": "b90b9735",
+      "shot": 0,
+      "published": [
+        {
+          "aspect": "16:9",
+          "slot": "s1_shadow_dragon",
+          "song_s": [
+            16.42,
+            20.92
+          ]
+        }
+      ],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "Shadow-self dragon in smoke (backlit silhouette)",
+      "tys": [
+        "30 Oct 7:53 am: \"The dragon with the smoke, kind of iconic and cool as well.\"",
+        "30 Oct 12:16 pm: the smoke section opener must be \"clearly discernable\" (the bird that read as a bear), so the opener was rebuilt as the pinned dragon chain"
+      ]
+    },
+    {
+      "id": "shadow-self-griffin-to-serpent",
+      "groups": [
+        "shadow-self-dragon-in-smoke"
+      ],
+      "file": "shadow-self-griffin-to-serpent.mp4",
+      "vibe": "shadow-self",
+      "from": {
+        "file": "shadow-self/157_griffin.jpg",
+        "noun": "griffin"
+      },
+      "to": {
+        "file": "shadow-self/155_serpent.jpg",
+        "noun": "serpent"
+      },
+      "style": "melt",
+      "timing": "smooth",
+      "effects": [],
+      "look": "noir-glow",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 0.7,
+        "speed": 0.5,
+        "chaos": 0.15,
+        "glow": 0.7
+      },
+      "seed": 2728,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 1389537,
+      "sha1": "a921ae9214ab7181a892bd9bea2a8d6b8c60b7e9",
+      "made": "2026-10-30",
+      "job": "b90b9735",
+      "shot": 1,
+      "published": [
+        {
+          "aspect": "16:9",
+          "slot": "s1_shadow_dragon",
+          "song_s": [
+            20.92,
+            26.33
+          ]
+        }
+      ],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "griffin -> serpent"
+    },
+    {
+      "id": "shadow-self-dragon-to-griffin-shatter",
+      "groups": [
+        "shadow-self-dragon-in-smoke"
+      ],
+      "file": "shadow-self-dragon-to-griffin-shatter.mp4",
+      "vibe": "shadow-self",
+      "from": {
+        "file": "shadow-self/156_dragon.jpg",
+        "noun": "dragon"
+      },
+      "to": {
+        "file": "shadow-self/157_griffin.jpg",
+        "noun": "griffin"
+      },
+      "style": "shatter",
+      "timing": "snap",
+      "effects": [
+        "feedback"
+      ],
+      "look": "noir-glow",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 1.0,
+        "speed": 1.0,
+        "chaos": 0.45,
+        "glow": 1.0
+      },
+      "seed": 2727,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 49,
+      "seconds": 2.04,
+      "bytes": 1219515,
+      "sha1": "60d7920afe5e30c5e7e62e0f1ccda20b9b9a7094",
+      "made": "2026-10-30",
+      "job": "43d31753",
+      "shot": 0,
+      "published": [
+        {
+          "aspect": "16:9",
+          "slot": "b_shadow_mythic",
+          "song_s": [
+            182.17,
+            184.0
+          ]
+        }
+      ],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "same pair, Shatter/Snap + feedback (published slot b_shadow_mythic)"
+    },
+    {
+      "id": "shadow-self-dragon-to-griffin-9x16",
+      "groups": [
+        "shadow-self-dragon-in-smoke"
+      ],
+      "file": "shadow-self-dragon-to-griffin-9x16.mp4",
+      "vibe": "shadow-self",
+      "from": {
+        "file": "shadow-self/156_dragon.jpg",
+        "noun": "dragon"
+      },
+      "to": {
+        "file": "shadow-self/157_griffin.jpg",
+        "noun": "griffin"
+      },
+      "style": "melt",
+      "timing": "smooth",
+      "effects": [],
+      "look": "noir-glow",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 0.7,
+        "speed": 0.5,
+        "chaos": 0.15,
+        "glow": 0.7
+      },
+      "seed": 2727,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "9:16",
+      "px": [
+        576,
+        1024
+      ],
+      "fps": 24,
+      "frames": 73,
+      "seconds": 3.04,
+      "bytes": 456231,
+      "sha1": "7d1e244578b4783f95b9c988bdb1206dd5bbbeed",
+      "made": "2026-10-30",
+      "job": "b753f298",
+      "shot": 0,
+      "published": [],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "9:16 render of the same opener"
+    },
+    {
+      "id": "iridescent-glass-lunar-rover-to-astronaut-glove",
+      "groups": [
+        "iridescent-glass-hand"
+      ],
+      "file": "iridescent-glass-lunar-rover-to-astronaut-glove.mp4",
+      "vibe": "iridescent-glass",
+      "from": {
+        "file": "iridescent-glass/116_lunar_rover.jpg",
+        "noun": "lunar rover"
+      },
+      "to": {
+        "file": "iridescent-glass/117_astronaut_glove.jpg",
+        "noun": "astronaut glove"
+      },
+      "style": "bloom",
+      "timing": "beat",
+      "effects": [
+        "feedback"
+      ],
+      "look": "auto",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 1.0,
+        "speed": 0.9,
+        "chaos": 0.45,
+        "glow": 0.85
+      },
+      "seed": 2729,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 1044232,
+      "sha1": "642fb1d4bfe8c3cec6e75e9e709d56984e7c6721",
+      "made": "2026-10-29",
+      "job": "4b735507",
+      "shot": 2,
+      "published": [
+        {
+          "aspect": "16:9",
+          "slot": "glass_space_bloom",
+          "song_s": [
+            215.0,
+            216.92
+          ]
+        },
+        {
+          "aspect": "9:16",
+          "slot": "glass_space_bloom@169",
+          "song_s": [
+            215.0,
+            216.92
+          ]
+        }
+      ],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "Iridescent glass hand (the 'astronaut glove' still)",
+      "tys": [
+        "30 Oct 7:53 am: \"The object should have some sort of symbolic element, like the hand. I quite like how you've done that.\""
+      ]
+    },
+    {
+      "id": "iridescent-glass-astronaut-glove-to-brass-orrery",
+      "groups": [
+        "iridescent-glass-hand"
+      ],
+      "file": "iridescent-glass-astronaut-glove-to-brass-orrery.mp4",
+      "vibe": "iridescent-glass",
+      "from": {
+        "file": "iridescent-glass/117_astronaut_glove.jpg",
+        "noun": "astronaut glove"
+      },
+      "to": {
+        "file": "iridescent-glass/118_brass_orrery.jpg",
+        "noun": "brass orrery"
+      },
+      "style": "bloom",
+      "timing": "beat",
+      "effects": [
+        "feedback"
+      ],
+      "look": "auto",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 1.0,
+        "speed": 0.9,
+        "chaos": 0.45,
+        "glow": 0.85
+      },
+      "seed": 2730,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 997538,
+      "sha1": "eb6bb129c07a36437090c809ced8f7d7149678eb",
+      "made": "2026-10-29",
+      "job": "4b735507",
+      "shot": 3,
+      "published": [],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "hand -> brass orrery"
+    },
+    {
+      "id": "iridescent-glass-lunar-rover-to-astronaut-glove-9x16",
+      "groups": [
+        "iridescent-glass-hand"
+      ],
+      "file": "iridescent-glass-lunar-rover-to-astronaut-glove-9x16.mp4",
+      "vibe": "iridescent-glass",
+      "from": {
+        "file": "iridescent-glass/116_lunar_rover.jpg",
+        "noun": "lunar rover"
+      },
+      "to": {
+        "file": "iridescent-glass/117_astronaut_glove.jpg",
+        "noun": "astronaut glove"
+      },
+      "style": "bloom",
+      "timing": "beat",
+      "effects": [
+        "feedback"
+      ],
+      "look": "auto",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 1.0,
+        "speed": 0.9,
+        "chaos": 0.45,
+        "glow": 0.85
+      },
+      "seed": 2730,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "9:16",
+      "px": [
+        576,
+        1024
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 970413,
+      "sha1": "e92c0977c146961d3d68d392380f8d6826c6d1e5",
+      "made": "2026-10-29",
+      "job": "595f65b9",
+      "shot": 3,
+      "published": [],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "9:16 render, lunar rover -> glove"
+    },
+    {
+      "id": "iridescent-glass-astronaut-glove-to-brass-orrery-9x16",
+      "groups": [
+        "iridescent-glass-hand"
+      ],
+      "file": "iridescent-glass-astronaut-glove-to-brass-orrery-9x16.mp4",
+      "vibe": "iridescent-glass",
+      "from": {
+        "file": "iridescent-glass/117_astronaut_glove.jpg",
+        "noun": "astronaut glove"
+      },
+      "to": {
+        "file": "iridescent-glass/118_brass_orrery.jpg",
+        "noun": "brass orrery"
+      },
+      "style": "bloom",
+      "timing": "beat",
+      "effects": [
+        "feedback"
+      ],
+      "look": "auto",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 1.0,
+        "speed": 0.9,
+        "chaos": 0.45,
+        "glow": 0.85
+      },
+      "seed": 2731,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "9:16",
+      "px": [
+        576,
+        1024
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 1024428,
+      "sha1": "750240531eac29fe8a448356f6c9d98a98e3eada",
+      "made": "2026-10-29",
+      "job": "595f65b9",
+      "shot": 4,
+      "published": [],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "9:16, glove -> orrery"
+    },
+    {
+      "id": "liquid-gold-infinity-knot-to-scarab-beetle",
+      "groups": [
+        "gold-beetle",
+        "gold-outro"
+      ],
+      "file": "liquid-gold-infinity-knot-to-scarab-beetle.mp4",
+      "vibe": "liquid-gold",
+      "from": {
+        "file": "liquid-gold/176_infinity_knot.jpg",
+        "noun": "infinity knot"
+      },
+      "to": {
+        "file": "liquid-gold/177_scarab_beetle.jpg",
+        "noun": "scarab beetle"
+      },
+      "style": "melt",
+      "timing": "smooth",
+      "effects": [],
+      "look": "auto",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 1.0,
+        "speed": 0.9,
+        "chaos": 0.4,
+        "glow": 0.45
+      },
+      "seed": 2731,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 1058062,
+      "sha1": "0602ecf50475ea74aa41d9bbb8e69af93150c213",
+      "made": "2026-10-30",
+      "job": "45b4eb51",
+      "shot": 4,
+      "published": [
+        {
+          "aspect": "16:9",
+          "slot": "gold_finale_clear",
+          "song_s": [
+            232.92,
+            235.08
+          ]
+        },
+        {
+          "aspect": "9:16",
+          "slot": "gold_finale_clear@169",
+          "song_s": [
+            232.92,
+            235.08
+          ]
+        }
+      ],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "Gold scarab beetle (the demo and X cover)",
+      "tys": [
+        "30 Oct 2:21 pm: \"different thumbnails. for one use the beetle i like that one\"",
+        "30 Oct 2:43 pm (X cover): \"is it possible to change that thumbnail it lands on to the beatle\""
+      ]
+    },
+    {
+      "id": "liquid-gold-scarab-beetle-to-koi",
+      "groups": [
+        "gold-beetle",
+        "gold-outro"
+      ],
+      "file": "liquid-gold-scarab-beetle-to-koi.mp4",
+      "vibe": "liquid-gold",
+      "from": {
+        "file": "liquid-gold/177_scarab_beetle.jpg",
+        "noun": "scarab beetle"
+      },
+      "to": {
+        "file": "liquid-gold/178_koi.jpg",
+        "noun": "koi"
+      },
+      "style": "melt",
+      "timing": "smooth",
+      "effects": [],
+      "look": "auto",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 1.0,
+        "speed": 0.9,
+        "chaos": 0.4,
+        "glow": 0.45
+      },
+      "seed": 2732,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 882521,
+      "sha1": "6903a03ba4fbba3bcff42632804649f69d9f894e",
+      "made": "2026-10-30",
+      "job": "45b4eb51",
+      "shot": 5,
+      "published": [
+        {
+          "aspect": "16:9",
+          "slot": "gold_finale_clear",
+          "song_s": [
+            235.08,
+            237.75
+          ]
+        },
+        {
+          "aspect": "9:16",
+          "slot": "gold_finale_clear@169",
+          "song_s": [
+            235.08,
+            237.75
+          ]
+        }
+      ],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "scarab -> koi"
+    },
+    {
+      "id": "liquid-gold-honeybee-to-scarab-beetle",
+      "groups": [
+        "gold-beetle"
+      ],
+      "file": "liquid-gold-honeybee-to-scarab-beetle.mp4",
+      "vibe": "liquid-gold",
+      "from": {
+        "file": "liquid-gold/052_honeybee.jpg",
+        "noun": "honeybee"
+      },
+      "to": {
+        "file": "liquid-gold/177_scarab_beetle.jpg",
+        "noun": "scarab beetle"
+      },
+      "style": "melt",
+      "timing": "beat",
+      "effects": [],
+      "look": "auto",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 0.6,
+        "speed": 0.9,
+        "chaos": 0.4,
+        "glow": 0.45
+      },
+      "seed": 2732,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 790150,
+      "sha1": "24266e2dea057667ab4a83f4bf97ec9434c7360f",
+      "made": "2026-10-30",
+      "job": "ca5b44b6",
+      "shot": 5,
+      "published": [
+        {
+          "aspect": "16:9",
+          "slot": "o5_gold_insects",
+          "song_s": [
+            74.58,
+            76.08
+          ]
+        }
+      ],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "honeybee -> scarab (insects run, slot o5_gold_insects)"
+    },
+    {
+      "id": "liquid-gold-scarab-beetle-to-stag-beetle",
+      "groups": [
+        "gold-beetle"
+      ],
+      "file": "liquid-gold-scarab-beetle-to-stag-beetle.mp4",
+      "vibe": "liquid-gold",
+      "from": {
+        "file": "liquid-gold/177_scarab_beetle.jpg",
+        "noun": "scarab beetle"
+      },
+      "to": {
+        "file": "liquid-gold/186_stag_beetle.jpg",
+        "noun": "stag beetle"
+      },
+      "style": "melt",
+      "timing": "beat",
+      "effects": [],
+      "look": "auto",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 0.6,
+        "speed": 0.9,
+        "chaos": 0.4,
+        "glow": 0.45
+      },
+      "seed": 2733,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 1262440,
+      "sha1": "0d919c382a8ecd4d311591e4baac61938ede779f",
+      "made": "2026-10-30",
+      "job": "ca5b44b6",
+      "shot": 6,
+      "published": [
+        {
+          "aspect": "16:9",
+          "slot": "o5_gold_insects",
+          "song_s": [
+            76.08,
+            77.42
+          ]
+        }
+      ],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "scarab -> stag beetle"
+    },
+    {
+      "id": "liquid-gold-eagle-to-infinity-knot",
+      "groups": [
+        "gold-outro"
+      ],
+      "file": "liquid-gold-eagle-to-infinity-knot.mp4",
+      "vibe": "liquid-gold",
+      "from": {
+        "file": "liquid-gold/175_eagle.jpg",
+        "noun": "eagle"
+      },
+      "to": {
+        "file": "liquid-gold/176_infinity_knot.jpg",
+        "noun": "infinity knot"
+      },
+      "style": "melt",
+      "timing": "smooth",
+      "effects": [],
+      "look": "auto",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 1.0,
+        "speed": 0.9,
+        "chaos": 0.4,
+        "glow": 0.45
+      },
+      "seed": 2730,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 1121190,
+      "sha1": "613e72f95493b35670d6a828ba776078f95a09a8",
+      "made": "2026-10-30",
+      "job": "45b4eb51",
+      "shot": 3,
+      "published": [
+        {
+          "aspect": "16:9",
+          "slot": "gold_finale_clear",
+          "song_s": [
+            230.33,
+            232.92
+          ]
+        },
+        {
+          "aspect": "9:16",
+          "slot": "gold_finale_clear@169",
+          "song_s": [
+            230.33,
+            232.92
+          ]
+        }
+      ],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "Gold outro (phoenix, lion, dragon, eagle on the infinity knot, scarab, koi) and its title",
+      "tys": [
+        "30 Oct 12:16 pm: \"the gold outro part i love, from around 3:46ish - i think we can also use that as a clip as well so make that a little standalone clip for me with the music as well\""
+      ]
+    },
+    {
+      "id": "liquid-gold-phoenix-to-lion-head",
+      "groups": [
+        "gold-outro"
+      ],
+      "file": "liquid-gold-phoenix-to-lion-head.mp4",
+      "vibe": "liquid-gold",
+      "from": {
+        "file": "liquid-gold/172_phoenix.jpg",
+        "noun": "phoenix"
+      },
+      "to": {
+        "file": "liquid-gold/173_lion_head.jpg",
+        "noun": "lion head"
+      },
+      "style": "melt",
+      "timing": "smooth",
+      "effects": [],
+      "look": "auto",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 1.0,
+        "speed": 0.9,
+        "chaos": 0.4,
+        "glow": 0.45
+      },
+      "seed": 2727,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 1284396,
+      "sha1": "bbc891a57ab36e5aa9555194c8a67a5a7f499e96",
+      "made": "2026-10-30",
+      "job": "45b4eb51",
+      "shot": 0,
+      "published": [
+        {
+          "aspect": "16:9",
+          "slot": "gold_finale_clear",
+          "song_s": [
+            224.12,
+            225.67
+          ]
+        },
+        {
+          "aspect": "9:16",
+          "slot": "gold_finale_clear@169",
+          "song_s": [
+            224.12,
+            225.67
+          ]
+        }
+      ],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "phoenix -> lion head"
+    },
+    {
+      "id": "liquid-gold-lion-head-to-dragon",
+      "groups": [
+        "gold-outro"
+      ],
+      "file": "liquid-gold-lion-head-to-dragon.mp4",
+      "vibe": "liquid-gold",
+      "from": {
+        "file": "liquid-gold/173_lion_head.jpg",
+        "noun": "lion head"
+      },
+      "to": {
+        "file": "liquid-gold/174_dragon.jpg",
+        "noun": "dragon"
+      },
+      "style": "melt",
+      "timing": "smooth",
+      "effects": [],
+      "look": "auto",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 1.0,
+        "speed": 0.9,
+        "chaos": 0.4,
+        "glow": 0.45
+      },
+      "seed": 2728,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 1207606,
+      "sha1": "f9a875fcc44dfd0559fb6194a5fc108681c2c0a2",
+      "made": "2026-10-30",
+      "job": "45b4eb51",
+      "shot": 1,
+      "published": [
+        {
+          "aspect": "16:9",
+          "slot": "gold_finale_clear",
+          "song_s": [
+            225.67,
+            228.33
+          ]
+        },
+        {
+          "aspect": "9:16",
+          "slot": "gold_finale_clear@169",
+          "song_s": [
+            225.67,
+            228.33
+          ]
+        }
+      ],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "lion head -> dragon"
+    },
+    {
+      "id": "liquid-gold-dragon-to-eagle",
+      "groups": [
+        "gold-outro"
+      ],
+      "file": "liquid-gold-dragon-to-eagle.mp4",
+      "vibe": "liquid-gold",
+      "from": {
+        "file": "liquid-gold/174_dragon.jpg",
+        "noun": "dragon"
+      },
+      "to": {
+        "file": "liquid-gold/175_eagle.jpg",
+        "noun": "eagle"
+      },
+      "style": "melt",
+      "timing": "smooth",
+      "effects": [],
+      "look": "auto",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 1.0,
+        "speed": 0.9,
+        "chaos": 0.4,
+        "glow": 0.45
+      },
+      "seed": 2729,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 1650693,
+      "sha1": "d1b10b35cd644117e280024eb9221473cd6aa6da",
+      "made": "2026-10-30",
+      "job": "45b4eb51",
+      "shot": 2,
+      "published": [
+        {
+          "aspect": "16:9",
+          "slot": "gold_finale_clear",
+          "song_s": [
+            228.33,
+            230.33
+          ]
+        },
+        {
+          "aspect": "9:16",
+          "slot": "gold_finale_clear@169",
+          "song_s": [
+            228.33,
+            230.33
+          ]
+        }
+      ],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "dragon -> eagle"
+    },
+    {
+      "id": "liquid-gold-koi-to-gargoyle-head",
+      "groups": [
+        "gold-outro"
+      ],
+      "file": "liquid-gold-koi-to-gargoyle-head.mp4",
+      "vibe": "liquid-gold",
+      "from": {
+        "file": "liquid-gold/178_koi.jpg",
+        "noun": "koi"
+      },
+      "to": {
+        "file": "liquid-gold/077_gargoyle_head.jpg",
+        "noun": "gargoyle head"
+      },
+      "style": "melt",
+      "timing": "smooth",
+      "effects": [],
+      "look": "auto",
+      "foreshadow": "trace",
+      "knobs": {
+        "intensity": 1.0,
+        "speed": 0.9,
+        "chaos": 0.4,
+        "glow": 0.45
+      },
+      "seed": 2733,
+      "engine": "LTX-2.5 22B distilled on Comfy Cloud (Cloud Final), workflows/ltx25_morph_api.json, guides loosened: img_compression 30, end_strength 0.6",
+      "tier": "cloud",
+      "aspect": "16:9",
+      "px": [
+        1024,
+        576
+      ],
+      "fps": 24,
+      "frames": 97,
+      "seconds": 4.04,
+      "bytes": 873833,
+      "sha1": "3b901a3418d296bc5be9ec5e90e789e19c4dccfd",
+      "made": "2026-10-30",
+      "job": "45b4eb51",
+      "shot": 6,
+      "published": [
+        {
+          "aspect": "16:9",
+          "slot": "gold_finale_clear",
+          "song_s": [
+            237.75,
+            238.19
+          ]
+        },
+        {
+          "aspect": "9:16",
+          "slot": "gold_finale_clear@169",
+          "song_s": [
+            237.75,
+            238.19
+          ]
+        }
+      ],
+      "credit": "Made by the author with Xenoform: a Cloud Final morph, LTX-2.5 22B distilled (open weights, LTX-2.x Community License Agreement of 11 August 2026) run on Comfy Cloud, between two stills of the vibe's shipped pool (CREDITS.md). No audio.",
+      "note": "koi -> gargoyle head"
+    }
+  ]
+}

@@ -79,6 +79,7 @@ Open weights only, on your own GPU. Checked against each model card or licence t
 | ACE-Step 1.5 | Optional local music | MIT |
 | `examples/demo.wav` | The bundled demo song | Made by `xenoform synth`; part of this MIT repo |
 | `examples/songs/` (six mp3s with their analyses) | The bundled songs: Morphing Wobble (a 20 s cut and the whole song), Hip hop, boom bap, Liquid drum and bass, Ambient, Glitch Out | Made by the author with Suno; included for use with Xenoform |
+| `examples/morphs/` (38 raw clips, `morphs.json`), `examples/clips/gold_outro.mp4` and the "Watch a finished one" reel | The morphs the author loved as Cloud Final left them (the black glass rose into the lotus, the deep-sea fish, origami noir, the smoke dragon, the glass hand, the gold beetle), each with its two stills, seed, style, timing, effects, look and knobs; the gold outro of the Glitch Out video | Made by the author with Xenoform: LTX-2.5 22B distilled (open weights) run on Comfy Cloud, between the author's own stills |
 
 The song in the contest demo video is "Glitch Out", the author's own Suno instrumental, bundled as `examples/songs/glitch_out.mp3`; use it, `examples/demo.wav`, another of the six bundled songs or your own track. The demo video's outputs were rendered with Cloud Final: the same open-weights LTX-2.5 22B distilled model, run on Comfy Cloud's GPUs so the 4-minute montage could be made in an afternoon. Cloud Final is an opt-in path, off by default; Final renders the same model on your own GPU.
 
@@ -256,7 +257,8 @@ workflows/                             xenoform_morph.json (LTX 0.9.5), xenoform
                                        ltx_v2v*.json, ltx25_*.json (optional, not default)
 assets/library/                        manifest.json and the NASA anchor stills; clips are fetched on first run
 library/                               shapes, loops, moves (driving clips are fetched, not shipped)
-examples/                              demo.wav, demo_base.mp4, demo_features.json, songs/ (the six bundled songs and their analyses)
+examples/                              demo.wav, demo_base.mp4, demo_features.json, songs/ (the six bundled songs and their analyses),
+                                       morphs/ (the loved morphs as raw clips), clips/ (the gold outro)
 scripts/                               vibe_objects/, autotune/, fetch_library.py, fetch_moves.py, build_showcase.py, qa_library.py, analyse_bundled_songs.py
 docs/                                  REPRODUCE, CONTEST, LICENCES, mcp, stems, midi, vj, VIBES, transitions, footage, demo/
 tests/                                 pytest suite, incl. test_eligibility.py and test_docs.py

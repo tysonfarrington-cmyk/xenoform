@@ -2053,6 +2053,12 @@
    "noun": "origami wolf",
    "finish": "black paper, gold foil",
    "source": "Z-Image Turbo (Apache 2.0), seed 1886945870, 1024x576, prompt configs/still_prompts.json origami-noir prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-30"
+  },
+  {
+   "file": "origami-noir/001_praying_mantis.jpg",
+   "noun": "praying mantis",
+   "finish": "black paper, gold foil",
+   "source": "Z-Image Turbo (Apache 2.0), seed 4020, 1024x576, prompt configs/still_prompts.json origami-noir prefix and subject sentence, grown 2026-10-25"
   }
  ],
  "neon-noir": [
@@ -2671,6 +2677,12 @@
    "noun": "squid",
    "finish": "translucent gelatinous tissue, bioluminescent glow",
    "source": "Z-Image Turbo (Apache 2.0), seed 1305050555, 1024x576, prompt configs/still_prompts.json bioluminescent prefix and subject sentence, grown 2026-10-30"
+  },
+  {
+   "file": "bioluminescent/123_koi.jpg",
+   "noun": "koi",
+   "finish": "translucent gelatinous tissue, bioluminescent glow",
+   "source": "Z-Image Turbo (Apache 2.0), seed 1096820719, 1024x576, prompt configs/still_prompts.json bioluminescent prefix and subject sentence, grown 2026-10-29"
   }
  ],
  "risograph": [
@@ -3059,6 +3071,12 @@
    "noun": "astronaut glove",
    "finish": "hand-blown iridescent glass",
    "source": "Z-Image Turbo (Apache 2.0), seed 476302941, 1024x576, prompt configs/still_prompts.json iridescent-glass prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-29"
+  },
+  {
+   "file": "iridescent-glass/118_brass_orrery.jpg",
+   "noun": "brass orrery",
+   "finish": "hand-blown iridescent glass",
+   "source": "Z-Image Turbo (Apache 2.0), seed 476302942, 1024x576, prompt configs/still_prompts.json iridescent-glass prefix and subject sentence, typed in the desk as an own shape, grown 2026-10-29"
   }
  ],
  "ink-wash": [
