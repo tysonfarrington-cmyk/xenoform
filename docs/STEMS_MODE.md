@@ -31,7 +31,8 @@ exists, and on Windows the two names are one file.)
    - where the stem goes out for a bar or more, the layer cuts: on the first beat inside the silence and on the last beat
      before the stem comes back (`stem_cut`), whatever the planner's shots were, so the return is a fresh morph;
    - a stretch where the stem is silent (mean activity under 0.12, peak under 0.3) folds into **one** shot, marked
-     `stem_silent`, with no effects and no event: no morphs are spent where nothing shows, and the layer fades out there;
+     `stem_silent`, with no effects and no event: one morph at most is spent where nothing shows, and the layer fades
+     out there;
    - two **quiet** shots of a passage (mean under 0.4) become one, at most 16 beats long: a quiet stem cuts half as often;
    - a drop run's **heat** on a layer is the run's heat times how hard the stem plays it (full from 0.8 activity, never
      under 0.2 while it plays);
