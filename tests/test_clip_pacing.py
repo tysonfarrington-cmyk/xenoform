@@ -169,6 +169,19 @@ def test_every_drop_run_opens_on_a_cut_to_a_fresh_film(mode):
     assert not any(s.get("event") == "style" for s in shots)  # a style event on film is the cut
 
 
+def test_a_drop_runs_first_morph_snaps_with_breathe_off_too():
+    song = _whole("glitch-out")
+    lay = _lay(song, _pack(), 139.71, breathe=False, drop_mode="auto")
+    shots, slots = lay["shots"], lay["slots"]
+    entries = [i for i, s in enumerate(shots) if s.get("event") == "drop"]
+    snapped = [i for i, s in enumerate(shots) if (s.get("timing") or {}).get("mode") == "snap"]
+    assert entries and len(snapped) == len(entries)
+    for i, j in zip(entries, snapped):  # the morph right after the run's opening clip
+        assert j == next(k for k in range(i + 1, len(shots)) if slots[k]["kind"] == "morph")
+    smooth_beat = _lay(song, _pack(), 139.71, breathe=False, drop_mode="auto", morph_timing="beat")
+    assert not any(s.get("timing") for s in smooth_beat["shots"])  # the cut's own Timing stands
+
+
 def test_drops_off_is_one_drop_and_no_cuts():
     song = _whole("glitch-out")
     lay = _lay(song, _pack(), 139.71, breathe=True, drop_mode="off")

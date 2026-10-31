@@ -476,6 +476,25 @@ def thin(shots: list[dict], kind: list[str], limit: int, period: float, *, floor
     return _frames(out), kd
 
 
+def snap_runs(shots: list[dict], kind: list[str], state: dict) -> int:
+    """The drop treatment's Snap on film: a drop run opens on a cut to a clip (no morph to time), so the run's first morph
+    snaps, as an object run's opening morph does (``pacing._treat``), when the cut's Timing is left on Smooth (Breathe's
+    drop profile times the rest). In place, on the plan's shots, so a re-cut keeps it. Returns how many."""
+    from xenoform import morph_timing, pacing
+
+    if pacing.drop_mode_of(state) not in ("auto", "max") or morph_timing.normal(state.get("morph_timing")) != "smooth":
+        return 0
+    n = 0
+    for i, s in enumerate(shots):
+        if s.get("event") != "drop":
+            continue
+        j = next((j for j in range(i + 1, len(shots)) if kind[j] == "morph"), None)
+        if j is not None and shots[j].get("drop_run") == s.get("drop_run") and not shots[j].get("timing"):
+            shots[j]["timing"] = {"mode": "snap"}
+            n += 1
+    return n
+
+
 def arrange(shots: list[dict], plan: dict, clips: list[dict], state: dict, beats: list | None = None, *,
             limit: int | None = None, duration: float = 0.0) -> dict:
     """What a clips cut plays, shot by shot, before anything renders: ``{"shots", "slots", "paced", "clip_shots"}``. A
@@ -498,6 +517,7 @@ def arrange(shots: list[dict], plan: dict, clips: list[dict], state: dict, beats
         laid, kind = thin(laid, kind, int(limit), period, floor=floor, longest_s=longest)
     scenes = pacing.boldness(pacing.breathe_amount(state)) >= 0.5
     sl = assign(laid, kind, clips, scenes=scenes)
+    snap_runs(laid, kind, state)
     return {"shots": laid, "slots": sl, "paced": True,
             "clip_shots": sum(1 for x in sl if x["kind"] == "clip" and not x.get("cont"))}
 
