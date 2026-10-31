@@ -890,6 +890,30 @@ def fresh_at_drops(stills: list[dict], shots: list[dict], assign: list | None = 
     return out, moved
 
 
+FLASH_BARS = 8   # the tame's window: flash frames per 8 bars (the montage measured them so)
+
+
+def flash_rules(shots: list[dict], fps: int, beats: list | None = None) -> list[tuple | None]:
+    """The flash tame's rule a frame (``deflash.Tame``), from the passage each composed frame sits in: ``(keep, budget,
+    window)``, the share of a flash kept and the flash frames an 8-bar window may hold (the profile's ``flash``: none in
+    the intro and the outro, 16 in the calm, a build rising from 24 to 40 as it ramps, 40 in the drops); a frame of a
+    shot with no role gets the drops' cap."""
+    from xenoform import deflash as DF
+
+    b = sorted(float(x) for x in beats or [])
+    period = _median_gap(b) if len(b) > 2 else 0.5
+    window = max(1, int(round(FLASH_BARS * 4 * period * int(fps))))
+    out: list[tuple | None] = []
+    for s in shots:
+        role = str(s.get("section") or "")
+        budget = int((PROFILE.get(role) or PROFILE["drop"])["flash"])
+        if role == "build" or s.get("ramp") is not None:
+            budget = int(round(24 + 16 * float(s.get("ramp") or 0.0)))
+        keep = DF.KEEP if budget > 0 else 0.0
+        out.extend([(keep, budget, window)] * int(s.get("frames") or 0))
+    return out
+
+
 # ------------------------------------------------------------------------------------------------ the record
 
 

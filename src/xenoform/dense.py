@@ -1093,6 +1093,15 @@ def paced_kinds(state: dict, shots: list[dict]) -> dict | None:
     return {"breathe": _pc.breathe_of(state)}
 
 
+def tame_rules(state: dict, shots: list[dict], fps: int, beats: list | None) -> list | None:
+    """The flash tame's rule a frame (``pacing.flash_rules``) when Breathe is on, else None (the frames as they come)."""
+    from xenoform import pacing as _pc
+
+    if not _pc.breathe_of(state):
+        return None
+    return _pc.flash_rules(shots, fps, beats)
+
+
 def foreshadow_mode(opt: dict, vibe: str, state: dict) -> str:
     """The foreshadow layer's mode for the cut; Breathe never slices (the strips read as the bar wipe Tys tired of)."""
     from xenoform import foreshadow as _fs
@@ -1708,9 +1717,12 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
                           palette_image=str(stills[0]["path"]) if stills else None,
                           adaptive=str(opt.get("dance_fx") or "auto").strip().lower() == "auto",
                           transitions=transitions, foreshadow=fs_mode, boundary_fx=boundary_fx, effects=effect_names,
-                          tones=_E.palette_from_clips(clips).tolist() if _E.wants_tones(look_preset, effect_names, shots) else None)
+                          tones=_E.palette_from_clips(clips).tolist() if _E.wants_tones(look_preset, effect_names, shots) else None,
+                          tame=tame_rules(state, shots, fps, directed.get("beats") or []))
     if made.get("effects"):
         notes.append({"effects": made["effects"]})
+    if made.get("tame"):
+        notes.append({"tame": made["tame"]})  # the flash tame (Breathe): flash frames found and how many it lifted
     if made.get("look", {}).get("seconds"):
         log.info("house look took %.1fs for %d frames", made["look"]["seconds"], made["look"]["frames"])
     card = False
@@ -1762,6 +1774,8 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
             # where the cut sits in the song (a Length cut is trimmed from it): the Resolve export and any later assembly
             # read it instead of finding the offset by cross-correlating the audio (the montage had to, 30 Oct)
             "window": window_of(state, duration)}
+    if made.get("tame"):
+        info["pacing"]["tame"] = made["tame"]
     (work / "simple.json").write_text(json.dumps(info, indent=1, default=str), encoding="utf-8")
     return info
 
@@ -1959,7 +1973,8 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
                           end_card=opt["end_card"], seed=int(rec.get("seed") or 0), palette_image=rec.get("palette_image"),
                           adaptive=str(opt.get("dance_fx") or "auto").strip().lower() == "auto", transitions=transitions,
                           foreshadow=fs_mode, boundary_fx=boundary_fx, effects=effect_names,
-                          tones=_E.palette_from_clips(clips).tolist() if _E.wants_tones(look_preset, effect_names, shots) else None)
+                          tones=_E.palette_from_clips(clips).tolist() if _E.wants_tones(look_preset, effect_names, shots) else None,
+                          tame=tame_rules(state, shots, fps, beats))
     if opt["end_card"]:
         beatfx.end_card(tmp, str(opt.get("recipe") or "(none)"))
     from xenoform.turbo import publish_file
@@ -1977,7 +1992,8 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
                 "recuts": int(rec.get("recuts") or 0) + 1})
     if shaped is not None or rec.get("pacing"):  # the shape the re-cut was made in (Breathe and the Drops re-cut too)
         pace = dict(rec.get("pacing") or {})
-        pace.update({"breathe": _pc.breathe_of(state), "drop_mode": _pc.drop_mode_of(state), "shape": shaped})
+        pace.update({"breathe": _pc.breathe_of(state), "drop_mode": _pc.drop_mode_of(state), "shape": shaped,
+                     "tame": made.get("tame")})
         if _pc.paced_shots(record_shots):
             pace["line"] = _pc.summary_line(record_shots, breathe=pace["breathe"], drop=drop,
                                             song_start=float((rec.get("window") or {}).get("song_start") or 0.0))

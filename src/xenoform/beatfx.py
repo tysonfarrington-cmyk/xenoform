@@ -796,7 +796,8 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
             stem_orbit: bool | None = None, stem_env: dict | None = None, macros: dict | None = None,
             house: dict | None = None, end_card: bool = False, seed: int = 0, palette_image: str | None = None,
             adaptive: bool = False, transitions: list | None = None, foreshadow: str | None = None,
-            boundary_fx: list | None = None, effects: list | None = None, tones: list | None = None) -> dict:
+            boundary_fx: list | None = None, effects: list | None = None, tones: list | None = None,
+            tame: list | None = None) -> dict:
     """Retime every clip to its shot (speed, ease, hold, stutter, skip, reverse), reframe, add beat FX, mux.
 
     ``transitions``: one entry per shot, ``{"kind", "frames"}`` or None; a premium transition (transitions_fx)
@@ -813,6 +814,10 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
 
     ``size`` overrides the output frame size (native vertical Final: 1080x1920). Clips that
     already have the target aspect pass through whole; any other clip is cropped around its object.
+
+    ``tame``: the flash tame's rule a frame (``pacing.flash_rules``; Breathe turns it on): the last pass over the
+    picture before the encoder, a white veil over any frame brighter than the frames around it lifted to its passage's
+    budget (``deflash.Tame``). None leaves the frames as they are.
 
     House look (see ``LookPass``): ``dance_fx`` "off" / "house" / a preset name, ``stem_orbit`` on/off,
     ``stem_env`` a ``stem_react`` envelope (else one is derived from the mix), ``macros`` the Simple knobs
@@ -866,6 +871,13 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
     held: list[np.ndarray] = []  # the previous shot's last frames, withheld for the transition into the next shot
     used_transitions: list[str] = []
     t_intensity = float((house.get("transitions") or {}).get("intensity") or 0.5)
+    tamer = None
+    if tame:
+        from xenoform.deflash import Tame
+
+        tamer = Tame()
+    rules = list(tame or [])
+    written = [0]
 
     def write(frame: np.ndarray) -> None:
         # ffmpeg reads fixed-size raw frames and silently drops everything after a short one, so a frame of
@@ -873,6 +885,12 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
         if frame.shape[0] != h or frame.shape[1] != w:
             log.warning("compose: a %dx%d frame where %dx%d was expected; resized", frame.shape[1], frame.shape[0], w, h)
             frame = resize(frame, w, h)
+        if tamer is not None:  # the flash tame, the last pass: frames leave it five behind, decided
+            k = written[0]
+            written[0] += 1
+            for done in tamer.push(np.ascontiguousarray(frame), rules[k] if k < len(rules) else None):
+                enc.stdin.write(np.ascontiguousarray(done).tobytes())
+            return
         enc.stdin.write(np.ascontiguousarray(frame).tobytes())
 
     # The per-shot work runs in _shot_frames, here or in worker processes (look_workers): a full song's look pass
@@ -977,6 +995,9 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
         for frame in held:
             write(frame)
         held = []
+        if tamer is not None:
+            for done in tamer.flush():
+                enc.stdin.write(np.ascontiguousarray(done).tobytes())
     finally:
         enc.stdin.close()
         code = enc.wait()
@@ -989,7 +1010,8 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
     return {"frames": n, "seconds": round(n / fps, 3), "size": f"{w}x{h}", "aspect": aspect, "fx": bool(fx),
             "overlay": over is not None, "centres": centres, "fps": fps, "look": look.info(),
             "transitions": used_transitions, "workers": int(workers), "foreshadow": _F.info(fs_entries, fs_mode, fs_params, fps),
-            "boundary_fx": _B.info(bx_picks, bx_params), "effects": list((fx_cfg or {}).get("names") or [])}
+            "boundary_fx": _B.info(bx_picks, bx_params), "effects": list((fx_cfg or {}).get("names") or []),
+            **({"tame": tamer.info()} if tamer is not None else {})}
 
 
 def reframe_file(src: Path, dest: Path, aspect: str, *, quality: str = "draft", shots: list[dict] | None = None) -> dict:
