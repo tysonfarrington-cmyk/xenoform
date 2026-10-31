@@ -320,6 +320,26 @@ same composite byte for byte; the suite green with the fake split.
     in the side-by-sides; Breathe is to read as scenes (long holds, one look per calm passage, rests) against
     eventful drops, with a Breathe amount in the API; the proof is a stacked plain-over-Breathe passage that
     crosses groove, build, drop and release, never three small panels.
+    Round two landed 31 Oct as aac4ec2 (1305 passed on its tree): breathe takes true or 0 to 1 (On is 1.0, 0.5 is
+    round one); at full Breathe each calm passage holds one look from one family in shots of 3 to 4 bars (a morph
+    of at most two bars, then a rest), no effects or wipes, Chaos 0.15, no flash; builds go from 2 bars to 1; drops
+    as before; a Breathe Make may spend fewer morphs than its budget. Whole song: grooves 2.5 looks a minute, drops
+    10.3 (4.1 times). Flash frames in the worst 8 bars, plain against Breathe: 146 to 24 (1:30 to 3:00), 136 to 38
+    (0:30 to 2:00), 71 to 0 (0:00 to 0:30). Left: the camera orbit follows the cut's Chaos, not the shot's; one
+    place per passage is one family only (settings not yet held); a round-one record re-cuts with the new looks but
+    its old shot lengths. Proof: Desktop/xeno_pacing_31oct/round2 (stacked plain over Breathe with a rhythm strip).
+11. Stems mode: built 31 Oct on its branch (1340 passed on 1c86c88; it merges aac4ec2 before it lands). Decided by
+    the orchestrator: a layer playing alone is opaque and prominence matters only where two stems play; defaults
+    drums and other on, drums 0.8, the rest 0.6, screen; drive thresholds: silent under 0.12 mean and 0.3 peak,
+    quiet under 0.4 (two quiet shots become one, at most 16 beats), a cut where the stem is out for a bar, the drop
+    event stays on a layer whose stem plays the first beat at 0.35 or more; the idea line applies to every objects
+    layer, no object twice across layers. For Tys: Lead means the lead stem's exits of 2 bars or more become
+    release passages for every layer; is that what he meant? Not yet on a layer: swap, re-render, Generate here,
+    Dream; Edit in Resolve exports the composite as one picture; the draft preview uses the cut's vibe even for
+    clip layers. The doc is docs/STEMS_MODE.md (docs/stems.md already existed; Windows ignores case). Found on the
+    way, handed to the taste stage: pick_stills with no idea line and a pool of 40 or more narrows to one realm of
+    min(count, 8) stills, so a chain longer than the realm repeats objects (the orb and the mobius twice in a
+    default liquid-gold cut); bioluminescent's default pick reaches the DNA helix.
 
 ## 9. Working rules for every session
 

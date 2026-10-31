@@ -1,5 +1,8 @@
 """Breathe (docs/MUSIC_VIDEO_PLAN.md section 3): one profile table a passage, written into the shots as fields the
-timeline already reads, by one helper the Make and the re-cut both call, so Breathe and the Drops re-cut with no GPU."""
+timeline already reads, by one helper the Make and the re-cut both call, so Breathe and the Drops re-cut with no GPU.
+
+These are the first round's profile, Breathe 0.5 since the amount came in (true is now the bold profile, 1.0, whose
+tests are in test_pacing_scenes.py)."""
 from __future__ import annotations
 
 import copy
@@ -23,7 +26,7 @@ def _song() -> dict:
 
 def _plan(**extra) -> tuple[list[dict], dict]:
     song = _song()
-    body = {"energy_preset": "dense", "aspect": "9:16", "quality_tier": "draft", "breathe": True, **extra}
+    body = {"energy_preset": "dense", "aspect": "9:16", "quality_tier": "draft", "breathe": 0.5, **extra}
     body, _ = guardrails.apply(body, duration=song["duration"], beats=song["beats"])
     return dense.shots_for(body, song, None, drop=GLITCH_DROP)
 
@@ -34,7 +37,7 @@ def _beats_of(s: dict) -> float:
 
 def test_breathe_cuts_a_bar_a_shot_and_rests_at_the_passage_ends():
     shots, plan = _plan()
-    assert plan["name"] == "story" and plan["breathe"] is True
+    assert plan["name"] == "story" and plan["breathe"] == 0.5
     by = {}
     for s in shots:
         by.setdefault(s["section"], []).append(s)
@@ -57,7 +60,7 @@ def test_breathe_cuts_a_bar_a_shot_and_rests_at_the_passage_ends():
     assert not any(s.get("rest") for s in old)
 
 
-def _shape(shots, *, breathe=True, drop_mode="auto", macros=None, **kw):
+def _shape(shots, *, breathe=0.5, drop_mode="auto", macros=None, **kw):
     shots = copy.deepcopy(shots)
     info = pacing.shape(shots, macros or {"intensity": 0.5, "chaos": 0.3}, breathe=breathe, drop_mode=drop_mode,
                         beats=_song()["beats"], **kw)
@@ -125,7 +128,7 @@ def test_the_handoff_kinds_follow_the_passages():
     for s in plan_shots:
         s["frames"] = int(round(float(s["seconds"]) * 24))
     shots, _ = _shape(plan_shots, macros={"intensity": 0.5, "chaos": 0.5})
-    picks = B.pick(shots, {"intensity": 0.5, "chaos": 0.5}, _song()["beats"], 24, seed=3, paced={"breathe": True})
+    picks = B.pick(shots, {"intensity": 0.5, "chaos": 0.5}, _song()["beats"], 24, seed=3, paced={"breathe": 0.5})
     kinds = [(i, p["kind"]) for i, p in enumerate(picks) if p]
     assert kinds
     assert not any(shots[i]["section"] in ("intro", "build", "outro") and not shots[i].get("boundary") for i, _ in kinds)
@@ -142,25 +145,25 @@ def test_the_handoff_kinds_follow_the_passages():
 
 def test_the_plan_line_names_the_main_drop():
     shots, plan = _plan()
-    line = pacing.summary_line(shots, breathe=True, drop=plan["drop"])
+    line = pacing.summary_line(shots, breathe=0.5, drop=plan["drop"])
     assert line == "5 drops, the main at 2:21; 14 passages; 3 rests"
-    assert pacing.summary_line(shots, breathe=True, drop=plan["drop"], song_start=60.0).startswith("5 drops, the main at 3:21")
+    assert pacing.summary_line(shots, breathe=0.5, drop=plan["drop"], song_start=60.0).startswith("5 drops, the main at 3:21")
     off, plan_off = _plan(breathe=False)
     assert pacing.summary_line(off, breathe=False, drop=plan_off["drop"]) == "5 drops, the main at 2:21; 14 passages"
-    rec = pacing.record(plan, shots, {"breathe": True}, {"song_start": 0.0, "length_s": 238.8})
-    assert rec["line"] == line and rec["rests"] == 3 and len(rec["runs"]) == 5 and rec["breathe"] is True
+    rec = pacing.record(plan, shots, {"breathe": 0.5}, {"song_start": 0.0, "length_s": 238.8})
+    assert rec["line"] == line and rec["rests"] == 3 and len(rec["runs"]) == 5 and rec["breathe"] == 0.5
 
 
 def test_breathe_styles_by_passage():
     shots, plan = _plan()
-    styles = pacing.styles(shots, {"breathe": True, "morph_style": "auto"}, plan["drop"])
+    styles = pacing.styles(shots, {"breathe": 0.5, "morph_style": "auto"}, plan["drop"])
     by = {}
     for s, st in zip(shots, styles):
         if s.get("event") != "style":  # a long run's planted style change is any style its neighbours do not have
             by.setdefault(s["section"], set()).add(st)
     assert by["intro"] <= {"bloom", "melt"} and by["drop"] <= {"shatter", "spin", "bloom"} and by["outro"] == {"melt"}
     assert styles[0] == "bloom"
-    assert pacing.styles(shots, {"breathe": True, "morph_style": "spin"}) is None  # a style chosen by hand
+    assert pacing.styles(shots, {"breathe": 0.5, "morph_style": "spin"}) is None  # a style chosen by hand
     assert pacing.styles(shots, {"breathe": False, "drop_mode": "off"}) is None  # Auto's own rules
     plain = pacing.styles(shots, {"breathe": False}, plan["drop"])  # Auto's rules with the drop runs opening on events
     assert {plain[i] for i, s in enumerate(shots) if s.get("event") == "drop"} <= {"shatter", "spin"}
@@ -169,14 +172,15 @@ def test_breathe_styles_by_passage():
 def test_the_recipe_carries_the_shape_and_an_old_code_is_the_old_cut():
     code = sr.encode({"vibe": "ocean", "breathe": True, "drop_mode": "max"})
     back = sr.decode(code)
-    assert back["breathe"] is True and back["drop_mode"] == "max"
+    assert back["breathe"] == 1.0 and back["drop_mode"] == "max"  # true is the bold profile
+    assert sr.decode(sr.encode({"vibe": "ocean", "breathe": 0.5}))["breathe"] == 0.5  # an amount rides as it is
     plain = sr.decode(sr.encode({"vibe": "ocean"}))  # a plain Make today: Breathe off, the Drops on auto
-    assert plain["breathe"] is False and plain["drop_mode"] == "auto"
+    assert plain["breathe"] == 0 and plain["drop_mode"] == "auto"
     old = "xf1." + __import__("base64").urlsafe_b64encode(__import__("zlib").compress(b'{"v":"ocean"}')).decode().rstrip("=")
-    assert sr.decode(old)["breathe"] is False and sr.decode(old)["drop_mode"] == "off"  # made before the keys: the old cut
+    assert sr.decode(old)["breathe"] == 0 and sr.decode(old)["drop_mode"] == "off"  # made before the keys: the old cut
 
 
-def _tiny_record(tmp_path: Path, shots: list[dict], breathe: bool) -> Path:
+def _tiny_record(tmp_path: Path, shots: list[dict], breathe: bool | float) -> Path:
     job = tmp_path / "job"
     work = job / "simple"
     work.mkdir(parents=True)
@@ -203,7 +207,7 @@ def test_breathe_re_cuts_with_no_gpu(tmp_path, monkeypatch):
     shots = custom_shots({"shots": plan_shots}, _song()["duration"])
     for s, raw in zip(shots, plan_shots):
         s.update({k: raw[k] for k in dense.PLAN_KEYS if k in raw})
-    job = _tiny_record(tmp_path, shots, breathe=True)
+    job = _tiny_record(tmp_path, shots, breathe=0.5)
     seen = []
 
     def spy(clips, shots_, audio, out, **kw):
@@ -215,11 +219,11 @@ def test_breathe_re_cuts_with_no_gpu(tmp_path, monkeypatch):
     monkeypatch.setattr(beatfx, "compose", spy)
     rec = dense.recut_from_cache(job, {"macros": {"intensity": 0.5, "chaos": 0.3}})
     assert any(s.get("rest") for s in seen[-1]) and any(s.get("fx_names") for s in seen[-1])
-    assert rec["recut_state"]["breathe"] is True and "rest" in rec["pacing"]["line"]
+    assert rec["recut_state"]["breathe"] == 0.5 and "rest" in rec["pacing"]["line"]
     rec = dense.recut_from_cache(job, {"breathe": False})  # Breathe off on the same morphs (the Drops still on auto)
     assert not any(s.get("rest") for s in seen[-1]) and not any(s.get("fx_names") for s in seen[-1] if s.get("ramp") is None)
-    assert rec["recut_state"]["breathe"] is False and rec["pacing"]["breathe"] is False
-    rec = dense.recut_from_cache(job, {"breathe": True, "drop_mode": "off"})
+    assert rec["recut_state"]["breathe"] == 0 and rec["pacing"]["breathe"] == 0
+    rec = dense.recut_from_cache(job, {"breathe": 0.5, "drop_mode": "off"})
     assert any(s.get("rest") for s in seen[-1]) and rec["recut_state"]["drop_mode"] == "off"
 
 
@@ -256,7 +260,7 @@ def test_breathe_holds_a_style_for_a_look_of_whole_bars():
     from collections import Counter
 
     shots, plan = _plan()
-    styles = pacing.styles(shots, {"breathe": True, "morph_style": "auto"}, plan["drop"], period=plan["period"])
+    styles = pacing.styles(shots, {"breathe": 0.5, "morph_style": "auto"}, plan["drop"], period=plan["period"])
     passages = pacing.passage_of(shots)
     two_bars = 8 * BEAT
     starts: dict[int, float] = {}

@@ -60,6 +60,14 @@ def _pin_exists(file: str) -> bool:
     return False
 
 
+def _breathe(raw) -> float:
+    """A row's Breathe: true is the bold profile (1.0), a number its amount; anything else (a missing key, a word) is
+    off, as every loved chain was cut."""
+    from xenoform.pacing import amount_of
+
+    return amount_of(raw) if isinstance(raw, (bool, int, float)) else 0.0
+
+
 def clean(row: dict) -> dict | None:
     """One preset as the desk can use it, or None when it is not one (no id, no name, or a vibe the registry does not know)."""
     from xenoform import effects, morph_pass, morph_style, morph_timing, pacing, simple_recipe, vibes
@@ -105,7 +113,7 @@ def clean(row: dict) -> dict | None:
         "look": look if look in _looks() else "auto",
         "foreshadow": foreshadow if foreshadow in simple_recipe.FORESHADOW else "auto",
         "backdrop": backdrop if backdrop in morph_pass.BACKDROPS else "plain",
-        "breathe": row.get("breathe") is True,
+        "breathe": _breathe(row.get("breathe")),
         "drop_mode": drop_mode if drop_mode in pacing.DROP_MODES else "off",
         "knobs": knobs,
         "seed": seed,
