@@ -172,10 +172,16 @@ def view(rec: dict, *, assembling: dict | None = None, elsewhere: bool = False) 
     if st == "done":
         out["video"] = f"/api/videos/{rec['id']}/video"
     left = [w for w in rec["windows"] if w.get("status") not in ("done",)]
-    est = ((rec.get("estimate") or {}).get("tiers") or {}).get(rec.get("tier") or "draft") or {}
-    total = float(est.get("seconds") or 0.0)
-    if total and c["morphs"]:
-        out["left_s"] = round(total * sum(int(w.get("morphs") or 0) for w in left) / max(1, c["morphs"]), 1)
+    morphs_left = sum(int(w.get("morphs") or 0) for w in left)
+    done = [w for w in rec["windows"] if w.get("status") == "done" and w.get("took_s")]
+    if done:  # the pace this song has kept so far (each window's own time over its morphs), then the assembly
+        per = sum(float(w["took_s"]) for w in done) / max(1, sum(int(w.get("morphs") or 0) for w in done))
+        out["left_s"] = round(per * morphs_left + (90.0 if morphs_left else 0.0), 1)
+    else:
+        est = ((rec.get("estimate") or {}).get("tiers") or {}).get(rec.get("tier") or "draft") or {}
+        total = float(est.get("seconds") or 0.0)
+        if total and c["morphs"]:
+            out["left_s"] = round(total * morphs_left / max(1, c["morphs"]), 1)
     return out
 
 
