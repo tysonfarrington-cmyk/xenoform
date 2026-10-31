@@ -1,6 +1,6 @@
 # Vibes
 
-Xenoform has 30 vibes in `configs/vibes.json`, which `src/xenoform/vibes.py` loads: 12 featured and None on the desk, 9 more behind More vibes, and 8 not yet ready (`ready: false`), which the desk never shows. Six more come from the original set (`vibes.ORIGINAL_META`, with their looks in `morph_pass.VIBE_LOOK` and `configs/autotune.json`) and sit behind More vibes too, so the desk lists 28: the 12 featured and None, then 15 more behind More vibes. The eight not ready are `glass-prism`, `hologram`, `seapunk`, `psy-fractal`, `ink-water`, `thermal`, `crt-phosphor` and `alien-botanical`.
+Xenoform has 30 vibes in `configs/vibes.json`, which `src/xenoform/vibes.py` loads: 11 featured and None on the desk, 10 more behind More vibes, and 8 not yet ready (`ready: false`), which the desk never shows. Six more come from the original set (`vibes.ORIGINAL_META`, with their looks in `morph_pass.VIBE_LOOK` and `configs/autotune.json`) and sit behind More vibes too, so the desk lists 28: the 11 featured and None, then 16 more behind More vibes. Wet paint was featured until 31 October 2026 (Tys: its colours are "pretty terrible"); it and the odd machine carry a `taste` note saying why they are off the first row, and keep their entry, stills, strip, card and example cut, so either still works when chosen by name. The eight not ready are `glass-prism`, `hologram`, `seapunk`, `psy-fractal`, `ink-water`, `thermal`, `crt-phosphor` and `alien-botanical`.
 
 Each registry entry carries: `look` (the morph prompt fragment), `negative`, `palette`, `lighting`, `material`, `motion` (notes for the edit), `ltx` (LTX-Video 0.9.5 morph settings: steps, cfg, img_compression, guide_end_strength), `transitions` (recommended per boundary: drop, switch, beat, silence), `still_style` (the Z-Image Turbo prompt used for its stills) and `tags` (for the source library).
 
@@ -19,10 +19,10 @@ Autotune results in `configs/autotune.json` win over a registry `ltx` block. Bac
 | `liquid-gold` | Molten gold | Molten gold that pours, drips and cools to a polish. | match-cut / chrome-refract / cut |
 | `ink-wash` | Ink & paper | Sumi ink blooming across wet paper. | match-cut / depth-parallax / cut |
 | `cyberspace-95` | Cyberspace 1995 | Green wireframe on an endless grid, 1995. | match-cut / flow-carry / cut |
-| `wet-paint` | Wet paint | Thick glossy paint folding into the next shape. | match-cut / flow-carry / cut |
 | `shadow-self` | Shadow self | A backlit silhouette and smoke in one shaft of light. | match-cut / echo-trail / cut |
 | `botanical` | Bloom timelapse | A single bloom on black, scrubbed by the song. | match-cut / lens-breath / cut |
 | `none` | None | No vibe: the things as they are, their own materials, plain light, no grade. | match-cut / depth-parallax / cut |
+| `wet-paint` | Wet paint | Thick glossy paint folding into the next shape. (off the featured cards since 31 Oct) | match-cut / flow-carry / cut |
 | `paper-summer` | Paper summer | A paper boat crosses a bright kitchen. | none recorded |
 | `bloom` | Bloom | A flower opens on a green hill. | none recorded |
 | `neon-night` | Neon night | A neon sign holds one quiet street. | none recorded |

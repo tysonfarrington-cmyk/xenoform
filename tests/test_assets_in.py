@@ -112,7 +112,7 @@ def test_the_licence_lines_name_the_models_that_made_the_showcase():
 # ---------------------------------------------------------------------------------------------- example cuts and cards
 
 CUTS = ROOT / "examples" / "cuts"
-FEATURED = ("chrome-mercury", "neon-noir", "porcelain-kintsugi", "bioluminescent", "risograph", "iridescent-glass",
+EXAMPLE_VIBES = ("chrome-mercury", "neon-noir", "porcelain-kintsugi", "bioluminescent", "risograph", "iridescent-glass",  # the 13 that were featured on 29 Oct
             "liquid-gold", "ink-wash", "cyberspace-95", "wet-paint", "shadow-self", "botanical", "none")
 NOT_BUNDLED_NAMES = ("korn", "tool_", "prodigy", "zeds", "xf_")  # the not-bundled Suno demos' file names name artists: no record carries them
 
@@ -124,7 +124,7 @@ def test_every_example_cut_is_a_540p_silent_excerpt_with_its_record():
     songs = {s["id"] for s in _json(ROOT / "examples" / "songs" / "songs.json")["songs"]}
     shipped = _shipped_files()
     rows = manifest["cuts"]
-    assert sorted(r["vibe"] for r in rows) == sorted(FEATURED) and len({r["id"] for r in rows}) == 13
+    assert sorted(r["vibe"] for r in rows) == sorted(EXAMPLE_VIBES) and len({r["id"] for r in rows}) == 13
     assert sorted(p.name for p in CUTS.glob("*.mp4")) == sorted(r["file"] for r in rows)
     for r in rows:
         path = CUTS / r["file"]
@@ -173,11 +173,11 @@ def test_a_vibe_row_carries_its_example_and_the_desk_serves_it(tmp_path, monkeyp
 
     rows = {r["id"]: r for r in vibes.catalog()}
     with_example = {vid for vid, r in rows.items() if r["example"]}
-    assert with_example == set(FEATURED)
+    assert with_example == set(EXAMPLE_VIBES)  # wet paint left the featured row, and kept its example cut
     assert rows["chrome-mercury"]["example"] == "/examples/cuts/chrome-mercury.mp4" and rows["ocean"]["example"] == ""
     client = TestClient(_ui.create_app())
     served = client.get("/api/vibes").json()["vibes"]
-    assert {v["id"] for v in served if v["example"]} == set(FEATURED)
+    assert {v["id"] for v in served if v["example"]} == set(EXAMPLE_VIBES)
     cuts = client.get("/api/examples/cuts").json()["cuts"]
     assert [c["vibe"] for c in cuts] == [r["vibe"] for r in _json(CUTS / "cuts.json")["cuts"]] and all(c["url"] and c["recipe"] for c in cuts)
     video = client.get("/examples/cuts/none.mp4")

@@ -1,10 +1,13 @@
 import json
 from pathlib import Path
 from xenoform import vibes
-def test_twelve_featured_distinct_and_none():
+def test_eleven_featured_distinct_and_none():
+    """Twelve on the desk's first row: eleven vibes and None. Wet paint left the featured cards on 31 Oct (Tys: its colours
+    are "pretty terrible"); it and the odd machine stay in the registry, behind More vibes, with everything they ship."""
     f = [v for v in vibes.every() if v.get("featured", 0) > 0]
-    assert len(f) == 13 and f[-1]["id"] == "none"  # Tys, 29 Oct: "in vibes we have an option for none as well"
-    assert len({(v["palette"], v["material"]) for v in f}) == 13
+    assert len(f) == 12 and f[-1]["id"] == "none"  # Tys, 29 Oct: "in vibes we have an option for none as well"
+    assert [v["featured"] for v in f] == list(range(1, 13)) and "wet-paint" not in {v["id"] for v in f}
+    assert len({(v["palette"], v["material"]) for v in f}) == 12
     assert sum(1 for v in f if "shell" in (v.get("look", "") + v.get("still_style", "")).lower()) <= 1
     root = Path(vibes.REGISTRY).parents[1] / "src/xenoform/ui_static/vibes"
     assert all((root / f"{v['id']}.jpg").is_file() for v in f)

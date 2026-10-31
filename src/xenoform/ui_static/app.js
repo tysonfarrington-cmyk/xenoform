@@ -366,7 +366,6 @@ const V6_VIBES = [
   {"id": "liquid-gold", "name": "Molten gold", "line": "Molten gold that pours, drips and cools to a polish.", "palette": "gold", "register": "pynchon", "morph": true, "dark": true, "tone": "dark", "still": "/static/vibes/liquid-gold.jpg", "featured": true},
   {"id": "ink-wash", "name": "Ink & paper", "line": "Sumi ink blooming across wet paper.", "palette": "sumi", "register": "pynchon", "morph": true, "dark": false, "tone": "bright", "still": "/static/vibes/ink-wash.jpg", "featured": true},
   {"id": "cyberspace-95", "name": "Cyberspace 1995", "line": "Green wireframe on an endless grid, 1995.", "palette": "green-cyan", "register": "pynchon", "morph": true, "dark": true, "tone": "dark", "still": "/static/vibes/cyberspace-95.jpg", "featured": true},
-  {"id": "wet-paint", "name": "Wet paint", "line": "Thick glossy paint folding into the next shape.", "palette": "primary", "register": "pynchon", "morph": true, "dark": false, "tone": "bright", "still": "/static/vibes/wet-paint.jpg", "featured": true},
   {"id": "shadow-self", "name": "Shadow self", "line": "A backlit silhouette and smoke in one shaft of light.", "palette": "noir", "register": "pynchon", "morph": true, "dark": true, "tone": "dark", "still": "/static/vibes/shadow-self.jpg", "featured": true},
   {"id": "botanical", "name": "Bloom timelapse", "line": "A single bloom on black, scrubbed by the song.", "palette": "natural", "register": "pynchon", "morph": true, "dark": true, "tone": "dark", "still": "/static/vibes/botanical.jpg", "featured": true},
   {"id": "none", "name": "None", "line": "No vibe: the things as they are, their own materials, plain light, no grade.", "palette": "neutral", "register": "pynchon", "morph": true, "dark": true, "tone": "dark", "still": "/static/vibes/none.jpg", "featured": true}
@@ -503,6 +502,17 @@ const VIBES_LEGACY = [
     dark: true,
     tone: "dark",
     still: "/static/vibes/odd-machine.jpg",
+  },
+  {
+    id: "wet-paint",  // off the featured cards on 31 Oct (Tys: its colours are "pretty terrible"); still in the registry, behind More vibes
+    name: "Wet paint",
+    line: "Thick glossy paint folding into the next shape.",
+    palette: "primary",
+    register: "pynchon",
+    morph: true,
+    dark: false,
+    tone: "bright",
+    still: "/static/vibes/wet-paint.jpg",
   },
   {
     id: "brutalist",
