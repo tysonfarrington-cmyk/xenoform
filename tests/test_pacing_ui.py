@@ -23,18 +23,18 @@ def test_the_shape_row_sits_beside_timing_in_both_knob_blocks():
 
 
 def test_the_shape_is_plumbed_like_the_timing():
-    assert "breathe: !!(state.easy && state.easy.breathe)," in APP and 'drop_mode: (state.easy && state.easy.dropMode) || "auto",' in APP
+    assert "breathe: breatheValue(state.easy)," in APP and "function breatheValue(easy)" in APP and 'drop_mode: (state.easy && state.easy.dropMode) || "auto",' in APP
     saved = APP.split("const EASY_SAVED_KEYS = [")[1].split("];")[0]
     assert '"breathe"' in saved and '"dropMode"' in saved
     assert 'act === "easy-breathe"' in APP and 'act === "easy-drops"' in APP
     knobs = APP.split("const KNOB_ACTS = {")[1].split("};")[0]
     assert '"easy-breathe": "Breathe"' in knobs and '"easy-drops": "Drops"' in knobs
     recut = APP.split("async function recutWithKnobs()")[1].split("async function easyMake")[0]
-    assert "breathe: !!state.easy.breathe" in recut and 'drop_mode: state.easy.dropMode || "auto"' in recut
+    assert "breathe: breatheValue(state.easy)" in recut and 'drop_mode: state.easy.dropMode || "auto"' in recut
     recipe = APP.split("function applySimpleRecipe(recipe)")[1].split("\n}\n")[0]
-    assert "easy.breathe = recipe.breathe === true;" in recipe and "easy.dropMode" in recipe
+    assert "easy.breathe = breatheValue({ breathe: recipe.breathe });" in recipe and "easy.dropMode" in recipe
     options = APP.split("async function loadSimpleOptions()")[1].split("\n}\n")[0]
-    assert 'breathe: easy.breathe ? "on" : "off"' in options and "drop_mode: easy.dropMode" in options
+    assert 'breathe: (() => { const b = breatheValue(easy); return b === true ? "on" : b ? String(b) : "off"; })(),' in options and "drop_mode: easy.dropMode" in options
     assert 'stemOrbit: true,\n          // the shape (xenoform.pacing): Breathe off until Tys has judged the sheets, the Drops on Auto\n          breathe: false, dropMode: "auto" },' in APP
 
 
@@ -55,10 +55,10 @@ def test_the_lane_shows_the_passages_the_heat_and_the_rests():
     secs = got["sections"]
     assert [(s["section"], s.get("drop_run")) for s in secs] == [("intro", None), ("drop", 0), ("drop", 1)]  # two runs, two passages
     assert secs[0]["rests"] == 1 and secs[1]["heat"] == 1.0 and secs[2]["heat"] == 0.5
-    assert got["plan_line"].startswith("2 drops") and got["breathe"] is True and got["drop_mode"] == "auto" and got["rests"] == 1
+    assert got["plan_line"].startswith("2 drops") and got["breathe"] == 1.0 and got["drop_mode"] == "auto" and got["rests"] == 1
     old = lane.build({"shots": [{"start": 0.0, "end": 2.0, "section": "calm"}, {"start": 2.0, "end": 4.0, "section": "calm"}],
                       "stills": ["a/0_x.jpg", "a/1_y.jpg", "a/2_z.jpg"], "clips": ["c", "c"]}, "v2")
-    assert [s["section"] for s in old["sections"]] == ["calm"] and old["breathe"] is False and old["drop_mode"] == "off"
+    assert [s["section"] for s in old["sections"]] == ["calm"] and old["breathe"] == 0 and old["drop_mode"] == "off"
     assert old["plan_line"] == ""
     timeline = APP.split("function shotsLane(easy)")[1].split("\nfunction ")[0]
     assert 'class="tl-rest"' in timeline and "lane.plan_line" in timeline and "sec.heat" in timeline
@@ -91,5 +91,5 @@ def test_a_loved_chain_comes_back_in_the_shape_it_was_cut_in(tmp_path, monkeypat
     got = {p["id"]: (presets.body(p)["breathe"], presets.body(p)["drop_mode"]) for p in presets.load()}
     assert got == {"said": (True, "max"), "silent": (False, "off"), "odd": (False, "off")}
     apply = APP.split("function applyPreset(id) {", 1)[1].split("function ideaReadingLine(", 1)[0]
-    assert "easy.breathe = body.breathe === true;" in apply and 'DROP_MODES.includes(body.drop_mode) ? body.drop_mode : "off"' in apply
+    assert "easy.breathe = breatheValue({ breathe: body.breathe });" in apply and 'DROP_MODES.includes(body.drop_mode) ? body.drop_mode : "off"' in apply
     assert "loadSimpleOptions().then(render)" in apply  # the Shape moves the plan: the count and the clock are asked again
