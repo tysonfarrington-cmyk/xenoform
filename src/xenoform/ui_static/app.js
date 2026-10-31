@@ -5728,9 +5728,14 @@ function stemsLaneBlock(easy, lane) {
     const hue = STEM_HUES[String(l.stem).toLowerCase()] != null ? STEM_HUES[String(l.stem).toLowerCase()] : 260;
     return `<div class="stem-lane-row${l.stem === lane.layer ? " on" : ""}">
         <button type="button" class="text stem-lane-name" data-act="easy-stems-layer" data-value="${esc(l.stem)}">${esc(stemLabel(l.stem))}${l.lead ? " · lead" : ""}</button>
-        ${stemSpark(l.envelope, l.alpha, hue)}
-        <label class="stem-pro">Prominence <input type="range" class="stem-mix-pro" min="0" max="1" step="0.05" value="${pro}" data-stem="${esc(l.stem)}" aria-label="${esc(l.stem)}: prominence"><b>${pro.toFixed(2)}</b></label>
-        <select class="stem-mix-blend" data-stem="${esc(l.stem)}" aria-label="${esc(l.stem)}: blend">${STEM_BLENDS.map(([v, t]) => `<option value="${v}"${v === bl ? " selected" : ""}>${t}</option>`).join("")}</select>
+        <div class="stem-lane-body">
+          ${stemSpark(l.envelope, l.alpha, hue)}
+          <div class="stem-ctl">
+            <label class="stem-pro">Prominence <input type="range" class="stem-mix-pro" min="0" max="1" step="0.05" value="${pro}" data-stem="${esc(l.stem)}" aria-label="${esc(l.stem)}: prominence"><b>${pro.toFixed(2)}</b></label>
+            <label class="stem-blend-label">Blend <select class="stem-mix-blend" data-stem="${esc(l.stem)}" aria-label="${esc(l.stem)}: blend">${STEM_BLENDS.map(([v, t]) => `<option value="${v}"${v === bl ? " selected" : ""}>${t}</option>`).join("")}</select></label>
+            <span class="note">${esc(String(l.shots))} shots${Number(l.silent_s) ? ` · silent ${Number(l.silent_s).toFixed(1)} s` : ""}${Number(l.drops_kept) ? ` · ${l.drops_kept} drop${Number(l.drops_kept) === 1 ? "" : "s"} carried` : ""}</span>
+          </div>
+        </div>
       </div>`;
   }).join("");
   const dirty = Object.keys(mix.prominence).length + Object.keys(mix.blend).length;
