@@ -115,7 +115,14 @@ def _read_json(path: Path, default):
 def _write_json(path: Path, data) -> None:
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
-    os.replace(tmp, path)
+    for attempt in range(40):  # Windows refuses the replace while a reader has the file open (the desk polls the counts
+        try:                   # while a grow or an import writes): the reader lets go within a few milliseconds
+            os.replace(tmp, path)
+            return
+        except PermissionError:
+            if attempt == 39:
+                raise
+            time.sleep(0.05)
 
 
 # ------------------------------------------------------------------------------------------------ catalogue

@@ -51,6 +51,9 @@ _GUIDES: dict[str, Path] = {}
 _HEROES: dict[str, Path] = {}
 _OWN: dict[str, Path] = {}  # own_id -> folder of the user's own clips and images (POST /api/own)
 _STILLS_JOB: dict[str, Any] = {}  # the one stills-library grow at a time (POST /api/stills/grow): status, vibe, done, kept
+IMPORT_EXTS = (".png", ".jpg", ".jpeg", ".webp")  # what Import a folder takes (stills.import_folder)
+MAX_IMPORT = 300                                   # pictures one import takes; a bigger folder is split
+IMPORT_S_PER_STILL = 0.25                          # the checks on this machine, about a quarter second a picture
 _JUDGE_HITS: dict[str, list[float]] = {}
 _JUDGE_LIMIT = 6
 _JUDGE_WINDOW = 60.0
@@ -1419,6 +1422,79 @@ def create_app(cfg: dict | None = None):
             if running:
                 _STILLS_JOB["cancel"] = True
         return {"ok": True, "stopping": running}
+
+    @app.post("/api/stills/import")
+    def library_import(body: dict) -> dict:
+        """Import a folder of pictures into a vibe's library (``stills.import_folder``, the CLI's ``stills import`` on the
+        desk): every png, jpg or webp in ``folder`` (a folder on this machine) or in the files dropped on the desk
+        (``own_id``), each one through the usual checks (``stills.check``: backdrop, size, cropped, soft, duplicate; a scene
+        or a setting by its relaxed ones) and kept as the vibe's next numbered still, or set aside in its ``rejected/``
+        folder with the reasons in the name. ``kind`` (object, scene or setting) is what they are kept as; ``own`` lists
+        objects as your own shapes; ``origin`` is the credit their rows carry. The noun is each file's name (a leading
+        number dropped). No GPU; one import or grow at a time, in the background: poll GET /api/stills."""
+        from xenoform import stills
+        from xenoform import vibes as _vibes
+
+        vibe = str(body.get("vibe") or "").strip()
+        if not vibe:
+            raise HTTPException(400, "Pick a vibe first.")
+        if vibe not in _vibes.ids() and vibe not in stills.catalogue():
+            raise HTTPException(400, f"{vibe} is not a vibe this desk knows.")
+        kind = str(body.get("kind") or "object").strip().lower()
+        if kind not in stills.KINDS:
+            raise HTTPException(400, "Import them as things, scenes or places.")
+        own = bool(body.get("own")) and kind == "object"
+        folder_text = str(body.get("folder") or "").strip().strip('"')
+        own_id = str(body.get("own_id") or "")
+        if own_id and not folder_text:
+            with _LOCK:
+                dropped = _OWN.get(own_id)
+            folder_text = str(dropped) if dropped is not None else ""
+        if not folder_text:
+            raise HTTPException(400, "Type the folder of pictures to import (a folder on this machine).")
+        folder = Path(folder_text).expanduser()
+        if not folder.is_dir():
+            raise HTTPException(400, f"{folder} is not a folder on this machine.")
+        folder = folder.resolve()
+        library = stills.root().resolve()
+        if folder == library or (folder.is_relative_to(library) and folder.name != "rejected"):
+            # a vibe's rejected/ folder may be run again after the checks change; the library itself is already in
+            raise HTTPException(400, "That folder is the stills library itself: its stills are in already.")
+        files = sorted(p for p in folder.iterdir() if p.is_file() and p.suffix.lower() in IMPORT_EXTS)
+        if not files:
+            raise HTTPException(400, f"No png, jpg or webp pictures in {folder}.")
+        if len(files) > MAX_IMPORT:
+            raise HTTPException(400, f"{len(files)} pictures in {folder}: import at most {MAX_IMPORT} at a time.")
+        origin = str(body.get("origin") or "").strip()[:200] or f"imported on the desk from {folder.name}, {time.strftime('%Y-%m-%d')}"
+        with _LOCK:  # the same slot as a grow: the library takes one job at a time
+            if _STILLS_JOB.get("status") in ("running", "starting"):
+                raise HTTPException(409, "The library is busy growing or importing; wait for it to finish or stop it.")
+            _STILLS_JOB.clear()
+            _STILLS_JOB.update({"status": "running", "action": "import", "vibe": vibe, "own": own, "kind": kind,
+                                "asked": len(files), "done": 0, "kept": 0, "started": time.time(),
+                                "eta_s": round(IMPORT_S_PER_STILL * len(files), 1), "note": "", "cancel": False,
+                                "folder": str(folder)})
+
+        def progress(done: int, total: int, kept: int) -> None:
+            with _LOCK:
+                _STILLS_JOB.update({"done": int(done), "asked": int(total), "kept": int(kept)})
+
+        def run() -> None:
+            try:
+                result = stills.import_folder(vibe, folder, origin=origin, own=own, progress=progress, kind=kind)
+                note = stills.summary_line(result)
+                if result.get("skipped"):
+                    note += f" · skipped {result['skipped']} (banned or already in the pool)"
+                with _LOCK:
+                    _STILLS_JOB.update({"status": "done", "result": result, "note": note, "done": result.get("asked", 0),
+                                        "kept": result.get("kept", 0)})
+            except Exception as exc:  # the desk shows the reason; whatever was kept before it stays
+                log.exception("stills import %s failed", vibe)
+                with _LOCK:
+                    _STILLS_JOB.update({"status": "error", "note": str(exc)[:300]})
+
+        threading.Thread(target=run, name=f"stills-import-{vibe}", daemon=True).start()
+        return {"ok": True, "vibe": vibe, "kind": kind, "own": own, "asked": len(files), "folder": str(folder)}
 
     @app.post("/api/hero")
     async def add_hero(file: UploadFile = File(...)) -> dict:

@@ -114,7 +114,7 @@ function shortcutLabel() {
 }
 
 // The last session's vibe and Fine-tune choices survive a reload or a desk restart (the song cannot: uploads live on the server).
-const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow", "scenes", "pins", "feelSig", "batchN", "batchVary", "morphSource", "scenesChosen", "morphStyle", "morphTiming", "effects", "backdrop", "breathe", "dropMode"];
+const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow", "scenes", "pins", "feelSig", "batchN", "batchVary", "morphSource", "scenesChosen", "morphStyle", "morphTiming", "effects", "backdrop", "breathe", "dropMode", "importFolder", "importKind"];
 // The Model row's tiers as the desk names them (quality_tier: draft, fast, final, cloud)
 const TIER_LABEL = { draft: "Draft", fast: "Fast Final", final: "Final", cloud: "Cloud Final" };
 function saveEasy() {
@@ -1408,6 +1408,10 @@ function stillsCount(easy) {
 }
 function stillsStatus(easy) {
   const job = (state.stills || {}).job || {};
+  if ((job.status === "running" || job.status === "starting") && job.action === "import") {
+    // Import a folder: the pictures through the usual checks, no GPU
+    return `Importing ${job.kind === "scene" ? "scenes" : job.kind === "setting" ? "places" : "stills"} into ${job.vibe}: ${job.done || 0} of ${job.asked || 0} checked · kept ${job.kept || 0}`;
+  }
   if (job.status === "running" || job.status === "starting") {
     const eta = Number(job.eta_s || 0) - (Date.now() / 1000 - Number(job.started || 0));
     const left = eta > 0 ? `about ${clockText(eta)} left` : (job.done ? "finishing" : "loading the model, the first render takes longer");
@@ -1439,7 +1443,41 @@ function stillsRow(easy) {
       <button type="button" class="ghost" data-act="easy-make-shapes"${running || !easy.vibe ? " disabled" : ""} title="Render the shapes you typed in this vibe's material">Make them</button>
       ${running ? '<button type="button" class="ghost" data-act="easy-grow-stop">Stop</button>' : ""}
     </div>
+    ${importRow(easy, running)}
     <p class="note">${esc(note)}</p>`;
+}
+// Import a folder (POST /api/stills/import, stills.import_folder): pictures made elsewhere into this vibe's library, each one
+// through the same checks as a grown still and kept as a thing, a scene or a place (the noun is the file's name). No GPU.
+const IMPORT_KINDS = [["object", "Things"], ["scene", "Scenes"], ["setting", "Places"]];
+function importRow(easy, running) {
+  const kind = IMPORT_KINDS.some(([id]) => id === easy.importKind) ? easy.importKind : "object";
+  const kinds = IMPORT_KINDS.map(([id, label]) => `<option value="${id}"${id === kind ? " selected" : ""}>${label}</option>`).join("");
+  return `<div class="simple-seg own-row library-row library-import"><span>Import a folder</span>
+      <label class="ghost cloud-toggle">Folder <input type="text" id="easy-import-folder" value="${esc(easy.importFolder || "")}" spellcheck="false" aria-label="A folder of pictures on this machine" placeholder="C:\\Users\\you\\Pictures\\shapes"></label>
+      <label class="ghost cloud-toggle">as <select id="easy-import-kind" aria-label="Import them as">${kinds}</select></label>
+      <button type="button" class="ghost" data-act="easy-import-folder"${running || !easy.vibe ? " disabled" : ""} title="Run every png, jpg or webp in the folder through this vibe's checks (backdrop, size, cropped, soft, duplicate) and keep the ones that pass, named by their file names">Import</button>
+    </div>`;
+}
+async function importStills() {
+  if (!state.easy || !state.easy.vibe) return;
+  const folder = (state.easy.importFolder || "").trim();
+  if (!folder) {
+    state.easy.stillsNote = "Type the folder of pictures to import first.";
+    render();
+    return;
+  }
+  const body = { vibe: state.easy.vibe, folder, kind: state.easy.importKind || "object" };
+  state.easy.stillsNote = "Checking the pictures...";
+  render();
+  const response = await api("/api/stills/import", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    state.easy.stillsNote = data.detail || "The import did not start.";
+    render();
+    return;
+  }
+  state.easy.stillsNote = "";
+  loadStills(true);
 }
 
 // The idea line, its reading and its help: what an object cut morphs through (a clips cut has no objects to name).
@@ -4158,6 +4196,8 @@ document.addEventListener("click", async (event) => {
     growStills(true);
   } else if (act === "easy-grow-stop") {
     api("/api/stills/stop", { method: "POST" }).then(() => loadStills(true));
+  } else if (act === "easy-import-folder") {
+    importStills();
   } else if (act === "easy-chain-slot") {
     const slot = Number(el.dataset.slot);
     state.easy.chainPick = state.easy.chainPick === slot ? null : slot;
@@ -4698,6 +4738,11 @@ document.addEventListener("input", (event) => {
   } else if (target.id === "easy-own-shapes") {
     state.easy.ownShapes = target.value;
     state.easy.stillsNote = "";
+  } else if (target.id === "easy-import-folder") {
+    state.easy.importFolder = target.value;
+    state.easy.stillsNote = "";
+  } else if (target.id === "easy-import-kind") {
+    state.easy.importKind = target.value;
   } else if (target.id === "easy-own-folder") {
     state.easy.ownFolder = target.value;
     state.easy.ownId = "";  // one source at a time: a typed folder replaces dropped files
