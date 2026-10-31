@@ -389,6 +389,11 @@ same composite byte for byte; the suite green with the fake split.
     a beat, refusing beyond that with a line that says the limit; the main drop run is the heaviest by heat times
     length and the chosen vibe owns it (ZedsDead v1: Ferrofluid moves to the 23.7 s run at 2:25). Still open: a
     rest inside a window is smoothed by the lag fix within a shot.
+15. Clips pacing (Tys, 1 Nov: build it): Clips mode gets the whole pacing engine, with rests that never freeze film
+    (a rest in clips is the clip playing on; a morph lands on the incoming clip's first frame), the taste rules for
+    clips (no clip twice, black-and-white film as a note not a ban), and the whole-song maker takes clips. An Opus
+    builder started 1 Nov from 346d766 (desk 47335; proof on ZedsDead v2 in Desktop/xeno_clips_1nov, stacked plain
+    over Breathe with a still-picture count).
 
 ## 9. Working rules for every session
 
