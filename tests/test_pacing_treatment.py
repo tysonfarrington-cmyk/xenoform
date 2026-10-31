@@ -34,13 +34,13 @@ def _shaped(shots, body, **kw):
     work = copy.deepcopy(shots)
     for s in work:
         s["frames"] = int(round(float(s["seconds"]) * 24))
-    pacing.shape(work, {"intensity": 0.5, "chaos": 0.3}, breathe=pacing.breathe_of(body), drop_mode=pacing.drop_mode_of(body),
+    pacing.shape(work, {"intensity": 0.5, "chaos": 0.3}, breathe=pacing.breathe_amount(body), drop_mode=pacing.drop_mode_of(body),
                  beats=_song()["beats"], look="house", **kw)
     return work
 
 
 def test_every_drop_run_opens_with_an_event():
-    for extra in ({}, {"breathe": True}):  # a plain Make, and Breathe
+    for extra in ({}, {"breathe": 0.5}):  # a plain Make, and Breathe
         shots, plan, body = _plan(**extra)
         entries = [i for i, s in enumerate(shots) if s.get("event") == "drop"]
         assert len(entries) == 5 and all(shots[i].get("boundary") == "drop" for i in entries)
@@ -59,7 +59,7 @@ def test_every_drop_run_opens_with_an_event():
         capped = dense.boundary_transitions(work, "chrome-mercury", seed=1)
         assert sum(1 for i in entries if trans[i]) == 5 and sum(1 for i in entries if capped[i]) <= 2
         picks = B.pick(work, {"intensity": 0.5, "chaos": 0.3}, _song()["beats"], 24, seed=2, premium=trans,
-                       paced={"breathe": pacing.breathe_of(body)})
+                       paced={"breathe": pacing.breathe_amount(body)})
         for i in entries:  # the run's next handoff takes its kind, the drop transition holding its first
             assert picks[i] is None and picks[i + 1] is not None
         bare = B.pick(work, {"intensity": 0.5, "chaos": 0.3}, _song()["beats"], 24, seed=2, paced={"breathe": False})
@@ -67,7 +67,7 @@ def test_every_drop_run_opens_with_an_event():
 
 
 def test_the_four_bars_before_a_run_ramp():
-    for extra, step in (({}, 4.0), ({"breathe": True}, 2.0)):
+    for extra, step in (({}, 4.0), ({"breathe": 0.5}, 2.0)):
         shots, plan, body = _plan(**extra)
         ramps = [s for s in shots if s.get("ramp") is not None]
         assert ramps and all(s["section"] not in ("drop", "drop_late") for s in ramps)
@@ -160,9 +160,9 @@ def test_a_drop_lands_on_a_fresh_family():
 def test_a_ramp_cuts_on_the_drums_strong_hits():
     beats = [round(i * 0.5, 4) for i in range(int(64 / 0.5))]
     secs = [{"label": "calm", "start": 0.0, "end": 32.0, "level": 0.3}, {"label": "drop", "start": 32.0, "end": 64.0, "level": 1.0}]
-    plain = pacing.song_plan(64.0, beats, secs, 32.0, breathe=True)
+    plain = pacing.song_plan(64.0, beats, secs, 32.0, breathe=0.5)
     hits = [24.5, 26.5, 28.5, 30.5]  # odd beats of the ramp (24 to 32 s)
-    on = pacing.song_plan(64.0, beats, secs, 32.0, breathe=True, hits=hits)
+    on = pacing.song_plan(64.0, beats, secs, 32.0, breathe=0.5, hits=hits)
     cuts = lambda p: sorted(round(s["start"], 2) for s in p["shots"] if 24.0 <= s["start"] < 32.0)  # noqa: E731
     assert set(cuts(on)) & set(hits) and not set(cuts(plain)) & set(hits)
 
@@ -189,7 +189,7 @@ def test_a_window_end_leaves_no_sliver():
     """Nothing under two beats, the last shot included: the 1:45 window of Glitch Out under Breathe stopped 0.9 s into
     its last ramp shot (the window ends where it ends, mid-bar); the end now folds into the shot before it."""
     for start in (105.0, 0.0, 60.0):
-        for extra in ({"breathe": True}, {}, {"drop_mode": "max"}):
+        for extra in ({"breathe": True}, {"breathe": 0.5}, {}, {"drop_mode": "max"}):
             win = _window(start)
             shots, plan, _ = _plan(song=win, drop=None, **extra)
             assert plan["name"] == "story" and shots[-1]["end"] == 30.0

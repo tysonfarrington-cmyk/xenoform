@@ -96,7 +96,7 @@ NO_KIND_ROLES = ("intro", "build", "outro")  # Breathe: plain handoffs here (the
 
 
 def _pick_paced(shots: list[dict], macros: dict | None, beats, fps: int, *, seed: int, premium: list | None, smear: str,
-                breathe: bool) -> list[dict | None]:
+                breathe: bool | float) -> list[dict | None]:
     """``pick`` for a cut the pacing engine shaped (``pacing.shape``): each passage takes the share of its handoffs its
     own Chaos asks for (a shot's ``chaos``: the knob, capped by the passage under Breathe, lifted in a drop by its heat;
     none in an intro, a build or an outro under Breathe); a drop run's first handoff and every planted ``event`` come
@@ -132,8 +132,15 @@ def _pick_paced(shots: list[dict], macros: dict | None, beats, fps: int, *, seed
     def event(i: int) -> bool:  # a drop run's first handoff (or the next one), or a long run's planted kind
         return entry(i) or i in follow or str(shots[i].get("event") or "") == "kind"
 
+    from xenoform import pacing as _pc
+
+    amount = _pc.amount_of(breathe)
+    scenes = amount > 0 and _pc.boldness(amount) >= 0.5
+
     def share_at(i: int) -> float:
-        if breathe and role(i) in NO_KIND_ROLES:
+        if amount > 0 and role(i) in NO_KIND_ROLES:
+            return 0.0
+        if scenes and role(i) in _pc.SCENE_ROLES:  # full Breathe's scenes hand over plainly: one look a passage
             return 0.0
         try:
             c = float(shots[i].get("chaos", p["chaos"]))
@@ -219,7 +226,7 @@ def pick(shots: list[dict], macros: dict | None, beats, fps: int, *, seed: int =
     never the drop, "on" lets it in like the other kinds. ``paced`` (``{"breathe": bool}``, a cut the pacing engine
     shaped) picks by passage instead (``_pick_paced``)."""
     if paced is not None:
-        return _pick_paced(shots, macros, beats, fps, seed=seed, premium=premium, smear=smear, breathe=bool(paced.get("breathe")))
+        return _pick_paced(shots, macros, beats, fps, seed=seed, premium=premium, smear=smear, breathe=paced.get("breathe") or 0.0)
     smear = smear_of(smear)
     n = len(shots)
     out: list[dict | None] = [None] * n

@@ -49,6 +49,13 @@ def choices() -> dict:
             "morph_styles": [{"id": s, "label": _MS.LABELS[s], "note": _MS.NOTES[s]} for s in _MS.STYLES]}
 
 
+def _amount(raw) -> float:
+    """A record's Breathe as an amount 0..1 (true is 1.0; an older record's flag reads the same)."""
+    from xenoform.pacing import amount_of
+
+    return amount_of(raw, 0.0)
+
+
 def build(info: dict, video_id: str = "") -> dict:
     shots = list(info.get("shots") or [])
     files = [str(f) for f in (info.get("stills") or [])]
@@ -192,10 +199,21 @@ def build(info: dict, video_id: str = "") -> dict:
                              **({"drop_run": r["drop_run"], "heat": r["heat"]} if r.get("drop_run") is not None else {})})
         elif sections and r["section"] == sections[-1]["section"]:
             sections[-1]["end"] = r["end"]
-    for sec in sections:  # the rests a passage holds (Breathe)
-        held = sum(1 for r in rows if r.get("rest") and sec["start"] - 1e-6 <= r["start"] < sec["end"] - 1e-6)
+    paced = any(s.get("passage") is not None for s in shots)
+    beat_list = sorted(float(b) for b in (info.get("beats") or []))
+    gaps = sorted(y - x for x, y in zip(beat_list, beat_list[1:]) if y > x)
+    bar = 4.0 * gaps[len(gaps) // 2] if gaps else 0.0
+    for sec in sections:  # the rests a passage holds (Breathe) and how long it holds a shot
+        mine = [r for r in rows if sec["start"] - 1e-6 <= r["start"] < sec["end"] - 1e-6]
+        held = sum(1 for r in mine if r.get("rest"))
         if held:
             sec["rests"] = held
+        if mine and paced:  # a cut the pacing engine shaped: how long each passage holds a shot (Breathe's scenes)
+            lengths = sorted(float(r["end"]) - float(r["start"]) for r in mine)
+            sec["shots"] = len(mine)
+            sec["hold_s"] = round(lengths[len(lengths) // 2], 2)
+            if bar > 0:
+                sec["hold_bars"] = round(2 * sec["hold_s"] / bar) / 2  # to the half bar
     pacing = info.get("pacing") if isinstance(info.get("pacing"), dict) else {}
     shape = info.get("recut_state") if isinstance(info.get("recut_state"), dict) else {}
     chain_rows = [{"index": k, "file": f, "noun": stills[k], "kind": kind_of(f),
@@ -217,6 +235,6 @@ def build(info: dict, video_id: str = "") -> dict:
             "drop": info.get("drop"), "morph_style": str(info.get("morph_style") or "auto"),
             "morph_timing": str(info.get("morph_timing") or "smooth"), "choices": choices() if rows else {},
             # the cut's shape (xenoform.pacing): what it was made or last re-cut in, and the line the Make reported
-            "breathe": bool(pacing.get("breathe", shape.get("breathe", False))),
+            "breathe": _amount(pacing.get("breathe", shape.get("breathe", False))),
             "drop_mode": str(pacing.get("drop_mode") or shape.get("drop_mode") or "off"),
             "plan_line": str(pacing.get("line") or ""), "rests": sum(1 for r in rows if r.get("rest"))}
