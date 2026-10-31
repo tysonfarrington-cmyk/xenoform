@@ -295,6 +295,7 @@ def run(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg: dict,
             "beats": [round(float(b), 4) for b in (directed.get("beats") or [])], "render": made["size"],
             "frames": made["frames"], "seconds": round(time.perf_counter() - started, 2), "look": made.get("look") or {},
             "macros": m, "handoffs": made.get("boundary_fx"), "house": str(hp.get("name") or ""),
-            "stems_path": str(state.get("stems_path") or "")}
+            "stems_path": str(state.get("stems_path") or ""),
+            "window": dense.window_of(state, float(directed.get("duration") or 0.0))}  # where the cut sits in the song
     (work / "simple.json").write_text(json.dumps(info, indent=1, default=str), encoding="utf-8")
     return info

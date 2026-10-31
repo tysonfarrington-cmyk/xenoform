@@ -49,7 +49,9 @@ def _sections():
 
 def _story_shots():
     directed = {"duration": 120.0, "beats": _beats(120.0), "sections": _sections()}
-    shots, plan = dense.shots_for({"energy_preset": "dense", "aspect": "9:16", "pace": "tight"}, directed, None)  # the denser plan: a 3 s clip has a passage to fit
+    # the denser plan as it was made before the pacing engine (Breathe and Drops off): a 3 s clip has a passage to fit
+    shots, plan = dense.shots_for({"energy_preset": "dense", "aspect": "9:16", "pace": "tight", "breathe": False, "drop_mode": "off"},
+                                  directed, None)
     assert plan["name"] == "story"
     return shots
 

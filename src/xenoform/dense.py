@@ -601,15 +601,46 @@ def _scene_kw(state: dict, shots: list[dict], count: int, assign: list | None = 
     return {"scene_at": _mp.scene_slots(shots, count, choice, assign=assign)} if choice != "off" else {}
 
 
-def _merge_to(shots: list[dict], n: int) -> list[dict]:
+MERGE_RANK = {"calm": 0, "sustain": 0, "intro": 1, "outro": 1, "release": 1, "drop_late": 2, "build": 3, "drop": 4}
+
+
+def _merge_to(shots: list[dict], n: int, protected: bool = False) -> list[dict]:
     """``shots`` folded into ``n`` by merging the shortest into its shorter neighbour, the timeline untouched. The
     story planner keeps a cut at every role start, so ``max_shots`` alone left 16 shots for 11 morphs on a shipped
-    12-still pool and the compose crashed (26 Oct review); the chain's count is enforced here."""
+    12-still pool and the compose crashed (26 Oct review); the chain's count is enforced here.
+
+    ``protected`` (a paced plan): the calm passages give up their shots first and the drops and builds last
+    (``MERGE_RANK``), a shot merges into a neighbour of its own passage when it has one, and a drop run's first shot
+    keeps its own start (its event): the shortest-first rule merged the drops away first under any cap."""
     shots = [dict(s) for s in shots]
     n = max(1, int(n))
+
+    def secs(k: int) -> float:
+        return float(shots[k].get("seconds") or 0.0)
+
+    def entry(k: int) -> bool:
+        return 0 <= k < len(shots) and str(shots[k].get("boundary") or "") == "drop"
+
+    def rank(k: int) -> float:
+        # the role's place in the queue, weighed by how long the shot already is against the cut's mean: a calm shot
+        # gives up its morph first, but not until it is a slideshow (about four times the mean before a drop's shot)
+        mean = max(1e-3, sum(secs(q) for q in range(len(shots))) / len(shots))
+        return MERGE_RANK.get(str(shots[k].get("section") or ""), 1) + 2.0 * math.log2(max(secs(k), 0.05) / mean)
+
+    def partners(i: int, keep_entries: bool) -> list[int]:
+        options = [k for k in (i - 1, i + 1) if 0 <= k < len(shots)]
+        if keep_entries:  # never fold a drop run's first shot into the shot before it (the merged shot takes the earlier's place)
+            options = [k for k in options if not (k == i + 1 and entry(i + 1)) and not (k == i - 1 and entry(i))]
+        return options
+
     while len(shots) > n:
-        i = min(range(len(shots)), key=lambda k: float(shots[k].get("seconds") or 0.0))
-        if i == 0:
+        if protected:
+            order = sorted(range(len(shots)), key=lambda k: (rank(k), secs(k)))
+            i = next((k for k in order if partners(k, True)), order[0])
+            options = partners(i, True) or partners(i, False)
+            same = [k for k in options if shots[k].get("passage", -1) == shots[i].get("passage", -2)]
+            j = min(same or options, key=lambda k: (rank(k), secs(k)))
+        elif (i := min(range(len(shots)), key=secs)) == 0:
             j = 1
         elif i == len(shots) - 1:
             j = i - 1
@@ -622,6 +653,10 @@ def _merge_to(shots: list[dict], n: int) -> list[dict]:
             merged["end"] = b.get("end", a.get("end"))
         if "frames" in a or "frames" in b:
             merged["frames"] = int(a.get("frames") or 0) + int(b.get("frames") or 0)
+        for key in ("rest", "rest_s"):  # a rest is the end of a shot: the merged shot ends where the later one did
+            merged.pop(key, None)
+            if b.get(key) is not None:
+                merged[key] = b[key]
         lo = min(i, j)
         shots[lo:lo + 2] = [merged]
     for k, s in enumerate(shots):
@@ -658,24 +693,37 @@ def long_song_chain(state: dict, directed: dict, audio_path: Path, shots: list[d
         return len(_rows_of_kind(rows, choice, backdrop)) or len(_rows_of_kind(rows, "off", "plain")) or len(rows)
 
     pool_n = pool_count()
-    chain = clip_plan(shots, duration, beats_list, pool=pool_n or None, tier="cloud" if opt["cloud"] else opt["tier"])
+    tier = "cloud" if opt["cloud"] else opt["tier"]
+    chain = clip_plan(shots, duration, beats_list, pool=pool_n or None, tier=tier)
     if grow:
         grown = grow_family_for_cut(state, pool_vibe, chain["morphs"] + 1, cfg, report, engine=engine)
         if grown:  # the idea's family now in the pool: count again, the chain may afford more
             notes.append({"grown": grown})
             pool_n = pool_count()
-            chain = clip_plan(shots, duration, beats_list, pool=pool_n or None, tier="cloud" if opt["cloud"] else opt["tier"])
+            chain = clip_plan(shots, duration, beats_list, pool=pool_n or None, tier=tier)
     if not chain["fits"]:
         wanted = chain["wanted"]
-        shots, plan = shots_for({**state, "max_shots": chain["morphs"]}, directed, Path(audio_path))
-        if len(shots) > chain["morphs"]:
-            shots = _merge_to(shots, chain["morphs"])
-        chain = clip_plan(shots, duration, beats_list, pool=pool_n or None, tier="cloud" if opt["cloud"] else opt["tier"])
+        shots, plan, chain = fit_chain(state, directed, audio_path, chain, pool_n, tier)
         notes.append({"capped": {"wanted": wanted, "shots": len(shots), "cap": chain.get("cap"), "pool": pool_n}})
         if report:
             report("restyle", 0.04, f"{wanted} shots re-planned as {len(shots)} longer ones: no object repeats, and {opt['tier']} "
                                     f"affords {chain.get('cap')} morphs" + (f" over a pool of {pool_n}" if pool_n else ""))
     return shots, plan, chain, notes
+
+
+def fit_chain(state: dict, directed: dict, audio_path: Path | None, chain: dict, pool_n: int | None, tier: str, *,
+              drop: float | None = None) -> tuple[list[dict], dict, dict]:
+    """A plan the chain cannot afford, made again with ``max_shots`` at the morphs it can (fewer, longer shots on the
+    bars), merged down to that count when the planner's roles still outnumber it; the Make and the desk's estimate
+    (``plan_summary``) both come here, so the count the desk shows is the count the cut gets. A paced plan merges its
+    calm shots first and its drops and builds last (``_merge_to``'s ``protected``)."""
+    duration = float(directed.get("duration") or 0.0)
+    beats_list = list(directed.get("beats") or [])
+    capped = {**state, "max_shots": chain["morphs"]}
+    shots, plan = shots_for(capped, directed, Path(audio_path) if audio_path else None, drop=drop)
+    if len(shots) > chain["morphs"]:
+        shots = _merge_to(shots, chain["morphs"], protected=paced(capped, directed))
+    return shots, plan, clip_plan(shots, duration, beats_list, pool=pool_n or None, tier=tier)
 
 
 def _cloud_fits(chain: dict) -> None:
@@ -732,16 +780,33 @@ def clip_plan(shots: list[dict], duration: float, beats: list, *, pool: int | No
 
 
 def plan_summary(duration: float, beats: list, energy: str = "dense", tier: str = "draft", aspect: str = "9:16",
-                 vertical: str = "native", drop: float | None = None, performer: int = 0, pool: int | None = None) -> dict:
+                 vertical: str = "native", drop: float | None = None, performer: int = 0, pool: int | None = None, *,
+                 sections: list[dict] | None = None, state: dict | None = None) -> dict:
     """What a Make will do for this song: shots, unique morphs, clip length and a time estimate (GPU + look).
-    ``pool`` is the vibe's still count when known: the chain never repeats an object, so it caps the morphs too."""
+    ``pool`` is the vibe's still count when known: the chain never repeats an object, so it caps the morphs too.
+
+    With the song's ``sections`` and the Make body (``state``) it plans with the Make's own planner and chain
+    (``shots_for``, ``clip_plan``, ``fit_chain``), so the count and the clock the desk shows are the cut's; without
+    them it is the older estimate on the demo1 plan."""
     duration = float(duration)
-    if energy == "dense":
-        shots = dense_plan(duration, beats, drop if drop is not None else duration * 0.6)["shots"]
-    else:
-        shots = plan_shots(duration, beats)
     long_song = duration > LONG_SONG_S
-    cp = clip_plan(shots, duration, beats, pool=pool or None, tier=tier) if long_song else {"clip_s": 2, "morphs": len(shots), "assign": list(range(len(shots))), "reuse": False}
+    plan: dict = {}
+    if state is not None and sections:
+        body = {**state, "energy_preset": energy, "quality_tier": tier}
+        directed = {"duration": duration, "beats": list(beats or []), "sections": list(sections)}
+        shots, plan = shots_for(body, directed, None, drop=drop)
+        if long_song and not plan.get("stills"):
+            cp = clip_plan(shots, duration, beats, pool=pool or None, tier=tier)
+            if not cp["fits"]:
+                shots, plan, cp = fit_chain(body, directed, None, cp, pool, tier, drop=drop)
+        else:
+            cp = {"clip_s": 2, "morphs": len(shots), "assign": list(range(len(shots))), "reuse": False}
+    else:
+        if energy == "dense":
+            shots = dense_plan(duration, beats, drop if drop is not None else duration * 0.6)["shots"]
+        else:
+            shots = plan_shots(duration, beats)
+        cp = clip_plan(shots, duration, beats, pool=pool or None, tier=tier) if long_song else {"clip_s": 2, "morphs": len(shots), "assign": list(range(len(shots))), "reuse": False}
     fps = 24
     frames_total = int(round(duration * fps))
     compose_s = frames_total * COMPOSE_S_PER_FRAME["final" if tier in ("final", "fast", "cloud") else "draft"] / beatfx.look_speedup(frames_total)
@@ -759,7 +824,8 @@ def plan_summary(duration: float, beats: list, energy: str = "dense", tier: str 
         est["seconds"] = int(est["seconds"] + est["performer_seconds"])
         est["minutes"] = round(est["seconds"] / 60, 1)
     return {"duration": round(duration, 2), "shots": min(len(shots), cp["morphs"]) if long_song else len(shots), "morphs": cp["morphs"],
-            "clip_s": cp["clip_s"], "reuse": cp["reuse"], "long_song": long_song, "estimate": est, "performer": n_perf}
+            "clip_s": cp["clip_s"], "reuse": cp["reuse"], "long_song": long_song, "estimate": est, "performer": n_perf,
+            "plan_name": str(plan.get("name") or ("dense (auto)" if energy == "dense" else "flow"))}
 
 
 def dense_plan(duration: float, beats: list, drop: float | None = None, max_shots: int | None = None,
@@ -854,6 +920,11 @@ def _story_roles(sections: list[dict], duration: float, min_len: float = 6.0) ->
     rows = [dict(sec) for sec in sections if float(sec.get("end", 0)) > float(sec.get("start", 0))]
     if not rows:
         return [{"start": 0.0, "end": float(duration), "label": "calm", "level": 0.5, "role": "calm"}]
+    if all(str(r.get("role") or "") in STORY_BEATS for r in rows):
+        # the song's own roles, cut to a Length window (ui._window_features): kept as the whole song has them, not
+        # judged again against the window's own loudest
+        return [{"label": str(r.get("label") or r["role"]), "start": float(r["start"]), "end": float(r["end"]),
+                 "level": float(r.get("level") or 0.0), "role": str(r["role"])} for r in rows]
     # The analyser slices finely (a run of 2 s "drop" spans): merge same-label neighbours, then fold anything
     # shorter than ``min_len`` into the neighbour whose level is closer, so a section is a passage, not a bar.
     top0 = max(float(r.get("level") or 0.0) for r in rows) or 1.0
@@ -999,13 +1070,70 @@ def story_plan(duration: float, beats: list, sections: list[dict], drop: float |
             "roles": [(r["role"], round(float(r["start"]), 2), round(float(r["end"]), 2)) for r in roles]}
 
 
+def shape_shots(shots: list[dict], state: dict, m: dict, wobble_house: dict | None, *, look: str = "",
+                beats: list | None = None) -> dict | None:
+    """The knobs on the cut's shots, in place, the same for a Make and a re-cut: ``apply_macros`` for a cut shaped as
+    before (``pacing.legacy``) or one with no section roles, else the pacing engine's profile (``pacing.shape``: each
+    passage's Chaos, Intensity, timing, one effect and look). Returns what the profile did (None: the knobs alone)."""
+    from xenoform import effects as _E
+    from xenoform import morph_timing as _mt
+    from xenoform import pacing as _pc
+
+    if _pc.legacy(state) or not any(s.get("section") for s in shots):
+        for s in shots:  # a rest is Breathe's and an event the drop treatment's: a cut shaped as before has neither
+            for key in ("rest", "rest_s", "event", "ramp"):
+                s.pop(key, None)
+        apply_macros(shots, m, wobble_house)
+        return None
+    return _pc.shape(shots, m, breathe=_pc.breathe_of(state), drop_mode=_pc.drop_mode_of(state), house=wobble_house,
+                     look=str(look or ""), look_auto=dance_fx_choice(state) == "auto", effects=_E.names_of(state),
+                     timing=_mt.normal(state.get("morph_timing")), beats=list(beats or []))
+
+
+def drop_treated(state: dict, shots: list[dict]) -> bool:
+    """True when the cut's drop runs get the drop treatment (``drop_mode`` auto or max on a paced plan)."""
+    from xenoform import pacing as _pc
+
+    return _pc.drop_mode_of(state) in ("auto", "max") and any(s.get("drop_run") is not None for s in shots)
+
+
+def paced_kinds(state: dict, shots: list[dict]) -> dict | None:
+    """``boundary_fx.pick``'s ``paced`` for a cut the profile shaped, else None (the kinds as before)."""
+    from xenoform import pacing as _pc
+
+    if _pc.legacy(state) or not any(s.get("section") for s in shots):
+        return None
+    return {"breathe": _pc.breathe_of(state)}
+
+
+def tame_rules(state: dict, shots: list[dict], fps: int, beats: list | None) -> list | None:
+    """The flash tame's rule a frame (``pacing.flash_rules``) when Breathe is on, else None (the frames as they come)."""
+    from xenoform import pacing as _pc
+
+    if not _pc.breathe_of(state):
+        return None
+    return _pc.flash_rules(shots, fps, beats)
+
+
+def foreshadow_mode(opt: dict, vibe: str, state: dict) -> str:
+    """The foreshadow layer's mode for the cut; Breathe never slices (the strips read as the bar wipe Tys tired of)."""
+    from xenoform import foreshadow as _fs
+    from xenoform import pacing as _pc
+
+    mode = _fs.mode_for(opt["foreshadow"], vibe)
+    return "trace" if mode == "slices" and _pc.breathe_of(state) else mode
+
+
 BLOCKY = {"datamosh": "chroma-split"}  # the blocky transitions and what stands in for them while the smear is off
 
 
-def boundary_transitions(shots: list[dict], vibe: str, *, seed: int = 0, smear: str = "off") -> list[dict | None]:
+def boundary_transitions(shots: list[dict], vibe: str, *, seed: int = 0, smear: str = "off",
+                         per_run: bool = False) -> list[dict | None]:
     """One premium transition per section boundary (the vibe's recommendation for drop / switch / silence),
     capped at two uses per type by the guardrail; everything else is a clean handoff. One entry per shot. With the
-    blocky smear off (``smear``, boundary_fx.SMEAR; the default), a vibe's datamosh is a chromatic split instead."""
+    blocky smear off (``smear``, boundary_fx.SMEAR; the default), a vibe's datamosh is a chromatic split instead.
+    ``per_run`` (the drop treatment): the guard counts the drop transition's cap a run, so every drop run opens on the
+    vibe's drop transition; the other boundaries keep the cut's cap."""
     from xenoform import boundary_fx as _B
     from xenoform import transitions_fx as T
 
@@ -1017,7 +1145,17 @@ def boundary_transitions(shots: list[dict], vibe: str, *, seed: int = 0, smear: 
     kinds = ["match-cut" if k == "scene-morph" else k for k in kinds]
     if _B.smear_of(smear) == "off":
         kinds = [BLOCKY.get(k, k) for k in kinds]
-    kinds, _msgs = T.guard(kinds, seed=seed)
+    if per_run:
+        runs = [k for k, i in enumerate(idx) if shots[i].get("boundary") == "drop"]
+        rest = [k for k in range(len(idx)) if k not in set(runs)]
+        guarded = list(kinds)
+        for k, v in zip(rest, T.guard([kinds[k] for k in rest], seed=seed)[0]):
+            guarded[k] = v
+        for k in runs:  # a passage of its own: its cap is counted in it
+            guarded[k] = T.guard([kinds[k]], seed=seed + k)[0][0]
+        kinds = guarded
+    else:
+        kinds, _msgs = T.guard(kinds, seed=seed)
     out: list[dict | None] = [None] * len(shots)
     for i, kind in zip(idx, kinds):
         if kind in T.EXEMPT_FROM_CAP:
@@ -1037,14 +1175,30 @@ def flow_plan(duration: float, beats: list, count: int) -> dict:
     return {"name": f"flow ({count} forms)", "shots": shots}
 
 
+_DROPS: dict[tuple, float | None] = {}  # (path, size, mtime, beats) -> drop time: one decode a song, not one a plan
+
+
 def find_drop(audio_path: Path | None, beats: list, duration: float) -> float | None:
     if audio_path is None or not Path(audio_path).is_file():
         return None
     try:
-        return beatfx.drop_time(Path(audio_path), beats)
+        st = Path(audio_path).stat()
+        key = (str(Path(audio_path).resolve()), st.st_size, st.st_mtime_ns, len(beats or []),
+               round(float(beats[0]), 3) if beats else 0.0, round(float(beats[-1]), 3) if beats else 0.0)
+    except OSError:
+        key = None
+    if key is not None and key in _DROPS:
+        return _DROPS[key]
+    try:
+        got = beatfx.drop_time(Path(audio_path), beats)
     except Exception:
         log.exception("drop detection")
         return None
+    if key is not None:
+        if len(_DROPS) > 64:
+            _DROPS.clear()
+        _DROPS[key] = got
+    return got
 
 
 def _analysis_sections(directed: dict) -> list[dict]:
@@ -1056,10 +1210,68 @@ def _analysis_sections(directed: dict) -> list[dict]:
     return [r for r in (rows or []) if r.get("label")]
 
 
-def shots_for(state: dict, directed: dict, audio_path: Path | None) -> tuple[list[dict], dict]:
-    """Validated shots plus the plan they came from."""
+PLAN_KEYS = ("section", "boundary", "heat", "drop_run", "passage", "rest", "rest_s", "event", "ramp")  # what custom_shots does not carry
+
+
+def paced(state: dict, directed: dict) -> bool:
+    """True when the Make is planned by the pacing engine (``pacing.song_plan``): a Dense cut of a song over
+    ``LONG_SONG_S`` with sections, unless it is shaped as before (``pacing.legacy``) or carries its own cut plan."""
+    from xenoform import pacing as _pc
+
+    return (not _pc.legacy(state) and not state.get("cut_plan") and options(state)["energy"] == "dense"
+            and float(directed.get("duration") or 0.0) > LONG_SONG_S and len(_analysis_sections(directed)) >= 2)
+
+
+def song_plan_for(state: dict, directed: dict, drop: float | None) -> dict:
+    """The pacing engine's plan for this Make: the roles always run, and a requested Forms count, an off-centre Speed
+    and the guardrail's budget (``form_budget``, forms per 20 s) scale it by role instead of replacing it."""
+    from xenoform import pacing as _pc
+
     duration = float(directed.get("duration") or 0.0)
     beats = list(directed.get("beats") or [])
+    sections = _analysis_sections(directed)
+    try:
+        cap = int(state.get("max_shots") or 0) or None
+    except (TypeError, ValueError):
+        cap = None
+    try:
+        budget = float(state.get(_pc.FORM_BUDGET_KEY) or 0.0)
+    except (TypeError, ValueError):
+        budget = 0.0
+    if budget > 0:  # the morph_density guardrail's budget, spent by role inside the planner
+        allowed = max(1, int(round(duration / 20.0 * budget)))
+        cap = min(cap, allowed) if cap else allowed
+    env = stem_env_for(state)  # the split stems' strong drum hits: a ramp into a drop cuts on them (none from the mix)
+    hits = list(env.get("drum_strong") or []) if env and not str(env.get("engine") or "").startswith("mix") else None
+    kw = dict(max_shots=cap, breathe=_pc.breathe_of(state), drop_mode=_pc.drop_mode_of(state), pace=story_pace(state),
+              tempo=directed.get("tempo"), hits=hits)
+    plan = _pc.song_plan(duration, beats, sections, drop, **kw)
+    n = morph_count(state)
+    speed = macros(state)["speed"]
+    target = None
+    if n != "auto":
+        target = int(n)
+    elif abs(speed - 0.5) > 0.05:  # the Speed knob scales the plan's own count: x0.6 at 0, x1.4 at 1
+        target = max(1, int(round(len(plan["shots"]) * (0.6 + 0.8 * max(0.0, min(1.0, float(speed)))))))
+    if target and target != len(plan["shots"]):
+        plan = _pc.song_plan(duration, beats, sections, drop, target=target, **kw)
+        plan["target"] = target
+    return plan
+
+
+def shots_for(state: dict, directed: dict, audio_path: Path | None, *, drop: float | None = None) -> tuple[list[dict], dict]:
+    """Validated shots plus the plan they came from. ``drop`` (seconds) stands in for the song's own when the caller
+    has it and no audio (the desk's estimate)."""
+    duration = float(directed.get("duration") or 0.0)
+    beats = list(directed.get("beats") or [])
+    if paced(state, directed):
+        plan = song_plan_for(state, directed, drop if drop is not None else find_drop(audio_path, beats, duration))
+        shots = custom_shots(plan, duration)
+        for shot, raw in zip(shots, plan.get("shots") or []):
+            for key in PLAN_KEYS:
+                if raw.get(key) is not None and raw.get(key) != "":
+                    shot[key] = raw[key]
+        return shots, plan
     opt = options(state)
     n = morph_count(state)
     speed = macros(state)["speed"]
@@ -1074,10 +1286,10 @@ def shots_for(state: dict, directed: dict, audio_path: Path | None) -> tuple[lis
     if state.get("cut_plan"):
         plan = state["cut_plan"]
     elif opt["energy"] == "dense" and n == "auto" and duration > LONG_SONG_S and len(_analysis_sections(directed)) >= 2:
-        drop = find_drop(audio_path, beats, duration)
+        drop = drop if drop is not None else find_drop(audio_path, beats, duration)
         plan = story_plan(duration, beats, _analysis_sections(directed), drop, max_shots=max_shots, pace=story_pace(state))
     elif opt["energy"] == "dense":
-        drop = find_drop(audio_path, beats, duration)
+        drop = drop if drop is not None else find_drop(audio_path, beats, duration)
         count = None if n == "auto" else n
         if max_shots and (count is None or count > max_shots):
             count = max_shots
@@ -1225,6 +1437,11 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
                                 f"no object twice")
     else:
         render_shots = shots
+    from xenoform import pacing as _pc
+
+    if _pc.paced_shots(shots):  # what the pacing engine planned, in a line (the record keeps it too)
+        report("restyle", 0.05, _pc.summary_line(shots, breathe=_pc.breathe_of(state),
+                                                 song_start=window_of(state, duration)["song_start"], drop=plan.get("drop")))
     vibe, stills = (vibe, stills) if long_song else stills_for({**state, "cut_plan": plan if plan.get("stills") else None}, len(shots) + 1,
                                                                 **_scene_kw(state, shots, len(shots) + 1))
     repeat_note = ""
@@ -1240,6 +1457,9 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
         repeat_note = (f"Only {unique} distinct stills in the {vibe} pool: {len(shots)} longer morphs instead of "
                        f"repeating stills. Add stills (or pick a bigger vibe) for faster morphing.")
         report("restyle", 0.05, repeat_note)
+    fresh_moved = 0
+    if drop_treated(state, shots):  # a new look on every drop run's first beat: a fresh object family lands there
+        stills, fresh_moved = _pc.fresh_at_drops(stills, shots, chain.get("assign") if long_song else None)
     from xenoform import guardrails as _guard
 
     hp = house(state, cfg)
@@ -1271,6 +1491,8 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
         size = (int(fmt.get("width") or size[0]), int(fmt.get("height") or size[1]))  # the house output size (1080x1920)
     fps = int(fmt.get("fps") or beatfx.FPS) if vertical_house else beatfx.FPS
     notes: list[dict] = list(line_notes) + list(pre_notes)
+    if fresh_moved:
+        notes.append({"fresh_at_drops": fresh_moved})  # stills moved so a drop run opens on a new object family
     scene_files = [s["file"] for s in stills if s.get("kind") == "scene"]  # which stills of the chain are scenes
     if scene_choice != "off" and not scene_files:
         notes.append({"scenes": f"{scene_choice} asked, but the {vibe} pool has no scenes yet: objects only "
@@ -1287,8 +1509,11 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     # (Melt in the verses, Shatter on the drop, Bloom / Fold / Spin by the Chaos knob); a long song's chain morph takes
     # the style of the first shot that plays it
     from xenoform import morph_style as _ms
+    from xenoform import pacing as _pc
 
-    shot_styles = _ms.for_cut({**state, "macros": macros(state)}, shots, plan.get("drop"))
+    # a paced cut on Auto takes its passages' styles (pacing.styles); else the setting or Auto, as before
+    shot_styles = (_pc.styles(shots, state, plan.get("drop"), period=plan.get("period"))
+                   or _ms.for_cut({**state, "macros": macros(state)}, shots, plan.get("drop")))
     if long_song:
         firsts: dict[int, str] = {}
         for k, ci in enumerate(chain["assign"]):
@@ -1485,7 +1710,11 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     import copy as _copy
 
     plan_shots = _copy.deepcopy(shots)  # before the macros: a re-cut starts from here
-    apply_macros(shots, m, hp if vertical_house else None)
+    look_preset = beatfx.resolve_dance_preset(opt["dance_fx"], vibe, hp)
+    # the knobs, or for a paced cut each passage's profile (pacing.shape): the same helper a re-cut calls
+    shaped = shape_shots(shots, state, m, hp if vertical_house else None, look=look_preset, beats=directed.get("beats") or [])
+    if shaped:
+        notes.append({"pacing": shaped})
     # when the change happens inside each morph (morph_timing): Smooth as the model made it, On the beat, or Snap
     from xenoform import morph_timing as _mt
 
@@ -1498,20 +1727,20 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
 
     effect_names = _E.names_of(state)
     smear = _E.smear_setting(state)
-    transitions = boundary_transitions(shots, vibe, seed=seed, smear=smear) if plan.get("name") == "story" else None
+    transitions = boundary_transitions(shots, vibe, seed=seed, smear=smear, per_run=drop_treated(state, shots)) \
+        if plan.get("name") == "story" else None
     # the boundary kinds (boundary_fx): Chaos decides how many handoffs smear, strobe, wipe or rip their colours apart;
     # the vibe's premium picks keep their boundaries, except the drop past Chaos 0.7, which the strobe takes
     from xenoform import boundary_fx as _B
 
     boundary_fx = _B.pick(shots, m, directed.get("beats") or [], fps, seed=seed, premium=transitions, drop=plan.get("drop"),
-                          smear=smear)
+                          smear=smear, paced=paced_kinds(state, shots))
     transitions = _B.clear_premium(transitions, boundary_fx)
     from xenoform import transitions_fx as _T
 
     transitions = _T.kind_guard(transitions, shots)  # a kind that wants an object on a ground: a plain handoff into a place
     if any(boundary_fx):
         notes.append({"boundary_fx": _B.info(boundary_fx)})
-    look_preset = beatfx.resolve_dance_preset(opt["dance_fx"], vibe, hp)
     if look_preset == "off" and not opt["stem_orbit"]:
         # with no look and no orbit a held still is four identical frames (dead air, 25 Oct judge panel): the orbit stays
         opt["stem_orbit"] = True
@@ -1521,9 +1750,7 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
                             f"stems {'split' if stem_env else 'from the mix'}")
     if chain:
         notes.append({"chain": {"morphs": chain["morphs"], "clip_s": chain["clip_s"], "shots": len(shots)}})
-    from xenoform import foreshadow as _fs
-
-    fs_mode = _fs.mode_for(opt["foreshadow"], vibe)  # the next object traced, negative, sliced or silhouetted in before its shot
+    fs_mode = foreshadow_mode(opt, vibe, state)  # the next object traced, negative, sliced or silhouetted in before its shot
     if fs_mode:
         notes.append({"foreshadow": fs_mode})
     made = beatfx.compose(clips, shots, Path(audio_path), tmp, aspect=opt["aspect"],
@@ -1534,9 +1761,12 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
                           palette_image=str(stills[0]["path"]) if stills else None,
                           adaptive=str(opt.get("dance_fx") or "auto").strip().lower() == "auto",
                           transitions=transitions, foreshadow=fs_mode, boundary_fx=boundary_fx, effects=effect_names,
-                          tones=_E.palette_from_clips(clips).tolist() if _E.wants_tones(look_preset, effect_names, shots) else None)
+                          tones=_E.palette_from_clips(clips).tolist() if _E.wants_tones(look_preset, effect_names, shots) else None,
+                          tame=tame_rules(state, shots, fps, directed.get("beats") or []))
     if made.get("effects"):
         notes.append({"effects": made["effects"]})
+    if made.get("tame"):
+        notes.append({"tame": made["tame"]})  # the flash tame (Breathe): flash frames found and how many it lifted
     if made.get("look", {}).get("seconds"):
         log.info("house look took %.1fs for %d frames", made["look"]["seconds"], made["look"]["frames"])
     card = False
@@ -1571,10 +1801,13 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
             "morph_style": _ms.normal(state.get("morph_style") or "auto"), "morph_styles": shot_styles,
             "morph_timing": timing_mode, "effects": effect_names, "smear": smear,
             "palette_image": str(stills[0]["path"]) if stills else None, "vertical_house": vertical_house,
-            "recut_state": {k: state.get(k) for k in ("vibe", "aspect", "quality_tier", "energy_preset", "dance_fx", "stem_orbit", "pace",
-                                                      "beat_fx", "beat_overlay", "end_card", "stems_path", "macros", "still_background",
-                                                      "performer", "performer_style", "foreshadow", "scene_stills", "chain_pins",
-                                                      "morph_style", "morph_timing", "effects", "boundary_smear", "backdrop")},
+            "recut_state": {**{k: state.get(k) for k in ("vibe", "aspect", "quality_tier", "energy_preset", "dance_fx", "stem_orbit", "pace",
+                                                         "beat_fx", "beat_overlay", "end_card", "stems_path", "macros", "still_background",
+                                                         "performer", "performer_style", "foreshadow", "scene_stills", "chain_pins",
+                                                         "morph_style", "morph_timing", "effects", "boundary_smear", "backdrop")},
+                            # the shape the cut was made in, so a re-cut starts there (a record without them: both off)
+                            "breathe": _pc.breathe_of(state), "drop_mode": _pc.drop_mode_of(state)},
+            "pacing": _pc.record(plan, shots, state, window_of(state, duration)),
             "roles": plan.get("roles"), "performer": performer_info, "own": own_info,
             "handoffs_s": [s["start"] for s in shots] + [shots[-1]["end"]], "fallbacks": notes,
             "beats": [round(float(b), 4) for b in (directed.get("beats") or [])],
@@ -1582,9 +1815,25 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
             "steps": 8 if engine == "ltx23" else None,
             "fps": made.get("fps", beatfx.FPS), "look": made.get("look") or {}, "foreshadow": made.get("foreshadow"), "macros": m,
             "handoffs": made.get("boundary_fx"),
-            "house": str(hp.get("name") or ""), "stems_path": str(state.get("stems_path") or "")}
+            "house": str(hp.get("name") or ""), "stems_path": str(state.get("stems_path") or ""),
+            # where the cut sits in the song (a Length cut is trimmed from it): the Resolve export and any later assembly
+            # read it instead of finding the offset by cross-correlating the audio (the montage had to, 30 Oct)
+            "window": window_of(state, duration)}
+    if made.get("tame"):
+        info["pacing"]["tame"] = made["tame"]
     (work / "simple.json").write_text(json.dumps(info, indent=1, default=str), encoding="utf-8")
     return info
+
+
+def window_of(state: dict, duration: float) -> dict:
+    """``{"song_start", "length_s"}``: the cut's start in the song it was trimmed from (``song_source``, set by the desk
+    when Length trims the song; 0 for the whole song) and its length."""
+    src = state.get("song_source") if isinstance(state.get("song_source"), dict) else {}
+    try:
+        start = float(src.get("offset") or 0.0)
+    except (TypeError, ValueError):
+        start = 0.0
+    return {"song_start": round(start, 3), "length_s": round(float(duration or 0.0), 3)}
 
 
 def ground_is_black(stills: list[dict], *, luma: float = 16.0) -> bool:
@@ -1622,6 +1871,10 @@ def chain_preview(directed: dict, state: dict, audio_path: Path) -> dict:
         shots, plan, chain, _ = long_song_chain(state, directed, Path(audio_path), shots, plan, options(state), grow=False)
         vibe, pool = stills_for({**state, "cut_plan": None}, chain["morphs"] + 1, record=False,
                                 **_scene_kw(state, shots, chain["morphs"] + 1, chain["assign"]))
+        if drop_treated(state, shots):  # the same new look on each drop run the render gives it
+            from xenoform import pacing as _pc
+
+            pool = _pc.fresh_at_drops(pool, shots, chain["assign"])[0]
         picks = [pool[ci] for ci in chain["assign"]]
     else:
         vibe, pool = stills_for({**state, "cut_plan": plan if plan.get("stills") else None}, len(shots) + 1, record=False,
@@ -1701,7 +1954,10 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
     raw = dict(overrides or {})
     so_raw = raw.pop("shot_overrides", None)
     bo_raw = raw.pop("boundary_overrides", None)
+    from xenoform import pacing as _pc
+
     state = dict(rec.get("recut_state") or {})
+    state.update(_pc.recut_modes(state))  # a record from before Breathe and the Drops has neither: it re-cuts as it was made
     state.update({k: v for k, v in raw.items() if v is not None})
     opt = options(state)
     hp = house(state, cfg)
@@ -1710,13 +1966,16 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
     shots = _copy.deepcopy(shots)
     n = len(shots)
     m = macros(state)
-    apply_macros(shots, m, hp if rec.get("vertical_house") else None)
     vibe = str(rec.get("vibe") or state.get("vibe") or "")
+    look_preset = beatfx.resolve_dance_preset(opt["dance_fx"], vibe, hp)
+    shaped = shape_shots(shots, state, m, hp if rec.get("vertical_house") else None, look=look_preset,
+                         beats=list(rec.get("beats") or []))
     from xenoform import effects as _E
 
     effect_names = _E.names_of(state)
     smear = _E.smear_setting(state)
-    transitions = boundary_transitions(shots, vibe, seed=int(rec.get("seed") or 0), smear=smear) if rec.get("plan_name") == "story" else None
+    transitions = boundary_transitions(shots, vibe, seed=int(rec.get("seed") or 0), smear=smear,
+                                       per_run=drop_treated(state, shots)) if rec.get("plan_name") == "story" else None
     from xenoform import boundary_fx as _B
 
     drop = rec.get("drop")
@@ -1728,7 +1987,8 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
     fps = int(rec.get("fps") or 24)
     beats = list(rec.get("beats") or [])
     boundary_fx = _B.pick(shots, m, beats, fps, seed=int(rec.get("seed") or 0),
-                          premium=transitions, drop=drop, smear=smear)  # re-picked from the knobs as they are now: the same knobs give the same kinds
+                          premium=transitions, drop=drop, smear=smear,
+                          paced=paced_kinds(state, shots))  # re-picked from the knobs as they are now: the same knobs give the same kinds
     transitions = _B.clear_premium(transitions, boundary_fx)
     from xenoform import transitions_fx as _T
 
@@ -1749,7 +2009,6 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
 
     timing_mode = _mt.normal(state.get("morph_timing"))
     timed = _mt.plan(shots, timing_mode, beats, drop, so_laid)
-    look_preset = beatfx.resolve_dance_preset(opt["dance_fx"], vibe, hp)
     if look_preset == "off" and not opt["stem_orbit"]:
         opt["stem_orbit"] = True  # as in run_simple: no look and no orbit would leave held stills dead
     stem_env = stem_env_for(state)
@@ -1758,16 +2017,15 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
     tmp = job_dir / "xenoform.recut.mp4"
     if report:
         report("assemble", 0.1, "Re-cutting from the cached morphs (no GPU)" + (f" with {len(so) + len(bo)} timeline edits" if (so or bo) else ""))
-    from xenoform import foreshadow as _fs
-
-    fs_mode = _fs.mode_for(opt["foreshadow"], vibe)
+    fs_mode = foreshadow_mode(opt, vibe, state)
     made = beatfx.compose(clips, shots, audio, tmp, aspect=opt["aspect"], quality="final" if engine == "final" else "draft",
                           fx=opt["fx"], overlay=opt["overlay"], beats=beats, report=report, size=size, fps=fps,
                           dance_fx=look_preset, stem_orbit=opt["stem_orbit"], stem_env=stem_env, macros=m, house=hp,
                           end_card=opt["end_card"], seed=int(rec.get("seed") or 0), palette_image=rec.get("palette_image"),
                           adaptive=str(opt.get("dance_fx") or "auto").strip().lower() == "auto", transitions=transitions,
                           foreshadow=fs_mode, boundary_fx=boundary_fx, effects=effect_names,
-                          tones=_E.palette_from_clips(clips).tolist() if _E.wants_tones(look_preset, effect_names, shots) else None)
+                          tones=_E.palette_from_clips(clips).tolist() if _E.wants_tones(look_preset, effect_names, shots) else None,
+                          tame=tame_rules(state, shots, fps, beats))
     if opt["end_card"]:
         beatfx.end_card(tmp, str(opt.get("recipe") or "(none)"))
     from xenoform.turbo import publish_file
@@ -1783,6 +2041,14 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
                 "timeline": {"shots": len(so), "boundaries": len(bo), "notes": tl_notes},
                 "morph_timing": timing_mode, "timed": timed, "effects": effect_names, "smear": smear,
                 "recuts": int(rec.get("recuts") or 0) + 1})
+    if shaped is not None or rec.get("pacing"):  # the shape the re-cut was made in (Breathe and the Drops re-cut too)
+        pace = dict(rec.get("pacing") or {})
+        pace.update({"breathe": _pc.breathe_of(state), "drop_mode": _pc.drop_mode_of(state), "shape": shaped,
+                     "tame": made.get("tame")})
+        if _pc.paced_shots(record_shots):
+            pace["line"] = _pc.summary_line(record_shots, breathe=pace["breathe"], drop=drop,
+                                            song_start=float((rec.get("window") or {}).get("song_start") or 0.0))
+        rec["pacing"] = pace
     rec_path.write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
     return rec
 

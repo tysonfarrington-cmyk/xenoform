@@ -128,6 +128,36 @@ def flash_report(path: str | Path, fps: float = 24.0, *, jump: float = 40.0, max
     return rep
 
 
+def _grey_lumas(path: str | Path) -> np.ndarray:
+    """Each frame's mean luma: the encoded Y plane as it is (limited range, the levels the montage's deflash read as
+    YAVG and ``deflash.luma`` computes), shrunk; a plain grey decode would stretch it to full range, 1.16 x every rise."""
+    raw = subprocess.run([_ffmpeg(), "-v", "error", "-i", str(path), "-vf", "extractplanes=y,scale=64:36", "-pix_fmt", "gray",
+                          "-f", "rawvideo", "-"], capture_output=True, check=False).stdout
+    return np.frombuffer(raw, dtype=np.uint8).reshape(-1, 36, 64).astype(np.float32).mean(axis=(1, 2))
+
+
+def veil_counts(luma, fps: float = 24.0, beats: list[float] | None = None, bars: int = 8) -> dict:
+    """The soft white flashes Tys asked to tame (deflash's test: a frame more than 6 luma levels above the darker of the
+    darkest 5 frames either side), counted per ``bars`` bars of the song's beat (pure; tests feed it)."""
+    from xenoform import deflash
+
+    flags = deflash.flash_frames(luma)
+    b = sorted(float(x) for x in beats or [])
+    gaps = sorted(y - x for x, y in zip(b, b[1:]) if y > x)
+    period = gaps[len(gaps) // 2] if gaps else 0.5
+    window = max(1, int(round(bars * 4 * period * float(fps))))
+    per = deflash.per_window(flags, window)
+    seconds = max(len(flags) / float(fps), 1e-6)
+    return {"flash_frames": int(flags.sum()), "per_8_bars": round(float(flags.sum()) * window / max(1, len(flags)), 1),
+            "max_8_bars": max(per) if per else 0, "windows": per, "window_s": round(window / float(fps), 2),
+            "seconds": round(seconds, 2)}
+
+
+def veil_report(path: str | Path, fps: float = 24.0, beats: list[float] | None = None) -> dict:
+    """``veil_counts`` on a finished cut: what the flash tame (Breathe) holds to its passages' budgets. A report only."""
+    return veil_counts(_grey_lumas(path), fps, beats)
+
+
 def lag_report(path: str | Path, fps: float = 24.0) -> dict:
     r = _rule("lag_qa")
     info = probe(path)
@@ -335,6 +365,10 @@ def run(path: str | Path, *, fps: float = 24.0, beats: list[float] | None = None
         rep["issues"] += fl["issues"]
     except Exception as exc:
         rep["flashes"] = {"error": str(exc)[:200]}
+    try:  # the soft white flashes per 8 bars (deflash's test), what Breathe's tame holds down: reported, never an issue
+        rep["veil"] = veil_report(path, fps, beats)
+    except Exception as exc:
+        rep["veil"] = {"error": str(exc)[:200]}
     if beats:
         say(0.7, "Checking the cuts against the beat")
         try:

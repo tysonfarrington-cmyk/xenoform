@@ -67,7 +67,21 @@ def test_viscous_pace_cuts_the_drop_on_the_bar():
     assert dense.story_pace({"pace": "tight"}) == "tight"
     assert dense.story_pace({"pace": "weird"}) == "viscous" and dense.story_pace(None) == "viscous" and dense.story_pace({}) == "viscous"
     directed = {"duration": 120.0, "beats": beats, "sections": _sections()}
-    shots, plan = dense.shots_for({"energy_preset": "dense", "aspect": "9:16"}, directed, None)  # Simple sends no pace
+    # the cut as it was made before the pacing engine (Breathe off, Drops off) keeps the old story plan exactly
+    old = {"energy_preset": "dense", "aspect": "9:16", "breathe": False, "drop_mode": "off"}
+    shots, plan = dense.shots_for(old, directed, None)  # Simple sends no pace
     assert plan["name"] == "story" and len(shots) == len(viscous)
-    shots_t, _ = dense.shots_for({"energy_preset": "dense", "aspect": "9:16", "pace": "tight"}, directed, None)
+    shots_t, _ = dense.shots_for({**old, "pace": "tight"}, directed, None)
     assert len(shots_t) == len(tight)
+    # a plain Make plans with the pacing engine (pacing.song_plan), viscous by default and tight when asked
+    from xenoform import pacing
+
+    shots, plan = dense.shots_for({"energy_preset": "dense", "aspect": "9:16"}, directed, None)
+    assert plan["name"] == "story" and len(shots) == len(pacing.song_plan(120.0, beats, _sections(), None)["shots"])
+    shots_t, _ = dense.shots_for({"energy_preset": "dense", "aspect": "9:16", "pace": "tight"}, directed, None)
+    assert len(shots) < len(shots_t)
+    by = {}
+    for s in shots:
+        by.setdefault(s["section"], []).append(round(s["end"] - s["start"], 2))
+    # the drop treatment: a hot run's first two bars on the half bar, then a bar a shot; two bars in the verses (120 bpm)
+    assert by["drop"][:4] == [1.0, 1.0, 1.0, 1.0] and by["drop"][4] == 2.0 and max(by["calm"]) == 4.0

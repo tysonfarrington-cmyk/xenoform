@@ -66,19 +66,24 @@ def plan(shots: list[dict], mode: str, beats: list[float], drop: float | None = 
     downbeats = beats[::4]
     counts: dict[str, int] = {}
     for i, s in enumerate(shots):
-        s.pop("timing", None)
+        prior = s.pop("timing", None)
         own = (overrides or {}).get(i) or (overrides or {}).get(str(i)) or {}
-        m = normal(own.get("timing")) if own.get("timing") else mode
+        # the pacing engine's per-passage timing (pacing.shape: ``{"mode"}`` alone) stands where the timeline says nothing
+        preset = prior.get("mode") if isinstance(prior, dict) and not prior.get("hits") else None
+        m = normal(own.get("timing")) if own.get("timing") else normal(preset) if preset else mode
         if m == "smooth" or _skip(s):
             continue
         a, b = float(s.get("start") or 0.0), float(s.get("end") or 0.0)
+        if s.get("rest_s"):  # Breathe's rest: the change happens in the morph's part of the shot, before the dwell
+            b = max(a + 0.25, b - float(s["rest_s"]))
         dur = b - a
         if dur <= 0.2:
             continue
         width = WIDTH[m] * period
         if m == "beat":
             hits = [t for t in beats if a + 0.12 * dur < t < b - 0.08 * dur] or [a + dur / 2]
-        elif drop is not None and abs(a - float(drop)) < 0.05:
+        elif (drop is not None and abs(a - float(drop)) < 0.05) or s.get("event") == "drop":
+            # the drop, and with the pacing engine every drop run's first shot: a quarter beat in, and sharper
             hits, width = [a + DROP_LAG * period], DROP_WIDTH * period
         else:
             inside = [t for t in downbeats if a + 0.1 * dur < t < b - 0.1 * dur]

@@ -148,7 +148,12 @@ def plan(shots: list[dict], clips: list, beats, fps: int, mode: str, p: dict, *,
             tgt = None if in_place(si + 1, which) else frame(si + 1, which)
             if tgt is not None:
                 entry["target"] = tgt
-                entry["lead"] = int(min(lead, max(MIN_LEAD_FRAMES, n // 2)))
+                ramp = shot.get("ramp")  # the bars before a drop run (pacing): the next object shows earlier as the drop nears
+                if ramp is not None:
+                    r = max(0.0, min(1.0, float(ramp)))
+                    entry["lead"] = int(min(lead * (1.0 + r), max(MIN_LEAD_FRAMES, n * (0.5 + 0.3 * r))))
+                else:
+                    entry["lead"] = int(min(lead, max(MIN_LEAD_FRAMES, n // 2)))
                 entry["which"] = which
         if si > 0 and si - 1 < len(clips) and n > 0 and (hard(si) or hard(si - 1) or held(si - 1)):
             which = "first" if held(si - 1) else "last"  # across a hard cut: the object that just left echoes out for a beat

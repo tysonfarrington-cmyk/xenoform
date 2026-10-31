@@ -25,7 +25,7 @@ def test_recipe_roundtrip_is_short_and_keeps_every_choice():
     back = sr.decode(code)
     for key, value in state.items():
         assert back[key] == value
-    assert len(sr.encode({"vibe": "black"})) < 40
+    assert len(sr.encode({"vibe": "black"})) < 48  # the shape rides along (a plain Make's Drops on auto; pacing)
 
 
 def test_recipe_clamps_unknown_values_and_rejects_junk():
