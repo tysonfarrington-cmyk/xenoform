@@ -227,7 +227,10 @@ def test_length_trims_the_song_around_the_drop(client, tmp_path, monkeypatch):
     assert captured["body"]["audio_id"] == audio_id
 
 
-def test_simple_options_describe_the_plan(client):
+def test_simple_options_describe_the_plan(client, monkeypatch):
+    from xenoform import batch
+
+    monkeypatch.setattr(batch, "measured", lambda jobs, seconds=None: {})  # no cut measured on this machine yet
     r = client.get("/api/simple/options?duration=239&energy=dense&tier=draft&bpm=90&aspect=9:16&vertical=native&length=0")
     plan = r.json()["plan"]
     assert plan["long_song"] and plan["shots"] == plan["morphs"] >= 40 and plan["estimate"]["minutes"] > 5  # one morph a shot, no repeats
