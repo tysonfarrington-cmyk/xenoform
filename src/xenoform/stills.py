@@ -520,7 +520,8 @@ def places_for(vibe: str, count: int, *, start: int = 0, seed: int | None = None
 
 # the words that put an object on a studio ground: a setting's prompt and its morph keep the vibe's material and light but
 # drop these, since the place is the ground now ("plain dark grey backdrop" under a scarab on the dunes)
-GROUND_WORDS = ("backdrop", "void", "no floor", "studio", "seamless", "on pure black", "on black", "black background")
+GROUND_WORDS = ("backdrop", "void", "no floor", "studio", "seamless", "on pure black", "black background")  # not "on black":
+# neon noir's "reflections on black wet asphalt" is a street, the very place its settings stand in
 
 
 def place_look(look: str) -> str:
