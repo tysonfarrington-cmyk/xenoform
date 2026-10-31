@@ -573,6 +573,11 @@ PROFILE: dict[str, dict] = {
               "flash": 0},
 }
 BUILD_TOP = 1.0          # a build's Intensity ramps to this by its end
+# Breathe holds a morph style for a look of whole bars (montage_rules.md 5.4: "a look is a bundle ... held for whole
+# bars", the intro's 4.4 to 6.2 bars, a groove's 1 to 4, a drop's median of two, a breakdown's 2 to 3, the outro one
+# look; about 4 looks a minute in the intro and the outro, 10 to 11 in the grooves, the builds and the drops): the bars
+# a look lasts by role, counted from the passage's start (0: the whole passage is one look)
+LOOK_BARS = {"intro": 5, "calm": 2, "sustain": 2, "build": 2, "release": 2, "drop": 2, "drop_late": 2, "outro": 0}
 DITHER_BARS = 2          # a drop's first bars hit with dither (the ramp's last two lead in); feedback trails the rest
 THIRD_EFFECTS = ("slitscan", "dither")  # one calm passage in three takes one of these, in turn
 
@@ -810,10 +815,12 @@ def _calm_look(look: str, index: int, house: dict | None) -> str:
     return ""
 
 
-def styles(shots: list[dict], state: dict, drop: float | None = None) -> list[str] | None:
+def styles(shots: list[dict], state: dict, drop: float | None = None, *, period: float | None = None) -> list[str] | None:
     """The morph style a shot for a paced cut with the Morph row on Auto (None: ``morph_style.for_cut`` decides, as
-    before). Breathe takes its passage's styles in turn (bloom and melt in the intro, melt and bloom in the grooves,
-    fold and bloom in a build, shatter, spin and bloom in a drop, melt in the outro); without it the Auto rules stand."""
+    before). Breathe takes its passage's styles in turn, a look at a time (``LOOK_BARS``: two bars in the grooves, the
+    builds and the drops, the intro's five, the outro one look; ``period`` the beat the plan was cut on): bloom and melt
+    in the intro, melt and bloom in the grooves, fold and bloom in a build, shatter, spin and bloom in a drop (from the
+    style its first beat opened on), melt in the outro. Without it the Auto rules stand."""
     from xenoform import morph_style as MS
 
     state = state or {}
@@ -826,25 +833,33 @@ def styles(shots: list[dict], state: dict, drop: float | None = None) -> list[st
     drops = drop_mode_of(state) in ("auto", "max")
     if not breathe and not drops:
         return None
+    # every run opens on a Shatter, a Spin when the run before it shattered (the main run always shatters)
+    entries = [i for i, s in enumerate(shots) if s.get("event") == "drop"] if drops else []
+    main = next((k for k, i in enumerate(entries) if drop is not None and abs(float(shots[i].get("start") or 0.0) - float(drop)) < 0.06), 0)
+    opens = {i: ("shatter" if (k - main) % 2 == 0 else "spin") for k, i in enumerate(entries)}
     if breathe:
         passages = passage_of(shots)
+        beat = float(period) if period else _period_of(shots)
+        starts: dict[int, float] = {}
+        offset: dict[int, int] = {}
+        for i, (s, p) in enumerate(zip(shots, passages)):
+            starts.setdefault(p, float(s.get("start") or 0.0))
+            cycle = (PROFILE.get(str(s.get("section") or "")) or {}).get("styles") or ("melt",)
+            if i in opens and p not in offset and opens[i] in cycle:  # a drop's looks turn on from the style it opened on
+                offset[p] = cycle.index(opens[i])
         out: list[str] = []
-        seen: dict[int, int] = {}
         for s, p in zip(shots, passages):
             role = str(s.get("section") or "")
             cycle = (PROFILE.get(role) or {}).get("styles") or ("melt",)
-            k = seen.get(p, 0)
-            seen[p] = k + 1
-            out.append(cycle[k % len(cycle)])
+            bars = LOOK_BARS.get(role, 2)
+            k = int((float(s.get("start") or 0.0) - starts[p] + 1e-3) // (bars * 4 * beat)) if bars and beat > 0 else 0
+            out.append(cycle[(k + offset.get(p, 0)) % len(cycle)])
     else:
         m = state.get("macros") if isinstance(state.get("macros"), dict) else {}
         out = MS.auto(shots, drop, _knob(m, "chaos", 0.3))
     if drops:
-        # every run opens on a Shatter, a Spin when the run before it shattered (the main run always shatters)
-        entries = [i for i, s in enumerate(shots) if s.get("event") == "drop"]
-        main = next((k for k, i in enumerate(entries) if drop is not None and abs(float(shots[i].get("start") or 0.0) - float(drop)) < 0.06), 0)
-        for k, i in enumerate(entries):
-            out[i] = "shatter" if (k - main) % 2 == 0 else "spin"
+        for i, st in opens.items():
+            out[i] = st
         for i, s in enumerate(shots):  # a long run's planted style event: a style its neighbours do not have
             if s.get("event") == "style":
                 near = {out[i - 1] if i else "", out[i + 1] if i + 1 < len(out) else "", out[i]}

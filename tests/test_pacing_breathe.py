@@ -247,3 +247,45 @@ def test_the_recut_route_passes_the_shape(monkeypatch):
     client = TestClient(ui.create_app())
     assert client.post("/api/jobs/shape-recut/recut", json={"breathe": True, "drop_mode": "max"}).status_code == 200
     assert done.wait(10) and got["breathe"] is True and got["drop_mode"] == "max"
+
+
+def test_breathe_holds_a_style_for_a_look_of_whole_bars():
+    """A look is held for whole bars (montage_rules.md 5.4): Breathe turns a passage's morph style every two bars in the
+    grooves, the builds and the drops and holds one through the outro, a drop's looks turning on from the style its
+    first beat opened on; about 4 looks a minute at the ends of the song and 10 to 11 between, not a new style a bar."""
+    from collections import Counter
+
+    shots, plan = _plan()
+    styles = pacing.styles(shots, {"breathe": True, "morph_style": "auto"}, plan["drop"], period=plan["period"])
+    passages = pacing.passage_of(shots)
+    two_bars = 8 * BEAT
+    starts: dict[int, float] = {}
+    for s, p in zip(shots, passages):
+        starts.setdefault(p, s["start"])
+
+    def look(i: int) -> int:
+        return int((shots[i]["start"] - starts[passages[i]] + 1e-3) // two_bars)
+
+    held = 0
+    for i in range(1, len(shots)):
+        s, prev = shots[i], shots[i - 1]
+        if pacing.LOOK_BARS.get(s["section"]) != 2 or passages[i] != passages[i - 1] or look(i) != look(i - 1):
+            continue
+        if "style" in (s.get("event"), prev.get("event")):  # a long run's planted style change
+            continue
+        assert styles[i] == styles[i - 1], (i, s["section"], styles[i - 1], styles[i])
+        held += 1
+    assert held > 20
+    assert len({st for s, st in zip(shots, styles) if s["section"] == "outro"}) == 1
+    for i, s in enumerate(shots):  # a drop holds the style its first beat opened on for its first two bars
+        if s.get("event") == "drop":
+            first = [j for j in range(i, len(shots)) if passages[j] == passages[i] and look(j) == 0 and shots[j].get("event") != "style"]
+            assert {styles[j] for j in first} == {styles[i]} and styles[i] in ("shatter", "spin")
+    secs, looks = Counter(), Counter()
+    for i, s in enumerate(shots):
+        g = {"calm": "groove", "sustain": "groove"}.get(s["section"], s["section"])
+        secs[g] += s["end"] - s["start"]
+        looks[g] += int(i == 0 or styles[i] != styles[i - 1] or passages[i] != passages[i - 1])
+    rate = {g: looks[g] / (secs[g] / 60.0) for g in secs}
+    assert all(7.0 <= rate[g] <= 13.0 for g in ("groove", "build", "drop")), rate
+    assert rate["outro"] <= 6.0, rate

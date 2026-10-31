@@ -1507,7 +1507,8 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     from xenoform import pacing as _pc
 
     # a paced cut on Auto takes its passages' styles (pacing.styles); else the setting or Auto, as before
-    shot_styles = _pc.styles(shots, state, plan.get("drop")) or _ms.for_cut({**state, "macros": macros(state)}, shots, plan.get("drop"))
+    shot_styles = (_pc.styles(shots, state, plan.get("drop"), period=plan.get("period"))
+                   or _ms.for_cut({**state, "macros": macros(state)}, shots, plan.get("drop")))
     if long_song:
         firsts: dict[int, str] = {}
         for k, ci in enumerate(chain["assign"]):
