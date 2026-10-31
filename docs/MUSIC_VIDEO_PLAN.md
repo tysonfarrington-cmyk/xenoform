@@ -55,7 +55,7 @@ backdrops ("morph an entire scene, not just a shape").
 | 3 | Backdrops: the Final/Cloud scene fixes, the `setting` kind (an object in a place), a Backdrop row, Draft sheets | backdrops | Opus 5.5 | stills.py, portrait.py, morph_pass.py (scene parts), cloud_final.py, final_tier.py, configs/still_prompts.json, configs/settings.json, app.js (one row), tests | now |
 | 4 | Assets into the app: the stills, the loved clips, the showcase, example cuts and cards, chain presets, records, strips | assets-in | Sonnet 5.5 | ui_static/**, examples/**, configs/chain_presets.json, configs/clip_pack.json, scripts/**, CREDITS.md, docs/LICENCES.md, vibes.py, stills.py (catalogue dedupe), app.js (preset chips), tests | now |
 | 2 | The taste file and its enforcement, chain presets as the carrier of what he loves, the morph cache, a stills import route | taste | Opus 5.5 | taste.py, configs/taste.json, guardrails.py, morph_pass.py, boundary_fx.py, beatfx.py, batch.py, morph_cache.py, ui.py, docs/TASTE.md | 1, 3 and 4 merged |
-| 5 | The whole-song music video: passages become window Makes, queued, assembled on the beat into one cut | song-plan | Opus 5.5 | song_plan.py, song_assemble.py, batch.py, dense.py, ui.py, app.js, docs/SONG.md | started 1 Nov on Tys's go |
+| 5 | The whole-song music video: passages become window Makes, queued, assembled on the beat into one cut | song-plan | Opus 5.5 | song_plan.py, song_assemble.py, batch.py, dense.py, ui.py, app.js, docs/SONG.md | landed 1 Nov as c74d844 |
 | 6 | Stems mode: each stem its own layer, objects or clips, cut by the same planner on the stem's drive, composited by prominence; a Stems step | stems-mode | Opus 5.5 | stems.py, stems_mode.py, stems_composite.py, dense.py (dispatch), guardrails.py, ui.py, app.js, docs/STEMS.md, tests | now (Tys's ask of 31 Oct) |
 
 Each session works in its own worktree and branch cut from `contest-rc2`, commits as Owly, never pushes. The
@@ -355,6 +355,35 @@ same composite byte for byte; the suite green with the fake split.
     Kept as built: flash looks stand down before the first drop even when chosen; kaleido steps aside per shot on
     living things; an idea line naming a small family still repeats (28 Oct decision); one-palette skips None;
     quiet-opener bites above Intensity 0.6.
+13. The whole song: landed 1 Nov as c74d844 (1547 passed on its tree): song_plan.py, song_run.py (POST /api/song
+    through the Variations queue, resumable, stoppable), song_assemble.py (the beat grid as montage.py, the title on
+    the last hit, tame and QA once, -16 LUFS, re-assemble with no GPU, song.json, Edit in Resolve), Whole song in
+    the Length row with the estimate by tier, docs/SONG.md. Proof: Desktop/xeno_song_1nov, Glitch Out 3:58 at
+    Draft 16:9, Neon noir on the main drop, 14 passages: Breathe 1.0 made 78 morphs in 23 minutes (23 flash frames
+    in all); plain 86 morphs (242 flash frames, no tame). The 60-cap question is settled by the design: no Make over
+    13 morphs. Cloud Final would be 281 to 468 credits for the Breathe song (the plan guessed 400 to 650); Final
+    here about 10 hours; Fast Final under two. Decided by the builder, for Tys to confirm: two loved chains never
+    pin one object in two passages (the lower slot keeps it); the title defaults to Xenoform (song_title, empty for
+    none); windows are hidden from My videos and never grow stills; Clips and Stems are refused as a whole song.
+    For Tys: (a) the chosen vibe takes only the main drop and no-vibe-twice spreads 14 vibes over one song,
+    non-featured ones included (Low-poly, Lava obsidian): too many looks? (b) a loved chain keeps its own style,
+    timing and effects in its passage, so the origami drop runs at 4.2 looks a minute against 8 to 12 elsewhere;
+    (c) the whole-noun test lets near-repeats through (dragon and origami dragon, rose and enchanted rose, glove
+    and helmet); (d) should a whole song always tame, even with Breathe off; (e) should the QA lag fix skip song
+    windows (it reads Breathe rests as freezes and cut windows short before aeb1b41).
+14. Demos of 1 Nov on the ZedsDead tracks (Desktop/xeno_demos_1nov: v1 Ferrofluid 16:9 with Breathe and plain, v2
+    Molten gold 9:16 with Breathe, v2 from the film pack with Breathe and plain). Found: a whole song can drift out
+    of sync by seconds when a window ends on a rest, because the window QA lag fix drops trailing held frames and
+    the assembly pads at most 0.25 s and checks the sound length rather than the picture (demo 2 ran 1.8 s early
+    from passage 2; repaired by hand; the fix is with the whole-song builder). The chosen vibe took the loudest
+    5 s run while the 24 s run after it went to a drawn vibe: decided 1 Nov, the main drop run is the heaviest by
+    heat times length and the chosen vibe owns it. Clips: the pacing engine reaches clips as the shot plan only
+    (73 shots under Breathe against 89), with no effects and no tame, and the rests freeze film (51 s of still
+    picture against 28); a clips cut renders a morph between clips (36 morphs, about 5 min). For Tys: Breathe and
+    the drops for clips, or rests off for clips; repeats by head noun (five skulls, three dragons); the objects the
+    rules do not see (pocket watch, chalice, plague mask, gauntlet and glove, heart, brain, femur, plain solids);
+    a curated clip set rather than the whole pack in order; the title for these tracks; portrait by Fast Final
+    (about an hour) for anything shared.
 
 ## 9. Working rules for every session
 
