@@ -178,8 +178,11 @@ def test_without_the_loved_chains_the_song_still_draws_one_look_a_passage(drop, 
 # ------------------------------------------------------------------------------------------------ the objects and bodies
 
 
-def test_no_object_twice_across_passages_and_every_slot_pinned(drop, tasted):
-    song = song_plan.plan(FEATURES, _state(quality_tier="final"), drop=drop, label="Glitch Out")
+@pytest.mark.parametrize("tier,breathe", [("final", 1.0), ("draft", 0.0)])
+def test_no_object_twice_across_passages_and_every_slot_pinned(drop, tasted, tier, breathe):
+    """Breathe off gives the loved chains more slots: the glow sea reaches its jellyfish and the black glass rose its
+    own, the gold finale its dragon and the smoke dragon opens on one; still no object twice."""
+    song = song_plan.plan(FEATURES, _state(quality_tier=tier, breathe=breathe), drop=drop, label="Glitch Out")
     seen: Counter = Counter()
     for w in song["windows"]:
         b = w["body"]
@@ -192,6 +195,43 @@ def test_no_object_twice_across_passages_and_every_slot_pinned(drop, tasted):
             assert w["stills"][0] == song["windows"][w["index"] - 1]["stills"][-1]
         assert not set(nouns[1 if w["part"] else 0:]) & set(b["avoid_nouns"])
     assert [n for n, k in seen.items() if k > 1] == []
+
+
+def test_two_loved_chains_never_pin_one_object_in_two_passages():
+    """The smoke dragon opens on its dragon and the gold finale pins one third: the dragon stays with the chain that pins
+    it first and the finale walks on to its next still. Your own pins are kept as you set them and keep the object (the
+    glow sea gives up its turtle). A still past the slots a window holds does not count."""
+    files = {"g/comb_jelly.jpg": "comb jelly", "g/jellyfish.jpg": "jellyfish", "g/turtle.jpg": "sea turtle",
+             "s/dragon.jpg": "dragon", "s/griffin.jpg": "griffin", "s/serpent.jpg": "serpent",
+             "l/phoenix.jpg": "phoenix", "l/lion_head.jpg": "lion head", "l/dragon.jpg": "dragon", "l/eagle.jpg": "eagle",
+             "l/koi.jpg": "koi", "n/rose.jpg": "rose", "n/turtle.jpg": "Sea-Turtle"}
+    chain = lambda *names: {str(i): f for i, f in enumerate(names)}  # noqa: E731
+
+    def song(gold_morphs: int) -> dict:
+        looks = [{"preset": "glow-sea", "why": "a loved chain"}, {"preset": "smoke-dragon", "why": "a loved chain"},
+                 {"preset": "", "why": "the vibe you chose, on the main drop"}, {"preset": "gold-finale", "why": "a loved chain"}]
+        roles = [("intro", 7.0), ("calm", 21.0), ("drop", 29.0), ("outro", 12.0)]
+        passages = [{"index": i, "role": r, "seconds": s, "look": lk, "windows": [i]} for i, ((r, s), lk) in enumerate(zip(roles, looks))]
+        passages[2].update({"main": True, "drop_run": 0, "heat": 1.0})
+        pins = [chain("g/comb_jelly.jpg", "g/jellyfish.jpg", "g/turtle.jpg"),
+                chain("s/dragon.jpg", "s/griffin.jpg", "s/serpent.jpg"),
+                {"0": "n/rose.jpg", "2": "n/turtle.jpg"},
+                chain("l/phoenix.jpg", "l/lion_head.jpg", "l/dragon.jpg", "l/eagle.jpg", "l/koi.jpg")]
+        morphs = [2, 2, 4, gold_morphs]
+        windows = [{"index": i, "passage": i, "part": 0, "morphs": m, "body": {"chain_pins": p}}
+                   for i, (m, p) in enumerate(zip(morphs, pins))]
+        return {"passages": passages, "windows": windows}
+
+    s = song(3)
+    song_plan._hold_pins(s, files)
+    got = [w["body"]["chain_pins"] for w in s["windows"]]
+    assert got[0] == chain("g/comb_jelly.jpg", "g/jellyfish.jpg")  # your turtle keeps it: the glow sea has no next still
+    assert got[1] == chain("s/dragon.jpg", "s/griffin.jpg", "s/serpent.jpg")  # the dragon opens the smoke dragon's chain
+    assert got[2] == {"0": "n/rose.jpg", "2": "n/turtle.jpg"}  # yours, as set
+    assert got[3] == chain("l/phoenix.jpg", "l/lion_head.jpg", "l/eagle.jpg", "l/koi.jpg")  # the finale walks on
+    short = song(1)  # the finale holds two stills: its dragon is past them, nothing steps out
+    song_plan._hold_pins(short, files)
+    assert short["windows"][3]["body"]["chain_pins"] == chain("l/phoenix.jpg", "l/lion_head.jpg")
 
 
 def test_the_window_bodies_are_exact_draft_objects_cuts(drop):

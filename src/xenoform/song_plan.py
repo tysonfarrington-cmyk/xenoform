@@ -582,23 +582,72 @@ def _repeats(rows: list[dict]) -> list[str]:
     return out
 
 
+def _hold_pins(song: dict, noun_of: dict[str, str]) -> None:
+    """Each window's pins, as many as it holds (a loved chain longer than its window: its first stills; a passage's
+    second window none, it opens where the first landed), with no object pinned in two passages. Two loved chains that
+    pin one object (the glow sea's jellyfish and the black glass rose's, the smoke dragon's dragon and the gold finale's)
+    keep it in the chain that pins it first (the lower slot, then the order the looks were drawn) and the other chain
+    walks on to its next still; your own pins (the vibe's on the desk, the loved chain you chose) are kept as you set
+    them and keep the object. Only the stills a window holds count. In place: every window's ``chain_pins``."""
+    from xenoform import taste
+
+    order = [k for i in _importance(song["passages"]) for k in song["passages"][i]["windows"]]
+    rank = {k: n for n, k in enumerate(order)}
+    chains: dict[int, list[str]] = {}  # a loved chain drawn by taste: its stills in order, one may step out
+    kept: dict[int, dict[str, str]] = {}  # yours, as set
+    for w in song["windows"]:
+        raw = {str(k): str(v) for k, v in (w["body"].get("chain_pins") or {}).items() if str(k).isdigit()}
+        look = song["passages"][w["passage"]].get("look") or {}
+        if w["part"]:
+            kept[w["index"]] = {}
+        elif look.get("preset") and look.get("why") != "the loved chain you chose":
+            chains[w["index"]] = [raw[k] for k in sorted(raw, key=int)]
+        else:
+            kept[w["index"]] = raw
+
+    def held(w: dict) -> dict[str, str]:
+        slots = int(w["morphs"]) + 1
+        if w["index"] in chains:
+            return {str(i): f for i, f in enumerate(chains[w["index"]][:slots])}
+        return {s: f for s, f in kept[w["index"]].items() if int(s) < slots}
+
+    settled: set[str] = set()
+    while True:
+        claims: dict[str, list[tuple]] = {}
+        for w in song["windows"]:
+            for s, f in held(w).items():
+                noun = taste.words_of(noun_of.get(f, ""))
+                if noun and noun not in settled:
+                    claims.setdefault(noun, []).append((w["index"] in chains, int(s), rank.get(w["index"], len(rank)),
+                                                        w["index"], f))
+        clash = next((sorted(c) for c in claims.values() if len({x[3] for x in c}) > 1), None)
+        if clash is None:
+            break
+        losers = [x for x in clash[1:] if x[3] != clash[0][3] and x[0]]  # only a loved chain drawn by taste walks on
+        if not losers:  # your own pins both ways: kept as you set them
+            settled.add(taste.words_of(noun_of.get(clash[0][4], "")))
+            continue
+        for x in losers:
+            chains[x[3]].remove(x[4])
+    for w in song["windows"]:
+        w["body"]["chain_pins"] = held(w)
+
+
 def objects(song: dict, features: dict) -> None:
     """The stills each window morphs through, picked the way its Make picks them (the chain it plans, the pick under the
     taste file, a fresh family on a drop run's first beat, one family a scene under full Breathe), the objects of every
     window picked before it left out (no object twice across passages) and pinned slot by slot in its body. The windows
     pick in the order the looks are drawn (the intro, the outro, the main drop, the other drops, then the longest
-    passages first), so the song's moments get first call on the library. A passage cut in two windows carries on: the
+    passages first), so the song's moments get first call on the library; two loved chains never pin one object in two
+    passages (``_hold_pins``). A passage cut in two windows carries on: the
     second opens on the still the first landed on. In place: each window's ``stills``, ``nouns`` and body pins, and
     every body's ``avoid_nouns`` (the other windows' objects, for any slot left free)."""
     from xenoform import cloud_morph, dense, morph_pass
 
     noun_of = {str(r.get("file")): str(r.get("noun") or "").strip().lower()
                for rows in morph_pass.catalogue().values() for r in rows if r.get("file")}
-    for w in song["windows"]:  # a loved chain's pins (and yours) are held: no window before them takes those objects
-        slots = int(w["morphs"]) + 1  # a loved chain longer than the window: as many of its stills as the window holds
-        pins = {k: v for k, v in (w["body"].get("chain_pins") or {}).items() if str(k).isdigit() and int(k) < slots}
-        w["body"]["chain_pins"] = {} if w["part"] else pins
-    reserved = {w["index"]: [noun_of.get(str(f), "") for f in w["body"]["chain_pins"].values()] for w in song["windows"]}
+    _hold_pins(song, noun_of)  # a loved chain's pins (and yours) are held: no window before them takes those objects
+    reserved ={w["index"]: [noun_of.get(str(f), "") for f in w["body"]["chain_pins"].values()] for w in song["windows"]}
     taken_nouns: list[str] = []
     taken_files: list[str] = []
     order = [k for i in _importance(song["passages"]) for k in song["passages"][i]["windows"]]

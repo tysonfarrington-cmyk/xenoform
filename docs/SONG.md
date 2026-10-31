@@ -29,7 +29,11 @@ hit) is a Make: **Fine-tune → Length → Whole song**, then **Make the whole s
    family a scene under full Breathe), the windows picking in the order the looks were drawn (the intro, the outro, the
    main drop, the other drops, then the longest passages) so the song's moments get first call on the library, each
    window leaving out every object the windows before it took and the objects a loved chain pins: **no object twice
-   across passages**. A vibe's own line that names a family too small for its passage (cosmic's "star field") is
+   across passages**. Two loved chains that pin one object (the glow sea's jellyfish and the black glass rose's, the
+   smoke dragon's dragon and the gold finale's: with Breathe off their passages reach those stills) keep it in the
+   chain that pins it first, the lower slot, and the other chain walks on to its next still; your own pins (the vibe's
+   on the desk, the loved chain you chose) stay as you set them and keep the object (`song_plan._hold_pins`). A vibe's
+   own line that names a family too small for its passage (cosmic's "star field") is
    dropped for that pick, which then walks on instead of lapping the family. Every slot is pinned in the window's body,
    so the Make renders exactly those stills and a re-run asks the morph cache for the very same morphs.
 4. **Runs the windows through the Variations queue** (`batch.Runner`, `song_run.py`): one batch, `vary` "song", one
