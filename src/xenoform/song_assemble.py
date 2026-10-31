@@ -5,8 +5,9 @@ window's cut laid end to end by song time, so its picture plays over the very se
 on the song's own hits), each cut between two windows on a beat of the song's own grid (``place``: a passage's start is
 pinned, the cut inside a passage goes where the outgoing morph has landed, then on beat 1, then on beat 3, and only
 where both windows have picture), every window checked by its own picture frames, never its file's length (``check``: a
-picture that came out short of its passage is held on its last frame for the whole shortfall, up to a bar, and refused
-past that; a window that plays a stretch shifted by whole beats must have the picture for it), the picture counted
+picture that came out short of its passage is held on its last frame for the whole shortfall, up to the larger of a bar
+and the rest its own plan ends on plus a beat (``hold_limit``), and refused past that; a window that plays a stretch
+shifted by whole beats must have the picture for it), the picture counted
 frame for frame against the song once laid, the flash tame once over the whole when Breathe is on (``deflash.Tame`` with each passage's rule), the title
 on the song's last hit (the hand-made video's "Xenoform" at 3:51), the song itself as the sound at -16 LUFS, and the QA
 pass once over the whole.
@@ -125,11 +126,13 @@ def slots(rec: dict, jobs: Path) -> list[dict]:
         bounds = sorted({round(offset + float(s.get("start") or 0.0), 4) for s in shots}
                         | {round(offset + float(s.get("end") or 0.0), 4) for s in shots})
         picture = float(info["picture_s"])
+        last = shots[-1] if shots else {}
+        rest_s = float(last.get("rest_s") or 0.0) if last.get("rest") else 0.0  # the rest the window's own plan ends on
         out.append({"window": w["index"], "passage": w["passage"], "part": int(w.get("part") or 0), "job": job,
                     "role": str(w.get("role") or ""), "mp4": mp4, "record": cut, "info": info, "offset": offset,
                     "seconds": picture, "sound_s": float(info["seconds"]), "frames": int(round(picture * FPS)),
                     "end": offset + picture, "bounds": bounds, "shift_beats": shift, "start": float(w["start"]),
-                    "want_end": float(w["end"])})
+                    "want_end": float(w["end"]), "rest_s": rest_s})
     return out
 
 
@@ -192,13 +195,24 @@ def place(a: dict, b: dict, want: float, beats: list[float], *, pin: bool, perio
     return {"at": round(t, 4), "want": round(want, 4), "why": reason(t), "beat": bar_pos(t), "pinned": False}
 
 
+def hold_limit(slot: dict, period: float) -> tuple[float, str]:
+    """How long a window's picture may be held on its last frame when it came out short of its slot, and why: the larger
+    of a bar (``HOLD_MAX_BARS``) and the rest its own plan ends on plus a beat. A shortfall within it is a rest an older
+    QA pass cut away (a ZedsDead intro lost 49 frames of the 3.3 s rest it closed on, at 144 BPM where a bar is 40
+    frames); one past it is a window that is really broken."""
+    bar = HOLD_MAX_BARS * 4.0 * float(period)
+    rest = float(slot.get("rest_s") or 0.0)
+    if rest > 0 and rest + float(period) > bar:
+        return rest + float(period), f"the {rest:.2f} s rest its plan ends on and a beat"
+    return bar, ("a bar" if HOLD_MAX_BARS == 1 else f"{HOLD_MAX_BARS} bars") + ("" if rest > 0 else "; its plan ends on no rest")
+
+
 def check(order: list[dict], cuts: list[float], period: float) -> list[str]:
     """The window checked (montage_check) by its own picture frames, never its file's length (a window's sound runs its
     passage's whole length even when its picture came out short): each slot plays a stretch its picture has, its shift
     applied. A picture that ends short of its slot is held on its last frame for the whole shortfall (``lay_picture``)
-    up to ``HOLD_MAX_BARS`` bars; past that, or a shift that runs out of picture, the slot is refused. The problems as
-    sentences ([] when every slot is covered)."""
-    bar = 4.0 * float(period)
+    up to ``hold_limit`` (a bar, or the rest the window's plan ends on and a beat); past that, or a shift that runs out
+    of picture, the slot is refused. The problems as sentences ([] when every slot is covered)."""
     bad = []
     for k, s in enumerate(order):
         a, b = cuts[k], cuts[k + 1]
@@ -213,10 +227,11 @@ def check(order: list[dict], cuts: list[float], period: float) -> list[str]:
             bad.append(f"{name} starts at {c0:.2f} in the song; its slot asks from {a:.2f}")
             continue
         f0, n, short = _span(s, cuts, k, period)
-        if short > HOLD_MAX_BARS * bar * FPS + 0.5:
+        limit, why = hold_limit(s, period)
+        if short > limit * FPS + 0.5:
             bad.append(f"{name} has {int(s['frames'])} frames of picture for the {f0 + n} its slot plays: {short} short "
-                       f"({short / FPS:.2f} s), more than {'a bar' if HOLD_MAX_BARS == 1 else f'{HOLD_MAX_BARS} bars'} "
-                       f"({HOLD_MAX_BARS * bar:.2f} s) to hold on its last frame; make that passage again")
+                       f"({short / FPS:.2f} s), more than the {limit:.2f} s it may be held on its last frame ({why}); "
+                       f"make that passage again")
     return bad
 
 
@@ -378,14 +393,14 @@ def _flash_rules(shots: list[dict], rec: dict, beats: list[float]) -> list | Non
     return pacing.flash_rules(shots, FPS, beats, breathe=pacing.amount_of(rec.get("breathe")))
 
 
-HOLD_MAX_BARS = 1  # a window's picture that ends short of its slot is held on its last frame for at most this many bars
+HOLD_MAX_BARS = 1  # a short window's picture is held on its last frame for at least this many bars (``hold_limit``)
 
 
 def lay_picture(order: list[dict], cuts: list[float], size: tuple[int, int], dest: Path, period: float) -> int:
     """The windows' stretches end to end, silent, at ``FPS`` and ``size``, each frame-exact: ``trim`` on exactly the
     frames the slot plays, a window whose picture came out short (a QA lag fix that dropped the held frames of the rest
     it closed on: 49 frames on a ZedsDead intro, 1 Nov) held on its own last frame for the whole shortfall first, else
-    every window after it would play that much early against the song (``check`` refuses one more than a bar short).
+    every window after it would play that much early against the song (``check`` refuses one short past ``hold_limit``).
     The picture is counted after: one that is not frame for frame the song's is refused. Returns the frame count."""
     w, h = size
     frames = [int(round(c * FPS)) for c in cuts]

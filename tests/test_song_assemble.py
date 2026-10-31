@@ -155,10 +155,39 @@ def test_a_window_49_frames_short_is_held_and_the_song_stays_in_sync(mini):
     assert after[..., 2].mean() > 150 > after[..., 1].mean()  # the blue window on its own first frame, on time
 
 
-def test_a_window_more_than_a_bar_short_is_refused_with_a_clear_line(mini):
+def test_a_window_ending_on_its_planned_rest_is_held_past_a_bar(mini):
+    """The ZedsDead intro (1 Nov): 49 frames short at 144 BPM, where a bar is 40 frames, its plan ending on a 2 s rest
+    an older QA pass cut away. The limit is the larger of a bar and that rest plus a beat, so it is held and the song
+    stays in sync; the same window with no rest in its plan is refused, as a window really broken."""
+    period = 60.0 / 144.0
+    rec = song_run.load(mini["folder"])
+    rec["song"].update({"tempo": 144.0, "beats": [round(k * period, 4) for k in range(int(LENGTH / period) + 1)]})
+    song_run.save(mini["folder"], rec)
     a, b = mini["cuts"][1], mini["cuts"][2]
-    _clip(mini["jobs"] / "job1aaaa" / "xenoform.mp4", "green", (b - a) - 70 / 24.0, sound=b - a)  # a bar is 64 at 90 BPM
-    with pytest.raises(song_assemble.AssemblyError, match="70 short .* more than a bar .* make that passage again"):
+    job = mini["jobs"] / "job1aaaa"
+    _clip(job / "xenoform.mp4", "green", (b - a) - 49 / 24.0, sound=b - a)  # 49 frames short; its sound whole
+    bare = json.loads((job / "simple" / "simple.json").read_text(encoding="utf-8"))
+    rested = json.loads(json.dumps(bare))
+    rested["shots"][-1].update({"rest": 5, "rest_s": round(5 * period, 4)})  # the 2.08 s rest its plan ends on
+    (job / "simple" / "simple.json").write_text(json.dumps(rested), encoding="utf-8")
+    got = song_assemble.assemble(mini["folder"], mini["jobs"], qa=False)
+    assert [w["padded_frames"] for w in got["assembly"]["windows"]] == [0, 49, 0] and got["assembly"]["frames"] == 576
+    after = _frame(mini["folder"] / "xenoform.mp4", b + 1.5 / 24)
+    assert after[..., 2].mean() > 150 > after[..., 1].mean()  # the blue window on its own first frame, on time
+    (job / "simple" / "simple.json").write_text(json.dumps(bare), encoding="utf-8")  # no rest planned: a bar is the limit
+    with pytest.raises(song_assemble.AssemblyError,
+                       match=r"49 short \(2\.04 s\), more than the 1\.67 s it may be held on its last frame \(a bar; its plan "
+                             r"ends on no rest\); make that passage again"):
+        song_assemble.assemble(mini["folder"], mini["jobs"], qa=False)
+
+
+def test_a_window_more_than_a_bar_short_is_refused_with_a_clear_line(mini):
+    """70 frames short at 90 BPM (a bar is 64) with no rest in its plan: a window really broken, refused with its limit."""
+    a, b = mini["cuts"][1], mini["cuts"][2]
+    _clip(mini["jobs"] / "job1aaaa" / "xenoform.mp4", "green", (b - a) - 70 / 24.0, sound=b - a)
+    with pytest.raises(song_assemble.AssemblyError,
+                       match=r"70 short \(2\.92 s\), more than the 2\.67 s it may be held on its last frame \(a bar; its plan "
+                             r"ends on no rest\); make that passage again"):
         song_assemble.assemble(mini["folder"], mini["jobs"], qa=False)
     error = song_run.load(mini["folder"])["assembly"]["error"]
     assert "window 2 (drop, passage 2)" in error and not (mini["folder"] / "xenoform.mp4").exists()

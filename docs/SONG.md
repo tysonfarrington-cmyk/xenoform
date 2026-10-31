@@ -56,8 +56,10 @@ hit) is a Make: **Fine-tune → Length → Whole song**, then **Make the whole s
    its beat; inside a passage cut in two the cut goes where the outgoing morph lands, then on beat 1, then on beat 3,
    only where both windows have picture); every window checked by its own picture frames, never its file's length
    (`check`, montage_check.py's test: a window's sound runs its passage's whole length even when its picture came out
-   short), a picture short of its slot held on its last frame for the whole shortfall, up to a bar, and the assembly
-   refused past that with the window to make again; a window that plays a stretch shifted by whole beats must have the
+   short), a picture short of its slot held on its last frame for the whole shortfall, up to the larger of a bar and
+   the rest the window's own plan ends on plus a beat (a rest an older QA pass cut away is known from the plan: the
+   ZedsDead intro's 49 frames, at 144 BPM where a bar is 40, are held), and the assembly refused past that, as a window
+   really broken, with the window to make again; a window that plays a stretch shifted by whole beats must have the
    picture for it; the laid picture counted frame for frame against the song; the flash tame once over the whole when Breathe is on (each
    passage's rule, `pacing.flash_rules`); the title on the song's last hit (the last bar line with the song's loudest
    onset and level, at least 3 s from the end: 3:51 on Glitch Out, where the hand-made video put it), the shot dimmed
@@ -138,8 +140,9 @@ and open from the song's timeline.
 - **Shift a stretch**: set `shift_beats` on a window in `song.json` (whole beats; positive plays a later stretch of the
   cut) and re-assemble. The window is checked first: a window is made exactly as long as its passage, so a shift only
   fits where the window has picture to spare, and one that runs out is refused with the times it asks for.
-- **A window refused as short**: "window 1 (intro, passage 1) has 230 frames of picture for the 292 its slot plays: 62
-  short (2.58 s), more than a bar (1.67 s) to hold on its last frame; make that passage again". Resume does not run a
+- **A window refused as short**: "window 2 (drop, passage 2) has 122 frames of picture for the 192 its slot plays: 70
+  short (2.92 s), more than the 2.67 s it may be held on its last frame (a bar; its plan ends on no rest); make that
+  passage again". The limit is a bar, or the rest the window's plan ends on and a beat when that is longer. Resume does not run a
   window that is done: make the whole song again from the desk. Every morph already rendered comes from the morph
   cache (the second plain Glitch Out rendered 6 of its 86), so it costs the windows' Makes around them, and a window's
   QA no longer cuts its rest away.
