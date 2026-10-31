@@ -147,6 +147,14 @@ def build_parser() -> argparse.ArgumentParser:
     status_p = lib_sub.add_parser("status", help="Stills per vibe: shipped, grown here, your own.")
     _add_config(status_p)
 
+    cache = sub.add_parser("morph-cache", help="The morph cache: clips kept by what they were made from, so a request never renders twice.")
+    cache_sub = cache.add_subparsers(dest="cache_cmd", required=True)
+    seed_p = cache_sub.add_parser("seed", help="Keep the morphs the jobs on disk already rendered (read from each clip's own graph).")
+    seed_p.add_argument("--work", default="", help="The desk's work folder (default: work/ui beside this checkout).")
+    seed_p.add_argument("--dry-run", action="store_true", help="Read and count; keep nothing.")
+    seed_p.add_argument("--limit", type=int, default=None, help="Read at most this many clips.")
+    cache_sub.add_parser("status", help="Clips kept per engine.")
+
     midi = sub.add_parser("midi", help="MIDI controller bridge (needs: pip install \"xenoform[midi]\").")
     midi_sub = midi.add_subparsers(dest="midi_cmd", required=True)
     midi_sub.add_parser("list", help="List MIDI input ports.")
@@ -366,6 +374,31 @@ def _dispatch(args, cfg: dict) -> None:
             print(f"{len(p['nouns'])} {what} for {args.vibe}: {', '.join(p['nouns'])}")
             res = stills.grow(args.vibe, count, nouns=p["nouns"], own=own, cfg=cfg, seed=args.seed, progress=tick, kind=kind)
             print("\n" + stills.summary_line(res) + f" in {res['seconds']} s -> {stills.root() / args.vibe}")
+        return
+
+    if args.cmd == "morph-cache":
+        from xenoform import morph_cache as mc
+
+        if args.cache_cmd == "status":
+            got = mc.status()
+            print(f"morph cache: {got['cache']}")
+            for eng, row in got["engines"].items():
+                print(f"{eng:12s} {row['clips']:5d} clips  {row['mb']:8.1f} MB")
+            return
+        work = Path(args.work) if args.work else mc.ROOT / "work" / "ui"
+        if not (work / "jobs").is_dir():
+            raise SystemExit(f"{work} has no jobs folder")
+        res = mc.seed(work, dry_run=bool(args.dry_run), limit=args.limit)
+        verb = "would keep" if res["dry_run"] else "kept"
+        print(f"{res['seen']} clips read under {work / 'jobs'}: {verb} {res['kept']}, already kept {res['had']}"
+              + (f", skipped {sum(res['skipped'].values())}" if res["skipped"] else "") + f" -> {res['cache']}")
+        for why, n in res["skipped"].items():
+            print(f"  skipped {n}: {why}")
+        for eng, n in res["engines"].items():
+            print(f"  {eng}: {n}")
+        if res.get("repeats"):
+            print(f"  {res['repeats']} were the same request rendered again: "
+                  + ", ".join(f"{e} {n}" for e, n in res["repeats_by_engine"].items()))
         return
 
     if args.cmd == "midi":

@@ -831,6 +831,8 @@ def _run_turbo(
         "quality": "turbo",
         # what the pacing engine planned, in a line ("3 drops, the main at 1:59; 6 passages; 4 rests"), for the job
         "plan_line": str(((morph_info or {}).get("pacing") or {}).get("line") or "") if isinstance(morph_info, dict) else "",
+        # what the taste file did in the Make (xenoform.taste), as [taste] lines for the cut's guardrail notes on the desk
+        "taste_lines": list(((morph_info or {}).get("taste") or {}).get("lines") or []) if isinstance(morph_info, dict) else [],
     }
 
 

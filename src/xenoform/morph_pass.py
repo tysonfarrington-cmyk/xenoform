@@ -137,7 +137,7 @@ def tuned(vibe: str) -> dict:
 
 def _drop_bad_pairs(pool: list[dict], bad: set) -> list[dict]:
     """Reorder so no adjacent pair is on the autotune blocklist (either order), when a reorder can do it."""
-    if not bad:
+    if not bad or not pool:  # an empty pool (every object banned, a scenes-only vibe) has no pair to reorder
         return pool
     bad = set(bad) | {(b, a) for a, b in bad}
     out, rest = [pool[0]], list(pool[1:])
@@ -422,6 +422,27 @@ def pick_stills(state: dict, count: int, record: bool = True, scene_at: list[int
         scene_rows.sort(key=lambda r: 0 if str(r.get("noun") or "").lower() in wanted_scenes else 1)  # the typed place opens
     words = stills.content_words(_story_words(state))  # the stop words out: "to" must not pick the reel-to-reel
     typed = stills.content_words(_idea_words(state))  # the idea line and the brief: what the user actually asked for
+    from xenoform import taste as _taste
+
+    if _taste.active():
+        # the taste file's bans before the walk (configs/taste.json): the app never picks a cup, a wheel or a pirate on its
+        # own; a shape the user typed or asked for stays theirs, and the pinned stills and your images are held apart above
+        typed_own = {stills.clean_noun(n) for n in list(reading.get("own") or []) + list(reading.get("objects") or [])
+                     + stills.own_nouns(str(state.get("own_shapes") or ""))}
+
+        def _asked(r: dict) -> bool:
+            noun = str(r.get("noun") or "").lower()
+            return noun in typed_own or bool(stills.noun_keys(noun) & typed)
+
+        kept_pool, out_pool = _taste.screen(pool, _asked)
+        kept_own, out_own = _taste.screen(own, _asked)
+        kept_scenes, out_scenes = _taste.screen(scene_rows, _asked)
+        if (kept_pool or kept_own or kept_scenes or not (pool or own or scene_rows)) or held or user_targets(state):
+            pool, own, scene_rows = kept_pool, kept_own, kept_scenes
+            _taste.note_dropped(out_pool + out_own + out_scenes, asked or vibe)
+        else:  # every still the vibe has is banned: the bans step aside rather than leave the cut with nothing
+            _taste.note([r["id"] for _, r in out_pool + out_own + out_scenes][:1] or "taste",
+                        f"every {asked or vibe} still is one the taste file bans: the pick takes them as they are")
     # objects that belong together: the cut draws on one family first (the idea line's word, else the vibe's
     # heaviest family, the tie turned by the seed), freshest first within it, the rest of the pool after
     named = str(reading.get("family") or "") or stills.family_named(asked or vibe, typed) \
@@ -436,14 +457,23 @@ def pick_stills(state: dict, count: int, record: bool = True, scene_at: list[int
         # only a family the idea line names reorders them; the vibe's own family groups the grown library behind.
         used = stills.usage().get(vibe) or {}  # a tick a cut, so a bigger number is a more recent cut
 
-        def key(r):
+        def key(r, weighed: bool = True):
             tick = int(used.get(str(r.get("file")), 0))
             in_family = 0 if (named or not r.get("shipped")) and r.get("family") == family else 1
+            # the taste file's family weight (natural-first): natural and iconic families before the rest, inside each
+            # freshness group; 0 for every row with no taste file, and the shipped curated chains keep their own order
+            first = _taste.tier(r.get("family")) if weighed and (named or not r.get("shipped")) else 0
             # the idea's family leads over freshness (a second cut of the chess idea still opens on the machines,
             # longest-unused first); the vibe's own family only groups the fresh rows
-            return (in_family, tick) if named else (0 if tick == 0 else 1, in_family, tick)
+            return (in_family, first, tick) if named else (0 if tick == 0 else 1, first, in_family, tick)
 
-        pool.sort(key=key)
+        if _taste.active():
+            plain = [r.get("file") for r in sorted(pool, key=lambda r: key(r, False))[:count]]
+            pool.sort(key=key)
+            if [r.get("file") for r in pool[:count]] != plain:
+                _taste.note("natural-first", f"natural or iconic families first in the {asked or vibe} pool")
+        else:
+            pool.sort(key=key)
     lead = next((i for i, item in enumerate(pool) if set(item["noun"].split()) & typed), None)
     if lead is None:
         lead = next((i for i, item in enumerate(pool) if set(item["noun"].split()) & words), None)
@@ -467,20 +497,59 @@ def pick_stills(state: dict, count: int, record: bool = True, scene_at: list[int
     elif len(pool) >= stills.REALM_LIBRARY:
         # no line: the cut stays in one realm (creatures, garden, cosmos, machines, dark fantasy, home and craft) with
         # enough stills to carry it, the one this vibe has used least (the seed breaks a tie, so cuts take turns),
-        # family by family, so neighbours belong together
+        # family by family, so neighbours belong together. Under the taste file the realms are sized on the pool after
+        # its bans (screened above) and on what a cut may draw from them (``taste.usable``: one still an object, a run's
+        # one), so a realm the banned stills or a second still of one object would fill out never carries a cut alone
         by_realm: dict[str, list[dict]] = {}
         for r in pool:
             name = stills.realm_of(str(r.get("family") or ""))
             if name:
                 by_realm.setdefault(name, []).append(r)
-        fit = sorted(n for n, rows in by_realm.items() if len(rows) >= min(int(count), THEME_CHAIN_MIN))
+        fit = sorted(n for n, rows in by_realm.items() if len(_taste.usable(rows)) >= min(int(count), THEME_CHAIN_MIN))
         if fit:
+            # the taste file's family weight: the realms of natural and iconic families take their turns first (creatures,
+            # garden, cosmos, dark fantasy before the machines and the home); every realm as before with no taste file
+            first = _taste.first_realms(fit, by_realm)
+            if first and len(first) < len(fit):
+                _taste.note("natural-first", f"natural or iconic families first: the cut draws on the {' or the '.join(first)} "
+                                             f"realm before {', '.join(n for n in fit if n not in first)}")
+                fit = first
             used = stills.usage().get(vibe) or {}
             worn = {n: sum(int(used.get(str(r.get("file")), 0)) for r in by_realm[n]) / len(by_realm[n]) for n in fit}
             fresh = [n for n in fit if worn[n] == min(worn.values())]
             name = fresh[int(state.get("seed") or 0) % len(fresh)] if len(fresh) > 1 else fresh[0]
             fams = stills.REALMS[name]
-            pool = sorted(by_realm[name], key=lambda r: fams.index(r.get("family")))
+            realm_pool = _taste.by_weight(sorted(by_realm[name], key=lambda r: fams.index(r.get("family"))))
+            def short(rows: list[dict]) -> bool:  # fewer objects than the cut may show once each
+                return len(_taste.usable(rows)) < int(count)
+
+            if _taste.rule("no-object-twice") and short(realm_pool):
+                # the taste file's no object twice: a realm too small for the cut (a default ten-morph cut of liquid gold
+                # drew the nine stills of its cosmos and showed the orb and the mobius twice, 31 Oct) walks on into the
+                # next realms (the natural and iconic ones first, the least used next) rather than lap its own stills
+                top = _taste.first_at() or 0.0
+                order = sorted((n for n in by_realm if n != name),
+                               key=lambda n: (0 if _taste.realm_weight(by_realm[n]) >= top else 1,
+                                              sum(int(used.get(str(r.get("file")), 0)) for r in by_realm[n]) / len(by_realm[n]), n))
+                joined = []
+                for n2 in order:
+                    if not short(realm_pool):
+                        break
+                    realm_pool = realm_pool + _taste.by_weight(sorted(by_realm[n2], key=lambda r, f=stills.REALMS[n2]: f.index(r.get("family"))))
+                    joined.append(n2)
+                if short(realm_pool):
+                    realm_pool = realm_pool + [r for r in pool if not stills.realm_of(str(r.get("family") or ""))]
+                if joined:
+                    k = len(_taste.usable(by_realm[name]))
+                    _taste.note("no-object-twice", f"the {name} realm holds {k} different object{'s' if k != 1 else ''}, fewer "
+                                                   f"than the cut's {int(count)}: it walks on into the {', then the '.join(joined)} "
+                                                   f"realm rather than repeat one")
+            pool = realm_pool
+    if _taste.active():
+        # what the taste file sends to the back (taste.settle): a second still of an object the cut has (no object twice),
+        # a run's stills past one (the musical run), a vibe's demoted stills (plain marble chess) and stills off the palette
+        taken = [str(r.get("noun") or "") for r in held.values()] + [str(r.get("noun") or "") for r in user_targets(state)]
+        pool, own = _taste.settle(own + pool, vibe=asked or vibe, taken=taken), []
     pool = _drop_bad_pairs(pool, {tuple(p) for p in autotune().get("bad_pairs") or []})
     # A chain of ``count`` takes the first ``count`` objects when the pool is bigger, so the walk below only
     # repeats pairings when the whole pool is smaller than the cut (a 20 s clip over twelve stills never repeats one).

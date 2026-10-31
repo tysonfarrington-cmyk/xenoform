@@ -50,6 +50,12 @@ xenoform stills import cosmic C:\some\folder\of\pngs
 
 `--plan` prints the subjects and prompts without rendering; `xenoform stills status` prints the counts.
 
+On the desk the Library row's **Import a folder** does the import: type a folder of pictures on this machine, choose
+what they are (Things, Scenes or Places) and press Import. Every png, jpg or webp goes through the same checks as a
+grown still (the scenes and places through their relaxed ones), is named by its file name and kept under its kind, or
+set aside in the vibe's `rejected/` folder; the status line counts them as they go. No GPU; one import or grow at a time
+(`POST /api/stills/import`, at most 300 pictures an import).
+
 ## The prompt
 
 A new still must sit on the same backdrop and light as the pool it joins, or a morph between an old and a new still

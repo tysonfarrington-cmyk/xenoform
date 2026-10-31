@@ -335,9 +335,25 @@ def mix_stem_env(env: dict | None, beats: Iterable[float] = (), fps: int | None 
             "drum_strong": [round(float(b), 3) for b in beats]}
 
 
-def resolve_dance_preset(choice, vibe: str | None = None, house: dict | None = None) -> str:
+def resolve_dance_preset(choice, vibe: str | None = None, house: dict | None = None, *, before_drop: bool = False,
+                         index: int = 1) -> str:
     """The Simple ``dance_fx`` key -> "off", "house" (per-role house presets) or a preset name.
-    "auto": the vibe's configs/vibes.json ``fx_defaults.dance_fx`` when present, else the house vj preset."""
+    "auto": the vibe's configs/vibes.json ``fx_defaults.dance_fx`` when present, else the house vj preset.
+
+    ``before_drop`` (a shot before the cut's first drop, ``index`` its place in the cut): under the taste file's
+    ``no-flash-before-drop`` a flash look resolves to the calm look, and the house look's opening role (its flash on the
+    first shot) to the house's VJ preset (``taste.calm_look``); as before with no taste file."""
+    preset = _resolve_dance_preset(choice, vibe, house)
+    if before_drop:
+        from xenoform import taste as _taste
+
+        calm = _taste.calm_look(preset, int(index), house)
+        if calm:
+            return calm
+    return preset
+
+
+def _resolve_dance_preset(choice, vibe: str | None = None, house: dict | None = None) -> str:
     from xenoform import dance_fx as D
 
     text = str(choice if choice is not None else "auto").strip().lower()

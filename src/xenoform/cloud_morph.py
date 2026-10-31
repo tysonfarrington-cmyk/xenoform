@@ -668,7 +668,11 @@ def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, cli
     """Free: one LTX 0.9.5 A->B morph per shot through the existing morph graph.
 
     ``size`` overrides the render size (Draft 9:16 renders portrait 320x576 from re-laid stills); ``styles`` is how
-    each shot's object changes (``morph_style``: melt, shatter, bloom, spin, fold; Melt when not given)."""
+    each shot's object changes (``morph_style``: melt, shatter, bloom, spin, fold; Melt when not given).
+
+    The morph cache (``morph_cache``) is asked first: a shot whose request (both stills' bytes, the prompt, the seed,
+    the whole graph) was rendered before is copied from it and never queued; a shot rendered here is kept in it."""
+    from xenoform import morph_cache as mc
     from xenoform import morph_pass as mp
 
     render_w, render_h = (int(size[0]), int(size[1])) if size else (mp.WIDTH, mp.HEIGHT)
@@ -683,10 +687,11 @@ def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, cli
         return assets[path]
 
     jobs = []
+    queued: dict[int, Any] = {}  # shot -> its ComfyUI job (a cached shot has none)
+    keys: dict[int, Any] = {}
+    cached: dict[int, Path] = {}
     for i, shot in enumerate(shots):
         wf = client.workflows.from_file(str(graph))
-        wf.set_input("6", "image", asset(stills[i]["path"]))
-        wf.set_input("7", "image", asset(stills[i + 1]["path"]))
         from xenoform.guardrails import guard_prompt
 
         kinds = mp.pair_kinds(stills[i], stills[i + 1])  # a pair that touches a scene gets the scene prompt
@@ -710,21 +715,42 @@ def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, cli
             wf.set_input("22", "strength", float(tune["guide_end_strength"]))
         wf.set_input("13", "noise_seed", int(seed) + i)
         wf.set_input("18", "fps", float(FPS))
+        # the request, keyed before anything is uploaded: the same one rendered before is copied and never queued
+        keys[i] = mc.key_for(getattr(wf, "json", None) or {}, {"6": stills[i]["path"], "7": stills[i + 1]["path"]}, "ltx095") \
+            if isinstance(getattr(wf, "json", None), dict) else None
+        dest = work / f"local{i:02d}.mp4"
+        if mc.get("ltx095", keys[i], dest):
+            cached[i] = dest
+            continue
+        wf.set_input("6", "image", asset(stills[i]["path"]))
+        wf.set_input("7", "image", asset(stills[i + 1]["path"]))
         mp.stop_queued(jobs, cancel)
-        jobs.append(client.submit(wf))
+        queued[i] = client.submit(wf)
+        jobs.append(queued[i])
     clips = []
     started = time.perf_counter()
-    for i, job in enumerate(jobs):
+    rendered = 0
+    for i in range(len(shots)):
+        dest = work / f"local{i:02d}.mp4"
+        if i in cached:
+            clips.append(cached[i])
+            if report:
+                report("restyle", 0.1 + 0.45 * (i + 1) / len(shots), f"Morph {i + 1} of {len(shots)} (kept from an earlier render)")
+            continue
+        job = queued[i]
         mp.wait_or_cancel(job, jobs, cancel)
         result = _job_result(client, job)
         outs = list(result.get_outputs("19")) or list(result.outputs)
-        dest = work / f"local{i:02d}.mp4"
         next((o for o in outs if getattr(o, "type", None) == "video"), outs[0]).to_file(str(dest))
         clips.append(dest)
+        mc.put("ltx095", keys.get(i), dest)
+        rendered += 1
         if report:  # the desk re-estimates from the real pace of "Morph k of N"
-            pace = (time.perf_counter() - started) / (i + 1)
-            left = int(round(pace * (len(jobs) - i - 1)))
-            report("restyle", 0.1 + 0.45 * (i + 1) / len(jobs), f"Morph {i + 1} of {len(jobs)}" + (f" · about {left} s left" if left else ""))
+            pace = (time.perf_counter() - started) / rendered
+            left = int(round(pace * (len(jobs) - rendered)))
+            report("restyle", 0.1 + 0.45 * (i + 1) / len(shots), f"Morph {i + 1} of {len(shots)}" + (f" · about {left} s left" if left else ""))
+    if cached:
+        log.info("morph cache: %d of %d Draft morphs kept from earlier renders, %d rendered", len(cached), len(shots), rendered)
     return clips
 
 

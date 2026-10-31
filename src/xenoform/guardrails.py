@@ -4,7 +4,8 @@ One place for every rule (configs/guardrails.json). ``apply(body)`` returns a
 cleaned copy of the render settings plus a report. The desk (/api/generate),
 the MCP tools and the CLI all call it. ``expert=True`` keeps the user's values
 and turns each clamp into a warning, except hard bans (shimmer, the T5 encoder
-on LTX-2.x) which always apply.
+on LTX-2.x) which always apply. The taste file's rules (configs/taste.json,
+``taste.guard_body``) come last, as ``[taste]`` lines.
 """
 
 from __future__ import annotations
@@ -352,6 +353,12 @@ def apply(body: dict | None, *, expert: bool | None = None, duration: float | No
             else:
                 body["open_weights_only"] = False
                 rep.warn("open_weights", "this render is NOT contest-eligible (partner node)")
+
+    # Tys's taste (configs/taste.json, xenoform.taste): what it changes in the body, and what the Make will do with the
+    # body as it is, as [taste] lines; nothing at all when the taste file is absent
+    from xenoform import taste as _taste
+
+    _taste.guard_body(body, rep, expert=expert)
 
     body["blocks"] = blocks if "blocks" in body else body.get("blocks")
     if body["blocks"] is None:

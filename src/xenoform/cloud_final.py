@@ -165,22 +165,25 @@ def cloud_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
                 state: dict | None = None, styles: list[str] | None = None, backend=None,
                 name: str | None = None) -> tuple[list[Path], list[dict]]:
     """Render every shot's morph on Comfy Cloud. Returns the clips (at the render size; the caller scales them) and
-    one note per shot that fell back to its Draft morph. ``name`` picks the graph (``model()`` when not given)."""
+    one note per shot that fell back to its Draft morph. ``name`` picks the graph (``model()`` when not given).
+
+    The morph cache (``morph_cache``, engine ``ltx25cloud`` or ``ltx23cloud``) answers first: a shot whose request was
+    rendered on Comfy Cloud before is copied from it, and nothing of it is uploaded or sent, so it spends no credit. The
+    shots it does not answer go to Comfy Cloud behind the usual gate (the key in the environment, the graph on disk, no
+    partner node), checked before the first upload; with every shot answered nothing is sent at all. The Make's own
+    gate (the credits tick, ``dense.run_simple``) comes before all of this."""
     from xenoform import cloud_backend as cb
     from xenoform import final_tier
+    from xenoform import morph_cache as mc
     from xenoform import morph_pass as mp
     from xenoform.guardrails import guard_prompt, negative_for
     from xenoform.turbo import JobCancelled
 
-    gate = ready()
-    if not gate["ready"]:
-        raise cb.CloudRefused(gate["why"])
     if len(shots) > MAX_MORPHS:
         raise cb.CloudRefused(f"Cloud Final takes at most {MAX_MORPHS} morphs; this cut has {len(shots)}. "
                               "A shorter Length keeps it under.")
     name = name or model()
     a_node, b_node = INPUT_NODES[name]
-    backend = backend or cb.CloudBackend.from_config(cfg)
     work = Path(work)
     w, h = RENDER_916 if vertical else RENDER_169
     from xenoform.portrait import portrait_stills, suffix_for
@@ -207,14 +210,26 @@ def cloud_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
                 "inputs": {a_node: Path(stills[i]["path"]), b_node: Path(stills[i + 1]["path"])}}
 
     jobs = [job(i) for i in range(len(shots))]
-    for j in jobs:  # the whole batch is refused up front, before any upload, if one graph has a partner node
-        backend.prepare(j["graph"])
+    engine = name + "cloud"  # ltx25cloud / ltx23cloud: the cache never answers a Cloud shot with a local render
     clips: dict[int, Path] = {}
+    for i, j in enumerate(jobs):  # the morph cache first: a hit is copied and never sent
+        j["key"] = mc.key_for(j["graph"], j["inputs"], engine)
+        if mc.get(engine, j["key"], work / f"cloud{i:02d}.mp4"):
+            clips[i] = work / f"cloud{i:02d}.mp4"
+    pending = [i for i in range(len(jobs)) if i not in clips]
+    if clips and report:
+        report("restyle", 0.12, f"Cloud Final: {len(clips)} of {len(jobs)} morphs kept from earlier renders, nothing sent for them")
+    if pending:  # the usual gate, before the first upload: the key, the graph, and no partner node in any graph sent
+        gate = ready()
+        if not gate["ready"]:
+            raise cb.CloudRefused(gate["why"])
+        backend = backend or cb.CloudBackend.from_config(cfg)
+        for i in pending:  # the whole batch is refused up front, before any upload, if one graph has a partner node
+            backend.prepare(jobs[i]["graph"])
     notes: list[dict] = []
     failed: list[int] = []
-    pending = list(range(len(jobs)))
-    done = 0
-    with ThreadPoolExecutor(max_workers=backend.max_parallel) as pool:
+    done = len(clips)
+    with ThreadPoolExecutor(max_workers=backend.max_parallel if pending else 1) as pool:  # every shot kept: nothing to send
         running = {}
         while pending or running:
             while pending and len(running) < backend.max_parallel and not (cancel and cancel()):
@@ -234,6 +249,7 @@ def cloud_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
                     dest = work / f"cloud{i:02d}.mp4"
                     shutil.move(str(videos[0]), dest)
                     clips[i] = dest
+                    mc.put(engine, jobs[i].get("key"), dest)  # kept: the same request never spends a credit again
                 except Exception as exc:  # noqa: BLE001 - a failed shot falls back to its Draft morph
                     failed.append(i)
                     notes.append({"shot": i, "fallback": "ltx095-draft", "why": str(exc)[:200]})

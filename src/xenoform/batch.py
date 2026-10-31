@@ -82,6 +82,9 @@ def _vibes(body: dict, count: int) -> list[tuple[str, dict]]:
     first = str(body.get("vibe") or (featured[0] if featured else ""))
     at = featured.index(first) + 1 if first in featured else 0
     order = [first] + [v for v in featured[at:] + featured[:at] if v != first]
+    from xenoform import taste as _taste
+
+    order = _taste.fresh_vibes(order)  # no vibe twice, and no demoted vibe past the one chosen (the taste file)
     out = []
     for k, vid in enumerate(order[:count]):
         b = _draft(body)
