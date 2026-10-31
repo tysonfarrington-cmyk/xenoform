@@ -90,7 +90,7 @@ def test_thin_takes_from_the_calm_first_keeps_the_cuts_and_minds_the_clip_length
     rows[6]["event"] = "drop"
     shots = clip_cut._frames(rows)
     kind = ["clip", "morph", "clip", "morph", "clip", "morph", "clip", "morph", "clip", "morph", "clip", "morph"]
-    out, kd = clip_cut.thin(shots, kind, 5, period, steps={"calm": 8, "drop": 4}, longest_s=13.0)
+    out, kd = clip_cut.thin(shots, kind, 5, period, longest_s=13.0)
     clips = [s for s, k in zip(out, kd) if k == "clip"]
     assert len(clips) == 5
     calm = [s for s, k in zip(out, kd) if k == "clip" and s["section"] == "calm"]

@@ -420,19 +420,21 @@ def assign(shots: list[dict], kind: list[str], clips: list[dict], *, scenes: boo
     return out
 
 
-def thin(shots: list[dict], kind: list[str], limit: int, period: float, *, steps: dict | None = None,
-         floor: int = 1, longest_s: float = 0.0) -> tuple[list[dict], list[str]]:
+def thin(shots: list[dict], kind: list[str], limit: int, period: float, *, floor: int = 1,
+         longest_s: float = 0.0) -> tuple[list[dict], list[str]]:
     """Fewer, longer shots until no clip shows twice (the taste file's ``no-clip-twice``, ``limit`` the clips there are):
     a clip plays on over the morph after it and the clip that morph led into, the pair gone, in the passage that can
-    best spare it: the calm passages first and the drops last (``pacing.PRIORITY``, plus how much longer its shots
-    already are than its role's step, as the planner spends a budget), inside the passage the pair that leaves the
-    shortest clip. A drop's entry, an event's cut, a passage's first clip and a film carried on stay; a hot drop run's
+    best spare it: the calm passages first and the drops last (``pacing.PRIORITY``, plus the log of how far its shots
+    are already down, as the planner doubles a role's step), inside the passage the pair that leaves the shortest
+    clip. A drop's entry, an event's cut, a passage's first clip and a film carried on stay; a hot drop run's
     first two bars give theirs up only when nothing else can; no clip shot grows past ``longest_s`` (a clip's own
     length: past it the film would slow or stop); never under ``floor`` shots. Returns the shots and kinds."""
     from xenoform import pacing
 
     out, kd = [dict(s) for s in shots], list(kind)
-    base = {str(k): float(v) for k, v in (steps or {}).items() if v}
+    first: dict = {}
+    for s in out:  # each passage's shots before it gave any up: what it has given is the log of their share
+        first[s.get("passage")] = first.get(s.get("passage"), 0) + 1
 
     def clip_count() -> int:
         return sum(1 for s, k in zip(out, kd) if k == "clip" and not s.get("cont"))
@@ -459,8 +461,7 @@ def thin(shots: list[dict], kind: list[str], limit: int, period: float, *, steps
         def score(p) -> tuple:
             mine = [s for s in out if s.get("passage") == p]
             role = str(mine[0].get("section") or "")
-            mean = sum(beats_of(s) for s in mine) / len(mine)
-            return (p not in cool, pacing.PRIORITY.get(role, 1.0) + math.log2(max(1e-6, mean / base.get(role, mean))))
+            return (p not in cool, pacing.PRIORITY.get(role, 1.0) + math.log2(first[p] / len(mine)))
 
         p = min(cands, key=score)
         i = min(cands[p], key=lambda j: beats_of(out[j - 1]) + beats_of(out[j]) + beats_of(out[j + 1]))
@@ -494,7 +495,7 @@ def arrange(shots: list[dict], plan: dict, clips: list[dict], state: dict, beats
         lengths = sorted(float(c.get("seconds") or 0.0) for c in clips if float(c.get("seconds") or 0.0) > 0)
         # as long as the folder's longer clips (its upper quarter), which assign gives the long shots
         longest = max(MEAN_SHOT_MAX_S, lengths[int(0.75 * (len(lengths) - 1))]) if lengths else 0.0
-        laid, kind = thin(laid, kind, int(limit), period, steps=plan.get("steps"), floor=floor, longest_s=longest)
+        laid, kind = thin(laid, kind, int(limit), period, floor=floor, longest_s=longest)
     scenes = pacing.boldness(pacing.breathe_amount(state)) >= 0.5
     sl = assign(laid, kind, clips, scenes=scenes)
     return {"shots": laid, "slots": sl, "paced": True,
