@@ -41,6 +41,27 @@ is `src/xenoform/taste.py`. The rules come from his notes on the cuts and the mo
 | `batch` (Variations by vibe) | no vibe twice, no demoted vibe after the one you chose |
 | `dense.recut_from_cache` | goes through the same helpers, so a timeline re-cut keeps the same rules |
 | `stems_mode.run` (the Stems mode) | every layer is a cut of its own through `guardrails.apply` and the Make, so each hook above acts inside each layer; the Make's notes carry each layer's lines, named by its stem (`[taste] drums layer: ...`) |
+| `clip_cut` (a clips cut, a clips song) | no clip twice (`fit` and `thin`), black-and-white film a note (`film_note`); and the hooks above through the same helpers: `dense.shape_shots` reads your clips' names as a chain's nouns, so the kaleido steps aside on a clip of a living thing, the effects take turns, and no flash look plays before the first drop; `boundary_fx.pick` keeps the wipes under a quarter |
+
+## Clips
+
+A clips cut shows your clips, so the subject bans, the families and the family weight, which steer what the app picks
+from its library, do not touch it: you chose every clip. Three rules read a clips cut as its own:
+
+- `no-clip-twice`: each clip once. When the plan wants more clip shots than the folder holds, a clip plays on over the
+  morph and the clip after it, the pair gone, until it fits: the calm passages give theirs up first and the drops last,
+  as the pacing engine spends any budget; a drop's opening cut, an event's cut and a passage's first clip stay, and a
+  hot drop's half-bar entries go only when nothing else can. No clip shot grows past the folder's longer clips (its
+  upper quarter: past that the film would slow down) and the cut never falls under a shot in 8 s; past those, a clip
+  comes back with a later stretch, and the cut's `[taste]` line says how many. The free film pack's 24 clips cover a
+  three-minute song once each.
+- `no-film-clips`: black-and-white film in a music video is a demoted look, a `[taste]` note and never a ban. The
+  guardrail notes it when the clips come from the free film pack, and the cut counts the black-and-white clips it shows
+  by measuring their colour (15 of the pack's 24; a tinted reel, Caligari's sepia or the dinosaurs' amber, reads as
+  colour). The clips stay: you chose them.
+- `no-kaleido-on-living`: a clip whose name says a living thing (its label from the folder's `labels.json`, else its
+  file name: a face, a figure, a dancer, a crowd, a witch, a vampire, a dinosaur, and the film pack's Nosferatu,
+  Phantom, Jekyll and Hyde, Cesare, Keaton and Willie) plays another chosen effect, or none, instead of the kaleido.
 
 ## The rules
 
