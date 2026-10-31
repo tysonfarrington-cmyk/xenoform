@@ -1169,10 +1169,23 @@ def clock(seconds: float) -> str:
     return f"{s // 60}:{s % 60:02d}"
 
 
-def summary_line(shots: list[dict], *, breathe: bool, song_start: float = 0.0, drop: float | None = None) -> str:
+def summary_line(shots: list[dict], *, breathe: bool, song_start: float = 0.0, drop: float | None = None,
+                 song: dict | None = None) -> str:
     """What the plan did, in a line for the Make's report: "3 drops, the main at 1:59; 6 passages; 4 rests" (song
     time: a Length cut counts from where it sits in the song; the main drop is the run that opens at ``drop``, the
-    plan's)."""
+    plan's). A whole song's window (``song``, ``song_context``) says which passage of the song it is: "passage 5 of 14
+    of the song, a drop at 1:32 (heat 0.57)"."""
+    if song:
+        role = str((shots[0] if shots else {}).get("section") or song.get("role") or "")
+        run = next((s for s in shots if s.get("drop_run") is not None), None)
+        at = clock(float(song.get("passage_start", song.get("offset") or 0.0)))
+        part = f", part {int(song.get('part') or 0) + 1} of {int(song.get('parts') or 1)}" if int(song.get("parts") or 1) > 1 else ""
+        what = f"a drop at {at} (heat {float(run.get('heat') or 0.0):.2f})" if run is not None else f"{role} at {at}"
+        line = f"passage {int(song.get('passage') or 0) + 1} of {int(song.get('passages') or 1)} of the song{part}, {what}"
+        if breathe:
+            rests = sum(1 for s in shots if s.get("rest"))
+            line += f"; {rests} rest{'s' if rests != 1 else ''}"
+        return line
     entries = [s for i, s in enumerate(shots) if str(s.get("boundary") or "") == "drop" or (
         s.get("drop_run") is not None and (i == 0 or shots[i - 1].get("drop_run") != s.get("drop_run")))]
     runs = {s.get("drop_run") for s in shots if s.get("drop_run") is not None}
@@ -1203,5 +1216,6 @@ def record(plan: dict, shots: list[dict], state: dict, window: dict | None = Non
     start = float((window or {}).get("song_start") or 0.0)
     out.update({"passages": list(plan.get("passages") or []), "runs": list(plan.get("runs") or []),
                 "rests": sum(1 for s in shots if s.get("rest")), "steps": dict(plan.get("steps") or {}),
-                "line": summary_line(shots, breathe=out["breathe"], song_start=start, drop=plan.get("drop"))})
+                "line": summary_line(shots, breathe=out["breathe"], song_start=start, drop=plan.get("drop"),
+                                     song=song_context(state))})
     return out

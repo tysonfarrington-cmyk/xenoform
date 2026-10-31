@@ -1614,7 +1614,8 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
 
     if _pc.paced_shots(shots):  # what the pacing engine planned, in a line (the record keeps it too)
         report("restyle", 0.05, _pc.summary_line(shots, breathe=_pc.breathe_of(state),
-                                                 song_start=window_of(state, duration)["song_start"], drop=plan.get("drop")))
+                                                 song_start=window_of(state, duration)["song_start"], drop=plan.get("drop"),
+                                                 song=song_window(state)))
     vibe, stills = (vibe, stills) if long_song else stills_for({**state, "cut_plan": plan if plan.get("stills") else None}, len(shots) + 1,
                                                                 **_scene_kw(state, shots, len(shots) + 1))
     repeat_note = ""
@@ -2255,7 +2256,8 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
                      "tame": made.get("tame")})
         if _pc.paced_shots(record_shots):
             pace["line"] = _pc.summary_line(record_shots, breathe=pace["breathe"], drop=drop,
-                                            song_start=float((rec.get("window") or {}).get("song_start") or 0.0))
+                                            song_start=float((rec.get("window") or {}).get("song_start") or 0.0),
+                                            song=song_window(state))
         rec["pacing"] = pace
     if _taste.active():  # what the taste file did in this re-cut (the Make's own block stays as it was)
         rec["taste_recut"] = _taste.record(_taste.current())

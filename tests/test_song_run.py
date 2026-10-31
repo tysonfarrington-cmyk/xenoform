@@ -227,5 +227,7 @@ def test_a_window_make_on_the_mock_engine_is_the_songs_passage(tmp_path, drop):
     assert info["stills"] == w["stills"]  # the pins the plan picked, every slot
     assert info["recut_state"][song_plan.KEY]["passage"] == w["passage"] and "plan" not in info["recut_state"][song_plan.KEY]
     assert [round(s["end"] - s["start"], 2) for s in info["shots"]] == [round(s["end"] - s["start"], 2) for s in w["plan"]["shots"]]
+    assert info["pacing"]["line"].startswith("passage 8 of 14 of the song, a drop at 2:00 (heat 1.00)")  # not "the main"
     again = dense.recut_from_cache(job, {"macros": {"intensity": 0.7, "chaos": 0.4, "glow": 0.5}})
     assert again["drop"] == info["drop"] and len(again["shots"]) == 5
+    assert again["pacing"]["line"].startswith("passage 8 of 14 of the song")
