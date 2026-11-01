@@ -439,6 +439,16 @@ same composite byte for byte; the suite green with the fake split.
     the planner, Resolve naming clip shots after the film, swap and re-render on Stems layers, rests inside a
     window kept through QA (an Opus builder started 1 Nov, desk 47337, proof in Desktop/xeno_followups_1nov);
     the morph cache was seeded on the mainline checkout.
+18. The two judged Cloud sets ran 1 Nov (Desktop/xeno_cloud_1nov). The six botanical scene pairs came back clean
+    on Cloud Final with the fix (6 morphs, about 22 to 36 credits; same stills, seeds and lengths as the old
+    clips, only the object sentence gone and the scene guide uncompressed). ZedsDead v1 as a Breathe whole song
+    with Ferrofluid on the main drop: 75 morphs planned (270 to 450 credits), 74 rendered on Cloud in 49 minutes,
+    the last refused with HTTP 429, which the code reads as subscription inactive, so the outro shot is a local
+    Draft; the cut runs 2:57 at -16 LUFS with 14 flash frames. Tys: check the Comfy Cloud account before any
+    further Cloud run. Found: an idea line starting moon jellyfish sent the NASA moon anchor text in the intro
+    prompts (the follow-ups round fixes whole-noun matching); the fallback used the local ComfyUI once without a
+    queue check at that moment. The three Cloud tools (re-sending pairs, the pairs sheet, delivering a song) are
+    kept under docs/demo/tools.
 
 ## 9. Working rules for every session
 
