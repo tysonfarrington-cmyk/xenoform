@@ -412,8 +412,8 @@ same composite byte for byte; the suite green with the fake split.
     motion, living and mood that the cutter and the kaleido rule read; nothing of the footage in the repository.
     An Opus builder started 1 Nov from d9644f2 (desk 47336; proof in Desktop/xeno_pack_1nov: the pack contact
     sheet and ZedsDead v2 on the new pack stacked against the 24-pack cut).
-    Tys, 1 Nov: the Keaton bridge clip (general_bridge, The General) is out of the pack for good, overused and too
-    low in quality; a banned_clips list in the taste file keeps it out even where the old file remains.
+    Tys, 1 Nov: The General (general_cannon, general_bridge) and Battleship Potemkin (potemkin_steps) are out of
+    the pack for good (the bridge overused and too low in quality); a banned_clips list in the taste file keeps them out even where the old files remain.
 
 ## 9. Working rules for every session
 
