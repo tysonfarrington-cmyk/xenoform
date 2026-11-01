@@ -46,7 +46,7 @@ is `src/xenoform/taste.py`. The rules come from his notes on the cuts and the mo
 ## Clips
 
 A clips cut shows your clips, so the subject bans, the families and the family weight, which steer what the app picks
-from its library, do not touch it: you chose every clip. Three rules read a clips cut as its own:
+from its library, do not touch it: you chose every clip. Three rules read a clips cut as its own, and one list:
 
 - `no-clip-twice`: each clip once. When the plan wants more clip shots than the folder holds, a clip plays on over the
   morph and the clip after it, the pair gone, until it fits: the calm passages give theirs up first and the drops last,
@@ -62,6 +62,11 @@ from its library, do not touch it: you chose every clip. Three rules read a clip
 - `no-kaleido-on-living`: a clip whose name says a living thing (its label from the folder's `labels.json`, else its
   file name: a face, a figure, a dancer, a crowd, a witch, a vampire, a dinosaur, and the film pack's Nosferatu,
   Phantom, Jekyll and Hyde, Cesare, Keaton and Willie) plays another chosen effect, or none, instead of the kaleido.
+- `banned_clips` (a list beside the rules, 1 Nov): clips no cut ever shows, each by its film pack id and its label: the
+  Keaton bridge (overused, and its upload too low in quality to use), the Keaton cannon and the Potemkin steps (The
+  General and Battleship Potemkin are out of the pack). A folder that still holds the old file, under its pack name or
+  renamed with the label kept, never plays it: the guardrail leaves it out of a Make with a `[taste]` line, and the cut
+  and the whole-song plan leave it out too. Delete an entry, or give it `off: true`, to allow the clip again.
 
 ## The rules
 

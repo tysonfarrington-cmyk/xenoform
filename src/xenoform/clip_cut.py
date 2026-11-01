@@ -652,6 +652,20 @@ def mono(path: str | Path) -> bool | None:
     return got
 
 
+def usable(clips: list[dict]) -> list[dict]:
+    """The clips a cut may show: the taste file's banned clips (``taste.clip_banned``: a clip by its pack id or its label,
+    so a folder that still holds the old file never plays it) left out, with a [taste] line saying which."""
+    from xenoform import taste
+
+    kept, gone = [], []
+    for c in clips:
+        (gone if taste.clip_banned(c) else kept).append(c)
+    if gone:
+        names = ", ".join(clip_names(gone))
+        taste.note("banned_clips", f"{len(gone)} clip{'s' if len(gone) != 1 else ''} the taste file bans left out: {names}")
+    return kept
+
+
 def film_note(clips: list[dict]) -> int:
     """The taste file's ``no-film-clips`` on the cut: a [taste] note when clips it shows are black-and-white film (measured,
     ``mono``, whatever folder they came from), which does not move to the music and reads flat in a music video; the
@@ -681,7 +695,7 @@ def animatic(directed: dict, state: dict, audio_path: Path, out_path: Path, work
     from xenoform.turbo import publish_file
     from xenoform.video import ffmpeg_bin
 
-    clips_in = [c for c in (state.get("own_clips") or []) if isinstance(c, dict) and c.get("path")]
+    clips_in = usable([c for c in (state.get("own_clips") or []) if isinstance(c, dict) and c.get("path")])
     if not clips_in:
         raise ValueError("Clips mode needs your clips.")
     work = Path(work)
@@ -720,7 +734,7 @@ def run(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg: dict,
     from xenoform import taste as _taste
 
     started = time.perf_counter()
-    clips_in = [c for c in (state.get("own_clips") or []) if isinstance(c, dict) and c.get("path")]
+    clips_in = usable([c for c in (state.get("own_clips") or []) if isinstance(c, dict) and c.get("path")])
     if not clips_in:
         raise ValueError("Clips mode needs your clips: choose a folder of clips (or drop them on the desk), then Make.")
     opt = dense.options(state)

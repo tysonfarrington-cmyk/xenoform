@@ -93,7 +93,14 @@ def _clean(raw: Any, where: str) -> dict:
     if bad:
         _warn_once((where, "bad", tuple(bad)), f"taste file {where}: {len(bad)} rule(s) without an id, a known kind or a reason "
                                                f"left out ({', '.join(bad[:5])})")
-    return {"version": raw.get("version", 0), "rules": rules, "by_id": by_id, "path": where}
+    banned = []
+    for row in raw.get("banned_clips") or [] if isinstance(raw.get("banned_clips"), list) else []:
+        if not isinstance(row, dict) or row.get("off") is True:
+            continue
+        cid, label = str(row.get("id") or "").strip(), str(row.get("label") or "").strip()
+        if cid or label:
+            banned.append({**row, "id": cid, "label": label})
+    return {"version": raw.get("version", 0), "rules": rules, "by_id": by_id, "path": where, "banned_clips": banned}
 
 
 def load() -> dict:
@@ -722,6 +729,35 @@ def clips_once() -> bool:
     return _limit("no-clip-twice") is not None
 
 
+def banned_clips() -> list[dict]:
+    """The taste file's ``banned_clips``: the clips no cut shows, each by its film pack id and its label (1 Nov: the
+    Keaton bridge, the Keaton cannon and the Potemkin steps); [] with no file."""
+    return list(load().get("banned_clips") or [])
+
+
+def clip_banned(clip: Any) -> dict | None:
+    """The ``banned_clips`` entry a clip matches, or None: by its pack id (a file named ``NN_<id>.mp4``, as the film pack
+    names it, or ``<id>.mp4``) or by its label (its words, as the chain reads them), so a folder that still holds the
+    old file, renamed or not, never plays it."""
+    rows = banned_clips()
+    if not rows:
+        return None
+    if isinstance(clip, dict):
+        path, label = str(clip.get("path") or ""), str(clip.get("label") or "")
+    else:
+        path, label = str(clip or ""), ""
+    stem = Path(path).stem.lower()
+    bare = stem.split("_", 1)[1] if re.match(r"^\d+_", stem) else stem
+    said = words_of(label)
+    for r in rows:
+        cid = str(r.get("id") or "").lower()
+        if cid and cid in (stem, bare):
+            return r
+        if said and words_of(r.get("label")) == said:
+            return r
+    return None
+
+
 def vibes_once() -> bool:
     return _limit("no-vibe-twice") is not None
 
@@ -950,7 +986,15 @@ def guard_body(body: dict, rep, *, expert: bool = False) -> None:
         if rep.clamp(rid, text("no-slices", f"the sliced foreshadow draws bars: {instead} instead")):
             body["foreshadow"] = instead
     if clips:
-        films = [c for c in body.get("own_clips") or [] if film_clip((c or {}).get("path") if isinstance(c, dict) else c)]
+        own = [c for c in body.get("own_clips") or [] if c]
+        gone = [c for c in own if clip_banned(c)]
+        if gone:  # a clip the taste file bans never plays, under Expert too: Tys took it out of the pack (1 Nov)
+            names = ", ".join(str((c.get("label") if isinstance(c, dict) else "") or Path(str((c or {}).get("path") if isinstance(c, dict) else c)).stem)
+                              for c in gone)
+            rep.clamp(rid, text("banned_clips", f"{len(gone)} clip{'s' if len(gone) != 1 else ''} the taste file bans left out: {names}"),
+                      hard=True)
+            body["own_clips"] = own = [c for c in own if not clip_banned(c)]
+        films = [c for c in own if film_clip((c or {}).get("path") if isinstance(c, dict) else c)]
         if films and rule("no-film-clips"):
             rep.warn(rid, text("no-film-clips", f"{len(films)} of your clips come from the free film pack: black-and-white film "
                                                 f"reads flat in a music video"))
