@@ -40,7 +40,7 @@ sheets were made at 12. The planner's tests read frozen copies of the old analys
 - Comfy Cloud refused the last morph of the 1 Nov song with HTTP 429, which the code reads as an inactive subscription.
   Check the account before any further Cloud run.
 - Tys's desks 47320 and 47321 run older code until he says to restart them.
-- Eleven builder worktrees remain under `xenoform-judge-test/.claude/worktrees`, about 13 GB, all merged. They hold raw
+- Eleven builder worktrees remain under `xenoform-judge-test/.claude/worktrees`, about 14 GB, all merged. They hold raw
   Draft job folders. Remove them on his word.
 
 ## Known limits
