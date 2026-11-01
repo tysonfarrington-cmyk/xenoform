@@ -45,6 +45,8 @@ hit) is a Make: **Fine-tune → Length → Whole song**, then **Make the whole s
    song shows 91 stills), so under a count a window whose vibe has run out lets objects come round again, as few as it needs, the ones
    the song has shown least and farthest away first (never another passage's pinned object); the record names them
    (`vibes.again`, and each window's `again`). The estimate does not change with Vibes: the morphs are the pacing's.
+   The desk's facts and its Make line say what the choice draws ("Passages: 13, two vibes between them"; a look each
+   only at Auto and All).
    **A hero object opens the main drop** (`song_plan.place_hero`). The main drop run's first shot lands on the hero of
    its look: the first object your Chain row pins (your pins then moved along so it sits there, in the order you set
    them), else the vibe's card object, the still of the object its picker card shows (`configs/vibe_heroes.json`: the

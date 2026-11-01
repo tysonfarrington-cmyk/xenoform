@@ -6,6 +6,8 @@ estimate does not change, a vibe's library lets objects come round only as it mu
 from __future__ import annotations
 
 import json
+import shutil
+import subprocess
 from collections import Counter
 from pathlib import Path
 
@@ -202,3 +204,33 @@ def test_the_desk_has_a_vibes_control_under_whole_song():
     assert "body.song_vibes = songVibesValue(state.easy);" in make
     facts = APP.split("function songPlanFacts(")[1].split("\n}\n")[0]
     assert '"Vibes"' in facts
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="node runs the desk's text builders")
+def test_the_make_line_and_the_passages_fact_say_what_the_vibes_control_says(tmp_path):
+    """The facts said "13, a look each" and the Make line "A look a passage, no vibe twice" beside Vibes 2 (1 Nov): both
+    now read the Vibes choice, a look a passage only at Auto and All."""
+    facts = APP.split("function songPlanFacts(")[1].split("\n}\n")[0]
+    assert ", ${songPassageLooks(easy)}`]);" in facts and "a look each`" not in facts
+    assert "${songMakeLooks(easy)}, the title on the last hit." in APP.split("function songMakeLine(")[1].split("\n}\n")[0]
+    src = "\n".join(["const SONG_VIBES = " + APP.split("const SONG_VIBES = ", 1)[1].split("\n", 1)[0],
+                     "function songVibesValue(" + APP.split("function songVibesValue(", 1)[1].split("\n}\n", 1)[0] + "\n}",
+                     "function songMakeLooks(" + APP.split("function songMakeLooks(", 1)[1].split("\n}\n", 1)[0] + "\n}",
+                     "function songPassageLooks(" + APP.split("function songPassageLooks(", 1)[1].split("\n}\n", 1)[0] + "\n}"])
+    harness = src + """
+const vibeById = (id) => (id === "ferrofluid" ? { name: "Ferrofluid" } : null);
+const out = {};
+for (const v of ["auto", "all", "1", "2", "3", "8", "nonsense"]) {
+  const easy = { vibe: "ferrofluid", songVibes: v };
+  out[v] = { make: songMakeLooks(easy), passages: songPassageLooks(easy) };
+}
+console.log(JSON.stringify(out));
+"""
+    script = tmp_path / "looks.js"
+    script.write_text(harness, encoding="utf-8")
+    got = json.loads(subprocess.run(["node", str(script)], capture_output=True, text=True, encoding="utf-8", check=True).stdout)
+    for v in ("auto", "all", "nonsense"):  # a value the control does not know reads as Auto
+        assert got[v] == {"make": "A look a passage, drawn by taste (no vibe twice, the loved chains where they fit)", "passages": "a look each"}
+    assert got["1"] == {"make": "Ferrofluid over the whole song", "passages": "one vibe over them all"}
+    assert got["2"]["make"].startswith("Ferrofluid on the main drop and the rest") and got["2"]["passages"] == "two vibes between them"
+    assert got["3"]["make"].startswith("At most 3 vibes, Ferrofluid on the main drop") and got["8"]["passages"] == "at most 8 vibes between them"

@@ -1260,20 +1260,36 @@ function songLengthNote(easy, secs) {
   if (clips) return `Whole song (${clockText(secs)}): your clips as one cut over the song's ${s.passages} passages, a morph between every two clips, cut on the beat and laid with the title on the last hit and the song at -16 LUFS. ${s.morphs} morphs in all; Draft ${songTierText(s, "draft")}.`;
   return `Whole song (${clockText(secs)}): ${s.passages} passages, each its own Make of at most ${s.window_cap} morphs on the beat, queued one after another on a free GPU and laid together on the song's beats. ${s.morphs} morphs in all; Draft ${songTierText(s, "draft")}.`;
 }
+// How the passages' looks are drawn under the Vibes choice (song_vibes), so the Make line and the facts say what the
+// Vibes control says: a look a passage at Auto and All, else the vibes they share
+function songMakeLooks(easy) {
+  const v = songVibesValue(easy);
+  const vibe = vibeById(easy.vibe);
+  const name = vibe ? vibe.name : "the vibe you chose";
+  if (v === "1") return `${name} over the whole song`;
+  if (v === "2") return `${name} on the main drop and the rest, one more vibe drawn by taste on the other drops`;
+  if (v !== "auto" && v !== "all") return `At most ${v} vibes, ${name} on the main drop, the calm passages and the outro sharing first (the loved chains count)`;
+  return "A look a passage, drawn by taste (no vibe twice, the loved chains where they fit)";
+}
+function songPassageLooks(easy) {
+  const v = songVibesValue(easy);
+  if (v === "auto" || v === "all") return "a look each";
+  return v === "1" ? "one vibe over them all" : v === "2" ? "two vibes between them" : `at most ${v} vibes between them`;
+}
 function songMakeLine(easy) {
   const s = songEstimate();
   const tier = easy.tier || "draft";
   const clips = morphSource(easy) === "clips";
-  if (!s) return clips ? "The whole song in your clips: one cut over its passages, every cut on the beat." : "The whole song as its passages: a look a passage, drawn by taste, every cut on the beat.";
+  if (!s) return clips ? "The whole song in your clips: one cut over its passages, every cut on the beat." : `The whole song as its passages, every cut on the beat. ${songMakeLooks(easy)}.`;
   if (clips) return `${s.line}. ${TIER_LABEL[tier] || "Draft"}: ${songTierText(s, tier)}. Your clips, one cut over the whole song, each clip once, the title on the last hit.`;
-  return `${s.line}. ${TIER_LABEL[tier] || "Draft"}: ${songTierText(s, tier)}. A look a passage, drawn by taste (no vibe twice, the loved chains where they fit), the title on the last hit.`;
+  return `${s.line}. ${TIER_LABEL[tier] || "Draft"}: ${songTierText(s, tier)}. ${songMakeLooks(easy)}, the title on the last hit.`;
 }
 function songPlanFacts(easy) {
   const s = songEstimate();
   const rows = [["Video", `${clockText(easySongSeconds())} (the whole song, in passages)`]];
   if (s) {
     const clips = morphSource(easy) === "clips";  // a clips song: one clips cut over every passage
-    rows.push(["Passages", clips ? `${s.passages}, one clips cut over them` : `${s.passages}${s.windows !== s.passages ? ` in ${s.windows} Makes` : ""}, a look each`]);
+    rows.push(["Passages", clips ? `${s.passages}, one clips cut over them` : `${s.passages}${s.windows !== s.passages ? ` in ${s.windows} Makes` : ""}, ${songPassageLooks(easy)}`]);
     rows.push(["Morphs", clips ? `${s.morphs} between your clips, on the beat` : `${s.morphs} on the beat (at most ${s.window_cap} a Make${s.cap && s.cap !== "auto" ? `, capped at ${s.cap}` : ""})`]);
     for (const [tier, label] of [["draft", "Draft"], ["fast", "Fast Final"], ["final", "Final"], ["cloud", "Cloud Final"]]) {
       if (!(clips && tier === "cloud")) rows.push([label, songTierText(s, tier)]);  // a clips cut has no Cloud path
@@ -1301,7 +1317,7 @@ async function easySongMake() {
   const vibe = vibeById(state.easy.vibe);
   if (!vibe) return;
   state.easy.note = morphSource(state.easy) === "clips" ? "Planning the whole song in your clips: its passages, one cut over them. A few seconds."
-    : "Planning the whole song: its passages, a look each, the objects. A few seconds.";
+    : "Planning the whole song: its passages, their looks, the objects. A few seconds.";
   render();
   state.brief = (state.easy.idea || "").trim() || vibe.line;
   state.palette = vibe.palette;
