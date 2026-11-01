@@ -3429,7 +3429,13 @@ def _run_job(job_id: str, audio_path: Path, body: dict, cfg: dict, out: Path, ca
                 if fpath.is_file():
                     beats = list((json.loads(fpath.read_text(encoding="utf-8")) or {}).get("beats") or [])
                 fix = bool((post_qa._rule("lag_qa") or {}).get("auto_fix", True))
-                qa_report = post_qa.run(out, fps=24.0, beats=beats, vj=bool(body.get("vj")), fix=fix, report=on_progress)
+                planned = []  # the cut's shot plan: every rest it holds is held picture by design, kept through the fix
+                try:
+                    planned = list((json.loads((work / "simple" / "simple.json").read_text(encoding="utf-8")) or {}).get("shots") or [])
+                except (OSError, ValueError):
+                    planned = []
+                qa_report = post_qa.run(out, fps=24.0, beats=beats, vj=bool(body.get("vj")), fix=fix, report=on_progress,
+                                        shots=planned)
             except Exception:
                 log.exception("post QA")
         with _LOCK:

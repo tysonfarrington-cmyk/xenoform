@@ -168,18 +168,71 @@ def held_end(freezes: list[tuple[float, float]], frames: int, fps: float) -> int
     return max(0, min(frames, int(round((end - float(a)) * fps)))) if float(b) >= end - 1.5 / fps else 0
 
 
-def lag_report(path: str | Path, fps: float = 24.0) -> dict:
+def rests_of(shots: list[dict] | None, fps: float = 24.0) -> list[tuple[int, int]]:
+    """Every planned rest of a cut's shot plan as frames ``(first, end)`` (pure): a shot with a ``rest`` holds its
+    arrived object for its last ``rest_s`` seconds (pacing: Breathe's rests, a scene's morph then its dwell), so those
+    frames are held picture by design, wherever in the cut they sit."""
+    out: list[tuple[int, int]] = []
+    for s in shots or []:
+        if not isinstance(s, dict) or not s.get("rest"):
+            continue
+        try:
+            rest_s, end = float(s.get("rest_s") or 0.0), float(s.get("end") or 0.0)
+        except (TypeError, ValueError):
+            continue
+        a, b = int(round((end - rest_s) * fps)), int(round(end * fps))
+        if rest_s > 0 and b - a >= 2:
+            out.append((max(0, a), b))
+    return _merge_ranges(out)
+
+
+def _merge_ranges(ranges) -> list[tuple[int, int]]:
+    merged: list[list[int]] = []
+    for a, b in sorted((int(a), int(b)) for a, b in ranges if int(b) > int(a)):
+        if merged and a <= merged[-1][1]:
+            merged[-1][1] = max(merged[-1][1], b)
+        else:
+            merged.append([a, b])
+    return [(a, b) for a, b in merged]
+
+
+def kept_times(path: str | Path) -> list[float]:
+    """The times of the frames mpdecimate keeps (the ones that are not near-duplicates of the frame before)."""
+    err = subprocess.run([_ffmpeg(), "-v", "info", "-i", str(path), "-map", "0:v:0", "-vf", "mpdecimate,showinfo",
+                          "-f", "null", "-"], capture_output=True, text=True, timeout=600).stderr
+    return [float(x) for x in re.findall(r"pts_time:([\d.]+)", err)]
+
+
+def _in_holds(a: float, b: float, holds: list[tuple[int, int]], fps: float) -> bool:
+    """A freeze from ``a`` to ``b`` seconds that lies mostly (half or more) inside the planned holds."""
+    span = max(1e-6, b - a)
+    inside = sum(max(0.0, min(b, hb / fps) - max(a, ha / fps)) for ha, hb in holds)
+    return inside >= 0.5 * span
+
+
+def lag_report(path: str | Path, fps: float = 24.0, rests: list[tuple[int, int]] | None = None) -> dict:
     """Lag in a finished cut: held or duplicate frames past ``max_dup_ratio`` (judder), several short freezes, an fps
     that is not the project's. A held picture the cut ends on is not lag (``held_end``: a window closing on a rest, the
-    hold its design): its frames are left out of the duplicate count and its freeze out of the short ones."""
+    hold its design): its frames are left out of the duplicate count and its freeze out of the short ones. ``rests``
+    (``rests_of`` the cut's shot plan) are every rest the plan holds, wherever it sits: their frames are left out of the
+    duplicate count (the frames mpdecimate keeps are counted outside them) and a freeze lying in one is not a short one."""
     r = _rule("lag_qa")
     info = probe(path)
     freezes = freeze_ranges(path, float(r.get("freeze_noise", 0.003)), float(r.get("freeze_min_s", 0.25)))
     total = max(1, info["frames"])
-    kept = kept_frames(path) or total
-    tail = held_end(freezes, total, info["fps"] or fps)
-    counted = max(1, total - max(0, tail - 1))  # the hold keeps its first frame; the rest of it is not judder
-    dup = max(0.0, 1.0 - kept / counted)
+    rate = info["fps"] or fps
+    tail = held_end(freezes, total, rate)
+    planned = _merge_ranges(list(rests or []) + ([(total - tail, total)] if tail else []))
+    if rests:  # every planned hold out of the count: the frames kept outside them against the frames outside them
+        times = kept_times(path)
+        kept = len(times) or total
+        outside = max(1, total - sum(b - a for a, b in planned))
+        kept_out = sum(1 for t in times if not any(a <= int(round(t * rate)) < b for a, b in planned))
+        dup = max(0.0, 1.0 - kept_out / outside)
+    else:
+        kept = kept_frames(path) or total
+        counted = max(1, total - max(0, tail - 1))  # the hold keeps its first frame; the rest of it is not judder
+        dup = max(0.0, 1.0 - kept / counted)
     frozen_s = sum(b - a for a, b in freezes)
     issues = []
     if abs(info["fps"] - fps) > 0.05:
@@ -187,12 +240,17 @@ def lag_report(path: str | Path, fps: float = 24.0) -> dict:
     if dup > float(r.get("max_dup_ratio", 0.15)):
         issues.append(f"{dup:.0%} duplicate/held frames (judder)")
     inner = freezes[:-1] if tail else freezes
-    short = [f for f in inner if f[1] - f[0] <= float(r.get("lag_freeze_max_s", 0.6))]
+    in_rests = [f for f in inner if rests and _in_holds(f[0], f[1], planned, rate)]
+    short = [f for f in inner if f not in in_rests and f[1] - f[0] <= float(r.get("lag_freeze_max_s", 0.6))]
     if len(short) >= int(r.get("max_short_freezes", 3)):
         issues.append(f"{len(short)} short freezes read as lag")
-    return {"fps": info["fps"], "project_fps": fps, "frames": total, "kept": kept, "dup_ratio": round(dup, 4),
-            "freezes": [[round(a, 3), round(b, 3)] for a, b in freezes], "frozen_s": round(frozen_s, 3),
-            "held_end_frames": tail, "short_freezes": len(short), "issues": issues, "lag": bool(issues)}
+    out = {"fps": info["fps"], "project_fps": fps, "frames": total, "kept": kept, "dup_ratio": round(dup, 4),
+           "freezes": [[round(a, 3), round(b, 3)] for a, b in freezes], "frozen_s": round(frozen_s, 3),
+           "held_end_frames": tail, "short_freezes": len(short), "issues": issues, "lag": bool(issues)}
+    if rests:
+        out.update({"rests": [list(h) for h in rests], "rest_frames": sum(b - a for a, b in rests),
+                    "rest_freezes": len(in_rests)})
+    return out
 
 
 def conform(src: str | Path, dest: str | Path, fps: float = 24.0, interpolate: bool = False) -> Path:
@@ -215,8 +273,41 @@ def conform(src: str | Path, dest: str | Path, fps: float = 24.0, interpolate: b
     return dest
 
 
-def fix_lag(path: str | Path, report: dict, fps: float = 24.0) -> dict:
-    """Fix in place. fps mismatch -> conform; judder / short freezes -> interpolate held frames."""
+def keep_holds(src: str | Path, fixed: str | Path, dest: str | Path, holds: list[tuple[int, int]], fps: float = 24.0) -> Path:
+    """``fixed`` (the interpolated picture, frame for frame the source's at ``fps``) with every planned hold's frames
+    taken back from ``src`` as they were: the picture laid from the two in turn, frame-exact (``trim`` on frames after an
+    ``fps`` on each), the source's sound copied. So the lag fix smooths the judder and leaves every rest held."""
+    frames = int(probe(fixed)["frames"])
+    edges = sorted({0, frames} | {min(frames, max(0, a)) for a, _ in holds} | {min(frames, max(0, b)) for _, b in holds})
+    spans = [(a, b, any(ha <= a and b <= hb for ha, hb in holds)) for a, b in zip(edges, edges[1:]) if b > a]
+    if not any(held for *_, held in spans):
+        shutil.copyfile(fixed, dest)
+        return Path(dest)
+    n_src, n_fix = sum(1 for *_, h in spans if h), sum(1 for *_, h in spans if not h)
+    parts = [f"[0:v]fps={fps},split={max(1, n_src)}" + "".join(f"[s{k}]" for k in range(max(1, n_src))),
+             f"[1:v]fps={fps},split={max(1, n_fix)}" + "".join(f"[f{k}]" for k in range(max(1, n_fix)))]
+    ks = kf = 0
+    labels = []
+    for i, (a, b, held) in enumerate(spans):
+        pad = f"s{ks}" if held else f"f{kf}"
+        ks, kf = ks + int(held), kf + int(not held)
+        parts.append(f"[{pad}]trim=start_frame={a}:end_frame={b},setpts=PTS-STARTPTS[p{i}]")
+        labels.append(f"[p{i}]")
+    if n_src == 0:
+        parts.append("[s0]nullsink")
+    if n_fix == 0:
+        parts.append("[f0]nullsink")
+    parts.append("".join(labels) + f"concat=n={len(labels)}:v=1:a=0[v]")
+    subprocess.run([_ffmpeg(), "-v", "error", "-y", "-i", str(src), "-i", str(fixed), "-filter_complex", ";".join(parts),
+                    "-map", "[v]", "-map", "0:a?", "-frames:v", str(frames), "-c:v", "libx264", "-crf", "18", "-pix_fmt", "yuv420p",
+                    "-c:a", "copy", "-movflags", "+faststart", str(dest)], check=True, timeout=1800)
+    return Path(dest)
+
+
+def fix_lag(path: str | Path, report: dict, fps: float = 24.0, rests: list[tuple[int, int]] | None = None) -> dict:
+    """Fix in place. fps mismatch -> conform; judder / short freezes -> interpolate held frames. ``rests`` (the shot
+    plan's, ``rests_of``): every planned rest keeps its held frames through an interpolation (``keep_holds``), not only
+    the one the cut ends on, so a rest in the middle of a window is still a rest after the fix."""
     path = Path(path)
     if not report.get("lag"):
         return {"fixed": False}
@@ -224,9 +315,18 @@ def fix_lag(path: str | Path, report: dict, fps: float = 24.0) -> dict:
         _rule("lag_qa").get("max_short_freezes", 3))
     tmp = path.with_name(path.stem + ".qa.mp4")
     conform(path, tmp, fps, interpolate=interp)
+    kept = 0
+    if interp and rests:
+        held = path.with_name(path.stem + ".qa.rests.mp4")
+        keep_holds(path, tmp, held, rests, fps)
+        held.replace(tmp)
+        kept = len(rests)
     tmp.replace(path)
-    return {"fixed": True, "method": "interpolate held frames" if interp else f"conform to {fps} fps",
-            "frames": [int(report.get("frames") or 0), int(probe(path)["frames"])]}
+    out = {"fixed": True, "method": "interpolate held frames" if interp else f"conform to {fps} fps",
+           "frames": [int(report.get("frames") or 0), int(probe(path)["frames"])]}
+    if rests:
+        out["rests_kept"] = kept
+    return out
 
 
 # ------------------------------------------------------------------ sources
@@ -353,9 +453,12 @@ def snap_cuts(cuts: list[float], beats: list[float], tol: float | None = None, m
 
 # ------------------------------------------------------------------ all
 def run(path: str | Path, *, fps: float = 24.0, beats: list[float] | None = None, vj: bool = False,
-        fix: bool = True, report: Callable[[str, float, str], None] | None = None) -> dict:
+        fix: bool = True, report: Callable[[str, float, str], None] | None = None, shots: list[dict] | None = None) -> dict:
     """The post-render QA pass for the job report. Never raises; a failed check says so. ``report(stage, frac,
-    detail)``, the pipeline's progress shape, hears each pass start (the desk's bar used to sit still through QA)."""
+    detail)``, the pipeline's progress shape, hears each pass start (the desk's bar used to sit still through QA).
+    ``shots``: the cut's shot plan (its record's), whose planned rests (``rests_of``) are held picture by design: the
+    lag check leaves them out and a lag fix keeps every one of them."""
+    rests = rests_of(shots, fps) if shots else []
     rep: dict[str, Any] = {"ok": True, "issues": []}
 
     def say(frac: float, detail: str) -> None:
@@ -368,13 +471,13 @@ def run(path: str | Path, *, fps: float = 24.0, beats: list[float] | None = None
 
     say(0.2, "Checking for lag")
     try:
-        lag = lag_report(path, fps)
+        lag = lag_report(path, fps, rests=rests or None)
         rep["lag"] = lag
         if lag["lag"]:
             rep["issues"] += lag["issues"]
             if fix:
                 say(0.35, "Fixing the lag")  # right after the measurement, so the scans below see the fixed file
-                rep["lag_fix"] = fix_lag(path, lag, fps)
+                rep["lag_fix"] = fix_lag(path, lag, fps, rests=rests or None)
     except Exception as exc:
         rep["lag"] = {"error": str(exc)[:200]}
     say(0.5, "Scanning for artifacts")

@@ -198,6 +198,11 @@ A window's QA (`post_qa`) leaves the rest it closes on alone: held frames at a c
 (they count neither as duplicates nor as a short freeze), and a lag fix that does run on a window holds its last
 picture on to the picture's own end, so it keeps every frame it had. Before 1 Nov a fix could cut that rest away: a
 ZedsDead intro came out 243 frames for its 292, and its song played 1.8 s early from there until it was laid again.
+The QA reads the cut's shot plan too (`post_qa.rests_of`, the record's shots): **every rest the plan holds**, in the
+middle of a window as at its end, is left out of the duplicate count and its freeze out of the short ones, and when a
+lag fix still runs for real judder around them, each rest's frames are taken back from the cut as they were
+(`post_qa.keep_holds`), so a mid-window rest stays held instead of being smoothed into the next shot. The song's own QA
+once laid reads the song's shots the same way (its report only).
 
 Beside it: `xenoform.mp4` (the song), `simple/simple.json` (`mode` "song": every shot in song time with its passage,
 window, job and vibe, a window's first shot a hard cut; the timeline, Edit in Resolve and My videos read it, the
