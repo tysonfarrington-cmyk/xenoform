@@ -73,8 +73,8 @@ def client(quiet_split, tmp_path, monkeypatch):
 def test_manifest_rows_match_the_files_and_their_analyses():
     rows = songs_api.manifest()
     assert [row["id"] for row in rows] == IDS  # the 20 s Wobble first (the quick one), then the whole Wobble, then the rest
-    fps = songs_api.SHIPPED_FPS  # the rate they were built at (the desk analyses an upload at 12 since 1 Nov)
-    assert fps == 24.0 and float(ui.load_desk_config()["fps"]) == 12.0
+    fps = songs_api.SHIPPED_FPS  # the desk's own rate, so a bundled song and its upload find the same drops
+    assert fps == 12.0 == float(ui.load_desk_config()["fps"])
     for row in rows:
         path = SONGS / row["file"]
         assert path.is_file(), row["id"]
@@ -126,13 +126,13 @@ def test_load_registers_the_quick_wobble_and_answers_an_uploads_payload(client, 
     assert response.status_code == 200, response.text
     payload = response.json()
     assert payload["audio_id"] == QUICK_AUDIO and payload["title"] == "Morphing Wobble (20 s)"
-    assert abs(payload["duration"] - 20.0) <= 0.3 and payload["tempo"] > 0 and payload["fps"] == 24.0
+    assert abs(payload["duration"] - 20.0) <= 0.3 and payload["tempo"] > 0 and payload["fps"] == 12.0
     assert payload["audio_url"] == f"/media/audio/{QUICK_AUDIO}" and payload["video"] == "" and payload["reference"] == ""
     assert payload["video_label"].startswith("No picture yet") and payload["blocks"] and payload["sections"]
     assert payload["song"]["id"] == QUICK and payload["song"]["audio_id"] == QUICK_AUDIO
     with ui._LOCK:
         assert ui._AUDIO[QUICK_AUDIO] == SONGS / "morphing_wobble_20s.mp3"
-        assert ui._FEATURES[QUICK_AUDIO]["n_frames"] == 480
+        assert ui._FEATURES[QUICK_AUDIO]["n_frames"] == 240
     assert quiet_split == [SONGS / "morphing_wobble_20s.mp3"]  # stems by default, like an upload
     again = client.post("/api/songs/load", json={"id": QUICK}).json()
     assert again["audio_id"] == QUICK_AUDIO  # idempotent: the same id, the split asked for again (its registry dedupes)
@@ -168,7 +168,7 @@ def test_a_fresh_desk_knows_a_bundled_song_without_a_load(quiet_split, tmp_path,
     _forget(QUICK_AUDIO)
     with ui._LOCK:
         assert QUICK_AUDIO in ui._AUDIO  # the Make's "known" check
-        assert ui._FEATURES.get(QUICK_AUDIO)["n_frames"] == 480  # _features_for's lookup
+        assert ui._FEATURES.get(QUICK_AUDIO)["n_frames"] == 240  # _features_for's lookup
         assert ui._AUDIO[QUICK_AUDIO].name == "morphing_wobble_20s.mp3"
     # anything else is a plain dict: no file is touched for an unknown id, and nothing is invented
     with ui._LOCK:

@@ -31,6 +31,12 @@ SECTION_MUTATE = {
 }
 
 
+# Beats are tracked at this rate at the least, whatever the frames' rate: the tracker's tempo can only be a whole number
+# of its own frames, and its beats land on them, so at 12 fps it reads 90, 120, 144 or 180 BPM and lands 40 to 58 ms off
+# (Liquid DnB read 90 for 120, Ambient 90 for 131). The energy, the sections and so the drops keep the frames' rate.
+BEAT_FPS = 24.0
+
+
 def _resample(values: np.ndarray, src_times: np.ndarray, dst_times: np.ndarray) -> np.ndarray:
     if len(values) == 0:
         return np.zeros(len(dst_times), dtype=np.float32)
@@ -199,8 +205,9 @@ def analyze_audio(
             series = stft[mask].mean(axis=0)
         bands[name] = _robust_norm(_resample(series, stft_times, times))
 
-    tempo, beat_frames = librosa.beat.beat_track(y=audio, sr=sr, hop_length=hop, units="frames")
-    beat_times = librosa.frames_to_time(np.atleast_1d(beat_frames), sr=sr, hop_length=hop)
+    beat_hop = max(1, int(round(sr / max(float(fps), BEAT_FPS))))  # beats keep their own clock: see BEAT_FPS
+    tempo, beat_frames = librosa.beat.beat_track(y=audio, sr=sr, hop_length=beat_hop, units="frames")
+    beat_times = librosa.frames_to_time(np.atleast_1d(beat_frames), sr=sr, hop_length=beat_hop)
     onset_frames = librosa.onset.onset_detect(onset_envelope=onset_env, sr=sr, hop_length=hop, units="frames")
     onset_times = librosa.frames_to_time(np.atleast_1d(onset_frames), sr=sr, hop_length=hop)
 

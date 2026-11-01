@@ -54,3 +54,21 @@ def test_silence_is_one_section():
     assert abs(features["duration"] - 360.0) < 0.05
     assert len(features["sections"]) == 1
     assert features["tempo"] == 0.0
+
+
+def test_beats_keep_their_own_clock_at_a_low_frame_rate():
+    """Beats and tempo come from analyze.BEAT_FPS at the least: 12 fps frames find the same beats as 24 fps frames, and
+    the frames themselves stay at the rate asked for."""
+    from xenoform.analyze import BEAT_FPS, analyze_audio
+
+    sr = 22050
+    period = 60.0 / 130.909  # eleven 24 fps frames a beat; at 12 fps the tracker could only read 120 or 144 here
+    audio = np.zeros(int(sr * 20), dtype=np.float32)
+    click = np.exp(-np.linspace(0.0, 8.0, 800, dtype=np.float32)) * np.sin(np.linspace(0.0, 300.0, 800, dtype=np.float32))
+    for k in range(int(20 / period)):
+        at = int(k * period * sr)
+        audio[at:at + len(click)] += click[: len(audio) - at]
+    low, high = analyze_audio(audio, sr, fps=12.0), analyze_audio(audio, sr, fps=BEAT_FPS)
+    assert low["fps"] == 12.0 and low["n_frames"] == 240 and high["n_frames"] == 480
+    assert low["beats"] == high["beats"] and low["tempo"] == high["tempo"]
+    assert abs(float(low["tempo"]) - 130.909) < 1.0

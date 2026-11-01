@@ -2,7 +2,7 @@
 
 For every row of ``examples/songs/songs.json`` this writes ``examples/songs/<id>.features.json`` exactly as the desk's
 ``/api/analyze`` makes an upload's features (librosa load at the file's own rate, mono; ``analyze.analyze_audio`` with
-the desk's ``cfg["analyze"]`` at ``songs_api.SHIPPED_FPS``, the rate they were built at), so a bundled song loads at
+the desk's ``cfg["analyze"]`` at ``songs_api.SHIPPED_FPS``, the desk's own 12 fps), so a bundled song loads at
 once with no librosa pass. It also
 refreshes the manifest's measured fields: ``seconds`` from ffprobe (to 0.1 s) and ``bpm`` from the analysis (rounded).
 Titles, feel lines and credits are left as written.

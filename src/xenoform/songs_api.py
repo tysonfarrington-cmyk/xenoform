@@ -9,9 +9,10 @@ the desk loads one at once, with no librosa pass (``xenoform.ui`` includes ``rou
 The manifest is ``examples/songs/songs.json`` (``manifest()``); the analyses are ``examples/songs/<id>.features.json``,
 built by ``scripts/analyse_bundled_songs.py`` the way ``/api/analyze`` builds an upload's (``analyse(path)``). A song
 whose shipped analysis is missing is analysed on first load and cached under ``work/ui/songs/<id>.features.json``.
-The shipped analyses were built at 24 fps (``SHIPPED_FPS``), the rate ``configs/example.json`` gave until 1 Nov, as the
-demo's was, and ``analyse`` keeps that rate so a song analysed here matches them; the desk (``xenoform ui``,
-``config.DEFAULTS``) and the example config analyse an upload at 12 fps.
+The shipped analyses are built at 12 fps (``SHIPPED_FPS``), the rate the desk (``xenoform ui``, ``config.DEFAULTS``)
+and ``configs/example.json`` analyse an upload at, so a bundled song and the same file uploaded find the same drops.
+The pacing engine's thresholds were tuned at that rate: at 24 fps the energy peak reads higher and short drops are lost.
+Beats keep a finer clock of their own (``analyze.BEAT_FPS``), so the bundled songs' beat grids are the ones they always had.
 
 A desk restart forgets ``ui._AUDIO`` and ``ui._FEATURES``, and a job's recipe, a bookmarked page or a poll may still
 name ``song-<id>``. ``audio_registry()`` and ``features_registry()`` are those two dicts: a lookup of ``song-<id>``
@@ -116,13 +117,12 @@ def demo_row() -> dict:
 
 
 # ---------------------------------------------------------------- the analyses
-SHIPPED_FPS = 24.0  # the rate the bundled songs' shipped analyses were built at (the example config's until 1 Nov)
+SHIPPED_FPS = 12.0  # the rate the bundled songs' shipped analyses are built at, the desk's own
 
 
 def analyse(path: Path) -> dict:
     """The same analysis ``/api/analyze`` runs on an upload, with the desk's ``analyze`` settings, at the rate the
-    shipped analyses were built at (``SHIPPED_FPS``), so a bundled song analysed here matches its siblings. Rebuilding
-    them at the desk's 12 fps would change every bundled song's sections and drops: a round of its own."""
+    shipped analyses are built at (``SHIPPED_FPS``), so a bundled song analysed here matches its siblings."""
     import librosa
 
     from xenoform.analyze import analyze_audio
