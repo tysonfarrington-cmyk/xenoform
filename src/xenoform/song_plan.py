@@ -176,8 +176,9 @@ def whole(features: dict, state: dict, drop: float | None) -> dict:
     hard = cap or max(1, len(grid))  # auto: one shot a beat at most, so the profile's own steps stand
     env = dense.stem_env_for(state)  # the split stems' strong drum hits: a ramp into a drop cuts on them, as in a Make
     hits = list(env.get("drum_strong") or []) if env and not str(env.get("engine") or "").startswith("mix") else None
+    # an objects song's hero holds a bar: its main run opens on a whole bar (place_hero lands the hero on that shot)
     kw = dict(breathe=pacing.breathe_amount(state), drop_mode=pacing.drop_mode_of(state), pace=dense.story_pace(state),
-              tempo=a["tempo"], hits=hits)
+              tempo=a["tempo"], hits=hits, hold_main=not clips_song(state))
     plan = pacing.song_plan(duration, a["beats"], a["sections"], drop, max_shots=hard, **kw)
     speed = dense.macros(state)["speed"]
     if abs(speed - 0.5) > 0.05:  # the Speed knob scales the song's own count, x0.6 at 0 and x1.4 at 1 (song_plan_for)
@@ -884,8 +885,10 @@ def place_hero(song: dict) -> dict | None:
     w["body"]["chain_pins"] = {str(k): f for k, f in sorted(moved.items())}
     w["hero"] = still
     main["hero"] = still
+    first = ((w.get("plan") or {}).get("shots") or [None])[0]  # the shot it lands on: a whole bar (pacing.HERO_BEATS)
+    hold = round(float(first["end"]) - float(first["start"]), 3) if first else None
     return {"still": still, "noun": noun, "why": why, "vibe": str(look.get("vibe") or ""), "passage": int(main["index"]),
-            "window": int(w["index"]), "slot": HERO_SLOT, "at": float(main["start"])}
+            "window": int(w["index"]), "slot": HERO_SLOT, "at": float(main["start"]), "hold_s": hold}
 
 
 # ------------------------------------------------------------------------------------------------ the bodies
@@ -1240,7 +1243,7 @@ def vibes_record(song: dict, state: dict) -> dict:
 
 
 def summary_line(song: dict) -> str:
-    """"14 passages, 78 morphs; 5 drops, the main at 2:21" for the desk and the record."""
+    """"14 passages, 77 morphs; 5 drops, the main at 2:21" for the desk and the record."""
     runs = [p for p in song["passages"] if p.get("drop_run") is not None]
     main = next((p for p in runs if p.get("main")), runs[0] if runs else None)
     bits = [f"{len(song['passages'])} passage{'s' if len(song['passages']) != 1 else ''}",

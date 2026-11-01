@@ -163,7 +163,7 @@ def test_one_vibe_keeps_every_window_whole_and_lets_objects_come_round_only_as_i
     no object twice inside a window, and the record names what came round again."""
     estimate = song_plan.plan(FEATURES, _state(song_vibes=1), drop=drop, pick=False)
     song = song_plan.plan(FEATURES, _state(song_vibes=1), drop=drop, label="Glitch Out")
-    assert song["morphs"] == estimate["morphs"] == 78 and song["estimate"]["morphs"] == 78
+    assert song["morphs"] == estimate["morphs"] == 77 and song["estimate"]["morphs"] == 77
     assert {p["look"]["vibe"] for p in song["passages"]} == {"cosmic"}
     for w in song["windows"]:
         nouns = [taste.words_of(n) for n in w["nouns"]]
@@ -185,7 +185,7 @@ def test_auto_never_lets_an_object_come_round(drop, tasted):
 def test_the_record_keeps_the_choice_and_the_estimate_does_not_change(drop):
     for n in ("auto", 1, 2):
         est = song_plan.plan(FEATURES, _state(song_vibes=n), drop=drop, pick=False)
-        assert est["morphs"] == 78 and est["vibes"] == {"choice": n if n != "auto" else "auto"}
+        assert est["morphs"] == 77 and est["vibes"] == {"choice": n if n != "auto" else "auto"}
     song = song_plan.plan(FEATURES, _state(song_vibes=2), drop=drop, song_id="abc12345", label="Glitch Out")
     rec = song_run.new(song, song_id="abc12345", body=_state(song_vibes=2), audio_id="song-glitch-out", audio_path=AUDIO,
                        label="Glitch Out", beats=FEATURES["beats"])

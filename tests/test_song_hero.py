@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from xenoform import dense, morph_pass, song_plan, song_run, taste
+from xenoform import dense, morph_pass, pacing, song_plan, song_run, taste
 
 ROOT = Path(__file__).resolve().parents[1]
 FEATURES = json.loads((ROOT / "examples" / "songs" / "glitch-out.features.json").read_text(encoding="utf-8"))
@@ -87,6 +87,26 @@ def test_a_hero_under_the_taste_file_and_a_song_kept_to_one_vibe(drop, monkeypat
     w = _main_window(song)
     assert w["stills"][1] == "ferrofluid/063_ferrofluid_phoenix.jpg" and song["hero"]["noun"] == "ferrofluid phoenix"
     assert all("ferrofluid phoenix" not in [n.strip().lower() for n in v["nouns"]] for v in song["windows"] if v is not w)
+
+
+def test_the_hero_holds_a_bar_on_the_main_drops_opening_shot(drop):
+    """The hero showed for a quarter of a second (1 Nov: the main drop opened on a two-beat shot): the main drop run
+    opens on one shot of a whole bar, the one the hero lands on, its event, punch and stutter on its first beat, and
+    the hot run's two-beat entry shots start from its second bar; no other window has such a shot."""
+    song = song_plan.plan(FEATURES, _state(), drop=drop, song_id="abc12345", label="Glitch Out")
+    shots = _main_window(song)["plan"]["shots"]
+    bar = 4 * float(song["period"])
+    first = shots[0]
+    assert first.get("hero_bar") and first.get("event") == "drop"
+    assert abs((first["end"] - first["start"]) - bar) < 0.1 * bar
+    assert [fx["type"] for fx in first["effects"]] == ["punch", "stutter"] and first["effects"][0]["t"] == 0.0
+    main = next(p for p in song["passages"] if p.get("main"))
+    assert float(main["heat"]) >= pacing.ENTRY_HEAT  # Glitch Out's main run is hot: its second bar on the half bar
+    assert all(abs((s["end"] - s["start"]) - bar / 2) < 0.2 * bar for s in shots[1:3])
+    assert song["hero"]["hold_s"] == round(first["end"] - first["start"], 3)
+    assert sum(1 for w in song["windows"] for s in w["plan"]["shots"] if s.get("hero_bar")) == 1
+    clips = song_plan.whole(FEATURES, {**_state(), "morph_source": "clips"}, drop)  # a clips song has no hero to hold
+    assert song_plan.clips_song({"morph_source": "clips"}) and not any(s.get("hero_bar") for s in clips["shots"])
 
 
 def test_a_song_with_no_drop_run_has_no_hero(drop):

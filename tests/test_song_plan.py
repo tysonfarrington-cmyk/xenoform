@@ -44,19 +44,19 @@ def _state(**extra) -> dict:
 
 def test_the_song_is_its_passages_and_the_per_make_cap_does_not_cap_it(drop):
     """Glitch Out whole: 14 passages (the pacing engine's own), each window at most 16 morphs, the total the sum of the
-    windows; Breathe off plans 86 morphs, past the 60 one Make of the song may hold (dense.clip_plan's cap)."""
-    for breathe, total in ((1.0, 78), (0.0, 86)):
+    windows; Breathe off plans 85 morphs, past the 60 one Make of the song may hold (dense.clip_plan's cap)."""
+    for breathe, total in ((1.0, 77), (0.0, 85)):
         song = song_plan.plan(FEATURES, _state(breathe=breathe), drop=drop, pick=False)
         assert len(song["passages"]) == 14 and song["morphs"] == total
         assert song["morphs"] == sum(w["morphs"] for w in song["windows"]) == sum(p["morphs"] for p in song["passages"])
         assert all(1 <= w["morphs"] <= song_plan.PASSAGE_MAX for w in song["windows"])
-    one_make = dense.clip_plan([{}] * 86, FEATURES["duration"], FEATURES["beats"], tier="draft")
+    one_make = dense.clip_plan([{}] * 85, FEATURES["duration"], FEATURES["beats"], tier="draft")
     assert one_make["cap"] == 60 and song["morphs"] > one_make["cap"]
     roles = [p["role"] for p in song["passages"]]
     assert roles[0] == "intro" and roles[-1] == "outro" and roles.count("drop") == 5
     main = [p for p in song["passages"] if p.get("main")]
     assert len(main) == 1 and pacing.clock(main[0]["start"]) == "2:21" and main[0]["heat"] == 1.0
-    assert song["line"] == "14 passages, 86 morphs; 5 drops, the main at 2:21"
+    assert song["line"] == "14 passages, 85 morphs; 5 drops, the main at 2:21"
 
 
 def test_the_windows_tile_the_song_on_its_own_beats(drop):
@@ -85,15 +85,15 @@ def test_a_cap_spends_the_song_by_role_calm_first(drop):
 
 
 def test_a_passage_past_the_tiers_cap_is_cut_on_a_bar_line(drop):
-    """Final takes 12 morphs a Make (dense.MORPH_CAP): the two 13-morph drops become two windows each, cut where a shot
-    starts on a bar line, and the song's total does not change."""
+    """Final takes 12 morphs a Make (dense.MORPH_CAP): the 13-morph drop becomes two windows, cut where a shot
+    starts on a bar line (the main run, 12 as its hero holds a bar, fits one); the total does not change."""
     assert song_plan.window_cap("draft") == 16 and song_plan.window_cap("cloud") == 16 and song_plan.window_cap("final") == 12
     draft = song_plan.plan(FEATURES, _state(), drop=drop, pick=False)
     final = song_plan.plan(FEATURES, _state(quality_tier="final"), drop=drop, pick=False)
-    assert final["morphs"] == draft["morphs"] and len(final["windows"]) == len(draft["windows"]) + 2
+    assert final["morphs"] == draft["morphs"] and len(final["windows"]) == len(draft["windows"]) + 1
     assert all(w["morphs"] <= 12 for w in final["windows"])
     split = [w for w in final["windows"] if w["parts"] == 2]
-    assert len(split) == 4 and {w["role"] for w in split} == {"drop"}
+    assert len(split) == 2 and {w["role"] for w in split} == {"drop"}
     full = song_plan.whole(FEATURES, _state(quality_tier="final"), drop)
     for w in split:
         if w["part"] == 1:
@@ -296,10 +296,10 @@ def test_the_title_lands_on_the_last_hit_as_the_hand_made_video_had_it(drop):
 def test_the_estimate_says_the_morphs_the_minutes_and_what_cloud_would_cost(drop):
     song = song_plan.plan(FEATURES, _state(), drop=drop, pick=False)
     est = song["estimate"]
-    assert est["morphs"] == 78 and set(est["tiers"]) == set(song_plan.TIERS)
+    assert est["morphs"] == 77 and set(est["tiers"]) == set(song_plan.TIERS)
     draft, final, cloud = est["tiers"]["draft"], est["tiers"]["final"], est["tiers"]["cloud"]
     assert 20 < draft["minutes"] < final["minutes"] and not draft["measured"]
-    assert cloud["credits"] == [round(78 * 3.6), round(78 * 6.0)]
+    assert cloud["credits"] == [round(77 * 3.6), round(77 * 6.0)]
     measured = song_plan.estimate({**song, "beats": FEATURES["beats"]}, rates={"draft": {"per_s": 10.0}})
     assert measured["tiers"]["draft"]["measured"] and measured["tiers"]["draft"]["seconds"] >= 2388
 

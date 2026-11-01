@@ -108,6 +108,36 @@ def test_hot_runs_cut_their_first_two_bars_on_the_half_bar_and_nothing_is_shorte
     assert hot_first[0]["heat"] == 1.0 and float(hot_first[0]["seconds"]) / BEAT < 2.5
 
 
+def test_a_whole_songs_main_run_opens_on_a_whole_bar_for_its_hero():
+    """The hero holds a bar (1 Nov): with ``hold_main`` (a whole song's plan) the heaviest run opens on one shot of a
+    whole bar, its event, punch and stutter on its first beat, and its half-bar entry shots start from its second bar;
+    the other runs open as before, and a plan without it is unchanged."""
+    song = _song()
+    args = (song["duration"], song["beats"], song["sections"], GLITCH_DROP)
+    plain = pacing.song_plan(*args, breathe=0.5)
+    held = pacing.song_plan(*args, breathe=0.5, hold_main=True)
+    assert not any(s.get("hero_bar") for s in plain["shots"])
+    runs = [p for p in held["passages"] if "drop_run" in p]
+    k = pacing.heaviest([{"heat": p["heat"], "seconds": p["end"] - p["start"], "opens": p["main"]} for p in runs])
+    main = runs[k]["drop_run"]
+    bar = 4 * held["period"]
+
+    def run_shots(plan, run):
+        return [s for s in plan["shots"] if s.get("drop_run") == run]
+
+    first = run_shots(held, main)
+    assert first[0]["hero_bar"] and first[0]["event"] == "drop" and abs((first[0]["end"] - first[0]["start"]) - bar) < 0.1 * bar
+    assert [fx["type"] for fx in first[0]["effects"]] == ["punch", "stutter"] and first[0]["effects"][0]["t"] == first[0]["start"]
+    assert runs[k]["heat"] >= pacing.ENTRY_HEAT and all(abs((s["end"] - s["start"]) - bar / 2) < 0.2 * bar for s in first[1:3])
+    before = run_shots(plain, main)
+    assert abs((before[0]["end"] - before[0]["start"]) - bar / 2) < 0.2 * bar  # it opened on two beats
+    assert first[0]["start"] == before[0]["start"] and first[0]["end"] == before[1]["end"]  # its first two shots, one bar
+    assert sum(1 for s in held["shots"] if s.get("hero_bar")) == 1
+    for p in runs:
+        if p["drop_run"] != main:
+            assert run_shots(held, p["drop_run"])[0]["end"] == run_shots(plain, p["drop_run"])[0]["end"]
+
+
 def test_a_long_run_plants_an_event_every_eight_bars():
     beats = [round(i * 0.5, 4) for i in range(int(240 / 0.5))]  # 120 bpm: a bar is 2 s, 8 bars 16 s
     secs = [{"label": "calm", "start": 0.0, "end": 40.0, "level": 0.3}, {"label": "drop", "start": 40.0, "end": 200.0, "level": 1.0},

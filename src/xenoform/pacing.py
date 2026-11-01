@@ -198,6 +198,7 @@ QUIET_END = 0.6     # a last passage under this share of the loudest is the outr
 # the drop treatment (plan section 3): what every drop run gets, scaled by its heat
 ENTRY_BARS = 2      # a hot run's first bars cut on the half bar (the only 2-beat shots a run has)
 ENTRY_HEAT = 0.8    # ...from this heat
+HERO_BEATS = 4      # a whole song's hero holds a bar: the main run's opening shot, the one song_plan.place_hero lands on
 RAMP_BARS = 4       # the bars before a run that ramp into it: shots halved, Intensity up, dither in, a longer foreshadow
 EVENT_BARS = 8      # a long run plants an event (a style change or a boundary kind) every this many bars
 HIT_SNAP_S = 0.09   # a drum hit this close to a beat makes it a ramp's cut (stem_react's drum_strong)
@@ -410,7 +411,7 @@ def breathe_table(amount) -> dict:
 def song_plan(duration: float, beats: list, sections: list[dict], drop: float | None = None, *,
               max_shots: int | None = None, target: int | None = None, breathe: bool | float = False,
               drop_mode: str = DROP_MODE_DEFAULT, pace: str = "viscous", tempo: float | None = None,
-              hits: list | None = None) -> dict:
+              hits: list | None = None, hold_main: bool = False) -> dict:
     """The music-video cut for a whole song or a window of one, with roles, on the beat grid (``grid_for``).
 
     Every passage (a run of one role, its start pinned on the beat the analysis put it) cuts on the bar lines at its
@@ -419,8 +420,12 @@ def song_plan(duration: float, beats: list, sections: list[dict], drop: float | 
     the plan's own count) are met by changing the beats a shot by role: the calm passages give up morphs first and get
     them last, the drops the other way round. ``breathe`` is an amount (``amount_of``): from three quarters the scene
     passages hold and rest after every morph (``SCENE_ROLES``, ``MORPH_BEATS``) and the budget never stretches them
-    past ``SCENE_MAX`` (a Breathe cut may spend fewer morphs than it could). Returns ``dense.story_plan``'s shape
-    (``name`` "story", ``drop``, ``shots`` with ``section`` and ``boundary``, ``roles``) plus ``passages``."""
+    past ``SCENE_MAX`` (a Breathe cut may spend fewer morphs than it could). ``hold_main`` (a whole song's plan,
+    ``song_plan.whole``): the main drop run, the heaviest by heat times length (``heaviest``: the run
+    ``song_plan.main_run`` picks and its hero opens), opens on one shot of a whole bar (``HERO_BEATS``, marked
+    ``hero_bar``), its event and punch on its first beat, and a hot run's half-bar entry shots start from its second
+    bar. Returns ``dense.story_plan``'s shape (``name`` "story", ``drop``, ``shots`` with ``section`` and
+    ``boundary``, ``roles``) plus ``passages``."""
     from xenoform import dense
 
     amount = amount_of(breathe)
@@ -477,6 +482,13 @@ def song_plan(duration: float, beats: list, sections: list[dict], drop: float | 
     for p, q in zip(passages, passages[1:] + [None]):
         p["i1"] = q["i0"] if q else len(grid)
         p["end"] = q["start"] if q else duration
+    held = None  # hold_main: the passage of the run whose opening shot holds a bar (its seconds as song_plan rounds them)
+    if hold_main and per_run:
+        run_ps = [pi for pi, p in enumerate(passages) if "drop_run" in p]
+        k_main = heaviest([{"heat": passages[pi]["heat"], "opens": bool(passages[pi].get("main")),
+                            "seconds": round(round(passages[pi]["end"], 4) - round(passages[pi]["start"], 4), 3)}
+                           for pi in run_ps])
+        held = run_ps[k_main] if k_main is not None else None
 
     def zone_role(p: dict, k: int) -> str:
         if p["role"] != "drop":
@@ -549,6 +561,8 @@ def song_plan(duration: float, beats: list, sections: list[dict], drop: float | 
                     step *= BREATHE_FIRST  # the intro opens on one long shot
                 elif breathe and bold > 0 and role == "build" and 2 * (k - p["i0"]) >= p["i1"] - p["i0"]:
                     step = max(4, step // 2)  # a build tightens: its second half a bar a shot
+                if first and pi == held:  # the hero holds a bar: the main run opens on a whole bar, the entry after it
+                    step = max(step, HERO_BEATS)
                 nxt = k + step
                 # land the next cut on a bar line (the montage cut on beat 1); a drop run counts its bars from its own
                 # first beat, pinned where the drop hits
@@ -680,6 +694,8 @@ def song_plan(duration: float, beats: list, sections: list[dict], drop: float | 
             shot.update({"drop_run": p["drop_run"], "heat": p["heat"]})
         if ramp is not None:
             shot["ramp"] = ramp
+        if starts and held is not None and pi == held:
+            shot["hero_bar"] = True  # the main run's opening shot, a whole bar: the one a whole song's hero lands on
         if entry:
             shot["event"] = "drop"
         elif per_run and "drop_run" in p:  # a long run does not go flat: an event every EVENT_BARS bars of it
