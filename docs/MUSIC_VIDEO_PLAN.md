@@ -416,7 +416,7 @@ same composite byte for byte; the suite green with the fake split.
     the pack for good (the bridge overused and too low in quality); a banned_clips list in the taste file keeps them out even where the old files remain.
     Landed 1 Nov (43fc5ab, 0ce0775, bfecdb9, 582404e; 1620 passed, 2 skipped on its tree): version 2 of
     configs/film_pack.json, 40 clips from 29 sources (14 Prelinger items carrying the public domain dedication, 12
-    United States government films, five of them from NASA's own library, 3 films published before 1929), 36 in
+    United States government films, four of them from NASA's own library, 3 films published before 1929), 36 in
     colour with 8 calm ones, and the Machine-Man, Moloch, the Moon landing and Steamboat Willie for the drops; each
     source with its file and size, each clip with its crop, colour, motion, living and mood, which pack.json and
     labels.json carry and clip_cut reads (calm clips in the calm passages, drop clips in the drop runs, living for the
