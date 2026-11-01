@@ -26,7 +26,12 @@ file's per-shot rules; ``boundary_fx`` by passage; the flash tame under Breathe)
   the clip it lands on);
 - under full Breathe a scene passage holds one film (``assign``: the clips of one family, the film the pack says a clip
   is from), and every drop run's cut goes to a film none of the last three were; a clip is never shown twice while
-  unused ones remain.
+  unused ones remain;
+- the film pack's moods (its version 2, 1 Nov: Tys, "colour and action first, so every cut the plan wants shows a clip
+  once"): a clip the pack calls ``calm`` goes to the calm passages, ``drop`` to the drop runs, ``build`` to the builds,
+  before a clip a step away (``wanted_mood``, ``mood_miss``); the pack's ``motion`` stands in for ``motion``, its
+  ``colour`` for ``mono`` and its ``living`` for the kaleido rule's reading of a clip's name. A folder without the fields
+  is cut as before.
 
 The taste file's rules reach a clips cut as they reach an object cut (``dense.shape_shots`` reads the clips' names as a
 chain's nouns: the kaleido steps aside on a clip of a living thing, the effects take turns, no flash look before the
@@ -72,8 +77,13 @@ HOLD_BEATS = 8           # a shot this long or longer holds its film (two bars)
 MEAN_SHOT_MAX_S = 8.0    # no-clip-twice never cuts the plan past one shot in this many seconds: a folder too small
                          # for the song lets a clip come back (a later stretch) rather than hold one for half a minute
 MONO_COLOUR = 6.0        # a clip whose colour varies less than this (Hasler and Suesstrunk's spread of the two
-                         # opponent channels) is black-and-white film: 15 of the film pack's 24 (a tinted reel, Caligari's
-                         # sepia or the dinosaurs' amber, reads as colour, as the 1 Nov demo counted them)
+                         # opponent channels) is black-and-white film: 15 of the film pack's first 24 (a tinted reel,
+                         # Caligari's sepia or the dinosaurs' amber, reads as colour, as the 1 Nov demo counted them)
+MOTION_FULL = 25.0       # a clip's ``motion`` field (the film pack's version 2) is ``motion()`` over this, 0 to 1: the
+                         # Odessa steps, the busiest clip of the first pack, measured 25.1
+MOODS = ("calm", "build", "drop")  # a clip's ``mood``: the passages it suits, in the order of their heat
+CALM_ROLES = ("intro", "calm", "sustain", "release", "outro")  # the passages that want a calm clip (pacing.SCENE_ROLES)
+DROP_ROLES = ("drop", "drop_late")  # and the ones that want a drop clip (with every shot of a drop run)
 
 
 def wants(state: dict | None) -> bool:
@@ -394,20 +404,52 @@ def motion(path: str | Path) -> float | None:
     return got
 
 
+def clip_motion(clip: dict) -> float | None:
+    """How much a clip moves, on ``motion``'s scale: the pack's ``motion`` field (0 to 1, times ``MOTION_FULL``) when the
+    clip carries one, else measured."""
+    m = (clip or {}).get("motion")
+    if isinstance(m, (int, float)) and not isinstance(m, bool):
+        return float(m) * MOTION_FULL
+    return motion(clip["path"])
+
+
+def wanted_mood(shot: dict) -> str:
+    """The mood a clip shot's passage wants (``MOODS``): a drop run's and a drop's shots a drop clip, a build's a build
+    clip, the calm passages (the intro, calm, sustain, release, outro) a calm one; "" when the shot says no role."""
+    role = str((shot or {}).get("section") or "")
+    if (shot or {}).get("drop_run") is not None or role in DROP_ROLES:
+        return "drop"
+    if role == "build":
+        return "build"
+    return "calm" if role in CALM_ROLES else ""
+
+
+def mood_miss(clip: dict, want: str) -> int:
+    """How far a clip's ``mood`` is from the one a shot wants: 0 when it is the mood, or either says none (a folder
+    without the pack's fields is ranked as before), 1 a step away (a build clip in a calm passage or a drop), 2 across
+    (a calm clip in a drop, a drop clip in a calm passage)."""
+    mood = str((clip or {}).get("mood") or "")
+    if not want or mood not in MOODS or want not in MOODS:
+        return 0
+    return abs(MOODS.index(mood) - MOODS.index(want))
+
+
 def assign(shots: list[dict], kind: list[str], clips: list[dict], *, scenes: bool = False, hold_s: float = 0.0) -> list[dict]:
     """The clip each clip shot plays, and the clips each morph runs between: ``slots``' shape, a clip shot's slot with its
     ``family`` and ``cut`` (it opens with a hard cut), a shot that carries a clip on (``cont``) the clip before it.
     Unused clips first, in the folder's order, so a clip comes back (a later stretch, ``turn``) only once every clip has
     played; a cut on an event goes to a fresh film (none of the last ``FRESH_BACK``); under full Breathe (``scenes``) a
-    scene passage holds one film, the one with the most clips left (the most that move, then not the film of the scene
-    before, where another will do); a clip long enough for its shot before one that is not; a shot held ``hold_s`` or
-    longer on a film that moves (``motion`` of ``STILL_MOTION`` and over: a still film held for bars reads as a frozen
-    picture, and goes where the cut moves fast instead); no clip right after one of its own film outside a scene, where
-    another will do."""
+    scene passage holds one film, the one with the most clips left of the mood it wants (then the most left, the most
+    that move, then not the film of the scene before, where another will do); a clip long enough for its shot before one
+    that is not; a shot held ``hold_s`` or longer on a film that moves (``clip_motion`` of ``STILL_MOTION`` and over: a
+    still film held for bars reads as a frozen picture, and goes where the cut moves fast instead); then a clip of the
+    mood its passage wants (``wanted_mood``: calm clips for the calm passages, drop clips for the drop runs, when the
+    folder's pack says so) before one a step or two away; no clip right after one of its own film outside a scene,
+    where another will do."""
     from xenoform import pacing
 
     fam = [family_of(c) for c in clips]
-    still = [(m := motion(c["path"])) is not None and m < STILL_MOTION for c in clips] if hold_s > 0 else [False] * len(clips)
+    still = [(m := clip_motion(c)) is not None and m < STILL_MOTION for c in clips] if hold_s > 0 else [False] * len(clips)
     used = [0] * len(clips)
     shown: list[int] = []
     passages = pacing.passage_of(shots)
@@ -431,16 +473,20 @@ def assign(shots: list[dict], kind: list[str], clips: list[dict], *, scenes: boo
         cut = i > 0 and kind[i - 1] == "clip"
         scene = scenes and str(s.get("section") or "") in pacing.SCENE_ROLES and s.get("drop_run") is None
         p = passages[i]
+        mood = wanted_mood(s)
         if scene and p not in scene_film:
             left: dict = {}
             moving: dict = {}
+            fits: dict = {}
             for c, f in enumerate(fam):
                 if not used[c]:
                     left[f] = left.get(f, 0) + 1
                     moving[f] = moving.get(f, 0) + int(not still[c])
+                    fits[f] = fits.get(f, 0) + int(mood_miss(clips[c], mood) == 0)
             want = sum(1 for j, kk in enumerate(kind) if kk == "clip" and passages[j] == p)
-            if left:
-                scene_film[p] = max(sorted(left), key=lambda f: (min(left[f], want), min(moving[f], want), f != before, left[f]))
+            if left:  # a folder without moods: every clip fits, and the film is chosen as before
+                scene_film[p] = max(sorted(left), key=lambda f: (min(fits[f], want), min(left[f], want), min(moving[f], want),
+                                                                 f != before, left[f]))
                 before = scene_film[p]
         recent = {fam[c] for c in shown[-FRESH_BACK:]}
         last = fam[shown[-1]] if shown else ""
@@ -452,6 +498,7 @@ def assign(shots: list[dict], kind: list[str], clips: list[dict], *, scenes: boo
                     have < 0.8 * need,  # a clip that would play under 0.8x for this shot only when no other will do
                     (fam[c] != scene_film[p]) if scene and p in scene_film else (fam[c] in recent) if cut else (fam[c] == last),
                     held and still[c],  # a held shot on a film that moves
+                    mood_miss(clips[c], mood),  # the pack's mood for this passage: calm in the scenes, drop in the runs
                     have < need - 0.05,
                     c)
 
@@ -605,15 +652,20 @@ def layout(state: dict, directed: dict, audio_path: Path | None, clips: list[dic
 def nouns(shots: list[dict]) -> list[dict]:
     """What a clips cut shows at each handoff, read the way the taste file's per-shot rules read a chain's stills
     (``taste.shot_nouns``: shot i between entries i and i + 1): the clip a clip shot plays, the clips a morph runs
-    between."""
+    between. An entry carries ``living`` when the film pack says whether people or animals are in that clip, so the
+    kaleido rule reads the pack rather than guessing from the clip's name (``taste.effects_by_shot``)."""
     out: list[dict] = []
+
+    def entry(noun: str, alive) -> dict:
+        return {"noun": noun, "living": alive} if isinstance(alive, bool) else {"noun": noun}
+
     for i, s in enumerate(shots):
         m = s.get("clip_morph") if isinstance(s.get("clip_morph"), dict) else None
         head = str((m or {}).get("from") or s.get("label") or "")
         tail = str((m or {}).get("to") or s.get("label") or "")
         if i == 0:
-            out.append({"noun": head})
-        out.append({"noun": tail})
+            out.append(entry(head, (m or {}).get("from_living") if m else s.get("living")))
+        out.append(entry(tail, (m or {}).get("to_living") if m else s.get("living")))
     return out
 
 
@@ -652,15 +704,38 @@ def mono(path: str | Path) -> bool | None:
     return got
 
 
+def black_and_white(clip: dict) -> bool | None:
+    """Whether a clip is black-and-white film: the pack's ``colour`` field when the clip carries one (it was measured
+    the same way when the pack was curated), else ``mono``."""
+    colour = (clip or {}).get("colour")
+    if isinstance(colour, bool):
+        return not colour
+    return mono(clip["path"])
+
+
+def usable(clips: list[dict]) -> list[dict]:
+    """The clips a cut may show: the taste file's banned clips (``taste.clip_banned``: a clip by its pack id or its label,
+    so a folder that still holds the old file never plays it) left out, with a [taste] line saying which."""
+    from xenoform import taste
+
+    kept, gone = [], []
+    for c in clips:
+        (gone if taste.clip_banned(c) else kept).append(c)
+    if gone:
+        names = ", ".join(clip_names(gone))
+        taste.note("banned_clips", f"{len(gone)} clip{'s' if len(gone) != 1 else ''} the taste file bans left out: {names}")
+    return kept
+
+
 def film_note(clips: list[dict]) -> int:
-    """The taste file's ``no-film-clips`` on the cut: a [taste] note when clips it shows are black-and-white film (measured,
-    ``mono``, whatever folder they came from), which does not move to the music and reads flat in a music video; the
-    clips stay, because you chose them. Returns how many were."""
+    """The taste file's ``no-film-clips`` on the cut: a [taste] note when clips it shows are black-and-white film (the
+    pack's ``colour`` field, else measured, ``mono``, whatever folder they came from), which does not move to the music
+    and reads flat in a music video; the clips stay, because you chose them. Returns how many were."""
     from xenoform import taste
 
     if not taste.rule("no-film-clips"):
         return 0
-    bw = sum(1 for c in clips if mono(c["path"]))
+    bw = sum(1 for c in clips if black_and_white(c))
     if bw:
         taste.note("no-film-clips", f"{bw} of the {len(clips)} clips this cut shows are black-and-white film, which reads "
                                     f"flat in a music video; they stay, because you chose them")
@@ -681,7 +756,7 @@ def animatic(directed: dict, state: dict, audio_path: Path, out_path: Path, work
     from xenoform.turbo import publish_file
     from xenoform.video import ffmpeg_bin
 
-    clips_in = [c for c in (state.get("own_clips") or []) if isinstance(c, dict) and c.get("path")]
+    clips_in = usable([c for c in (state.get("own_clips") or []) if isinstance(c, dict) and c.get("path")])
     if not clips_in:
         raise ValueError("Clips mode needs your clips.")
     work = Path(work)
@@ -720,7 +795,7 @@ def run(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg: dict,
     from xenoform import taste as _taste
 
     started = time.perf_counter()
-    clips_in = [c for c in (state.get("own_clips") or []) if isinstance(c, dict) and c.get("path")]
+    clips_in = usable([c for c in (state.get("own_clips") or []) if isinstance(c, dict) and c.get("path")])
     if not clips_in:
         raise ValueError("Clips mode needs your clips: choose a folder of clips (or drop them on the desk), then Make.")
     opt = dense.options(state)
@@ -779,6 +854,8 @@ def run(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg: dict,
             s.update({"own": True, "speed": 1.0, "source": Path(clip["path"]).name, "label": names[sl["clip"]],
                       "clip_start": round(at, 4) if x > i else at,
                       "effects": [e for e in (s.get("effects") or []) if e.get("type") in keep]})
+            if isinstance(clip.get("living"), bool):  # the pack says whether people or animals are in it (the kaleido)
+                s["living"] = clip["living"]
             if is_paced:
                 s["family"] = sl.get("family") or family_of(clip)
                 if x == i and sl.get("cut"):
@@ -837,6 +914,9 @@ def run(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg: dict,
                 notes.extend(up_notes)
         files[i] = Path(made)
         shots[i]["clip_morph"] = {"from": names[plan_slots[i]["a"]], "to": names[plan_slots[i]["b"]]}
+        for end, k in (("from", plan_slots[i]["a"]), ("to", plan_slots[i]["b"])):
+            if isinstance(clips_in[k].get("living"), bool):  # what the pack says of each film the morph runs between
+                shots[i]["clip_morph"][f"{end}_living"] = clips_in[k]["living"]
         shots[i]["style"] = style
     # the taste file on what this cut shows: black-and-white film is a note, never a ban (you chose the clips)
     film_note([clips_in[k] for k in dict.fromkeys(sl["clip"] for sl in plan_slots if sl["kind"] == "clip")])

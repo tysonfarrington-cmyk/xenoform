@@ -414,6 +414,21 @@ same composite byte for byte; the suite green with the fake split.
     sheet and ZedsDead v2 on the new pack stacked against the 24-pack cut).
     Tys, 1 Nov: The General (general_cannon, general_bridge) and Battleship Potemkin (potemkin_steps) are out of
     the pack for good (the bridge overused and too low in quality); a banned_clips list in the taste file keeps them out even where the old files remain.
+    Landed 1 Nov (43fc5ab, 0ce0775, bfecdb9, 582404e; 1620 passed, 2 skipped on its tree): version 2 of
+    configs/film_pack.json, 40 clips from 29 sources (14 Prelinger items carrying the public domain dedication, 12
+    United States government films, four of them from NASA's own library, 3 films published before 1929), 36 in
+    colour with 8 calm ones, and the Machine-Man, Moloch, the Moon landing and Steamboat Willie for the drops; each
+    source with its file and size, each clip with its crop, colour, motion, living and mood, which pack.json and
+    labels.json carry and clip_cut reads (calm clips in the calm passages, drop clips in the drop runs, living for the
+    kaleido rule); banned_clips in taste.json holds the Keaton bridge, the Keaton cannon and the Potemkin steps;
+    MAX_CLIPS 48; windows cut in square pixels. Proof on ZedsDead v2, Breathe 1.0, Drops Auto, Draft
+    (Desktop/xeno_pack_1nov): 62 shots against the 24-pack's 42, all 34 clip shots the plan wants shown once (the
+    24-pack thinned them to 24), the longest build hold 4.9 s (was 15.2) and drop hold 2.5 s (was 11.5), still
+    picture 3.0 s (was 5.3), 4 black-and-white clips shown (was 15), 3 flash frames left after the tame (was 0).
+    For Tys: four black-and-white clips rather than six to eight; the three silent films read from archive.org
+    copies that are marked public domain; only Prelinger items with the dedication; Air Force Now is undated and its
+    page offers a licensed copy; eight calm clips for the song's eleven calm shots; the shuttle ascent from NASA
+    Kennedy's archive.org mirror of its channel (NASA's library has it only at 450 lines).
 17. Tys's answers of 1 Nov: Breathe stays off by default; fourteen vibes in a song is fine and a Vibes control
     lets a song use as few as one (song_vibes, follow-ups round); the taste calls stand as built (every helmet,
     the vessels family, natural-first, no head-noun merging); Lead in Stems mode means the lead instrument, like a

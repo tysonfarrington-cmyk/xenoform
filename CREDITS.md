@@ -68,7 +68,37 @@ Fifteen dance clips, ten from Pexels and five from Mixkit, used only as motion s
 
 ## Free film pack (`configs/film_pack.json`)
 
-Not in the repo. Short clips from public-domain films on archive.org (Méliès, the Lumières, Murnau, Lang, Keaton and more), pulled on request: Setup & models has ffmpeg read each window straight from its archive.org URL into `work/ui/film_pack/` (under `work/`, which git ignores). Every source's title, year, maker, archive.org item, URL and licence line is in `configs/film_pack.json`, and each download writes them, with the clips and their times, to `work/ui/film_pack/CREDITS.md` beside the clips. Where a source is NASA footage, no NASA endorsement is implied and no NASA insignia is used.
+Not in the repo. Version 2 (1 November 2026): 40 short clips from 29 sources, pulled on request: Setup & models has ffmpeg read each window straight from its archive.org or NASA URL into `work/ui/film_pack/` (under `work/`, which git ignores). Every source's title, year, maker, page, URL, the file taken with its size, and its licence line is in `configs/film_pack.json` (the licence bases are in [docs/LICENCES.md](docs/LICENCES.md)), and each download writes them, with the clips and their times, to `work/ui/film_pack/CREDITS.md` beside the clips. Where a source is NASA footage, no NASA endorsement is implied and no NASA insignia is used. The sources:
+
+- Ocean Moon Glint and City Night Lights (2017), NASA (Jack Fischer, from the ISS). https://archive.org/details/Ocean-Moon-Glint-And-City-Night-Lights-In-4K-UHD
+- Ultimate Saturn V Launch (1969), NASA Marshall Space Flight Center. https://images.nasa.gov/details/Ultimate%20Saturn%20V%20Launch%20w%20Enhanced%20Sound
+- Design for Dreaming (1956), MPO Productions for General Motors. https://archive.org/details/Designfo1956
+- Show 'Em the Road (Part II) (1954), Sid Davis Productions for General Petroleum. https://archive.org/details/ShowEmth1954_2
+- Time-Lapse Astronaut Photography of Earth: Aurora Australis, Madagascar (2011), NASA Johnson Space Center. https://archive.org/details/Time-lapseAstronautPhotographyOfEarth
+- Ingenuity in Action (Part II) (1958), Sid Davis Productions for Hot Rod Magazine. https://archive.org/details/Ingenuit1958_2
+- Metropolis (1927), Fritz Lang. https://archive.org/details/metropolis-1927_202511
+- STS-133 Space Shuttle Launch (2011), NASA Kennedy Space Center. https://archive.org/details/NASAKennedy-RxFwUG9PiYM
+- A Touch of Magic (1961), MPO Television Films for General Motors. https://archive.org/details/TouchofM1961
+- At the End of the Rainbow (Part I) (1946), The Jam Handy Organization for Sun-Kraft. https://archive.org/details/AttheEnd1946
+- New Orleans Carnival Week, February 22, 1941 (amateur film) (1941), unknown amateur. https://archive.org/details/NewOrlea1941
+- Volcano Eruptions (1959), United States government (National Archives, FedFlix). https://archive.org/details/gov.archives.arc.68933
+- Solar Highlights of 2016/2017: Twisting Solar Material (2016), NASA Goddard Space Flight Center (Solar Dynamics Observatory). https://images.nasa.gov/details/GSFC_20160624_SDO_m12292_TwistingSolarMaterial
+- Supersonic Thunderbirds (1959), United States Air Force (National Archives, FedFlix). https://archive.org/details/gov.archives.arc.67591
+- 6 1/2 Magic Hours (1958), Kahlenberg for Pan American World Airways. https://archive.org/details/612Magic1958
+- A Trip to the Moon (1902), Georges Méliès. https://archive.org/details/levoyagedanslalune_georgesmelies
+- American Harvest (Part I) (1955), The Jam Handy Organization for Chevrolet. https://archive.org/details/American1955
+- Cosmic Careers: Divers (2024), NASA Johnson Space Center. https://images.nasa.gov/details/CosmicCareers_Diving_Videographer_edit._MP4
+- Air Force Now: Thunderbirds (undated), United States Air Force. https://archive.org/details/AirForceNow-Thunderbirds
+- World's Fair Night Aerials (1964), unknown (New York World's Fair footage). https://archive.org/details/tmp_1964Worl
+- American Thrift (Part II) (1962), The Jam Handy Organization for Chevrolet. https://archive.org/details/American1962_2
+- Midwest Holiday (Part II) (1952), Wilding Picture Productions for Standard Oil. https://archive.org/details/MidwestH1952_2
+- Volcanoes (1955), Art Carter. https://archive.org/details/volcanoes
+- Time-Lapse Astronaut Photography of Earth: Aurora Australis, Australia to New Zealand (2011), NASA Johnson Space Center. https://archive.org/details/Time-lapseAstronautPhotographyOfEarth
+- Artemis I Isolated Launch Views (2022), NASA Kennedy Space Center. https://images.nasa.gov/details/KSC-20221116-MH-AJN01-0001-Artemis_I_Isolated_Launch_Views-3314595
+- Time-Lapse Astronaut Photography of Earth 2: Halfway Across the World (2011), NASA Johnson Space Center. https://archive.org/details/Time-lapseAstronautPhotographyOfEarth-2
+- Steamboat Willie (1928), Walt Disney and Ub Iwerks. https://archive.org/details/steamboat-willie-1928-by-walt-disney
+- Your Fire Department (Part I) (1949), Los Angeles Fire Department. https://archive.org/details/YourFire1949
+- To New Horizons (1940), The Jam Handy Organization for General Motors. https://archive.org/details/ToNewHor1940
 
 ## Fonts
 

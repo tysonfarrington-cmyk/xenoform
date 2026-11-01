@@ -897,9 +897,12 @@ def plan(features: dict, state: dict, *, drop: float | None, song_id: str = "", 
     why = refuse(state)
     if why:
         raise SongError(why)
+    from xenoform import clip_cut
+
     tier = tier_of(state)
     full = whole(features, state, drop)
-    clips = [c for c in state.get("own_clips") or [] if isinstance(c, dict) and c.get("path")] if clips_song(state) else []
+    # a clips song plans on the clips its Make will show: the taste file's banned clips out, as the Make leaves them out
+    clips = clip_cut.usable([c for c in state.get("own_clips") or [] if isinstance(c, dict) and c.get("path")]) if clips_song(state) else []
     passages, windows = clips_passages(full, clips, state, features) if clips else passages_of(full, tier)
     a = analysis(features)
     song = {"duration": round(a["duration"], 3), "tempo": a["tempo"], "drop": full.get("drop"), "first_drop": first_drop(full),
