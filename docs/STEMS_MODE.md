@@ -39,6 +39,10 @@ exists, and on Windows the two names are one file.)
    - a drop's **event** (its punch, stutter and drop boundary) stays only on a layer whose stem plays the drop's first
      beat (activity 0.35 or more): the stem that carries the drop gets the event; on the others the boundary is a plain
      switch;
+   - with a **Lead** layer, the lead instrument takes the drop events and the long runs' style events wherever its stem
+     plays their first beat (0.35 or more): the other layers give them up there (a plain switch, no punch, no style
+     change), and the lead keeps a style event its stem plays even in a quiet shot; where the lead is out, the events
+     stay with the layers whose stems carry them, as above;
    - every shot says how active its stem was (`stem_activity`) and how many of its onsets it holds (`stem_onsets`).
 4. **The composite** (`stems_composite.build`): the layers laid together into the job's `xenoform.mp4`, the song mixed
    in once (AAC 192k, as every cut is). See *Prominence and blend* below.
@@ -50,9 +54,13 @@ layers that are on (and so do Cloud's credits).
 ## The rules it keeps
 
 - **The same planner, the same passages.** Every layer is planned by `pacing.song_plan` on the mix's sections, so
-  Breathe, the drop runs and their heat are shared; only the shots inside a passage follow the stem. With a **lead**
-  layer, the passages are the mix's split where the lead stem goes out for two bars or more (that stretch is a release,
-  a breakdown, for every layer).
+  Breathe, the drop runs and their heat are shared; only the shots inside a passage follow the stem.
+- **Lead is the lead instrument, like a lead synth** (Tys, 1 Nov). The Lead layer sits on top of the stack with the
+  highest prominence (0.9 unless its row sets one), takes the drop events and the style events where its stem plays,
+  and the passages are the mix's split where its stem goes out for two bars or more: that stretch is a release, a
+  breakdown, for every layer. The desk makes the melodic stem the Lead: the vocals when the song has them (they play a
+  tenth of it or more; the vocals row is then turned on too), else the other stem; a Lead chosen by hand stays, song
+  after song. A body with no layer marked `lead` has none: the mix's sections are the passages, as before.
 - **One Shape for all.** The knobs, Breathe and Drops, the Look, Timing and Effects are one setting for every layer; a
   re-cut with new knobs re-cuts every layer. Under Breathe a layer's calm passage is a scene like any cut's (one look
   from one family, holds of three to four bars, a morph then a rest); its stem's exits and returns still cut it where
@@ -97,9 +105,10 @@ The Make body (`POST /api/generate`) of a Stems cut:
 - `vibe` (objects): the layer's vibe; empty is the cut's.
 - `pins` (objects): chain slot to still file, as the Chain row's `chain_pins`.
 - `clips`, `clips_folder` or `own_id` (clips): a list of clip paths, a folder, or the files dropped on the desk.
-- `prominence`: 0..1, how dominant the layer is (default 0.7).
+- `prominence`: 0..1, how dominant the layer is (default 0.7; the lead's 0.9).
 - `blend`: `screen` (default), `normal`, `add`, `lighten` or `multiply`.
-- `lead`: true on at most one layer: its stem's entrances and exits set the passages.
+- `lead`: true on at most one layer: the lead instrument, like a lead synth: on top of the stack, the drop and style
+  events where its stem plays, and its rests of two bars or more are releases for every layer.
 - `on`: false leaves a row out (the desk sends only the rows that are on).
 
 What `stems_mode` adds to each layer's own body: `mode: "simple"`, the layer's `vibe`, `chain_pins` or `own_clips`
@@ -135,7 +144,8 @@ prominence. (The plan's "the lowest opaque when it is the only one active", made
 plays alone.)
 
 **Order.** Bottom to top by prominence: the least prominent first, the most prominent on top (ties in the layers'
-order). The ground is black; the bottom layer is laid over it at its alpha.
+order), and the Lead layer on top whatever its prominence. The ground is black; the bottom layer is laid over it at its
+alpha.
 
 **Blend**, for each layer above the bottom, always at the layer's alpha:
 
@@ -158,8 +168,10 @@ in seconds, no GPU and no re-cut. The order follows the new prominence.
 
 - **The Stems step** (Morph: Stems): Split stems with its progress (Demucs prints nothing the desk can read, so the bar is
   the measured rate: about 0.3 s a second of song on 8 cores), then a row a stem: its envelope drawn, On or Off,
-  Objects or Clips, the vibe and "Chain row's pins" or a folder of clips, prominence, blend, Lead. Drums and other are on
-  at first. Four layers at most.
+  Objects or Clips, the vibe and "Chain row's pins" or a folder of clips, prominence, blend, Lead (its help: "the lead
+  instrument, like a lead synth"). Drums and other are on at first, and the melodic stem is the Lead (the vocals when
+  the song has them, turned on with it, else the other), its prominence 0.9; moving the Lead moves that prominence with
+  it unless the slider was set by hand. Four layers at most.
 - **The cut's screen**: the Layers block over the timeline, a row a layer (its stem's activity filled, its alpha dashed,
   prominence, blend), a tab a layer. The timeline shows the chosen layer's own shots; its edits (Hold, the order, the
   look, the joins) re-cut that layer alone (`POST /api/jobs/<id>/recut` with `layer`), then the layers are laid again.

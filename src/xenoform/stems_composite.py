@@ -7,8 +7,8 @@ here). This module lays them together with ffmpeg, deterministically from the re
   RMS, attack within a beat, release over two), so a layer breathes with its stem. A layer that is the only one active
   is drawn opaque (``SOLO``): its alpha rises toward 1 by how alone it is, ``a + (1 - a) x act x prod(1 - act_other)``,
   so one stem playing alone is never a dim picture over black, and two playing at once share the frame by prominence.
-- **order**: bottom to top by prominence (the most prominent on top), ties in the layers' own order. The ground is black;
-  the bottom layer is laid over it at its alpha.
+- **order**: bottom to top by prominence (the most prominent on top), ties in the layers' own order, and the lead layer
+  (the lead instrument) on top whatever its prominence. The ground is black; the bottom layer is laid over it at its alpha.
 - **blend** of each layer above the bottom: ``screen`` (the default: objects on black overlap without mud), ``normal``,
   ``add``, ``lighten`` or ``multiply``, each at the layer's alpha. Screen, add and lighten blend the layer premultiplied
   against black (the screen of an ``a``-premultiplied layer is screen at opacity ``a``: ``b + aL(1 - b)``); multiply
@@ -57,8 +57,9 @@ def prominence_of(value, default: float = 0.7) -> float:
 
 
 def order_of(layers: list[dict]) -> list[str]:
-    """The stems bottom to top: the least prominent first (the most prominent on top), ties in the layers' order."""
-    ranked = sorted(enumerate(layers), key=lambda kv: (prominence_of(kv[1].get("prominence")), kv[0]))
+    """The stems bottom to top: the least prominent first (the most prominent on top), ties in the layers' order; the
+    lead layer (``lead``: the lead instrument) always on top."""
+    ranked = sorted(enumerate(layers), key=lambda kv: (bool(kv[1].get("lead")), prominence_of(kv[1].get("prominence")), kv[0]))
     return [str(layer["stem"]) for _, layer in ranked]
 
 

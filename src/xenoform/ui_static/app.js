@@ -114,7 +114,7 @@ function shortcutLabel() {
 }
 
 // The last session's vibe and Fine-tune choices survive a reload or a desk restart (the song cannot: uploads live on the server).
-const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow", "scenes", "pins", "feelSig", "batchN", "batchVary", "morphSource", "scenesChosen", "morphStyle", "morphTiming", "effects", "backdrop", "breathe", "dropMode", "stemRows", "importFolder", "importKind", "wholeSong", "songCap", "songVibes"];
+const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow", "scenes", "pins", "feelSig", "batchN", "batchVary", "morphSource", "scenesChosen", "morphStyle", "morphTiming", "effects", "backdrop", "breathe", "dropMode", "stemRows", "stemLeadAuto", "importFolder", "importKind", "wholeSong", "songCap", "songVibes"];
 // The Model row's tiers as the desk names them (quality_tier: draft, fast, final, cloud)
 const TIER_LABEL = { draft: "Draft", fast: "Fast Final", final: "Final", cloud: "Cloud Final" };
 function saveEasy() {
@@ -4867,14 +4867,13 @@ document.addEventListener("click", async (event) => {
     if (act === "easy-stem-on") {
       if (!row.on && stemLayers(state.easy).length >= STEM_LAYER_MAX) {
         state.easy.note = `Four layers at most: turn one off first.`;
-      } else row.on = !row.on;
+      } else Object.assign(row, { on: !row.on, autoOn: false });  // on or off by hand: it stays so
     } else if (act === "easy-stem-kind") {
       row.kind = el.dataset.value === "clips" ? "clips" : "objects";
       row.pins = {};  // a layer is objects or clips, never both: what it kept goes with the kind
     } else if (act === "easy-stem-lead") {
-      const was = row.lead;
-      Object.values(state.easy.stemRows || {}).forEach((r) => { r.lead = false; });  // one lead a cut
-      row.lead = !was;
+      stemSetLead(state.easy, row, !row.lead);  // one lead a cut: the lead instrument, on top and the most prominent
+      state.easy.stemLeadAuto = false;  // chosen by hand: it no longer follows the song
     } else if (act === "easy-stem-chainpins") {
       row.chainPins = !row.chainPins;
     } else {
@@ -5236,7 +5235,7 @@ document.addEventListener("input", (event) => {
   } else if (target.classList && (target.classList.contains("stem-pro-in") || target.classList.contains("stem-mix-pro"))) {
     // a Stems prominence: the Stems step's row, or on the cut's screen the mix waiting for Lay them again; the readout follows
     const v = Math.round(Number(target.value) * 100) / 100;
-    if (target.classList.contains("stem-pro-in")) stemRow(state.easy, target.dataset.stem).prominence = v;
+    if (target.classList.contains("stem-pro-in")) Object.assign(stemRow(state.easy, target.dataset.stem), { prominence: v, proSet: true });
     else stemsMixSet(state.lane, target.dataset.stem, "prominence", v);
     const readout = target.parentElement && target.parentElement.querySelector("b");
     if (readout) readout.textContent = v.toFixed(2);
@@ -6011,13 +6010,59 @@ function stemLabel(stem) {
 function stemsSplitFor(id) {
   return state && state.stemsSplit && state.stemsSplit.audioId === id ? state.stemsSplit : null;
 }
+function stemProDefault(name) {
+  return String(name).toLowerCase() === "drums" ? 0.8 : 0.6;
+}
 function stemRow(easy, name) {
   easy.stemRows = easy.stemRows || {};
   if (!easy.stemRows[name]) {
     easy.stemRows[name] = { on: STEM_DEFAULT_ON.includes(String(name).toLowerCase()), kind: "objects", vibe: "", chainPins: false,
-      folder: "", prominence: String(name).toLowerCase() === "drums" ? 0.8 : 0.6, blend: "screen", lead: false, pins: {} };
+      folder: "", prominence: stemProDefault(name), blend: "screen", lead: false, pins: {} };
   }
   return easy.stemRows[name];
+}
+// Lead (Tys, 1 Nov): the lead instrument, like a lead synth. It sits on top of the stack with the highest prominence
+// (STEM_LEAD_PRO unless its slider was moved), takes the drop and style events where its stem plays, and where it rests
+// two bars or more every layer has a breakdown. By default it is the melodic stem: the vocals when the song has them
+// (they play a tenth of it or more), else the other stem; it is turned on with the drums and the other.
+const STEM_LEAD_PRO = 0.9;
+const STEM_LEAD_HELP = "The lead instrument, like a lead synth: on top of the stack, the most prominent, the drop and style events where it plays, and where it rests two bars or more every layer has a breakdown";
+function stemDefaultLead(stems) {
+  const rows = stems || [];
+  const vocals = rows.find((r) => String(r.name).toLowerCase() === "vocals" && Number(r.active || 0) >= 0.1);
+  if (vocals) return vocals.name;
+  const other = rows.find((r) => String(r.name).toLowerCase() === "other");
+  return other ? other.name : "";
+}
+// The rows of a split as it shows: drums and other on at first; until a Lead is chosen by hand (stemLeadAuto false) the
+// lead follows the song, the melodic stem of each split, turned on with it (and off again when it moves on, if it was
+// only on for that)
+function stemDefaults(easy, stems) {
+  easy.stemRows = easy.stemRows || {};
+  const names = (stems || []).map((r) => r.name);
+  if (!names.length) return;
+  names.forEach((n) => stemRow(easy, n));
+  if (easy.stemLeadAuto === false) return;  // a Lead chosen by hand stays, song after song
+  const lead = stemDefaultLead(stems);
+  if (!lead || easy.stemRows[lead].lead) return;
+  Object.values(easy.stemRows).forEach((r) => {
+    if (r.autoOn && r.lead) { r.on = false; r.autoOn = false; }
+  });
+  const row = easy.stemRows[lead];
+  stemSetLead(easy, row, true);
+  if (!row.on) Object.assign(row, { on: true, autoOn: true });
+}
+// Lead moved to another row: its prominence follows unless that slider was set by hand
+function stemSetLead(easy, row, on) {
+  Object.values(easy.stemRows || {}).forEach((r) => {
+    if (r.lead && r !== row) {
+      r.lead = false;
+      if (!r.proSet) r.prominence = stemProDefault(Object.keys(easy.stemRows).find((k) => easy.stemRows[k] === r) || "");
+    }
+  });
+  row.lead = on;
+  const name = Object.keys(easy.stemRows || {}).find((k) => easy.stemRows[k] === row) || "";
+  if (!row.proSet) row.prominence = on ? STEM_LEAD_PRO : stemProDefault(name);
 }
 function stemNames() {
   const st = state && stemsSplitFor(state.audioId);
@@ -6103,7 +6148,8 @@ function stemRowHtml(easy, r) {
         <div class="stem-ctl">
           <label class="stem-pro">Prominence <input type="range" class="stem-pro-in" min="0" max="1" step="0.05" value="${Number(row.prominence)}" data-stem="${name}" aria-label="${name}: prominence"><b>${Number(row.prominence).toFixed(2)}</b></label>
           <label class="stem-blend-label">Blend <select class="stem-blend" data-stem="${name}" aria-label="${name}: blend">${STEM_BLENDS.map(([v, t]) => `<option value="${v}"${(row.blend || "screen") === v ? " selected" : ""}>${t}</option>`).join("")}</select></label>
-          <button type="button" class="chip${row.lead ? " on" : ""}" data-act="easy-stem-lead" data-stem="${name}" aria-pressed="${row.lead ? "true" : "false"}" title="Its entrances and exits become the passages for every layer">Lead</button>
+          <button type="button" class="chip${row.lead ? " on" : ""}" data-act="easy-stem-lead" data-stem="${name}" aria-pressed="${row.lead ? "true" : "false"}" title="${esc(STEM_LEAD_HELP)}">Lead</button>
+          ${row.lead ? `<span class="note stem-lead-note">the lead instrument, like a lead synth</span>` : ""}
         </div>
       </div>
     </div>`;
@@ -6130,6 +6176,7 @@ function stemsStep(easy) {
     return `<section class="easy-step stems-step" data-tour="easy-stems">${head}${split}
       <p class="note">Demucs separates the song into drums, bass, other and vocals (the band split where Demucs is not installed). Each stem you turn on becomes a layer, cut by the same planner on its own stem: it plays where its stem plays and fades where it rests.</p></section>`;
   }
+  stemDefaults(easy, st.stems);  // the first time a split shows: drums and other on, the melodic stem the lead
   const rows = (st.stems || []).map((r) => stemRowHtml(easy, r)).join("");
   const on = stemLayers(easy);
   return `<section class="easy-step stems-step" data-tour="easy-stems">${head}${split}
