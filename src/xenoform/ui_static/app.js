@@ -2822,9 +2822,10 @@ function timelineDrawer(easy, lane, tl, picked) {
         <label>seed <input id="tl-seed" type="number" placeholder="next" min="0" step="1" aria-label="Seed, empty for the next one" /></label>
         <label>length <select id="tl-render-s" aria-label="Seconds of source"><option value="">as it is</option>${lengthOpts.map((v) => `<option value="${v}">${v} s</option>`).join("")}</select></label>
         <label>prompt <select id="tl-variant" aria-label="Prompt variant">${variants.map((v) => `<option value="${esc(v)}">${esc(variantName(v))}</option>`).join("")}</select></label></div>
-      <div class="tl-gpu-row"><button type="button" class="ghost" data-act="easy-tl-insert" data-index="${s.index}">Generate here</button>
-        <label>length <select id="tl-insert-s" aria-label="Seconds to generate">${insertS.map((v) => `<option value="${v}"${v === 10 ? " selected" : ""}>${v} s</option>`).join("")}</select></label></div>` : ""}
-      ${dream}`;
+      ${lane.insertable === false ? "" : `<div class="tl-gpu-row"><button type="button" class="ghost" data-act="easy-tl-insert" data-index="${s.index}">Generate here</button>
+        <label>length <select id="tl-insert-s" aria-label="Seconds to generate">${insertS.map((v) => `<option value="${v}"${v === 10 ? " selected" : ""}>${v} s</option>`).join("")}</select></label></div>`}` : ""}
+      ${dream}
+      ${lane.mode === "stems" ? `<p class="note tl-layer-note">${esc(`The ${stemLabel(lane.layer)} layer: Swap and Re-render render its own morphs, then the layers are laid together again with no GPU. ${lane.layer_note || ""}`)}</p>` : ""}`;
   }
   return `<div class="tl-drawer" id="tl-drawer">${head}<div class="tl-tab-body">${body}</div></div>`;
 }
@@ -2906,9 +2907,11 @@ async function rerenderShot(index, style) {
   if (seedEl && seedEl.value !== "") body.seed = Number(seedEl.value);
   if (lenEl && lenEl.value !== "") body.render_s = Number(lenEl.value);
   if (style && MORPH_STYLES.includes(style)) body.style = style;
+  if (lane.mode === "stems") body.layer = lane.layer;  // a Stems cut: this layer's morph, then the layers laid again
   const shot = lane.shots.find((x) => x.index === Number(index)) || {};
   const how = body.style ? ` as ${morphStyleLabel(body.style)}` : "";
-  await postCutEdit(id, "rerender", body, `Re-rendering shot ${Number(index) + 1}'s morph${how} on the GPU`, shot.start);
+  const where = lane.mode === "stems" ? ` on the ${lane.layer} layer` : "";
+  await postCutEdit(id, "rerender", body, `Re-rendering shot ${Number(index) + 1}'s morph${how}${where} on the GPU`, shot.start);
 }
 async function insertRun(index) {
   const id = easyVideoId();
@@ -2925,8 +2928,11 @@ async function insertRun(index) {
 // and re-composes; the job runs like a re-cut, the making screen shows it, the lane reloads when it is done.
 async function swapStill(id, slot, file) {
   if (!id || !state.easy || slot == null || !file) return;
+  const lane = state.lane && state.lane.id === id ? state.lane : null;
+  const swap = { slot: Number(slot), file };
+  if (lane && lane.mode === "stems") swap.layer = lane.layer;  // a Stems cut: this layer's still, then the layers laid again
   try {
-    const res = await api(`/api/jobs/${encodeURIComponent(id)}/swap`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slot: Number(slot), file }) });
+    const res = await api(`/api/jobs/${encodeURIComponent(id)}/swap`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(swap) });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       state.easy.note = err.detail || "The swap did not start.";

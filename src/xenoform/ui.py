@@ -800,6 +800,29 @@ def create_app(cfg: dict | None = None):
         threading.Thread(target=run, name=f"recut-{job_id}", daemon=True).start()
         return {"id": job_id, "status": "running"}
 
+    def _stems_layer_for_edit(rec: dict, body: dict) -> str | None:
+        """A Stems cut's swap or re-render is one layer's (``stems_mode.layer_edit``): the body's ``layer``, a stem the
+        cut has, else a plain-words 400. None for a plain cut."""
+        if str(rec.get("mode") or "") != "stems":
+            return None
+        from xenoform import stems_mode as _sm
+
+        try:
+            return str(_sm.layer_of(rec, body.get("layer"))["stem"])
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+
+    def _no_stems_run(folder: Path) -> None:
+        """Generate here and Dream act on one cut: a Stems cut refuses them with the note the desk shows."""
+        try:
+            rec = json.loads((folder / "simple" / "simple.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return
+        if str(rec.get("mode") or "") == "stems":
+            from xenoform import stems_mode as _sm
+
+            raise HTTPException(400, _sm.LAYER_ONLY)
+
     @app.post("/api/jobs/{job_id}/swap")
     def swap_job(job_id: str, body: dict | None = None) -> dict:
         """Swap one still of a finished Simple cut (``dense.swap_still``): the two morphs that touch it are re-rendered
@@ -835,6 +858,19 @@ def create_app(cfg: dict | None = None):
             raise HTTPException(400, "This cut's record did not read.")
         from xenoform.dense import library_row
 
+        layer = _stems_layer_for_edit(rec, body)  # a Stems cut: the swap is one layer's, its record checked here
+        if layer is not None:
+            from xenoform import stems_mode as _sm
+
+            try:
+                _row, layer_rec = _sm.layer_record(rec, layer)
+            except (OSError, ValueError) as exc:
+                raise HTTPException(400, f"The {layer} layer's record did not read: make the cut again. ({exc})") from exc
+            other = _sm.taken_elsewhere(rec, layer, file)
+            if other:
+                raise HTTPException(400, f"{file.split('/')[-1]} is in the {other} layer already: an object shows once "
+                                         "across the layers.")
+            rec = layer_rec
         files = [str(f) for f in rec.get("stills") or []]
         if not 0 <= slot < len(files):
             raise HTTPException(400, f"This cut has {len(files)} stills; slot {slot} is not one of them.")
@@ -854,7 +890,13 @@ def create_app(cfg: dict | None = None):
 
         def run() -> None:
             try:
-                rec = swap_still(folder, slot, file, cfg=cfg, report=on_progress)
+                if layer is not None:  # the layer's two morphs, its re-cut, then the layers laid together again (no GPU)
+                    from xenoform import stems_mode as _sm
+
+                    rec = _sm.layer_edit(folder, layer, lambda d, rep: swap_still(d, slot, file, cfg=cfg, report=rep),
+                                         kind="swap", report=on_progress, detail={"slot": slot, "file": file})
+                else:
+                    rec = swap_still(folder, slot, file, cfg=cfg, report=on_progress)
                 with _LOCK:
                     version = int(job.get("video_version") or 0) + 1
                     job.update({"status": "done", "stage": "done", "progress": 1.0, "video_version": version,
@@ -958,6 +1000,14 @@ def create_app(cfg: dict | None = None):
             rec = json.loads((folder / "simple" / "simple.json").read_text(encoding="utf-8"))
         except ValueError:
             raise HTTPException(400, "This cut's record did not read.")
+        layer = _stems_layer_for_edit(rec, body)  # a Stems cut: the shot is one layer's, its record checked here
+        if layer is not None:
+            from xenoform import stems_mode as _sm
+
+            try:
+                rec = _sm.layer_record(rec, layer)[1]
+            except (OSError, ValueError) as exc:
+                raise HTTPException(400, f"The {layer} layer's record did not read: make the cut again. ({exc})") from exc
         shots = list(rec.get("plan_shots") or rec.get("shots") or [])
         if not 0 <= shot < len(shots):
             raise HTTPException(400, f"This cut has {len(shots)} shots; shot {shot} is not one of them.")
@@ -969,11 +1019,22 @@ def create_app(cfg: dict | None = None):
         if under:
             raise HTTPException(400, f"Shot {shot + 1} is {under}: it plays no morph of the chain to re-render.")
         with _LOCK:
-            job.update({"status": "running", "stage": "restyle", "progress": 0.05, "detail": f"Re-rendering shot {shot + 1}'s morph", "error": None})
-        _run_edit(job, job_id, "rerender", "Re-render ready", "The re-render did not run.",
-                  lambda report: rerender_morph(folder, shot, seed=seed, render_s=render_s, variant=variant, style=style, cfg=cfg,
-                                                report=report))
-        return {"id": job_id, "status": "running", "shot": shot, "seed": seed, "render_s": render_s, "variant": variant, "style": style}
+            job.update({"status": "running", "stage": "restyle", "progress": 0.05, "error": None,
+                        "detail": f"Re-rendering shot {shot + 1}'s morph" + (f" on the {layer} layer" if layer else "")})
+
+        def rerender(report):
+            go = lambda d, rep: rerender_morph(d, shot, seed=seed, render_s=render_s, variant=variant,  # noqa: E731
+                                               style=style, cfg=cfg, report=rep)
+            if layer is None:
+                return go(folder, report)
+            from xenoform import stems_mode as _sm  # one layer's morph and re-cut, then the layers laid again (no GPU)
+
+            return _sm.layer_edit(folder, layer, go, kind="rerender", report=report,
+                                  detail={"shot": shot, "seed": seed, "render_s": render_s, "variant": variant, "style": style})
+
+        _run_edit(job, job_id, "rerender", "Re-render ready", "The re-render did not run.", rerender)
+        return {"id": job_id, "status": "running", "shot": shot, "seed": seed, "render_s": render_s, "variant": variant, "style": style,
+                **({"layer": layer} if layer else {})}
 
     @app.post("/api/jobs/{job_id}/insert")
     def insert_job(job_id: str, body: dict | None = None) -> dict:
@@ -984,6 +1045,7 @@ def create_app(cfg: dict | None = None):
 
         body = body or {}
         job, folder = _cut_job_for_edit(job_id, "generate into")
+        _no_stems_run(folder)  # a Stems cut: not on a layer yet, said plainly
         try:
             first = int(body.get("first"))
         except (TypeError, ValueError):
@@ -1030,6 +1092,7 @@ def create_app(cfg: dict | None = None):
 
         body = body or {}
         job, folder = _cut_job_for_edit(job_id, "dream over")
+        _no_stems_run(folder)  # a Stems cut: not on a layer yet, said plainly
         try:
             first = int(body.get("first"))
         except (TypeError, ValueError):

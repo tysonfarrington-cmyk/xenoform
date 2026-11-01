@@ -735,7 +735,8 @@ def test_the_desk_routes_split_lane_and_recomposite(tmp_path, fake_render, monke
     c = TestClient(ui.create_app())
     lane = c.get("/api/videos/abc12345/shots").json()
     assert lane["mode"] == "stems" and [l["stem"] for l in lane["layers"]] == ["drums", "other"]
-    assert lane["layer"] == "drums" and lane["swappable"] is False and lane["rerenderable"] is False
+    assert lane["layer"] == "drums" and lane["swappable"] is True and lane["rerenderable"] is True  # a layer's own (1 Nov)
+    assert lane["insertable"] is False and lane["dreamable"] is False  # Generate here and Dream: not on a layer
     assert lane["shots"] == lane["layers"][0]["lane"]["shots"] and lane["layers"][1]["lane"]["tl_key"] == "abc12345:other"
     assert 0 < len(lane["layers"][0]["envelope"]) <= stems.ENVELOPE_POINTS and len(lane["layers"][1]["alpha"]) > 0
     assert lane["order"] == ["other", "drums"] and lane["prominence"] == {"drums": 0.8, "other": 0.5}

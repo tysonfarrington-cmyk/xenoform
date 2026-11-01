@@ -128,7 +128,8 @@ and `morph_source`, its seed (the cut's plus 97 a layer), `stem_drive` (the stem
 - `composite`: `order` (bottom to top), `blends`, `prominence`, `solo`, `ground`, `curve_source` ("activity"),
   `curves` (`composite/curves.json`: each layer's activity a frame for this cut), `fps`, `size`, `frames`, `audio`,
   `sha256` of the file it made, `alpha_mean`;
-- `lead` and, with a lead, the `sections` it made; `pacing.line`; `recuts`, `composites`.
+- `lead` and, with a lead, the `sections` it made; `pacing.line`; `recuts`, `composites`; `edits` (each swap or
+  re-render on a layer: the layer, the kind and what it asked).
 
 The composite is rebuilt from the layer files and the curves alone: the same record makes the same file, byte for
 byte (`stems_composite.build`; the bitexact flags, the encoder's threads pinned, no metadata).
@@ -175,8 +176,13 @@ in seconds, no GPU and no re-cut. The order follows the new prominence.
 - **The cut's screen**: the Layers block over the timeline, a row a layer (its stem's activity filled, its alpha dashed,
   prominence, blend), a tab a layer. The timeline shows the chosen layer's own shots; its edits (Hold, the order, the
   look, the joins) re-cut that layer alone (`POST /api/jobs/<id>/recut` with `layer`), then the layers are laid again.
-  The knobs' Re-cut re-cuts every layer. Swap, Re-render, Generate here and Dream act on one cut and are not offered on
-  a layer yet.
+  The knobs' Re-cut re-cuts every layer. **Swap** (the lane's picker) and **Re-render** (its variants: seed, length,
+  prompt, style) act on the chosen layer (`POST /api/jobs/<id>/swap` or `/rerender` with `layer`,
+  `stems_mode.layer_edit`): that layer's own morphs render on the GPU as on any Draft cut (the morph cache answers what
+  was rendered before), it re-cuts from its cached morphs, and the layers are laid together again from their files and
+  the curves with no GPU; the record keeps each edit (`edits`). A swap refuses a still another layer shows (no object
+  twice across layers). Generate here and Dream act on one cut and stay off on a layer: the drawer says so, and the
+  routes refuse a Stems cut with that note.
 - Render at Final from a Stems prototype keeps every layer's stills, as a plain Final keeps its chain.
 
 ## Routes
@@ -188,6 +194,8 @@ in seconds, no GPU and no re-cut. The order follows the new prominence.
   `onsets`) when done. Registered before `GET /api/stems/<id>`.
 - `POST /api/jobs/<id>/composite` `{"prominence": {stem: 0..1}, "blend": {stem: mode}}`: the re-composite.
 - `POST /api/jobs/<id>/recut` takes `layer` (the timeline's maps are that layer's) and `prominence` / `blend`.
+- `POST /api/jobs/<id>/swap` and `/rerender` take `layer` on a Stems cut (required there): the layer's still or shot,
+  rendered and re-cut, then the composite laid again. `/insert` and `/dream` answer 400 on a Stems cut.
 - `GET /api/videos/<id>/shots`: for a Stems cut, `mode: "stems"`, `layers` (each with its `lane`, `envelope`, `alpha`),
   `order`, `prominence`, `blends`; the top level is the first layer's lane.
 

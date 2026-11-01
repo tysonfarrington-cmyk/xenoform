@@ -799,6 +799,73 @@ def recut(job_dir: Path, overrides: dict | None = None, report: Callable[[str, f
     return rec
 
 
+LAYER_ONLY = ("Generate here and Dream act on one cut: a Stems cut is its layers laid together, and a generated or "
+              "dreamed run inside one layer is not built yet. Swap and Re-render work on a layer: pick its tab.")
+
+
+def layer_of(rec: dict, layer) -> dict:
+    """The record row of the Stems cut's layer named ``layer`` (its stem); ValueError naming the layers it has."""
+    by_stem = {str(l["stem"]): l for l in rec.get("layers") or []}
+    if layer in (None, "") or str(layer) not in by_stem:
+        named = f"no {layer} layer" if layer not in (None, "") else "layers, not one picture"
+        raise ValueError(f"This Stems cut has {named}: say which layer the edit is for ({', '.join(by_stem)}).")
+    return by_stem[str(layer)]
+
+
+def layer_record(rec: dict, layer) -> tuple[dict, dict]:
+    """A layer's record row and its own cut's record (``layers/<stem>/simple/simple.json``)."""
+    row = layer_of(rec, layer)
+    return row, json.loads(Path(str(row["record"])).read_text(encoding="utf-8"))
+
+
+def taken_elsewhere(rec: dict, layer, file: str) -> str:
+    """The stem of another layer that already shows ``file`` or an object of its name (no object twice across layers),
+    "" when none does."""
+    from xenoform import dense
+
+    new = dense.library_row(file) or {}
+    noun = str(new.get("noun") or "").strip().lower()
+    for row in rec.get("layers") or []:
+        if str(row["stem"]) == str(layer):
+            continue
+        stills = [str(f) for f in row.get("stills") or []]
+        nouns = {str((dense.library_row(f) or {}).get("noun") or "").strip().lower() for f in stills}
+        if file in stills or (noun and noun in nouns):
+            return str(row["stem"])
+    return ""
+
+
+def layer_edit(job_dir: Path, layer, edit: Callable[[Path, Callable | None], dict], *, kind: str,
+               report: Callable[[str, float, str], None] | None = None, detail: dict | None = None) -> dict:
+    """A timeline edit on one layer of a Stems cut (the lane's swap, a re-render variant): ``edit(layer_dir, report)``
+    is the plain cut's edit (``dense.swap_still``, ``dense.rerender_morph``) on the layer's own folder, which renders
+    what it must (a morph pair, one morph; the morph cache answers what was rendered before) and re-cuts that layer;
+    then the layers are laid together again from their files and the curves with no GPU (``stems_composite.build``) and
+    the record keeps what each layer now holds and the edit (``edits``). Returns the Stems record."""
+    job_dir = Path(job_dir)
+    rec = read_record(job_dir)
+    row = layer_of(rec, layer)
+    sub = layer_report(report, 0, 1, str(row["stem"]), "draft") if report else None  # its morphs, then its re-cut
+    edit(Path(str(row["folder"])), sub)
+    for l in rec.get("layers") or []:  # what each layer now holds
+        try:
+            lrec = json.loads(Path(str(l["record"])).read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        l.update({"shots": len(lrec.get("shots") or []), "stills": list(lrec.get("stills") or []),
+                  "recuts": int(lrec.get("recuts") or 0)})
+    if report:
+        report("assemble", 0.62, f"Laying the layers together again (no GPU): the {row['stem']} layer's {kind} is in")
+    rec["composite"] = SC.build(job_dir, rec, report=report)
+    from datetime import datetime
+
+    rec["edits"] = list(rec.get("edits") or []) + [{"layer": str(row["stem"]), "kind": kind, **(detail or {}),
+                                                    "at": datetime.now().astimezone().isoformat(timespec="seconds")}]
+    rec["recuts"] = int(rec.get("recuts") or 0) + 1
+    (job_dir / "simple" / "simple.json").write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
+    return rec
+
+
 def timing(plan: dict, body: dict, duration: float) -> dict:
     """``job_timing.plan_for``'s phases for a Stems Make: every layer's morphs and cut in the morphs phase (one cut's worth
     a layer), the composite as the cut."""
@@ -813,9 +880,10 @@ def timing(plan: dict, body: dict, duration: float) -> dict:
 
 
 def lane(info: dict, video_id: str = "") -> dict:
-    """The timeline of a Stems cut: every layer's own lane (``lane.build`` of its record; its own shot and boundary
-    overrides, swaps and re-renders not yet), stacked with its stem's envelope and its alpha as drawn curves; the top
-    level is the first layer's lane, so the timeline opens on it."""
+    """The timeline of a Stems cut: every layer's own lane (``lane.build`` of its record: its own shot and boundary
+    overrides, its swaps and re-renders as on any cut, ``layer_edit``; Generate here and Dream not on a layer, said in
+    ``layer_note``), stacked with its stem's envelope and its alpha as drawn curves; the top level is the first layer's
+    lane, so the timeline opens on it."""
     from xenoform import lane as _lane
 
     folder = Path(str(info.get("folder") or ""))
@@ -838,7 +906,9 @@ def lane(info: dict, video_id: str = "") -> dict:
         except (OSError, ValueError):
             lrec = {}
         ln = _lane.build(lrec, video_id)
-        ln.update({"swappable": False, "rerenderable": False, "layer": l["stem"], "mode": MODE,
+        # the layer's own swap and re-render (lane.build's flags: a Draft objects layer), its edits routed to it and the
+        # layers laid together again; Generate here and Dream act on one cut, not a layer
+        ln.update({"insertable": False, "dreamable": False, "layer_note": LAYER_ONLY, "layer": l["stem"], "mode": MODE,
                    "tl_key": f"{video_id}:{l['stem']}"})
         rows.append({"stem": l["stem"], "kind": l.get("kind"), "vibe": l.get("vibe"), "prominence": l.get("prominence"),
                      "blend": l.get("blend"), "lead": bool(l.get("lead")), "shots": len(ln.get("shots") or []),
