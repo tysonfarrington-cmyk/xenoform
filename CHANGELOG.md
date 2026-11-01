@@ -2,6 +2,18 @@
 
 ## 0.3.3 (unreleased, the week to the contest)
 
+- **The curated film pack** (Tys, 1 Nov: "Build a bigger curated clip pack, about 40 clips, colour and action first,
+  so every cut the plan wants shows a clip once"). `configs/film_pack.json` version 2: 40 clips from 29 sources, 36 in
+  colour (launches, neon, dancers, drag racers, crowds, lava, jets, surf, and eight quiet ones from orbit and
+  underwater for the calm passages) and four black-and-white classics for the drops, from Prelinger items that carry
+  the public domain dedication, United States government films (NASA's own library among them) and films published
+  before 1929; each source names the file it is read from and its size, each clip its crop and four fields, `colour`,
+  `motion`, `living` and `mood`. `pack.json` and `labels.json` carry them, `own_media.scan` hands them on, and the
+  clips cut takes calm clips for the calm passages and drop clips for the drop runs, reads the kaleido rule's living
+  thing from the pack and its black-and-white note from the pack's colour. A clip's window comes out in square
+  pixels (the FedFlix MPEG-2 files store 720x480 at 8:9). `own_media.MAX_CLIPS` is 48. The taste file's new
+  `banned_clips` keeps the Keaton bridge, the Keaton cannon and the Potemkin steps out of every cut, even from a folder
+  that still holds the old files.
 - **The stress pass** (Tys, 29 Oct: "lets do a few polish passes and stress tests, make sure all the buttons are
   working correctly and nothing is broken"). Every control on the desk was clicked in a headless browser, a Draft made
   and edited, every route sent bad bodies, and the docs read against the code. Fixed: every chip under the knobs

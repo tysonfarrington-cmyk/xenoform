@@ -171,3 +171,21 @@ def test_the_credits_name_the_file_taken_its_size_and_each_clips_colour_and_mood
                                   "clips": [{"id": "g_train", "source": "g", "start": 1.0, "seconds": 4.0}]}, [])
     assert "File taken" not in old and "| Colour |" not in old and "| 01_g_train.mp4 | The General | 1.0 | 4.0 | g train |" in old
 
+
+# ---------------------------------------------------------------- the licences and the credits in the repo
+def test_the_licences_and_the_credits_name_every_source_with_its_basis():
+    """docs/LICENCES.md carries a row a source (its page, its licence basis, the file taken and its size) and CREDITS.md a
+    line a source; the kinds of basis are the three the pack draws on, and nothing comes from a stock site."""
+    licences = (ROOT / "docs" / "LICENCES.md").read_text(encoding="utf-8")
+    credits = (ROOT / "CREDITS.md").read_text(encoding="utf-8")
+    section = licences.split("## The free film pack's sources", 1)[1]
+    for key, s in REAL["sources"].items():
+        page = film_pack.item_url(s)
+        row = next((line for line in section.splitlines() if line.startswith(f"| {s['title']} |") and page in line), "")
+        assert row and s["licence"] in row and s["file"] in row, key
+        assert f"{int(s['bytes']) / 1e6:.1f} MB" in row, key
+        assert f"- {s['title']}" in credits and page in credits, key
+    for words in ("Creative Commons Public Domain Dedication", "Works of the United States government", "Films published before 1929"):
+        assert words in section, words
+    assert "Nothing is taken from YouTube, Pexels, Pixabay" in section
+    assert "40 clips from 29 sources" in licences and "40 short clips from 29 sources" in credits
