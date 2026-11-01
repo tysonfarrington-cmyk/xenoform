@@ -290,22 +290,78 @@ def drop_runs(rows: list[dict], drop: float | None, period: float, mode: str = D
     return main
 
 
-def main_drop(features: dict, drop: float | None) -> float | None:
-    """The first beat of the song's main drop run (``drop_runs`` on its own analysis), which a prototype window is cut
-    around: the drop time alone can sit on a riser or on a build well before the drop (Ambient: 120 s, against the drop
-    the analysis puts at 143 s, so its 30 s prototype held no drop at all). ``drop`` when the song has no drop run."""
+def heaviest(runs: list[dict]) -> int | None:
+    """Which drop run is the song's main one (decided 1 Nov): the heaviest by its heat times its length (``seconds``,
+    else ``end - start``), not the loudest moment's run alone; a tie goes to the run the song's drop opens (``opens``),
+    then to the earlier. The index into ``runs``, None for none. The whole-song planner (``song_plan.main_run``), the
+    desk's drop card and the prototype window (``main_run``) all choose by it."""
+    if not runs:
+        return None
+
+    def weight(k: int) -> tuple:
+        r = runs[k]
+        secs = float(r["seconds"]) if r.get("seconds") is not None else float(r.get("end") or 0.0) - float(r.get("start") or 0.0)
+        return (round(float(r.get("heat") or 0.0) * secs, 2), bool(r.get("opens")), -k)
+
+    return max(range(len(runs)), key=weight)
+
+
+def main_run(features: dict, drop: float | None, drop_mode: str = DROP_MODE_DEFAULT) -> dict | None:
+    """The song's main drop run as the whole-song planner picks it: the drop-run passages of ``song_plan`` on the song's
+    own analysis (Drops "max" heats every run full; "off" plans as "auto" here, so a prototype still finds the run),
+    the heaviest by ``heaviest``. ``{"start", "end", "seconds", "heat", "drop_run", "runs", "opens"}`` (song time;
+    ``runs`` how many drop runs the song has, ``opens`` whether the song's drop opens this one), None when the song has
+    no drop run or fewer than two sections."""
     from xenoform import dense
 
     duration = float(features.get("duration") or 0.0)
     sections = dense._analysis_sections(features)
     if duration <= 0 or len(sections) < 2:
-        return drop
-    grid = grid_for(list(features.get("beats") or []), duration, features.get("tempo"))
-    period = _median_gap(grid) or 0.5
-    rows = dense._story_roles(sections, duration, min_len=max(6.0, 8 * period))
-    rows = split_at_drop(refine_roles(rows, sections, period=period), drop, period)
-    main = drop_runs(rows, drop, period)
+        return None
+    mode = drop_mode if drop_mode in ("auto", "max") else DROP_MODE_DEFAULT
+    plan = song_plan(duration, list(features.get("beats") or []), sections, drop, breathe=0.0, drop_mode=mode,
+                     tempo=features.get("tempo"))
+    runs = [p for p in plan.get("passages") or [] if "drop_run" in p]
+    k = heaviest([{"heat": p.get("heat"), "start": p["start"], "end": p["end"], "opens": bool(p.get("main"))} for p in runs])
+    if k is None:
+        return None
+    p = runs[k]
+    return {"start": round(float(p["start"]), 4), "end": round(float(p["end"]), 4),
+            "seconds": round(float(p["end"]) - float(p["start"]), 3), "heat": float(p.get("heat") or 0.0),
+            "drop_run": int(p["drop_run"]), "runs": len(runs), "opens": bool(p.get("main"))}
+
+
+def main_drop(features: dict, drop: float | None, drop_mode: str = DROP_MODE_DEFAULT) -> float | None:
+    """The first beat of the song's main drop run (``main_run``: the heaviest by heat times length, as the whole-song
+    planner picks it), which a prototype window is cut around: the drop time alone can sit on a riser or on a build well
+    before the drop (Ambient: 120 s, against the drop the analysis puts at 143 s, so its 30 s prototype held no drop at
+    all), and the loudest run can be a few seconds long beside a longer one (ZedsDead v1: 5.3 s at 2:20, then 23.7 s at
+    2:25). ``drop`` when the song has no drop run."""
+    main = main_run(features, drop, drop_mode)
     return round(float(main["start"]), 4) if main is not None else drop
+
+
+PROTO_LEAD = 0.45   # a prototype window holds its main drop run's first beat this far in (the build before it, then the run)
+
+
+def prototype_window(features: dict, drop: float | None, length_s: float, *, paced: bool = True,
+                     drop_mode: str = DROP_MODE_DEFAULT) -> dict | None:
+    """Where a Length window (the 30 s prototype) sits in the song, one rule for the Make's trim, the desk's estimate
+    and its drop card: around the main drop run (``main_run``) when the cut is paced, its first beat ``PROTO_LEAD`` of
+    the way in, else around ``drop`` (or 60 % in, with no drop); kept inside the song and started on a beat at or before.
+    ``{"start", "end", "length_s", "anchor", "main"}``; None when no window applies (no length, a song that short)."""
+    duration = float(features.get("duration") or 0.0)
+    length_s = float(length_s or 0.0)
+    if length_s <= 0 or duration <= 0 or duration <= length_s + 1.0:
+        return None
+    main = main_run(features, drop, drop_mode) if paced else None
+    anchor = float(main["start"]) if main is not None else (float(drop) if drop is not None else duration * 0.6)
+    start = max(0.0, min(anchor - length_s * PROTO_LEAD, duration - length_s))
+    earlier = [float(b) for b in features.get("beats") or [] if float(b) <= start + 1e-6]
+    if earlier:
+        start = max(earlier)
+    return {"start": round(start, 4), "end": round(start + length_s, 4), "length_s": length_s, "anchor": round(anchor, 4),
+            "main": main}
 
 
 def given_roles(sections: list[dict]) -> bool:

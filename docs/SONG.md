@@ -17,8 +17,11 @@ hit) is a Make: **Fine-tune → Length → Whole song**, then **Make the whole s
 2. **Draws a look a passage, by taste** (`song_plan.looks`). The vibe you chose owns the main drop run, the stretch
    the song is built on: the heaviest drop run by its heat times its length (`song_plan.main_run`, decided 1 Nov), not
    only the run the song's loudest moment opens, which keeps the drop's event (on ZedsDead v1 that run is 5.3 s at
-   2:20 and the 23.7 s run after it is now the main); a tie goes to the run the drop opens. When the body is a loved
-   chain you applied, that chain goes on the passage it fits instead. The loved chains
+   2:20 and the 23.7 s run after it is now the main); a tie goes to the run the drop opens. The desk agrees with it:
+   the Song step's drop card names this run, its time and its length ("The main drop: 2:25, 24 s", `GET /api/opener`'s
+   `main`), and the 30 s prototype is cut around it, its first beat 45 % of the way in (`pacing.prototype_window`, the
+   rule the Make's trim, the estimate and the card all use; `pacing.heaviest` is the one choice for the song plan, the
+   card and the window). When the body is a loved chain you applied, that chain goes on the passage it fits instead. The loved chains
    (`configs/chain_presets.json`) take the passages they fit: the opener (glow sea) the intro, the finale (the gold) the
    outro, the calm ones (smooth, Chaos 0.2 and under: the black glass rose, the smoke dragon) the grooves, the ones on
    the beat (Chaos 0.4 and over: the glass hand, the origami icons) the drops and builds; a chain keeps its own style,

@@ -266,14 +266,13 @@ def passages_of(plan: dict, tier: str) -> tuple[list[dict], list[dict]]:
 def main_run(passages: list[dict]) -> int | None:
     """The song's main drop run, the one the vibe you chose owns: the heaviest drop run by its heat times its length,
     not the loudest moment alone (decided 1 Nov: on ZedsDead the drop's own run was 5.3 s at 2:20 and the 23.7 s run
-    right after it went to a vibe drawn by taste). A tie goes to the run the song's drop opens, then to the earlier.
+    right after it went to a vibe drawn by taste). A tie goes to the run the song's drop opens, then to the earlier
+    (``pacing.heaviest``: the rule the desk's drop card and the prototype window choose by too, ``pacing.main_run``).
     The index of that passage, None when the song has no drop run."""
     runs = [p for p in passages if p.get("drop_run") is not None]
-    if not runs:
-        return None
-    best = max(runs, key=lambda p: (round(float(p.get("heat") or 0.0) * float(p.get("seconds") or 0.0), 2),
-                                    bool(p.get("drop_at")), -int(p["index"])))
-    return int(best["index"])
+    k = pacing.heaviest([{"heat": p.get("heat"), "seconds": float(p.get("seconds") or 0.0), "opens": bool(p.get("drop_at"))}
+                         for p in runs])
+    return None if k is None else int(runs[k]["index"])
 
 
 def clips_passages(full: dict, clips: list[dict], state: dict, features: dict) -> tuple[list[dict], list[dict]]:

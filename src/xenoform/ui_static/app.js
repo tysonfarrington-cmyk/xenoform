@@ -742,16 +742,22 @@ function shotStrip(vibeId) {
     .join("");
 }
 
+// The drop card names the main drop run as the planner picks it (GET /api/opener's ``main``: pacing.main_run, the
+// heaviest drop run by heat times length, the run a whole song gives the vibe you chose), its time and length, and the
+// prototype window cut around it (``window``: pacing.prototype_window, the rule the Make's trim uses): one source.
+function dropCardTitle(opener) {
+  const main = opener && opener.main;
+  if (main) return `The main drop: ${clockText(Number(main.start || 0))}, ${Math.round(Number(main.seconds || 0))} s`;
+  return `The big moment is at ${clockText(Number((opener && opener.at) || 0))}`;
+}
 function dropCard() {
   const opener = state.opener;
   const ready = opener && opener.ready;
   // Simple mode: plain words, not the library ids of the morph pair.
   const noDrop = opener && !ready && opener.line;
-  const pair = ready
-    ? `The big moment is at ${clockText(Number(opener.at || 0))}`
-    : (noDrop ? "No big drop in this song" : "Listening for the drop.");
+  const pair = ready ? dropCardTitle(opener) : (noDrop ? "No big drop in this song" : "Listening for the drop.");
   const line = ready
-    ? "That is where the biggest change happens: one object turns into the next, right on the downbeat."
+    ? (opener.main ? opener.line : "That is where the biggest change happens: one object turns into the next, right on the downbeat.")
     : (noDrop ? "The video still morphs on the beat. It just has no single big moment." : "The song decides the moment. This lands before any GPU wait.");
   return `<section class="drop-open" id="drop-open">
     <p class="eyebrow">The drop</p>
@@ -759,6 +765,13 @@ function dropCard() {
     <p class="drop-line">${esc(line)}</p>
     <button type="button" class="ghost" data-act="open-drop"${ready ? "" : " disabled"}>Play the drop</button>
   </section>`;
+}
+// What the card is asked for: the song, the Length (the prototype's), the Shape (the window follows the main run when
+// the cut is paced) and the Drops (Max heats every run)
+function openerKey() {
+  const easy = state.easy || {};
+  const len = wholeSong(easy) ? 30 : (easyLength(easy) || 30);
+  return [state.audioId || "demo", len, breatheValue(easy) ? 1 : 0, easy.dropMode || "auto"].join("|");
 }
 
 // An example cut: about 15 s of a finished Cloud Final cut in a vibe (GET /api/vibes carries the url as `example`, from
@@ -6439,13 +6452,21 @@ function scheduleOpener() {
   const card = document.getElementById("drop-open");
   if (!card || !state) return;
   const key = state.audioId || "demo";
-  if (state.opener && state.opener.audioId === key && state.opener.ready) return;
+  const ask = openerKey();
+  if (state.opener && state.opener.audioId === key && state.opener.key === ask) return;  // answered for this song and Shape
+  if (scheduleOpener.asking === ask) return;  // already asked: a render while it answers does not ask again
+  scheduleOpener.asking = ask;
   const token = (scheduleOpener.token = (scheduleOpener.token || 0) + 1);
+  const easy = state.easy || {};
   api("/api/opener", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       audio_id: key,
+      // the prototype window the Make would cut, around the main drop run (pacing.prototype_window)
+      length_s: wholeSong(easy) ? 30 : (easyLength(easy) || 30),
+      breathe: breatheValue(easy) ? "on" : "off",
+      drop_mode: easy.dropMode || "auto",
       vibe: (state.easy && state.easy.vibe) || "",
       library_folder: state.libraryFolder || "",
       exclude_faces: state.excludeFaces !== false,
@@ -6458,10 +6479,12 @@ function scheduleOpener() {
       if (token !== scheduleOpener.token || !state) return;
       const body = response.ok ? await response.json() : { ready: false, line: "The drop did not read." };
       body.audioId = key;
+      body.key = ask;
       state.opener = body;
       paintOpener();
     })
-    .catch(() => {});
+    .catch(() => {})
+    .finally(() => { if (scheduleOpener.asking === ask) scheduleOpener.asking = ""; });
 }
 
 function paintOpener() {
@@ -6471,7 +6494,8 @@ function paintOpener() {
   const title = card.querySelector("h3");
   const line = card.querySelector(".drop-line");
   const button = card.querySelector("[data-act='open-drop']");
-  const pair = opener.source && opener.target ? `${opener.source} → ${opener.target}` : (opener.becomes || "Impact");
+  const pair = opener.main ? dropCardTitle(opener)  // the planner's main drop run, its time and length
+    : opener.source && opener.target ? `${opener.source} → ${opener.target}` : (opener.becomes || "Impact");
   if (title) title.textContent = opener.ready ? pair : "Finding the downbeat…";
   if (line) line.textContent = opener.line || "";
   if (button) button.disabled = !opener.ready;
