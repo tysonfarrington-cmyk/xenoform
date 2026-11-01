@@ -40,8 +40,6 @@ sheets were made at 12. The planner's tests read frozen copies of the old analys
 ## Waiting on Tys
 
 - The last morph of the 1 Nov ZedsDead Cloud song was refused with HTTP 429, so its outro shot is a local Draft.
-- Eleven builder worktrees remain under `xenoform-judge-test/.claude/worktrees`, about 14 GB, all merged. They hold raw
-  Draft job folders. Remove them on his word.
 
 ## Known limits
 
