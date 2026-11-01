@@ -4,7 +4,8 @@ Premiere or Final Cut (from Pause's demo: every edit its own clip, 27 Oct).
 ``build`` writes a pack for the cut as it is now under ``<job>/edit/<version>/`` and zips it beside:
 
 - V1: the composed cut split at the shot boundaries into a file a shot, named for its objects ("04 chameleon to wet
-  street"), laid end to end. The editor plays exactly the cut, look and FX included, and each shot is a clip of its own
+  street"), a clip shot for its film ("05 Metropolis robot": the clip's label in its folder's pack.json or labels.json,
+  else its file name), laid end to end. The editor plays exactly the cut, look and FX included, and each shot is a clip of its own
   in the bin to trim, move, grade or replace. One x264 pass at CRF 14 with a keyframe forced on every boundary, split
   there by the segment muxer: frame-exact, visually lossless. No sound on these, so nothing doubles the song.
 - A1: the song as the cut plays it (the record's ``audio_path`` starts where the cut starts), one clip under the cut.
@@ -72,24 +73,83 @@ def _rows(rec: dict) -> list[dict]:
     return lane.build(rec)["shots"] if rec.get("shots") else []
 
 
-def _shot_name(i: int, row: dict) -> str:
+def _shot_name(i: int, row: dict, film: str = "") -> str:
     n = f"{i + 1:02d}"
     if row.get("performer"):
         return f"{n} Polly"
     if row.get("own"):
-        return f"{n} your clip"
+        return f"{n} {film or 'your clip'}"
     pair = f"{row.get('from') or '?'} → {row.get('to') or '?'}"
     if row.get("generated") is not None:
         pair = f"generated {pair}"
     return f"{n} {pair}" + (" (held)" if row.get("hold") else "")
 
 
+def folder_labels(folder: Path) -> dict[str, str]:
+    """{file name: label} of a clip folder: its ``pack.json`` (the free film pack's record: each clip's ``label``, else
+    its ``title``) over its ``labels.json`` (your own labels, and the pack's), {} when it has neither."""
+    out: dict[str, str] = {}
+    for name in ("labels.json", "pack.json"):
+        try:
+            data = json.loads((Path(folder) / name).read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if name == "labels.json" and isinstance(data, dict):
+            out.update({str(k): v.strip() for k, v in data.items() if isinstance(v, str) and v.strip()})
+        elif isinstance(data, dict):
+            for r in data.get("clips") or []:
+                label = str((r or {}).get("label") or (r or {}).get("title") or "").strip() if isinstance(r, dict) else ""
+                if label and r.get("file"):
+                    out[str(r["file"])] = label
+    return out
+
+
+def film_names(rec: dict) -> dict[int, str]:
+    """What Edit in Resolve calls each clip shot, after the film (the follow-ups of 1 Nov: not "your clip"): the label
+    the clip's folder gives it, in ``pack.json`` or ``labels.json`` (``folder_labels``), else the label the clip was cut
+    with (``own_clips``: the folder's labels.json when the cut was made), else its file name. {shot index: name}; a
+    clips cut's shot names its clip in ``source``, an objects cut's own-footage slot in ``own.slots``."""
+    shots = list(rec.get("shots") or [])
+    paths: dict[str, Path] = {}
+    given: dict[str, str] = {}
+    for c in rec.get("own_clips") or []:
+        p = c.get("path") if isinstance(c, dict) else c
+        if p:
+            paths[Path(str(p)).name] = Path(str(p))
+            if isinstance(c, dict) and str(c.get("label") or "").strip():
+                given[Path(str(p)).name] = str(c["label"]).strip()
+    own = rec.get("own") if isinstance(rec.get("own"), dict) else {}
+    slot_clip: dict[int, Path] = {}
+    for sl in own.get("slots") or []:
+        if isinstance(sl, dict) and sl.get("clip"):
+            for j in range(int(sl.get("first", 0)), int(sl.get("last", sl.get("first", 0))) + 1):
+                slot_clip[j] = Path(str(sl["clip"]))
+    folders: dict[Path, dict[str, str]] = {}
+    out: dict[int, str] = {}
+    for i, s in enumerate(shots):
+        if not s.get("own"):
+            continue
+        src = str(s.get("source") or "")
+        path = paths.get(Path(src).name) if src else slot_clip.get(i)
+        name = Path(src).name if src else (path.name if path is not None else "")
+        if not name:
+            continue
+        labels: dict[str, str] = {}
+        if path is not None:
+            if path.parent not in folders:
+                folders[path.parent] = folder_labels(path.parent)
+            labels = folders[path.parent]
+        out[i] = labels.get(name) or given.get(name) or Path(name).stem
+    return out
+
+
 def segments(rec: dict, frames: int, fps: Fraction) -> list[dict]:
-    """V1's clips: the cut split at its shot boundaries, frame-exact at the cut's rate, each named for its shot and
-    contiguous by construction. Frames past the last shot (an end card) are a clip of their own; a cut with no shot
-    record is one clip."""
+    """V1's clips: the cut split at its shot boundaries, frame-exact at the cut's rate, each named for its shot (a morph
+    for its objects, "A → B"; a clip for its film, ``film_names``) and contiguous by construction. Frames past the last
+    shot (an end card) are a clip of their own; a cut with no shot record is one clip."""
     shots = list(rec.get("shots") or [])
     rows = _rows(rec)
+    films = film_names(rec)
     bounds = [_frame(s.get("start"), fps, frames) for s in shots]
     last_end = _frame(shots[-1].get("end"), fps, frames) if shots else 0
     tail = bool(shots) and frames - last_end > 2  # more than rounding left over: the end card
@@ -98,7 +158,7 @@ def segments(rec: dict, frames: int, fps: Fraction) -> list[dict]:
         end = bounds[i + 1] if i + 1 < len(rows) else (last_end if tail else frames)
         start = out[-1]["end"] if out else 0
         if end > start:  # a shot under a frame at this rate folds into its neighbour
-            out.append({"shot": i, "name": _shot_name(i, row), "start": start, "end": end})
+            out.append({"shot": i, "name": _shot_name(i, row, films.get(i, "")), "start": start, "end": end})
     if tail or not out:
         start = out[-1]["end"] if out else 0
         out.append({"shot": None, "name": f"{len(out) + 1:02d} end card" if out else "the cut", "start": start, "end": frames})

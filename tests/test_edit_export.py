@@ -41,6 +41,58 @@ def test_the_cut_splits_into_a_clip_a_shot_named_for_its_objects():
     assert [(s["start"], s["end"]) for s in segs] == [(0, 24), (24, 48)]
 
 
+def _clips_rec(tmp_path, pack: bool = True):
+    """A clips cut's record (clip_cut): clip shots that name their clip in ``source``, morphs between them carrying the
+    clips' names, the clips in a folder with the free film pack's pack.json and labels.json beside them."""
+    folder = tmp_path / "film_pack"
+    folder.mkdir(parents=True)
+    for name in ("01_metropolis_robot.mp4", "02_trip_moon_face.mp4", "03_holiday.mp4"):
+        (folder / name).write_bytes(b"x")
+    if pack:
+        (folder / "pack.json").write_text(json.dumps({"clips": [
+            {"file": "01_metropolis_robot.mp4", "source": "metropolis", "label": "Metropolis robot",
+             "title": "Metropolis: the Machine-Man wakes"}]}), encoding="utf-8")
+    (folder / "labels.json").write_text(json.dumps({"01_metropolis_robot.mp4": "metropolis label",
+                                                    "02_trip_moon_face.mp4": "Trip to the Moon"}), encoding="utf-8")
+    own = [{"path": str(folder / n), "seconds": 10.0} for n in ("01_metropolis_robot.mp4", "02_trip_moon_face.mp4", "03_holiday.mp4")]
+    times = [(0.0, 3.0), (3.0, 4.0), (4.0, 6.0), (6.0, 7.0), (7.0, 9.0)]
+    shots = [{"index": i, "start": a, "end": b, "seconds": b - a} for i, (a, b) in enumerate(times)]
+    shots[0].update({"own": True, "source": "01_metropolis_robot.mp4", "label": "metropolis robot"})
+    shots[1]["clip_morph"] = {"from": "Metropolis robot", "to": "Trip to the Moon"}
+    shots[2].update({"own": True, "source": "02_trip_moon_face.mp4", "label": "Trip to the Moon"})
+    shots[3]["clip_morph"] = {"from": "Trip to the Moon", "to": "holiday"}
+    shots[4].update({"own": True, "source": "03_holiday.mp4", "label": "holiday"})
+    return {"shots": shots, "stills": [], "source": "clips", "own_clips": own, "tier": "draft", "fps": 24}
+
+
+def test_clip_shots_are_named_after_the_film_and_the_morphs_stay_a_to_b(tmp_path):
+    """Edit in Resolve named every clip shot "your clip" (1 Nov): a clip shot is named for its film, the label its
+    folder's pack.json gives it, else its labels.json's, else its file name; a morph between two stays "A → B"."""
+    rec = _clips_rec(tmp_path)
+    segs = E.segments(rec, 9 * 24, FPS)
+    assert [s["name"] for s in segs] == ["01 Metropolis robot", "02 Metropolis robot → Trip to the Moon", "03 Trip to the Moon",
+                                         "04 Trip to the Moon → holiday", "05 03_holiday"]
+    assert E.file_name(segs[1]["name"]) == "02 Metropolis robot to Trip to the Moon"
+    bare = _clips_rec(tmp_path / "b", pack=False)  # no pack.json: the folder's labels.json names it
+    assert E.segments(bare, 9 * 24, FPS)[0]["name"] == "01 metropolis label"
+    gone = _clips_rec(tmp_path / "c")
+    gone["own_clips"] = [{**c, "path": str(tmp_path / "moved" / Path(c["path"]).name)} for c in gone["own_clips"]]
+    gone["own_clips"][1]["label"] = "Trip to the Moon"  # the label the clip was cut with, its folder since moved
+    assert [s["name"] for s in E.segments(gone, 9 * 24, FPS)][::2] == ["01 01_metropolis_robot", "03 Trip to the Moon", "05 03_holiday"]
+    assert E.folder_labels(tmp_path / "film_pack") == {"01_metropolis_robot.mp4": "Metropolis robot",
+                                                       "02_trip_moon_face.mp4": "Trip to the Moon"}
+
+
+def test_own_footage_in_an_objects_cut_is_named_after_its_clip(tmp_path):
+    folder = tmp_path / "mine"
+    folder.mkdir()
+    (folder / "labels.json").write_text(json.dumps({"beach.mp4": "the beach at dusk"}), encoding="utf-8")
+    rec = _rec(own={"slots": [{"first": 1, "last": 2, "clip": str(folder / "beach.mp4")}]})
+    rec["shots"][1]["own"] = rec["shots"][2]["own"] = True
+    names = [s["name"] for s in E.segments(rec, 168, FPS)]
+    assert names[1] == "02 the beach at dusk" and names[2] == "03 the beach at dusk" and names[0] == "01 wet street → moth"
+
+
 def test_markers_name_the_drop_and_the_dressed_handoffs_one_a_frame():
     marks = E.markers(_rec(), 168, FPS)
     assert marks == [

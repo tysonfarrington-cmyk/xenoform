@@ -126,8 +126,9 @@ is one Make, not a window a passage.
 4. **Queued and laid together as any whole song**: one item through the Variations queue (an idle desk, an idle ComfyUI
    queue), then `song_assemble` lays that one cut with the title on the last hit, the flash tame under Breathe, the song
    at -16 LUFS, the QA once; the composite record (`simple/simple.json`, `source` "clips", the cut's own pacing block)
-   is what the timeline, My videos and **Edit in Resolve** read (every shot its own clip on V1, named for your clip or the
-   morph between two, the song on A1, a marker at each passage).
+   is what the timeline, My videos and **Edit in Resolve** read (every shot its own clip on V1, a clip shot named after
+   its film, "05 Metropolis robot": the label the clip's folder gives it in `pack.json` or `labels.json`, else its file
+   name; a morph "A → B" for the two clips it runs between; the song on A1, a marker at each passage).
 
 What a clips cut does with the pacing engine (`clip_cut`, the same for a clips song and a clips cut of any Length):
 
