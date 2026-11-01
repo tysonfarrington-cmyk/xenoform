@@ -184,8 +184,15 @@ def apply(body: dict | None, *, expert: bool | None = None, duration: float | No
 
     # duplicate features
     r = R.get("duplicate_features")
-    if r:
-        hit = _has(text, r.get("subjects") or [])
+    if r:  # a real subject named as a whole noun (anchors.named): "the moon" is anchored, "moon jellyfish" is a jellyfish
+        from xenoform.anchors import SUBJECT_FEATURES as _features
+        from xenoform.anchors import named as _named
+
+        # each source its own phrase: "the moon" and the vibe after it must not read as one noun ("moon cosmic")
+        said = " , ".join(str(t or "") for t in [body.get("prompt"), body.get("idea"), body.get("vibe")]
+                          + [b.get("form") for b in blocks]
+                          + [c.get("noun") or c.get("name") for c in body.get("customs") or [] if isinstance(c, dict)])
+        hit = [w for w in r.get("subjects") or [] if _named(w, said, features=_features)]
         if hit:
             if body.get("anchor") not in (r.get("anchor"),) and rep.clamp("duplicate_features", f"{hit[0]} anchored on NASA images to stop duplicate features"):
                 body["anchor"] = r.get("anchor")
@@ -429,8 +436,9 @@ def prompt_hint(state: dict | None) -> str:
 
 
 def _subject_text(state: dict | None) -> str:
+    """The words a real subject may be named in (the prompt, the idea line), each its own phrase for ``anchors.named``."""
     st = state or {}
-    return " ".join(str(st.get(k) or "") for k in ("prompt", "idea"))
+    return " , ".join(str(st.get(k) or "") for k in ("prompt", "idea"))
 
 
 def guard_prompt(prompt: str, state: dict | None) -> str:
@@ -439,7 +447,7 @@ def guard_prompt(prompt: str, state: dict | None) -> str:
     if (state or {}).get("anchor") == "nasa":
         try:  # the named real subject's NASA anchor prompt (configs/anchors.json)
             from xenoform.anchors import harden
-            prompt = harden(prompt, _subject_text(state) + " " + prompt)
+            prompt = harden(prompt, _subject_text(state) + " , " + prompt)
         except Exception:
             pass
     if not hint or hint in prompt:
