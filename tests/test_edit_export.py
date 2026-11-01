@@ -93,6 +93,19 @@ def test_own_footage_in_an_objects_cut_is_named_after_its_clip(tmp_path):
     assert names[1] == "02 the beach at dusk" and names[2] == "03 the beach at dusk" and names[0] == "01 wet street → moth"
 
 
+def test_a_version_2_labels_file_still_names_the_clip(tmp_path):
+    """The free film pack's version 2 (1 Nov) writes labels.json as {"label", "colour", "motion", "living", "mood"} a
+    file, and a folder of your own may too: Edit in Resolve still names the shot after its label."""
+    folder = tmp_path / "mine"
+    folder.mkdir()
+    (folder / "labels.json").write_text(json.dumps({"beach.mp4": {"label": "the beach at dusk", "mood": "calm", "living": False},
+                                                    "pier.mp4": "the pier", "fog.mp4": {"mood": "calm"}}), encoding="utf-8")
+    assert E.folder_labels(folder) == {"beach.mp4": "the beach at dusk", "pier.mp4": "the pier"}
+    rec = _rec(own={"slots": [{"first": 1, "last": 1, "clip": str(folder / "beach.mp4")}]})
+    rec["shots"][1]["own"] = True
+    assert [s["name"] for s in E.segments(rec, 168, FPS)][1] == "02 the beach at dusk"
+
+
 def test_markers_name_the_drop_and_the_dressed_handoffs_one_a_frame():
     marks = E.markers(_rec(), 168, FPS)
     assert marks == [

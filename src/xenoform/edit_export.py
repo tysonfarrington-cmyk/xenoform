@@ -87,7 +87,8 @@ def _shot_name(i: int, row: dict, film: str = "") -> str:
 
 def folder_labels(folder: Path) -> dict[str, str]:
     """{file name: label} of a clip folder: its ``pack.json`` (the free film pack's record: each clip's ``label``, else
-    its ``title``) over its ``labels.json`` (your own labels, and the pack's), {} when it has neither."""
+    its ``title``) over its ``labels.json`` (your own labels, and the pack's: a label a file, or ``{"label", "mood",
+    ...}`` a file as the pack's version 2 writes it), {} when it has neither."""
     out: dict[str, str] = {}
     for name in ("labels.json", "pack.json"):
         try:
@@ -95,7 +96,10 @@ def folder_labels(folder: Path) -> dict[str, str]:
         except (OSError, ValueError):
             continue
         if name == "labels.json" and isinstance(data, dict):
-            out.update({str(k): v.strip() for k, v in data.items() if isinstance(v, str) and v.strip()})
+            for k, v in data.items():
+                label = v.get("label") if isinstance(v, dict) else v
+                if isinstance(label, str) and label.strip():
+                    out[str(k)] = label.strip()
         elif isinstance(data, dict):
             for r in data.get("clips") or []:
                 label = str((r or {}).get("label") or (r or {}).get("title") or "").strip() if isinstance(r, dict) else ""
