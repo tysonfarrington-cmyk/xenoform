@@ -16,7 +16,7 @@ import pytest
 from xenoform import clip_cut, dense, film_pack, guardrails, own_media, taste
 
 ROOT = Path(__file__).resolve().parents[1]
-SONGS = ROOT / "examples" / "songs"
+SONGS = ROOT / "tests" / "fixtures" / "analyses"  # frozen, so a rebuilt song moves no plan here
 SHIPPED = ROOT / "configs" / "taste.json"
 MOODS = ["calm", "build", "drop"]
 

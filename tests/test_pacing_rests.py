@@ -14,7 +14,7 @@ import pytest
 from xenoform import beatfx, cloud_morph, dense, foreshadow as F, guardrails, morph_timing as MT, pacing
 
 ROOT = Path(__file__).resolve().parents[1]
-SONGS = ROOT / "examples" / "songs"
+SONGS = ROOT / "tests" / "fixtures" / "analyses"  # frozen, so a rebuilt song moves no plan here
 
 
 def _shot(seconds=4.0, rest_s=0.0, **extra):

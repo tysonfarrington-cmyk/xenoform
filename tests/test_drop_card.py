@@ -12,7 +12,8 @@ import pytest
 from xenoform import dense, pacing, song_plan
 
 ROOT = Path(__file__).resolve().parents[1]
-SONGS = ROOT / "examples" / "songs"
+SONGS = ROOT / "tests" / "fixtures" / "analyses"  # frozen, so a rebuilt song moves no plan here
+AUDIO = ROOT / "examples" / "songs"
 
 
 def _features(name: str) -> dict:
@@ -39,7 +40,7 @@ def _zeds_like() -> dict:
 def test_the_main_run_is_the_planners_on_the_bundled_songs_and_a_long_run_after_a_short_drop():
     for name in ("glitch-out", "ambient", "liquid-dnb", "hip-hop-boom-bap"):
         f = _features(name)
-        audio = next(SONGS.glob(name.replace("-", "_") + ".mp3"), None)
+        audio = next(AUDIO.glob(name.replace("-", "_") + ".mp3"), None)
         drop = dense.find_drop(audio, f["beats"], f["duration"]) if audio else None
         main = pacing.main_run(f, drop)
         if f["duration"] <= dense.LONG_SONG_S or main is None:
@@ -49,7 +50,7 @@ def test_the_main_run_is_the_planners_on_the_bundled_songs_and_a_long_run_after_
         assert abs(planned["start"] - main["start"]) < 1e-3 and abs(planned["end"] - main["end"]) < 1e-3, name
         assert pacing.main_drop(f, drop) == main["start"]
     glitch = _features("glitch-out")
-    m = pacing.main_run(glitch, dense.find_drop(SONGS / "glitch_out.mp3", glitch["beats"], glitch["duration"]))
+    m = pacing.main_run(glitch, dense.find_drop(AUDIO / "glitch_out.mp3", glitch["beats"], glitch["duration"]))
     assert pacing.clock(m["start"]) == "2:21" and m["heat"] == 1.0 and m["runs"] == 5 and m["opens"]
     z = _zeds_like()
     zm = pacing.main_run(z, 52.0)
@@ -71,7 +72,7 @@ def test_the_prototype_window_is_cut_around_the_main_run():
     assert start == win["start"]  # the estimate's window (and the Make's trim) is the card's
 
 
-def test_the_drop_card_names_the_main_run_and_the_window(monkeypatch):
+def test_the_drop_card_names_the_main_run_and_the_window(frozen_songs, monkeypatch):
     from fastapi.testclient import TestClient
 
     from xenoform import ui

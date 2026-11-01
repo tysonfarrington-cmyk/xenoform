@@ -14,7 +14,7 @@ import pytest
 from xenoform import dense, pacing, song_plan, taste
 
 ROOT = Path(__file__).resolve().parents[1]
-FEATURES = json.loads((ROOT / "examples" / "songs" / "glitch-out.features.json").read_text(encoding="utf-8"))
+FEATURES = json.loads((ROOT / "tests" / "fixtures" / "analyses" / "glitch-out.features.json").read_text(encoding="utf-8"))
 AUDIO = ROOT / "examples" / "songs" / "glitch_out.mp3"
 SHIPPED_TASTE = ROOT / "configs" / "taste.json"
 

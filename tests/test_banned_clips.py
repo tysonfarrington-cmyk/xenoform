@@ -76,7 +76,7 @@ def test_the_guardrail_the_cut_and_the_song_plan_leave_them_out(shipped):
         assert clip_cut.usable(old + keep) == keep
     assert lines and lines[0]["ids"] == ["banned_clips"] and "general bridge" in lines[0]["line"]
     # a clips song plans on the clips its Make will show
-    features = json.loads((ROOT / "examples" / "songs" / "glitch-out.features.json").read_text(encoding="utf-8"))
+    features = json.loads((ROOT / "tests" / "fixtures" / "analyses" / "glitch-out.features.json").read_text(encoding="utf-8"))
     state = {"morph_source": "clips", "own_clips": old + keep, "quality_tier": "draft", "aspect": "16:9", "vibe": "none",
              "energy_preset": "dense"}
     planned = song_plan.plan(features, state, drop=139.71, pick=False)

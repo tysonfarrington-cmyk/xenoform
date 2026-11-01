@@ -12,7 +12,7 @@ import pytest
 from xenoform import dense, guardrails, job_timing, pacing
 
 ROOT = Path(__file__).resolve().parents[1]
-SONGS = ROOT / "examples" / "songs"
+SONGS = ROOT / "tests" / "fixtures" / "analyses"  # frozen, so a rebuilt song moves no plan here
 
 
 def _features(song: str) -> dict:
@@ -272,7 +272,7 @@ def test_a_window_keeps_the_songs_roles_where_it_sits():
     from xenoform import ui as ui_mod
 
     f = _features("glitch-out")
-    audio = SONGS / "glitch_out.mp3"
+    audio = ROOT / "examples" / "songs" / "glitch_out.mp3"
     win, at, _ = ui_mod._window_features(f, audio, 30.0, 0.0, paced=True)
     # (the song's second calm passage begins 1.9 s before the window stops: under two bars, it folds into the first)
     assert [s["role"] for s in win["sections"]] == ["intro", "calm"] and at == 0.0 and win["sections"][-1]["end"] == 30.0

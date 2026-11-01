@@ -14,7 +14,7 @@ from xenoform import clip_cut, dense, edit_export, lane, pacing, song_assemble, 
 
 ROOT = Path(__file__).resolve().parents[1]
 AUDIO = ROOT / "examples" / "songs" / "glitch_out.mp3"
-FEATURES = json.loads((ROOT / "examples" / "songs" / "glitch-out.features.json").read_text(encoding="utf-8"))
+FEATURES = json.loads((ROOT / "tests" / "fixtures" / "analyses" / "glitch-out.features.json").read_text(encoding="utf-8"))
 FILMS = ("metropolis", "moon", "nosferatu", "general", "caligari", "phantom")
 
 

@@ -13,7 +13,7 @@ import pytest
 from xenoform import batch, dense, song_plan, song_run
 
 ROOT = Path(__file__).resolve().parents[1]
-FEATURES = json.loads((ROOT / "examples" / "songs" / "glitch-out.features.json").read_text(encoding="utf-8"))
+FEATURES = json.loads((ROOT / "tests" / "fixtures" / "analyses" / "glitch-out.features.json").read_text(encoding="utf-8"))
 AUDIO = ROOT / "examples" / "songs" / "glitch_out.mp3"
 
 
@@ -146,7 +146,7 @@ def _client(tmp_path, monkeypatch):
     return TestClient(_ui.create_app())
 
 
-def test_the_desk_plans_queues_stops_and_resumes_a_whole_song(tmp_path, monkeypatch):
+def test_the_desk_plans_queues_stops_and_resumes_a_whole_song(frozen_songs, tmp_path, monkeypatch):
     client = _client(tmp_path, monkeypatch)
     opts = client.get("/api/simple/options", params={"duration": 239, "energy": "dense", "tier": "draft", "aspect": "16:9",
                                                        "audio_id": "song-glitch-out", "breathe": "1", "drop_mode": "auto",
@@ -177,7 +177,7 @@ def test_the_desk_plans_queues_stops_and_resumes_a_whole_song(tmp_path, monkeypa
     assert client.get("/api/song/nope").status_code == 404
 
 
-def test_cloud_is_queued_only_behind_the_credits_tick_and_each_window_holds_its_gate(tmp_path, monkeypatch, drop):
+def test_cloud_is_queued_only_behind_the_credits_tick_and_each_window_holds_its_gate(frozen_songs, tmp_path, monkeypatch, drop):
     """A whole song on Cloud Final queues only with the tick, every window a Make of at most 16 morphs carrying the tier
     and the tick; a window body without the tick is refused by the Make before anything is sent (nothing renders here:
     the queue never runs in a test)."""

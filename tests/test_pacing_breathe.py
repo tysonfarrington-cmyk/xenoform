@@ -14,7 +14,7 @@ import pytest
 from xenoform import beatfx, boundary_fx as B, dense, guardrails, pacing, simple_recipe as sr
 
 ROOT = Path(__file__).resolve().parents[1]
-SONGS = ROOT / "examples" / "songs"
+SONGS = ROOT / "tests" / "fixtures" / "analyses"  # frozen, so a rebuilt song moves no plan here
 GLITCH_DROP = 139.71
 BEAT = 60.0 / 90.0  # Glitch Out
 

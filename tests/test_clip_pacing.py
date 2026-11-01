@@ -16,7 +16,7 @@ import pytest
 from xenoform import beatfx, clip_cut, cloud_morph, dense, guardrails, pacing
 
 ROOT = Path(__file__).resolve().parents[1]
-SONGS = ROOT / "examples" / "songs"
+SONGS = ROOT / "tests" / "fixtures" / "analyses"  # frozen, so a rebuilt song moves no plan here
 DEMO = ROOT / "examples" / "demo.wav"
 FILMS = ("metropolis", "moon", "nosferatu", "general", "caligari", "phantom")
 

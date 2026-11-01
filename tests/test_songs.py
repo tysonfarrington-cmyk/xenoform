@@ -422,3 +422,25 @@ def test_the_docs_name_the_bundled_songs():
     assert hip in readme and hip in unreleased and hip in credits and "Hip hop boom bap" not in readme + unreleased
     assert "bundled songs" in _read("docs/REPRODUCE.md") and "examples/demo.wav" in _read("docs/REPRODUCE.md")
     assert "/api/songs/load" in _read("docs/stems.md")
+
+
+@pytest.mark.parametrize("song", ["morphing-wobble", "hip-hop-boom-bap", "liquid-dnb", "ambient", "glitch-out"])
+def test_every_long_song_plans_a_whole_song_on_its_shipped_analysis(song):
+    """The shipped analyses at the desk's rate carry the whole-song plan: passages, a main drop run, windows in their cap."""
+    from xenoform import dense, song_plan
+
+    row = songs_api.find(song)
+    features = json.loads(songs_api.shipped_features_path(row).read_text(encoding="utf-8"))
+    drop = dense.find_drop(songs_api.song_path(row), list(features["beats"]), float(features["duration"]))
+    plan = song_plan.whole(features, {"breathe": 1.0}, drop)
+    passages, windows = song_plan.passages_of(plan, "draft")
+    assert len(passages) >= 5 and windows
+    assert any(p.get("drop_run") is not None for p in passages) and song_plan.main_run(passages) is not None
+    assert all(0 < int(w["morphs"]) <= song_plan.window_cap("draft") for w in windows)
+
+
+def test_the_bundled_tempos_read_true_at_the_desks_rate():
+    """Tempo reads true at the desk's rate: at 12 fps the tracker alone read Liquid DnB as 90 and Ambient as 90."""
+    for song, bpm in (("liquid-dnb", 120), ("ambient", 131), ("glitch-out", 90), ("hip-hop-boom-bap", 180)):
+        row = songs_api.find(song)
+        assert int(row["bpm"]) == bpm, song

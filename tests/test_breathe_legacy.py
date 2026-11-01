@@ -23,7 +23,7 @@ from xenoform import beatfx, dense, guardrails
 from xenoform.cloud_morph import shot_indices
 
 ROOT = Path(__file__).resolve().parents[1]
-SONGS = ROOT / "examples" / "songs"
+SONGS = ROOT / "tests" / "fixtures" / "analyses"  # frozen, so a rebuilt song moves no plan here
 DEMO = ROOT / "examples" / "demo.wav"
 FIXTURE = ROOT / "tests" / "fixtures" / "legacy_cut.json"
 LEGACY = {"breathe": False, "drop_mode": "off"}

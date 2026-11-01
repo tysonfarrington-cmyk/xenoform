@@ -432,7 +432,7 @@ def test_the_batch_never_takes_a_vibe_twice_nor_a_demoted_one(shipped):
 
 
 def _make(tmp_path: Path, monkeypatch, body: dict, *, song: str = "morphing-wobble-20s", drop: float = 12.79) -> tuple[Path, list]:
-    feats = json.loads((ROOT / "examples" / "songs" / f"{song}.features.json").read_text(encoding="utf-8"))
+    feats = json.loads((ROOT / "tests" / "fixtures" / "analyses" / f"{song}.features.json").read_text(encoding="utf-8"))
     directed = {"duration": float(feats["duration"]), "beats": [float(b) for b in feats["beats"]], "sections": feats["sections"]}
     guarded, _ = guardrails.apply(body, duration=directed["duration"], beats=directed["beats"])
     monkeypatch.setattr("xenoform.portrait.black_stills", lambda stills_, work: stills_)

@@ -1,6 +1,8 @@
 """Every test runs against an empty local stills library (stills.root) so the shipped pools alone are what
 the chain sees, and no test writes usage or grown stills into work/ui/objects. The Setup check never asks the
 machine's own ComfyUI for its model lists: it reads the folder a test made, unless the test fakes a listing."""
+from pathlib import Path
+
 import pytest
 
 
@@ -34,3 +36,18 @@ def _final_on_ltx23(monkeypatch):
 def _comfy_lists_no_models(monkeypatch):
     monkeypatch.setattr("xenoform.models_setup._fetch_listing", lambda base, folder: None)
     monkeypatch.setattr("xenoform.models_setup._LISTED", {})
+
+
+@pytest.fixture
+def frozen_songs(monkeypatch):
+    """The desk answers a bundled song from the frozen analyses (tests/fixtures/analyses), as the planner's tests read them,
+    so a rebuilt song moves no plan these tests pin."""
+    from xenoform import songs_api, ui
+
+    frozen = Path(__file__).parent / "fixtures" / "analyses"
+    monkeypatch.setattr(songs_api, "shipped_features_path", lambda row: frozen / f"{row['id']}.features.json")
+    for key in [k for k in list(dict.keys(ui._FEATURES)) if str(k).startswith("song-")]:
+        dict.pop(ui._FEATURES, key, None)
+    yield
+    for key in [k for k in list(dict.keys(ui._FEATURES)) if str(k).startswith("song-")]:
+        dict.pop(ui._FEATURES, key, None)

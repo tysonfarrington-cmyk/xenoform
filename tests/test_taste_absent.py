@@ -30,7 +30,7 @@ _REAL_MOCK = _cm._mock_clips
 _REAL_COMPOSE = beatfx.compose
 
 ROOT = Path(__file__).resolve().parents[1]
-SONGS = ROOT / "examples" / "songs"
+SONGS = ROOT / "tests" / "fixtures" / "analyses"  # frozen, so a rebuilt song moves no plan here
 DEMO = ROOT / "examples" / "demo.wav"
 FIXTURE = ROOT / "tests" / "fixtures" / "taste_absent_cut.json"
 COMPOSE_KEYS = ("aspect", "quality", "fx", "overlay", "size", "fps", "dance_fx", "stem_orbit", "macros", "end_card", "seed",

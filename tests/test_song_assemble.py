@@ -16,7 +16,7 @@ from xenoform import edit_export, lane, song_assemble, song_run
 
 ROOT = Path(__file__).resolve().parents[1]
 AUDIO = ROOT / "examples" / "songs" / "glitch_out.mp3"
-FEATURES = json.loads((ROOT / "examples" / "songs" / "glitch-out.features.json").read_text(encoding="utf-8"))
+FEATURES = json.loads((ROOT / "tests" / "fixtures" / "analyses" / "glitch-out.features.json").read_text(encoding="utf-8"))
 AT = 120.0      # the stretch of Glitch Out the mini song is cut from
 LENGTH = 24.0
 COLOURS = ("red", "green", "blue")

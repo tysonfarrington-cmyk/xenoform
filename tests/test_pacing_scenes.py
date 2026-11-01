@@ -15,7 +15,7 @@ import pytest
 from xenoform import boundary_fx as B, dense, guardrails, lane, pacing, presets
 
 ROOT = Path(__file__).resolve().parents[1]
-SONGS = ROOT / "examples" / "songs"
+SONGS = ROOT / "tests" / "fixtures" / "analyses"  # frozen, so a rebuilt song moves no plan here
 GLITCH_DROP = 139.71
 BEAT = 60.0 / 90.0  # Glitch Out
 BAR = 4 * BEAT

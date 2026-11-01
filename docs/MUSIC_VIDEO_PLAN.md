@@ -462,6 +462,14 @@ same composite byte for byte; the suite green with the fake split.
     vibe's objects up to four times; when vocals become Lead the desk turns on a third layer. Proof in
     Desktop/xeno_followups_1nov.
 
+20. The analysis rate (Tys, 1 Nov: 12). The bundled songs are analysed at 12 fps, as the desk analyses an upload, so
+    a song finds the same drops either way; this supersedes the 24 fps note in item 19. Rebuilding showed the tracker
+    itself suffers at 12: Liquid DnB read 90 for 120, Ambient 90 for 131, beats landed 40 to 58 ms off. So beats keep
+    their own clock, `analyze.BEAT_FPS`, at 24; energy, sections and drops read at 12. The shipped beat grids are
+    unchanged and drop runs held on all eight tracks tried. Glitch Out's plan moved (15 passages for 14, 71 shots for
+    77 at Breathe, the title at 3:47 for 3:51), and its earlier sheets show the old plan. The planner's tests read
+    frozen analyses in tests/fixtures/analyses. See docs/HANDOFF_1NOV.md.
+
 ## 9. Working rules for every session
 
 Own worktree and branch off `contest-rc2`; commit as `git -c user.name=Owly -c user.email=owly@local commit` with

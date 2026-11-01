@@ -2,6 +2,33 @@
 
 ## 0.3.3 (unreleased, the week to the contest)
 
+- **The music-video round** (Tys, 31 Oct to 1 Nov: a cut should breathe and read as a music video, not "a fancy VJ
+  output"; plan and decisions in [docs/MUSIC_VIDEO_PLAN.md](docs/MUSIC_VIDEO_PLAN.md)). In one round:
+  - **Pacing.** The story plan now runs for every Dense song. Each drop run is its own passage with a heat, opens on
+    an event, and is merged last when a cut runs short; a build ramps into it. A **Shape** row sets Breathe and Drops.
+    **Breathe** (off by default, an amount from 0 to 1 in the API) turns calm passages into scenes: one look, three
+    to four bars a shot, a rest after the morph, no effects, a flash tame.
+  - **Whole song.** The song as its passages, each a window Make of at most 16 morphs with a look drawn by taste,
+    queued through Variations, assembled on the beat grid with the title on the last hit. A **Vibes** control keeps
+    a song to as few vibes as you like; the chosen vibe owns the heaviest drop run, and its hero object holds that
+    run's first bar. See [docs/SONG.md](docs/SONG.md).
+  - **Stems mode.** A third source beside Objects and Your clips: each stem its own layer of objects or clips, cut by
+    the same planner on that stem's drive, laid by prominence with no render, the Lead instrument on top. See
+    [docs/STEMS_MODE.md](docs/STEMS_MODE.md).
+  - **The taste file.** `configs/taste.json` holds the standing rules as data (banned subjects and clips, demoted
+    looks, limits), enforced at every Make with `[taste]` report lines; [docs/TASTE.md](docs/TASTE.md) explains each.
+    A cut with no taste file is the plain planner's, byte for byte.
+  - **Backdrops.** Scene pairs go to Final and Cloud as scenes, and a new still kind, the setting, stands one object
+    in a place that suits the vibe, chosen by a Backdrop row (plain, places or scenes).
+  - **Clips follow the pacing.** Rests play the film on, a morph lands on the incoming clip's first frame, drop runs
+    open on a cut to a fresh film, and a clips song is one Make of the whole song.
+  - **Assets in the app.** The stills the cuts show, 38 loved Cloud morphs, example cuts on the cards, nine loved
+    chains as chips under the idea line, per-job records and new library strips.
+  - **The morph cache.** A rendered morph is kept by the request it was made from (`morph_cache.py`,
+    `xenoform morph-cache seed|status`), so a repeat costs no render and no Cloud credit.
+- **Beats keep their own clock.** The bundled songs are now analysed at the desk's 12 fps, and `analyze.BEAT_FPS` tracks
+  beats at 24 at the least. At 12 fps the tracker read Liquid DnB as 90 BPM for 120 and Ambient as 90 for 131, and
+  landed beats 40 to 58 ms off; a song uploaded today gets the finer beats.
 - **The curated film pack** (Tys, 1 Nov: "Build a bigger curated clip pack, about 40 clips, colour and action first,
   so every cut the plan wants shows a clip once"). `configs/film_pack.json` version 2: 40 clips from 29 sources, 36 in
   colour (launches, neon, dancers, drag racers, crowds, lava, jets, surf, and eight quiet ones from orbit and

@@ -9,7 +9,7 @@ from pathlib import Path
 from xenoform import dense, guardrails, pacing
 
 ROOT = Path(__file__).resolve().parents[1]
-SONGS = ROOT / "examples" / "songs"
+SONGS = ROOT / "tests" / "fixtures" / "analyses"  # frozen, so a rebuilt song moves no plan here
 GLITCH_DROP = 139.71  # beatfx.drop_time on the bundled mp3: the build two beats before the long drop at 2:21
 
 
