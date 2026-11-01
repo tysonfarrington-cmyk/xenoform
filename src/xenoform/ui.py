@@ -2400,6 +2400,8 @@ def create_app(cfg: dict | None = None):
         make = dict(body.get("body") or {})
         if body.get("song_cap") not in (None, ""):
             make[song_plan.CAP_KEY] = body.get("song_cap")
+        if body.get("song_vibes") not in (None, ""):  # Vibes (Whole song): "auto", "all" or a count, as in the body
+            make[song_plan.VIBES_KEY] = body.get("song_vibes")
         if song_plan.clips_song(make):  # a clips song plans on your clips: the folder (or the files dropped) read now
             _apply_own(make)
         audio_id = str(make.get("audio_id") or "")

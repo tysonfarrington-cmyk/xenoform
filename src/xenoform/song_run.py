@@ -22,8 +22,8 @@ VERSION = 1
 # the body keys the record keeps of the desk's own (the rest are the Director desk's and the other modes')
 BODY_KEEP = ("audio_id", "vibe", "idea", "quality_tier", "aspect", "breathe", "drop_mode", "macros", "morph_style",
              "morph_timing", "effects", "dance_fx", "foreshadow", "backdrop", "scene_stills", "seed", "song",
-             "song_morph_cap", "song_title", "chain_pins", "cloud_final_ok", "beat_fx", "stem_orbit", "stems_path",
-             "morph_source", "own_folder")
+             "song_morph_cap", "song_title", "song_vibes", "chain_pins", "cloud_final_ok", "beat_fx", "stem_orbit",
+             "stems_path", "morph_source", "own_folder")
 
 
 def path(folder: Path) -> Path:
@@ -65,6 +65,7 @@ def new(song: dict, *, song_id: str, body: dict, audio_id: str, audio_path: Path
                  "beats": [round(float(b), 4) for b in beats or []]},
         "tier": song["tier"], "aspect": song["aspect"], "breathe": song["breathe"], "drop_mode": song["drop_mode"],
         "cap": song["cap"], "window_cap": song["window_cap"], "taste": taste.active(),
+        "vibes": copy.deepcopy(song.get("vibes") or {"choice": "auto"}),
         "plan": {"morphs": song["morphs"], "shots": song["shots"], "line": song["line"], "steps": song.get("steps"),
                  "bar_phase": song.get("bar_phase"), "period": song.get("period")},
         "title": dict(song.get("title") or {}), "estimate": song.get("estimate") or {},
@@ -159,6 +160,7 @@ def view(rec: dict, *, assembling: dict | None = None, elsewhere: bool = False) 
     assembly = rec.get("assembly") or {}
     out = {"id": rec["id"], "status": st, "label": (rec.get("song") or {}).get("label") or "", "line": (rec.get("plan") or {}).get("line"),
            "tier": rec.get("tier"), "aspect": rec.get("aspect"), "breathe": rec.get("breathe"), "drop_mode": rec.get("drop_mode"),
+           "vibes": rec.get("vibes") or {"choice": "auto"},
            "created": rec.get("created"), "batch": rec.get("batch") or "", "elsewhere": bool(elsewhere),
            **c, "passages": passages, "estimate": rec.get("estimate") or {}, "title": rec.get("title") or {},
            "assembly": {k: assembly.get(k) for k in ("video", "seconds", "made", "error", "cuts", "loudness", "tame", "qa")

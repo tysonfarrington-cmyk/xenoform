@@ -665,6 +665,36 @@ def _merge_to(shots: list[dict], n: int, protected: bool = False) -> list[dict]:
     return shots
 
 
+def chain_pool(state: dict, *, avoided: bool | None = None) -> int:
+    """How many stills a cut's chain may draw on, counted as the pick will use them (``long_song_chain``): the rows the
+    scenes choice and the Backdrop let it draw on (objects or settings, scenes alone, both; a vibe asked for scenes or
+    places it has none of falls back to its objects, as the pick does), the asked vibe's own and the pool it borrows, the
+    taste file's bans, its one still an object and its runs off first (``taste.usable``), so a pool they shrink plans
+    fewer morphs rather than repeat a still. The stills and objects in ``avoid_stills``/``avoid_nouns`` (what the layers
+    before a Stems layer took) are left out under the taste file, as the pick leaves them out; ``avoided`` True leaves
+    them out with no taste file too (a whole song's window, ``song_plan.objects``)."""
+    from xenoform import taste as _taste
+    from xenoform.morph_pass import backdrop_choice as _backdrop_choice
+    from xenoform.morph_pass import catalogue as _catalogue, rows_of_kind as _rows_of_kind, scenes_choice as _scenes_choice
+    from xenoform.morph_pass import vibe_for as _vibe_for
+
+    pool_vibe = _vibe_for(state)
+    asked = str(state.get("vibe") or "")
+    choice = _scenes_choice(state)
+    cat = _catalogue()
+    rows = list(cat.get(pool_vibe) or []) + (list(cat.get(asked) or []) if asked and asked != pool_vibe else [])
+    backdrop = _backdrop_choice(state, rows)
+    leave_out = _taste.active() if avoided is None else bool(avoided)
+    if leave_out and (state.get("avoid_stills") or state.get("avoid_nouns")):
+        # a Stems layer draws on what the layers before it left (the pick leaves out their stills, and their objects by
+        # name): counted so, under no object twice its chain plans fewer morphs rather than show one of its own twice
+        gone = {str(f) for f in state.get("avoid_stills") or []}
+        names = {str(n).strip().lower() for n in state.get("avoid_nouns") or []}
+        rows = [r for r in rows if str(r.get("file")) not in gone and str(r.get("noun") or "").strip().lower() not in names]
+    return len(_taste.usable(_rows_of_kind(rows, choice, backdrop))) or len(_taste.usable(_rows_of_kind(rows, "off", "plain"))) \
+        or len(_taste.usable(rows))
+
+
 def long_song_chain(state: dict, directed: dict, audio_path: Path, shots: list[dict], plan: dict, opt: dict, *,
                     cfg: dict | None = None, report: Callable | None = None, engine: str | None = None,
                     grow: bool = True) -> tuple[list[dict], dict, dict, list[dict]]:
@@ -673,35 +703,15 @@ def long_song_chain(state: dict, directed: dict, audio_path: Path, shots: list[d
     capping it; the idea's family grown first when ``grow``; past the cap the song is re-planned with fewer, longer
     shots on the bars and merged down to the count when the planner's roles still outnumber it. Returns
     ``(shots, plan, chain, notes)``."""
-    from xenoform.morph_pass import catalogue as _catalogue, rows_of_kind as _rows_of_kind, scenes_choice as _scenes_choice
-    from xenoform.morph_pass import backdrop_choice as _backdrop_choice
     from xenoform.morph_pass import vibe_for as _vibe_for
 
     notes: list[dict] = []
     duration = float(directed.get("duration") or 0.0)
     beats_list = list(directed.get("beats") or [])
     pool_vibe = _vibe_for(state)
-    asked = str(state.get("vibe") or "")
-    choice = _scenes_choice(state)
-
-    from xenoform import taste as _taste
 
     def pool_count() -> int:
-        # the rows the scenes choice and the Backdrop let the cut draw on (objects or settings, scenes alone, both); a vibe
-        # asked for scenes or places it has none of falls back to its objects, as the pick does. The taste file's bans,
-        # its one-still-an-object and its runs come off first (taste.usable), so a pool they shrink plans fewer morphs
-        # rather than repeat a still
-        cat = _catalogue()
-        rows = list(cat.get(pool_vibe) or []) + (list(cat.get(asked) or []) if asked and asked != pool_vibe else [])
-        backdrop = _backdrop_choice(state, rows)
-        if _taste.active() and (state.get("avoid_stills") or state.get("avoid_nouns")):
-            # a Stems layer draws on what the layers before it left (the pick leaves out their stills, and their objects by
-            # name): counted so, under no object twice its chain plans fewer morphs rather than show one of its own twice
-            gone = {str(f) for f in state.get("avoid_stills") or []}
-            names = {str(n).strip().lower() for n in state.get("avoid_nouns") or []}
-            rows = [r for r in rows if str(r.get("file")) not in gone and str(r.get("noun") or "").strip().lower() not in names]
-        return len(_taste.usable(_rows_of_kind(rows, choice, backdrop))) or len(_taste.usable(_rows_of_kind(rows, "off", "plain"))) \
-            or len(_taste.usable(rows))
+        return chain_pool(state)
 
     pool_n = pool_count()
     tier = "cloud" if opt["cloud"] else opt["tier"]

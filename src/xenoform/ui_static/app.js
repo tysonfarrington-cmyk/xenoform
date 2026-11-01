@@ -114,7 +114,7 @@ function shortcutLabel() {
 }
 
 // The last session's vibe and Fine-tune choices survive a reload or a desk restart (the song cannot: uploads live on the server).
-const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow", "scenes", "pins", "feelSig", "batchN", "batchVary", "morphSource", "scenesChosen", "morphStyle", "morphTiming", "effects", "backdrop", "breathe", "dropMode", "stemRows", "importFolder", "importKind", "wholeSong", "songCap"];
+const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow", "scenes", "pins", "feelSig", "batchN", "batchVary", "morphSource", "scenesChosen", "morphStyle", "morphTiming", "effects", "backdrop", "breathe", "dropMode", "stemRows", "importFolder", "importKind", "wholeSong", "songCap", "songVibes"];
 // The Model row's tiers as the desk names them (quality_tier: draft, fast, final, cloud)
 const TIER_LABEL = { draft: "Draft", fast: "Fast Final", final: "Final", cloud: "Cloud Final" };
 function saveEasy() {
@@ -1215,6 +1215,29 @@ function songCapRow(easy) {
       <span class="note">${esc(auto ? "the profile table's own count, passage by passage: no Make's cap caps the song" : `at most ${n} for the whole song: the calm passages give theirs up first`)}</span>
     </div>`;
 }
+// Whole song: song_vibes, how many vibes the song uses (song_plan.share). Auto and All are a look a passage, no vibe
+// twice; 1 is the vibe you chose for the whole song; 2 your vibe on the main drop and the rest, one more on the other
+// drops; N at most N, the calm passages and the outro sharing first, the drops last. The estimate does not change.
+const SONG_VIBES = [["auto", "Auto"], ["1", "1"], ["2", "2"], ["3", "3"], ["5", "5"], ["8", "8"], ["all", "All"]];
+function songVibesValue(easy) {
+  const v = String((easy && easy.songVibes) || "auto");
+  return SONG_VIBES.some(([id]) => id === v) ? v : "auto";
+}
+function songVibesNote(easy) {
+  const v = songVibesValue(easy);
+  const vibe = vibeById(easy.vibe);
+  const name = vibe ? vibe.name : "the vibe you chose";
+  const s = songEstimate();
+  const passages = s ? Number(s.passages) || 0 : 0;
+  if (v === "auto" || v === "all") return `A look a passage, drawn by taste, no vibe twice${passages ? ` (${passages} looks)` : ""}: ${name} on the main drop.`;
+  if (v === "1") return `${name} carries the whole song. Its library comes round again where it runs out (the record says which objects).`;
+  if (v === "2") return `${name} on the main drop and the rest of the song; one more vibe, drawn by taste for contrast, on the other drops.`;
+  return `At most ${v} vibes: ${name} on the main drop; the calm passages and the outro share a vibe first, the drops last. The loved chains count.`;
+}
+function songVibesRow(easy) {
+  return `<div class="song-vibes">${simpleSeg("easy-song-vibes", songVibesValue(easy), SONG_VIBES, "Vibes")}
+      <p class="note">${esc(songVibesNote(easy))}</p></div>`;
+}
 function songLengthNote(easy, secs) {
   const s = state.simpleOptions && state.simpleOptions.song;
   if (s && s.error) return s.error;
@@ -1243,6 +1266,12 @@ function songPlanFacts(easy) {
       if (!(clips && tier === "cloud")) rows.push([label, songTierText(s, tier)]);  // a clips cut has no Cloud path
     }
     if (s.title && s.title.at != null) rows.push(["Title", `on the last hit, ${clockText(s.title.at)}`]);
+    if (!clips) {  // song_vibes: what the looks will be drawn as (the morphs and minutes above do not change with it)
+      const v = songVibesValue(easy);
+      rows.push(["Vibes", v === "auto" ? "Auto: a look a passage, no vibe twice" : v === "all" ? "All: a look a passage, no vibe twice"
+        : v === "1" ? "1: the vibe you chose for the whole song" : v === "2" ? "2: yours on the main drop and the rest, one more on the other drops"
+        : `at most ${v}: the calm passages and the outro share first, the drops last`]);
+    }
   } else {
     rows.push(["Morphs", (state.simpleOptions && state.simpleOptions.song && state.simpleOptions.song.error) || "Planning the passages..."]);
   }
@@ -1265,6 +1294,7 @@ async function easySongMake() {
   state.quality = "turbo";
   state.live = true;
   const body = payload();
+  if (morphSource(state.easy) !== "clips") body.song_vibes = songVibesValue(state.easy);  // Vibes: how many the song uses
   try {
     const res = await api("/api/song", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body, song_cap: state.easy.songCap || "" }) });
     const data = await res.json();
@@ -2242,6 +2272,7 @@ function simpleOptions(easy) {
       ${machineRows(easy)}
       ${aspect === "9:16" && tier === "final" ? simpleSeg("easy-vertical", vertical, [["native", "Native"], ["crop", "Crop"]], "Vertical") : ""}
       ${wholeSong(easy) ? songCapRow(easy) : morphControl(easy, tier, aspect, vertical)}
+      ${wholeSong(easy) && morphSource(easy) !== "clips" ? songVibesRow(easy) : ""}
       ${simpleSeg("easy-fx", fx ? "on" : "off", [["on", "On"], ["off", "Off"]], "Beat FX")}
       ${simpleSeg("easy-orbit", orbit ? "on" : "off", [["on", "On"], ["off", "Off"]], "Subject orbit")}
       ${simpleSeg("easy-card", card ? "on" : "off", [["off", "Off"], ["on", "On"]], "End card")}
@@ -4875,6 +4906,9 @@ document.addEventListener("click", async (event) => {
     state.easy.songCap = "";
     render();
     loadSimpleOptions().then(render);
+  } else if (act === "easy-song-vibes") {  // Whole song: how many vibes the song uses (song_vibes); the estimate stays
+    state.easy.songVibes = SONG_VIBES.some(([id]) => id === el.dataset.value) ? el.dataset.value : "auto";
+    render();
   } else if (act === "easy-vertical") {
     state.easy.vertical = el.dataset.value === "crop" ? "crop" : "native";
     render();
