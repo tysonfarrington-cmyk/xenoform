@@ -45,3 +45,13 @@ def test_guide_workflow_uses_the_same_node_ids():
     graph = json.loads(path.read_text(encoding="utf-8"))
     assert graph["10"]["class_type"] == "LTXVAddGuide"
     assert graph["16"]["class_type"] == "LTXVCropGuides"
+
+
+def test_the_example_config_analyses_at_the_desks_frame_rate():
+    """configs/example.json said 24 fps while the desk (xenoform ui, config.DEFAULTS) analyses at 12, and at 24 ZedsDead
+    v1 found no drop runs (1 Nov): the example config, and the desk that loads it when started without one, say 12."""
+    from xenoform.config import DEFAULTS
+    from xenoform.ui import load_desk_config
+
+    assert load_config(ROOT / "configs" / "example.json")["fps"] == DEFAULTS["fps"] == 12
+    assert load_desk_config()["fps"] == 12

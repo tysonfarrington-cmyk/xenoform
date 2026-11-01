@@ -73,7 +73,8 @@ def client(quiet_split, tmp_path, monkeypatch):
 def test_manifest_rows_match_the_files_and_their_analyses():
     rows = songs_api.manifest()
     assert [row["id"] for row in rows] == IDS  # the 20 s Wobble first (the quick one), then the whole Wobble, then the rest
-    fps = float(ui.load_desk_config()["fps"])
+    fps = songs_api.SHIPPED_FPS  # the rate they were built at (the desk analyses an upload at 12 since 1 Nov)
+    assert fps == 24.0 and float(ui.load_desk_config()["fps"]) == 12.0
     for row in rows:
         path = SONGS / row["file"]
         assert path.is_file(), row["id"]
@@ -85,7 +86,7 @@ def test_manifest_rows_match_the_files_and_their_analyses():
         features_path = SONGS / f"{row['id']}.features.json"
         assert features_path.is_file(), row["id"]
         features = json.loads(features_path.read_text(encoding="utf-8"))
-        assert float(features["fps"]) == fps, row["id"]  # the desk's own frame rate, so a Make needs no re-analysis
+        assert float(features["fps"]) == fps, row["id"]  # one rate for them all, so a Make needs no re-analysis
         assert abs(float(features["duration"]) - float(row["seconds"])) <= 0.3, row["id"]
         assert features["n_frames"] == len(features["frames"]) == round(float(features["duration"]) * fps), row["id"]
         assert int(round(float(features["tempo"]))) == int(row["bpm"]), row["id"]
