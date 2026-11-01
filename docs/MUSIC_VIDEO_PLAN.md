@@ -414,6 +414,16 @@ same composite byte for byte; the suite green with the fake split.
     sheet and ZedsDead v2 on the new pack stacked against the 24-pack cut).
     Tys, 1 Nov: The General (general_cannon, general_bridge) and Battleship Potemkin (potemkin_steps) are out of
     the pack for good (the bridge overused and too low in quality); a banned_clips list in the taste file keeps them out even where the old files remain.
+17. Tys's answers of 1 Nov: Breathe stays off by default; fourteen vibes in a song is fine and a Vibes control
+    lets a song use as few as one (song_vibes, follow-ups round); the taste calls stand as built (every helmet,
+    the vessels family, natural-first, no head-noun merging); Lead in Stems mode means the lead instrument, like a
+    lead synth; the title default stays Xenoform; the Cloud credits are approved for the two judged sets (the six
+    botanical scene pairs, then ZedsDead v1 as a Breathe whole song with Ferrofluid, about 281 to 468 credits);
+    contest-rc2 is pushed to the public main as each round lands; the follow-ups are resolved as recommended:
+    vibes per song, Lead as the lead instrument, a hero object opening the main drop, the drop card agreeing with
+    the planner, Resolve naming clip shots after the film, swap and re-render on Stems layers, rests inside a
+    window kept through QA (an Opus builder started 1 Nov, desk 47337, proof in Desktop/xeno_followups_1nov);
+    the morph cache was seeded on the mainline checkout.
 
 ## 9. Working rules for every session
 
