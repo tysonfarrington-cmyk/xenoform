@@ -56,12 +56,13 @@ from its library, do not touch it: you chose every clip. Three rules read a clip
   comes back with a later stretch, and the cut's `[taste]` line says how many. The free film pack's 40 clips (version
   2, 1 Nov) cover every clip shot the plan wants in a three-minute song once each (34 for ZedsDead v2 under Breathe).
 - `no-film-clips`: black-and-white film in a music video is a demoted look, a `[taste]` note and never a ban. The
-  guardrail notes it when the clips come from the free film pack, and the cut counts the black-and-white clips it shows
-  by measuring their colour (15 of the pack's 24; a tinted reel, Caligari's sepia or the dinosaurs' amber, reads as
-  colour). The clips stay: you chose them.
-- `no-kaleido-on-living`: a clip whose name says a living thing (its label from the folder's `labels.json`, else its
-  file name: a face, a figure, a dancer, a crowd, a witch, a vampire, a dinosaur, and the film pack's Nosferatu,
-  Phantom, Jekyll and Hyde, Cesare, Keaton and Willie) plays another chosen effect, or none, instead of the kaleido.
+  guardrail notes it when clips of the free film pack are black-and-white (the pack's `colour` field; 4 of its 40),
+  and the cut counts the black-and-white clips it shows by the pack's field, else by measuring their colour (a tinted
+  reel reads as colour). The clips stay: you chose them.
+- `no-kaleido-on-living`: a clip of a living thing plays another chosen effect, or none, instead of the kaleido. The
+  film pack says it of each of its clips (its `living` field: people or animals in it), and the rule takes the pack at
+  its word; a clip without the field is read by its name (its label from the folder's `labels.json`, else its file
+  name: a face, a figure, a dancer, a crowd, a witch, a vampire, a dinosaur).
 - `banned_clips` (a list beside the rules, 1 Nov): clips no cut ever shows, each by its film pack id and its label: the
   Keaton bridge (overused, and its upload too low in quality to use), the Keaton cannon and the Potemkin steps (The
   General and Battleship Potemkin are out of the pack). A folder that still holds the old file, under its pack name or
@@ -106,8 +107,8 @@ Demoted looks (`kind: look`): kept, never deleted, and said.
 | `wet-paint-weak` | a note when the vibe is chosen; it is already off the featured cards (`configs/vibes.json`) | One of the weakest vibes, its colour scheme does not work. | 29 Oct |
 | `pink-odd-machine` | a note when the vibe is chosen; never featured | He does not want the pink odd-machine or its theme. | 29 Oct |
 | `plain-marble-chess` | chess pieces go to the back of a porcelain-marble cut | Plain marble chess was dull. | 30 Oct |
-| `no-film-clips` | a note, never a ban: the guardrail's when a clips cut draws on the free film pack, and the cut's own (its `taste` block) counting the black-and-white clips it shows, measured by their colour whatever folder they came from (a tinted reel counts as colour); the clips stay, because you chose them | Black-and-white film does not react to the music; the montage dropped it. | 30 Oct |
-| `no-kaleido-on-living` | a shot that morphs a living thing (a fish, a bird, an insect), or plays a clip of one (a clip whose name says a face, a figure, a dancer, a vampire, a dinosaur: the film pack's Nosferatu, Phantom, Jekyll and Hyde, Keaton), plays another chosen effect, or none, instead of the kaleido | Overused, and on the fish it flattened them into a pattern. | 29 Oct |
+| `no-film-clips` | a note, never a ban: the guardrail's when a clips cut draws on the free film pack's black-and-white clips (its `colour` field), and the cut's own (its `taste` block) counting the black-and-white clips it shows, by the pack's field or measured by their colour whatever folder they came from (a tinted reel counts as colour); the clips stay, because you chose them | Black-and-white film does not react to the music; the montage dropped it. | 30 Oct |
+| `no-kaleido-on-living` | a shot that morphs a living thing (a fish, a bird, an insect), or plays a clip of one (the film pack's `living` field says it of each of its clips; another clip is read by its name: a face, a figure, a dancer, a vampire, a dinosaur), plays another chosen effect, or none, instead of the kaleido | Overused, and on the fish it flattened them into a pattern. | 29 Oct |
 
 Limits (`kind: limit`):
 

@@ -845,6 +845,22 @@ def shot_nouns(shots: list[dict], stills: list) -> list[tuple[str, str]]:
     return out
 
 
+def shot_living(shots: list[dict], stills: list) -> list[tuple[bool | None, bool | None]]:
+    """Beside ``shot_nouns``: for the two entries each shot morphs between, the ``living`` their rows say (a clips cut's
+    entries carry the film pack's field, ``clip_cut.nouns``), None where a row says nothing and the words decide."""
+    flags = [s.get("living") if isinstance(s, dict) and isinstance(s.get("living"), bool) else None for s in stills or []]
+    out = []
+    for i, s in enumerate(shots):
+        m = s.get("morph", s.get("clip", i))
+        try:
+            m = int(m)
+        except (TypeError, ValueError):
+            out.append((None, None))
+            continue
+        out.append((flags[m], flags[m + 1]) if 0 <= m < len(flags) - 1 else (None, None))
+    return out
+
+
 def effects_by_shot(shots: list[dict], names: list[str], stills: list | None = None, turn: int | None = None) -> dict:
     """The cut's effects a shot at a time, in place (``fx_names``, the field the compositor and the timeline read): with
     ``one-effect`` and more than one effect chosen, each passage plays one in turn (a cut with no passages takes them in
@@ -874,10 +890,12 @@ def effects_by_shot(shots: list[dict], names: list[str], stills: list | None = N
                                f"({', '.join(names)}): never two on one look")
     if "kaleido" in names and rule("no-kaleido-on-living"):
         pairs = shot_nouns(shots, stills or [])
+        alive = shot_living(shots, stills or [])
         others = [n for n in names if n != "kaleido"]
-        for s, (a, b) in zip(shots, pairs):
+        for s, (a, b), (la, lb) in zip(shots, pairs, alive):
             mine = list(s["fx_names"]) if "fx_names" in s else list(names)
-            if "kaleido" not in mine or not (living(a) or living(b)):
+            # a row that says whether it is alive (a clip of the film pack) is taken at its word; the others by their words
+            if "kaleido" not in mine or not ((la if la is not None else living(a)) or (lb if lb is not None else living(b))):
                 continue
             rest = [n for n in mine if n != "kaleido"]
             if not rest and others and each is not None:
@@ -994,10 +1012,16 @@ def guard_body(body: dict, rep, *, expert: bool = False) -> None:
             rep.clamp(rid, text("banned_clips", f"{len(gone)} clip{'s' if len(gone) != 1 else ''} the taste file bans left out: {names}"),
                       hard=True)
             body["own_clips"] = own = [c for c in own if not clip_banned(c)]
-        films = [c for c in own if film_clip((c or {}).get("path") if isinstance(c, dict) else c)]
+
+        def black_and_white(c) -> bool:  # the pack's colour field when the clip has one, else where it came from
+            if isinstance(c, dict) and isinstance(c.get("colour"), bool):
+                return not c["colour"]
+            return film_clip((c or {}).get("path") if isinstance(c, dict) else c)
+
+        films = [c for c in own if black_and_white(c)]
         if films and rule("no-film-clips"):
-            rep.warn(rid, text("no-film-clips", f"{len(films)} of your clips come from the free film pack: black-and-white film "
-                                                f"reads flat in a music video"))
+            rep.warn(rid, text("no-film-clips", f"{len(films)} of your clips are black-and-white film from the free film pack, "
+                                                f"which reads flat in a music video"))
         return
     # notes: what the Make will do with the body as it is
     r = demoted_vibe(body.get("vibe"))

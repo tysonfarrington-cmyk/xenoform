@@ -7,7 +7,7 @@ licence line; clips as a source, a start and a length). Setup & models has a **F
 button; the desk's Your clips row has a **Free film pack** button that points the cut at the folder once it is there.
 
 Version 2 of the list (Tys, 1 Nov: "about 40 clips, colour and action first, so every cut the plan wants shows a clip
-once") gives each clip four more fields:
+once") gives each clip four more fields, which ``pack.json`` and ``labels.json`` carry beside the files for the cutter:
 ``colour`` (false for black-and-white film, by the taste file's measure, ``clip_cut.mono``), ``motion`` (0 to 1: the
 clip's frame-to-frame change, ``clip_cut.motion``, over ``clip_cut.MOTION_FULL``), ``living`` (people or animals in it:
 the kaleido steps aside on it) and ``mood`` (``calm``, ``build`` or ``drop``: the passages it suits). A clip's own
@@ -22,9 +22,10 @@ and at most 1280 wide at 24 fps (an MPEG-2 file's 720x480 at 8:9 comes out 640x4
 answer a seek, or a small one that costs less whole (version 2 has none). The folder is ``work/ui/film_pack/`` (``XENO_FILM_PACK`` moves it), one ``NN_<id>.mp4`` a clip so
 the manifest's order is the folder's name order (``own_media.scan`` reads files in name order), plus ``CREDITS.md``
 (title, year, maker, page, licence line and the file taken with its size a source; the clips with their times),
-``pack.json`` (what was made, with the start, seconds, url and crop each clip was cut from) and ``labels.json`` (a
-readable label a file, which ``own_media.scan`` hands to ``clip_cut`` for the chain and the morph lines). The list is
-curated over time, and ``pack.json`` is how a run follows it: a clip whose window moved is
+``pack.json`` (what was made, with the start, seconds, url and crop each clip was cut from, and its fields) and
+``labels.json`` (a readable label a file, with the fields beside it when the list gives them, which ``own_media.scan``
+hands to ``clip_cut`` for the chain, the morph lines and the cutter). The list is curated over time, and ``pack.json``
+is how a run follows it: a clip whose window moved is
 made again, a clip the list reordered is moved to its new name, a file the pack made for a clip that left the list is
 removed (never a file of the user's), and a whole source is removed once every clip of it is in place.
 
@@ -494,6 +495,7 @@ def _run() -> None:
                    "start": clip.get("start"), "seconds": clip.get("seconds"), "title": clip.get("title"), "label": title}
             if crop:
                 row["crop"] = crop
+            row.update(fields_of(clip))  # version 2: what the cutter reads (own_media.scan hands it on)
             _set(status="running", progress=round(i / total, 4), detail=f"Clip {i + 1} of {total}: {title}", error=None)
             record = previous.get(dest.name)
             if clip_ready(dest) and (record is None or _same_window(record, clip, url, crop)):
@@ -660,7 +662,7 @@ def write_sidecars(manifest: dict, root: Path, made: list[dict], failed: list[di
     pack = {"made_at": datetime.now(timezone.utc).isoformat(timespec="seconds"), "manifest_version": manifest.get("version", 1),
             "name": manifest.get("name"), "folder": str(root), "clips": made, "failed": failed, "removed": list(removed or [])}
     (root / "pack.json").write_text(json.dumps(pack, indent=1), encoding="utf-8")
-    labels = {clip_name(c, i): clip_label(c) for i, c in enumerate(manifest.get("clips") or [])}
+    labels = {clip_name(c, i): label_entry(c) for i, c in enumerate(manifest.get("clips") or [])}
     try:  # the labels you gave your own clips stay; the pack's names are the pack's, a moved or removed clip's goes
         before = json.loads((root / "labels.json").read_text(encoding="utf-8"))
         before = {str(k): v for k, v in before.items() if str(k) not in labels and (root / str(k)).is_file()} if isinstance(before, dict) else {}
