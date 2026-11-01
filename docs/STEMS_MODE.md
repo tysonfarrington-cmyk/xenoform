@@ -58,7 +58,8 @@ layers that are on (and so do Cloud's credits).
 - **Lead is the lead instrument, like a lead synth** (Tys, 1 Nov). The Lead layer sits on top of the stack with the
   highest prominence (0.9 unless its row sets one), takes the drop events and the style events where its stem plays,
   and the passages are the mix's split where its stem goes out for two bars or more: that stretch is a release, a
-  breakdown, for every layer. The desk makes the melodic stem the Lead: the vocals when the song has them (they play a
+  breakdown, for every layer. A passage under two bars those splits leave (a second of the lead between two of its
+  rests) folds into its neighbour, as a role clipped at a Length window's edge does. The desk makes the melodic stem the Lead: the vocals when the song has them (they play a
   tenth of it or more; the vocals row is then turned on too), else the other stem; a Lead chosen by hand stays, song
   after song. A body with no layer marked `lead` has none: the mix's sections are the passages, as before.
 - **One Shape for all.** The knobs, Breathe and Drops, the Look, Timing and Effects are one setting for every layer; a

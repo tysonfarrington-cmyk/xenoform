@@ -487,7 +487,8 @@ def drive(got: tuple[list[dict], dict], state: dict, directed: dict | None = Non
 def lead_sections(directed: dict, curve, fps: int = 24) -> list[dict]:
     """The passages when a layer leads: the mix's roles (as the planner reads them), split where the lead stem goes out
     for ``LEAD_GAP_BARS`` bars or more (its edges on the nearest beat); a stretch it is out is a passage of its own, a
-    release (the breakdown), and every section carries its role so the planner keeps them as they are."""
+    release (the breakdown), and every section carries its role so the planner keeps them as they are. A passage under
+    two bars those splits leave folds into its neighbour (the rule a Length window's clipped edge follows)."""
     from xenoform import dense
     from xenoform import pacing as _pc
 
@@ -533,6 +534,25 @@ def lead_sections(directed: dict, curve, fps: int = 24) -> list[dict]:
             out[-1]["end"] = p["end"]
         else:
             out.append(dict(p))
+    # a passage under two bars the lead's rests leave (a second of the lead between two of them: ZedsDead v1's drop at
+    # 1:53) folds into its neighbour, as a role clipped at a window's edge does (ui._window_features): into the passage
+    # before it (the first into the one after), and neighbours of one role and one lead_out are then one passage
+    least = 8 * period - 1e-6
+    short = next((i for i, p in enumerate(out) if float(p["end"]) - float(p["start"]) < least), None)
+    while short is not None and len(out) > 1:
+        j = short - 1 if short > 0 else 1
+        keep = out[j]
+        keep["start"] = min(float(keep["start"]), float(out[short]["start"]))
+        keep["end"] = max(float(keep["end"]), float(out[short]["end"]))
+        del out[short]
+        joined: list[dict] = []
+        for p in out:
+            if joined and joined[-1]["role"] == p["role"] and bool(joined[-1].get("lead_out")) == bool(p.get("lead_out")):
+                joined[-1]["end"] = p["end"]
+            else:
+                joined.append(p)
+        out = joined
+        short = next((i for i, p in enumerate(out) if float(p["end"]) - float(p["start"]) < least), None)
     for p in out:
         p.setdefault("label", p["role"])
         if p["role"] not in _pc.PROFILE and p["role"] not in dense.STORY_BEATS:

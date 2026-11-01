@@ -117,3 +117,22 @@ def test_the_desk_makes_the_melodic_stem_the_lead_and_says_what_lead_is():
     assert '"stemLeadAuto"' in app.split("const EASY_SAVED_KEYS = [", 1)[1].split("];", 1)[0]
     setlead = app.split("function stemSetLead(easy, row, on) {", 1)[1].split("\n}\n", 1)[0]
     assert "if (!row.proSet) row.prominence = on ? STEM_LEAD_PRO : stemProDefault(name);" in setlead
+
+
+def test_a_passage_under_two_bars_between_the_leads_rests_folds_into_its_neighbour():
+    """ZedsDead v1 with the other stem as Lead had a 1 s drop passage at 1:53 between two of its rests (1 Nov): a
+    passage under two bars the lead's rests leave folds into its neighbour, as a role clipped at a window's edge does,
+    so the two rests and the second between them are one release; a passage of exactly two bars stays."""
+    directed = {"duration": 40.0, "beats": [i * 0.5 for i in range(80)],
+                "sections": [{"label": "calm", "start": 0.0, "end": 16.0, "level": 0.5, "role": "calm"},
+                             {"label": "drop", "start": 16.0, "end": 40.0, "level": 0.9, "role": "drop"}]}
+    # the lead plays 0 to 8 s, rests 8 to 17, plays one second, rests 18 to 26, plays to the end (two bars: 4 s)
+    curve = [1.0] * (8 * 24) + [0.0] * (9 * 24) + [1.0] * 24 + [0.0] * (8 * 24) + [1.0] * (14 * 24)
+    rows = stems_mode.lead_sections(directed, curve, 24)
+    assert [(r["role"], r["start"], r["end"]) for r in rows] == [("calm", 0.0, 8.0), ("release", 8.0, 26.0), ("drop", 26.0, 40.0)]
+    assert rows[1]["lead_out"] is True and all(r["end"] - r["start"] >= 4.0 for r in rows)
+    first = [1.0] * 24 + [0.0] * (10 * 24) + [1.0] * (29 * 24)  # a second of the lead at the very start joins the passage after it
+    assert [(r["role"], r["start"], r["end"]) for r in stems_mode.lead_sections(directed, first, 24)][:2] == \
+        [("release", 0.0, 11.0), ("calm", 11.0, 16.0)]
+    two = [1.0] * (6 * 24) + [0.0] * (6 * 24) + [1.0] * (4 * 24) + [0.0] * (6 * 24) + [1.0] * (18 * 24)
+    assert ("calm", 12.0, 16.0) in [(r["role"], r["start"], r["end"]) for r in stems_mode.lead_sections(directed, two, 24)]
