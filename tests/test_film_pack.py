@@ -1,7 +1,7 @@
 """The free film pack (Tys, 29 Oct: "lets include a bunch of those free domain clips in the app as an optional download"):
 the manifest is sound, the pack is made from archive.org windows into one folder with its credits beside it, a clip that
 fails is named while the rest come, a second run skips what is there, Setup carries the row and dispatches its Download,
-the desk has the row and the Your clips button, and a clips cut takes up to 24 clips, each called by its label."""
+the desk has the row and the Your clips button, and a clips cut takes up to 48 clips, each called by its label."""
 
 import json
 import os
@@ -116,7 +116,7 @@ def test_the_manifest_is_valid():
         assert ID_RE.match(key), key
         for field in ("title", "year", "maker", "licence", "url"):
             assert src.get(field), f"{key} needs {field}"
-        assert str(src["url"]).startswith(ARCHIVE), key
+        assert str(src["url"]).startswith((ARCHIVE, film_pack.NASA)), key  # archive.org, or NASA's own library (version 2)
         if src.get("whole"):
             assert int(src.get("bytes") or 0) > 0, f"{key} is whole and needs bytes"
     ids = [c["id"] for c in clips]
@@ -176,7 +176,7 @@ def test_a_faked_runner_makes_the_whole_pack_with_its_credits(pack, monkeypatch,
     used = {c["source"] for c in real["clips"]}
     for key in used:
         src = real["sources"][key]
-        assert src["title"] in credits and src["licence"] in credits and f"https://archive.org/details/{src['item']}" in credits
+        assert src["title"] in credits and src["licence"] in credits and film_pack.item_url(src) in credits
     for name in after["files"]:
         assert name in credits
     made = json.loads((pack / "pack.json").read_text(encoding="utf-8"))
@@ -558,17 +558,17 @@ def test_the_desk_has_the_setup_row_and_the_clips_button():
 
 
 # ---------------------------------------------------------------- the clips cap and the labels
-def test_a_folder_gives_up_to_24_clips_and_the_cut_cycles_through_them_all(tmp_path, tiny):
-    for k in range(26):
+def test_a_folder_gives_up_to_48_clips_and_the_cut_cycles_through_them_all(tmp_path, tiny):
+    for k in range(50):
         shutil.copyfile(tiny, tmp_path / f"{k:02d}_reel.mp4")
     # only words are labels: a number, an object or blank space in the sidecar leaves the id-derived name
     (tmp_path / "labels.json").write_text(json.dumps({"00_reel.mp4": " the opening reel ", "01_reel.mp4": 7, "02_reel.mp4": {"a": 1}, "03_reel.mp4": "  "}), encoding="utf-8")
     found = own_media.scan(tmp_path)
-    assert own_media.MAX_ITEMS == 12 and own_media.MAX_CLIPS == 24 and len(found["clips"]) == 24
-    assert [Path(c["path"]).name for c in found["clips"]] == [f"{k:02d}_reel.mp4" for k in range(24)]
+    assert own_media.MAX_ITEMS == 12 and own_media.MAX_CLIPS == 48 and len(found["clips"]) == 48
+    assert [Path(c["path"]).name for c in found["clips"]] == [f"{k:02d}_reel.mp4" for k in range(48)]
     assert found["clips"][0]["label"] == "the opening reel" and all("label" not in c for c in found["clips"][1:4])
-    plan = clip_cut.slots(2 * 24 - 1, 24)
-    assert {s["clip"] for s in plan if s["kind"] == "clip"} == set(range(24))
+    plan = clip_cut.slots(2 * 48 - 1, 48)
+    assert {s["clip"] for s in plan if s["kind"] == "clip"} == set(range(48))
     assert clip_cut.clip_names(found["clips"][:3]) == ["the opening reel", "reel", "reel"]
     assert clip_cut.clip_names([{"path": "x/03_trip_moon_eye.mp4"}, {"path": "y/reel.mp4"}]) == ["trip moon eye", "reel"]
 
@@ -607,11 +607,13 @@ def test_the_real_runner_cuts_a_window_from_a_local_source(pack, monkeypatch):
 
 
 def test_a_source_with_bars_baked_in_is_cropped_and_a_changed_crop_remakes_the_clip():
-    """Two of the uploads (the Méliès and the Apollo files) are a 4:3 picture inside a 16:9 frame: the manifest's crop
-    is cut off before the scale, it is recorded with the clip, and a clip cut before the crop was known is made again."""
+    """Some uploads (the Méliès file) are a 4:3 picture inside a 16:9 frame, and some scans carry thin edges: the
+    manifest's crop (a clip's own since version 2, a source's in version 1) is cut off before the scale, it is recorded
+    with the clip, and a clip cut before the crop was known is made again."""
     real = film_pack.load_manifest()
-    cropped = {k: s["crop"] for k, s in real["sources"].items() if s.get("crop")}
+    cropped = {c["id"]: film_pack._crop(real["sources"], c) for c in real["clips"] if film_pack._crop(real["sources"], c)}
     assert cropped and all(film_pack.CROP_RE.fullmatch(c) for c in cropped.values())
+    assert cropped["moon_landing"] == "640:480:106:0"  # the pillarbox of the Méliès upload
     args = film_pack.ffmpeg_args("https://x/y.mp4", 10.0, 4.0, Path("out.mp4"), "928:720:176:0")
     assert args[args.index("-vf") + 1] == "crop=928:720:176:0," + film_pack.SCALE
     assert film_pack.ffmpeg_args("a", 0, 1, Path("o.mp4"))[args.index("-vf") + 1] == film_pack.SCALE

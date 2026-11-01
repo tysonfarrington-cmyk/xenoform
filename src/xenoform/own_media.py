@@ -29,7 +29,8 @@ MIN_S = 2.0        # a clip's run is at least two seconds, so the clip is seen
 MAX_S = 8.0        # and at most eight, so the morphs keep the cut moving
 MIN_CLIP_S = 2.0   # clips shorter than this are skipped
 MAX_ITEMS = 12     # images (twelve morph targets is the pool size)
-MAX_CLIPS = 24     # clips: a clips cut cycles through every one (clip_cut.slots), and the free film pack is about twenty
+MAX_CLIPS = 48     # clips: a clips cut cycles through every one (clip_cut.slots); the free film pack's version 2 is about
+                   # forty (1 Nov: every cut the plan wants shows a clip once), with room for a few of your own beside it
 LABELS = "labels.json"  # an optional sidecar in the folder, {file name: label}: what the chain calls a clip (the film pack writes one)
 
 

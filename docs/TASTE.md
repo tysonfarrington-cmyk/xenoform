@@ -53,8 +53,8 @@ from its library, do not touch it: you chose every clip. Three rules read a clip
   as the pacing engine spends any budget; a drop's opening cut, an event's cut and a passage's first clip stay, and a
   hot drop's half-bar entries go only when nothing else can. No clip shot grows past the folder's longer clips (its
   upper quarter: past that the film would slow down) and the cut never falls under a shot in 8 s; past those, a clip
-  comes back with a later stretch, and the cut's `[taste]` line says how many. The free film pack's 24 clips cover a
-  three-minute song once each.
+  comes back with a later stretch, and the cut's `[taste]` line says how many. The free film pack's 40 clips (version
+  2, 1 Nov) cover every clip shot the plan wants in a three-minute song once each (34 for ZedsDead v2 under Breathe).
 - `no-film-clips`: black-and-white film in a music video is a demoted look, a `[taste]` note and never a ban. The
   guardrail notes it when the clips come from the free film pack, and the cut counts the black-and-white clips it shows
   by measuring their colour (15 of the pack's 24; a tinted reel, Caligari's sepia or the dinosaurs' amber, reads as
