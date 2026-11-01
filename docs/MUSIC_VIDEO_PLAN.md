@@ -449,6 +449,18 @@ same composite byte for byte; the suite green with the fake split.
     prompts (the follow-ups round fixes whole-noun matching); the fallback used the local ComfyUI once without a
     queue check at that moment. The three Cloud tools (re-sending pairs, the pairs sheet, delivering a song) are
     kept under docs/demo/tools.
+19. The follow-ups round landed 1 Nov as 2fb2054 (1691 passed on its tree): song_vibes and a Vibes control (Auto,
+    1, 2, 3, 5, 8, All; Auto and All are the same today); Lead in Stems mode is the lead instrument, on top at 0.9,
+    taking the drop and style events, vocals or other by default; a hero object (configs/vibe_heroes.json) opens
+    the main drop and holds its first bar; the drop card and the 30 s window follow the planner's main run; Edit
+    in Resolve names clip shots after the film; swap and re-render on one Stems layer, re-laid without the GPU;
+    the QA lag fix keeps every planned rest; anchors match whole nouns (moon jellyfish is a jellyfish); a passage
+    under two bars left by the Lead's rests folds away; configs/example.json analyses at 12 fps like the desk.
+    Side effects: the bundled songs keep their 24 fps analyses (songs_api.SHIPPED_FPS; rebuilding at 12 would
+    change their sections and drops, Tys's call); Glitch Out is 77 morphs at Breathe and 85 without, Cloud 277 to
+    462. Known: at 24 fps the drop line at 0.82 of a higher peak loses ZedsDead v1's drops; Vibes 1 shows a
+    vibe's objects up to four times; when vocals become Lead the desk turns on a third layer. Proof in
+    Desktop/xeno_followups_1nov.
 
 ## 9. Working rules for every session
 
