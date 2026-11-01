@@ -42,7 +42,7 @@ hit) is a Make: **Fine-tune → Length → Whole song**, then **Make the whole s
    it takes a passage it fits and its vibe becomes its group's, and inside a group a loved chain of that vibe may take a
    passage it fits (the gold finale on the outro of a Liquid gold song). The other passages of a group take its vibe with
    your own settings. One vibe's library is smaller than a whole song (Ferrofluid holds 27 objects; ZedsDead v1 as a whole
-   song shows 91 stills), so under a count a window whose vibe has run out lets objects come round again, as few as it needs, the ones
+   song shows 90 stills), so under a count a window whose vibe has run out lets objects come round again, as few as it needs, the ones
    the song has shown least and farthest away first (never another passage's pinned object); the record names them
    (`vibes.again`, and each window's `again`). The estimate does not change with Vibes: the morphs are the pacing's.
    The desk's facts and its Make line say what the choice draws ("Passages: 13, two vibes between them"; a look each
