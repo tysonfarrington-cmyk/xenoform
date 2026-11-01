@@ -10,7 +10,8 @@ For the next session on Xenoform. The music-video round is finished and pushed. 
 - Push only on Tys's word for that round. His word of 1 Nov covered that round alone.
 - Never restart ComfyUI (8188), the proxy (8189) or Tys's desks 47320 and 47321 unless he asks. Check
   `GET http://127.0.0.1:8188/queue` is idle before GPU work.
-- No Cloud credits without his word. Never print or paste `COMFY_ORG_API_KEY`.
+- Comfy Cloud is approved until the credits run out (Tys, 1 Nov). Stop when Cloud refuses a run, and say what a run
+  used. Never print or paste `COMFY_ORG_API_KEY`. The paid partner path stays off.
 - Keep objects and clips separate within a Make. In Stems mode this holds within a layer.
 - Tys judges by watching: sheets and cuts with full paths. Builders report short summaries, with detail in a README.
 
@@ -18,7 +19,8 @@ For the next session on Xenoform. The music-video round is finished and pushed. 
 
 `contest-rc2` is the working branch and `origin/main` follows it. All stages of the plan are in: roles that run, the
 pacing engine with Breathe, the taste file, backdrops, assets, the whole song, Stems mode, plus the clips pacing, the
-40-clip film pack and the follow-ups. Agent desks 47324 (Tys tests here) and 47325 run the merged tree.
+40-clip film pack and the follow-ups. Desks 47320, 47321, 47324 (Tys tests here) and 47325 run the merged tree with
+the key. A desk started through `.claude/launch.json` does not get the key, so start one that needs Cloud with it.
 
 Decided on 1 Nov: Breathe stays off by default; the Vibes control runs from one vibe to all; the taste calls stand as
 built; Lead means the lead instrument; the title default is Xenoform; the bundled songs are analysed at 12 fps.
@@ -37,9 +39,7 @@ sheets were made at 12. The planner's tests read frozen copies of the old analys
 
 ## Waiting on Tys
 
-- Comfy Cloud refused the last morph of the 1 Nov song with HTTP 429, which the code reads as an inactive subscription.
-  Check the account before any further Cloud run.
-- Tys's desks 47320 and 47321 run older code until he says to restart them.
+- The last morph of the 1 Nov ZedsDead Cloud song was refused with HTTP 429, so its outro shot is a local Draft.
 - Eleven builder worktrees remain under `xenoform-judge-test/.claude/worktrees`, about 14 GB, all merged. They hold raw
   Draft job folders. Remove them on his word.
 
