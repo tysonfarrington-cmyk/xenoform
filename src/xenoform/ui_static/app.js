@@ -114,7 +114,7 @@ function shortcutLabel() {
 }
 
 // The last session's vibe and Fine-tune choices survive a reload or a desk restart (the song cannot: uploads live on the server).
-const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow", "scenes", "pins", "feelSig", "batchN", "batchVary", "morphSource", "scenesChosen", "morphStyle", "morphTiming", "effects", "backdrop", "breathe", "dropMode", "stemRows", "importFolder", "importKind", "wholeSong", "songCap"];
+const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow", "scenes", "pins", "feelSig", "batchN", "batchVary", "morphSource", "scenesChosen", "morphStyle", "morphTiming", "effects", "backdrop", "breathe", "dropMode", "stemRows", "stemLeadAuto", "importFolder", "importKind", "wholeSong", "songCap", "songVibes"];
 // The Model row's tiers as the desk names them (quality_tier: draft, fast, final, cloud)
 const TIER_LABEL = { draft: "Draft", fast: "Fast Final", final: "Final", cloud: "Cloud Final" };
 function saveEasy() {
@@ -742,16 +742,22 @@ function shotStrip(vibeId) {
     .join("");
 }
 
+// The drop card names the main drop run as the planner picks it (GET /api/opener's ``main``: pacing.main_run, the
+// heaviest drop run by heat times length, the run a whole song gives the vibe you chose), its time and length, and the
+// prototype window cut around it (``window``: pacing.prototype_window, the rule the Make's trim uses): one source.
+function dropCardTitle(opener) {
+  const main = opener && opener.main;
+  if (main) return `The main drop: ${clockText(Number(main.start || 0))}, ${Math.round(Number(main.seconds || 0))} s`;
+  return `The big moment is at ${clockText(Number((opener && opener.at) || 0))}`;
+}
 function dropCard() {
   const opener = state.opener;
   const ready = opener && opener.ready;
   // Simple mode: plain words, not the library ids of the morph pair.
   const noDrop = opener && !ready && opener.line;
-  const pair = ready
-    ? `The big moment is at ${clockText(Number(opener.at || 0))}`
-    : (noDrop ? "No big drop in this song" : "Listening for the drop.");
+  const pair = ready ? dropCardTitle(opener) : (noDrop ? "No big drop in this song" : "Listening for the drop.");
   const line = ready
-    ? "That is where the biggest change happens: one object turns into the next, right on the downbeat."
+    ? (opener.main ? opener.line : "That is where the biggest change happens: one object turns into the next, right on the downbeat.")
     : (noDrop ? "The video still morphs on the beat. It just has no single big moment." : "The song decides the moment. This lands before any GPU wait.");
   return `<section class="drop-open" id="drop-open">
     <p class="eyebrow">The drop</p>
@@ -759,6 +765,13 @@ function dropCard() {
     <p class="drop-line">${esc(line)}</p>
     <button type="button" class="ghost" data-act="open-drop"${ready ? "" : " disabled"}>Play the drop</button>
   </section>`;
+}
+// What the card is asked for: the song, the Length (the prototype's), the Shape (the window follows the main run when
+// the cut is paced) and the Drops (Max heats every run)
+function openerKey() {
+  const easy = state.easy || {};
+  const len = wholeSong(easy) ? 30 : (easyLength(easy) || 30);
+  return [state.audioId || "demo", len, breatheValue(easy) ? 1 : 0, easy.dropMode || "auto"].join("|");
 }
 
 // An example cut: about 15 s of a finished Cloud Final cut in a vibe (GET /api/vibes carries the url as `example`, from
@@ -1215,6 +1228,29 @@ function songCapRow(easy) {
       <span class="note">${esc(auto ? "the profile table's own count, passage by passage: no Make's cap caps the song" : `at most ${n} for the whole song: the calm passages give theirs up first`)}</span>
     </div>`;
 }
+// Whole song: song_vibes, how many vibes the song uses (song_plan.share). Auto and All are a look a passage, no vibe
+// twice; 1 is the vibe you chose for the whole song; 2 your vibe on the main drop and the rest, one more on the other
+// drops; N at most N, the calm passages and the outro sharing first, the drops last. The estimate does not change.
+const SONG_VIBES = [["auto", "Auto"], ["1", "1"], ["2", "2"], ["3", "3"], ["5", "5"], ["8", "8"], ["all", "All"]];
+function songVibesValue(easy) {
+  const v = String((easy && easy.songVibes) || "auto");
+  return SONG_VIBES.some(([id]) => id === v) ? v : "auto";
+}
+function songVibesNote(easy) {
+  const v = songVibesValue(easy);
+  const vibe = vibeById(easy.vibe);
+  const name = vibe ? vibe.name : "the vibe you chose";
+  const s = songEstimate();
+  const passages = s ? Number(s.passages) || 0 : 0;
+  if (v === "auto" || v === "all") return `A look a passage, drawn by taste, no vibe twice${passages ? ` (${passages} looks)` : ""}: ${name} on the main drop.`;
+  if (v === "1") return `${name} carries the whole song. Its library comes round again where it runs out (the record says which objects).`;
+  if (v === "2") return `${name} on the main drop and the rest of the song; one more vibe, drawn by taste for contrast, on the other drops.`;
+  return `At most ${v} vibes: ${name} on the main drop; the calm passages and the outro share a vibe first, the drops last. The loved chains count.`;
+}
+function songVibesRow(easy) {
+  return `<div class="song-vibes">${simpleSeg("easy-song-vibes", songVibesValue(easy), SONG_VIBES, "Vibes")}
+      <p class="note">${esc(songVibesNote(easy))}</p></div>`;
+}
 function songLengthNote(easy, secs) {
   const s = state.simpleOptions && state.simpleOptions.song;
   if (s && s.error) return s.error;
@@ -1224,25 +1260,52 @@ function songLengthNote(easy, secs) {
   if (clips) return `Whole song (${clockText(secs)}): your clips as one cut over the song's ${s.passages} passages, a morph between every two clips, cut on the beat and laid with the title on the last hit and the song at -16 LUFS. ${s.morphs} morphs in all; Draft ${songTierText(s, "draft")}.`;
   return `Whole song (${clockText(secs)}): ${s.passages} passages, each its own Make of at most ${s.window_cap} morphs on the beat, queued one after another on a free GPU and laid together on the song's beats. ${s.morphs} morphs in all; Draft ${songTierText(s, "draft")}.`;
 }
+// How the passages' looks are drawn under the Vibes choice (song_vibes), so the Make line and the facts say what the
+// Vibes control says: a look a passage at Auto and All, else the vibes they share
+function songMakeLooks(easy) {
+  const v = songVibesValue(easy);
+  const vibe = vibeById(easy.vibe);
+  const name = vibe ? vibe.name : "the vibe you chose";
+  if (v === "1") return `${name} over the whole song`;
+  if (v === "2") return `${name} on the main drop and the rest, one more vibe drawn by taste on the other drops`;
+  if (v !== "auto" && v !== "all") return `At most ${v} vibes, ${name} on the main drop, the calm passages and the outro sharing first (the loved chains count)`;
+  return "A look a passage, drawn by taste (no vibe twice, the loved chains where they fit)";
+}
+function songPassageLooks(easy) {
+  const v = songVibesValue(easy);
+  if (v === "auto" || v === "all") return "a look each";
+  return v === "1" ? "one vibe over them all" : v === "2" ? "two vibes between them" : `at most ${v} vibes between them`;
+}
 function songMakeLine(easy) {
   const s = songEstimate();
   const tier = easy.tier || "draft";
   const clips = morphSource(easy) === "clips";
-  if (!s) return clips ? "The whole song in your clips: one cut over its passages, every cut on the beat." : "The whole song as its passages: a look a passage, drawn by taste, every cut on the beat.";
+  if (!s) return clips ? "The whole song in your clips: one cut over its passages, every cut on the beat." : `The whole song as its passages, every cut on the beat. ${songMakeLooks(easy)}.`;
   if (clips) return `${s.line}. ${TIER_LABEL[tier] || "Draft"}: ${songTierText(s, tier)}. Your clips, one cut over the whole song, each clip once, the title on the last hit.`;
-  return `${s.line}. ${TIER_LABEL[tier] || "Draft"}: ${songTierText(s, tier)}. A look a passage, drawn by taste (no vibe twice, the loved chains where they fit), the title on the last hit.`;
+  return `${s.line}. ${TIER_LABEL[tier] || "Draft"}: ${songTierText(s, tier)}. ${songMakeLooks(easy)}, the title on the last hit.`;
 }
 function songPlanFacts(easy) {
   const s = songEstimate();
   const rows = [["Video", `${clockText(easySongSeconds())} (the whole song, in passages)`]];
   if (s) {
     const clips = morphSource(easy) === "clips";  // a clips song: one clips cut over every passage
-    rows.push(["Passages", clips ? `${s.passages}, one clips cut over them` : `${s.passages}${s.windows !== s.passages ? ` in ${s.windows} Makes` : ""}, a look each`]);
+    rows.push(["Passages", clips ? `${s.passages}, one clips cut over them` : `${s.passages}${s.windows !== s.passages ? ` in ${s.windows} Makes` : ""}, ${songPassageLooks(easy)}`]);
     rows.push(["Morphs", clips ? `${s.morphs} between your clips, on the beat` : `${s.morphs} on the beat (at most ${s.window_cap} a Make${s.cap && s.cap !== "auto" ? `, capped at ${s.cap}` : ""})`]);
     for (const [tier, label] of [["draft", "Draft"], ["fast", "Fast Final"], ["final", "Final"], ["cloud", "Cloud Final"]]) {
       if (!(clips && tier === "cloud")) rows.push([label, songTierText(s, tier)]);  // a clips cut has no Cloud path
     }
     if (s.title && s.title.at != null) rows.push(["Title", `on the last hit, ${clockText(s.title.at)}`]);
+    if (!clips && (s.hero || (easy.pins && Object.keys(easy.pins).length))) {  // song_plan.place_hero: the main drop's first shot
+      const pinned = easy.pins && Object.keys(easy.pins).length;
+      const from = /card/.test(String((s.hero && s.hero.why) || "")) ? "its card's object" : "its first still";
+      rows.push(["Hero", pinned ? "your first pinned still opens the main drop" : `the ${s.hero.noun || "vibe's hero"} opens the main drop (${from})`]);
+    }
+    if (!clips) {  // song_vibes: what the looks will be drawn as (the morphs and minutes above do not change with it)
+      const v = songVibesValue(easy);
+      rows.push(["Vibes", v === "auto" ? "Auto: a look a passage, no vibe twice" : v === "all" ? "All: a look a passage, no vibe twice"
+        : v === "1" ? "1: the vibe you chose for the whole song" : v === "2" ? "2: yours on the main drop and the rest, one more on the other drops"
+        : `at most ${v}: the calm passages and the outro share first, the drops last`]);
+    }
   } else {
     rows.push(["Morphs", (state.simpleOptions && state.simpleOptions.song && state.simpleOptions.song.error) || "Planning the passages..."]);
   }
@@ -1254,7 +1317,7 @@ async function easySongMake() {
   const vibe = vibeById(state.easy.vibe);
   if (!vibe) return;
   state.easy.note = morphSource(state.easy) === "clips" ? "Planning the whole song in your clips: its passages, one cut over them. A few seconds."
-    : "Planning the whole song: its passages, a look each, the objects. A few seconds.";
+    : "Planning the whole song: its passages, their looks, the objects. A few seconds.";
   render();
   state.brief = (state.easy.idea || "").trim() || vibe.line;
   state.palette = vibe.palette;
@@ -1265,6 +1328,7 @@ async function easySongMake() {
   state.quality = "turbo";
   state.live = true;
   const body = payload();
+  if (morphSource(state.easy) !== "clips") body.song_vibes = songVibesValue(state.easy);  // Vibes: how many the song uses
   try {
     const res = await api("/api/song", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body, song_cap: state.easy.songCap || "" }) });
     const data = await res.json();
@@ -2242,6 +2306,7 @@ function simpleOptions(easy) {
       ${machineRows(easy)}
       ${aspect === "9:16" && tier === "final" ? simpleSeg("easy-vertical", vertical, [["native", "Native"], ["crop", "Crop"]], "Vertical") : ""}
       ${wholeSong(easy) ? songCapRow(easy) : morphControl(easy, tier, aspect, vertical)}
+      ${wholeSong(easy) && morphSource(easy) !== "clips" ? songVibesRow(easy) : ""}
       ${simpleSeg("easy-fx", fx ? "on" : "off", [["on", "On"], ["off", "Off"]], "Beat FX")}
       ${simpleSeg("easy-orbit", orbit ? "on" : "off", [["on", "On"], ["off", "Off"]], "Subject orbit")}
       ${simpleSeg("easy-card", card ? "on" : "off", [["off", "Off"], ["on", "On"]], "End card")}
@@ -2773,9 +2838,10 @@ function timelineDrawer(easy, lane, tl, picked) {
         <label>seed <input id="tl-seed" type="number" placeholder="next" min="0" step="1" aria-label="Seed, empty for the next one" /></label>
         <label>length <select id="tl-render-s" aria-label="Seconds of source"><option value="">as it is</option>${lengthOpts.map((v) => `<option value="${v}">${v} s</option>`).join("")}</select></label>
         <label>prompt <select id="tl-variant" aria-label="Prompt variant">${variants.map((v) => `<option value="${esc(v)}">${esc(variantName(v))}</option>`).join("")}</select></label></div>
-      <div class="tl-gpu-row"><button type="button" class="ghost" data-act="easy-tl-insert" data-index="${s.index}">Generate here</button>
-        <label>length <select id="tl-insert-s" aria-label="Seconds to generate">${insertS.map((v) => `<option value="${v}"${v === 10 ? " selected" : ""}>${v} s</option>`).join("")}</select></label></div>` : ""}
-      ${dream}`;
+      ${lane.insertable === false ? "" : `<div class="tl-gpu-row"><button type="button" class="ghost" data-act="easy-tl-insert" data-index="${s.index}">Generate here</button>
+        <label>length <select id="tl-insert-s" aria-label="Seconds to generate">${insertS.map((v) => `<option value="${v}"${v === 10 ? " selected" : ""}>${v} s</option>`).join("")}</select></label></div>`}` : ""}
+      ${dream}
+      ${lane.mode === "stems" ? `<p class="note tl-layer-note">${esc(`The ${stemLabel(lane.layer)} layer: Swap and Re-render render its own morphs, then the layers are laid together again with no GPU. ${lane.layer_note || ""}`)}</p>` : ""}`;
   }
   return `<div class="tl-drawer" id="tl-drawer">${head}<div class="tl-tab-body">${body}</div></div>`;
 }
@@ -2857,9 +2923,11 @@ async function rerenderShot(index, style) {
   if (seedEl && seedEl.value !== "") body.seed = Number(seedEl.value);
   if (lenEl && lenEl.value !== "") body.render_s = Number(lenEl.value);
   if (style && MORPH_STYLES.includes(style)) body.style = style;
+  if (lane.mode === "stems") body.layer = lane.layer;  // a Stems cut: this layer's morph, then the layers laid again
   const shot = lane.shots.find((x) => x.index === Number(index)) || {};
   const how = body.style ? ` as ${morphStyleLabel(body.style)}` : "";
-  await postCutEdit(id, "rerender", body, `Re-rendering shot ${Number(index) + 1}'s morph${how} on the GPU`, shot.start);
+  const where = lane.mode === "stems" ? ` on the ${lane.layer} layer` : "";
+  await postCutEdit(id, "rerender", body, `Re-rendering shot ${Number(index) + 1}'s morph${how}${where} on the GPU`, shot.start);
 }
 async function insertRun(index) {
   const id = easyVideoId();
@@ -2876,8 +2944,11 @@ async function insertRun(index) {
 // and re-composes; the job runs like a re-cut, the making screen shows it, the lane reloads when it is done.
 async function swapStill(id, slot, file) {
   if (!id || !state.easy || slot == null || !file) return;
+  const lane = state.lane && state.lane.id === id ? state.lane : null;
+  const swap = { slot: Number(slot), file };
+  if (lane && lane.mode === "stems") swap.layer = lane.layer;  // a Stems cut: this layer's still, then the layers laid again
   try {
-    const res = await api(`/api/jobs/${encodeURIComponent(id)}/swap`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slot: Number(slot), file }) });
+    const res = await api(`/api/jobs/${encodeURIComponent(id)}/swap`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(swap) });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       state.easy.note = err.detail || "The swap did not start.";
@@ -4836,14 +4907,13 @@ document.addEventListener("click", async (event) => {
     if (act === "easy-stem-on") {
       if (!row.on && stemLayers(state.easy).length >= STEM_LAYER_MAX) {
         state.easy.note = `Four layers at most: turn one off first.`;
-      } else row.on = !row.on;
+      } else Object.assign(row, { on: !row.on, autoOn: false });  // on or off by hand: it stays so
     } else if (act === "easy-stem-kind") {
       row.kind = el.dataset.value === "clips" ? "clips" : "objects";
       row.pins = {};  // a layer is objects or clips, never both: what it kept goes with the kind
     } else if (act === "easy-stem-lead") {
-      const was = row.lead;
-      Object.values(state.easy.stemRows || {}).forEach((r) => { r.lead = false; });  // one lead a cut
-      row.lead = !was;
+      stemSetLead(state.easy, row, !row.lead);  // one lead a cut: the lead instrument, on top and the most prominent
+      state.easy.stemLeadAuto = false;  // chosen by hand: it no longer follows the song
     } else if (act === "easy-stem-chainpins") {
       row.chainPins = !row.chainPins;
     } else {
@@ -4875,6 +4945,9 @@ document.addEventListener("click", async (event) => {
     state.easy.songCap = "";
     render();
     loadSimpleOptions().then(render);
+  } else if (act === "easy-song-vibes") {  // Whole song: how many vibes the song uses (song_vibes); the estimate stays
+    state.easy.songVibes = SONG_VIBES.some(([id]) => id === el.dataset.value) ? el.dataset.value : "auto";
+    render();
   } else if (act === "easy-vertical") {
     state.easy.vertical = el.dataset.value === "crop" ? "crop" : "native";
     render();
@@ -5202,7 +5275,7 @@ document.addEventListener("input", (event) => {
   } else if (target.classList && (target.classList.contains("stem-pro-in") || target.classList.contains("stem-mix-pro"))) {
     // a Stems prominence: the Stems step's row, or on the cut's screen the mix waiting for Lay them again; the readout follows
     const v = Math.round(Number(target.value) * 100) / 100;
-    if (target.classList.contains("stem-pro-in")) stemRow(state.easy, target.dataset.stem).prominence = v;
+    if (target.classList.contains("stem-pro-in")) Object.assign(stemRow(state.easy, target.dataset.stem), { prominence: v, proSet: true });
     else stemsMixSet(state.lane, target.dataset.stem, "prominence", v);
     const readout = target.parentElement && target.parentElement.querySelector("b");
     if (readout) readout.textContent = v.toFixed(2);
@@ -5977,13 +6050,59 @@ function stemLabel(stem) {
 function stemsSplitFor(id) {
   return state && state.stemsSplit && state.stemsSplit.audioId === id ? state.stemsSplit : null;
 }
+function stemProDefault(name) {
+  return String(name).toLowerCase() === "drums" ? 0.8 : 0.6;
+}
 function stemRow(easy, name) {
   easy.stemRows = easy.stemRows || {};
   if (!easy.stemRows[name]) {
     easy.stemRows[name] = { on: STEM_DEFAULT_ON.includes(String(name).toLowerCase()), kind: "objects", vibe: "", chainPins: false,
-      folder: "", prominence: String(name).toLowerCase() === "drums" ? 0.8 : 0.6, blend: "screen", lead: false, pins: {} };
+      folder: "", prominence: stemProDefault(name), blend: "screen", lead: false, pins: {} };
   }
   return easy.stemRows[name];
+}
+// Lead (Tys, 1 Nov): the lead instrument, like a lead synth. It sits on top of the stack with the highest prominence
+// (STEM_LEAD_PRO unless its slider was moved), takes the drop and style events where its stem plays, and where it rests
+// two bars or more every layer has a breakdown. By default it is the melodic stem: the vocals when the song has them
+// (they play a tenth of it or more), else the other stem; it is turned on with the drums and the other.
+const STEM_LEAD_PRO = 0.9;
+const STEM_LEAD_HELP = "The lead instrument, like a lead synth: on top of the stack, the most prominent, the drop and style events where it plays, and where it rests two bars or more every layer has a breakdown";
+function stemDefaultLead(stems) {
+  const rows = stems || [];
+  const vocals = rows.find((r) => String(r.name).toLowerCase() === "vocals" && Number(r.active || 0) >= 0.1);
+  if (vocals) return vocals.name;
+  const other = rows.find((r) => String(r.name).toLowerCase() === "other");
+  return other ? other.name : "";
+}
+// The rows of a split as it shows: drums and other on at first; until a Lead is chosen by hand (stemLeadAuto false) the
+// lead follows the song, the melodic stem of each split, turned on with it (and off again when it moves on, if it was
+// only on for that)
+function stemDefaults(easy, stems) {
+  easy.stemRows = easy.stemRows || {};
+  const names = (stems || []).map((r) => r.name);
+  if (!names.length) return;
+  names.forEach((n) => stemRow(easy, n));
+  if (easy.stemLeadAuto === false) return;  // a Lead chosen by hand stays, song after song
+  const lead = stemDefaultLead(stems);
+  if (!lead || easy.stemRows[lead].lead) return;
+  Object.values(easy.stemRows).forEach((r) => {
+    if (r.autoOn && r.lead) { r.on = false; r.autoOn = false; }
+  });
+  const row = easy.stemRows[lead];
+  stemSetLead(easy, row, true);
+  if (!row.on) Object.assign(row, { on: true, autoOn: true });
+}
+// Lead moved to another row: its prominence follows unless that slider was set by hand
+function stemSetLead(easy, row, on) {
+  Object.values(easy.stemRows || {}).forEach((r) => {
+    if (r.lead && r !== row) {
+      r.lead = false;
+      if (!r.proSet) r.prominence = stemProDefault(Object.keys(easy.stemRows).find((k) => easy.stemRows[k] === r) || "");
+    }
+  });
+  row.lead = on;
+  const name = Object.keys(easy.stemRows || {}).find((k) => easy.stemRows[k] === row) || "";
+  if (!row.proSet) row.prominence = on ? STEM_LEAD_PRO : stemProDefault(name);
 }
 function stemNames() {
   const st = state && stemsSplitFor(state.audioId);
@@ -6069,7 +6188,8 @@ function stemRowHtml(easy, r) {
         <div class="stem-ctl">
           <label class="stem-pro">Prominence <input type="range" class="stem-pro-in" min="0" max="1" step="0.05" value="${Number(row.prominence)}" data-stem="${name}" aria-label="${name}: prominence"><b>${Number(row.prominence).toFixed(2)}</b></label>
           <label class="stem-blend-label">Blend <select class="stem-blend" data-stem="${name}" aria-label="${name}: blend">${STEM_BLENDS.map(([v, t]) => `<option value="${v}"${(row.blend || "screen") === v ? " selected" : ""}>${t}</option>`).join("")}</select></label>
-          <button type="button" class="chip${row.lead ? " on" : ""}" data-act="easy-stem-lead" data-stem="${name}" aria-pressed="${row.lead ? "true" : "false"}" title="Its entrances and exits become the passages for every layer">Lead</button>
+          <button type="button" class="chip${row.lead ? " on" : ""}" data-act="easy-stem-lead" data-stem="${name}" aria-pressed="${row.lead ? "true" : "false"}" title="${esc(STEM_LEAD_HELP)}">Lead</button>
+          ${row.lead ? `<span class="note stem-lead-note">the lead instrument, like a lead synth</span>` : ""}
         </div>
       </div>
     </div>`;
@@ -6096,6 +6216,7 @@ function stemsStep(easy) {
     return `<section class="easy-step stems-step" data-tour="easy-stems">${head}${split}
       <p class="note">Demucs separates the song into drums, bass, other and vocals (the band split where Demucs is not installed). Each stem you turn on becomes a layer, cut by the same planner on its own stem: it plays where its stem plays and fades where it rests.</p></section>`;
   }
+  stemDefaults(easy, st.stems);  // the first time a split shows: drums and other on, the melodic stem the lead
   const rows = (st.stems || []).map((r) => stemRowHtml(easy, r)).join("");
   const on = stemLayers(easy);
   return `<section class="easy-step stems-step" data-tour="easy-stems">${head}${split}
@@ -6353,13 +6474,21 @@ function scheduleOpener() {
   const card = document.getElementById("drop-open");
   if (!card || !state) return;
   const key = state.audioId || "demo";
-  if (state.opener && state.opener.audioId === key && state.opener.ready) return;
+  const ask = openerKey();
+  if (state.opener && state.opener.audioId === key && state.opener.key === ask) return;  // answered for this song and Shape
+  if (scheduleOpener.asking === ask) return;  // already asked: a render while it answers does not ask again
+  scheduleOpener.asking = ask;
   const token = (scheduleOpener.token = (scheduleOpener.token || 0) + 1);
+  const easy = state.easy || {};
   api("/api/opener", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       audio_id: key,
+      // the prototype window the Make would cut, around the main drop run (pacing.prototype_window)
+      length_s: wholeSong(easy) ? 30 : (easyLength(easy) || 30),
+      breathe: breatheValue(easy) ? "on" : "off",
+      drop_mode: easy.dropMode || "auto",
       vibe: (state.easy && state.easy.vibe) || "",
       library_folder: state.libraryFolder || "",
       exclude_faces: state.excludeFaces !== false,
@@ -6372,10 +6501,12 @@ function scheduleOpener() {
       if (token !== scheduleOpener.token || !state) return;
       const body = response.ok ? await response.json() : { ready: false, line: "The drop did not read." };
       body.audioId = key;
+      body.key = ask;
       state.opener = body;
       paintOpener();
     })
-    .catch(() => {});
+    .catch(() => {})
+    .finally(() => { if (scheduleOpener.asking === ask) scheduleOpener.asking = ""; });
 }
 
 function paintOpener() {
@@ -6385,7 +6516,8 @@ function paintOpener() {
   const title = card.querySelector("h3");
   const line = card.querySelector(".drop-line");
   const button = card.querySelector("[data-act='open-drop']");
-  const pair = opener.source && opener.target ? `${opener.source} → ${opener.target}` : (opener.becomes || "Impact");
+  const pair = opener.main ? dropCardTitle(opener)  // the planner's main drop run, its time and length
+    : opener.source && opener.target ? `${opener.source} → ${opener.target}` : (opener.becomes || "Impact");
   if (title) title.textContent = opener.ready ? pair : "Finding the downbeat…";
   if (line) line.textContent = opener.line || "";
   if (button) button.disabled = !opener.ready;

@@ -590,8 +590,8 @@ def assemble(folder: Path, jobs: Path, *, report: Callable[[str, float, str], No
     level = measured_lufs(out)
     qa_rep = None
     if qa:
-        try:
-            qa_rep = post_qa.run(out, fps=float(FPS), beats=song_beats, fix=False)
+        try:  # every rest the passages plan is held picture by design: the song's lag check leaves them all out
+            qa_rep = post_qa.run(out, fps=float(FPS), beats=song_beats, fix=False, shots=shots)
         except Exception as exc:  # the QA is a report: a failed check never loses the song
             qa_rep = {"error": str(exc)[:200]}
     comp = composite(rec, order, cuts, video_s=video_s, size=size, period=period, beats=[round(b, 4) for b in song_beats])
@@ -635,10 +635,12 @@ def _qa_summary(rep: dict | None) -> dict | None:
         return None
     veil = rep.get("veil") or {}
     beats = rep.get("beats") or {}
+    lag = rep.get("lag") if isinstance(rep.get("lag"), dict) else {}
     return {"issues": list(rep.get("issues") or [])[:12], "flash_frames": veil.get("flash_frames"),
             "max_flash_8_bars": veil.get("max_8_bars"), "per_8_bars": veil.get("per_8_bars"),
             "off_beat": len(beats.get("off_beat") or []) if isinstance(beats, dict) else None,
-            "hard_flashes": (rep.get("flashes") or {}).get("flashes")}
+            "hard_flashes": (rep.get("flashes") or {}).get("flashes"),
+            "rest_frames": lag.get("rest_frames"), "dup_ratio": lag.get("dup_ratio")}
 
 
 def _write_meta(folder: Path, rec: dict) -> None:

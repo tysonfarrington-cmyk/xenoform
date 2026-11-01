@@ -9,7 +9,9 @@ the desk loads one at once, with no librosa pass (``xenoform.ui`` includes ``rou
 The manifest is ``examples/songs/songs.json`` (``manifest()``); the analyses are ``examples/songs/<id>.features.json``,
 built by ``scripts/analyse_bundled_songs.py`` the way ``/api/analyze`` builds an upload's (``analyse(path)``). A song
 whose shipped analysis is missing is analysed on first load and cached under ``work/ui/songs/<id>.features.json``.
-The shipped analyses are at the default desk's frame rate (``configs/example.json``, 24 fps), as the demo's is.
+The shipped analyses were built at 24 fps (``SHIPPED_FPS``), the rate ``configs/example.json`` gave until 1 Nov, as the
+demo's was, and ``analyse`` keeps that rate so a song analysed here matches them; the desk (``xenoform ui``,
+``config.DEFAULTS``) and the example config analyse an upload at 12 fps.
 
 A desk restart forgets ``ui._AUDIO`` and ``ui._FEATURES``, and a job's recipe, a bookmarked page or a poll may still
 name ``song-<id>``. ``audio_registry()`` and ``features_registry()`` are those two dicts: a lookup of ``song-<id>``
@@ -114,8 +116,13 @@ def demo_row() -> dict:
 
 
 # ---------------------------------------------------------------- the analyses
+SHIPPED_FPS = 24.0  # the rate the bundled songs' shipped analyses were built at (the example config's until 1 Nov)
+
+
 def analyse(path: Path) -> dict:
-    """The same analysis ``/api/analyze`` runs on an upload, with the desk's config (``fps`` and ``analyze``)."""
+    """The same analysis ``/api/analyze`` runs on an upload, with the desk's ``analyze`` settings, at the rate the
+    shipped analyses were built at (``SHIPPED_FPS``), so a bundled song analysed here matches its siblings. Rebuilding
+    them at the desk's 12 fps would change every bundled song's sections and drops: a round of its own."""
     import librosa
 
     from xenoform.analyze import analyze_audio
@@ -126,7 +133,7 @@ def analyse(path: Path) -> dict:
     return analyze_audio(
         audio,
         int(sr),
-        fps=float(cfg["fps"]),
+        fps=SHIPPED_FPS,
         onset_tau=float(cfg["analyze"]["onset_tau"]),
         beat_tau=float(cfg["analyze"]["beat_tau"]),
         section_min_seconds=float(cfg["analyze"]["section_min_seconds"]),

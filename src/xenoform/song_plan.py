@@ -14,6 +14,11 @@ Every passage gets its own look, drawn by taste (``looks``):
   drop run by heat times length, the stretch the song is built on), the loved chains (``presets``) on the passages they fit (the opener on the intro, the finale on the outro, the
   calm ones on the grooves, the ones on the beat on the drops), the rest the featured vibes in their order, the quiet
   ones on the quiet passages and the loud ones on the drops and builds;
+- ``song_vibes`` (``VIBES_KEY``) keeps the song to fewer vibes: "auto" (the default) and "all" are the look a passage
+  above; a count N is at most N vibes (``share``): the vibe you chose on the main drop, the calm passages and the outro
+  sharing a vibe before the builds do and the drops last, the loved chains counting toward N (1: the vibe you chose
+  carries the whole song; 2: it takes the main drop and the rest of the song, and one more vibe drawn by taste for
+  contrast takes the other drops);
 - the intro and the outro one long look each (one vibe, one family under full Breathe, a passage of their own);
 - no object twice across passages, natural or iconic first (``objects``): the stills each window morphs through are
   picked here the way its Make picks them (``morph_pass.pick_stills`` under the taste file), each window leaving out the
@@ -39,6 +44,8 @@ KEY = "song_passage"            # the body key a window Make carries: its stretc
 CAP_KEY = "song_morph_cap"      # the body key for the song's total: "auto" (the profile's own count) or a number of morphs
 TITLE_KEY = "song_title"        # the title on the last hit: the hand-made video's "Xenoform" by default, "" for none
 TITLE_DEFAULT = "Xenoform"
+VIBES_KEY = "song_vibes"        # the most vibes the song uses: "auto" (a look a passage, no vibe twice), "all", or a count
+VIBES_CHOICES = ("auto", 1, 2, 3, 5, 8, "all")  # the desk's Vibes control (Whole song), in its order
 PASSAGE_MAX = 16                # morphs a window Make holds at most (cloud_final.MAX_MORPHS: one Cloud Make's cap)
 TIERS = ("draft", "fast", "final", "cloud")
 # Comfy Cloud credits a Cloud Final morph: 464 for 128 morphs and 135 for 37 measured on 29 Oct (3.6), about 6 for a
@@ -58,8 +65,8 @@ LOUD_TAGS = {"neon", "metal", "chrome", "digital", "wireframe", "retro", "fire",
 # Length of the desk (the window says its own) and the paid partner path
 DROP_KEYS = ("scenes", "blocks", "customs", "cards", "cut_plan", "morph_styles", "own_clips", "morph_targets", "own_folder",
              "own_id", "performer_ref", "hero_id", "hero_path", "guide_id", "guide_path", "length_s", "length_start",
-             "song_source", "layers", "stem_rows", "only_scenes", "simple_recipe", "recipe", CAP_KEY, "avoid_stills",
-             "avoid_nouns", "chain_pins", "idea_reading")
+             "song_source", "layers", "stem_rows", "only_scenes", "simple_recipe", "recipe", CAP_KEY, VIBES_KEY,
+             "avoid_stills", "avoid_nouns", "chain_pins", "idea_reading")
 
 
 class SongError(ValueError):
@@ -98,6 +105,25 @@ def tier_of(state: dict | None) -> str:
 def title_of(state: dict | None) -> str:
     raw = (state or {}).get(TITLE_KEY)
     return TITLE_DEFAULT if raw is None else str(raw).strip()[:40]
+
+
+def vibes_of(state: dict | None) -> int | None:
+    """``song_vibes`` as the most vibes the song may use, or None for "auto" and "all" (and anything else): a look a
+    passage, no vibe twice, as many vibes as the song has passages."""
+    raw = (state or {}).get(VIBES_KEY)
+    if raw is None or isinstance(raw, bool) or str(raw).strip().lower() in ("", "auto", "all", "0"):
+        return None
+    try:
+        return max(1, int(float(raw)))
+    except (TypeError, ValueError):
+        return None
+
+
+def vibes_choice(state: dict | None) -> str | int:
+    """``song_vibes`` as the record keeps it: "auto", "all" or the count."""
+    raw = str((state or {}).get(VIBES_KEY) or "").strip().lower()
+    n = vibes_of(state)
+    return n if n is not None else ("all" if raw == "all" else "auto")
 
 
 def clips_song(state: dict | None) -> bool:
@@ -150,8 +176,9 @@ def whole(features: dict, state: dict, drop: float | None) -> dict:
     hard = cap or max(1, len(grid))  # auto: one shot a beat at most, so the profile's own steps stand
     env = dense.stem_env_for(state)  # the split stems' strong drum hits: a ramp into a drop cuts on them, as in a Make
     hits = list(env.get("drum_strong") or []) if env and not str(env.get("engine") or "").startswith("mix") else None
+    # an objects song's hero holds a bar: its main run opens on a whole bar (place_hero lands the hero on that shot)
     kw = dict(breathe=pacing.breathe_amount(state), drop_mode=pacing.drop_mode_of(state), pace=dense.story_pace(state),
-              tempo=a["tempo"], hits=hits)
+              tempo=a["tempo"], hits=hits, hold_main=not clips_song(state))
     plan = pacing.song_plan(duration, a["beats"], a["sections"], drop, max_shots=hard, **kw)
     speed = dense.macros(state)["speed"]
     if abs(speed - 0.5) > 0.05:  # the Speed knob scales the song's own count, x0.6 at 0 and x1.4 at 1 (song_plan_for)
@@ -240,14 +267,13 @@ def passages_of(plan: dict, tier: str) -> tuple[list[dict], list[dict]]:
 def main_run(passages: list[dict]) -> int | None:
     """The song's main drop run, the one the vibe you chose owns: the heaviest drop run by its heat times its length,
     not the loudest moment alone (decided 1 Nov: on ZedsDead the drop's own run was 5.3 s at 2:20 and the 23.7 s run
-    right after it went to a vibe drawn by taste). A tie goes to the run the song's drop opens, then to the earlier.
+    right after it went to a vibe drawn by taste). A tie goes to the run the song's drop opens, then to the earlier
+    (``pacing.heaviest``: the rule the desk's drop card and the prototype window choose by too, ``pacing.main_run``).
     The index of that passage, None when the song has no drop run."""
     runs = [p for p in passages if p.get("drop_run") is not None]
-    if not runs:
-        return None
-    best = max(runs, key=lambda p: (round(float(p.get("heat") or 0.0) * float(p.get("seconds") or 0.0), 2),
-                                    bool(p.get("drop_at")), -int(p["index"])))
-    return int(best["index"])
+    k = pacing.heaviest([{"heat": p.get("heat"), "seconds": float(p.get("seconds") or 0.0), "opens": bool(p.get("drop_at"))}
+                         for p in runs])
+    return None if k is None else int(runs[k]["index"])
 
 
 def clips_passages(full: dict, clips: list[dict], state: dict, features: dict) -> tuple[list[dict], list[dict]]:
@@ -517,10 +543,19 @@ def look_of_vibe(row: dict, state: dict, *, why: str, pins: dict | None = None) 
 
 
 def looks(passages: list[dict], state: dict, *, loaded: list[dict] | None = None) -> list[dict]:
-    """One look a passage (``looks`` of the module doc): the vibe you chose on the main drop (on the passage its loved
-    chain fits, when the body is one), the loved chains where they fit and their vibe is free, then the candidate vibes
-    with the best pull for each passage, each vibe once. Past the vibes there are, a vibe comes round again (said in
-    the look's ``why``)."""
+    """One look a passage (``looks`` of the module doc). With ``song_vibes`` "auto" or "all" (or a count no smaller than
+    the passages) each passage its own vibe (``_looks_each``); with a count the passages share at most that many
+    (``_looks_shared``)."""
+    n = vibes_of(state)
+    if n is None or n >= len(passages):
+        return _looks_each(passages, state, loaded=loaded)
+    return _looks_shared(passages, state, n, loaded=loaded)
+
+
+def _looks_each(passages: list[dict], state: dict, *, loaded: list[dict] | None = None) -> list[dict]:
+    """One look a passage: the vibe you chose on the main drop (on the passage its loved chain fits, when the body is
+    one), the loved chains where they fit and their vibe is free, then the candidate vibes with the best pull for each
+    passage, each vibe once. Past the vibes there are, a vibe comes round again (said in the look's ``why``)."""
     from xenoform import morph_pass
     from xenoform import presets as _presets
     from xenoform import vibes
@@ -584,6 +619,276 @@ def looks(passages: list[dict], state: dict, *, loaded: list[dict] | None = None
         take(pick)
         seen.append(pick)
     return [o for o in out if o is not None]
+
+
+# ``song_vibes`` (``share``): what a lone passage pays to share another passage's vibe, the cheapest first (the calm
+# passages, then the outro, a release, the intro, a build); what a group pays to join the main drop's (the vibe you
+# chose): the scenes, then the builds; the drops last of all, the coolest first
+SHARE_COST = {"calm": 0.0, "sustain": 0.0, "outro": 1.0, "release": 2.0, "intro": 3.0, "build": 4.0}
+HOME_COST = {"scene": 5.0, "build": 6.0}
+DROP_SHARE, DROP_HOME = 7.0, 9.0
+
+
+def _kind(p: dict) -> str:
+    """What a passage shares as: a drop run, a build, or a scene (the intro, a calm passage, a release, the outro)."""
+    if p.get("drop_run") is not None or p["role"] in ("drop", "drop_late"):
+        return "drop"
+    return "build" if p["role"] == "build" else "scene"
+
+
+def share(passages: list[dict], n: int) -> list[list[int]]:
+    """The passages as at most ``n`` groups that each share one vibe (``song_vibes``), the main drop's group first.
+
+    Every passage starts on its own; then, the cheapest move first: a calm passage joins another scene's group (a calm
+    one first), then the outro, a release and the intro join the scenes' group, a build another build's; then the
+    scenes' group and the builds' join the main drop's (the vibe you chose); then a drop joins the drop group nearest its
+    heat (the coolest drop first, the nearest in time on a tie), then the drops' looks join one another; and last the
+    drops' look joins the main drop's. So the calm passages and the outro share before the drops do: two vibes are the
+    vibe you chose on the main drop and the rest of the song, and one more on the other drops. Indices into
+    ``passages``; a song with no drop run puts the group of its most important passage (``_importance``) first."""
+    order = _importance(passages)
+    main = next((p["index"] for p in passages if p.get("main")), None)
+    home = main if main is not None else (order[0] if order else 0)
+    groups: dict[int, list[int]] = {p["index"]: [p["index"]] for p in passages}
+
+    def heat(i: int) -> float:
+        return float(passages[i].get("heat") or 0.0)
+
+    def gkind(g: int) -> str:
+        return _kind(passages[groups[g][0]])
+
+    def mid(g: int) -> float:
+        return sum(float(passages[i]["start"]) + float(passages[i]["end"]) for i in groups[g]) / (2.0 * len(groups[g]))
+
+    while len(groups) > max(1, int(n)):
+        moves: list[tuple] = []
+        for g, members in groups.items():
+            if g == home:
+                continue
+            kind = gkind(g)
+            others = [h for h in groups if h not in (g, home) and gkind(h) == kind]
+            p = passages[members[0]]
+            if others and kind == "drop":  # a lone drop first (the coolest), then a drop look joins another
+                warm = sum(heat(i) for i in members) / len(members)
+                into = min(others, key=lambda h: (min(abs(heat(i) - warm) for i in groups[h]), abs(mid(h) - mid(g))))
+                moves.append((DROP_SHARE + (heat(members[0]) if len(members) == 1 else 1.0 + warm), float(p["start"]), g, into))
+            elif others and len(members) == 1:
+                def near(h: int, role: str = p["role"]) -> tuple:  # the same role, then a calm passage's, then the nearest
+                    roles = {passages[i]["role"] for i in groups[h]}
+                    return (0 if role in roles else 1 if roles & {"calm", "sustain"} else 2, abs(mid(h) - mid(g)))
+                moves.append((SHARE_COST.get(p["role"], 3.0), float(p["start"]), g, min(others, key=near)))
+            elif others:  # two scenes' or builds' groups become one before either takes the vibe you chose
+                moves.append((HOME_COST[kind] - 0.5, float(p["start"]), g, min(others, key=lambda h: abs(mid(h) - mid(g)))))
+            cost = DROP_HOME + max(heat(i) for i in members) if kind == "drop" else HOME_COST[kind]
+            moves.append((cost, float(passages[members[0]]["start"]), g, home))
+        if not moves:
+            break
+        _, _, g, into = min(moves)
+        groups[into] = sorted(groups[into] + groups.pop(g))
+    first = groups.pop(home)
+    return [first] + sorted(groups.values(), key=lambda m: min(order.index(i) for i in m))
+
+
+def _shared_tags(row: dict, other: dict | None) -> int:
+    return len(_tags(row) & _tags(other or {}))
+
+
+def _looks_shared(passages: list[dict], state: dict, n: int, *, loaded: list[dict] | None = None) -> list[dict]:
+    """One look a passage with the song kept to at most ``n`` vibes (``song_vibes``): the passages grouped by ``share``,
+    one vibe a group. The main drop's group is the vibe you chose (the loved chain you chose on the passage of it that
+    chain fits best); every other group takes, in the order its passages matter, a loved chain that fits one of its
+    passages and whose vibe is free (the chain's vibe is then the group's, so a loved chain counts toward ``n``), else
+    the free vibe with the best pull for its first passage that differs most from yours (the contrast) and can carry the
+    group. Inside a group a loved chain of the group's vibe takes a passage it fits; the other passages take the vibe
+    with the desk's own settings. Each look says its ``group`` and why."""
+    from xenoform import morph_pass
+    from xenoform import presets as _presets
+    from xenoform import vibes
+
+    loaded = _presets.load() if loaded is None else loaded
+    breathe = pacing.breathe_amount(state)
+    chosen = str(state.get("vibe") or "")
+    cands = candidates(chosen)
+    rows = {r["id"]: r for r in vibes.catalog()}
+    free = [r["id"] for r in cands]
+    order = _importance(passages)
+    groups = share(passages, n)
+    out: list[dict | None] = [None] * len(passages)
+    used_presets: set[str] = set()
+    main = next((p["index"] for p in passages if p.get("main")), None)
+    count = f"{n} vibe{'s' if n != 1 else ''}"
+    room: dict[str, int] = {}
+
+    def take(vibe: str) -> None:
+        if vibe in free:
+            free.remove(vibe)
+
+    def holds(vibe: str, morphs: int) -> bool:
+        if vibe not in room:
+            room[vibe] = capacity(vibe)
+        return room[vibe] >= int(morphs) + 1 + CAPACITY_MARGIN
+
+    def chain_for(i: int, vibe: str | None) -> dict | None:
+        """The loved chain that fits passage ``i`` best (2.0 and over), of ``vibe`` when given, else of a free vibe."""
+        role = passages[i]["role"]
+        fits = sorted(((preset_fit(p, role, breathe), -k, p) for k, p in enumerate(loaded) if p["id"] not in used_presets
+                       and (p["vibe"] == vibe if vibe else p["vibe"] in free)), key=lambda t: (t[0], t[1]), reverse=True)
+        return fits[0][2] if fits and fits[0][0] >= 2.0 else None
+
+    def fill(members: list[int], vibe: str, why: str) -> None:
+        for i in sorted(members, key=order.index):
+            if out[i] is not None:
+                continue
+            p = chain_for(i, vibe)
+            if p is not None:
+                out[i] = {**look_of_preset(p, state), "why": f"a loved chain of the group's vibe ({count})"}
+                used_presets.add(p["id"])
+            elif vibe in rows:
+                out[i] = look_of_vibe(rows[vibe], state, why=why)
+
+    mine = _user_preset(state, loaded)
+    home = groups[0]
+    home_vibe = ""
+    if mine is not None:  # the body is a loved chain: its vibe is the main drop's group, the chain where it fits in it
+        best = max(home, key=lambda i: (preset_fit(mine, passages[i]["role"], breathe), -order.index(i)))
+        at = best if preset_fit(mine, passages[best]["role"], breathe) > 0 else (main if main in home else min(home, key=order.index))
+        out[at] = {**look_of_preset(mine, state), "why": "the loved chain you chose"}
+        used_presets.add(mine["id"])
+        home_vibe = str(mine["vibe"])
+    elif chosen in rows:
+        at = main if main is not None else min(home, key=order.index)
+        pins = {str(k): v for k, v in morph_pass.pins_of(state).items()}
+        out[at] = look_of_vibe(rows[chosen], state, why="the vibe you chose, on the main drop" if main is not None
+                               else "the vibe you chose", pins=pins)
+        home_vibe = chosen
+    if home_vibe:
+        take(home_vibe)
+        fill(home, home_vibe, "the vibe you chose carries the whole song" if n == 1 else
+             f"the vibe you chose, shared: the song keeps to {count}")
+    rest = groups[1:] if home_vibe else groups
+    for k, members in enumerate(rest):
+        lead = sorted(members, key=order.index)
+        placed = next(((i, p) for i in lead for p in [chain_for(i, None)] if p is not None), None)
+        drops = all(_kind(passages[i]) == "drop" for i in members)
+        if placed is not None:
+            i, p = placed
+            out[i] = look_of_preset(p, state)
+            used_presets.add(p["id"])
+            vibe = str(p["vibe"])
+        else:
+            role = passages[lead[0]]["role"]
+            pool = free or [r["id"] for r in cands if r["id"] != home_vibe] or [r["id"] for r in cands]
+            total = sum(int(passages[i].get("morphs") or 0) for i in members)
+            biggest = max(int(passages[i].get("morphs") or 0) for i in members)
+            pool = [v for v in pool if holds(v, total)] or [v for v in pool if holds(v, biggest)] or pool
+            home_row = rows.get(home_vibe)
+            vibe = max(pool, key=lambda v: (affinity(rows.get(v) or {}, role), -_shared_tags(rows.get(v) or {}, home_row),
+                                            -pool.index(v)))
+            why = ("drawn by taste for contrast on the other drops" if n == 2 and drops and home_vibe else
+                   f"drawn by taste for {'these passages' if len(members) > 1 else 'this passage'}: the song keeps to {count}")
+            out[lead[0]] = look_of_vibe(rows[vibe], state, why=why)
+        take(vibe)
+        fill(members, vibe, f"sharing the vibe of passage {lead[0] + 1}: the song keeps to {count}")
+    for gi, members in enumerate(groups):
+        for i in members:
+            if out[i] is None:  # a group whose vibe the catalogue no longer has: its first passage's look, else yours
+                ref = next((out[j] for j in members if out[j] is not None), None)
+                row = rows.get(str((ref or {}).get("vibe") or home_vibe or chosen)) or cands[0]
+                out[i] = look_of_vibe(row, state, why=f"sharing a vibe: the song keeps to {count}")
+            out[i]["group"] = gi
+    return [o for o in out if o is not None]
+
+
+# ------------------------------------------------------------------------------------------------ the hero
+
+
+HERO_SLOT = 1   # the main drop's first shot morphs from slot 0 and lands on slot 1: the hero
+
+
+def heroes() -> dict[str, dict]:
+    """``configs/vibe_heroes.json``'s heroes: a vibe's card object as a library still ({vibe: {still, card}}), {} without
+    the file. ``XENO_HEROES`` points at another file."""
+    import json
+    import os
+
+    path = Path(os.environ.get("XENO_HEROES") or Path(__file__).resolve().parents[2] / "configs" / "vibe_heroes.json")
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    rows = data.get("heroes") if isinstance(data, dict) else None
+    return {str(k): v for k, v in (rows or {}).items() if isinstance(v, dict) and v.get("still")}
+
+
+def hero_still(vibe: str) -> tuple[str, str, str] | None:
+    """A vibe's hero object: its card's object (``heroes``) when the vibe's library holds it and the taste file allows
+    it, else its first shipped object the taste file allows. ``(file, noun, why)``, None for a vibe with no object."""
+    from xenoform import morph_pass, stills, taste
+
+    cat = morph_pass.catalogue()
+    pool = morph_pass.vibe_for({"vibe": vibe})
+    rows = list(cat.get(vibe) or []) + (list(cat.get(pool) or []) if pool != vibe else [])
+    usable = taste.usable([r for r in rows if stills.kind_of(r) == "object" and r.get("file")])
+    card = heroes().get(vibe) or {}
+    row = next((r for r in usable if str(r.get("file")) == str(card.get("still") or "")), None)
+    if row is not None:
+        return str(row["file"]), str(row.get("noun") or ""), f"the vibe's card object ({card.get('card') or row.get('noun')})"
+    row = next((r for r in usable if r.get("shipped")), None) or (usable[0] if usable else None)
+    return (str(row["file"]), str(row.get("noun") or ""), "the vibe's first still") if row is not None else None
+
+
+def hero_preview(state: dict) -> dict | None:
+    """The hero the desk can name before the plan picks anything (the estimate): the first object the desk pins, else
+    the chosen vibe's card object (``hero_still``). ``{"still", "noun", "why"}`` or None."""
+    from xenoform import morph_pass
+
+    pins = {int(k): str(v) for k, v in morph_pass.pins_of(state).items()}
+    if pins:
+        still = pins[min(pins)]
+        noun = next((str(r.get("noun") or "") for rows in morph_pass.catalogue().values() for r in rows
+                     if str(r.get("file")) == still), "")
+        return {"still": still, "noun": noun, "why": "your first pinned object"}
+    found = hero_still(str(state.get("vibe") or ""))
+    return {"still": found[0], "noun": found[1], "why": found[2]} if found else None
+
+
+def place_hero(song: dict) -> dict | None:
+    """A hero object opens the main drop (docs/SONG.md): the main drop run's first shot lands on the hero of its look,
+    pinned into that passage's first window at ``HERO_SLOT``. The hero is the first object the look's pins hold (yours on
+    the desk, or the loved chain's), the pins then moved along so it sits there and they keep their order (a pin past
+    the window's stills drops out), else the look's vibe's card object (``hero_still``). In place: the window's
+    ``chain_pins`` and ``hero``, the passage's ``hero``; returns the record's ``hero`` (None: no main drop)."""
+    from xenoform import morph_pass
+
+    main = next((p for p in song["passages"] if p.get("main")), None)
+    if main is None or not main.get("windows"):
+        return None
+    w = song["windows"][main["windows"][0]]
+    look = main.get("look") or {}
+    slots = int(w["morphs"]) + 1
+    pins = {int(k): str(v) for k, v in (w["body"].get("chain_pins") or {}).items() if str(k).isdigit()}
+    if pins:
+        first = min(pins)
+        still = pins[first]
+        moved = {k - first + HERO_SLOT: f for k, f in pins.items() if 0 <= k - first + HERO_SLOT < slots}
+        noun = next((str(r.get("noun") or "") for rows in morph_pass.catalogue().values() for r in rows
+                     if str(r.get("file")) == still), "")
+        why = "the loved chain's first object" if look.get("preset") else "your first pinned object"
+    else:
+        found = hero_still(str(look.get("vibe") or ""))
+        if found is None:
+            return None
+        still, noun, why = found
+        moved = {HERO_SLOT: still}
+    if slots <= HERO_SLOT:
+        return None
+    w["body"]["chain_pins"] = {str(k): f for k, f in sorted(moved.items())}
+    w["hero"] = still
+    main["hero"] = still
+    first = ((w.get("plan") or {}).get("shots") or [None])[0]  # the shot it lands on: a whole bar (pacing.HERO_BEATS)
+    hold = round(float(first["end"]) - float(first["start"]), 3) if first else None
+    return {"still": still, "noun": noun, "why": why, "vibe": str(look.get("vibe") or ""), "passage": int(main["index"]),
+            "window": int(w["index"]), "slot": HERO_SLOT, "at": float(main["start"]), "hold_s": hold}
 
 
 # ------------------------------------------------------------------------------------------------ the bodies
@@ -683,6 +988,8 @@ def _hold_pins(song: dict, noun_of: dict[str, str]) -> None:
         look = song["passages"][w["passage"]].get("look") or {}
         if w["part"]:
             kept[w["index"]] = {}
+        elif w.get("hero"):  # the main drop opens on its hero: its pins stay where place_hero put them, and keep the object
+            kept[w["index"]] = raw
         elif look.get("preset") and look.get("why") != "the loved chain you chose":
             chains[w["index"]] = [raw[k] for k in sorted(raw, key=int)]
         else:
@@ -716,7 +1023,47 @@ def _hold_pins(song: dict, noun_of: dict[str, str]) -> None:
         w["body"]["chain_pins"] = held(w)
 
 
-def objects(song: dict, features: dict) -> None:
+def _avoid(body: dict, w: dict, taken: dict[int, tuple[list[str], list[str]]], held: list[str], noun_of: dict[str, str], *,
+           again: bool = False) -> tuple[list[str], list[str], list[str]]:
+    """What a window's pick leaves out: every object the windows picked before it took (by name and by still) and the
+    objects the other windows hold pinned. With ``again`` (a song kept to fewer vibes, ``song_vibes``), when the window's
+    vibe's library cannot then carry it (one vibe's 27 objects for a whole song's 76 stills), objects of its library come
+    round again, as few as it needs: the ones the song has shown least, then those shown farthest from it in the song;
+    another window's pins never do. Returns the names, the stills and the names let back in."""
+    from xenoform import dense, morph_pass
+
+    shown: dict[str, int] = {}
+    near: dict[str, int] = {}
+    for k, (ns, _) in taken.items():
+        d = abs(int(k) - int(w["index"]))
+        for n in set(ns):
+            shown[n] = shown.get(n, 0) + 1
+            near[n] = min(near.get(n, d), d)
+    pinned = set(held)
+    nouns = set(near) | pinned
+    files = {f for _, fs in taken.values() for f in fs}
+    need = int(w.get("morphs") or 0) + 1
+
+    def room() -> int:
+        return dense.chain_pool({**body, "avoid_nouns": sorted(nouns), "avoid_stills": sorted(files)}, avoided=True)
+
+    back: list[str] = []
+    if again and near and room() < need:
+        cat = morph_pass.catalogue()
+        mine = {str(r.get("noun") or "").strip().lower() for v in {morph_pass.vibe_for(body), str(body.get("vibe") or "")}
+                for r in cat.get(v) or []}
+        queue = sorted((n for n in near if n in mine and n not in pinned), key=lambda n: (shown[n], -near[n], n))
+        while queue and room() < need:
+            step, queue = queue[:max(1, need - room())], queue[max(1, need - room()):]
+            for n in step:
+                nouns.discard(n)
+                files -= {f for f in list(files) if noun_of.get(f, "") == n}
+                back.append(n)
+    order = [f for k in sorted(taken) for f in taken[k][1]]
+    return sorted(nouns), [f for f in dict.fromkeys(order) if f in files], back
+
+
+def objects(song: dict, features: dict, *, again: bool = False) -> None:
     """The stills each window morphs through, picked the way its Make picks them (the chain it plans, the pick under the
     taste file, a fresh family on a drop run's first beat, one family a scene under full Breathe), the objects of every
     window picked before it left out (no object twice across passages) and pinned slot by slot in its body. The windows
@@ -731,8 +1078,7 @@ def objects(song: dict, features: dict) -> None:
                for rows in morph_pass.catalogue().values() for r in rows if r.get("file")}
     _hold_pins(song, noun_of)  # a loved chain's pins (and yours) are held: no window before them takes those objects
     reserved ={w["index"]: [noun_of.get(str(f), "") for f in w["body"]["chain_pins"].values()] for w in song["windows"]}
-    taken_nouns: list[str] = []
-    taken_files: list[str] = []
+    taken: dict[int, tuple[list[str], list[str]]] = {}  # window -> the objects (by name) and stills it took
     order = [k for i in _importance(song["passages"]) for k in song["passages"][i]["windows"]]
     for w in (song["windows"][k] for k in order):
         body = w["body"]
@@ -741,8 +1087,9 @@ def objects(song: dict, features: dict) -> None:
             if prev.get("stills"):
                 body["chain_pins"] = {"0": prev["stills"][-1]}
         held = [n for k, nouns in reserved.items() if k != w["index"] for n in nouns if n]
-        body["avoid_nouns"] = sorted(set(taken_nouns) | set(held))
-        body["avoid_stills"] = list(dict.fromkeys(taken_files))
+        body["avoid_nouns"], body["avoid_stills"], back = _avoid(body, w, taken, held, noun_of, again=again)
+        if back:
+            w["again"] = back  # the vibe's library ran out for this window: these objects come round from passages far off
         directed = directed_for(features, w)
         shots, plan = dense.shots_for(body, directed, None, drop=w["plan"].get("drop"))
         shots, plan, chain, _ = dense.long_song_chain(body, directed, None, shots, plan, dense.options(body), grow=False)
@@ -763,8 +1110,12 @@ def objects(song: dict, features: dict) -> None:
         w["families"] = sorted({str(r.get("family") or "") for r in pool if r.get("family")})
         w["morphs"] = int(chain["morphs"])
         body["chain_pins"] = {str(i): f for i, f in enumerate(w["stills"])}
-        taken_nouns += [n.strip().lower() for n in w["nouns"] if n.strip()]
-        taken_files += w["stills"]
+        taken[w["index"]] = ([n.strip().lower() for n in w["nouns"] if n.strip()], list(w["stills"]))
+        if w.get("again"):
+            mine = {n.strip().lower() for n in w["nouns"]}
+            w["again"] = [n for n in w["again"] if n in mine]
+            if not w["again"]:
+                w.pop("again")
     for w in song["windows"]:
         others = {n.strip().lower() for v in song["windows"] if v is not w for n in v.get("nouns") or [] if n.strip()}
         w["body"]["avoid_nouns"] = sorted(others - {n.strip().lower() for n in w.get("nouns") or []})
@@ -876,8 +1227,23 @@ def estimate(song: dict, *, aspect: str = "16:9", rates: dict | None = None) -> 
 # ------------------------------------------------------------------------------------------------ the plan
 
 
+def vibes_record(song: dict, state: dict) -> dict:
+    """The record's ``vibes``: what ``song_vibes`` asked (``choice``: "auto", "all" or a count), the vibes the looks
+    drew in song order and how many, and the objects that came round again because a vibe's library ran out
+    (``again``: the windows' names for them, ``_avoid``). Only the choice before the looks are drawn (the estimate)."""
+    out: dict = {"choice": vibes_choice(state)}
+    drawn = [str((p.get("look") or {}).get("vibe") or "") for p in song.get("passages") or []]
+    if any(drawn):
+        used = list(dict.fromkeys(v for v in drawn if v))
+        out.update({"count": len(used), "vibes": used})
+        again = sorted({n for w in song.get("windows") or [] for n in w.get("again") or []})
+        if again:
+            out["again"] = again
+    return out
+
+
 def summary_line(song: dict) -> str:
-    """"14 passages, 78 morphs; 5 drops, the main at 2:21" for the desk and the record."""
+    """"14 passages, 77 morphs; 5 drops, the main at 2:21" for the desk and the record."""
     runs = [p for p in song["passages"] if p.get("drop_run") is not None]
     main = next((p for p in runs if p.get("main")), runs[0] if runs else None)
     bits = [f"{len(song['passages'])} passage{'s' if len(song['passages']) != 1 else ''}",
@@ -933,8 +1299,10 @@ def plan(features: dict, state: dict, *, drop: float | None, song_id: str = "", 
             w["body"] = window_body(base, p["look"], ctx, w["plan"], w, label=f"{name} · {where}",
                                     seed=seed0 + SEED_STEP * w["index"], song_id=song_id)
         if not clips:  # a clips song shows your clips, no object (clip_cut picks them in the Make)
-            objects(song, features)
+            song["hero"] = place_hero(song)  # a hero object opens the main drop, pinned before the objects are picked
+            objects(song, features, again=vibes_of(state) is not None)
         song["morphs"] = sum(int(w["morphs"]) for w in windows)
+    song["vibes"] = vibes_record(song, state)
     song["line"] = summary_line(song)
     song["estimate"] = estimate(song, aspect=song["aspect"], rates=rates)
     song.pop("beats", None)
@@ -944,7 +1312,8 @@ def plan(features: dict, state: dict, *, drop: float | None, song_id: str = "", 
 
 
 def table(song: dict) -> list[dict]:
-    """The passage table (the proof's README, the record): passage, role, song seconds, vibe, morphs, looks a minute."""
+    """The passage table (the proof's README, the record): passage, role, song seconds, vibe, morphs, looks a minute,
+    the objects, the heat, the main drop, why the look was drawn and the group it shares a vibe with (``song_vibes``)."""
     rows = []
     for p in song["passages"]:
         secs = max(1e-6, float(p["end"]) - float(p["start"]))
@@ -953,7 +1322,8 @@ def table(song: dict) -> list[dict]:
                      "end": round(float(p["end"]), 2), "seconds": round(secs, 1), "vibe": look.get("vibe") or "",
                      "preset": look.get("preset") or "", "morphs": int(p.get("morphs") or 0),
                      "looks_a_minute": round(int(p.get("morphs") or 0) * 60.0 / secs, 1),
-                     "objects": list(p.get("objects") or []), "heat": p.get("heat")})
+                     "objects": list(p.get("objects") or []), "heat": p.get("heat"), "main": bool(p.get("main")),
+                     "why": look.get("why") or "", "group": look.get("group")})
     return rows
 
 

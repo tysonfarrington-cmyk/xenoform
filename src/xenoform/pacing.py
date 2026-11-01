@@ -198,6 +198,7 @@ QUIET_END = 0.6     # a last passage under this share of the loudest is the outr
 # the drop treatment (plan section 3): what every drop run gets, scaled by its heat
 ENTRY_BARS = 2      # a hot run's first bars cut on the half bar (the only 2-beat shots a run has)
 ENTRY_HEAT = 0.8    # ...from this heat
+HERO_BEATS = 4      # a whole song's hero holds a bar: the main run's opening shot, the one song_plan.place_hero lands on
 RAMP_BARS = 4       # the bars before a run that ramp into it: shots halved, Intensity up, dither in, a longer foreshadow
 EVENT_BARS = 8      # a long run plants an event (a style change or a boundary kind) every this many bars
 HIT_SNAP_S = 0.09   # a drum hit this close to a beat makes it a ramp's cut (stem_react's drum_strong)
@@ -290,22 +291,78 @@ def drop_runs(rows: list[dict], drop: float | None, period: float, mode: str = D
     return main
 
 
-def main_drop(features: dict, drop: float | None) -> float | None:
-    """The first beat of the song's main drop run (``drop_runs`` on its own analysis), which a prototype window is cut
-    around: the drop time alone can sit on a riser or on a build well before the drop (Ambient: 120 s, against the drop
-    the analysis puts at 143 s, so its 30 s prototype held no drop at all). ``drop`` when the song has no drop run."""
+def heaviest(runs: list[dict]) -> int | None:
+    """Which drop run is the song's main one (decided 1 Nov): the heaviest by its heat times its length (``seconds``,
+    else ``end - start``), not the loudest moment's run alone; a tie goes to the run the song's drop opens (``opens``),
+    then to the earlier. The index into ``runs``, None for none. The whole-song planner (``song_plan.main_run``), the
+    desk's drop card and the prototype window (``main_run``) all choose by it."""
+    if not runs:
+        return None
+
+    def weight(k: int) -> tuple:
+        r = runs[k]
+        secs = float(r["seconds"]) if r.get("seconds") is not None else float(r.get("end") or 0.0) - float(r.get("start") or 0.0)
+        return (round(float(r.get("heat") or 0.0) * secs, 2), bool(r.get("opens")), -k)
+
+    return max(range(len(runs)), key=weight)
+
+
+def main_run(features: dict, drop: float | None, drop_mode: str = DROP_MODE_DEFAULT) -> dict | None:
+    """The song's main drop run as the whole-song planner picks it: the drop-run passages of ``song_plan`` on the song's
+    own analysis (Drops "max" heats every run full; "off" plans as "auto" here, so a prototype still finds the run),
+    the heaviest by ``heaviest``. ``{"start", "end", "seconds", "heat", "drop_run", "runs", "opens"}`` (song time;
+    ``runs`` how many drop runs the song has, ``opens`` whether the song's drop opens this one), None when the song has
+    no drop run or fewer than two sections."""
     from xenoform import dense
 
     duration = float(features.get("duration") or 0.0)
     sections = dense._analysis_sections(features)
     if duration <= 0 or len(sections) < 2:
-        return drop
-    grid = grid_for(list(features.get("beats") or []), duration, features.get("tempo"))
-    period = _median_gap(grid) or 0.5
-    rows = dense._story_roles(sections, duration, min_len=max(6.0, 8 * period))
-    rows = split_at_drop(refine_roles(rows, sections, period=period), drop, period)
-    main = drop_runs(rows, drop, period)
+        return None
+    mode = drop_mode if drop_mode in ("auto", "max") else DROP_MODE_DEFAULT
+    plan = song_plan(duration, list(features.get("beats") or []), sections, drop, breathe=0.0, drop_mode=mode,
+                     tempo=features.get("tempo"))
+    runs = [p for p in plan.get("passages") or [] if "drop_run" in p]
+    k = heaviest([{"heat": p.get("heat"), "start": p["start"], "end": p["end"], "opens": bool(p.get("main"))} for p in runs])
+    if k is None:
+        return None
+    p = runs[k]
+    return {"start": round(float(p["start"]), 4), "end": round(float(p["end"]), 4),
+            "seconds": round(float(p["end"]) - float(p["start"]), 3), "heat": float(p.get("heat") or 0.0),
+            "drop_run": int(p["drop_run"]), "runs": len(runs), "opens": bool(p.get("main"))}
+
+
+def main_drop(features: dict, drop: float | None, drop_mode: str = DROP_MODE_DEFAULT) -> float | None:
+    """The first beat of the song's main drop run (``main_run``: the heaviest by heat times length, as the whole-song
+    planner picks it), which a prototype window is cut around: the drop time alone can sit on a riser or on a build well
+    before the drop (Ambient: 120 s, against the drop the analysis puts at 143 s, so its 30 s prototype held no drop at
+    all), and the loudest run can be a few seconds long beside a longer one (ZedsDead v1: 5.3 s at 2:20, then 23.7 s at
+    2:25). ``drop`` when the song has no drop run."""
+    main = main_run(features, drop, drop_mode)
     return round(float(main["start"]), 4) if main is not None else drop
+
+
+PROTO_LEAD = 0.45   # a prototype window holds its main drop run's first beat this far in (the build before it, then the run)
+
+
+def prototype_window(features: dict, drop: float | None, length_s: float, *, paced: bool = True,
+                     drop_mode: str = DROP_MODE_DEFAULT) -> dict | None:
+    """Where a Length window (the 30 s prototype) sits in the song, one rule for the Make's trim, the desk's estimate
+    and its drop card: around the main drop run (``main_run``) when the cut is paced, its first beat ``PROTO_LEAD`` of
+    the way in, else around ``drop`` (or 60 % in, with no drop); kept inside the song and started on a beat at or before.
+    ``{"start", "end", "length_s", "anchor", "main"}``; None when no window applies (no length, a song that short)."""
+    duration = float(features.get("duration") or 0.0)
+    length_s = float(length_s or 0.0)
+    if length_s <= 0 or duration <= 0 or duration <= length_s + 1.0:
+        return None
+    main = main_run(features, drop, drop_mode) if paced else None
+    anchor = float(main["start"]) if main is not None else (float(drop) if drop is not None else duration * 0.6)
+    start = max(0.0, min(anchor - length_s * PROTO_LEAD, duration - length_s))
+    earlier = [float(b) for b in features.get("beats") or [] if float(b) <= start + 1e-6]
+    if earlier:
+        start = max(earlier)
+    return {"start": round(start, 4), "end": round(start + length_s, 4), "length_s": length_s, "anchor": round(anchor, 4),
+            "main": main}
 
 
 def given_roles(sections: list[dict]) -> bool:
@@ -354,7 +411,7 @@ def breathe_table(amount) -> dict:
 def song_plan(duration: float, beats: list, sections: list[dict], drop: float | None = None, *,
               max_shots: int | None = None, target: int | None = None, breathe: bool | float = False,
               drop_mode: str = DROP_MODE_DEFAULT, pace: str = "viscous", tempo: float | None = None,
-              hits: list | None = None) -> dict:
+              hits: list | None = None, hold_main: bool = False) -> dict:
     """The music-video cut for a whole song or a window of one, with roles, on the beat grid (``grid_for``).
 
     Every passage (a run of one role, its start pinned on the beat the analysis put it) cuts on the bar lines at its
@@ -363,8 +420,12 @@ def song_plan(duration: float, beats: list, sections: list[dict], drop: float | 
     the plan's own count) are met by changing the beats a shot by role: the calm passages give up morphs first and get
     them last, the drops the other way round. ``breathe`` is an amount (``amount_of``): from three quarters the scene
     passages hold and rest after every morph (``SCENE_ROLES``, ``MORPH_BEATS``) and the budget never stretches them
-    past ``SCENE_MAX`` (a Breathe cut may spend fewer morphs than it could). Returns ``dense.story_plan``'s shape
-    (``name`` "story", ``drop``, ``shots`` with ``section`` and ``boundary``, ``roles``) plus ``passages``."""
+    past ``SCENE_MAX`` (a Breathe cut may spend fewer morphs than it could). ``hold_main`` (a whole song's plan,
+    ``song_plan.whole``): the main drop run, the heaviest by heat times length (``heaviest``: the run
+    ``song_plan.main_run`` picks and its hero opens), opens on one shot of a whole bar (``HERO_BEATS``, marked
+    ``hero_bar``), its event and punch on its first beat, and a hot run's half-bar entry shots start from its second
+    bar. Returns ``dense.story_plan``'s shape (``name`` "story", ``drop``, ``shots`` with ``section`` and
+    ``boundary``, ``roles``) plus ``passages``."""
     from xenoform import dense
 
     amount = amount_of(breathe)
@@ -421,6 +482,13 @@ def song_plan(duration: float, beats: list, sections: list[dict], drop: float | 
     for p, q in zip(passages, passages[1:] + [None]):
         p["i1"] = q["i0"] if q else len(grid)
         p["end"] = q["start"] if q else duration
+    held = None  # hold_main: the passage of the run whose opening shot holds a bar (its seconds as song_plan rounds them)
+    if hold_main and per_run:
+        run_ps = [pi for pi, p in enumerate(passages) if "drop_run" in p]
+        k_main = heaviest([{"heat": passages[pi]["heat"], "opens": bool(passages[pi].get("main")),
+                            "seconds": round(round(passages[pi]["end"], 4) - round(passages[pi]["start"], 4), 3)}
+                           for pi in run_ps])
+        held = run_ps[k_main] if k_main is not None else None
 
     def zone_role(p: dict, k: int) -> str:
         if p["role"] != "drop":
@@ -493,6 +561,8 @@ def song_plan(duration: float, beats: list, sections: list[dict], drop: float | 
                     step *= BREATHE_FIRST  # the intro opens on one long shot
                 elif breathe and bold > 0 and role == "build" and 2 * (k - p["i0"]) >= p["i1"] - p["i0"]:
                     step = max(4, step // 2)  # a build tightens: its second half a bar a shot
+                if first and pi == held:  # the hero holds a bar: the main run opens on a whole bar, the entry after it
+                    step = max(step, HERO_BEATS)
                 nxt = k + step
                 # land the next cut on a bar line (the montage cut on beat 1); a drop run counts its bars from its own
                 # first beat, pinned where the drop hits
@@ -624,6 +694,8 @@ def song_plan(duration: float, beats: list, sections: list[dict], drop: float | 
             shot.update({"drop_run": p["drop_run"], "heat": p["heat"]})
         if ramp is not None:
             shot["ramp"] = ramp
+        if starts and held is not None and pi == held:
+            shot["hero_bar"] = True  # the main run's opening shot, a whole bar: the one a whole song's hero lands on
         if entry:
             shot["event"] = "drop"
         elif per_run and "drop_run" in p:  # a long run does not go flat: an event every EVENT_BARS bars of it

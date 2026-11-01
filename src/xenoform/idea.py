@@ -363,6 +363,15 @@ def split_feel(line: str) -> tuple[str, str]:
     return ", ".join(g for g in groups if g not in feel), ", ".join(feel)
 
 
+def _names(chunk: list[str], words: frozenset) -> bool:
+    """A chunk names one of ``words`` as a whole noun: the word is the head of its noun phrase, not the first word of a
+    longer one (``anchors.head_follower``: "a sea angel" is an angel, not the sea; "moon jellyfish" is a jellyfish; "a
+    flooded car park" is a park; "under the sea", "a cyberpunk city" are the sea and the city)."""
+    from xenoform.anchors import head_follower
+
+    return any(w in words and (k + 1 >= len(chunk) or head_follower(chunk[k + 1])) for k, w in enumerate(chunk))
+
+
 def _chunks(group: str) -> list[list[str]]:
     """A comma group split at the prepositions that introduce a place, each chunk its words (the preposition kept
     in front): "girl dancing to rave music in a cyberpunk city outside warehouse" -> four chunks."""
@@ -528,8 +537,9 @@ def read(line: str, vibe: str = "", *, llm: bool | None = None) -> dict:
                 objects.append(noun)
         named_family = _family_label(group, labels)  # "sea creatures" names a family, not the sea
         music_chunks = [c for c in chunks if any(w in MUSIC for w in c)]  # "to rave music" is the song, not a place
-        place_chunks = [c for c in chunks if c not in music_chunks and any(w in PLACES for w in c)]
-        sky_chunks = [c for c in chunks if c not in place_chunks and c not in music_chunks and any(w in SKIES for w in c)]
+        # a place or a sky the chunk names as a whole noun (_names): "a sea angel" and "moon jellyfish" name neither
+        place_chunks = [c for c in chunks if c not in music_chunks and _names(c, PLACES)]
+        sky_chunks = [c for c in chunks if c not in place_chunks and c not in music_chunks and _names(c, SKIES)]
         if not named_family and (place_chunks or (sky_chunks and not found)):
             # a place with its light: "in a cyberpunk city outside warehouse" + "in the rain" -> "a cyberpunk city outside
             # a warehouse in the rain"; sky chunks alone ("under a red moon") are a scene too when nothing else is named.

@@ -597,7 +597,8 @@ def create_app(cfg: dict | None = None):
             raise HTTPException(400, "Load a song before rewriting the storyboard.")
         return cached
 
-    def _song_plan_inputs(audio_id: str, length_s: float, length_start=None, paced: bool = True) -> dict | None:
+    def _song_plan_inputs(audio_id: str, length_s: float, length_start=None, paced: bool = True,
+                          drop_mode: str = "auto") -> dict | None:
         """The loaded song cut to the window the Make will trim (``_window_features``) and its drop, for the desk's
         estimate; None when no song is loaded under ``audio_id`` (the estimate then plans a grid of the BPM)."""
         if not audio_id or audio_id == "demo":
@@ -608,7 +609,7 @@ def create_app(cfg: dict | None = None):
         if not feats or audio is None or not Path(audio).is_file():
             return None
         try:
-            win, start, drop = _window_features(feats, Path(audio), length_s, length_start, paced=paced)
+            win, start, drop = _window_features(feats, Path(audio), length_s, length_start, paced=paced, drop_mode=drop_mode)
         except Exception:
             log.exception("song plan inputs")
             return None
@@ -673,9 +674,15 @@ def create_app(cfg: dict | None = None):
         except Exception:
             log.exception("whole song estimate")
             return None
+        hero = None
+        if not song_plan.clips_song(body) and any(p.get("main") for p in got["passages"]):
+            try:  # the object the main drop opens on (song_plan.place_hero): the chosen vibe's card object (the desk
+                hero = song_plan.hero_preview(body)  # says so itself when its Chain row pins one)
+            except Exception:
+                log.exception("whole song hero")
         return {"morphs": got["morphs"], "passages": len(got["passages"]), "windows": len(got["windows"]),
                 "line": got["line"], "estimate": got["estimate"], "title": got["title"], "cap": got["cap"],
-                "window_cap": got["window_cap"], "duration": got["duration"],
+                "window_cap": got["window_cap"], "duration": got["duration"], "hero": hero,
                 "roles": [{"role": p["role"], "start": p["start"], "end": p["end"], "morphs": p["morphs"],
                            "heat": p.get("heat"), "main": bool(p.get("main"))} for p in got["passages"]]}
 
@@ -793,6 +800,29 @@ def create_app(cfg: dict | None = None):
         threading.Thread(target=run, name=f"recut-{job_id}", daemon=True).start()
         return {"id": job_id, "status": "running"}
 
+    def _stems_layer_for_edit(rec: dict, body: dict) -> str | None:
+        """A Stems cut's swap or re-render is one layer's (``stems_mode.layer_edit``): the body's ``layer``, a stem the
+        cut has, else a plain-words 400. None for a plain cut."""
+        if str(rec.get("mode") or "") != "stems":
+            return None
+        from xenoform import stems_mode as _sm
+
+        try:
+            return str(_sm.layer_of(rec, body.get("layer"))["stem"])
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+
+    def _no_stems_run(folder: Path) -> None:
+        """Generate here and Dream act on one cut: a Stems cut refuses them with the note the desk shows."""
+        try:
+            rec = json.loads((folder / "simple" / "simple.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return
+        if str(rec.get("mode") or "") == "stems":
+            from xenoform import stems_mode as _sm
+
+            raise HTTPException(400, _sm.LAYER_ONLY)
+
     @app.post("/api/jobs/{job_id}/swap")
     def swap_job(job_id: str, body: dict | None = None) -> dict:
         """Swap one still of a finished Simple cut (``dense.swap_still``): the two morphs that touch it are re-rendered
@@ -828,6 +858,19 @@ def create_app(cfg: dict | None = None):
             raise HTTPException(400, "This cut's record did not read.")
         from xenoform.dense import library_row
 
+        layer = _stems_layer_for_edit(rec, body)  # a Stems cut: the swap is one layer's, its record checked here
+        if layer is not None:
+            from xenoform import stems_mode as _sm
+
+            try:
+                _row, layer_rec = _sm.layer_record(rec, layer)
+            except (OSError, ValueError) as exc:
+                raise HTTPException(400, f"The {layer} layer's record did not read: make the cut again. ({exc})") from exc
+            other = _sm.taken_elsewhere(rec, layer, file)
+            if other:
+                raise HTTPException(400, f"{file.split('/')[-1]} is in the {other} layer already: an object shows once "
+                                         "across the layers.")
+            rec = layer_rec
         files = [str(f) for f in rec.get("stills") or []]
         if not 0 <= slot < len(files):
             raise HTTPException(400, f"This cut has {len(files)} stills; slot {slot} is not one of them.")
@@ -847,7 +890,13 @@ def create_app(cfg: dict | None = None):
 
         def run() -> None:
             try:
-                rec = swap_still(folder, slot, file, cfg=cfg, report=on_progress)
+                if layer is not None:  # the layer's two morphs, its re-cut, then the layers laid together again (no GPU)
+                    from xenoform import stems_mode as _sm
+
+                    rec = _sm.layer_edit(folder, layer, lambda d, rep: swap_still(d, slot, file, cfg=cfg, report=rep),
+                                         kind="swap", report=on_progress, detail={"slot": slot, "file": file})
+                else:
+                    rec = swap_still(folder, slot, file, cfg=cfg, report=on_progress)
                 with _LOCK:
                     version = int(job.get("video_version") or 0) + 1
                     job.update({"status": "done", "stage": "done", "progress": 1.0, "video_version": version,
@@ -951,6 +1000,14 @@ def create_app(cfg: dict | None = None):
             rec = json.loads((folder / "simple" / "simple.json").read_text(encoding="utf-8"))
         except ValueError:
             raise HTTPException(400, "This cut's record did not read.")
+        layer = _stems_layer_for_edit(rec, body)  # a Stems cut: the shot is one layer's, its record checked here
+        if layer is not None:
+            from xenoform import stems_mode as _sm
+
+            try:
+                rec = _sm.layer_record(rec, layer)[1]
+            except (OSError, ValueError) as exc:
+                raise HTTPException(400, f"The {layer} layer's record did not read: make the cut again. ({exc})") from exc
         shots = list(rec.get("plan_shots") or rec.get("shots") or [])
         if not 0 <= shot < len(shots):
             raise HTTPException(400, f"This cut has {len(shots)} shots; shot {shot} is not one of them.")
@@ -962,11 +1019,22 @@ def create_app(cfg: dict | None = None):
         if under:
             raise HTTPException(400, f"Shot {shot + 1} is {under}: it plays no morph of the chain to re-render.")
         with _LOCK:
-            job.update({"status": "running", "stage": "restyle", "progress": 0.05, "detail": f"Re-rendering shot {shot + 1}'s morph", "error": None})
-        _run_edit(job, job_id, "rerender", "Re-render ready", "The re-render did not run.",
-                  lambda report: rerender_morph(folder, shot, seed=seed, render_s=render_s, variant=variant, style=style, cfg=cfg,
-                                                report=report))
-        return {"id": job_id, "status": "running", "shot": shot, "seed": seed, "render_s": render_s, "variant": variant, "style": style}
+            job.update({"status": "running", "stage": "restyle", "progress": 0.05, "error": None,
+                        "detail": f"Re-rendering shot {shot + 1}'s morph" + (f" on the {layer} layer" if layer else "")})
+
+        def rerender(report):
+            go = lambda d, rep: rerender_morph(d, shot, seed=seed, render_s=render_s, variant=variant,  # noqa: E731
+                                               style=style, cfg=cfg, report=rep)
+            if layer is None:
+                return go(folder, report)
+            from xenoform import stems_mode as _sm  # one layer's morph and re-cut, then the layers laid again (no GPU)
+
+            return _sm.layer_edit(folder, layer, go, kind="rerender", report=report,
+                                  detail={"shot": shot, "seed": seed, "render_s": render_s, "variant": variant, "style": style})
+
+        _run_edit(job, job_id, "rerender", "Re-render ready", "The re-render did not run.", rerender)
+        return {"id": job_id, "status": "running", "shot": shot, "seed": seed, "render_s": render_s, "variant": variant, "style": style,
+                **({"layer": layer} if layer else {})}
 
     @app.post("/api/jobs/{job_id}/insert")
     def insert_job(job_id: str, body: dict | None = None) -> dict:
@@ -977,6 +1045,7 @@ def create_app(cfg: dict | None = None):
 
         body = body or {}
         job, folder = _cut_job_for_edit(job_id, "generate into")
+        _no_stems_run(folder)  # a Stems cut: not on a layer yet, said plainly
         try:
             first = int(body.get("first"))
         except (TypeError, ValueError):
@@ -1023,6 +1092,7 @@ def create_app(cfg: dict | None = None):
 
         body = body or {}
         job, folder = _cut_job_for_edit(job_id, "dream over")
+        _no_stems_run(folder)  # a Stems cut: not on a layer yet, said plainly
         try:
             first = int(body.get("first"))
         except (TypeError, ValueError):
@@ -1196,7 +1266,58 @@ def create_app(cfg: dict | None = None):
         )
         opened = first_drop(features, rows)
         opened.pop("downbeats", None)
+        card = _main_drop_card(audio_id, features, body)
+        if card:  # the card names the main drop run the planner picks; Play the drop plays from its first beat
+            card.update({"first_at": opened.get("at") if opened.get("ready") else None, "at": card["main"]["start"]})
+        opened.update(card)
         return opened
+
+    def _main_drop_card(audio_id: str, features: dict, body: dict) -> dict:
+        """The drop card's main drop run, the one the whole-song planner picks (``pacing.main_run``: the heaviest by heat
+        times length), its time and length, and the prototype window cut around it (``pacing.prototype_window``, the
+        rule the Make's trim and the estimate use), so the card and the 30 s prototype agree. ``{}`` for a song with no
+        drop run (the first drop's own line stays)."""
+        from xenoform import pacing as _pacing
+        from xenoform.dense import find_drop
+
+        with _LOCK:
+            audio = _AUDIO.get(audio_id) if audio_id and audio_id != "demo" else None
+        audio = audio or (repo_root() / "examples" / "demo.wav" if audio_id in ("", "demo") else None)
+        try:
+            drop = find_drop(Path(audio), list(features.get("beats") or []), float(features.get("duration") or 0.0)) \
+                if audio is not None and Path(audio).is_file() else None
+        except Exception:
+            drop = None
+        state = {"breathe": body.get("breathe"), "drop_mode": body.get("drop_mode")}
+        mode = _pacing.drop_mode_of(state)
+        try:
+            length = float(body.get("length_s") or 30.0)
+        except (TypeError, ValueError):
+            length = 30.0
+        try:
+            main = _pacing.main_run(features, drop, mode)
+            proto = _pacing.prototype_window(features, drop, length, paced=not _pacing.legacy(state), drop_mode=mode)
+        except Exception:
+            log.exception("drop card")
+            return {}
+        if main is None:
+            return {}
+        out = {"main": main, "window": None}
+        if proto is not None:
+            out["window"] = {"start": proto["start"], "end": proto["end"], "length_s": proto["length_s"],
+                             "anchor": proto["anchor"], "on_main": proto.get("main") is not None}
+        runs = int(main.get("runs") or 1)
+        clock = _pacing.clock
+        line = (f"The heaviest of {runs} drop runs by heat times length, {clock(main['start'])} to {clock(main['end'])}"
+                if runs > 1 else f"The song's drop run, {clock(main['start'])} to {clock(main['end'])}")
+        line += ": a whole song gives it the vibe you chose and opens it on its hero."
+        if out["window"] and out["window"]["on_main"]:
+            line += f" The {int(round(length))} s prototype is cut around it: {clock(proto['start'])} to {clock(proto['end'])}."
+        elif out["window"]:
+            line += f" With Breathe and Drops off the {int(round(length))} s prototype is cut around the drop time: " \
+                    f"{clock(proto['start'])} to {clock(proto['end'])}."
+        out.update({"ready": True, "line": line})
+        return out
 
     @app.post("/api/story/sheet")
     def story_sheet_route(body: dict) -> dict:
@@ -1804,7 +1925,8 @@ def create_app(cfg: dict | None = None):
         from xenoform import pacing as _pacing
 
         song = _song_plan_inputs(audio_id, float(length or 0.0), length_start,
-                                 paced=not _pacing.legacy({"breathe": breathe, "drop_mode": drop_mode or None}))
+                                 paced=not _pacing.legacy({"breathe": breathe, "drop_mode": drop_mode or None}),
+                                 drop_mode=_pacing.drop_mode_of({"drop_mode": drop_mode or None}))
         if song is not None:
             # the song is on the desk: the estimate plans the Make itself (its sections, its drop, the guardrail's
             # budget, the pool), so the count and the clock here are the cut's (dense.plan_summary with sections)
@@ -1933,7 +2055,7 @@ def create_app(cfg: dict | None = None):
         from xenoform import pacing as _pacing
 
         features, _start, _drop = _window_features(features, Path(audio), length_s, state.get("length_start"),
-                                                   paced=not _pacing.legacy(state))
+                                                   paced=not _pacing.legacy(state), drop_mode=_pacing.drop_mode_of(state))
         try:  # the guardrail the Make runs, on the cut's own length: a count set by hand gets its clamp (40 in 20 s:
             # 15) and "auto" the budget the planner spends by role, so the preview counts what renders
             from xenoform import guardrails as _guard
@@ -2400,6 +2522,8 @@ def create_app(cfg: dict | None = None):
         make = dict(body.get("body") or {})
         if body.get("song_cap") not in (None, ""):
             make[song_plan.CAP_KEY] = body.get("song_cap")
+        if body.get("song_vibes") not in (None, ""):  # Vibes (Whole song): "auto", "all" or a count, as in the body
+            make[song_plan.VIBES_KEY] = body.get("song_vibes")
         if song_plan.clips_song(make):  # a clips song plans on your clips: the folder (or the files dropped) read now
             _apply_own(make)
         audio_id = str(make.get("audio_id") or "")
@@ -2553,7 +2677,7 @@ def create_app(cfg: dict | None = None):
                              section_min_seconds=float(cfg["analyze"]["section_min_seconds"]))
 
     def _trim_audio(audio_id: str, audio_path: Path, length_s: float, start_s: float | None = None,
-                    paced: bool = False, exact: bool = False) -> tuple[str, Path] | None:
+                    paced: bool = False, exact: bool = False, drop_mode: str = "auto") -> tuple[str, Path] | None:
         """A ``length_s`` cut of the song centred a little before its drop (or from ``start_s`` when the Make body
         names a window), snapped back to a beat, with short fades, registered as its own audio id (analysed like
         an upload). None when the song is already short. A ``paced`` Make (``pacing``) centres it on the song's main
@@ -2575,18 +2699,18 @@ def create_app(cfg: dict | None = None):
             from xenoform.dense import find_drop  # beatfx.drop_time, decoded once a song
 
             found = find_drop(Path(audio_path), beats, dur)
-            drop = float(found) if found is not None else dur * 0.6
+            drop = float(found) if found is not None else None
         except Exception:
-            drop = dur * 0.6
-        anchor = drop
-        if paced:
-            from xenoform import pacing as _pacing
+            drop = None
+        from xenoform import pacing as _pacing
 
-            try:
-                anchor = float(_pacing.main_drop(features, drop) or drop)
-            except Exception:
-                log.exception("main drop")
-        start = max(0.0, min(anchor - length_s * 0.45, dur - length_s))
+        try:  # the prototype's window: one rule with the desk's drop card (pacing.prototype_window, the main drop run)
+            proto = _pacing.prototype_window(features, drop, length_s, paced=paced, drop_mode=drop_mode)
+        except Exception:
+            log.exception("main drop")
+            proto = None
+        anchor = float(proto["anchor"]) if proto else (drop if drop is not None else dur * 0.6)
+        start = max(0.0, min(anchor - length_s * _pacing.PROTO_LEAD, dur - length_s))
         if start_s is not None:
             start = max(0.0, min(float(start_s), dur - length_s))
         earlier = [b for b in beats if b <= start + 1e-6]
@@ -2618,7 +2742,7 @@ def create_app(cfg: dict | None = None):
             except Exception:
                 log.exception("the song's beats for the cut")
         features["trimmed_from"] = {"audio_id": audio_id, "start": round(start, 3), "length_s": float(length_s),
-                                    "drop": round(drop, 3), "song_duration": round(dur, 3)}
+                                    "drop": round(drop if drop is not None else dur * 0.6, 3), "song_duration": round(dur, 3)}
         try:  # the cut inherits the song's stems (sliced), or gets its own split in the background
             from xenoform.stems_api import slice_stems, start_background_split, stems_path_for
 
@@ -2655,7 +2779,8 @@ def create_app(cfg: dict | None = None):
             from xenoform import pacing as _pacing
 
             trimmed = _trim_audio(audio_id, Path(audio_path), length_s, start_s, paced=not _pacing.legacy(body),
-                                  exact=bool(body.get("length_exact")) and start_s is not None)
+                                  exact=bool(body.get("length_exact")) and start_s is not None,
+                                  drop_mode=_pacing.drop_mode_of(body))
             if trimmed is not None:
                 source_path = Path(audio_path)
                 audio_id, audio_path = trimmed
@@ -3304,7 +3429,13 @@ def _run_job(job_id: str, audio_path: Path, body: dict, cfg: dict, out: Path, ca
                 if fpath.is_file():
                     beats = list((json.loads(fpath.read_text(encoding="utf-8")) or {}).get("beats") or [])
                 fix = bool((post_qa._rule("lag_qa") or {}).get("auto_fix", True))
-                qa_report = post_qa.run(out, fps=24.0, beats=beats, vj=bool(body.get("vj")), fix=fix, report=on_progress)
+                planned = []  # the cut's shot plan: every rest it holds is held picture by design, kept through the fix
+                try:
+                    planned = list((json.loads((work / "simple" / "simple.json").read_text(encoding="utf-8")) or {}).get("shots") or [])
+                except (OSError, ValueError):
+                    planned = []
+                qa_report = post_qa.run(out, fps=24.0, beats=beats, vj=bool(body.get("vj")), fix=fix, report=on_progress,
+                                        shots=planned)
             except Exception:
                 log.exception("post QA")
         with _LOCK:
@@ -3448,7 +3579,7 @@ def _pool_count(body: dict) -> int | None:
 
 
 def _window_features(features: dict, audio: Path | None, length_s: float, length_start=None,
-                     paced: bool = True, exact: bool = False) -> tuple[dict, float | None, float | None]:
+                     paced: bool = True, exact: bool = False, drop_mode: str = "auto") -> tuple[dict, float | None, float | None]:
     """The song's analysis cut to the window a Length Make trims (the maths of ``_trim_audio``: a little before the
     drop, or from ``length_start``, back to a beat), its beats and sections shifted, without trimming anything; plus
     the window's start in the song and the drop in window time. The whole song when no window applies. ``paced`` as
@@ -3465,15 +3596,15 @@ def _window_features(features: dict, audio: Path | None, length_s: float, length
         drop = None
     if not (length_s and length_s > 0 and dur > length_s + 1.0):
         return features, None, drop
-    anchor = float(drop) if drop is not None else dur * 0.6
-    if paced and drop is not None:
-        from xenoform import pacing as _pacing
+    from xenoform import pacing as _pacing
 
-        try:
-            anchor = float(_pacing.main_drop(features, float(drop)) or anchor)
-        except Exception:
-            log.exception("main drop")
-    start = max(0.0, min(anchor - length_s * 0.45, dur - length_s))
+    try:  # the prototype's window: one rule with the Make's trim and the desk's drop card (pacing.prototype_window)
+        proto = _pacing.prototype_window(features, drop, length_s, paced=paced, drop_mode=drop_mode)
+    except Exception:
+        log.exception("main drop")
+        proto = None
+    anchor = float(proto["anchor"]) if proto else (float(drop) if drop is not None else dur * 0.6)
+    start = max(0.0, min(anchor - length_s * _pacing.PROTO_LEAD, dur - length_s))
     if length_start not in (None, ""):
         try:
             start = max(0.0, min(float(length_start), dur - length_s))

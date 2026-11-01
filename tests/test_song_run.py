@@ -119,7 +119,7 @@ def test_the_record_and_its_view_say_n_of_m(drop):
     items = song_run.items(rec)
     assert items[0]["label"].startswith("Passage 1 of 14: intro") and items[0]["window"] == 0
     v = song_run.view(rec)
-    assert (v["status"], v["done"], v["of"], v["morphs"]) == ("queued", 0, 14, 78) and v["left_s"] > 0
+    assert (v["status"], v["done"], v["of"], v["morphs"]) == ("queued", 0, 14, 77) and v["left_s"] > 0
     fake_batch = {"items": [{"window": k, "status": "done", "job_id": f"j{k}", "took_s": 60.0} for k in range(5)]
                   + [{"window": 5, "status": "running", "job_id": "j5", "progress": 0.4, "detail": "Morph 2 of 3"}]}
     song_run.sync(rec, fake_batch)
@@ -152,9 +152,9 @@ def test_the_desk_plans_queues_stops_and_resumes_a_whole_song(tmp_path, monkeypa
                                                        "audio_id": "song-glitch-out", "breathe": "1", "drop_mode": "auto",
                                                        "whole_song": "1"}).json()
     whole = opts["song"]
-    assert whole["morphs"] == 78 and whole["passages"] == 14 and whole["windows"] == 14
-    assert whole["estimate"]["tiers"]["cloud"]["credits"] == [281, 468] and whole["title"]["at"] == pytest.approx(231.33, abs=0.01)
-    assert opts["cloud_final"]["estimate"]["morphs"] == 78
+    assert whole["morphs"] == 77 and whole["passages"] == 14 and whole["windows"] == 14
+    assert whole["estimate"]["tiers"]["cloud"]["credits"] == [277, 462] and whole["title"]["at"] == pytest.approx(231.33, abs=0.01)
+    assert opts["cloud_final"]["estimate"]["morphs"] == 77
     assert client.get("/api/simple/options", params={"audio_id": "song-glitch-out", "duration": 239}).json()["song"] is None
     assert client.post("/api/song", json={"body": _state(audio_id="gone")}).status_code == 400
     assert client.post("/api/song", json={"body": _state(quality_tier="cloud")}).status_code == 400  # no credits tick
@@ -162,7 +162,7 @@ def test_the_desk_plans_queues_stops_and_resumes_a_whole_song(tmp_path, monkeypa
     r = client.post("/api/song", json={"body": _state(), "song_cap": "auto"})
     assert r.status_code == 200, r.text
     v = r.json()
-    assert (v["status"], v["done"], v["of"], v["morphs"]) == ("queued", 0, 14, 78) and v["batch"]
+    assert (v["status"], v["done"], v["of"], v["morphs"]) == ("queued", 0, 14, 77) and v["batch"]
     rec = json.loads((tmp_path / "jobs" / v["id"] / "song.json").read_text(encoding="utf-8"))
     saved = json.loads((tmp_path / "batches" / f"{v['batch']}.json").read_text(encoding="utf-8"))
     assert saved["vary"] == "song" and saved["song_id"] == v["id"] and len(saved["items"]) == 14
@@ -187,9 +187,9 @@ def test_cloud_is_queued_only_behind_the_credits_tick_and_each_window_holds_its_
     saved = json.loads((tmp_path / "batches" / f"{v['batch']}.json").read_text(encoding="utf-8"))
     bodies = [i["body"] for i in saved["items"]]
     assert all(b["quality_tier"] == "cloud" and b["cloud_final_ok"] is True for b in bodies)
-    assert all(len(b[song_plan.KEY]["plan"]["shots"]) <= 16 for b in bodies) and v["morphs"] == 78
+    assert all(len(b[song_plan.KEY]["plan"]["shots"]) <= 16 for b in bodies) and v["morphs"] == 77
     rec = json.loads((tmp_path / "jobs" / v["id"] / "song.json").read_text(encoding="utf-8"))
-    assert rec["estimate"]["tiers"]["cloud"]["credits"] == [281, 468]
+    assert rec["estimate"]["tiers"]["cloud"]["credits"] == [277, 462]
     w = rec["windows"][0]
     with pytest.raises(RuntimeError, match="Cloud Final spends Comfy Cloud credits"):
         dense.run_simple(song_plan.directed_for(FEATURES, w), AUDIO, tmp_path / "x.mp4", tmp_path, {},

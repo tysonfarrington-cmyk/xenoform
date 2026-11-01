@@ -12,13 +12,16 @@ hit) is a Make: **Fine-tune → Length → Whole song**, then **Make the whole s
    and every shot in them at the profile table's beats a shot. Each passage is a **window Make** of at most 16 morphs on
    the chosen tier (Final's own cap is 12, so on Final a longer passage is two Makes, cut where a shot starts on a bar
    line). The song's total is the sum of its passages: the per-Make caps (Draft's 60 on a four-minute song, Cloud's 16 a
-   Make) guard one Make and do not cap the song. Glitch Out at Breathe 1.0 is 14 passages and 78 morphs, at Breathe
-   off 86.
+   Make) guard one Make and do not cap the song. Glitch Out at Breathe 1.0 is 14 passages and 77 morphs, at Breathe
+   off 85 (a morph fewer each since the hero holds a bar).
 2. **Draws a look a passage, by taste** (`song_plan.looks`). The vibe you chose owns the main drop run, the stretch
    the song is built on: the heaviest drop run by its heat times its length (`song_plan.main_run`, decided 1 Nov), not
    only the run the song's loudest moment opens, which keeps the drop's event (on ZedsDead v1 that run is 5.3 s at
-   2:20 and the 23.7 s run after it is now the main); a tie goes to the run the drop opens. When the body is a loved
-   chain you applied, that chain goes on the passage it fits instead. The loved chains
+   2:20 and the 23.7 s run after it is now the main); a tie goes to the run the drop opens. The desk agrees with it:
+   the Song step's drop card names this run, its time and its length ("The main drop: 2:25, 24 s", `GET /api/opener`'s
+   `main`), and the 30 s prototype is cut around it, its first beat 45 % of the way in (`pacing.prototype_window`, the
+   rule the Make's trim, the estimate and the card all use; `pacing.heaviest` is the one choice for the song plan, the
+   card and the window). When the body is a loved chain you applied, that chain goes on the passage it fits instead. The loved chains
    (`configs/chain_presets.json`) take the passages they fit: the opener (glow sea) the intro, the finale (the gold) the
    outro, the calm ones (smooth, Chaos 0.2 and under: the black glass rose, the smoke dragon) the grooves, the ones on
    the beat (Chaos 0.4 and over: the glass hand, the origami icons) the drops and builds; a chain keeps its own style,
@@ -27,6 +30,36 @@ hit) is a Make: **Fine-tune → Length → Whole song**, then **Make the whole s
    chrome, digital) on the drops and builds, a vibe whose library could not carry the passage passed over. Under the
    taste file no vibe comes twice and the demoted ones stay out. The intro and the outro are one passage each, one
    look each.
+
+   **Vibes** (Fine-tune, under Whole song: Auto, 1, 2, 3, 5, 8, All; the body key `song_vibes`) keeps the song to fewer
+   vibes. Auto, the default, and All are the look a passage above (Tys, 1 Nov: fourteen vibes in a song is fine). A
+   count N is at most N vibes (`song_plan.share`): every passage starts with a vibe of its own, then the cheapest move
+   first, a calm passage shares another scene's vibe, then the outro, a release and the intro do, a build shares another
+   build's; then the scenes and the builds take the vibe you chose; then a drop shares the drop look nearest its heat;
+   the drops' looks go last. So **1** is the vibe you chose over the whole song; **2** is your vibe on the main drop and
+   the rest of the song, and one more vibe drawn by taste on the other drops (the one with the best pull for a drop that
+   shares fewest tags with yours: the contrast); **3** keeps two drop looks, and so on. A loved chain counts toward N:
+   it takes a passage it fits and its vibe becomes its group's, and inside a group a loved chain of that vibe may take a
+   passage it fits (the gold finale on the outro of a Liquid gold song). The other passages of a group take its vibe with
+   your own settings. One vibe's library is smaller than a whole song (Ferrofluid holds 27 objects; ZedsDead v1 as a whole
+   song shows 90 stills), so under a count a window whose vibe has run out lets objects come round again, as few as it needs, the ones
+   the song has shown least and farthest away first (never another passage's pinned object); the record names them
+   (`vibes.again`, and each window's `again`). The estimate does not change with Vibes: the morphs are the pacing's.
+   The desk's facts and its Make line say what the choice draws ("Passages: 13, two vibes between them"; a look each
+   only at Auto and All).
+   **A hero object opens the main drop** (`song_plan.place_hero`). The main drop run's first shot lands on the hero of
+   its look: the first object your Chain row pins (your pins then moved along so it sits there, in the order you set
+   them), else the vibe's card object, the still of the object its picker card shows (`configs/vibe_heroes.json`: the
+   ferrofluid phoenix, the black glass lotus, the radio telescope; read from the cut each card was made from and checked
+   against the card by picture), else the vibe's first shipped still the taste file allows. It is pinned into that
+   passage's first window at slot 1 (the first shot morphs from slot 0 into it on the drop's hit), no other passage
+   shows it, and the record says so (`hero`: the still, its noun, why, the passage, the window, the slot). The desk's
+   Fine-tune facts name it under Whole song. **The hero holds a bar** (1 Nov: on a two-beat opening shot it showed for a
+   quarter of a second): the whole song's plan opens the main run on one shot of a whole bar (`pacing.song_plan`'s
+   `hold_main`, `pacing.HERO_BEATS`; the shot says `hero_bar`), its event, punch and stutter still on its first beat,
+   and a hot run's two-beat entry shots start from its second bar; the record's `hero.hold_s` is that shot's length.
+   The bar takes the place of two two-beat shots, a morph fewer (78 to 77 on ZedsDead v1 and on Glitch Out). A clips
+   song has no hero and opens its main run as before.
 3. **Picks every window's objects** (`song_plan.objects`), the way its Make would pick them (the chain it plans, the
    pick under the taste file with natural or iconic families first, a fresh family on a drop run's first beat, one
    family a scene under full Breathe), the windows picking in the order the looks were drawn (the intro, the outro, the
@@ -100,8 +133,9 @@ is one Make, not a window a passage.
 4. **Queued and laid together as any whole song**: one item through the Variations queue (an idle desk, an idle ComfyUI
    queue), then `song_assemble` lays that one cut with the title on the last hit, the flash tame under Breathe, the song
    at -16 LUFS, the QA once; the composite record (`simple/simple.json`, `source` "clips", the cut's own pacing block)
-   is what the timeline, My videos and **Edit in Resolve** read (every shot its own clip on V1, named for your clip or the
-   morph between two, the song on A1, a marker at each passage).
+   is what the timeline, My videos and **Edit in Resolve** read (every shot its own clip on V1, a clip shot named after
+   its film, "05 Metropolis robot": the label the clip's folder gives it in `pack.json` or `labels.json`, else its file
+   name; a morph "A → B" for the two clips it runs between; the song on A1, a marker at each passage).
 
 What a clips cut does with the pacing engine (`clip_cut`, the same for a clips song and a clips cut of any Length):
 
@@ -136,6 +170,7 @@ What a clips cut does with the pacing engine (`clip_cut`, the same for a clips s
 |---|---|
 | `song_morph_cap` | The whole song's morphs: `"auto"` (default) is the profile table's own count, passage by passage; a number caps the song, the planner spending it by role (the calm passages give theirs up first, a deep cap squeezes the drops' half-bar entries too). The desk's Fine-tune → Morphs row under Whole song. |
 | `song_title` | The title on the last hit: `"Xenoform"` (the hand-made video's) by default, `""` for none, any other short line. |
+| `song_vibes` | How many vibes the song uses: `"auto"` (default) and `"all"` a look a passage, no vibe twice; a count from 1, at most that many (1: your vibe over the whole song; 2: yours on the main drop and the rest, one more on the other drops). The desk's Fine-tune → Vibes row under Whole song. A clips song is one look and ignores it. |
 | `breathe`, `drop_mode` | The Shape row, over the whole song (Breathe off by default, decision 2 of the plan). A loved chain's own Shape does not apply: its look does. |
 | `quality_tier` | The tier every window renders on: `draft`, `fast`, `final` (12 morphs a Make: longer passages are two windows) or `cloud` (needs `cloud_final_ok`, the credits tick). |
 | `vibe`, `idea`, `chain_pins` | The vibe you chose (the main drop's look), your line (every passage that is not a loved chain carries it), your pins (with the vibe, to its passage). |
@@ -156,10 +191,13 @@ and states, the estimate, the video once laid together), `POST /api/song/<id>/st
 
 - `song`: the label, the audio id, the file, its length, tempo, drop, first drop and beats;
 - `tier`, `aspect`, `breathe`, `drop_mode`, `cap`, `window_cap`, `taste` (whether the taste file was on), `plan` (the
-  song's morphs, shots, the line "14 passages, 78 morphs; 5 drops, the main at 2:21", the steps, the bar phase, the
-  beat), `title` (its text and the hit), `estimate` (every tier);
+  song's morphs, shots, the line "14 passages, 77 morphs; 5 drops, the main at 2:21", the steps, the bar phase, the
+  beat), `title` (its text and the hit), `estimate` (every tier), `vibes` (what `song_vibes` asked: `choice` "auto",
+  "all" or the count; the vibes drawn in song order and their `count`; `again`, the objects a vibe's library let come
+  round), `hero` (the object the main drop opens on: `still`, `noun`, `why`, `vibe`, `passage`, `window`, `slot`, `at`, `hold_s`);
 - `passages`: each with its role, span, heat and run, its morphs, its windows, its look (the vibe, the loved chain
-  when it is one, why it was drawn, its line, pins, style, timing, effects, look and knobs, its seed) and its objects;
+  when it is one, why it was drawn, its `group` under a Vibes count, its line, pins, style, timing, effects, look and
+  knobs, its seed) and its objects;
 - `windows`: each with its passage and part, its span in the song, its morphs, the stills it morphs through, their
   nouns and families, its whole Make body, and from the queue its job, status, progress, attempts, failures and time;
 - `batch`: the queue's batch (`work/ui/batches/<id>.json`), `status`;
@@ -174,6 +212,11 @@ A window's QA (`post_qa`) leaves the rest it closes on alone: held frames at a c
 (they count neither as duplicates nor as a short freeze), and a lag fix that does run on a window holds its last
 picture on to the picture's own end, so it keeps every frame it had. Before 1 Nov a fix could cut that rest away: a
 ZedsDead intro came out 243 frames for its 292, and its song played 1.8 s early from there until it was laid again.
+The QA reads the cut's shot plan too (`post_qa.rests_of`, the record's shots): **every rest the plan holds**, in the
+middle of a window as at its end, is left out of the duplicate count and its freeze out of the short ones, and when a
+lag fix still runs for real judder around them, each rest's frames are taken back from the cut as they were
+(`post_qa.keep_holds`), so a mid-window rest stays held instead of being smoothed into the next shot. The song's own QA
+once laid reads the song's shots the same way (its report only).
 
 Beside it: `xenoform.mp4` (the song), `simple/simple.json` (`mode` "song": every shot in song time with its passage,
 window, job and vibe, a window's first shot a hard cut; the timeline, Edit in Resolve and My videos read it, the
