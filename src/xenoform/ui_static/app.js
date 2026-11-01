@@ -1266,6 +1266,11 @@ function songPlanFacts(easy) {
       if (!(clips && tier === "cloud")) rows.push([label, songTierText(s, tier)]);  // a clips cut has no Cloud path
     }
     if (s.title && s.title.at != null) rows.push(["Title", `on the last hit, ${clockText(s.title.at)}`]);
+    if (!clips && (s.hero || (easy.pins && Object.keys(easy.pins).length))) {  // song_plan.place_hero: the main drop's first shot
+      const pinned = easy.pins && Object.keys(easy.pins).length;
+      const from = /card/.test(String((s.hero && s.hero.why) || "")) ? "its card's object" : "its first still";
+      rows.push(["Hero", pinned ? "your first pinned still opens the main drop" : `the ${s.hero.noun || "vibe's hero"} opens the main drop (${from})`]);
+    }
     if (!clips) {  // song_vibes: what the looks will be drawn as (the morphs and minutes above do not change with it)
       const v = songVibesValue(easy);
       rows.push(["Vibes", v === "auto" ? "Auto: a look a passage, no vibe twice" : v === "all" ? "All: a look a passage, no vibe twice"

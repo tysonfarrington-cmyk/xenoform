@@ -42,6 +42,14 @@ hit) is a Make: **Fine-tune → Length → Whole song**, then **Make the whole s
    song shows 91 stills), so under a count a window whose vibe has run out lets objects come round again, as few as it needs, the ones
    the song has shown least and farthest away first (never another passage's pinned object); the record names them
    (`vibes.again`, and each window's `again`). The estimate does not change with Vibes: the morphs are the pacing's.
+   **A hero object opens the main drop** (`song_plan.place_hero`). The main drop run's first shot lands on the hero of
+   its look: the first object your Chain row pins (your pins then moved along so it sits there, in the order you set
+   them), else the vibe's card object, the still of the object its picker card shows (`configs/vibe_heroes.json`: the
+   ferrofluid phoenix, the black glass lotus, the radio telescope; read from the cut each card was made from and checked
+   against the card by picture), else the vibe's first shipped still the taste file allows. It is pinned into that
+   passage's first window at slot 1 (the first shot morphs from slot 0 into it on the drop's hit), no other passage
+   shows it, and the record says so (`hero`: the still, its noun, why, the passage, the window, the slot). The desk's
+   Fine-tune facts name it under Whole song.
 3. **Picks every window's objects** (`song_plan.objects`), the way its Make would pick them (the chain it plans, the
    pick under the taste file with natural or iconic families first, a fresh family on a drop run's first beat, one
    family a scene under full Breathe), the windows picking in the order the looks were drawn (the intro, the outro, the
@@ -168,7 +176,7 @@ and states, the estimate, the video once laid together), `POST /api/song/<id>/st
   song's morphs, shots, the line "14 passages, 78 morphs; 5 drops, the main at 2:21", the steps, the bar phase, the
   beat), `title` (its text and the hit), `estimate` (every tier), `vibes` (what `song_vibes` asked: `choice` "auto",
   "all" or the count; the vibes drawn in song order and their `count`; `again`, the objects a vibe's library let come
-  round);
+  round), `hero` (the object the main drop opens on: `still`, `noun`, `why`, `vibe`, `passage`, `window`, `slot`, `at`);
 - `passages`: each with its role, span, heat and run, its morphs, its windows, its look (the vibe, the loved chain
   when it is one, why it was drawn, its `group` under a Vibes count, its line, pins, style, timing, effects, look and
   knobs, its seed) and its objects;

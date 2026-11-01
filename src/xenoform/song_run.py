@@ -66,6 +66,7 @@ def new(song: dict, *, song_id: str, body: dict, audio_id: str, audio_path: Path
         "tier": song["tier"], "aspect": song["aspect"], "breathe": song["breathe"], "drop_mode": song["drop_mode"],
         "cap": song["cap"], "window_cap": song["window_cap"], "taste": taste.active(),
         "vibes": copy.deepcopy(song.get("vibes") or {"choice": "auto"}),
+        "hero": copy.deepcopy(song.get("hero")),  # the object the main drop opens on (song_plan.place_hero)
         "plan": {"morphs": song["morphs"], "shots": song["shots"], "line": song["line"], "steps": song.get("steps"),
                  "bar_phase": song.get("bar_phase"), "period": song.get("period")},
         "title": dict(song.get("title") or {}), "estimate": song.get("estimate") or {},
@@ -160,7 +161,7 @@ def view(rec: dict, *, assembling: dict | None = None, elsewhere: bool = False) 
     assembly = rec.get("assembly") or {}
     out = {"id": rec["id"], "status": st, "label": (rec.get("song") or {}).get("label") or "", "line": (rec.get("plan") or {}).get("line"),
            "tier": rec.get("tier"), "aspect": rec.get("aspect"), "breathe": rec.get("breathe"), "drop_mode": rec.get("drop_mode"),
-           "vibes": rec.get("vibes") or {"choice": "auto"},
+           "vibes": rec.get("vibes") or {"choice": "auto"}, "hero": rec.get("hero"),
            "created": rec.get("created"), "batch": rec.get("batch") or "", "elsewhere": bool(elsewhere),
            **c, "passages": passages, "estimate": rec.get("estimate") or {}, "title": rec.get("title") or {},
            "assembly": {k: assembly.get(k) for k in ("video", "seconds", "made", "error", "cuts", "loudness", "tame", "qa")

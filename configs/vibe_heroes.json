@@ -1,0 +1,30 @@
+{
+  "note": "Each vibe's hero: the library still of the object its card shows (src/xenoform/ui_static/vibes/<id>.jpg, made by scripts/vibe_objects/make_card.py from one frame of a finished cut, picks_thumbs.json and picks_cards.json), read from that cut's record at the card's time and checked against the card by picture on 1 Nov 2026. A whole song opens its main drop on the chosen vibe's hero when the desk pins nothing (song_plan.hero; docs/SONG.md). A vibe not listed here, or whose hero the taste file bans, falls back to its first shipped still the taste file allows.",
+  "heroes": {
+    "bioluminescent": {"still": "bioluminescent/034_sea_turtle.jpg", "card": "the glowing sea turtle"},
+    "black": {"still": "black/05_lotus_black_glass.jpg", "card": "the black glass lotus the rose opens into"},
+    "bloom": {"still": "bloom/00_dandelion_iridescent.jpg", "card": "the iridescent dandelion (the card is the still)"},
+    "botanical": {"still": "botanical/11_butterfly.jpg", "card": "the butterfly orchid"},
+    "brutalist": {"still": "brutalist/053_moai_head.jpg", "card": "the moai head"},
+    "chrome-mercury": {"still": "chrome-mercury/117_enchanted_rose_under_glass.jpg", "card": "the chrome rose under glass"},
+    "cosmic": {"still": "cosmic/078_radio_telescope.jpg", "card": "the radio telescope"},
+    "cyberspace-95": {"still": "cyberspace-95/098_horned_demon_skull.jpg", "card": "the wireframe horned skull"},
+    "ferrofluid": {"still": "ferrofluid/063_ferrofluid_phoenix.jpg", "card": "the ferrofluid phoenix"},
+    "ice-crystal": {"still": "ice-crystal/040_stone_cairn.jpg", "card": "the frosted stone cairn"},
+    "ink-wash": {"still": "ink-wash/076_tarnished_silver_chalice.jpg", "card": "the ink-wash chalice"},
+    "iridescent-glass": {"still": "iridescent-glass/084_cracked_chapel_bell.jpg", "card": "the glass chapel bell"},
+    "lava-obsidian": {"still": "lava-obsidian/01_nautilus.jpg", "card": "the obsidian nautilus (the card is the still)"},
+    "liquid-gold": {"still": "liquid-gold/076_enchanted_rose_under_glass.jpg", "card": "the gold rose (opening from the crowned skull)"},
+    "low-poly": {"still": "low-poly/032_trefoil_knot.jpg", "card": "the faceted trefoil knot"},
+    "neon-noir": {"still": "neon-noir/074_horned_demon_skull.jpg", "card": "the wet horned skull in magenta and cyan"},
+    "none": {"still": "none/103_jellyfish.jpg", "card": "the jellyfish"},
+    "odd-machine": {"still": "odd-machine/01_nautilus.jpg", "card": "the nautilus (the card is the still)"},
+    "origami-noir": {"still": "origami-noir/11_butterfly.jpg", "card": "the black paper and gold foil moth of the loved fold"},
+    "porcelain-kintsugi": {"still": "porcelain-kintsugi/00_orb.jpg", "card": "the kintsugi orb"},
+    "porcelain-marble": {"still": "porcelain-marble/014_globe.jpg", "card": "the blue and white globe"},
+    "risograph": {"still": "risograph/078_horned_demon_skull.jpg", "card": "the risograph horned skull"},
+    "shadow-self": {"still": "shadow-self/107_candelabra_of_black_wax.jpg", "card": "the candelabra in the smoke"},
+    "wet-paint": {"still": "wet-paint/061_asteroid.jpg", "card": "the painted asteroid"},
+    "y2k-chrome": {"still": "y2k-chrome/045_smiley_face.jpg", "card": "the smiley face balloon"}
+  }
+}

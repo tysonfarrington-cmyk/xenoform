@@ -673,9 +673,15 @@ def create_app(cfg: dict | None = None):
         except Exception:
             log.exception("whole song estimate")
             return None
+        hero = None
+        if not song_plan.clips_song(body) and any(p.get("main") for p in got["passages"]):
+            try:  # the object the main drop opens on (song_plan.place_hero): the chosen vibe's card object (the desk
+                hero = song_plan.hero_preview(body)  # says so itself when its Chain row pins one)
+            except Exception:
+                log.exception("whole song hero")
         return {"morphs": got["morphs"], "passages": len(got["passages"]), "windows": len(got["windows"]),
                 "line": got["line"], "estimate": got["estimate"], "title": got["title"], "cap": got["cap"],
-                "window_cap": got["window_cap"], "duration": got["duration"],
+                "window_cap": got["window_cap"], "duration": got["duration"], "hero": hero,
                 "roles": [{"role": p["role"], "start": p["start"], "end": p["end"], "morphs": p["morphs"],
                            "heat": p.get("heat"), "main": bool(p.get("main"))} for p in got["passages"]]}
 

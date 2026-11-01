@@ -799,6 +799,96 @@ def _looks_shared(passages: list[dict], state: dict, n: int, *, loaded: list[dic
     return [o for o in out if o is not None]
 
 
+# ------------------------------------------------------------------------------------------------ the hero
+
+
+HERO_SLOT = 1   # the main drop's first shot morphs from slot 0 and lands on slot 1: the hero
+
+
+def heroes() -> dict[str, dict]:
+    """``configs/vibe_heroes.json``'s heroes: a vibe's card object as a library still ({vibe: {still, card}}), {} without
+    the file. ``XENO_HEROES`` points at another file."""
+    import json
+    import os
+
+    path = Path(os.environ.get("XENO_HEROES") or Path(__file__).resolve().parents[2] / "configs" / "vibe_heroes.json")
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    rows = data.get("heroes") if isinstance(data, dict) else None
+    return {str(k): v for k, v in (rows or {}).items() if isinstance(v, dict) and v.get("still")}
+
+
+def hero_still(vibe: str) -> tuple[str, str, str] | None:
+    """A vibe's hero object: its card's object (``heroes``) when the vibe's library holds it and the taste file allows
+    it, else its first shipped object the taste file allows. ``(file, noun, why)``, None for a vibe with no object."""
+    from xenoform import morph_pass, stills, taste
+
+    cat = morph_pass.catalogue()
+    pool = morph_pass.vibe_for({"vibe": vibe})
+    rows = list(cat.get(vibe) or []) + (list(cat.get(pool) or []) if pool != vibe else [])
+    usable = taste.usable([r for r in rows if stills.kind_of(r) == "object" and r.get("file")])
+    card = heroes().get(vibe) or {}
+    row = next((r for r in usable if str(r.get("file")) == str(card.get("still") or "")), None)
+    if row is not None:
+        return str(row["file"]), str(row.get("noun") or ""), f"the vibe's card object ({card.get('card') or row.get('noun')})"
+    row = next((r for r in usable if r.get("shipped")), None) or (usable[0] if usable else None)
+    return (str(row["file"]), str(row.get("noun") or ""), "the vibe's first still") if row is not None else None
+
+
+def hero_preview(state: dict) -> dict | None:
+    """The hero the desk can name before the plan picks anything (the estimate): the first object the desk pins, else
+    the chosen vibe's card object (``hero_still``). ``{"still", "noun", "why"}`` or None."""
+    from xenoform import morph_pass
+
+    pins = {int(k): str(v) for k, v in morph_pass.pins_of(state).items()}
+    if pins:
+        still = pins[min(pins)]
+        noun = next((str(r.get("noun") or "") for rows in morph_pass.catalogue().values() for r in rows
+                     if str(r.get("file")) == still), "")
+        return {"still": still, "noun": noun, "why": "your first pinned object"}
+    found = hero_still(str(state.get("vibe") or ""))
+    return {"still": found[0], "noun": found[1], "why": found[2]} if found else None
+
+
+def place_hero(song: dict) -> dict | None:
+    """A hero object opens the main drop (docs/SONG.md): the main drop run's first shot lands on the hero of its look,
+    pinned into that passage's first window at ``HERO_SLOT``. The hero is the first object the look's pins hold (yours on
+    the desk, or the loved chain's), the pins then moved along so it sits there and they keep their order (a pin past
+    the window's stills drops out), else the look's vibe's card object (``hero_still``). In place: the window's
+    ``chain_pins`` and ``hero``, the passage's ``hero``; returns the record's ``hero`` (None: no main drop)."""
+    from xenoform import morph_pass
+
+    main = next((p for p in song["passages"] if p.get("main")), None)
+    if main is None or not main.get("windows"):
+        return None
+    w = song["windows"][main["windows"][0]]
+    look = main.get("look") or {}
+    slots = int(w["morphs"]) + 1
+    pins = {int(k): str(v) for k, v in (w["body"].get("chain_pins") or {}).items() if str(k).isdigit()}
+    if pins:
+        first = min(pins)
+        still = pins[first]
+        moved = {k - first + HERO_SLOT: f for k, f in pins.items() if 0 <= k - first + HERO_SLOT < slots}
+        noun = next((str(r.get("noun") or "") for rows in morph_pass.catalogue().values() for r in rows
+                     if str(r.get("file")) == still), "")
+        why = "the loved chain's first object" if look.get("preset") else "your first pinned object"
+    else:
+        found = hero_still(str(look.get("vibe") or ""))
+        if found is None:
+            return None
+        still, noun, why = found
+        moved = {HERO_SLOT: still}
+    if slots <= HERO_SLOT:
+        return None
+    w["body"]["chain_pins"] = {str(k): f for k, f in sorted(moved.items())}
+    w["hero"] = still
+    main["hero"] = still
+    return {"still": still, "noun": noun, "why": why, "vibe": str(look.get("vibe") or ""), "passage": int(main["index"]),
+            "window": int(w["index"]), "slot": HERO_SLOT, "at": float(main["start"])}
+
+
 # ------------------------------------------------------------------------------------------------ the bodies
 
 
@@ -896,6 +986,8 @@ def _hold_pins(song: dict, noun_of: dict[str, str]) -> None:
         look = song["passages"][w["passage"]].get("look") or {}
         if w["part"]:
             kept[w["index"]] = {}
+        elif w.get("hero"):  # the main drop opens on its hero: its pins stay where place_hero put them, and keep the object
+            kept[w["index"]] = raw
         elif look.get("preset") and look.get("why") != "the loved chain you chose":
             chains[w["index"]] = [raw[k] for k in sorted(raw, key=int)]
         else:
@@ -1202,6 +1294,7 @@ def plan(features: dict, state: dict, *, drop: float | None, song_id: str = "", 
             w["body"] = window_body(base, p["look"], ctx, w["plan"], w, label=f"{name} · {where}",
                                     seed=seed0 + SEED_STEP * w["index"], song_id=song_id)
         if not clips:  # a clips song shows your clips, no object (clip_cut picks them in the Make)
+            song["hero"] = place_hero(song)  # a hero object opens the main drop, pinned before the objects are picked
             objects(song, features, again=vibes_of(state) is not None)
         song["morphs"] = sum(int(w["morphs"]) for w in windows)
     song["vibes"] = vibes_record(song, state)
