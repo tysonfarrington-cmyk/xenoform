@@ -29,12 +29,16 @@ MIN_S = 2.0        # a clip's run is at least two seconds, so the clip is seen
 MAX_S = 8.0        # and at most eight, so the morphs keep the cut moving
 MIN_CLIP_S = 2.0   # clips shorter than this are skipped
 MAX_ITEMS = 12     # images (twelve morph targets is the pool size)
-MAX_CLIPS = 24     # clips: a clips cut cycles through every one (clip_cut.slots), and the free film pack is about twenty
-LABELS = "labels.json"  # an optional sidecar in the folder, {file name: label}: what the chain calls a clip (the film pack writes one)
+MAX_CLIPS = 48     # clips: a clips cut cycles through every one (clip_cut.slots); the free film pack's version 2 is about
+                   # forty (1 Nov: every cut the plan wants shows a clip once), with room for a few of your own beside it
+LABELS = "labels.json"  # an optional sidecar in the folder, {file name: label}: what the chain calls a clip (the film pack
+                        # writes one); a value may be {"label", "colour", "motion", "living", "mood"} (the pack's version 2)
+MOODS = ("calm", "build", "drop")  # the passages a clip suits (film_pack.MOODS)
 
 
 def _labels(folder: Path) -> dict:
-    """The folder's ``labels.json`` ({file name: label}), or {} when there is none or it will not read."""
+    """The folder's ``labels.json`` ({file name: label, or a dict with a label and the clip's fields}), or {} when there
+    is none or it will not read."""
     path = folder / LABELS
     if not path.is_file():
         return {}
@@ -48,8 +52,8 @@ def _labels(folder: Path) -> dict:
 PACK = "pack.json"  # the free film pack's record beside its clips (film_pack.py): each clip's film is its ``source``
 
 
-def _families(folder: Path) -> dict:
-    """{file name: the film it is from} from the folder's ``pack.json`` (the free film pack writes one), or {}."""
+def _pack_rows(folder: Path) -> dict:
+    """{file name: its row} from the folder's ``pack.json`` (the free film pack writes one), or {}."""
     path = folder / PACK
     if not path.is_file():
         return {}
@@ -58,7 +62,31 @@ def _families(folder: Path) -> dict:
     except (OSError, ValueError):
         return {}
     rows = data.get("clips") if isinstance(data, dict) else None
-    return {str(r["file"]): str(r["source"]) for r in rows or [] if isinstance(r, dict) and r.get("file") and r.get("source")}
+    return {str(r["file"]): r for r in rows or [] if isinstance(r, dict) and r.get("file")}
+
+
+def _families(folder: Path) -> dict:
+    """{file name: the film it is from} from the folder's ``pack.json`` (the free film pack writes one), or {}."""
+    return {name: str(r["source"]) for name, r in _pack_rows(folder).items() if r.get("source")}
+
+
+def clip_fields(*rows) -> dict:
+    """The version 2 fields a clip's rows give (``colour`` and ``living`` true or false, ``motion`` 0 to 1, ``mood`` one
+    of ``MOODS``), a later row over an earlier one; a field of the wrong kind is left out, so the cut measures or guesses
+    as it did before."""
+    out: dict = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        for key in ("colour", "living"):
+            if isinstance(row.get(key), bool):
+                out[key] = row[key]
+        m = row.get("motion")
+        if isinstance(m, (int, float)) and not isinstance(m, bool) and 0.0 <= float(m) <= 1.0:
+            out["motion"] = float(m)
+        if row.get("mood") in MOODS:
+            out["mood"] = row["mood"]
+    return out
 
 
 def scan(folder: str | Path) -> dict:
@@ -68,6 +96,8 @@ def scan(folder: str | Path) -> dict:
     ``{"folder", "images": [paths], "clips": [{"path", "seconds"}]}``; a clip shorter than ``MIN_CLIP_S``
     or one ffprobe cannot read is left out. A clip named in the folder's ``labels.json`` carries its ``label``, and one
     its ``pack.json`` lists carries its ``family``: the film it is from (clip_cut holds a Breathe scene on one film).
+    Either sidecar may give a clip's ``colour``, ``motion``, ``living`` and ``mood`` (``clip_fields``; labels.json, which
+    you can edit, over pack.json): the cutter reads them instead of measuring or guessing.
     """
     folder = Path(str(folder)).expanduser()
     if not folder.is_dir():
@@ -76,7 +106,7 @@ def scan(folder: str | Path) -> dict:
     images = [str(i["path"]) for i in items if i["kind"] == "image"][:MAX_ITEMS]
     clips: list[dict] = []
     labels = _labels(folder)
-    films = _families(folder)
+    rows = _pack_rows(folder)
     for item in items:
         if item["kind"] != "video" or len(clips) >= MAX_CLIPS:
             continue
@@ -86,12 +116,16 @@ def scan(folder: str | Path) -> dict:
             log.warning("own clip %s unreadable: %s", item["path"], exc)
             continue
         if seconds >= MIN_CLIP_S:
+            name = Path(item["path"]).name
             clip = {"path": str(item["path"]), "seconds": round(seconds, 3)}
-            label = labels.get(Path(item["path"]).name)
+            entry = labels.get(name)
+            label = entry.get("label") if isinstance(entry, dict) else entry
             if isinstance(label, str) and label.strip():  # only words go on the chain: a number or an object is ignored
                 clip["label"] = label.strip()
-            if films.get(Path(item["path"]).name):
-                clip["family"] = films[Path(item["path"]).name]
+            row = rows.get(name) or {}
+            if row.get("source"):
+                clip["family"] = str(row["source"])
+            clip.update(clip_fields(row, entry))
             clips.append(clip)
     return {"folder": str(folder), "images": images, "clips": clips}
 

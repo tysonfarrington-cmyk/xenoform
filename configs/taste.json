@@ -1,6 +1,14 @@
 {
  "version": 1,
- "note": "Tys's standing rules as data (docs/TASTE.md says what each one does, why, and the day it came from). Every rule has an id, a kind, its data and a one-line reason. The app reads this file at every Make and re-cut (a change needs no restart); a missing or broken file means no rules at all. To drop a rule, delete it or give it \"off\": true. Kinds: subject (stills whose noun holds one of the words, as whole words, are never picked by the app; except spares a phrase; head: true reads only the noun's head, so a skull with horns is a skull), family (whole catalogue families never picked), run (at most max stills of the group in one cut), look (a look kept but demoted: a note, the back of the pool, or an effect that steps aside), limit (a cap on a knob or a picker), weight (the order families are drawn in).",
+ "note": "Tys's standing rules as data (docs/TASTE.md says what each one does, why, and the day it came from). Every rule has an id, a kind, its data and a one-line reason. The app reads this file at every Make and re-cut (a change needs no restart); a missing or broken file means no rules at all. To drop a rule, delete it or give it \"off\": true. Kinds: subject (stills whose noun holds one of the words, as whole words, are never picked by the app; except spares a phrase; head: true reads only the noun's head, so a skull with horns is a skull), family (whole catalogue families never picked), run (at most max stills of the group in one cut), look (a look kept but demoted: a note, the back of the pool, or an effect that steps aside), limit (a cap on a knob or a picker), weight (the order families are drawn in). banned_clips lists the clips no clips cut ever shows, each by its film pack id and its label, so a folder that still holds the old file never plays it.",
+ "banned_clips": [
+  {"id": "general_bridge", "label": "Keaton bridge", "since": "2026-11-01",
+   "reason": "The General's bridge scene got overused and its upload is too low in quality to use."},
+  {"id": "general_cannon", "label": "Keaton cannon", "since": "2026-11-01",
+   "reason": "The General is out entirely, the cannon with the bridge."},
+  {"id": "potemkin_steps", "label": "Potemkin steps", "since": "2026-11-01",
+   "reason": "Battleship Potemkin is out of the pack, the Odessa steps with it."}
+ ],
  "rules": [
   {"id": "no-cups-or-jugs", "kind": "subject", "since": "2026-10-29",
    "words": ["cup", "cups", "teacup", "teacups", "mug", "mugs", "jug", "jugs", "pitcher", "pitchers", "tankard"],

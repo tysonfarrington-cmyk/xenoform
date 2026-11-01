@@ -147,6 +147,13 @@ What a clips cut does with the pacing engine (`clip_cut`, the same for a clips s
   picture barely moves (the Moon's face, Caligari's stairs, the city of tomorrow) held for bars reads as a frozen
   picture, so it goes to the short shots of the drops and builds, where it flashes by.
 - **No shot under a bar** but in a hot drop run's first two bars: the plan's two-beat slivers fold into a neighbour.
+- **The pack's moods** (the free film pack's version 2, 1 Nov): each of its clips says its `mood` (calm, build or
+  drop), and a clip shot takes a clip of the mood its passage wants before one a step away: calm clips in the intro,
+  calm, sustain, release and outro, build clips in the builds, drop clips in every drop run (a drop run takes a build
+  clip before a calm one when its drop clips run out). Under Breathe a calm scene holds the film with the most clips
+  left of the mood it wants. The pack's `motion` stands in for the measure of a film that barely moves, its `colour`
+  for the black-and-white measure, and its `living` for the kaleido's reading of the clip's name. A folder of your own
+  is cut as before; give its `labels.json` the same fields (`{"label", "mood", "living"}` a file) to steer it.
 - The record carries the pacing block (passages, runs, rests, the line), and the timeline's re-cut obeys the same rules.
   Breathe off with Drops off is the clips cut as it was made before, byte for byte (`tests/test_clips_legacy.py`).
 
