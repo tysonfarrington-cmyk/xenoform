@@ -1,0 +1,703 @@
+{
+ "version": 1,
+ "source": "configs/vibes.json (comfy_pack/tools/sync_bundle.py)",
+ "vibes": [
+  {
+   "id": "chrome-mercury",
+   "name": "Liquid chrome",
+   "line": "A mirror-chrome drop pours itself into the next form.",
+   "palette": "silver",
+   "dark": true,
+   "tone": "dark",
+   "look": "flawless liquid chrome and mercury, mirror surface reflecting soft gradient light, deep graphite void",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "ready": true,
+   "featured": 1,
+   "tags": [
+    "liquid",
+    "metal",
+    "chrome"
+   ]
+  },
+  {
+   "id": "neon-noir",
+   "name": "Neon noir",
+   "line": "Wet streets, magenta and cyan rim light, rain in the haze.",
+   "palette": "magenta-cyan",
+   "dark": true,
+   "tone": "dark",
+   "look": "cinematic neon noir, wet glossy surfaces with magenta and cyan rim light, light rain haze and reflections on black wet asphalt, volumetric mist",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "pool": "neon-night",
+   "ready": true,
+   "featured": 2,
+   "tags": [
+    "neon",
+    "noir",
+    "wet"
+   ]
+  },
+  {
+   "id": "porcelain-kintsugi",
+   "name": "Porcelain & gold",
+   "line": "White porcelain that cracks open in gold on the beat.",
+   "palette": "ivory-gold",
+   "dark": false,
+   "tone": "bright",
+   "look": "glossy white porcelain broken and repaired with bright shining gold kintsugi seams running across the surface, soft museum light on a warm pale grey backdrop",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "pool": "porcelain-marble",
+   "ready": true,
+   "featured": 3,
+   "tags": [
+    "porcelain",
+    "clean",
+    "gold"
+   ]
+  },
+  {
+   "id": "bioluminescent",
+   "name": "Deep-sea glow",
+   "line": "Deep-sea forms that glow from inside.",
+   "palette": "teal-violet",
+   "dark": true,
+   "tone": "dark",
+   "look": "bioluminescent deep-sea organism glowing teal and violet from within, translucent tissue, floating particles, abyssal black water",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 0.85
+   },
+   "pool": "ocean",
+   "ready": true,
+   "featured": 4,
+   "tags": [
+    "water",
+    "organic",
+    "glow"
+   ]
+  },
+  {
+   "id": "risograph",
+   "name": "Risograph",
+   "line": "Two-colour print grain, inks sliding out of register.",
+   "palette": "pink-blue",
+   "dark": false,
+   "tone": "bright",
+   "look": "risograph print illustration, flat graphic shapes in two fluorescent ink colours pink and blue only, visible halftone grain and slight misregistration, off-white paper texture, not a photograph",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "pool": "paper-summer",
+   "ready": true,
+   "featured": 5,
+   "tags": [
+    "print",
+    "graphic",
+    "flat"
+   ]
+  },
+  {
+   "id": "iridescent-glass",
+   "name": "Iridescent glass",
+   "line": "Blown glass with a rainbow film and swimming caustics.",
+   "palette": "pearl-rainbow",
+   "dark": false,
+   "tone": "bright",
+   "look": "hand-blown iridescent glass with thin-film rainbow sheen, caustics and refractions, soft pearl-grey gradient backdrop",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "pool": "cosmic",
+   "ready": true,
+   "featured": 6,
+   "tags": [
+    "glass",
+    "crystal",
+    "iridescent"
+   ]
+  },
+  {
+   "id": "liquid-gold",
+   "name": "Molten gold",
+   "line": "Molten gold that pours, drips and cools to a polish.",
+   "palette": "gold",
+   "dark": true,
+   "tone": "dark",
+   "look": "molten 24k gold, glowing orange-hot edges cooling to polished gold, drips and splashes, dark forge smoke",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "ready": true,
+   "featured": 7,
+   "tags": [
+    "liquid",
+    "metal",
+    "gold"
+   ]
+  },
+  {
+   "id": "ink-wash",
+   "name": "Ink & paper",
+   "line": "Sumi ink blooming across wet paper.",
+   "palette": "sumi",
+   "dark": false,
+   "tone": "bright",
+   "look": "Japanese sumi-e ink wash painting, black ink bleeding into wet rice paper, expressive brush strokes, generous empty space",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "pool": "paper-summer",
+   "ready": true,
+   "featured": 8,
+   "tags": [
+    "ink",
+    "paper",
+    "calm"
+   ]
+  },
+  {
+   "id": "cyberspace-95",
+   "name": "Cyberspace 1995",
+   "line": "Green wireframe on an endless grid, 1995.",
+   "palette": "green-cyan",
+   "dark": true,
+   "tone": "dark",
+   "look": "1995 cyberspace, glowing green and cyan wireframe and low-poly gouraud shading, scanlines, phosphor glow, infinite grid floor, black",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "pool": "low-poly",
+   "ready": true,
+   "featured": 9,
+   "tags": [
+    "retro",
+    "wireframe",
+    "digital"
+   ]
+  },
+  {
+   "id": "wet-paint",
+   "name": "Wet paint",
+   "line": "Thick glossy paint folding into the next shape.",
+   "palette": "primary",
+   "dark": false,
+   "tone": "bright",
+   "look": "thick glossy wet acrylic paint, swirling ribbons of cobalt, vermilion and cream, impasto ridges, studio macro on cream backdrop",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "pool": "bloom",
+   "ready": true,
+   "featured": 0,
+   "tags": [
+    "paint",
+    "liquid",
+    "colour"
+   ]
+  },
+  {
+   "id": "shadow-self",
+   "name": "Shadow self",
+   "line": "A backlit silhouette and smoke in one shaft of light.",
+   "palette": "noir",
+   "dark": true,
+   "tone": "dark",
+   "look": "high-contrast film noir, a strong backlit silhouette, smoke curling in a single shaft of hard light, deep black shadows, 35mm grain",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "pool": "black",
+   "ready": true,
+   "featured": 10,
+   "tags": [
+    "noir",
+    "figure",
+    "smoke"
+   ]
+  },
+  {
+   "id": "botanical",
+   "name": "Bloom timelapse",
+   "line": "A single bloom on black, scrubbed by the song.",
+   "palette": "natural",
+   "dark": true,
+   "tone": "dark",
+   "look": "macro botanical timelapse photograph, a single flower on pure black, delicate petals, dewy, rich natural colour, shallow depth of field",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, hands, deformed, people, faces",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "pool": "bloom",
+   "ready": true,
+   "featured": 11,
+   "tags": [
+    "organic",
+    "plant",
+    "timelapse"
+   ]
+  },
+  {
+   "id": "ferrofluid",
+   "name": "Ferrofluid",
+   "line": "Black magnetic liquid bristles into spikes on the kick.",
+   "palette": "graphite",
+   "dark": true,
+   "tone": "dark",
+   "look": "jet-black glossy ferrofluid with sharp magnetic spikes and ridges, cold white rim light, pure black void",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, colourful, chrome mirror, soft",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "ready": true,
+   "featured": 0,
+   "tags": [
+    "liquid",
+    "metal",
+    "dark"
+   ]
+  },
+  {
+   "id": "glass-prism",
+   "name": "Glass prism",
+   "line": "Clear glass splits light into rainbow caustics.",
+   "palette": "spectral",
+   "dark": true,
+   "tone": "dark",
+   "look": "faceted crystal prism glass splitting a white beam into a vivid rainbow spectrum, saturated red to violet dispersion and coloured caustic light streaks across the object, pure black void",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, frosted, opaque, plastic",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "ready": false,
+   "featured": 0,
+   "tags": [
+    "crystal",
+    "glass",
+    "dark"
+   ]
+  },
+  {
+   "id": "hologram",
+   "name": "Hologram",
+   "line": "A projected light-form flickers into being, line by line.",
+   "palette": "cyan-magenta",
+   "dark": true,
+   "tone": "dark",
+   "look": "translucent emissive holographic light projection, cyan and magenta laser light, fine glowing contour lines, volumetric haze, pure black void",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, solid, opaque, metal, wood",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 0.85
+   },
+   "ready": false,
+   "featured": 0,
+   "tags": [
+    "neon",
+    "abstract",
+    "dark"
+   ]
+  },
+  {
+   "id": "y2k-chrome",
+   "name": "Y2K chrome",
+   "line": "Inflated chrome and frosted ice-blue plastic, millennium-clean.",
+   "palette": "ice-blue",
+   "dark": false,
+   "tone": "bright",
+   "look": "inflated puffy chrome and frosted translucent ice-blue plastic, glossy bubble forms, silver gradient studio, early-2000s futurism",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, dark, grungy, rust",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "ready": true,
+   "featured": 0,
+   "tags": [
+    "metal",
+    "bright",
+    "clean"
+   ]
+  },
+  {
+   "id": "low-poly",
+   "name": "Low-poly 32-bit",
+   "line": "Flat-shaded polygons from a late-90s console intro.",
+   "palette": "primary",
+   "dark": true,
+   "tone": "dark",
+   "look": "low-polygon 3D model with flat-shaded faceted triangles, affine-warped low-resolution textures, vertex colour gradients, late-1990s 32-bit console render, black void",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, smooth, photoreal, high poly, soft",
+   "ltx": {
+    "steps": 12,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "ready": true,
+   "featured": 0,
+   "tags": [
+    "abstract",
+    "dark"
+   ]
+  },
+  {
+   "id": "seapunk",
+   "name": "Seapunk",
+   "line": "Aqua and hot-pink gloss swims through retro web 3D.",
+   "palette": "aqua-pink",
+   "dark": false,
+   "tone": "bright",
+   "look": "glossy wet aqua teal and hot pink pearlescent surfaces, retro 1990s web 3D render, pastel ocean caustics, holographic sheen, deep teal backdrop",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, grey, muted, gritty",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "ready": false,
+   "featured": 0,
+   "tags": [
+    "water",
+    "iridescent",
+    "bright"
+   ]
+  },
+  {
+   "id": "psy-fractal",
+   "name": "Psy fractal",
+   "line": "Ultraviolet sacred geometry unfolds in fractal layers.",
+   "palette": "uv",
+   "dark": true,
+   "tone": "dark",
+   "look": "glowing ultraviolet fluorescent fractal geometry, intricate recursive symmetrical patterns, blacklight neon lime magenta and violet, pure black void",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, muddy, washed out, realistic photo",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 0.85
+   },
+   "ready": false,
+   "featured": 0,
+   "tags": [
+    "neon",
+    "spiral",
+    "abstract",
+    "dark"
+   ]
+  },
+  {
+   "id": "odd-machine",
+   "name": "Odd machine",
+   "line": "Rubbery biomechanics twitch with uncanny precision.",
+   "palette": "flesh-steel",
+   "dark": true,
+   "tone": "dark",
+   "look": "uncanny biomechanical form, glossy flesh-pink silicone fused with precision brushed steel parts and fine wiring, harsh surgical light, pure black void",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, cute, cartoon, gore, blood",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "ready": true,
+   "featured": 0,
+   "tags": [
+    "metal",
+    "dark"
+   ]
+  },
+  {
+   "id": "brutalist",
+   "name": "Brutalist",
+   "line": "Raw concrete monoliths under a hard sun.",
+   "palette": "concrete",
+   "dark": false,
+   "tone": "bright",
+   "look": "raw board-marked concrete monolithic sculpture, hard low raking sunlight, deep geometric shadows, overcast grey sky backdrop, architectural photography",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, colourful, glossy, neon",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "ready": true,
+   "featured": 0,
+   "tags": [
+    "stone",
+    "clean",
+    "still"
+   ]
+  },
+  {
+   "id": "ink-water",
+   "name": "Ink in water",
+   "line": "Vermilion and gold ink blooms through dark water.",
+   "palette": "vermilion",
+   "dark": true,
+   "tone": "dark",
+   "look": "a crisp sculpted form made of dense swirling vermilion red and gold ink frozen mid-bloom in clear dark water, the silhouette sharply readable, fine ink filaments trailing from its edges, pure black backdrop",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, solid object, hard edges",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 0.85
+   },
+   "ready": false,
+   "featured": 0,
+   "tags": [
+    "water",
+    "liquid",
+    "dark"
+   ]
+  },
+  {
+   "id": "porcelain-marble",
+   "name": "Porcelain marble",
+   "line": "White marble and blue-glazed porcelain on black velvet.",
+   "palette": "white-cobalt",
+   "dark": true,
+   "tone": "dark",
+   "look": "polished white veined marble and fine cobalt-blue glazed porcelain, museum spotlight, soft falloff, black velvet backdrop",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, cracked, dirty, plastic",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "ready": true,
+   "featured": 0,
+   "tags": [
+    "stone",
+    "clean",
+    "dark"
+   ]
+  },
+  {
+   "id": "lava-obsidian",
+   "name": "Lava obsidian",
+   "line": "Glowing magma cracks through black volcanic glass.",
+   "palette": "magma",
+   "dark": true,
+   "tone": "dark",
+   "look": "glossy black obsidian volcanic glass with glowing orange molten lava cracks, embers, heat shimmer free, pure black void",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, blue, cold, daylight",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "ready": true,
+   "featured": 0,
+   "tags": [
+    "fire",
+    "crystal",
+    "dark"
+   ]
+  },
+  {
+   "id": "thermal",
+   "name": "Thermal camera",
+   "line": "False-colour heat vision: white-hot to deep violet.",
+   "palette": "iron",
+   "dark": true,
+   "tone": "dark",
+   "look": "thermal infrared camera image, false-colour iron palette from white-hot yellow through orange and magenta to deep violet, heat signature, black cold background",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, natural colour, photograph, texture detail",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "ready": false,
+   "featured": 0,
+   "tags": [
+    "abstract",
+    "dark"
+   ]
+  },
+  {
+   "id": "crt-phosphor",
+   "name": "CRT phosphor",
+   "line": "A glowing tube screen, soft scanlines, warm tape bleed.",
+   "palette": "phosphor",
+   "dark": true,
+   "tone": "dark",
+   "look": "object shown on a glowing CRT monitor, soft visible scanlines and RGB phosphor glow, gentle analogue colour bleed, dark room, tasteful vintage video",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, heavy noise, torn, unreadable, modern flat screen",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 0.85
+   },
+   "ready": false,
+   "featured": 0,
+   "tags": [
+    "noir",
+    "neon",
+    "dark"
+   ]
+  },
+  {
+   "id": "ice-crystal",
+   "name": "Ice crystal",
+   "line": "Backlit frost crystals grow and fracture.",
+   "palette": "glacier",
+   "dark": true,
+   "tone": "dark",
+   "look": "clear frozen ice with intricate frost crystal growth and trapped bubbles, cold blue backlight, frost ferns, pure black void",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, warm, melting puddle, fire",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "ready": true,
+   "featured": 0,
+   "tags": [
+    "crystal",
+    "cold",
+    "dark"
+   ]
+  },
+  {
+   "id": "origami-noir",
+   "name": "Origami noir",
+   "line": "Black and gold-foil paper folds itself into new forms.",
+   "palette": "black-gold",
+   "dark": true,
+   "tone": "dark",
+   "look": "crisp origami folded from black paper and gold foil paper, sharp creases, elegant geometric folds, dim moody light, pure black void",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, white paper, crumpled, messy",
+   "ltx": {
+    "steps": 12,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 0.85
+   },
+   "ready": true,
+   "featured": 0,
+   "tags": [
+    "paper",
+    "dark"
+   ]
+  },
+  {
+   "id": "alien-botanical",
+   "name": "Alien botanical",
+   "line": "Iridescent alien flora with glowing veins unfurls.",
+   "palette": "violet-lime",
+   "dark": true,
+   "tone": "dark",
+   "look": "otherworldly alien plant form with iridescent violet petals, glowing lime veins, translucent tendrils and seed pods, moody dark greenhouse mist, black backdrop",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, people, hands, faces, earth plants, garden, daisy",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 0.85
+   },
+   "ready": false,
+   "featured": 0,
+   "tags": [
+    "organic",
+    "plant",
+    "dark"
+   ]
+  },
+  {
+   "id": "none",
+   "name": "None",
+   "line": "No vibe: the things as they are, their own materials, plain light, no grade.",
+   "palette": "neutral",
+   "dark": true,
+   "tone": "dark",
+   "look": "each object in its own real materials and natural colours, soft natural studio light, plain dark grey backdrop, photorealistic",
+   "negative": "text, letters, watermark, logo, two objects, duplicated features, extra copies, cut, flicker, shimmer, blurry, low quality, cartoon, illustration, painting, hands, deformed, people, faces",
+   "ltx": {
+    "steps": 16,
+    "cfg": 4,
+    "img_compression": 0,
+    "guide_end_strength": 1.0
+   },
+   "ready": true,
+   "featured": 12,
+   "tags": [
+    "plain",
+    "natural",
+    "none"
+   ]
+  }
+ ]
+}

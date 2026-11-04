@@ -65,8 +65,8 @@ if (-not (Test-Path $VenvPy)) {
 
 Write-Host "Installing Python packages into $Venv"
 & $VenvPy -m pip install --upgrade pip
-& $VenvPy -m pip install -r (Join-Path $Pack "requirements.txt")
-if ($LASTEXITCODE -ne 0) { Write-Host "pip could not install requirements.txt."; exit 1 }
+& $VenvPy -m pip install -r (Join-Path $Pack "requirements-desk.txt")
+if ($LASTEXITCODE -ne 0) { Write-Host "pip could not install requirements-desk.txt."; exit 1 }
 # The desk runs as `python -m xenoform`, so the package itself has to be in the venv.
 & $VenvPy -m pip install --no-deps -e $Pack
 if ($LASTEXITCODE -ne 0) { Write-Host "pip could not install the xenoform package."; exit 1 }

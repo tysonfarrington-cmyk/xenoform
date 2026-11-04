@@ -42,7 +42,7 @@ fi
 
 echo "Installing Python packages into $PACK/.venv"
 "$PACK/.venv/bin/python" -m pip install --upgrade pip
-"$PACK/.venv/bin/python" -m pip install -r "$PACK/requirements.txt"
+"$PACK/.venv/bin/python" -m pip install -r "$PACK/requirements-desk.txt"
 # The package itself (so `python -m xenoform` and the comfy-api-proxy entry point resolve), mirroring install.ps1.
 "$PACK/.venv/bin/pip" install --no-deps -e "$PACK"
 # Stems split by default (every loaded song, in the background), so the first Make is stem-reactive. Demucs is the

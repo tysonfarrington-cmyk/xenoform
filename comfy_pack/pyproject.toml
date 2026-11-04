@@ -1,0 +1,34 @@
+[project]
+name = "comfyui-xenoform"
+version = "0.1.0"
+description = "Xenoform for ComfyUI: a song becomes a music video of LTX morphs on the beat. Song analysis, a storyboard on the beats with a chain of objects, morph pairs for ComfyUI's own LTX nodes, a full-screen Morph Timeline editor saved with the workflow, and a beat-cut assemble."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+# Nothing beyond what ComfyUI ships (numpy, Pillow, torch, PyAV). librosa is used when it is installed.
+dependencies = []
+keywords = ["comfyui", "ltx", "music video", "morph", "beat", "audio-reactive"]
+
+[project.urls]
+Repository = "https://github.com/tysonfarrington-cmyk/xenoform"
+Documentation = "https://github.com/tysonfarrington-cmyk/xenoform/tree/main/comfy_pack#readme"
+"Bug Tracker" = "https://github.com/tysonfarrington-cmyk/xenoform/issues"
+
+# Comfy Registry (https://registry.comfy.org). Fill in PublisherId after creating the publisher account, then
+# `comfy node publish` from this folder publishes the pack alone. Until then, install from the git URL (README.md).
+# No `web` key here: __init__.py's WEB_DIRECTORY serves the editor, and ComfyUI 0.33 would load a second copy of it
+# from a `web` key.
+[tool.comfy]
+PublisherId = ""
+DisplayName = "Xenoform"
+Icon = ""
+includes = []
+requires-comfyui = ">=0.3.27"
+
+[[tool.comfy.Models]]
+location = "checkpoints/ltx-video-2b-v0.9.5.safetensors"
+model_url = "https://huggingface.co/Lightricks/LTX-Video/resolve/main/ltx-video-2b-v0.9.5.safetensors"
+
+[[tool.comfy.Models]]
+location = "text_encoders/t5xxl_fp8_e4m3fn_scaled.safetensors"
+model_url = "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp8_e4m3fn_scaled.safetensors"

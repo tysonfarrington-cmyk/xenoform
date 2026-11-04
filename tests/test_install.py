@@ -18,13 +18,25 @@ from xenoform.workflow_embed import png_with_workflow, read_workflow_png
 
 
 def test_node_pack_registers_from_the_repo_root():
+    """The repository cloned into custom_nodes: the node pack's five nodes and the desk's two, one web folder (the
+    pack's, which holds the Morph Timeline editor and the desk's tab)."""
+    import sys
+
     path = Path(__file__).resolve().parents[1] / "__init__.py"
     spec = importlib.util.spec_from_file_location("xenoform_comfy_entry", path)
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    sys.modules[spec.name] = module  # as ComfyUI registers it, so the entry's relative import of comfy_pack resolves
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.modules.pop(spec.name, None)
     assert "XenoformTryIt" in module.NODE_CLASS_MAPPINGS
     assert module.NODE_DISPLAY_NAME_MAPPINGS["XenoformTryIt"] == "Xenoform Try It"
-    assert module.WEB_DIRECTORY == "./web"
+    for name in ("XenoformSongAnalysis", "XenoformStoryboard", "XenoformMorphTimeline", "XenoformMorphPair", "XenoformAssemble"):
+        assert name in module.NODE_CLASS_MAPPINGS
+    assert module.WEB_DIRECTORY == "./comfy_pack/web"
+    web = (path.parent / module.WEB_DIRECTORY).resolve()
+    assert (web / "morph_timeline.js").is_file() and (web / "xenoform_desk.js").is_file()
     assert set(NODE_CLASS_MAPPINGS) == {"XenoformTryIt", "XenoformSetup"}
     assert "Xenoform Setup Check" in NODE_DISPLAY_NAME_MAPPINGS.values()
 
@@ -214,6 +226,6 @@ def test_installers_ship_demucs_by_default_with_an_opt_out():
     assert extras["stems"] == ["demucs>=4.0"]
     # stills.py imports PIL at module level, so Pillow must be a plain dependency in both files.
     assert any(dep.startswith("pillow") for dep in project["dependencies"])
-    assert "pillow" in (root / "requirements.txt").read_text(encoding="utf-8")
+    assert "pillow" in (root / "requirements-desk.txt").read_text(encoding="utf-8")
     ci = (root / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     assert "stems" not in ci and "demucs" not in ci
