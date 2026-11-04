@@ -320,15 +320,20 @@ def test_my_videos_rows_say_whether_a_cut_is_still_rendering(tmp_path, monkeypat
     from xenoform.config import load_config
 
     monkeypatch.setattr(ui, "work_dir", lambda: tmp_path)
-    for job_id in ("run00001", "done0002"):  # the animatic of a Make is on disk before the GPU pass ends
+    for job_id in ("run00001", "done0002", "edit0003"):  # the animatic of a Make is on disk before the GPU pass ends
         folder = tmp_path / "jobs" / job_id
         folder.mkdir(parents=True)
         (folder / "xenoform.mp4").write_bytes(b"\x00" * 64)
         (folder / "meta.json").write_text(json.dumps({"simple": True, "vibe": "black", "song": "Demo"}), encoding="utf-8")
     monkeypatch.setitem(ui._JOBS, "run00001", {"id": "run00001", "status": "running", "progress": 0.42})
+    # a finished cut with an edit running on it (_edit_start: a re-render, a swap, a re-cut) is not rendering: the edit
+    # runs where it was started (UI_REVIEW L7), and its card keeps Reopen, Re-render and Copy recipe
+    monkeypatch.setitem(ui._JOBS, "edit0003", {"id": "edit0003", "status": "running", "progress": 0.05, "edit": "rerender",
+                                               "edit_from": 1, "video_version": 1})
     rows = {row["id"]: row for row in TestClient(ui.create_app(load_config(None))).get("/api/videos").json()["videos"]}
     assert rows["run00001"]["status"] == "running" and rows["run00001"]["progress"] == 0.42
     assert rows["done0002"]["status"] == "done" and rows["done0002"]["progress"] == 1.0
+    assert rows["edit0003"]["status"] == "done" and rows["edit0003"]["progress"] == 1.0
 
 
 def test_the_setup_page_copy_is_in_the_users_words(tmp_path, monkeypatch):

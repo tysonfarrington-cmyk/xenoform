@@ -3008,6 +3008,9 @@ def create_app(cfg: dict | None = None):
                     simple = {}
             with _LOCK:
                 live = _JOBS.get(folder.name)
+            # a finished cut with an edit running on it (a re-render, a swap, a re-cut: _edit_start sets ``edit``) is not
+            # rendering: the edit runs where it was started (UI_REVIEW L7), and its card keeps Reopen, Re-render and Copy recipe
+            making = live if live and not live.get("edit") else None
             rows.append({
                 "id": folder.name,
                 "created": meta.get("created") or "",
@@ -3024,8 +3027,8 @@ def create_app(cfg: dict | None = None):
                 "hook": (folder / "hook.mp4").is_file(),
                 # a cut is listed as soon as its first picture is on disk, the animatic of a Make that is still on the GPU
                 # (UI review F14): the card says "rendering" and offers Open, not Re-render of a file that is not finished
-                "status": str((live or {}).get("status") or "done"),
-                "progress": float((live or {}).get("progress") or 0.0) if live else 1.0,
+                "status": str((making or {}).get("status") or "done"),
+                "progress": float((making or {}).get("progress") or 0.0) if making else 1.0,
             })
         from xenoform.perform_api import with_takes  # Perform's live takes (work/ui/takes) among the cuts, newest first
 
