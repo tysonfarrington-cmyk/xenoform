@@ -127,6 +127,35 @@ def _tempo(beats: list[float]) -> float:
     return round(60.0 / gaps[len(gaps) // 2], 1) if gaps else 0.0
 
 
+def _strip_passages(audio_id: str, window, duration: float) -> list[dict]:
+    """The passages the desk's strip shows for the cut's song (``perform_song``), on the cut's clock: shifted by the
+    window's start when the song is the whole one (an upload trimmed for the Make is analysed as its own stretch, from
+    0) and clipped to the cut. Empty when the desk has not analysed that song."""
+    if not audio_id or duration <= 0:
+        return []
+    try:
+        strip = perform_song(audio_id, buckets=60)
+    except Exception:  # an upload the desk forgot when it restarted: beats only, as before
+        return []
+    win = window if isinstance(window, dict) else {}
+    try:
+        start = float(win.get("song_start") or 0.0)
+    except (TypeError, ValueError):
+        start = 0.0
+    if start + duration > float(strip.get("duration") or 0.0) + 0.5:  # the song held is the cut's own stretch
+        start = 0.0
+    out = []
+    for row in strip.get("passages") or []:
+        a, b = max(0.0, float(row["start"]) - start), min(duration, float(row["end"]) - start)
+        if b - a < 0.05:
+            continue
+        p = {"role": str(row.get("role") or ""), "start": round(a, 3), "end": round(b, 3)}
+        if row.get("drop_run") is not None:
+            p.update({"drop_run": int(row["drop_run"]), "heat": float(row.get("heat") or 0.0)})
+        out.append(p)
+    return out
+
+
 @router.get("/api/perform/job/{job_id}")
 def perform_job(job_id: str) -> dict:
     """Everything ``/vj?job=<id>`` plays: the cut's clips (each with the object it lands on, for the pads), its shots on
@@ -198,6 +227,8 @@ def perform_job(job_id: str) -> dict:
         if sec.get("drop_run") is not None:
             p.update({"drop_run": int(sec["drop_run"]), "heat": float(sec.get("heat") or 0.0)})
         passages.append(p)
+    if not passages and mode not in ("stems", "song"):  # a plan whose shots name no passage (the bundled demo's): the strip's
+        passages = _strip_passages(str(meta.get("audio_id") or ""), info.get("window"), float(built.get("duration") or 0.0))
     runs = [p for p in passages if "drop_run" in p]
     if runs:  # the main run: the one the song's drop opens, else the hottest
         main = next((p for p in runs if drop is not None and float(p["start"]) - 0.01 <= drop < float(p["end"])), None) \

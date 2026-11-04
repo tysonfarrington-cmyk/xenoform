@@ -186,6 +186,51 @@ def test_a_cut_without_its_song_file_plays_its_own_soundtrack(desk, tmp_path):
     assert r.status_code == 200 and r.headers["content-type"].startswith("audio/") and r.content[4:8] == b"ftyp"
 
 
+def _demo_cut(work: Path, job_id: str, audio_id: str, window: dict, seconds: float, drop: float) -> None:
+    """A cut shaped like a Draft of the bundled demo: its plan's shots name no passage (no ``section``)."""
+    folder = _job(work, job_id)
+    meta = json.loads((folder / "meta.json").read_text(encoding="utf-8"))
+    (folder / "meta.json").write_text(json.dumps({**meta, "audio_id": audio_id, "song": "Bundled demo"}), encoding="utf-8")
+    info = json.loads((folder / "simple" / "simple.json").read_text(encoding="utf-8"))
+    n = 4
+    info["shots"] = [{"index": i, "start": round(seconds * i / n, 3), "end": round(seconds * (i + 1) / n, 3), "clip": i % 3} for i in range(n)]
+    info.update({"window": window, "drop": drop})
+    (folder / "simple" / "simple.json").write_text(json.dumps(info), encoding="utf-8")
+
+
+def test_a_demo_cut_without_sections_gets_the_strips_passages(desk, monkeypatch):
+    """The desk walk after the merge (integrate-4nov, gap B): a Draft of the bundled demo opened on Perform with no
+    passages ("beats only: the desk has not sent this song's sections"), its plan's shots naming none, while the desk's
+    strip for the demo shows build and DROP 1. perform_job falls back to the strip's passages on the cut's clock."""
+    client, work = desk
+    strip = client.get("/api/perform/song/demo").json()
+    _demo_cut(work, "demo1", "demo", {"song_start": 0.0, "length_s": 12.0}, 12.0, strip["drop"])
+    j = client.get("/api/perform/job/demo1").json()
+    assert [p["role"] for p in j["passages"]] == [p["role"] for p in strip["passages"]] and len(j["passages"]) >= 2
+    mains = [p for p in j["passages"] if p.get("main")]
+    assert len(mains) == 1 and mains[0]["role"] == "drop" and abs(mains[0]["start"] - strip["drop"]) < 0.05
+    assert j["passages"][-1]["end"] <= 12.0
+    # a whole song's window: shifted to the cut's clock and clipped to it; the song held as the cut's own stretch is not
+    from xenoform import perform_api
+
+    real = perform_api.perform_song
+    whole = {"duration": 60.0, "passages": [{"role": "build", "start": 0.0, "end": 25.0},
+                                             {"role": "drop", "start": 25.0, "end": 60.0, "drop_run": 0, "heat": 1.0}]}
+    monkeypatch.setattr(perform_api, "perform_song", lambda audio_id, buckets=600: whole)
+    _demo_cut(work, "win1", "upwhole01", {"song_start": 20.0, "length_s": 10.0}, 10.0, 5.0)
+    j = client.get("/api/perform/job/win1").json()
+    assert [(p["role"], p["start"], p["end"]) for p in j["passages"]] == [("build", 0.0, 5.0), ("drop", 5.0, 10.0)]
+    assert j["passages"][1].get("main") is True
+    whole["duration"] = 10.0
+    whole["passages"] = [{"role": "build", "start": 0.0, "end": 4.0}, {"role": "drop", "start": 4.0, "end": 10.0, "drop_run": 0, "heat": 1.0}]
+    j = client.get("/api/perform/job/win1").json()
+    assert [(p["start"], p["end"]) for p in j["passages"]] == [(0.0, 4.0), (4.0, 10.0)]
+    # a song the desk has not analysed (an upload forgotten at a restart) stays beats only
+    monkeypatch.setattr(perform_api, "perform_song", real)
+    _demo_cut(work, "gone1", "upforgotten", {"song_start": 0.0, "length_s": 10.0}, 10.0, 5.0)
+    assert client.get("/api/perform/job/gone1").json()["passages"] == []
+
+
 def test_perform_song_strip_for_a_track_the_desk_knows(desk):
     client, _ = desk
     j = client.get("/api/perform/song/demo").json()
