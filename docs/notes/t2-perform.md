@@ -49,9 +49,18 @@ Perform half of N7. Not merged, not pushed.
   soundtrack when the song file is gone) and its stems (`GET /api/perform/job/<id>`). It reads the cut's sections,
   beats, bars and drop from `lane.build`. **Follow the song** plays each shot's clip on the song's clock at the speed it
   was cut at. `vjUrl()` passes the job, and the cut's screen has one **Perform it** link beside Download.
-- **Pad holds and T1.** Pads go through `XenoMidi.holds` (press, release, top, clear, on). `vj.html` defines a local one
-  only when `midi.js` has none, and I proposed these names to the T1 session. Learnable targets: `pad:1`–`pad:8`,
-  `blackout`, `master`, `glow`, `speed`, `chaos`, `play`, `cue:drop`, `output`. `midi.js` is untouched.
+- **Pad holds and T1.** Pads go through `XenoMidi.holds` with t1-midi's API: ids are targets (`pad:3`),
+  `on(fn)` calls `fn(id, on, top, stack)`, and `top('pad:')` is the newest pad. `vj.html` defines a stand-in only when
+  `midi.js` has none. The `pad:*` handler leaves hold-mode rows to `midi.js`. `init` passes `read` (the on-screen
+  value, for soft takeover) and `targetName` (a pad's scene). L and the MIDI button open T1's docked map where it exists,
+  else Learn with the panel in the help sheet. The output window's body carries `clean` (T1's badges hide under it).
+  Learnable targets: `pad:1`–`pad:8`, `blackout`, `master`, `glow`, `speed`, `chaos`, `play`, `cue:drop`, `output`.
+  `midi.js` is untouched.
+- **Tested against t1-midi's `midi.js`** (its committed file dropped in temporarily, then restored):
+  - an on-screen pad holds through T1's stack;
+  - MIDI note 38 in the default map's hold mode shows pad 3, and note-off snaps back with the transport running;
+  - `read()` gives the on-screen values;
+  - L opens T1's dock (`xm-dock`), which names the pads by their scenes.
 
 ## How it was verified
 
@@ -115,8 +124,8 @@ Perform half of N7. Not merged, not pushed.
   (F) in the control view lends a fresh click and is the reliable path.
 - Real speakers or an audio interface: the latencies above are headless Chrome's. The clock follows
   `getOutputTimestamp`, so it should adapt, but it was not measured on hardware.
-- MIDI hardware with the hold pads (T1). The MiniLab profile still maps pads A to transitions; pads hold only when
-  learned onto `pad:N` or when T1's profiles map them.
+- MIDI hardware with the hold pads. On this branch's own `midi.js` the MiniLab profile still maps pads A to
+  transitions; with t1-midi's `midi.js` pads A1–A8 hold `pad:1`–`pad:8` (tested with synthetic events, not the device).
 - A whole song or a stems cut opens in Perform with its song and strip, but plays the library loops: its clips live in
   its passages' cuts.
 - Firefox: no Window Management, no H.264 MediaRecorder (VP8 is used). The output reads its opener the same way.
@@ -144,3 +153,7 @@ Perform half of N7. Not merged, not pushed.
   `galleryPanel` uses `takeCard`.
 - `ui.py` changes two lines: the router include and `with_takes` in `/api/videos`.
 - T5's Perform placeholder on `#perform/<job>` should open `/vj?job=<id>` (it does, per its note).
+- t1-midi also edits `vj.html`: a hold hook in `frame()`, its init block, `#midi-panel` out of the help with a `#midib`
+  button, and the L key. This branch already has the equivalents (holds applied by the engine, `read`/`targetName`, a
+  `#midib` button, L → `toggleDock`), so resolve those hunks by taking this branch's `vj.html` and t1-midi's `midi.js`.
+  t1-midi also fixes the `test_midi.py` failure above.

@@ -20,6 +20,7 @@
    <span class="rec-dot" id="rec-dot" aria-hidden="true"></span><span class="rec-time" id="rec-time" aria-live="polite"></span>
    <button type="button" class="ghost rec" id="recb" title="R: record the output, with the song's sound" data-midi="record">Rec</button>
   </div>
+  <button type="button" class="text" id="midib" title="L: the MIDI map and Learn">MIDI</button>
   <button type="button" class="text" id="helpb" title="?" aria-controls="help" aria-expanded="false">Help</button>
  </header>
  <div class="pf-grid">
@@ -499,10 +500,14 @@ const EV=[0,1,2,4,8];function rate(d){let i=EV.indexOf(S.every);i=Math.max(0,Mat
 function tog(k,btn){XP.set({[k]:S[k]?0:1})}
 function hud(){XP.set({hud:!S.hud})}
 const setTog=(k,btn,on)=>{XP.set({[k]:on?1:0})};
-// Pad holds (T1: pads are temporary overriders): press pushes, release pulls, the top is what shows, last-in-wins, and
-// the song never stops. midi.js may bring its own XenoMidi.holds with these names; this one stands in until it does.
-if(!OUT&&!XenoMidi.holds)XenoMidi.holds=(()=>{const st=[],fns=[];const top=()=>st.length?st[st.length-1]:null;const fire=()=>fns.forEach(f=>{try{f(top(),st.slice())}catch(e){console.error(e)}});
- return{press(id){const i=st.indexOf(id);if(i>=0)st.splice(i,1);st.push(id);fire()},release(id){const i=st.indexOf(id);if(i<0)return;st.splice(i,1);fire()},top,clear(){if(st.length){st.length=0;fire()}},on(f){fns.push(f)},get stack(){return st.slice()}}})();
+// Pad holds (T1: pads are temporary overriders): press(id) puts a pad on top, release(id) takes it off, the top is what
+// shows, last in wins, and the song never stops. midi.js brings XenoMidi.holds with these names (t1-midi); this one
+// stands in on a midi.js without it: ids are targets ("pad:3"), on(fn) calls fn(id, on, top, stack) and returns an
+// unsubscribe, top(prefix) is the newest id that starts with prefix.
+if(!OUT&&!XenoMidi.holds)XenoMidi.holds=(()=>{const st=[],fns=[];const top=p=>{for(let i=st.length-1;i>=0;i--)if(!p||String(st[i]).startsWith(p))return st[i];return null};
+ const tell=(id,on)=>{const t=top(),s=st.slice();fns.slice().forEach(f=>{try{f(id,on,t,s)}catch(e){console.error(e)}})};
+ return{press(id){const i=st.indexOf(id);if(i>=0)st.splice(i,1);st.push(id);tell(id,true)},release(id){const i=st.indexOf(id);if(i<0)return false;st.splice(i,1);tell(id,false);return true},
+  top,clear(){const was=st.splice(0);was.forEach(id=>tell(id,false))},list(){return st.slice()},held(id){return st.includes(id)},on(f){fns.push(f);return()=>{const i=fns.indexOf(f);if(i>=0)fns.splice(i,1)}}}})();
 addEventListener('keydown',e=>{if(e.target.tagName==='SELECT')return;const k=e.key;
  if(OUT||e.ctrlKey||e.metaKey||e.altKey||/^(INPUT|TEXTAREA)$/.test(e.target.tagName)&&e.target.type!=='range'||e.target.closest&&e.target.closest('[role=slider]')&&/^Arrow/.test(k))return;
  if(e.shiftKey&&/^Digit[1-8]$/.test(e.code)){e.preventDefault();if(!e.repeat)XP.press(+e.code.slice(5));return}
@@ -516,12 +521,14 @@ addEventListener('keydown',e=>{if(e.target.tagName==='SELECT')return;const k=e.k
  else if(/^[rR]$/.test(k))XP.rec();else if(/^[fF]$/.test(k))XP.fullscreen();else if(k==='?')XP.help();
  else if(/^[oO]$/.test(k))XP.openOutput();else if(/^[bB]$/.test(k))XP.blackout();else if(/^[dD]$/.test(k))XP.cueDrop();else if(k==='Home')XP.seek(0);
  else if(k==='Escape')XP.help(false);
- else if(/^[lL]$/.test(k)){XenoMidi.setLearnMode(!XenoMidi.learnMode);if(XenoMidi.learnMode)XP.help(true)}});
+ else if(/^[lL]$/.test(k))XP.midi()});
 addEventListener('keyup',e=>{if(!OUT&&/^Digit[1-8]$/.test(e.code))XP.release(+e.code.slice(5))});
 // MIDI: Web MIDI and the desk bridge (/ws/midi) through the shared mapping layer (midi.js). Default map = MiniLab 3.
 let intenToast=0;const stemName=n=>/^\d+$/.test(n)?((STEMS&&STEMS.stems)||[])[+n-1]||null:n;
 const PAD_TARGETS=[1,2,3,4,5,6,7,8].map(i=>'pad:'+i);
+// read: the value on screen, so a hardware knob takes over softly (t1-midi); targetName: a pad's scene in plain words
 if(!OUT)XenoMidi.init({page:'vj',toast,elements:{fx:'fx:next',every:'every',stemsb:'stem:1'},extraTargets:[...PAD_TARGETS,'blackout','master','glow','speed','chaos','play','cue:drop','output'],
+ read:t=>XP.readTarget(t),targetName:t=>XP.targetName(t),
  onStatus:s=>{$('h-midi').textContent=s.inputs.length?s.inputs.length+' input(s)'+(s.bridge==='bridge'?' + bridge':''):s.bridge==='bridge'?'bridge':s.bridge==='sse'?'bridge (sse)':'none'},
  targets:{
   intensity:v=>{XP.set({inten:Math.max(0,Math.min(2,v))});const now=performance.now();if(now-intenToast>250){intenToast=now;toast('Intensity '+S.inten.toFixed(2))}},
@@ -530,15 +537,17 @@ if(!OUT)XenoMidi.init({page:'vj',toast,elements:{fx:'fx:next',every:'every',stem
    else if(n==='step'){const i=KEYFX.indexOf(+S.fx),j=((i<0?0:i)+(v>0?1:-1)+KEYFX.length)%KEYFX.length;setFx(String(KEYFX[j]))}
    else{const f=KEYFX[+n-1];if(f!=null){setFx(String(f));XP.send('next',{fx:f})}}},
   'dance:*':n=>dance(+n),
-  'pad:*':(n,v)=>{if(v>0)XP.press(+n);else XP.release(+n)},blackout:v=>XP.blackout(v>0),
+  'pad:*':(n,v,ev,entry)=>{if(entry&&entry.mode==='hold')return;if(v>0)XP.press(+n);else XP.release(+n)},blackout:v=>XP.blackout(v>0),  // a hold row: midi.js holds it
   master:v=>XP.knob('master',v),glow:v=>XP.knob('glow',v),speed:v=>XP.knob('speed',v),chaos:v=>XP.knob('chaos',v),
   play:v=>{if(v>0)XP.togglePlay()},'cue:*':(n,v)=>{if(v>0)XP.cueDrop()},output:v=>{if(v>0)XP.openOutput()},
   mirror:v=>setTog('mir','mir',v>0),strobe:v=>setTog('stb','stb',v>0),kaleido:v=>{if(EXPERT)setTog('kal','kal',v>0);else toast('Kaleido is expert only (?expert=1)')},
   record:v=>{if((v>0)!==XP.recording())XP.rec()},tap:()=>XP.send('tap'),hud:v=>{if((v>0)!==S.hud)hud()},
   drums:v=>{XP.set({gain:{drums:v}})},bass:v=>{XP.set({gain:{bass:v}})},other:v=>{XP.set({gain:{other:v}})},vocals:v=>{XP.set({gain:{vocals:v}})},
   'stem:*':(n,v)=>{const name=stemName(n);if(name)setStemGain(name,v);else toast('No stem '+n+' (use this song\'s stems first)')}}});
-if(!OUT)XenoMidi.panel($('midi-panel'));
+// the MIDI map: docked by midi.js where it can (t1-midi: XenoMidi.dock), else the panel in the help sheet
+if(!OUT){if(XenoMidi.dock){const mp=$('midi-panel');if(mp)mp.remove()}else XenoMidi.panel($('midi-panel'))}
 if(Q.get('clean')==='1')document.documentElement.classList.add('clean');
+if(OUT||Q.get('clean')==='1')document.body.classList.add('clean');  // midi.js hides its badges under body.clean
 window.XC={loadTrack,trackFromDesk,useStems,micOn,micOff,listInputs,analyse,dance,setFx,rate,hud,ensureAC,loadStems,get track(){return trackEl},get file(){return trackFile},get mic(){return MIC},get ac(){return AC},stemsUrl:()=>STEMS_URL};
 requestAnimationFrame(frame);
 </script>

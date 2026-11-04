@@ -352,7 +352,7 @@
     }
     $("now-l").textContent = nowL;
     $("next-l").textContent = nextL;
-    const top = XenoMidi.holds.top(), pad = top ? C.pads[top - 1] : null;
+    const top = topPad(), pad = top ? C.pads[top - 1] : null;
     $("held-l").textContent = pad ? `pad ${top} · ${pad.label}: let go and it snaps back to the song${tr ? " at " + clock(tr.currentTime) : ""}` : "Hold a pad to show it; let go and the song carries on.";
     $("held-l").parentElement.classList.toggle("is-held", !!pad);
     const bar = r.bar;
@@ -385,9 +385,14 @@
       <b>${i + 1}</b><span>${esc(p.label)}</span><small>${p.kind === "look" ? "look" : "scene"}</small></button>`).join("");
     paintHeld();
   }
+  // the hold stack's ids are targets ("pad:3", as midi.js presses them for a pad in hold mode); the pads are numbered
+  const H = XenoMidi.holds;
+  const padNum = (id) => { const m = /^pad:(\d+)$/.exec(String(id == null ? "" : id)); return m ? +m[1] : null; };
+  const topPad = () => padNum(H.top("pad:"));
+  const heldPads = () => (H.list ? H.list() : []).map(padNum).filter((n) => n);
   // a hold changes classes in place: the button under the finger stays the same element, so its release is its own
   function paintHeld() {
-    const top = XenoMidi.holds.top(), stack = XenoMidi.holds.stack || [];
+    const top = topPad(), stack = heldPads();
     document.querySelectorAll("#pads [data-pad]").forEach((b) => {
       const n = +b.dataset.pad;
       b.classList.toggle("is-held", top === n);
@@ -395,9 +400,10 @@
       b.setAttribute("aria-pressed", top === n ? "true" : "false");
     });
   }
-  function press(n) { if (C.pads[n - 1]) XenoMidi.holds.press(n); }
-  function release(n) { XenoMidi.holds.release(n); }
-  XenoMidi.holds.on((top) => {
+  function press(n) { if (C.pads[n - 1]) H.press("pad:" + n); }
+  function release(n) { H.release("pad:" + n); }
+  H.on(() => {  // fn(id, on, top, stack): what shows is the newest pad held, whoever pressed it (the screen, a key, MIDI)
+    const top = topPad();
     const tr = track(), pos = tr ? tr.currentTime : 0;
     const open = C.holds.find((h) => h.end == null);
     if (open && open.pad !== top) open.end = pos;
@@ -734,6 +740,7 @@
   $("fs").onclick = () => fullscreen();
   $("recb").onclick = () => rec();
   $("helpb").onclick = () => help();
+  $("midib").onclick = () => window.XP.midi();
   $("helpx").onclick = () => help(false);
   $("playb").onclick = () => togglePlay();
   $("startb").onclick = () => seek(0);
@@ -771,6 +778,25 @@
   window.XP = {
     init, send, set, monitor, toast, help, rec, recording, togglePlay, seek, cue, cueDrop, press, release, blackout, knob, openOutput, fullscreen,
     monitorOnly, micFailed, trackLoaded, setSong, stems, report: R, linked, snapshot, song: () => C.song,
+    // the value on screen for a MIDI target, in the units of its mapping row (intensity 0..2, the rest 0..1), so a
+    // hardware knob takes over softly instead of jumping the picture (midi.js init({read}), t1-midi)
+    readTarget(t) {
+      if (t === "intensity") return S.inten;
+      if (t === "speed") return (S.speed - 0.25) / 1.75;
+      if (t === "glow" || t === "chaos" || t === "master") return S[t];
+      if (t === "drums" || t === "bass" || t === "other" || t === "vocals") return S.gain[t];
+      if (t === "every") return Math.max(0, EV.indexOf(S.every)) / 4;
+      return null;
+    },
+    targetName(t) {  // a pad in the MIDI map says what it shows
+      const n = padNum(t), p = n ? C.pads[n - 1] : null;
+      return p ? `Pad ${n}: ${p.label}` : null;
+    },
+    midi() {  // L and the MIDI button: the docked map where midi.js has one, else Learn with the panel in the help
+      if (XenoMidi.toggleDock) { XenoMidi.toggleDock(); return; }
+      XenoMidi.setLearnMode(!XenoMidi.learnMode);
+      if (XenoMidi.learnMode) help(true);
+    },
     ended() { paintTransport(); },
     // automation: play from start for seconds while recording, resolve with the saved take (perform_check.js)
     async go({ start = 0, seconds = 10 } = {}) {
