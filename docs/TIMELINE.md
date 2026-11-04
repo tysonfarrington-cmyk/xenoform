@@ -42,7 +42,7 @@ inside a shot and what happens at its edges.
 | **Play** | **Morph** (the clip plays whole: A becomes B) or **Hold** (the shot holds its start object, A, still; the orbit, the look, the beat FX and the foreshadow still run on it) | re-cut | `shot_overrides[i].play` = `"hold"`; the composed shot carries `hold: true` and `shot_indices` plays frame 0 throughout |
 | **Look** | Auto (the vibe's look), Off, or one preset (warm-leak, cool-echo, noir-glow, bloom-rush, negative-rush, cyan-flash, ...) | re-cut | `shot_overrides[i].look`; the composed shot carries `dance_fx` (the resolved preset or `"off"`), which `beatfx.LookPass` uses for that shot instead of the cut's mode |
 | **FX intensity** | 0 to 1 | re-cut | `shot_overrides[i].fx_intensity`; replaces the Intensity knob's value for that shot (`fx_intensity` on the composed shot, read by `guardrails.shot_fx` in `beatfx.beat_fx`) |
-| **Re-render this morph** | another seed, another length (2 to 5 s of source), a prompt variant | GPU, one morph | `rerenders` log, `clips[i]` replaced, the shot's `render_s` / `speed` updated; `POST /api/jobs/{id}/rerender` (1.5) |
+| **Re-render this shot** | another seed, another length (2 to 5 s of source), a prompt variant | GPU, one morph | `rerenders` log, `clips[i]` replaced, the shot's `render_s` / `speed` updated; `POST /api/jobs/{id}/rerender` (1.5) |
 | **Dream here** | 1, 2 or 3 s from this shot, light or deep: Z-Image Turbo img2img on every other frame (`xenoform.dream`, 28 Oct) | GPU, about 2.6 s a dreamed frame | `dreams` in the record, `dream` on the shots, the clips replaced; `POST /api/jobs/{id}/dream` |
 | **Timing** | As the cut, Smooth, On the beat or Snap: when this shot's change happens (`xenoform.morph_timing`, 28 Oct) | none (a re-cut) | `shot_overrides[i].timing`, applied with Apply like the look |
 | **Morph** (style) | Melt, Shatter, Bloom, Spin or Fold: how this shot's object becomes the next (`xenoform.morph_style`, 28 Oct) | GPU, one morph | the same re-render with `style`; `morph_styles[i]` in the record, the shot's `style` on the lane |
@@ -239,7 +239,7 @@ The lane under the result player becomes the **Timeline** panel (the first slice
   song row with the passages under them. A click on a shot or a boundary seeks the player there and opens its drawer
   under the timeline; a shot that differs from the default timeline is marked.
 - The **shot drawer**: Play (Morph / Hold), Look (the chips the Look row uses), FX intensity (a slider), then the GPU
-  buttons: Swap the object (the existing picker), Re-render this morph (seed, length, variant), Generate here.
+  buttons: Swap the object (the existing picker), Re-render this shot (seed, length, variant), Generate here.
 - The **boundary drawer**: Handoff (Morph / Cut), Dress it (Auto, None, the premium kinds, the boundary kinds), each
   with its one-line note.
 - **Apply** re-cuts with the overrides as they stand (one request, the whole maps), **Reset the timeline** clears them.
