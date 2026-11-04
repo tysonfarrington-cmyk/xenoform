@@ -5,6 +5,7 @@ cut's song again so Render works without choosing it; the desk clears a passage'
 import json
 import shutil
 import subprocess
+import threading
 import time
 import wave
 from pathlib import Path
@@ -208,3 +209,171 @@ def test_a_reopened_cuts_bundled_song_loads_before_the_song_list_was_read(tmp_pa
         assert got["calls"] == ["/api/songs", "/api/songs/load"], case  # the list once, then the cut's song
         assert got["ready"] is True and got["audioId"] == "song-ambient" and got["song"] == "ambient", case
         assert got["step"] == "render", case  # a reopened cut's own song keeps Render
+
+
+RESUME_HARNESS = r"""
+// The desk's real resumeMaking, resumeSong, loadCutSong, useBundledSong, useDemoSong, songHeld, cutOnSong and poll (its
+// done branch) against a stand-in for the rest of the desk: a reload or a link on #render/<job> while the Make runs.
+const fs = require("fs");
+const src = fs.readFileSync(__APP__, "utf8").replace(/\r\n/g, "\n");
+function fn(start) { const rest = src.slice(src.indexOf(start)); return rest.slice(0, rest.indexOf("\n}\n", 1) + 3); }
+const code = ["let easyTimer = null; let ignoreJob = null; const pollMisses = {}; const POLL_RETRY_MS = [];",
+  fn("async function resumeMaking(id, kept, quiet) {"), fn("async function resumeSong(id, job) {"), fn("async function loadCutSong(id, info) {"),
+  src.slice(src.indexOf("let songsAsking"), src.indexOf("function songClock(seconds)")), fn("function songHeld(easy) {"),
+  fn("async function useBundledSong(id, keepStep) {"), fn("async function useDemoSong(keepStep) {"), fn("function cutOnSong(easy) {"),
+  fn("async function poll(id) {").replace("async function poll(", "async function realPoll(")].join("\n");
+const desk = new Function(code + "\nreturn { resumeMaking, realPoll };")();
+const tick = () => new Promise((r) => setTimeout(r, 1));
+let calls = [];
+let jobAnswer = null;
+let songsLoad = true;
+let fileSong = false;
+let reopenSong = null;
+const ok = (body) => ({ ok: true, status: 200, json: async () => body });
+const no = (status) => ({ ok: false, status, json: async () => ({ detail: "no" }) });
+global.api = async (path, init) => {
+  calls.push(path);
+  await tick();
+  if (path.startsWith("/api/jobs/")) return ok(jobAnswer);
+  if (path === "/api/songs") return ok({ songs: [{ id: "ambient", title: "Ambient" }, { id: "other", title: "Other" }] });
+  if (path === "/api/songs/load") return songsLoad ? ok({ audio_id: `song-${JSON.parse(init.body).id}`, title: "x" }) : no(500);
+  if (path === "/api/demo") return ok({ audio_id: "demo", title: "demo" });
+  if (path.endsWith("/reopen")) return ok({ song: reopenSong });
+  if (path.endsWith("/song")) return fileSong ? ok({ audio_id: "up1", title: "Glitch Out (30 s cut)" }) : no(404);
+  throw new Error("unexpected " + path);
+};
+global.setInterval = () => 7;
+global.clearInterval = () => {};
+global.tickEasy = () => {};
+global.dropMaking = () => {};
+global.easyProgressText = (job) => `progress ${job.stage || ""}`;
+global.esc = (s) => String(s);
+global.window = { CSS: null };
+global.document = { querySelector: () => null, getElementById: () => null };
+let draws = 0;
+global.render = () => { draws += 1; };
+global.setEasyPhase = (p) => { global.state.easy.phase = p; };
+global.poll = (id) => calls.push(`poll ${id}`);
+global.adoptSession = (data) => { const previous = global.state; global.state = Object.assign({}, previous, { audioId: data.audio_id }); };
+global.settleCut = async () => {};
+global.loadSimpleOptions = async () => {};
+global.watchJob = () => {};
+global.notifyReady = () => {};
+global.showEasyPreview = () => {};
+global.clockText = (s) => `${Math.round(s)}s`;
+global.tookBreakdown = () => "";
+global.paintMaking = () => {};
+global.paintJob = () => {};
+global.lostContact = () => {};
+const fresh = (audioId, song, label) => ({ songs: null, audioId, job: null, lane: null,
+  easy: { song, songLabel: label, phase: "choose", step: "render", note: "", cutSongLabel: "" } });
+const view = (extra) => Object.assign({ phase: state.easy.phase, song: state.easy.song, label: state.easy.songLabel, audioId: state.audioId,
+  step: state.easy.step, onSong: global.cutOnSongNow(), note: state.easy.note, startedAt: state.easy.startedAt, calls: calls.slice() }, extra || {});
+(async () => {
+  const out = {};
+  global.cutOnSongNow = () => new Function(fn("function cutOnSong(easy) {") + "\nreturn cutOnSong;")()(state.easy);
+  const running = (song) => ({ id: "j1", status: "running", stage: "morphs", started: 1000, song });
+  const demo = { audio_id: "demo", label: "Bundled demo", bundled: null, file: false };
+  const ambient = { audio_id: "song-ambient", label: "Ambient", bundled: "ambient", file: false };
+  const upload = { audio_id: "up1", label: "Glitch Out (30 s cut)", bundled: null, file: true };
+  // a reload mid-render of a Draft of the bundled demo: the desk boots on the demo's analysis, no song chosen
+  global.state = fresh("demo", "", ""); calls = []; jobAnswer = running(demo);
+  await desk.resumeMaking("j1", null, false);
+  out.empty = view();
+  // a link on #render/<job> while another bundled song is on the desk: the job's own song replaces it
+  global.state = fresh("song-other", "other", "Other"); calls = []; jobAnswer = running(ambient); songsLoad = true;
+  await desk.resumeMaking("j1", null, false);
+  out.other = view();
+  jobAnswer = { id: "j1", status: "done", took_s: 226, video: "/v" };
+  await desk.realPoll("j1");
+  out.otherDone = view();
+  // an upload whose cut is not on disk yet: its song waits, and the end of the job brings it with the cut
+  global.state = fresh("demo", "", ""); calls = []; jobAnswer = running(upload); fileSong = false;
+  await desk.resumeMaking("j1", null, false);
+  out.uploadRunning = view();
+  fileSong = true; reopenSong = upload; jobAnswer = { id: "j1", status: "done", took_s: 226, video: "/v" };
+  await desk.realPoll("j1");
+  out.uploadDone = view();
+  // a bundled song that fails to load: the making screen still runs; the cut later says its song is not on the desk
+  global.state = fresh("demo", "", ""); calls = []; jobAnswer = running(ambient); songsLoad = false; reopenSong = ambient;
+  await desk.resumeMaking("j1", null, false);
+  out.failRunning = view();
+  jobAnswer = { id: "j1", status: "done", took_s: 226, video: "/v" };
+  await desk.realPoll("j1");
+  out.failDone = view();
+  console.log(JSON.stringify(out));
+})();
+"""
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="node runs the desk's song functions")
+def test_a_reload_while_the_make_runs_brings_the_jobs_song_back(tmp_path):
+    """The desk walk after the merge (integrate-4nov, gap A): a reload or a link on #render/<job> mid-render came back to
+    the making screen with its clock but an empty desk (no song, the strip empty, the head "· the song"), and the cut it
+    finished into said "its song is not on the desk" for the bundled demo. GET /api/jobs/<id> now names the job's song and
+    resumeMaking loads it as a reopened cut's (loadCutSong), keeping the making screen; poll's done branch brings it when
+    it could not load earlier."""
+    script = tmp_path / "resume.js"
+    script.write_text(RESUME_HARNESS.replace("__APP__", json.dumps(str(ROOT / "src/xenoform/ui_static/app.js"))), encoding="utf-8")
+    done = subprocess.run(["node", str(script)], capture_output=True, text=True, encoding="utf-8")
+    assert done.returncode == 0, done.stderr
+    out = json.loads(done.stdout.strip().splitlines()[-1])
+    e = out["empty"]
+    assert e["phase"] == "making" and e["song"] == "demo" and e["label"] == "Bundled demo" and e["audioId"] == "demo"
+    assert e["startedAt"] == 1000000 and e["onSong"] is True and e["step"] == "render" and "poll j1" in e["calls"]
+    o = out["other"]
+    assert o["phase"] == "making" and o["song"] == "ambient" and o["audioId"] == "song-ambient" and o["onSong"] is True
+    assert out["otherDone"]["phase"] == "result" and out["otherDone"]["onSong"] is True
+    assert not any(c.endswith("/reopen") for c in out["otherDone"]["calls"])  # its song was on the desk already
+    u = out["uploadRunning"]
+    assert u["phase"] == "making" and u["song"] == "" and u["calls"][-1] == "/api/videos/j1/song"
+    ud = out["uploadDone"]
+    assert ud["phase"] == "result" and ud["song"] == "file" and ud["audioId"] == "up1" and ud["onSong"] is True
+    assert ud["calls"][-2:] == ["/api/videos/j1/reopen", "/api/videos/j1/song"]
+    f = out["failRunning"]
+    assert f["phase"] == "making" and f["song"] == "" and "did not load" not in f["note"]
+    fd = out["failDone"]
+    assert fd["phase"] == "result" and fd["onSong"] is False and "did not load" not in fd["note"]
+    assert fd["calls"].count("/api/songs/load") == 1  # tried once: the cut's bar then says its song is not on the desk
+
+
+def test_a_running_jobs_route_names_its_song_and_its_upload_loads_before_the_cut_is_on_disk(desk, tmp_path):
+    folder = tmp_path / "jobs" / "re5"
+    folder.mkdir(parents=True)
+    _wav(tmp_path / "uploads" / "up5a5a5a5a.wav", 6.0)
+    (folder / "meta.json").write_text(json.dumps({"simple": True, "audio_id": "up5a5a5a5a", "song": "Glitch Out (30 s cut)"}), encoding="utf-8")
+    with ui_mod._LOCK:
+        ui_mod._JOBS["re5"] = {"id": "re5", "status": "running", "stage": "morphs", "progress": 0.4,
+                               "song": {"audio_id": "up5a5a5a5a", "label": "Glitch Out (30 s cut)", "bundled": None, "file": True}}
+    assert desk.get("/api/jobs/re5").json()["song"]["audio_id"] == "up5a5a5a5a"
+    r = desk.post("/api/videos/re5/song")
+    assert r.status_code == 200, r.text
+    assert r.json()["audio_id"] == "up5a5a5a5a"
+    with ui_mod._LOCK:
+        ui_mod._JOBS["re5"]["status"] = "error"
+    assert desk.post("/api/videos/re5/song").status_code == 404  # not running and no cut on disk: not on this machine
+
+
+def test_a_make_records_its_song_in_the_job(desk, tmp_path, monkeypatch):
+    gate = threading.Event()
+
+    def fake(cfg, audio_path, state, out_path, work, on_progress=None, tier_id=None, cancel=None):
+        gate.wait(5)
+        Path(out_path).parent.mkdir(parents=True, exist_ok=True)
+        Path(out_path).write_bytes(b"the cut")
+        return {"mode": "simple", "seconds": 1.0}
+
+    monkeypatch.setattr("xenoform.director.run_directed", fake)
+    demo = desk.get("/api/demo").json()
+    job_id = desk.post("/api/generate", json={**demo, "tiny": True, "song_label": "Bundled demo"}).json()["id"]
+    try:
+        job = desk.get(f"/api/jobs/{job_id}").json()
+        assert job["song"] == {"audio_id": "demo", "label": "Bundled demo", "bundled": None, "file": False}
+    finally:
+        gate.set()
+        for _ in range(200):
+            if desk.get(f"/api/jobs/{job_id}").json()["status"] != "running":
+                break
+            time.sleep(0.05)
+        with ui_mod._LOCK:
+            ui_mod._JOBS.pop(job_id, None)

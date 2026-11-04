@@ -3093,7 +3093,11 @@ def create_app(cfg: dict | None = None):
 
         from xenoform.analyze import analyze_audio
 
-        folder = _video_dir(video_id)
+        folder = work_dir() / "jobs" / storage_id(video_id, fallback="")
+        with _LOCK:  # a Make still running has no cut on disk yet: its song loads from its meta.json (resumeMaking)
+            running = (_JOBS.get(video_id) or {}).get("status") == "running"
+        if not (running and (folder / "meta.json").is_file()):
+            folder = _video_dir(video_id)
         meta = _read_meta(folder)
         audio_id = storage_id(str(meta.get("audio_id") or ""), fallback="demo")
         if audio_id == "demo" or audio_id.startswith("song-"):
@@ -3311,6 +3315,11 @@ def create_app(cfg: dict | None = None):
         recipe = _write_meta(out.parent, body, audio_id)
         if recipe and not body.get("simple_recipe"):
             body["simple_recipe"] = recipe
+        # the song the Make is of, as the cut's reopen names it (meta.json): a reload or a link on #render/<job> while
+        # it runs loads it on the desk again (app.js resumeMaking), without the cut's file the reopen route needs
+        song_view = {"audio_id": audio_id, "label": str(body.get("song") or body.get("song_label") or "")[:80],
+                     "bundled": audio_id[len("song-"):] if audio_id.startswith("song-") else None,
+                     "file": audio_id != "demo" and not audio_id.startswith("song-")}
         cancel_event = threading.Event()
         only = [str(item) for item in (body.get("only_scenes") or []) if str(item)]
         try:
@@ -3352,6 +3361,7 @@ def create_app(cfg: dict | None = None):
             "scene_transitions": [t.get("kind") if isinstance(t, dict) else t for t in (body.get("scene_transitions") or [])],
             "shot_looks": [str(s.get("dance_fx") or "") for s in (body.get("scenes") or []) if isinstance(s, dict)],
             "stems_path": str(body.get("stems_path") or ""),
+            "song": song_view,
             # Honest timing (job_timing): t0 / started, the planned seconds per phase for this song and Make, and the
             # overall fraction, ETA and phase boundaries _run_job's on_progress keeps up to date.
             **job_timing.start_fields(job_timing.plan_for(features, body, audio_path), body),

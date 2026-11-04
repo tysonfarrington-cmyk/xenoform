@@ -220,10 +220,12 @@ async function resumeMaking(id, kept, quiet) {
     state.job = job;
     state.easy.startedAt = Number(k.at) || (Number(job.started) > 0 ? Number(job.started) * 1000 : Date.now());
     state.easy.note = easyProgressText(job);
+    if (job.song && job.song.label) state.easy.cutSongLabel = job.song.label;  // the cut is of the job's song (cutOnSong)
     if (easyTimer) clearInterval(easyTimer);
     easyTimer = setInterval(tickEasy, 1000);
     setEasyPhase("making");
     poll(id);
+    if (job.song) await resumeSong(id, job);
     return;
   }
   dropMaking();
@@ -251,6 +253,21 @@ async function resumeMaking(id, kept, quiet) {
     state.easy.note = "The desk did not say what became of the render that was running. Reload once it answers.";
   }
   setEasyPhase("choose");
+}
+
+// A reload or a link on #render/<job> while it runs: the job's own song on the desk again (GET /api/jobs/<id> names it as
+// a reopened cut's record does, t4 N14: it replaces another song on the desk), so the strip draws its passages and the
+// making blocks, the head names it and the steps are ticked; the making screen, its clock and its poll stay. A song that
+// does not load leaves the render running, and the cut says so when it is done (songHeld). An upload loads from the
+// job's folder; if that fails, poll()'s done branch tries once more with the cut on disk (resumedSong).
+async function resumeSong(id, job) {
+  const song = (job && job.song) || {};
+  if (!song.audio_id || !state || !state.easy) return false;
+  state.easy.resumedSong = song.file ? id : "";
+  const ready = await loadCutSong(id, { song });
+  if (ready && state && state.easy && state.easy.resumedSong === id) state.easy.resumedSong = "";
+  if (state && state.easy && state.easy.phase === "making") render();
+  return ready;
 }
 
 // The five steps in the toolbar, on every screen. On Setup and Connect none is current and each one reachable is a
@@ -5568,6 +5585,10 @@ async function useBundledSong(id, keepStep) {
   if (!data) {  // back to the song step, cleanly: no half-loaded song (the one kept by Change, when there was one)
     state.easy.song = was ? was.song : "";
     state.easy.songLabel = was ? was.label : "";
+    if (state.easy.phase === "making") {  // a running job's song (resumeSong): the render goes on, its cut says so
+      render();
+      return;
+    }
     state.easy.note = "That song did not load. Try again, or choose a file.";
     setEasyPhase("choose");
     render();
@@ -5970,6 +5991,8 @@ async function poll(id) {
       state.easy.playedHere = false;
       state.easy.warm = true;
       state.easy.making = null;
+      const resumed = state.easy.resumedSong === id;  // a job taken up after a reload whose upload did not load yet (t4 N14)
+      state.easy.resumedSong = "";
       const took = Number(job.took_s || job.seconds || 0);
       state.easy.took = took;
       // the desk's warning or tier note beside Took (the cloud fell back, a tier dropped for memory, the frame fill did
@@ -5979,6 +6002,7 @@ async function poll(id) {
         ? job.detail
         : took ? `Took ${clockText(took)}${tookBreakdown(job.breakdown)}.${warn ? ` ${warn}` : ""}` : warn || "Your cut is ready.";
       render();
+      if (resumed && !cutOnSong(state.easy)) await loadCutSong(id).then((ready) => { if (ready) render(); });
       return;
     }
     if (job.status === "error" || job.status === "cancelled") {
