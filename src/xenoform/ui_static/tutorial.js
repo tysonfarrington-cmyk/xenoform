@@ -2,6 +2,9 @@
 (function () {
   const KEY = "xenoform.tutorial";
   const SIM = "Simulated. No GPU job was started. The bundled demo stands in.";
+  // widgets that turn on the arrow keys themselves: the tour's own Left and Right leave them alone. (A vibe card is a radio
+  // too, but the desk switches its own arrow keys off while the tour runs, so there the tour's steps stay the arrows' job.)
+  const ARROW_WIDGETS = '[role="slider"], [role="tab"], [role="listbox"], [role="menu"], [role="menuitem"], [role="spinbutton"], input[type="range"], input[type="radio"], audio[controls], video[controls]';
   let catalog = null;
   let catalogPromise = null;
   let running = null;
@@ -609,6 +612,10 @@
     const tag = document.activeElement && document.activeElement.tagName;
     const typing = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
     if (typing) return;
+    // an arrow key belongs to the widget that has focus (a knob, a slider, a vibe card in its radio group, a tab, a menu,
+    // a player's controls): the knob step in the tour turned the knob and the tour in one press (docs/UI_REVIEW.md A2)
+    const target = event.target && event.target.closest ? event.target : document.activeElement;
+    if (target && target.closest && target.closest(ARROW_WIDGETS)) return;
     if (event.key === "ArrowRight") {
       event.preventDefault();
       next();

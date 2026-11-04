@@ -244,7 +244,7 @@ def test_judges_page_is_generated_from_the_registry_and_up_to_date():
     assert listed[: len(featured)] == featured
     assert gen.rewrite(JUDGES, gen.render(keep)) == JUDGES  # the page is current
     assert gen.main(["--check"]) == 0
-    assert '<a href="/">Desk</a>' in JUDGES and 'href="index.html"' not in JUDGES
+    assert "<!--side-header-->" in JUDGES and "<header" not in JUDGES and 'href="index.html"' not in JUDGES  # the way back is the side shell's header (ui.py _side_header)
     import html
 
     for row in keep:

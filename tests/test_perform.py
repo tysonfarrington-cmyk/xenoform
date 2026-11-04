@@ -201,4 +201,4 @@ def test_vj_url_carries_the_cut_and_the_cut_screen_links_to_perform():
     assert 'params.set("job", job)' in vj and "easyVideoId()" in vj
     actions = app.split("function renderCut(easy, chosen) {")[1].split("const proto")[0]  # t5's Render step holds the cut screen
     assert ">Perform it</a>" in actions and 'href="${esc(vjUrl())}"' in actions
-    assert "function takeCard(row)" in app and 'row.kind === "take" ? takeCard(row)' in app
+    assert "function takeCard(row)" in app and 'if (row.kind === "take") return takeCard(row);' in app

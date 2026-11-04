@@ -26,8 +26,10 @@ def test_one_design_layer_is_linked_where_the_old_two_were():
     for sheet in ("strip.css", "songline.css", "hood.css"):
         assert "!important" not in re.sub(r"/\*.*?\*/", "", (STATIC / sheet).read_text(encoding="utf-8"), flags=re.S), sheet
     assert "var(--x-accent)" in re.sub(r"/\*.*?\*/", "", (STATIC / "hood.css").read_text(encoding="utf-8"), flags=re.S)
-    for page in ("judges.html", "moves.html"):
-        assert "desk.css" in (STATIC / page).read_text(encoding="utf-8"), page
+    for page in ("judges.html", "moves.html", "variations.html"):  # the side pages: desk.css, then side.css (the shell they share)
+        text = (STATIC / page).read_text(encoding="utf-8")
+        assert "desk.css" in text and text.index("desk.css") < text.index("side.css"), page
+    assert (STATIC / "side.css").is_file()
     rules = re.sub(r"/\*.*?\*/", "", DESK, flags=re.S)  # the comments may name the old layers' habit
     rules = rules.replace(".xf-strip-empty { display: none !important; }", "").replace("width: 100% !important", "")
     assert "!important" not in rules
