@@ -86,7 +86,7 @@ body[data-desk] .top { position: sticky; }
 .easy-crumbs .crumb.done { color: var(--x-text-2); }
 .easy-crumbs .crumb.done::before { content: "\2713"; color: #fff; background: var(--x-surface-4); box-shadow: none; font-size: 10px; }
 .easy-crumbs .crumb.now { color: #fff; background: var(--x-surface-3); box-shadow: var(--x-hi), 0 1px 2px rgba(0, 0, 0, 0.5); }
-.easy-crumbs .crumb.now::before { color: #fff; background: var(--x-accent); box-shadow: 0 0 0 3px var(--x-accent-soft); }
+.easy-crumbs .crumb.now::before { color: #fff; background: var(--x-primary); box-shadow: 0 0 0 3px var(--x-accent-soft); }
 .easy-crumbs button.crumb { cursor: pointer; color: var(--x-text-2); }
 @media (hover: hover) { .easy-crumbs button.crumb:hover { color: #fff; background: var(--x-surface-2); } }
 .easy-crumbs button.crumb:active { background: var(--x-surface-3); transform: translateY(1px); }
@@ -108,6 +108,13 @@ body[data-desk] .comfy-status[data-ok="1"]::before, .comfy-status[data-ok="1"]::
 }
 body[data-desk] .top > .ow-badge { margin-left: 0; }
 .top-actions { display: flex; align-items: center; gap: 6px; flex: none; margin-left: 0; }
+/* a ComfyUI that does not answer, said under the toolbar with the address that failed (docs/UI_REVIEW.md F11) */
+.comfy-banner {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 8px 16px;
+  background: rgba(242, 177, 74, 0.1); border-bottom: 1px solid rgba(242, 177, 74, 0.35); color: var(--x-text);
+}
+.comfy-banner p { margin: 0; font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; }
+.comfy-banner-actions { display: flex; align-items: center; gap: 6px; }
 
 /* ---------------------------------------------------------------- buttons */
 /* every control: same heights, same press, hover only with a mouse, a ring for the keyboard */
@@ -140,21 +147,23 @@ button.ghost, .upload, a.ghost, .easy .upload, .idea-shuffle, .idea-dice {
 button.ghost:active:not(:disabled), .upload:active, a.ghost:active { background: var(--x-surface-4); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5); }
 button.ghost.on, .cloud-toggle.on { background: var(--x-accent-soft); border-color: var(--x-accent); color: #fff; }
 
-/* primary: one per screen */
+/* primary: one per screen. White on --x-primary reads at 5.9:1 (the accent itself gave 3.9:1, and 2.9:1 on hover): every
+   state keeps white text at 4.5:1 or more, the highlight over the top of the button included (tests/test_desk_design.py
+   computes it from these rules) */
 button.generate, .upload.solid, .easy .upload.solid {
   display: inline-flex; align-items: center; justify-content: center; gap: 10px;
   min-height: var(--x-h-md); padding: 0 16px; border-radius: var(--x-r-md);
   font: 600 13.5px/1.2 var(--x-font-ui); color: #fff; white-space: nowrap;
-  background: var(--x-accent) linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 60%);
+  background: var(--x-primary) linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0) 60%);
   border: 1px solid rgba(255, 255, 255, 0.14);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 1px 2px rgba(0, 0, 0, 0.5), 0 6px 18px -8px rgba(124, 108, 255, 0.7);
   animation: none; filter: none;
 }
 @media (hover: hover) {
-  button.generate:hover:not(:disabled), .upload.solid:hover { background-color: var(--x-accent-hi); filter: none; }
+  button.generate:hover:not(:disabled), .upload.solid:hover { background-color: var(--x-primary-hi); filter: none; }
 }
 button.generate:active:not(:disabled), .upload.solid:active {
-  background-color: var(--x-accent-lo); box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35), 0 1px 1px rgba(0, 0, 0, 0.4);
+  background-color: var(--x-primary-lo); box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35), 0 1px 1px rgba(0, 0, 0, 0.4);
 }
 
 /* tertiary: text buttons, menu rows, links that act */
@@ -194,7 +203,7 @@ button.is-loading::before { border-width: 2px; }
   font: 500 13px/1.2 var(--x-font-ui); color: var(--x-text); background: transparent; border: 0; box-shadow: none; text-align: left;
 }
 .more-panel a.text { display: flex; align-items: center; text-decoration: none; }
-@media (hover: hover) { .more-panel button:hover, .more-panel a.text:hover { background: var(--x-accent); color: #fff; } }
+@media (hover: hover) { .more-panel button:hover, .more-panel a.text:hover { background: var(--x-primary); color: #fff; } }
 .more-panel .guard-expert {
   display: flex; align-items: center; gap: 8px; margin: 2px 0; padding: 7px 10px; border-radius: var(--x-r-sm);
   font-size: 12.5px; line-height: 1.3; color: var(--x-text-2); opacity: 1; max-width: none;
@@ -363,7 +372,7 @@ button.easy-showcase { width: 100%; margin-top: 12px; }
 }
 @media (hover: hover) { .stems-line label.text:hover { color: #fff; background: var(--x-surface-2); } }
 .stems-line button.text { min-height: 24px; padding: 0 6px; font-size: 12px; }
-.play-dot { width: 34px; height: 34px; background: var(--x-accent); color: #fff; font-size: 12px; box-shadow: 0 4px 12px -4px rgba(124, 108, 255, 0.8); }
+.play-dot { width: 34px; height: 34px; background: var(--x-primary); color: #fff; font-size: 12px; box-shadow: 0 4px 12px -4px rgba(124, 108, 255, 0.8); }
 .wave i { background: var(--x-surface-4); }
 .wave i.on { background: var(--x-accent-hi); }
 .drop-open {
@@ -376,7 +385,7 @@ button.easy-showcase { width: 100%; margin-top: 12px; }
 .drop-open h3 { grid-column: 1; margin: 0; font-size: 15px; font-weight: 600; color: #fff; letter-spacing: -0.01em; }
 .drop-open .drop-line { grid-column: 1; margin: 0; font-size: 12.5px; color: var(--x-text-2); }
 .drop-open button { grid-column: 2; grid-row: 1 / span 3; }
-.drop-open.is-hit { background: var(--x-accent); }
+.drop-open.is-hit { background: var(--x-primary); }
 .drop-open.is-hit .drop-line, .drop-open.is-hit h3, .drop-open.is-hit .eyebrow { color: #fff; }
 
 /* ---------------------------------------------------------------- vibes */
@@ -400,7 +409,7 @@ button.easy-showcase { width: 100%; margin-top: 12px; }
 .vibe-meta em, .vibe-card em { font-style: normal; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--x-text-3); }
 .vibe-tick {
   top: 8px; right: 8px; width: 22px; height: 22px; font-size: 12px; color: #fff;
-  background: var(--x-accent); border: 0; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  background: var(--x-primary); border: 0; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 .vibe-mini { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
 .vibe-mini .vibe-thumb { height: 52px; aspect-ratio: auto; }
@@ -556,6 +565,8 @@ button.easy-showcase { width: 100%; margin-top: 12px; }
 .gallery-card figcaption strong { font-size: 12.5px; }
 .gallery-actions { gap: 2px; }
 .gallery-actions button { min-height: 28px; padding: 0 8px; font-size: 12px; }
+.gallery-card.is-rendering { border-color: var(--x-accent-ring); }
+.gallery-state { display: block; color: var(--x-warn); font-weight: 500; }
 
 /* ---------------------------------------------------------------- making */
 .easy-make-head { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -618,7 +629,7 @@ button.easy-showcase { width: 100%; margin-top: 12px; }
 /* a shot whose morph is not a Melt names its style in the tile's corner (morph_style) */
 .shots-lane .shot .tl-style {
   position: absolute; top: 2px; left: 3px; font-size: 9px; font-weight: 600; line-height: 1; letter-spacing: 0.02em;
-  color: #fff; background: var(--x-accent); padding: 1px 3px; border-radius: 3px; pointer-events: none;
+  color: #fff; background: var(--x-primary); padding: 1px 3px; border-radius: 3px; pointer-events: none;
 }
 /* a Breathe rest (xenoform.pacing): the shot's object dwells after its morph; the badge sits in the tile's other corner */
 .shots-lane .shot .tl-rest {
@@ -649,6 +660,27 @@ button.easy-showcase { width: 100%; margin-top: 12px; }
 .easy-tool-head { margin-bottom: 14px; }
 .setup .panel, .connect, .model-card { padding: 16px; }
 .model-card { background: var(--x-surface-2); border: 1px solid var(--x-line); border-radius: 10px; }
+/* Setup (4 Nov 2026, docs/UI_REVIEW.md M1 to M3): what Make needs first, the tier heading, each model's files, the reasons a
+   Download is off, the long text behind Details */
+.setup-need { background: var(--x-accent-soft); border-color: var(--x-accent-ring); }
+.setup-need h2 { font-size: 17px; }
+.setup-need p { margin: 6px 0 0; color: var(--x-text-2); }
+.setup-facts { margin: 4px 0 8px; font-size: 13px; color: var(--x-text-2); }
+.note.is-stale { color: var(--x-warn); }
+.setup-detail, .model-detail { margin-top: 10px; }
+.setup-detail summary, .model-detail summary { width: fit-content; font-size: 12.5px; color: var(--x-text-2); cursor: pointer; }
+.setup-detail .note, .model-detail .note { margin: 6px 0 0; }
+.model-parts { display: grid; gap: 0; margin: 10px 0 0; padding: 0; list-style: none; }
+.model-parts li { display: grid; grid-template-columns: minmax(0, 1fr) auto 4.6rem; gap: 12px; align-items: baseline; padding: 5px 0; border-top: 1px solid var(--x-line); font-size: 13px; }
+.model-parts .part-name { min-width: 0; overflow-wrap: anywhere; }
+.model-parts .part-size { font-variant-numeric: tabular-nums; color: var(--x-text-2); }
+.model-parts .part-state { text-align: right; font-size: 12px; }
+.model-parts .is-here .part-state { color: var(--x-ok); }
+.model-parts .is-missing .part-state { color: var(--x-warn); }
+.model-parts code { display: block; font-size: 11px; color: var(--x-text-3); word-break: break-all; }
+.model-card .why-not { margin: 10px 0 0; color: var(--x-warn); }
+.model-card button.generate { margin-top: 10px; }
+.make-gate { margin: 8px 0 0; color: var(--x-text-2); }
 .snippet pre, .connect pre { background: var(--x-well); border: 1px solid var(--x-line); border-radius: var(--x-r-md); color: var(--x-text-2); }
 .kicker { font-size: 11.5px; letter-spacing: 0.06em; color: var(--x-text-3); }
 
@@ -662,11 +694,17 @@ dialog .field { gap: 6px; font-size: 12.5px; font-weight: 500; color: var(--x-te
 dialog .addon { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--x-text); }
 .dialog-actions { gap: 8px; }
 .licence-table th, .licence-table td { border-bottom-color: var(--x-line); }
+/* Settings and About in short lines, the long text behind Details; each setting says where it lives (this browser or the desk) */
+dialog .where { margin-left: 6px; font-size: 11px; font-weight: 400; letter-spacing: 0.02em; color: var(--x-text-3); }
+dialog .settings-detail, dialog .about-detail { margin: 6px 0 10px; }
+dialog .settings-detail summary, dialog .about-detail summary { width: fit-content; font-size: 12.5px; color: var(--x-text-2); cursor: pointer; }
+dialog .settings-detail .note, dialog .about-detail .note { margin: 6px 0 0; }
+.about-points { margin: 0 0 8px; padding-left: 1.2em; display: grid; gap: 4px; font-size: 13px; color: var(--x-text-2); }
 
 #command-palette { padding: 8px; background: var(--x-surface-2); border: 1px solid var(--x-line-2); border-radius: 12px; }
 #command-palette input { min-height: 40px; font-size: 14px; }
 #palette-list button { min-height: 34px; border-radius: var(--x-r-sm); background: transparent; border: 0; box-shadow: none; color: var(--x-text); }
-#palette-list button.on, #palette-list button:hover { background: var(--x-accent); color: #fff; }
+#palette-list button.on, #palette-list button:hover { background: var(--x-primary); color: #fff; }
 #palette-list .kind { color: var(--x-text-3); }
 
 .tour-card, .tour-offer {
@@ -813,19 +851,24 @@ body[data-knobs="folded"] .easy-done > .easy-side .knobs-fold { float: none; mar
 
 /* ---------------------------------------------------------------- example cuts (31 Oct 2026)
    A finished 15 s cut in a vibe (examples/cuts): a play badge in the corner of the vibe card, the layer it opens, and the
-   chips under the showcase reel. The badge is a span in the card (a button cannot hold a button). */
+   chips under the showcase reel. The badge is a button beside the card, in a cell with it (4 Nov: a button inside a radio
+   was a hidden Tab stop a card); the layer is a native modal <dialog>. */
+.vibe-cell { position: relative; display: grid; min-width: 0; }
+.vibe-cell > .vibe-card { width: 100%; }
 .vibe-eg {
-  position: absolute; top: 8px; left: 8px; z-index: 2; display: grid; place-items: center; width: 24px; height: 24px; padding-left: 2px;
-  border-radius: 50%; font-size: 10px; line-height: 1; color: #fff; cursor: pointer; background: rgba(8, 8, 12, 0.62);
+  position: absolute; top: 8px; left: 8px; z-index: 2; display: grid; place-items: center; width: 24px; height: 24px; min-height: 0; padding: 0 0 0 2px;
+  border: 0; border-radius: 50%; font-size: 10px; line-height: 1; color: #fff; cursor: pointer; background: rgba(8, 8, 12, 0.62);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.28), 0 2px 8px rgba(0, 0, 0, 0.5); opacity: 0.86;
   transition: opacity var(--x-t-fast) var(--x-ease), background var(--x-t-fast) var(--x-ease), transform var(--x-t-fast) var(--x-ease);
 }
-@media (hover: hover) { .vibe-eg { opacity: 0; } .vibe-card:hover .vibe-eg, .vibe-eg:focus-visible { opacity: 1; } }
-.vibe-eg:hover { background: var(--x-accent); transform: scale(1.08); }
+@media (hover: hover) { .vibe-eg { opacity: 0; } .vibe-cell:hover .vibe-eg, .vibe-cell:focus-within .vibe-eg, .vibe-eg:focus-visible { opacity: 1; } }
+.vibe-eg:hover { background: var(--x-primary); transform: scale(1.08); }
 .vibe-eg:focus-visible { outline: 2px solid var(--x-accent-hi, #a99bff); outline-offset: 2px; }
-.example-modal {
-  position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 16px; background: rgba(4, 4, 8, 0.78);
+dialog.example-modal {
+  width: min(380px, calc(100vw - 32px)); max-width: none; max-height: calc(100vh - 32px); padding: 0; overflow: visible;
+  background: transparent; border: 0; box-shadow: none;
 }
+.example-modal::backdrop { background: rgba(4, 4, 8, 0.78); backdrop-filter: none; }
 .example-card {
   display: flex; flex-direction: column; gap: 10px; width: min(380px, 100%); max-height: 100%; padding: 12px; overflow: auto;
   background: var(--x-surface-2); border: 1px solid var(--x-line-3, var(--x-line)); border-radius: 12px; box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);

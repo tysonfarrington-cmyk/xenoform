@@ -707,12 +707,17 @@ function vibeCards(easy, compact, which) {
   return rows.map((vibe) => {
     const on = vibe.id === easy.vibe;
     const tone = vibe.tone || (vibe.dark ? "dark" : "bright");
-    return `<button type="button" class="vibe-card${vibe.dark ? " is-dark" : ""}${on ? " on" : ""}${compact ? " is-mini" : ""}" role="radio" aria-checked="${on ? "true" : "false"}" tabindex="${on || (!easy.vibe && vibe.id === VIBES[0].id) ? "0" : "-1"}" data-act="easy-vibe" data-vibe="${esc(vibe.id)}">
+    const rove = on || (!easy.vibe && vibe.id === VIBES[0].id);  // the one card the radio group tabs to
+    const card = `<button type="button" class="vibe-card${vibe.dark ? " is-dark" : ""}${on ? " on" : ""}${compact ? " is-mini" : ""}" role="radio" aria-checked="${on ? "true" : "false"}" tabindex="${rove ? "0" : "-1"}" data-act="easy-vibe" data-vibe="${esc(vibe.id)}">
       <span class="vibe-thumb" style="background-image:url(${esc(media(vibe.still))})"></span>
       ${on && !compact ? '<span class="vibe-tick" aria-hidden="true">✓</span>' : ""}
-      ${vibe.example && !compact ? `<span class="vibe-eg" role="button" tabindex="0" data-act="vibe-example" data-vibe="${esc(vibe.id)}" title="Watch a finished cut in this vibe" aria-label="Watch a finished ${esc(vibe.name)} cut">&#9654;</span>` : ""}
       <span class="vibe-meta"><strong>${esc(vibe.name)}</strong>${compact ? "" : `<em>${esc(tone)}</em>`}</span>
     </button>`;
+    if (!(vibe.example && !compact)) return card;
+    // The play badge is a button beside the card, not one inside it (a button inside a radio is no widget at all, and each
+    // was a hidden Tab stop: docs/UI_REVIEW.md A3). Only the card the group tabs to has a badge that Tab reaches, one stop
+    // for the grid; the pointer reaches the others.
+    return `<div class="vibe-cell">${card}<button type="button" class="vibe-eg" tabindex="${rove ? "0" : "-1"}" data-act="vibe-example" data-vibe="${esc(vibe.id)}" title="Watch a finished cut in this vibe" aria-label="Watch a finished ${esc(vibe.name)} cut">&#9654;</button></div>`;
   }).join("");
 }
 
@@ -777,30 +782,53 @@ function openerKey() {
 // An example cut: about 15 s of a finished Cloud Final cut in a vibe (GET /api/vibes carries the url as `example`, from
 // examples/cuts). It opens in its own layer over the desk, so a redraw of the vibe grid under it leaves it playing.
 const EXAMPLE_LINE = "about 15 s of a finished Cloud Final cut in this vibe, picture only (the song is not in the file).";
+// The layer is a native modal <dialog> (docs/UI_REVIEW.md A3): the page behind it is inert, Tab stays inside it, Escape closes
+// it, and closing puts the focus back on the badge that opened it (or on that vibe's card when a redraw has replaced the badge).
 function closeExample() {
   const box = document.getElementById("xeno-example");
-  if (box) box.remove();
+  if (!box) return;
+  if (box.open) box.close();
+  finishExample(box);
 }
-function openExample(vibeId) {
+// Take the layer out and put the focus back (once, whichever way it was closed: our buttons, Escape, the dialog's own close)
+function finishExample(box) {
+  if (box._finished) return;
+  box._finished = true;
+  const from = box._from;
+  const id = box.dataset.vibe || "";
+  box.remove();
+  const back = from && from.isConnected ? from
+    : document.querySelector(`[data-act=vibe-example][data-vibe="${id}"]`) || document.querySelector(`[data-act=easy-vibe][data-vibe="${id}"]`);
+  if (back && back.focus) back.focus();
+}
+function openExample(vibeId, opener) {
   const vibe = vibeById(vibeId);
   if (!vibe || !vibe.example) return;
   closeExample();
-  const box = document.createElement("div");
+  const box = document.createElement("dialog");
+  box._from = opener || document.activeElement;
   box.id = "xeno-example";
   box.className = "example-modal";
-  box.dataset.act = "example-backdrop";
-  box.setAttribute("role", "dialog");
-  box.setAttribute("aria-modal", "true");
+  box.dataset.vibe = vibe.id;
+  box.dataset.act = "example-backdrop";  // a click on the dark around the card (the dialog's own backdrop) closes it
   box.setAttribute("aria-label", `${vibe.name}: a finished cut`);
   box.innerHTML = `<div class="example-card">
       <video playsinline autoplay loop muted controls preload="auto" poster="${esc(media(vibe.still))}" src="${esc(media(vibe.example))}"></video>
       <p class="example-line"><strong>${esc(vibe.name)}</strong> &middot; ${esc(EXAMPLE_LINE)}</p>
       <div class="example-actions">
-        <button type="button" class="generate" data-act="example-use" data-vibe="${esc(vibe.id)}">Use this vibe</button>
+        <button type="button" class="generate" data-act="example-use" data-vibe="${esc(vibe.id)}" autofocus>Use this vibe</button>
         <button type="button" class="ghost" data-act="example-close">Close</button>
       </div>
     </div>`;
+  box.addEventListener("close", () => finishExample(box));
+  box.addEventListener("keydown", (event) => {  // Escape closes it here, in this task: the focus is back before the next key
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    event.stopPropagation();  // it was meant for the layer: the desk's own Escape (stop the render) does not get it
+    closeExample();
+  });
   document.body.appendChild(box);
+  box.showModal();
   const use = box.querySelector("[data-act=example-use]");
   if (use) use.focus();
 }
@@ -818,19 +846,6 @@ function useExampleVibe(id) {
   const next = document.querySelector(`[data-act=easy-vibe][data-vibe="${id}"]`);
   if (next) next.focus();
 }
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && document.getElementById("xeno-example")) {
-    closeExample();
-    return;
-  }
-  const badge = event.target && event.target.closest ? event.target.closest(".vibe-eg") : null;
-  if (badge && (event.key === "Enter" || event.key === " ")) {  // the badge is a span in a card: it is not a button for the keyboard
-    event.preventDefault();
-    event.stopPropagation();
-    openExample(badge.dataset.vibe || "");
-  }
-}, true);
-
 // The showcase's side column: it is not his render, so no knobs, no re-cut, no share. One way on. Under the reel, a
 // finished cut in each vibe that has one (examples/cuts): a chip swaps it into the player, and Use it for my own goes back
 // to the song with that vibe picked.
@@ -1438,7 +1453,14 @@ function songMaking(easy, chosen) {
   const run = v.running || null;
   const assembling = v.status === "assembling" || v.assembling;
   const width = Math.round(100 * (assembling ? 0.95 : (Number(v.done || 0) + (run ? Number(run.progress || 0) : 0)) / Math.max(1, Number(v.of || 1))));
-  const head = v.status === "stopped" ? "Stopped." : v.status === "failed" ? "A passage did not render." : assembling ? "Laying the song together." : "Making the whole song.";
+  // a failed song says what failed: a passage's window (its detail) or only the laying together (assembly.error)
+  const assemblyError = String((v.assembly && v.assembly.error) || "");
+  const onlyAssembly = v.status === "failed" && !!assemblyError && Number(v.done || 0) === Number(v.of || 0);
+  const failedWindows = (v.passages || []).flatMap((p) => (p.windows || []).filter((w) => w.status === "error").map((w) => ({ p, w })));
+  const head = v.status === "stopped" ? "Stopped."
+    : onlyAssembly ? "The passages are done; laying them together failed."
+      : v.status === "failed" ? `${failedWindows.length > 1 ? `${failedWindows.length} passages` : "A passage"} did not render.`
+        : assembling ? "Laying the song together." : "Making the whole song.";
   const now = assembling ? `Laying the ${v.of} passages together on the song's beats: ${(v.assembling && v.assembling.detail) || "the tame, the title, the song"}`
     : run ? `Passage ${run.passage + 1} of ${(v.passages || []).length} · ${run.role} · ${run.vibe}${run.status === "waiting" ? " · waiting for the GPU" : ` · ${run.detail || "starting"}`}`
     : v.status === "queued" ? "Queued: the first passage starts as soon as the GPU is free." : "";
@@ -1446,12 +1468,23 @@ function songMaking(easy, chosen) {
   const rows = (v.passages || []).map((p) => {
     const wins = p.windows || [];
     const words = wins.map(songStatusWord).join(", ");
-    const cls = wins.every((x) => x.status === "done") ? "done" : wins.some((x) => x.status === "running" || x.status === "waiting") ? "now" : "wait";
-    return `<li class="${cls}">${esc(`${p.index + 1}. ${clockText(p.start)} ${p.role} · ${p.name || p.vibe} · ${p.morphs} morph${p.morphs === 1 ? "" : "s"} · ${words}`)}</li>`;
+    const why = wins.filter((x) => x.status === "error" && x.detail).map((x) => x.detail).join(" ");  // the window's own reason
+    const cls = wins.every((x) => x.status === "done") ? "done" : wins.some((x) => x.status === "running" || x.status === "waiting") ? "now" : wins.some((x) => x.status === "error") ? "bad" : "wait";
+    return `<li class="${cls}">${esc(`${p.index + 1}. ${clockText(p.start)} ${p.role} · ${p.name || p.vibe} · ${p.morphs} morph${p.morphs === 1 ? "" : "s"} · ${words}`)}${why ? `<span class="song-why">${esc(why)}</span>` : ""}</li>`;
   }).join("");
+  // Stopped or failed, the screen has two ways off it: carry on (Resume, or only the laying together again when that is all
+  // that failed) and back to the song screen; the queue is kept and shows under Make (docs/UI_REVIEW.md N8, F8)
   const buttons = v.status === "stopped" || v.status === "failed"
-    ? `<button type="button" class="generate" data-act="song-resume">Resume</button>`
+    ? `${onlyAssembly ? `<button type="button" class="generate" data-act="song-assemble">Lay it together again</button>` : `<button type="button" class="generate" data-act="song-resume">Resume</button>`}
+       <button type="button" class="ghost" data-act="easy-again">Back to the song</button>`
     : `<button type="button" class="ghost" data-act="song-stop">Stop</button>`;
+  const failure = v.status === "failed"
+    ? `<div class="song-failed" role="alert">${onlyAssembly
+      ? `<p><strong>Laying the song together failed:</strong> ${esc(assemblyError)}</p><p class="note">Every passage rendered and is kept. Lay it together again runs no GPU.</p>`
+      : failedWindows.length
+        ? `<p><strong>${failedWindows.length === 1 ? "This passage failed:" : "These passages failed:"}</strong></p><ul>${failedWindows.map(({ p, w }) => `<li>${esc(`${p.index + 1}. ${clockText(p.start)} ${p.role}: ${w.detail || "no reason was given"}`)}</li>`).join("")}</ul><p class="note">Resume runs the failed passages again and keeps the done ones.</p>`
+        : `<p><strong>The song failed.</strong> ${esc(assemblyError || "No reason was given.")}</p>`}</div>`
+    : "";
   return `<div class="easy easy-making">
       <div class="easy-make-head">
         <div>
@@ -1472,6 +1505,7 @@ function songMaking(easy, chosen) {
         <aside class="panel">
           <h3>The passages</h3>
           <p class="note">${esc(v.line || "")}. One Make a passage, one after another on a free GPU (another desk's render goes first); then the passages are laid together on the song's beats, no GPU.</p>
+          ${failure}
           <ol class="happen song-happen">${rows}</ol>
           <p class="note" id="easy-progress">${esc(now)}</p>
           <p class="note">You can leave this page: the queue keeps going on this desk, and the song waits for you. A passage that fails goes again once; Resume runs the rest and keeps the done ones.</p>
@@ -1581,9 +1615,9 @@ function wipDrawer(easy) {
   const open = readDrawer("xeno-wip");
   const item = (title, why, body) => `<div class="wip-item"><h4>${esc(title)}</h4><p class="note">${esc(why)}</p>${body}</div>`;
   return `<details class="fine-tune wip-drawer" id="wip-drawer"${open ? " open" : ""}>
-      <summary>Work in progress <small>Polly · cloud · Moves · VJ and MIDI · Connect an AI</small></summary>
-      <p class="note wip-lede">Xenoform is the morph engine. These work, but they are not the engine and not finished, so they wait here.</p>
-      ${item("Performer", "Polly sings, drums or dances to the song in a few shots of the cut (MiniMax H3). The idea line no longer brings her in: switch her on here.", performerRow(easy))}
+      <summary>Work in progress <small>Performer (Polly) · cloud · Moves · VJ and MIDI · Connect an AI</small></summary>
+      <p class="note wip-lede">Xenoform is the morph engine. These extras work beside it and live here.</p>
+      ${item("Performer (Polly)", "Polly sings, drums or dances to the song in a few shots of the cut (MiniMax H3). Only this switch brings her in.", performerRow(easy))}
       ${item("Paid cloud", "LTX-2.5 through a paid Comfy partner node: not open weights, off by default.", cloudRows(easy))}
       ${item("Live", "Character dances, live visuals to the stems, a MIDI controller on the knobs.",
         `<p class="note"><a href="/moves">Moves: make a character dance to a real dance clip (Wan Animate 2) &rarr;</a></p>
@@ -1642,10 +1676,10 @@ function timingRow(current, act, index, asCut) {
 const DROP_MODES = ["auto", "max", "off"];
 const SHAPE_NOTES = {
   "breathe-on": "Breathe: the calm passages become scenes. One look a passage, three or four bars a shot, a slow morph over two bars and then the object rests while the music plays on, no effects and no flash; the builds tighten from two bars a shot to one; the drops hit as hard as ever.",
-  "breathe-off": "Breathe off: the cut keeps one look and one timing all through, as it always has.",
+  "breathe-off": "Breathe off: the cut keeps one look and one timing all through.",
   "auto": "Drops on Auto: every drop opens with an event (a punch, Snap, a Shatter, a new object), the build's last four bars ramp into it, the loudest drops cut faster.",
   "max": "Drops on Max: every drop gets the main drop's full treatment.",
-  "off": "Drops off: one drop, as the cut was made before.",
+  "off": "Drops off: one drop only, the main one.",
 };
 // A clips cut takes the same Shape (xenoform.clip_cut, 1 Nov): its rests are film playing, never a held frame, and its
 // drops open on a hard cut to a fresh film
@@ -2399,21 +2433,45 @@ function galleryPanel() {
   if (!rows.length) {
     return `<section class="panel span gallery" id="my-videos"><h3>My videos</h3><p class="note">Every video you make shows up here, with its recipe code.</p></section>`;
   }
+  // a cut that is still rendering is listed as soon as its first picture is on disk (docs/UI_REVIEW.md F14): the card says so
+  // and offers Open (follow it), not Reopen, Re-render or Copy recipe, which would act on a file that is not finished
   const cards = rows
-    .map((row) => `<figure class="gallery-card" data-aspect="${esc(row.aspect)}">
+    .map((row) => {
+      const rendering = row.status === "running";
+      const pct = Math.round(Math.max(0, Math.min(1, Number(row.progress || 0))) * 100);
+      return `<figure class="gallery-card${rendering ? " is-rendering" : ""}" data-aspect="${esc(row.aspect)}">
         <video muted playsinline preload="metadata" loop src="${esc(media(row.url))}#t=1.5"></video>
         <figcaption><strong>${esc(row.song || row.vibe || row.id)}</strong>
           <span>${esc([row.vibe, row.energy, row.aspect, row.tier].filter(Boolean).join(" · "))}</span>
-          <span class="mono">${esc(String(row.created || "").replace("T", " ").slice(0, 16))}</span>
+          ${rendering ? `<span class="gallery-state" role="status">Rendering${pct ? ` · ${pct} %` : ""}</span>` : `<span class="mono">${esc(String(row.created || "").replace("T", " ").slice(0, 16))}</span>`}
           <span class="gallery-actions">
-            <button type="button" class="text" data-act="video-open" data-id="${esc(row.id)}">Reopen</button>
-            <button type="button" class="text" data-act="video-rerender" data-id="${esc(row.id)}"${row.recipe ? "" : " disabled"}>Re-render</button>
-            <button type="button" class="text" data-act="video-copy" data-id="${esc(row.id)}"${row.recipe ? "" : " disabled"}>Copy recipe</button>
+            <button type="button" class="text" data-act="video-open" data-id="${esc(row.id)}">${rendering ? "Open" : "Reopen"}</button>
+            ${rendering ? "" : `<button type="button" class="text" data-act="video-rerender" data-id="${esc(row.id)}"${row.recipe ? "" : " disabled"}>Re-render</button>
+            <button type="button" class="text" data-act="video-copy" data-id="${esc(row.id)}"${row.recipe ? "" : " disabled"}>Copy recipe</button>`}
           </span>
         </figcaption>
-      </figure>`)
+      </figure>`;
+    })
     .join("");
   return `<section class="panel span gallery" id="my-videos"><h3>My videos</h3><div class="gallery-grid">${cards}</div></section>`;
+}
+
+// Open on a cut that is still rendering: the making screen follows its job (poll) with the clock where the cut already is.
+function followRunningCut(row) {
+  state.easy.reopenId = "";
+  state.easy.reopenUrl = "";
+  state.easy.recipe = row.recipe || "";
+  state.easy.failed = false;
+  state.easy.showcase = false;
+  state.easy.note = "";
+  state.job = { id: row.id, status: "running", stage: "analyze", progress: Math.max(0.02, Number(row.progress || 0)), detail: "Reconnecting", mode: "live", quality: state.quality, error: null };
+  state.easy.startedAt = Date.now() - Math.max(0, Number(row.seconds || 0)) * 1000;
+  if (!state.easy.eta) state.easy.eta = easyPlanEta() || easyEtaGuess();
+  if (easyTimer) clearInterval(easyTimer);
+  easyTimer = setInterval(tickEasy, 1000);
+  setEasyPhase("making");
+  render();
+  poll(row.id);
 }
 
 async function loadVideos() {
@@ -3480,6 +3538,10 @@ function cloudFinalRow(easy) {
 }
 
 async function easyMake() {
+  if (setupGate()) {  // the models Make needs are not installed: Setup opens at once (and looks again as it opens)
+    goToSetup();
+    return;
+  }
   const vibe = vibeById(state.easy.vibe);
   if (!vibe) return;
   if (morphSource(state.easy) === "clips" && state.easy.tier === "cloud") state.easy.tier = "draft";  // Cloud Final has no clips path
@@ -3746,6 +3808,8 @@ function render() {
   else restorePlace(place);
   paintPlayhead();
   paintPending();
+  paintMakeGate();
+  paintComfyBanner();
 }
 
 // Setup & models and Connect an AI as full pages on the desk (the "..." menu, the line under Make, #setup and #connect).
@@ -4364,7 +4428,7 @@ function adoptSession(data, options = {}) {
     addons: previous && previous.addons != null ? !!previous.addons : readAddons(),
     paidCloudEnv: data.paid_cloud ? String(data.paid_cloud.env || "") : previous ? previous.paidCloudEnv || "" : "",
     paidCloud: paidCloudFor(data, previous),
-    endpoint: data.endpoint || (previous && previous.endpoint) || "",
+    endpoint: readEndpoint() || data.endpoint || (previous && previous.endpoint) || "",
     recipe: data.recipe,
     opener: previous && previous.audioId === data.audio_id ? previous.opener || null : null,
     video: data.video || (previous && previous.video) || "",
@@ -4603,6 +4667,10 @@ document.addEventListener("click", async (event) => {
       }
       // the card only selects; "Make it with ..." under the grid starts the render (one click on a thumbnail used to)
       render();
+      // the redraw replaced the card that had the focus: put it on the new one, or the next arrow press has nowhere to start
+      // (the mini cards on the cut's screen stopped after one step: docs/UI_REVIEW.md A4)
+      const chosen = document.querySelector(`[data-act=easy-vibe][data-vibe="${state.easy.vibe}"]`);
+      if (chosen) chosen.focus();
       return;
     }
     render();
@@ -4613,6 +4681,10 @@ document.addEventListener("click", async (event) => {
       if (make) make.focus();
     }
   } else if (act === "easy-make") {
+    if (setupGate()) {  // the button reads "Get the 11.5 GB model": Setup first, whether or not a song and a vibe are picked
+      easyMake();
+      return;
+    }
     if (!state.easy.song || !state.easy.vibe) {
       state.easy.note = state.easy.song ? "Pick a vibe." : "Choose a song.";
       const note = document.getElementById("easy-note");
@@ -4998,6 +5070,10 @@ document.addEventListener("click", async (event) => {
   } else if (act === "video-open") {
     const row = (state.videos || []).find((item) => item.id === el.dataset.id);
     if (!row) return;
+    if (row.status === "running") {  // still rendering: follow it on the making screen
+      followRunningCut(row);
+      return;
+    }
     state.easy.reopenId = row.id;
     state.easy.knobsTouched = {};
     if (row.vibe && vibeById(row.vibe)) state.easy.vibe = row.vibe;
@@ -5165,7 +5241,7 @@ document.addEventListener("click", async (event) => {
   } else if (act === "easy-preset") {
     applyPreset(el.dataset.id || "");
   } else if (act === "vibe-example") {
-    openExample(el.dataset.vibe || "");
+    openExample(el.dataset.vibe || "", el);
   } else if (act === "example-close") {
     closeExample();
   } else if (act === "example-backdrop") {
@@ -5209,6 +5285,12 @@ document.addEventListener("click", async (event) => {
     if (target && target.scrollIntoView) target.scrollIntoView({ behavior: "smooth", block: "start" });
   } else if (act === "easy-recut-knobs") {
     recutWithKnobs();
+  } else if (act === "comfy-settings") {
+    const open = document.getElementById("open-settings");
+    if (open) open.click();
+  } else if (act === "comfy-banner-off") {
+    comfyBannerOff = (state && state.endpoint) || "http://127.0.0.1:8188";
+    paintComfyBanner();
   } else if (act === "go") {
     const menu = el.closest("details.more-menu");
     if (menu) menu.open = false;
@@ -5564,6 +5646,8 @@ document.getElementById("open-settings").addEventListener("click", () => {
     paid.disabled = state.paidCloudEnv === "on" || state.paidCloudEnv === "off";
     const why = document.getElementById("paid-cloud-env");
     if (why) why.textContent = state.paidCloudEnv ? `Set by XENO_PAID_CLOUD=${state.paidCloudEnv === "on" ? "1" : "0"} when the desk started.` : "";
+    const where = document.getElementById("paid-cloud-where");  // where this one lives: the desk's switch wins over the browser's
+    if (where) where.textContent = state.paidCloudEnv ? "set by the desk" : "this browser";
   }
   const folder = document.getElementById("library-folder");
   if (folder) folder.value = state.libraryFolder || "";
@@ -5576,7 +5660,8 @@ document.getElementById("open-settings").addEventListener("click", () => {
 
 document.getElementById("save-settings").addEventListener("click", () => {
   if (!state) return;
-  state.endpoint =document.getElementById("endpoint").value.trim() || "http://127.0.0.1:8188";
+  state.endpoint = document.getElementById("endpoint").value.trim() || "http://127.0.0.1:8188";
+  writeEndpoint(state.endpoint);
   state.addons = document.getElementById("addons").checked;
   writeAddons(state.addons);
   const paid = document.getElementById("paid-cloud");
@@ -5600,7 +5685,9 @@ document.getElementById("save-settings").addEventListener("click", () => {
   state.libraryPick = null;
   document.getElementById("settings").close();
   render();
-  refreshComfy();
+  refreshComfy().then(() => {  // the facts and the banner read the new answer, not the old one
+    if (state && state.view !== "setup" && onFirstScreen()) render();
+  });
 });
 
 document.addEventListener("change", (event) => {
@@ -5629,6 +5716,7 @@ document.addEventListener("change", (event) => {
   const field = event.target && event.target.id === "easy-endpoint" ? event.target : null;
   if (!field || !state) return;
   state.endpoint = field.value.trim() || "http://127.0.0.1:8188";
+  writeEndpoint(state.endpoint);
   const settings = document.getElementById("endpoint");
   if (settings) settings.value = state.endpoint;
   refreshComfy().then(() => render());
@@ -5653,7 +5741,63 @@ async function refreshComfy() {
   const note = document.getElementById("comfy-settings-status");
   if (note) note.textContent = `${label}. The desk pings /system_stats on ${endpoint}.`;
   if (!state) return;
+  // the first answer counts when it is a no: the desk was drawn before it came, as if ComfyUI were there
+  const flipped = state.comfyOk === undefined ? ok === false : state.comfyOk !== ok;
   state.comfyOk = ok;
+  paintComfyBanner();
+  if (flipped) {  // ComfyUI came or went: what Setup read from it is another answer now (and the Make gate follows it)
+    loadSetup().then(() => {
+      if (!state) return;
+      // the first screen's facts say "no render" or a time by it; the cut's screen keeps its player, it is not redrawn for this
+      if (state.view === "setup" || onFirstScreen()) render();
+      else paintMakeGate();
+    });
+  }
+}
+
+// The desk before a cut: choosing the song and the vibe (not the making screen, the cut's own screen or the showcase, whose
+// player a redraw would rebuild)
+function onFirstScreen() {
+  return !!state && !!state.easy && !["making", "result", "showcase"].includes(state.easy.phase);
+}
+
+// A ComfyUI that does not answer is said above the desk, with the address that failed and what Make does instead
+// (docs/UI_REVIEW.md F11); the address is in Settings. The pill in the toolbar keeps its short word.
+let comfyBannerOff = "";  // the address whose banner was dismissed (a new address, or ComfyUI coming back, says it again)
+function paintComfyBanner() {
+  const old = document.getElementById("comfy-banner");
+  const address = (state && state.endpoint) || "http://127.0.0.1:8188";
+  if (state && state.comfyOk !== false) comfyBannerOff = "";
+  const show = !!state && state.comfyOk === false && state.view !== "setup" && state.view !== "connect" && comfyBannerOff !== address;
+  if (!show) {
+    if (old) old.remove();
+    return;
+  }
+  const html = `<p><strong>ComfyUI is not answering at ${esc(address)}.</strong> Make plays this vibe's pictures in the browser and renders nothing until it does.</p>
+    <span class="comfy-banner-actions"><button type="button" class="ghost" data-act="comfy-settings">Open Settings</button><button type="button" class="text" data-act="comfy-banner-off">Dismiss</button></span>`;
+  if (old) {
+    if (old.dataset.address !== address) old.innerHTML = html;
+    old.dataset.address = address;
+    return;
+  }
+  const bar = document.createElement("div");
+  bar.id = "comfy-banner";
+  bar.className = "comfy-banner";
+  bar.dataset.address = address;
+  bar.setAttribute("role", "alert");
+  bar.innerHTML = html;
+  const header = document.querySelector("header.top");
+  if (header) header.insertAdjacentElement("afterend", bar);
+}
+
+// A making screen with nothing rendering behind it is a dead end: a whole song that stopped or failed, a cut whose job was
+// cancelled. The logo leaves it (docs/UI_REVIEW.md N8); a song or a cut that is still running keeps its screen.
+function makingIsIdle() {
+  const easy = state && state.easy;
+  if (!easy || easy.phase !== "making") return false;
+  if (easy.songRun) return !["queued", "running", "assembling", "ready"].includes(String(easy.songRun.status || ""));
+  const job = state.job;
+  return !job || job.status !== "running" || (!!ignoreJob && job.id === ignoreJob);
 }
 
 // The logo is the home button: back to the song screen, from anywhere (a running job keeps its making screen).
@@ -5666,7 +5810,7 @@ if (brandLink) {
     if (viewFromHash() !== "simple") {
       try { history.pushState(null, "", "#simple"); } catch (err) { location.hash = "simple"; }
     }
-    if (state.easy.phase !== "making") {
+    if (state.easy.phase !== "making" || makingIsIdle()) {  // a render in flight keeps its screen; a stopped one does not
       state.easy.note = "";
       setEasyPhase("choose");
     }
@@ -5714,6 +5858,55 @@ function filmPackCard(pack) {
   </article>`;
 }
 
+// One model on Setup (docs/UI_REVIEW.md M2, M3): a short line, the files it needs each installed or missing with one total,
+// what a Download will still fetch, and the reason it is off when it cannot run (the drive is too small, the card too small).
+// The long text sits behind Details. The status span and the bar carry ids (dl-status-<id>, dl-track-<id>) so pollDownload
+// rewrites them in place while a download runs.
+function modelCard(model) {
+  const job = (state.downloads || {})[model.id] || {};
+  const running = job.status === "running";
+  const width = Math.round((job.progress || 0) * 100);
+  const ready = model.ready != null ? !!model.ready : !!model.present;
+  const parts = model.parts || [];
+  const have = parts.filter((part) => part.present).length;
+  const why = ready || running ? "" : model.why_not || "";
+  const status = running || job.status === "error"
+    ? job.detail || job.error || "Downloading"
+    : ready
+      ? "Installed"
+      : model.manual
+        ? "Place the files yourself"
+        : have
+          ? `${parts.length - have} of ${parts.length} files missing`
+          : model.required ? "Needed to make videos" : "Optional";
+  const label = running ? "Downloading" : have ? "Download the rest" : "Download";
+  const button = ready || model.manual
+    ? ""
+    : `<button type="button" class="generate${running ? " is-loading" : ""}" data-act="download-model" data-id="${esc(model.id)}"${running || why ? " disabled" : ""}${why ? ` title="${esc(why)}" aria-describedby="why-${esc(model.id)}"` : ""}>${label} · ${esc(model.need_label || model.size_label)}</button>`;
+  const variants = model.variants || [];
+  const picker = variants.length > 1
+    ? `<label>File<select data-act="pick-model" data-id="${esc(model.id)}" aria-label="Weight file for ${esc(model.name)}">${variants
+        .map((file) => `<option value="${esc(file)}"${file === model.chosen ? " selected" : ""}>${esc(file.split("/").pop())}</option>`)
+        .join("")}</select></label>`
+    : "";
+  const list = parts.length
+    ? `<ul class="model-parts">${parts.map((part) => `<li class="${part.present ? "is-here" : "is-missing"}"><span class="part-name">${esc(part.label)}${model.manual ? ` <code>${esc(part.folder)}/${esc(part.name)}</code>` : ""}</span><span class="part-size">${esc(part.size_label)}</span><span class="part-state">${part.present ? "Installed" : "Missing"}</span></li>`).join("")}</ul>
+      ${model.bytes ? `<p class="note">${esc(model.size_label)} in all${ready || model.manual || !have ? "" : `, ${esc(model.need_label)} still to get`}.</p>` : ""}`
+    : "";
+  const blurb = model.blurb || String(model.detail || "").split(". ")[0];
+  return `<article class="model-card${why ? " is-off" : ""}" id="model-${esc(model.id)}">
+    <header><strong>${esc(model.name)}</strong><span>${esc(model.badge || (model.required ? "Needed" : "Optional"))}</span></header>
+    <p>${esc(blurb)}</p>
+    <p class="status"><span id="dl-status-${esc(model.id)}">${esc(status)}</span>${model.filename && !parts.length ? ` · ${esc(model.filename)}` : ""}</p>
+    ${ready ? "" : list}
+    ${picker}
+    ${running ? `<div class="track" id="dl-track-${esc(model.id)}"><span style="width:${width}%"></span></div>` : ""}
+    ${why ? `<p class="note why-not" id="why-${esc(model.id)}">${esc(why)}</p>` : ""}
+    ${button}
+    <details class="model-detail"><summary>Details</summary><p class="note">${esc(model.detail)}</p>${ready ? list : ""}</details>
+  </article>`;
+}
+
 function renderSetup() {
   const setup = state.setup;
   if (!setup) {
@@ -5733,47 +5926,35 @@ function renderSetup() {
       <button type="button" class="ghost" data-act="check-extra">Check again</button></section>`;
   }
   const tier = setup.tier || {};
-  const cards = (setup.models || [])
-    .map((model) => {
-      const job = (state.downloads || {})[model.id] || {};
-      const running = job.status === "running";
-      const width = Math.round((job.progress || 0) * 100);
-      const status = model.present
-        ? "Installed"
-        : model.manual
-          ? "Place the local file"
-          : job.status === "error"
-            ? job.detail || job.error
-            : job.detail || (model.required ? "Needed for a live restyle" : "Optional");
-      const button = model.present || model.manual
-        ? ""
-        : `<button type="button" class="generate${running ? " is-loading" : ""}" data-act="download-model" data-id="${esc(model.id)}" ${running ? "disabled" : ""}>${running ? "Downloading" : "Download"} · ${esc(model.size_label)}</button>`;
-      const variants = model.variants || [];
-      const picker = variants.length
-        ? `<label>File<select data-act="pick-model" data-id="${esc(model.id)}" aria-label="Weight file for ${esc(model.name)}">${variants
-            .map((file) => `<option value="${esc(file)}"${file === model.chosen ? " selected" : ""}>${esc(file.split("/").pop())}</option>`)
-            .join("")}</select></label>`
-        : "";
-      return `<article class="model-card">
-        <header><strong>${esc(model.name)}</strong><span>${esc(model.badge || (model.required ? "Fast fallback" : "Optional"))}</span></header>
-        <p>${esc(model.detail)}</p>
-        <p class="status"><span id="dl-status-${esc(model.id)}">${esc(status)}</span>${model.filename ? ` · ${esc(model.filename)}` : ""}</p>
-        ${picker}
-        ${running ? `<div class="track" id="dl-track-${esc(model.id)}"><span style="width:${width}%"></span></div>` : ""}
-        ${button}
-      </article>`;
-    })
-    .join("");
+  const cards = (setup.models || []).map(modelCard).join("");
   const llm = setup.llm || {};
   const llmJob = (state.downloads || {}).llm || {};
+  // the page was read while ComfyUI answered; the header pill says it does not now: the check is out of date
+  const stale = state.comfyOk === false && !!setup.comfy_answered;
+  const comfyLine = stale
+    ? `Out of date: ComfyUI is not connected now. This list was read from ComfyUI at ${setup.comfy_url || "its address"} before it stopped answering.`
+    : setup.comfy_answered
+      ? `Read from ComfyUI at ${setup.comfy_url || "its address"}.`
+      : "ComfyUI is not answering, so the models folder was read.";
+  const gate = setup.gate && setup.gate.blocked ? setup.gate : null;
+  const facts = [tier.vram_label ? `Detected ${tier.vram_label}` : "", setup.disk ? `${setup.disk.free_label} on the models drive` : ""].filter(Boolean).join(" · ");
   return `<div class="setup">
-    <section class="panel">
+    ${gate ? `<section class="panel setup-need" role="status">
+      <h2>${esc(gate.line)}</h2>
+      <p>Press Download on the card below. Make comes back once it is installed.</p>
+    </section>` : ""}
+    <section class="panel setup-head">
       <p class="kicker">Setup check</p>
-      <h2>${esc(tier.label || "This machine")}</h2>
+      <h2>${esc(tier.heading || (tier.label ? `${tier.label} GPU preset` : "This machine"))}</h2>
+      ${facts ? `<p class="setup-facts">${esc(facts)}</p>` : ""}
       <p>${esc(tier.detail || "")}</p>
-      <p class="note">${esc(setup.checked || "")}</p>
-      <p class="note">${esc(setup.disk ? setup.disk.free_label : "")} on the models drive. ${esc(setup.try_it || "")}</p>
-      <p class="note">${esc((setup.stems || {}).detail || "")}</p>
+      <p class="note${stale ? " is-stale" : ""}" id="setup-checked"${stale ? ' role="status"' : ""}>${esc(comfyLine)}${stale ? ' <button type="button" class="text" data-act="check-extra">Check again</button>' : ""}</p>
+      <details class="setup-detail">
+        <summary>Details</summary>
+        <p class="note">${esc(setup.checked || "")}</p>
+        <p class="note">${esc((setup.stems || {}).detail || "")}</p>
+        <p class="note">${esc(setup.try_it || "")}</p>
+      </details>
     </section>
     <section class="panel models">${cards}</section>
     ${setup.film_pack ? `<section class="panel models">${filmPackCard(setup.film_pack)}</section>` : ""}
@@ -5786,7 +5967,6 @@ function renderSetup() {
           ? `<p class="status">Ollama is up.</p>`
           : `<button type="button" class="ghost${llmJob.status === "running" ? " is-loading" : ""}" data-act="download-model" data-id="llm"${llmJob.status === "running" ? " disabled" : ""}>${llmJob.status === "running" ? "Asking Ollama…" : "Use Ollama if it is installed"}</button>`
       }
-      <p class="note">Ableton is not part of this desk.</p>
     </section>
     <section class="panel">
       <p class="kicker">Optional</p>
@@ -5799,7 +5979,7 @@ function renderSetup() {
           </article>`,
         )
         .join("")}
-      <p class="note">Frame fill (${esc(setup.interpolate || "minterpolate")}) runs on its own when the QA pass finds judder; there is nothing to switch on. Live+AI and TensorRT stay off the base install.</p>
+      <p class="note">Frame fill (${esc(setup.interpolate || "minterpolate")}) smooths judder by itself; there is nothing to switch on. Live+AI and TensorRT are optional extras, not part of the base install.</p>
       <button type="button" class="ghost" data-act="check-extra">Check again</button>
     </section>
   </div>`;
@@ -5808,7 +5988,9 @@ function renderSetup() {
 let setupAsking = false;
 async function loadSetup() {
   try {
-    const response = await api("/api/setup");
+    // the address the header pings is the address the check asks (Settings moves it), not only the desk's own config
+    const asked = state && state.endpoint ? `?comfy=${encodeURIComponent(state.endpoint)}` : "";
+    const response = await api(`/api/setup${asked}`);
     if (!response.ok) return;
     state.setup = await response.json();
     const extra = (state.setup.extras || []).find((item) => item.id === "live-ai");
@@ -5816,6 +5998,50 @@ async function loadSetup() {
   } catch (error) {
     state.setup = state.setup || null;
   }
+}
+
+// The Make gate (docs/UI_REVIEW.md M1). /api/setup says what Make is missing (setup.gate: blocked, the sentence, the button
+// label); while a model Make needs is not installed the desk says so beside Make and the Make button leads to Setup. A
+// guess about where the models are never blocks (the server leaves ``blocked`` off then). Every Make goes through
+// easyMake, so the guard sits there; paintMakeGate renames the buttons and adds the line after each redraw.
+function setupGate() {
+  const gate = state && state.setup && state.setup.gate;
+  return gate && gate.blocked ? gate : null;
+}
+function goToSetup() {
+  if ((location.hash || "") === "#setup") render();
+  else location.hash = "setup";
+  // the page opens on what the desk knew; it asks again (a model may have been put there by hand since) and shows the answer
+  loadSetup().then(() => {
+    if (state && state.view === "setup") render();
+  });
+}
+function paintMakeGate() {
+  document.querySelectorAll(".make-gate").forEach((node) => node.remove());
+  const gate = setupGate();
+  const buttons = document.querySelectorAll('[data-act="easy-make"]');
+  buttons.forEach((button) => {  // both ways: a gate that lifts (Setup finished, a model put there by hand) gives the label back
+    const label = button.querySelector("span") || button;
+    if (gate) {
+      if (button.dataset.gate !== "setup") {
+        button.dataset.makeLabel = label.textContent;
+        button.dataset.makeTitle = button.title || "";
+      }
+      button.dataset.gate = "setup";
+      label.textContent = gate.button;
+      button.title = gate.line;
+    } else if (button.dataset.gate === "setup") {
+      label.textContent = button.dataset.makeLabel || label.textContent;
+      button.title = button.dataset.makeTitle || "";
+      delete button.dataset.gate;
+    }
+  });
+  if (!gate || !buttons.length) return;
+  const note = document.createElement("p");
+  note.className = "note make-gate";
+  note.setAttribute("role", "status");
+  note.innerHTML = `${esc(gate.line)}. <button type="button" class="text" data-act="go" data-hash="setup">Open Setup</button>`;
+  buttons[0].insertAdjacentElement("afterend", note);
 }
 
 // Your own clips and images for the Simple cut: the dropped or picked files go to work/ui/own/<id>/ (POST /api/own);
@@ -6582,6 +6808,22 @@ function paidCloudFor(data, previous) {
   if (env === "off") return false;
   if (previous && previous.paidCloud != null) return !!previous.paidCloud;
   return readPaidCloud() || !!(info && info.config);
+}
+
+// The ComfyUI address from Settings (or the field under Fine-tune) is kept in this browser, so a reload keeps it; the desk's
+// own address (its config) is what a browser that never chose one starts from.
+function readEndpoint() {
+  try {
+    return localStorage.getItem("xeno-endpoint") || "";
+  } catch (err) {
+    return "";
+  }
+}
+
+function writeEndpoint(value) {
+  try {
+    localStorage.setItem("xeno-endpoint", value || "");
+  } catch (err) {}
 }
 
 function readAddons() {

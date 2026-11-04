@@ -66,6 +66,11 @@
   --x-accent-lo: #6656f0;
   --x-accent-soft: rgba(124, 108, 255, 0.16);
   --x-accent-ring: rgba(124, 108, 255, 0.45);
+  /* the fill under white text (docs/UI_REVIEW.md A1): the accent gives white 3.9:1 and its hover 2.9:1; these give 5.9:1 at
+     rest and 4.5:1 or more under the button's highlight, hovered and pressed */
+  --x-primary: #5b4be0;
+  --x-primary-hi: #6455e6;
+  --x-primary-lo: #4a3bc8;
   --x-ok: #3ccf8e;
   --x-warn: #f2b14a;
   --x-bad: #ff6464;
