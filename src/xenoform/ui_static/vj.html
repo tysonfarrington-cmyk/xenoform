@@ -135,6 +135,7 @@
  <div id="toast" class="pf-toast" role="status" aria-live="polite"></div>
 </div>
 <script src="/static/midi.js"></script>
+<script src="/static/osc_out.js"></script>
 <script>
 // Xenoform Perform (docs/UI_REVIEW.md 6.5): one page, two windows. Without flags this is the control view (transport,
 // the song strip, pads, knobs, REC; vj_control.js draws it). With ?out=1 it is the output window: the canvas and nothing
@@ -558,6 +559,21 @@ if(!OUT)XenoMidi.init({page:'vj',toast,elements:{fx:'fx:next',every:'every',stem
   record:v=>{if((v>0)!==XP.recording())XP.rec()},tap:()=>XP.send('tap'),hud:v=>{if((v>0)!==S.hud)hud()},
   drums:v=>{XP.set({gain:{drums:v}})},bass:v=>{XP.set({gain:{bass:v}})},other:v=>{XP.set({gain:{other:v}})},vocals:v=>{XP.set({gain:{vocals:v}})},
   'stem:*':(n,v)=>{const name=stemName(n);if(name)setStemGain(name,v);else toast('No stem '+n+' (use this song\'s stems first)')}}});
+// OSC to TouchDesigner (t3-td-bridge: osc_out.js, docs/osc.md): frame() is what the picture shows right now. This
+// window's engine draws it, except while the output window is linked: then this engine sleeps, the output reads this
+// window's analyser (so an/buf stay fresh and the levels come from them), and the beat counter and the scene come from
+// the output's last report. The control goes just above the MIDI panel in the help sheet, before the map docks it away;
+// the output window (OUT) has no help and sends nothing (the control view streams what it shows).
+const oscLevels=r=>{if(!an||!buf||!AC)return r.levels||{b:0,m:0,h:0};const hz=AC.sampleRate/an.fftSize;
+ const avg=(a,b)=>{let s=0,n=0;for(let i=Math.floor(a/hz);i<Math.min(buf.length,b/hz);i++){s+=buf[i];n++}return n?s/n/255:0};return{b:avg(30,150),m:avg(150,2000),h:avg(4000,12000)}};
+if(!OUT&&window.XenoOsc){XenoOsc.init({toast,frame:()=>{const au=A(),r=S.asleep&&window.XP&&XP.report?XP.report():null;
+  const lv=r?oscLevels(r):{b:bassS,m:midS,h:highS},k=r?S.scenes.findIndex(s=>s.key===r.key):S.cur;
+  const f=Object.assign(XenoOsc.audio(an,buf,AC&&AC.sampleRate),{bass:lv.b,mid:lv.m,high:lv.h,beat:r?r.beats:S.beats,
+   scene:k<0?S.cur:k,scene_name:r?r.scene:(S.scenes[S.cur]||{}).name||'',transition_fx:r?r.fx:S.curFx,intensity:S.inten,bpm:S.bpm||0,
+   t:au.hasTrack()&&!au.isMic()?au.pos():performance.now()/1000});
+  if(!r)Object.assign(f,{beat_env:beatPulse,transition:S.trans?Math.min(1,(performance.now()-S.t0)/S.dur):0,stems:{drums:SE.drums,bass:SE.bass,other:SE.other,vocals:SE.vocals}});
+  return f}});
+ XenoOsc.mount($('midi-panel'),'before')}
 // the MIDI map: docked by midi.js where it can (t1-midi: XenoMidi.dock), else the panel in the help sheet
 if(!OUT){if(XenoMidi.dock){const mp=$('midi-panel');if(mp)mp.remove()}else XenoMidi.panel($('midi-panel'))}
 if(Q.get('clean')==='1')document.documentElement.classList.add('clean');

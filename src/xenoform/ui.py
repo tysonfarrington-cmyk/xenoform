@@ -276,6 +276,9 @@ def create_app(cfg: dict | None = None):
 
     app.include_router(stems_mode_router)  # first: /api/stems/status is not a stems id
     app.include_router(stems_router)
+    from xenoform.osc_relay import router as osc_router  # /api/osc/*, /ws/osc: the live OSC relay (python-osc is optional)
+
+    app.include_router(osc_router)
     from xenoform.film_pack import router as film_pack_router  # /api/film_pack (the free film pack's status)
 
     app.include_router(film_pack_router)
