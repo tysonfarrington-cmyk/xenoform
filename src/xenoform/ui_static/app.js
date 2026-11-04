@@ -111,7 +111,6 @@ function setEasyPhase(phase) {
   if (phase === "showcase") state.easy.showcase = true;
   else if (phase !== "result") state.easy.showcase = false;
   if (phase === "choose") state.easy.step = state.easy.song ? (before === "tweak" ? "tweak" : "plan") : "source";
-  else if (phase === "vibe") state.easy.step = state.easy.song ? "plan" : "source";  // a song picked: on to the plan by itself
   else if (phase === "result") state.easy.step = ["tweak", "render", "perform"].includes(before) ? before : "render";
   else if (phase === "making" && state.easy.makeStep) {
     state.easy.step = state.easy.makeStep;
@@ -987,6 +986,7 @@ function renderEasy() {
     else if (easy.phase === "making" && !easyVideoId()) body = renderMaking(easy, chosen);
     else body = renderCut(easy, chosen);
   } else if (step === "perform") body = renderPerform(easy);
+  else if (step === "source") body = renderSource(easy);
   else body = renderDesk(easy, chosen, step);
   return `${body}${easy.phase === "showcase" ? "" : stepBar(easy, step)}`;
 }
@@ -1111,7 +1111,39 @@ function renderCut(easy, chosen) {
   }
 }
 
-// Source, Plan and Tweak: the song, the vibe and the feel over the song strip.
+// Source (docs/UI_REVIEW.md 6.2, 6.7): the strip, empty until a song is in, and one action: a bundled song (the demo
+// among them, by name: the desk never presents it as chosen) or a file dropped anywhere on the screen or chosen in the
+// step bar. The strip fills as the song's analysis lands and the desk moves to Plan by itself. My videos is this
+// step's list; a cut reopened from it opens on Render.
+function renderSource(easy) {
+  const songSet = !!easy.song;
+  const facts = songSet
+    ? `<div class="songrow">
+        <span class="play-dot" aria-hidden="true">▶</span>
+        <div><strong>${esc(easy.songLabel || "Chosen")}</strong><span>${esc(songClock(Number(state.duration) || 0))}${state.tempo ? ` · ${esc(String(Math.round(Number(state.tempo))))} BPM` : ""}</span>${stemsLine()}</div>
+      </div>`
+    : "";
+  return `<div class="easy sl sl-source" data-song-drop="1">
+    <header class="sl-head">
+      <h2>Make a music video.</h2>
+      <p class="lede">Start with a song: its sections, beats and drops land on the strip below. Then a vibe and the feel, and a Draft of the drop in a few minutes. Free, local, open weights.</p>
+    </header>
+    <section class="panel sl-songs" data-tour="easy-song">
+      <div class="step-head"><h3>${songSet ? "The song" : "A song"}</h3>${songSet ? "<span>Pick another, or drop a file anywhere here</span>" : ""}</div>
+      ${facts}
+      <div id="bundled-songs">${songsRow(easy)}</div>
+      ${songSet ? "" : `<p class="note">${esc(easy.songLabel || "Drop a file here, use the bundled demo, or pick one of the bundled songs.")}</p>`}
+      ${easy.note ? `<p class="note" id="easy-note">${esc(easy.note)}</p>` : ""}
+    </section>
+    <section class="sl-strip"><div class="song-strip" data-song-strip="desk" aria-label="The song strip"></div></section>
+    ${galleryPanel()}
+    <p class="note sl-foot"><button type="button" class="text" data-act="easy-showcase">Watch a finished one</button>
+      <button type="button" class="text" data-act="go" data-hash="setup">Setup &amp; models</button>
+      <a class="ow-badge" href="${esc(media("/licences"))}" title="LTX-2.3 has a revenue threshold. FLUX.2 Klein 9B is non-commercial. This desk uses the Apache 2.0 4B.">Open weights</a></p>
+  </div>`;
+}
+
+// Plan and Tweak: the vibe and the feel over the song strip.
 function renderDesk(easy, chosen, step) {
   const preview = easy.vibe ? chosen : VIBES[3];
   const songSet = !!easy.song;
@@ -3433,7 +3465,7 @@ function stripModel(where) {
   const model = { id: where, hues: SECTION_HUES, lanes: ["sections", "wave", "beats", "shots", "intensity", "objects"] };
   if (!base || !(base.duration > 0)) {
     return Object.assign(model, { ghost: true, duration: 0, title: easy.song ? `<b>${esc(easy.songLabel || "The song")}</b> · reading it…` : "The song strip",
-      ghostNote: easy.song ? "Reading the song: its passages, beats and drops land here." : "Drop a song here, or pick one below: its passages, beats and drops land on this strip." });
+      ghostNote: easy.song ? "Reading the song: its passages, beats and drops land here." : "Pick a song above, or drop a file here: its passages, beats and drops land on this strip." });
   }
   Object.assign(model, { duration: Number(base.duration), passages: base.passages || [], beats: base.beats || [], bars: base.bars || [],
     wave: base.wave || [], title: song && (onSong || !lane) ? stripTitle(base, easy) : `<b>This cut</b> · ${esc(clockText(base.duration))} · its song is not on the desk` });
@@ -4756,9 +4788,11 @@ function songsRow(easy) {
     return "";
   }
   if (!songs.length) return "";
-  // The on class matches the Bundled demo button's; both rows are drawn only while no song is chosen, so neither shows.
+  // the bundled demo is one of them, by name (C3: it is never presented as chosen until it is picked); the song on the
+  // desk is lit
+  const demo = `<button type="button" class="chip${easy.song === "demo" ? " on" : ""}" data-act="easy-demo" title="A 12 s demo synthesised here">Bundled demo<small>0:12</small></button>`;
   const chips = songs.map((song) => `<button type="button" class="chip${easy.song === song.id ? " on" : ""}" data-act="easy-song" data-id="${esc(song.id)}" title="${esc(song.feel || "")}">${esc(song.title)}<small>${songClock(song.seconds)}</small></button>`).join("");
-  return `<div class="song-shelf"><span class="shelf-label">Bundled songs</span><div class="toggle chips song-chips" role="group" aria-label="Bundled songs">${chips}</div></div>`;
+  return `<div class="song-shelf"><span class="shelf-label">Bundled songs</span><div class="toggle chips song-chips" role="group" aria-label="Bundled songs">${chips}${demo}</div></div>`;
 }
 
 // A chip: the song's shipped analysis comes back at once (POST /api/songs/load) and the desk adopts it as it adopts the
@@ -4775,9 +4809,9 @@ async function useBundledSong(id, keepStep) {
   state.easy.song = song.id;
   state.easy.songLabel = song.title;
   state.easy.note = "";
-  if (!keepStep) state.easy.step = "plan";  // on to the plan by itself; a reopened cut's own song keeps Render
   if (!state.easy.phase || state.easy.phase === "song" || state.easy.phase === "choose") setEasyPhase("vibe");
   if (state.audioId === `song-${song.id}`) {
+    if (!keepStep) state.easy.step = "plan";
     render();
     return;
   }
@@ -4800,6 +4834,8 @@ async function useBundledSong(id, keepStep) {
     return;
   }
   adoptSession(data);
+  // the song is in: on to the plan by itself (a reopened cut's own song keeps Render)
+  if (!keepStep && state && state.easy) state.easy.step = "plan";
   await settleCut({ full: true });
   loadSimpleOptions().then(() => render());
 }
@@ -4812,9 +4848,9 @@ async function useDemoSong() {
     state.easy.songLabel = "Bundled demo";
     state.easy.note = "";
     if (!state.easy.phase || state.easy.phase === "song" || state.easy.phase === "choose") state.easy.phase = "vibe";
-    state.easy.step = "plan";  // on to the plan by itself (render() puts it in the URL)
   }
   if (!state || state.audioId === "demo") {
+    if (state && state.easy) state.easy.step = "plan";  // the demo's analysis is the desk's already: on to the plan
     render();
     return;
   }
@@ -4822,6 +4858,7 @@ async function useDemoSong() {
   if (!response.ok) return;
   if (!state || !state.easy || state.easy.song !== "demo") return;  // a bundled song or a file was chosen meanwhile: it owns the desk
   adoptSession(await response.json());
+  if (state && state.easy) state.easy.step = "plan";  // the song is in: on to the plan by itself
   await settleCut({ full: true });
   loadSimpleOptions().then(() => render());
 }
@@ -4832,7 +4869,6 @@ async function uploadSong(file) {
     state.easy.songLabel = file.name;
     state.easy.note = "";
     if (!state.easy.phase || state.easy.phase === "song" || state.easy.phase === "choose") state.easy.phase = "vibe";
-    state.easy.step = "plan";  // on to the plan by itself (render() puts it in the URL)
   }
   const app = document.getElementById("app");
   app.innerHTML = `<p class="boot">Reading ${esc(file.name)}…</p>`;
@@ -4847,6 +4883,7 @@ async function uploadSong(file) {
   }
   if (state && state.board && state.board.length) state.heldBoard = JSON.parse(JSON.stringify(state.board));
   adoptSession(data, { keepScript: state.locks.script, keepLook: state.locks.preset });
+  if (state && state.easy) state.easy.step = "plan";  // the song is in: on to the plan by itself
   await settleCut({ full: true });
   loadSimpleOptions().then(() => render());
 }

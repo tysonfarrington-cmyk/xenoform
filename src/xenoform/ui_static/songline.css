@@ -37,6 +37,23 @@ button.ghost .cost-tag { background: var(--x-well); color: var(--x-text-2); box-
 .step-quality .toggle button { min-height: 28px; min-width: 0; padding: 0 10px; font-size: 12.5px; }
 .step-facts .cloud-final-ok { flex-basis: 100%; }
 
+/* ---------------------------------------------------------------- the step screens */
+.easy.sl { grid-template-columns: minmax(0, 1fr); align-items: start; }
+.easy.sl > * { min-width: 0; }
+.sl-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 14px; padding: 2px 2px 0; }
+.sl-head h2 { font-size: 22px; font-weight: 600; margin: 0; }
+.sl-head .lede { flex: 1 1 420px; margin: 0; font-size: 13px; color: var(--x-text-3); max-width: none; }
+.sl-strip { min-width: 0; }
+
+/* Source: one action, the empty strip, My videos */
+.sl-songs { padding: 16px; display: grid; gap: 10px; }
+.sl-songs .step-head { margin-bottom: 0; }
+.sl-songs .songrow { margin-top: 0; }
+.sl-songs .song-shelf { margin-top: 0; }
+.sl-songs .note { margin: 0; }
+.sl-source[data-song-drop].is-dragging .sl-strip .xs { box-shadow: 0 0 0 2px var(--x-accent); }
+.sl-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; }
+
 /* ---------------------------------------------------------------- Perform (a placeholder the perform session replaces) */
 .easy-perform { max-width: 760px; margin: 0 auto; }
 .perform-card { padding: 22px 24px; display: grid; gap: 10px; }
