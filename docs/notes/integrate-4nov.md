@@ -29,18 +29,18 @@ worktree `C:\Projects\xf-integrate` from `ui-review-4nov` (574c1fc). Each branch
 | seam | resolution | commit |
 | --- | --- | --- |
 | r0 + t5: URLs | t5's step hashes (`#source #plan #tweak #render/<job> #perform/<job>`). Round 0 no longer writes `#simple/making/<job>` or `#simple/result/<cut>`; the old hashes are still read. | 9e9706d |
-| r0 + t5: reopen | t5's `reopenRoute()` hands a job to Round 0's `resumeMaking(id, keptMaking(), false)` and a cut to Round 0's `reopenCut(id, opts)`. | 9e9706d |
+| r0 + t5: reopen | t5's `reopenRoute()` hands a job to Round 0's `resumeMaking(id, keptMaking(), false)` and a cut to Round 0's `reopenCut(id, opts)`. A listed row still rendering goes to `resumeMaking` too. | 9e9706d, 297505e |
 | r0 + t5: making screen | `setEasyPhase()` keeps both bodies. `renderMaking()` is t5's Render progress view; Round 0's title, one clock, two steps per edit, Stop and "lost the desk" live in the step bar's making branch. | 9e9706d |
 | r0 + t5: N12 song change | Round 0's Change/Cancel is gone with t5's Source step. A bundled song that fails to load falls back only to a song the desk holds (`songHeld`), never to one still loading. The dead `easy-step` / `easy-song-keep` handlers went later. | b494bc3, aa9c38b, bc80a4f |
 | r0 + t4: edit routes | `dense.rerender_morph` takes `cancel=`, `overrides=` and `timing=`; `insert_generated` and `swap_still` take `cancel=`. The rerender route's extra kwargs go through `_edit_start`. t4's new take route (`POST shots/{i}/take`) also starts through `_edit_start` with a cancel. | 8033bbb |
 | r0 + t4: client | `poll()`: `shotEditTick` before the making branch. `postCutEdit(id, route, body, detail, at, stage, title, opts)`: Round 0's title 7th, t4's opts last. `reopenRow` ends in `reopenWhole(row)`. | 8033bbb |
 | r0 + t4: Regenerate | Tab gone: `TL_TABS` = shot, look, join, hood. Round 0's L3 Morph chip code removed, its pins moved to hood.js's style select and Re-render this shot. Round 0's L5 Reset with Undo kept. | 8033bbb, 1d07e48 |
-| t4 + t5: reopen song | t4's `loadCutSong(id, info)` (asks the server; demo, bundled or uploaded) replaces t5's. Decision: the cut's own song loads on reopen even when another song is on the desk. It keeps the step on Render and reads the song list first. | 8033bbb, 484b1af, 1d07e48 |
+| t4 + t5: reopen song | t4's `loadCutSong(id, info)` (asks the server; demo, bundled or uploaded) replaces t5's. Decision: the cut's own song loads on reopen even when another song is on the desk. It keeps the step on Render and reads the song list first. A running Make's song comes from the job's `song` field. | 8033bbb, 484b1af, 1d07e48, 1800dc4 |
 | t4 + t5: hosts | `#hood-shot` in the drawer, `#hood-project` in Tweak's "Project · under the hood". t4's `mountHood()` at the end of `render()` mounts both; t5's two mounts dropped. Decision: the project scope mounts with no provider, so t5's editable rows stay; t4's `hoodProject` is gone. | 8033bbb, 484b1af |
 | t4 + t5: progress | The re-render's progress and span lighting draw on the strip's `.xs-shot` block, not the old lane tile. | 8033bbb |
 | t4 + t5: tabs | Under the hood shows for every shot, including Polly's, your clips and generated runs (t4's filter). | 484b1af |
 | t1 + t2 + t3 + r0: `vj.html` | t2's page whole. t1's `midi.js`, `midi_map.js`, `midi_map.css`, presets; t1's held looks ported onto `XenoMidi.holds`. t3's `osc_out.js` after `midi.js` and the `XenoOsc` block after `XenoMidi.init`, no sender in `?out=1`. Round 0's V9 select-blur lines put back. | 1582d4d, 286a6a1, 55f4af5 |
-| t2 + desk | The cut screen has one ghost Download with t2's Perform it link beside it; the Perform step opens `/vj?job=`. | 55f4af5 |
+| t2 + desk | The cut screen has one ghost Download with t2's Perform it link beside it; the Perform step opens `/vj?job=`. A cut whose plan names no passage gets the desk strip's passages on Perform. | 55f4af5, 89d13e9 |
 | setup-shell: step bar | t5's step bar reads `/api/setup`'s gate and draws the Get-the-model button and its line itself; `paintMakeGate` renames only the other Make buttons. | 77cb311, db33100, 88eb2f6 |
 | setup-shell: F14 / N3 | My videos Open on a rendering cut uses Round 0's `resumeMaking`; `followRunningCut` dropped. | 77cb311, db33100 |
 | setup-shell: tour | t5's `tutorial.js` with setup-shell's A2 (arrow keys leave a focused slider, tab, menu or radio alone). | 77cb311 |
@@ -82,8 +82,14 @@ Declined or only half done:
 
 ## Tests
 
-- Full suite on the merged tree (about 8a2d935): **1971 passed, 2 skipped, 0 failed** in 12:48. A second full run after
-  the last fix showed no failures (its summary line was cut off). No flaky reruns were needed in these runs.
+- Final full suite at 297505e: **1978 passed, 2 skipped, 0 failed** in 12:55, exit 0, no reruns (output in
+  `work/suite_final.txt`, gitignored). Earlier: 1971 passed at about 8a2d935, 1973 at 3100c8a.
+- Playwright rerun at 297505e: `perform_check.js` passes (control webm/mp4 A/V within a frame, mic take with sound,
+  the refused-mic message, no page errors); `capture_after.js` passes (19 entries at 1440 and 375, the five steps);
+  `capture_shell.js` passes (every shot at 1366 and 375, none scrolls sideways). `node --check` on all 16 scripts in
+  `ui_static` and `tests/js`, and `compileall -q src`, pass.
+- The walk fixes' own tests: 78 passed for 1800dc4..2805ed1 (`test_reopen`, `test_r0_fixes`, `test_song_strip`,
+  `test_perform`, `test_simple_nav`, `test_pacing_ui`, `test_desk_shell_pass`); 48 and 30 for 297505e.
 - Per merge: t4 152 passed; vj-cluster 189; setup-shell 156 (157 results, 1 skipped); t6 127; the t5 rounds 66, 105
   and 201 (1 skipped). `test_midi::test_websocket_fan_out_and_http_ingest` passes now that t1 is in.
 - Playwright (Chrome channel) against a desk from this worktree: `capture_after.js` (t5's five steps at 1440 and
@@ -109,6 +115,81 @@ The final pass found the trimmed-upload strip bug and the stale `capture_shell.j
   (midi.js loads midi_map.js at runtime), a held look on a pad, Perform it opening `/vj?job=<id>`.
 - `/api/opener` and `applyTimeline()` have no desk caller (t5 and Round 0 notes).
 
+## The desk walk (4 Nov evening)
+
+A first-time user's walk on the desk on 47380 from this worktree, in Chrome at 1366x900 and at the pane's own size.
+
+What was walked and held:
+
+- **Source to Render.** The tour is dismissed and the bundled demo picked. Plan shows the Liquid chrome, the sketch
+  plays, the strip has 9 sketched shots and 1 drop at 0:06. Tweak has the presets, 4 knobs, stem reactions, the MIDI
+  fold (Map, List, Learn, K1..F4 on the Tweak controls), the morph rows, and Project · under the hood with t5's
+  editable rows and t4's where/cost tags. Render Draft starts the Make.
+- **The Draft.** Job 9924fd73, 9 Draft morphs, 3:46 (morphs 2:58, cut 0:40, check 0:02). The making screen tells the
+  three stages, shows the chain of 10 stills and one clock in the step bar with Stop. The strip's blocks follow the
+  morphs live: shot 1 done, shot 2 rendering, the rest queued, "Morph 2 of 9" in the bar.
+- **A reload mid-render** keeps the clock (1:58 elapsed). It lost the song: gap A, below.
+- **Reopen.** A plain reload loads the bundled demo and ticks the steps. The inspector docks under the strip with Shot,
+  Look, Join and Under the hood. The hood tab fills from hood.js (`GET /api/jobs/9924fd73/shots/4/recipe` 200): model,
+  prompt, negative, the two stills, seed with next and dice, steps 16, cfg 4, frames, guides, compression, style, LoRA
+  picker, Re-render this shot, Copy recipe, Reset to preset, "or queue it there", and "The clip's own graph matches
+  this record". `simple.json` holds a renders record of 9 entries (engine, model, text encoder, prompt, seed, steps,
+  cfg, sampler, style, lora, size, frames, guides, compression, the request graph, timing).
+- **Re-render in place.** Seed next (3740), then Re-render this shot: shotEdit {shot 4, version 3}, the strip block is
+  rendering with `--p` 0.1, the hood panel shows its progress line and a Stop, the Draft stays ready and the timeline
+  usable. `/api/videos` lists the cut as done meanwhile (7549be6). It lands in about 90 s: "Shot 5: Re-render ready.",
+  video_version 4, the header counts "1 re-render", the hood shows the new record.
+- **Perform it** from the cut (`/vj?track=demo&job=9924fd73&stemsId=...`): the monitor, NOW "shot 1 · lotus", HELD,
+  BEAT 120 BPM, the Source toggles. NEXT said beats only: gap B, below. The MIDI dock shows the MiniLab map with the
+  cut's objects on pads A and dance looks on pads B. A 6 s take is saved as a9c47806ac (6.04 s, 1024x768, "Take saved ·
+  in My videos"). An earlier take with the tab in the background came out 1.56 s: Chrome does not paint a background
+  canvas. Not a desk fault.
+- **OSC.** The hood-perform-osc check on a scratch relay: 59 to 60 bundles a second with all 27 `/xenoform/*`
+  addresses over the websocket. The control is in Help (host 127.0.0.1, port 7000, a Send OSC switch, `PUT /api/osc`,
+  desk-wide).
+- No console errors on any step, on `/vj`, or during the render and the re-render.
+
+Three live-desk checks ran beside the walk:
+
+- **2b020b0 (docs).** README tells the five steps and the 4 Nov round. The Length row and the VJ mode names are gone.
+  `[midi]` lists websockets; `[osc]` is added.
+- **3100c8a (their fixer).** MIDI badges skip a folded row and badge each target once. A pad learned onto a chip row
+  steps it, and the release keeps the chip. The phone hint says what the strip gives. The step nav fits at 375 px with a
+  tappable Perform. The Render header's plan line is in cut time (`planLineFor`). Suite 1973 passed, 2 skipped.
+- Their recheck left gap C: the header disagreed with the strip's own drop facts on the trimmed cut.
+
+The gaps and their fixes:
+
+- **A, 1800dc4: a reload mid-render loses the song.** `GET /api/jobs/<id>` has a `song` field (`audio_id`, `label`,
+  `bundled`, `file`, as `meta.json` holds). `resumeMaking` loads it through `loadCutSong` and stays on the making
+  screen, clock and poll untouched. Decision: a job field, not the reopen route, which needs `xenoform.mp4` and marks
+  the job reopened. `POST /api/videos/<id>/song` reads a running job's `meta.json`; poll's done branch retries an upload
+  once. A failed bundled load no longer drops the making screen to Source.
+- **A, round 2, 297505e.** A `#render/<job>` link on an open desk landed a Make that My videos lists as rendering on
+  "Your video is ready": `reopenRoute` now sends a running row to `resumeMaking`, as video-open does. A resumed Make in
+  a fresh browser left Plan unticked: the job carries the Make's `vibe` and `resumeMaking` sets it. Edit jobs carry no
+  vibe and keep the desk's (decided without asking).
+- **B, 89d13e9: Perform on the demo cut said beats only.** The demo's plan writes shots with no section. `perform_job`
+  falls back to `perform_song`'s passages for the cut's `audio_id`, shifted by `window.song_start` and clipped to the
+  cut. 9924fd73 now gives build 0 to 5.502, drop 5.502 to 12 (main); 31680167 is unchanged. The plan is left alone.
+- **C, 2805ed1: the header and the strip title each say a fact once.** `planLineFor` drops the passage count; on the
+  song held the drops are the strip title's. The trimmed cut reads "13 shots · 13 morphs over 14 objects · 2 passages"
+  under "2 drops, the main at 0:13". At 375 px "Edits wait for Apply" is hidden.
+
+Still open:
+
+- The Perform strip note on the demo cut says "The cut's own sections" for the fallback passages (`vj_control.js`
+  passes `src: 'cut'`). Values right, wording wrong. Left as a nit.
+- Gap A was not run on a real running Make (the GPU is shared); it was proved with a mocked running job on a scratch
+  desk. The queued and rendering block states after a resume were not checked.
+- Nits from the checks, left: "2 passages" twice, sticky chrome about a third of a phone screen, thumb targets under
+  40 px on Plan and `/vj`. Perform it and the Perform step open different URLs (same cut). The control view never asks
+  `/api/simple/strip` for a cut, so a cut has no wave (its energy lane comes from the stems). No hold or snap-back pad
+  target (t1's note). The collapsed MIDI summary is blank with no controller. The tour card covers the step bar on
+  first open.
+- Not walked: the second-screen output window, a real MIDI controller, a Final.
+- 47380's Python predates 1800dc4 and 297505e: the orchestrator restarts it to serve the new job fields.
+
 ## For Tys
 
 - **MiniLab 3.** Follow t1's note, "For Tys: test with the MiniLab 3": pads hold scenes, soft takeover on the knobs,
@@ -132,8 +213,8 @@ The final pass found the trimmed-upload strip bug and the stale `capture_shell.j
   demo when Next is pressed with no song.
 - **Merge decisions to confirm.** A reopened cut always loads its own song, replacing the one on the desk. Tweak's
   Project panel keeps t5's editable rows with t4's where/cost words, not t4's read-only rows.
-- A 30 s Draft on a free GPU would confirm the strip's blocks follow "Morph n of m" live and that a hood re-render
-  lights its block.
+- The desk walk confirmed the strip's blocks follow "Morph n of m" live and a hood re-render lights its block. Still
+  to try yourself: a reload while a real Make runs (gap A's fix was proved on a mocked job).
 
 ## How to run it
 
