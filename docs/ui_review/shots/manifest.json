@@ -1,0 +1,651 @@
+[
+ {
+  "file": "01_first_visit.jpg",
+  "url": "http://127.0.0.1:47340/",
+  "viewport": "1440x900 viewport",
+  "note": "fresh context, tutorial offer",
+  "pageErrors": [],
+  "consoleErrors": [
+   "WebSocket connection to 'ws://127.0.0.1:47340/ws/midi?name=desk' failed: Error during WebSocket handshake: Unexpected response code: 404",
+   "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ]
+ },
+ {
+  "file": "01b_first_visit_full.jpg",
+  "url": "http://127.0.0.1:47340/",
+  "viewport": "1440x900 fullPage",
+  "note": "fresh context fullPage",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "02_tutorial_step1.jpg",
+  "url": "http://127.0.0.1:47340/",
+  "viewport": "1440x900 viewport",
+  "note": "tour step 1",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "02b_tutorial_step2.jpg",
+  "url": "http://127.0.0.1:47340/",
+  "viewport": "1440x900 viewport",
+  "note": "tour step 2",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "02c_tutorial_step3.jpg",
+  "url": "http://127.0.0.1:47340/",
+  "viewport": "1440x900 viewport",
+  "note": "tour step 3",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "02d_tutorial_step4.jpg",
+  "url": "http://127.0.0.1:47340/",
+  "viewport": "1440x900 viewport",
+  "note": "tour step 4",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "02e_tutorial_step5.jpg",
+  "url": "http://127.0.0.1:47340/",
+  "viewport": "1440x900 viewport",
+  "note": "tour step 5",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "03_first_screen_full.jpg",
+  "url": "http://127.0.0.1:47340/",
+  "viewport": "1440x900 fullPage",
+  "note": "after the tour",
+  "pageErrors": [],
+  "consoleErrors": [
+   "WebSocket connection to 'ws://127.0.0.1:47340/ws/midi?name=desk' failed: Error during WebSocket handshake: Unexpected response code: 404"
+  ]
+ },
+ {
+  "file": "04_song_bundled_glitch_out.jpg",
+  "url": "http://127.0.0.1:47340/#simple",
+  "viewport": "1440x900 fullPage",
+  "note": "Glitch Out chip, 3 s",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "04b_song_bundled_glitch_out_30s.jpg",
+  "url": "http://127.0.0.1:47340/#simple",
+  "viewport": "1440x900 fullPage",
+  "note": "Glitch Out chip, 30 s later",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "05_song_upload.jpg",
+  "url": "http://127.0.0.1:47340/#simple",
+  "viewport": "1440x900 fullPage",
+  "note": "uploaded liquid_dnb.mp3; name appeared in page text: true",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "05a_song_change_open.jpg",
+  "url": "http://127.0.0.1:47340/#simple",
+  "viewport": "1440x900 viewport",
+  "note": "after clicking Change (song picker back)",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "06_vibe_selected.jpg",
+  "url": "http://127.0.0.1:47340/#simple",
+  "viewport": "1440x900 fullPage",
+  "note": "Neon noir clicked",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "07_more_vibes_open.jpg",
+  "url": "http://127.0.0.1:47340/#simple",
+  "viewport": "1440x900 fullPage",
+  "note": "More vibes open",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "08_morph_your_clips.jpg",
+  "url": "http://127.0.0.1:47340/#simple",
+  "viewport": "1440x900 fullPage",
+  "note": "Morph: Your clips (empty state)",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "08b_morph_clips_uploaded.jpg",
+  "url": "http://127.0.0.1:47340/#simple",
+  "viewport": "1440x900 fullPage",
+  "note": "after uploading demo_v5_preview.mp4 to clips input",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "09_morph_stems.jpg",
+  "url": "http://127.0.0.1:47340/#simple",
+  "viewport": "1440x900 fullPage",
+  "note": "Morph: Stems",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "10_idea_line.jpg",
+  "url": "http://127.0.0.1:47340/#simple",
+  "viewport": "1440x900 fullPage",
+  "note": "idea line typed + blur",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "11_loved_chain.jpg",
+  "url": "http://127.0.0.1:47340/#simple",
+  "viewport": "1440x900 fullPage",
+  "note": "Black glass rose chain chip",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "12_knobs_stems_open.jpg",
+  "url": "http://127.0.0.1:47340/#simple",
+  "viewport": "1440x900 viewport",
+  "note": "Stem reactions open",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "12b_midi_panel.jpg",
+  "url": "http://127.0.0.1:47340/#simple",
+  "viewport": "1440x900 viewport",
+  "note": "MIDI controller panel open",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "13_fine_tune_open.jpg",
+  "url": "http://127.0.0.1:47340/#simple",
+  "viewport": "1440x900 fullPage",
+  "note": "Fine-tune open",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "14_wip_open.jpg",
+  "url": "http://127.0.0.1:47340/#simple",
+  "viewport": "1440x900 fullPage",
+  "note": "Work in progress open",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "15_more_menu.jpg",
+  "url": "http://127.0.0.1:47340/#simple",
+  "viewport": "1440x900 viewport",
+  "note": "header menu open",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "16_settings_dialog.jpg",
+  "url": "http://127.0.0.1:47340/#simple",
+  "viewport": "1440x900 viewport",
+  "note": "Settings dialog",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "16b_settings_bad_endpoint.jpg",
+  "url": "http://127.0.0.1:47340/#simple",
+  "viewport": "1440x900 viewport",
+  "note": "endpoint set to :9 and saved. status: ComfyUI not connected | ComfyUI not connected. The desk pings /system_stats on http://127.0.0.1:9.",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "17_about_dialog.jpg",
+  "url": "http://127.0.0.1:47340/#simple",
+  "viewport": "1440x900 viewport",
+  "note": "About dialog",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "17b_about_dialog_scrolled.jpg",
+  "url": "http://127.0.0.1:47340/#simple",
+  "viewport": "1440x900 viewport",
+  "note": "About dialog scrolled to bottom",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "18_setup_page.jpg",
+  "url": "http://127.0.0.1:47340/#setup",
+  "viewport": "1440x900 fullPage",
+  "note": "#setup",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "19_connect_page.jpg",
+  "url": "http://127.0.0.1:47340/#connect",
+  "viewport": "1440x900 fullPage",
+  "note": "#connect; main starts: ← Back to the desk Xenoform · Connect an AI AGENT Connect an AI Grok, Claude",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "20_command_palette.jpg",
+  "url": "http://127.0.0.1:47340/#simple",
+  "viewport": "1440x900 viewport",
+  "note": "Ctrl+K, typed \"look\"",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "21_showcase.jpg",
+  "url": "http://127.0.0.1:47340/#simple/showcase",
+  "viewport": "1440x900 fullPage",
+  "note": "Watch a finished one, 4 s",
+  "pageErrors": [],
+  "consoleErrors": [
+   "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ]
+ },
+ {
+  "file": "21b_showcase_viewport.jpg",
+  "url": "http://127.0.0.1:47340/#simple/showcase",
+  "viewport": "1440x900 viewport",
+  "note": "showcase viewport",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "22_my_videos.jpg",
+  "url": "http://127.0.0.1:47340/#simple",
+  "viewport": "1440x900 viewport",
+  "note": "My videos section",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "23_variations_page.jpg",
+  "url": "http://127.0.0.1:47340/variations",
+  "viewport": "1440x900 fullPage",
+  "note": "HTTP 200",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "24_judges_page.jpg",
+  "url": "http://127.0.0.1:47340/judges",
+  "viewport": "1440x900 fullPage",
+  "note": "HTTP 200",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "25_moves_page.jpg",
+  "url": "http://127.0.0.1:47340/moves",
+  "viewport": "1440x900 fullPage",
+  "note": "HTTP 200",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "26_licences.jpg",
+  "url": "http://127.0.0.1:47340/licences",
+  "viewport": "1440x900 fullPage",
+  "note": "HTTP 200",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "27_credits.jpg",
+  "url": "http://127.0.0.1:47340/credits",
+  "viewport": "1440x900 fullPage",
+  "note": "HTTP 200",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "28_vj_first.jpg",
+  "url": "http://127.0.0.1:47340/vj",
+  "viewport": "1280x720 viewport",
+  "note": "/vj untouched",
+  "pageErrors": [],
+  "consoleErrors": [
+   "WebSocket connection to 'ws://127.0.0.1:47340/ws/midi?name=vj' failed: Error during WebSocket handshake: Unexpected response code: 404"
+  ]
+ },
+ {
+  "file": "28b_vj_help.jpg",
+  "url": "http://127.0.0.1:47340/vj",
+  "viewport": "1280x720 viewport",
+  "note": "pressed ?",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "28c_vj_hud.jpg",
+  "url": "http://127.0.0.1:47340/vj",
+  "viewport": "1280x720 viewport",
+  "note": "pressed p (HUD)",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "28d_vj_midi_learn.jpg",
+  "url": "http://127.0.0.1:47340/vj",
+  "viewport": "1280x720 viewport",
+  "note": "pressed l",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "28e_vj_track.jpg",
+  "url": "http://127.0.0.1:47340/vj",
+  "viewport": "1280x720 viewport",
+  "note": "glitch_out.mp3 loaded; bpm=90.7",
+  "pageErrors": [],
+  "consoleErrors": [
+   "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ]
+ },
+ {
+  "file": "28f_vj_rec.jpg",
+  "url": "http://127.0.0.1:47340/vj",
+  "viewport": "1280x720 viewport",
+  "note": "pressed r (recording on)",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "29_mobile_first.jpg",
+  "url": "http://127.0.0.1:47340/",
+  "viewport": "430x932 fullPage",
+  "note": "fresh 430x932 context, tutorial dismissed (Not now)",
+  "pageErrors": [],
+  "consoleErrors": [
+   "WebSocket connection to 'ws://127.0.0.1:47340/ws/midi?name=desk' failed: Error during WebSocket handshake: Unexpected response code: 404"
+  ]
+ },
+ {
+  "file": "30_narrow_first.jpg",
+  "url": "http://127.0.0.1:47340/",
+  "viewport": "1024x768 fullPage",
+  "note": "fresh 1024x768 context, tutorial dismissed",
+  "pageErrors": [],
+  "consoleErrors": [
+   "WebSocket connection to 'ws://127.0.0.1:47340/ws/midi?name=desk' failed: Error during WebSocket handshake: Unexpected response code: 404"
+  ]
+ },
+ {
+  "file": "31_reload_mid_state.jpg",
+  "url": "http://127.0.0.1:47340/#simple",
+  "viewport": "1440x900 fullPage",
+  "note": "Fine-tune summary before reload: \"Fine-tune 16:9 · Dense · Draft · Auto · Backdrop plain\" after: \"Fine-tune 16:9 · Dense · Draft · Auto · Backdrop plain\"",
+  "pageErrors": [],
+  "consoleErrors": [
+   "WebSocket connection to 'ws://127.0.0.1:47340/ws/midi?name=desk' failed: Error during WebSocket handshake: Unexpected response code: 404"
+  ]
+ },
+ {
+  "file": "40_result_full.jpg",
+  "url": "http://127.0.0.1:47340/#simple/result",
+  "viewport": "1440x900 fullPage",
+  "note": "Reopen on the Glitch Out (30 s cut) card",
+  "pageErrors": [],
+  "consoleErrors": [
+   "WebSocket connection to 'ws://127.0.0.1:47340/ws/midi?name=desk' failed: Error during WebSocket handshake: Unexpected response code: 404",
+   "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ]
+ },
+ {
+  "file": "40b_result_viewport.jpg",
+  "url": "http://127.0.0.1:47340/#simple/result",
+  "viewport": "1440x900 viewport",
+  "note": "result viewport",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "41_guardrails_open.jpg",
+  "url": "",
+  "viewport": "",
+  "note": "NOT CAPTURED: on a reopened cut state.job is a stub {id,status,stage,progress,video,reopened} with no guardrails, so #easy-guard stays empty and the Guardrails bar never renders (the job JSON does hold 4 messages: 2 taste, 2 qa).",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "42_shot_drawer_shot.jpg",
+  "url": "http://127.0.0.1:47340/#simple/result",
+  "viewport": "1440x900 viewport",
+  "note": "drawer, Shot tab. tabs: shot=Shot, look=Look, gpu=Regenerate",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "42b_shot_drawer_look.jpg",
+  "url": "http://127.0.0.1:47340/#simple/result",
+  "viewport": "1440x900 viewport",
+  "note": "drawer tab look",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "42c_shot_drawer_join.jpg",
+  "url": "http://127.0.0.1:47340/#simple/result",
+  "viewport": "1440x900 viewport",
+  "note": "drawer tab join",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "42d_shot_drawer_regenerate.jpg",
+  "url": "http://127.0.0.1:47340/#simple/result",
+  "viewport": "1440x900 viewport",
+  "note": "drawer tab gpu",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "43_seam.jpg",
+  "url": "http://127.0.0.1:47340/#simple/result",
+  "viewport": "1440x900 viewport",
+  "note": "join into shot 10",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "44_share_row.jpg",
+  "url": "http://127.0.0.1:47340/#simple/result",
+  "viewport": "1440x900 viewport",
+  "note": "Share section",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "45_side_column_hidden.jpg",
+  "url": "http://127.0.0.1:47340/#simple/result",
+  "viewport": "1440x900 fullPage",
+  "note": "after Hide",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "46_result_mobile.jpg",
+  "url": "http://127.0.0.1:47340/#simple/result",
+  "viewport": "430x932 fullPage",
+  "note": "reopened in a fresh mobile context",
+  "pageErrors": [],
+  "consoleErrors": [
+   "WebSocket connection to 'ws://127.0.0.1:47340/ws/midi?name=desk' failed: Error during WebSocket handshake: Unexpected response code: 404"
+  ]
+ },
+ {
+  "file": "47_result_narrow.jpg",
+  "url": "http://127.0.0.1:47340/#simple/result",
+  "viewport": "1024x768 fullPage",
+  "note": "reopened at 1024x768",
+  "pageErrors": [],
+  "consoleErrors": [
+   "WebSocket connection to 'ws://127.0.0.1:47340/ws/midi?name=desk' failed: Error during WebSocket handshake: Unexpected response code: 404"
+  ]
+ },
+ {
+  "file": "48_seed_json.jpg",
+  "url": "http://127.0.0.1:47340/api/jobs/31680167/seed",
+  "viewport": "1440x900 viewport",
+  "note": "/api/jobs/31680167/seed",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "49_my_videos_done.jpg",
+  "url": "http://127.0.0.1:47340/",
+  "viewport": "1440x900 viewport",
+  "note": "My videos with the finished card",
+  "pageErrors": [],
+  "consoleErrors": [
+   "WebSocket connection to 'ws://127.0.0.1:47340/ws/midi?name=desk' failed: Error during WebSocket handshake: Unexpected response code: 404"
+  ]
+ },
+ {
+  "file": "50_vj_from_cut.jpg",
+  "url": "http://127.0.0.1:47340/vj?track=demo&stemsId=98834501e60f33ca&stems=%2Fapi%2Fstems%2F98834501e60f33ca%2Fenvelopes.json",
+  "viewport": "1280x720 viewport",
+  "note": "link from vjUrl() on the result screen: /vj?track=demo&stemsId=98834501e60f33ca&stems=%2Fapi%2Fstems%2F98834501e60f33ca%2Fenvelopes.json ; page video srcs: [] ; query ?track=demo&stemsId=98834501e60f33ca&stems=%2Fapi%2Fstems%2F98834501e60f33ca%2Fenvelopes.json (the link carries track and stems only, no job id: plays library loops, not the cut morphs)",
+  "pageErrors": [],
+  "consoleErrors": [
+   "WebSocket connection to 'ws://127.0.0.1:47340/ws/midi?name=vj' failed: Error during WebSocket handshake: Unexpected response code: 404"
+  ]
+ },
+ {
+  "file": "60_making_0m03.jpg",
+  "url": "http://127.0.0.1:47340/#simple/making",
+  "viewport": "800x600 pane, 0.8 scale (640x480)",
+  "note": "pane 800x600 at 0.8: Making at 0:03, 2 %, 'reading the song', about 6:17 left",
+  "pageErrors": [],
+  "consoleErrors": [],
+  "source": "hand walk in the browser pane, 4 Nov"
+ },
+ {
+  "file": "60b_making_0m13.jpg",
+  "url": "http://127.0.0.1:47340/#simple/making",
+  "viewport": "800x600 pane, 0.8 scale (640x480)",
+  "note": "pane: Making at 0:13, 2 %, 'Growing 13 flowers objects for this idea (about 98 s)', about 6:07 left",
+  "pageErrors": [],
+  "consoleErrors": [],
+  "source": "hand walk in the browser pane, 4 Nov"
+ },
+ {
+  "file": "60c_making_1m13.jpg",
+  "url": "http://127.0.0.1:47340/#simple/making",
+  "viewport": "800x600 pane, 0.8 scale (640x480)",
+  "note": "pane: Making at 1:13, still 2 %, the same grow line, about 5:07 left",
+  "pageErrors": [],
+  "consoleErrors": [],
+  "source": "hand walk in the browser pane, 4 Nov"
+ },
+ {
+  "file": "60d_making_2m59.jpg",
+  "url": "http://127.0.0.1:47340/#simple/making",
+  "viewport": "800x600 pane, 0.8 scale (640x480)",
+  "note": "pane: Making at 2:59, still 2 %, the same grow line, about 3:21 left",
+  "pageErrors": [],
+  "consoleErrors": [],
+  "source": "hand walk in the browser pane, 4 Nov"
+ },
+ {
+  "file": "60e_making_5m28.jpg",
+  "url": "http://127.0.0.1:47340/#simple/making",
+  "viewport": "800x600 pane, 0.8 scale (640x480)",
+  "note": "pane: Making at 5:28, 9 %, 'Morph 1 of 13 · about 723 s left' under a header saying about 5:43 left; the chain has changed",
+  "pageErrors": [],
+  "consoleErrors": [],
+  "source": "hand walk in the browser pane, 4 Nov"
+ },
+ {
+  "file": "61_result_first_view.jpg",
+  "url": "http://127.0.0.1:47340/#simple/result",
+  "viewport": "800x600 pane, 0.8 scale (640x480)",
+  "note": "pane: the cut's screen as the Make landed: Took 8:49, the Guardrails bar, the timeline",
+  "pageErrors": [],
+  "consoleErrors": [],
+  "source": "hand walk in the browser pane, 4 Nov"
+ },
+ {
+  "file": "62_guardrails_open.jpg",
+  "url": "http://127.0.0.1:47340/#simple/result",
+  "viewport": "800x600 pane, 0.8 scale (640x480)",
+  "note": "pane: the Guardrails bar opened: two [taste] and two [qa] lines",
+  "pageErrors": [],
+  "consoleErrors": [],
+  "source": "hand walk in the browser pane, 4 Nov"
+ },
+ {
+  "file": "63_drawer_regenerate_live.jpg",
+  "url": "http://127.0.0.1:47340/#simple/result",
+  "viewport": "800x600 pane, 0.8 scale (640x480)",
+  "note": "pane: shot 1's Regenerate tab on the live job (style chips, swap, re-render with an empty seed, prompt variant, Generate here, Dream here)",
+  "pageErrors": [],
+  "consoleErrors": [],
+  "source": "hand walk in the browser pane, 4 Nov"
+ },
+ {
+  "file": "63b_drawer_join_live.jpg",
+  "url": "http://127.0.0.1:47340/#simple/result",
+  "viewport": "800x600 pane, 0.8 scale (640x480)",
+  "note": "pane: the seam into shot 6: Join tab (Flow/Cut, move by a beat, 21 transitions)",
+  "pageErrors": [],
+  "consoleErrors": [],
+  "source": "hand walk in the browser pane, 4 Nov"
+ },
+ {
+  "file": "64_recut_making_0s.jpg",
+  "url": "http://127.0.0.1:47340/#simple/making",
+  "viewport": "800x600 pane, 0.8 scale (640x480)",
+  "note": "pane: 3 s after Re-cut with these knobs: 'Making the prototype.', '11:34 elapsed · assemble', no ETA, four steps ticked, 'Re-cutting from the cached morphs (no GPU)'",
+  "pageErrors": [],
+  "consoleErrors": [],
+  "source": "hand walk in the browser pane, 4 Nov"
+ },
+ {
+  "file": "64b_recut_making_30s.jpg",
+  "url": "http://127.0.0.1:47340/#simple/making",
+  "viewport": "800x600 pane, 0.8 scale (640x480)",
+  "note": "pane: 33 s into the re-cut: the header still '11:34 elapsed', 'Cutting shot 11 of 13 to the beat'",
+  "pageErrors": [],
+  "consoleErrors": [],
+  "source": "hand walk in the browser pane, 4 Nov"
+ },
+ {
+  "file": "65_vj_pane_first.jpg",
+  "url": "http://127.0.0.1:47340/vj",
+  "viewport": "800x600 pane, 0.8 scale (640x480)",
+  "note": "pane 800x600: /vj as it opens, a library loop playing, the bar of pills",
+  "pageErrors": [],
+  "consoleErrors": [],
+  "source": "hand walk in the browser pane, 4 Nov"
+ },
+ {
+  "file": "65b_vj_pane_learn.jpg",
+  "url": "http://127.0.0.1:47340/vj",
+  "viewport": "800x600 pane, 0.8 scale (640x480)",
+  "note": "pane: after L: the help modal with the MIDI table under the key table",
+  "pageErrors": [],
+  "consoleErrors": [],
+  "source": "hand walk in the browser pane, 4 Nov"
+ }
+]
