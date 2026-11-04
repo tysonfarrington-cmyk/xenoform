@@ -150,11 +150,12 @@ def test_the_desk_has_the_effects_row_and_the_dither_look():
         assert f'"{key}": {json.dumps(text)}' in notes, key
     assert '"dither"' in APP.split("const LOOK_PRESETS = [", 1)[1].split("];", 1)[0]
     assert f'"dither": {json.dumps(E.LOOK_NOTES["dither"])}' in APP
-    desk = APP.split("simple-knobs-panel", 1)[1].split("</section>", 1)[0]
-    assert '${effectsRow(easy.effects, "easy-effect")}' in desk
-    result = APP.split("function renderCut(easy, chosen) {", 1)[1].split("function renderDesk(", 1)[0]
+    # Tweak's Effects row: a chip a choice, any at once, and None when none is on (C9)
+    rows = APP.split("function tweakRows(easy) {", 1)[1].split("\n}\n", 1)[0]
+    assert 'data-act="easy-effect" data-value="${esc(id)}"' in rows and 'data-act="easy-effect-none"' in rows
+    result = APP.split("function renderCut(easy, chosen) {", 1)[1].split("function renderSource(", 1)[0]
     assert '${effectsRow(easy.effects, "easy-effect")}' in result
     assert "effects: (state.easy && state.easy.effects) || []," in APP
     assert "effects: state.easy.effects || []," in APP.split("async function recutWithKnobs()", 1)[1].split("try {", 1)[0]
     assert '"effects"' in APP.split("const EASY_SAVED_KEYS = [", 1)[1].split("];", 1)[0] and 'act === "easy-effect"' in APP
-    assert "the blocky smear too, sparingly, when Effects asks for it" in APP
+    assert "The blocky datamosh smear at a few handoffs (one in six at most, never the drop)" in APP

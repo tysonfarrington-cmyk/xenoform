@@ -41,8 +41,9 @@ def test_breadcrumb_on_every_simple_screen():
 
 
 def test_fine_tune_in_the_main_column_and_rows_that_wrap():
-    main = APP.split('<section class="easy-main">')[1].split("</section>\n    <aside")[0]
-    assert "${fineTune(easy)}" in main
+    # Fine-tune and Work in progress went into the Project panel under the hood, on Tweak (C5, C6)
+    tweak = APP.split("function renderTweak(easy, chosen) {")[1].split("\n}\n")[0]
+    assert "${projectPanel(easy)}" in tweak and 'id="hood-project"' in APP
     assert ".simple-seg .toggle button { flex: 1 1 auto; min-width: max-content; white-space: nowrap; }" in CSS
     assert ".look-row .toggle .chip {" in CSS and ".simple-opts .look-row .toggle .chip" not in CSS
     assert ".easy-result-actions, .easy-make-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }" in CSS
@@ -58,7 +59,7 @@ def test_honest_clock_and_took():
 
 
 def test_vj_links_both_ways_and_state_persists():
-    assert 'href="${esc(vjUrl())}" target="_blank" rel="noopener">VJ mode' in APP
+    assert 'window.open(media(`/vj?job=${encodeURIComponent(id)}`), "_blank", "noopener");' in APP  # Perform opens /vj with the cut
     assert 'id="desk-link" href="/#simple"' in VJ
     assert 'localStorage.setItem("xeno-easy"' in APP and "loadEasy()" in APP
     assert 'body[data-advanced="0"] #open-about' not in CSS  # About is reachable in Simple

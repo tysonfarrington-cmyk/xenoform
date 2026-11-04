@@ -16,12 +16,13 @@ def _fn(name: str) -> str:
 
 
 def test_whole_song_sits_beside_the_30_s_window_in_the_length_row():
-    row = APP.split('simpleSeg("easy-length"')[1].split('"Length")')[0]
-    assert '["30", "30 s"], ["song", "Whole song"]' in row and 'wholeSong(easy) ? "song"' in row
-    click = APP.split('act === "easy-length"')[1].split("} else if")[0]
-    assert 'state.easy.wholeSong = el.dataset.value === "song";' in click and "loadSimpleOptions()" in click
+    # the Length row is gone: the Draft is the strip's 30 s window, the whole song a Quality of the Render step
+    assert 'simpleSeg("easy-length"' not in APP
+    assert 'const RENDER_QUALITIES = [["draft", "Draft, one cut"], ["passages", "By passages"], ["final", "Final"], ["cloud", "Cloud"]];' in APP
+    render = APP.split("async function renderWholeSong() {")[1].split("\n}\n")[0]
+    assert 'easy.wholeSong = q !== "draft";' in render and "await easyMake();" in render and "Object.assign(state.easy, { lengthS: keep.lengthS" in render
     saved = APP.split("const EASY_SAVED_KEYS = [")[1].split("];")[0]
-    assert '"wholeSong"' in saved and '"songCap"' in saved
+    assert '"wholeSong"' not in saved and '"lengthS"' not in saved and '"songCap"' in saved
 
 
 def test_the_estimate_shows_morphs_minutes_and_credits_by_tier():
@@ -34,7 +35,7 @@ def test_the_estimate_shows_morphs_minutes_and_credits_by_tier():
     tier_text = _fn("songTierText")
     assert "Comfy Cloud credits" in tier_text and "row.credits[0]" in tier_text and "measured here" in tier_text
     assert "if (wholeSong(easy)) return songPlanFacts(easy);" in _fn("easyPlanFacts")
-    assert "${wholeSong(easy) ? songCapRow(easy) : morphControl(" in APP  # the song's morphs, not one Make's Forms
+    assert "${wholeSong(easy) ? songCapRow(easy) : morphControl(" in APP and "${songCapRow(easy)}" in APP  # the song's morphs, not one Make's Forms
 
 
 def test_the_make_hands_the_body_to_the_song_route_after_the_credits_tick():

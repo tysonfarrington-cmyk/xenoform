@@ -170,7 +170,7 @@ function shortcutLabel() {
 }
 
 // The last session's vibe and Fine-tune choices survive a reload or a desk restart (the song cannot: uploads live on the server).
-const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "lengthS", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow", "scenes", "pins", "feelSig", "batchN", "batchVary", "morphSource", "scenesChosen", "morphStyle", "morphTiming", "effects", "backdrop", "breathe", "dropMode", "stemRows", "stemLeadAuto", "importFolder", "importKind", "wholeSong", "songCap", "songVibes"];
+const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow", "scenes", "pins", "feelSig", "batchN", "batchVary", "morphSource", "scenesChosen", "morphStyle", "morphTiming", "effects", "backdrop", "breathe", "dropMode", "stemRows", "stemLeadAuto", "importFolder", "importKind", "songCap", "songVibes"];
 // The Model row's tiers as the desk names them (quality_tier: draft, fast, final, cloud)
 const TIER_LABEL = { draft: "Draft", fast: "Fast Final", final: "Final", cloud: "Cloud Final" };
 function saveEasy() {
@@ -184,6 +184,12 @@ function saveEasy() {
 function loadEasy() {
   try {
     const saved = JSON.parse(localStorage.getItem("xeno-easy") || "{}");
+    if (saved && typeof saved === "object") {
+      // the Length row is gone (the Draft window and Render's Quality replace it): a length saved by an older desk
+      // would hide the window with no row left to bring it back
+      delete saved.lengthS;
+      delete saved.wholeSong;
+    }
     return saved && typeof saved === "object" ? saved : {};
   } catch (err) {
     return {};
@@ -696,28 +702,6 @@ function libraryStill(vibe, shot) {
   return media(`/static/library/${libraryFolder(vibe)}/${shot}.jpg`);
 }
 
-function songFacts() {
-  const duration = Number((state && state.duration) || 0);
-  const tempo = Math.round(Number((state && state.tempo) || 0));
-  const sections = ((state && state.sections) || []).length;
-  const clock = duration ? `${Math.floor(duration / 60)}:${String(Math.floor(duration % 60)).padStart(2, "0")}` : "";
-  return [clock, tempo ? `${tempo} BPM` : "", sections ? `${sections} sections` : ""].filter(Boolean).join(" · ");
-}
-
-function waveBars() {
-  const peaks = (state && state.waveform) || [];
-  const count = 42;
-  const bars = [];
-  for (let index = 0; index < count; index += 1) {
-    const sample = peaks.length ? peaks[Math.floor((index / count) * peaks.length)] : 0.35;
-    const value = typeof sample === "number" ? sample : Number(sample && sample.peak != null ? sample.peak : sample);
-    const scaled = Number.isFinite(value) ? (value > 2 ? value / 100 : value) : 0.35;
-    const height = Math.max(4, Math.round(Math.min(1, scaled) * 28));
-    bars.push(`<i style="height:${height}px"${index < 16 ? ' class="on"' : ""}></i>`);
-  }
-  return `<span class="wave" aria-hidden="true">${bars.join("")}</span>`;
-}
-
 const SHOWCASE = { video: "/static/showcase/showcase.mp4", poster: "/static/showcase/showcase.jpg" };
 const SHOWCASE_NOTE = "Made earlier with the same engine on Comfy Cloud (LTX-2.5, open weights), five of the morphs the author loved cut to six beats of Glitch Out each. Back to the song, pick a vibe, then Make: a 30 s cut takes a few minutes on a 12 GB GPU, a full song about twenty, each Polly shot about eight.";
 
@@ -956,7 +940,7 @@ function renderEasy() {
   } else if (step === "perform") body = renderPerform(easy);
   else if (step === "source") body = renderSource(easy);
   else if (step === "plan") body = renderPlan(easy, chosen);
-  else body = renderDesk(easy, chosen, step);
+  else body = renderTweak(easy, chosen);
   return `${body}${easy.phase === "showcase" ? "" : stepBar(easy, step)}`;
 }
 
@@ -1105,6 +1089,7 @@ function renderSource(easy) {
       ${easy.note ? `<p class="note" id="easy-note">${esc(easy.note)}</p>` : ""}
     </section>
     <section class="sl-strip"><div class="song-strip" data-song-strip="desk" aria-label="The song strip"></div></section>
+    ${songsLine()}
     ${galleryPanel()}
     <p class="note sl-foot"><button type="button" class="text" data-act="easy-showcase">Watch a finished one</button>
       <button type="button" class="text" data-act="go" data-hash="setup">Setup &amp; models</button>
@@ -1233,6 +1218,7 @@ function planDock(easy) {
         <b>${esc(slot.noun)}</b>
         <span class="note">object ${slot.index + 1} of ${stills.length}${where ? ` · ${esc(where)}` : ""}${slot.pinned ? " · pinned" : ""}</span>
         ${slot.pinned ? `<button type="button" class="text" data-act="easy-unpin" data-slot="${slot.index}">Let the pick choose</button>` : ""}
+        ${Object.keys(easy.pins || {}).length > 1 ? `<button type="button" class="text" data-act="easy-chain-reset" title="Let the pick choose every object again">Unpin all</button>` : ""}
         <button type="button" class="text" data-act="easy-chain-cancel">Close</button>
       </div>
       <p class="note">Pick what lands here instead: it holds through every render of this plan; the other objects are picked fresh.</p>
@@ -1240,76 +1226,174 @@ function planDock(easy) {
     </section>`;
 }
 
-// Tweak (for now the desk as it was): the feel over the song strip.
-function renderDesk(easy, chosen, step) {
-  const preview = easy.vibe ? chosen : VIBES[3];
-  const songSet = !!easy.song;
-  const songBlock = songSet
-    ? `<div class="songrow">
-        <span class="play-dot" aria-hidden="true">▶</span>
-        <div><strong>${esc(easy.songLabel || "Chosen")}</strong><span>${esc(songFacts() || "Ready")}</span>${stemsLine()}</div>
-        ${waveBars()}
-      </div>`
-    : `<div class="easy-actions">
-        <button type="button" class="ghost${easy.song === "demo" ? " on" : ""}" data-act="easy-demo">Bundled demo</button>
+// Tweak (docs/UI_REVIEW.md 6.3): the strip short (its sections, shots and Intensity), the feel under it: a Feel preset
+// first, the four knobs (ui_v6's strip, a MIDI slot each), then the rows, one segmented style for a pick-one row and one
+// chip style for a pick-many row (C9), one short line for the choice under the pointer or the keyboard instead of a
+// paragraph a row (C4, C15), a cost tag on every row (C10); the monitor beside (this song's Draft when there is one, else
+// the sketch); and the project's own rows under the hood, where Fine-tune and Work in progress went (C5, C6).
+const FEELS = [
+  { id: "house", name: "House", knobs: { intensity: 0.5, speed: 0.5, chaos: 0.3, glow: 0.4 }, look: "auto", style: "auto",
+    hint: "the desk's own feel: the vibe's look, Melt through the verses and Shatter on the drops, every knob in the middle." },
+  { id: "dreamy", name: "Dreamy", knobs: { intensity: 0.35, speed: 0.25, chaos: 0.1, glow: 0.75 }, look: "cool-echo", style: "melt",
+    hint: "slow and soft: long shots, a liquid melt, heavy bloom and a cool ghost trail." },
+  { id: "glitch", name: "Hard glitch", knobs: { intensity: 0.85, speed: 0.7, chaos: 0.8, glow: 0.3 }, look: "cyan-flash", style: "shatter",
+    hint: "hard and broken: fast cuts, punches and stutters, shards on every morph, electric flashes." },
+  { id: "warm", name: "Warm haze", knobs: { intensity: 0.45, speed: 0.4, chaos: 0.2, glow: 0.7 }, look: "warm-leak", style: "bloom",
+    hint: "warm and hazy: a split-tone grade with halation and light leaks, each object opening like a flower." },
+  { id: "clean", name: "Clean", knobs: { intensity: 0.4, speed: 0.5, chaos: 0.05, glow: 0.2 }, look: "off", style: "melt",
+    hint: "the morphs as they are: no colour pass, hardly any swing, cut on the beat." },
+];
+// the feel the knobs, the Look and the Morph style add up to now: a preset when they are its own, else Custom
+function feelNow(easy) {
+  const m = (window.XENO_MACROS ? window.XENO_MACROS() : null) || {};
+  const near = (a, b) => Math.abs(Number(a) - Number(b)) < 0.011;
+  const hit = FEELS.find((p) => Object.entries(p.knobs).every(([k, v]) => near(m[k] != null ? m[k] : v, v))
+    && (easy.danceFx || "auto") === p.look && (easy.morphStyle || "auto") === p.style);
+  return hit ? hit.id : "custom";
+}
+function applyFeelPreset(id) {
+  const p = FEELS.find((f) => f.id === id);
+  if (!p || !state.easy) return;
+  Object.entries(p.knobs).forEach(([k, v]) => { if (window.XENO_MACRO_SET) window.XENO_MACRO_SET(k, v); });
+  state.easy.danceFx = p.look;
+  state.easy.morphStyle = p.style;
+  saveEasy();
+}
+// a pick-one row: one segmented control, each choice with its one line (data-hint), the row's cost on its label
+function tweakSeg(act, current, choices, label, cost, slot) {
+  const buttons = choices.map(([id, text, hint]) => `<button type="button" class="${id === current ? "on" : ""}" data-act="${act}" data-value="${esc(id)}" aria-pressed="${id === current ? "true" : "false"}"${hint ? ` data-hint="${esc(`${text}: ${hint}`)}"` : ""}>${esc(text)}</button>`).join("");
+  return `<div class="tw-row" data-midi-slot="${esc(slot || act)}"><span>${esc(label)}${cost || ""}</span><div class="toggle" role="group" aria-label="${esc(label)}">${buttons}</div></div>`;
+}
+const NO_GPU = '<span class="cost-tag" title="A re-cut from the cached morphs: no GPU">re-cut</span>';
+const NEXT_RENDER = '<span class="cost-tag is-gpu" title="The morphs change: the next render spends the GPU">GPU</span>';
+function feelRow(easy) {
+  const now = feelNow(easy);
+  const choices = FEELS.map((p) => [p.id, p.name, p.hint]).concat([["custom", "Custom", "the knobs, the look and the morphs as you set them: turn anything and the feel is yours."]]);
+  return tweakSeg("easy-feel", now, choices, "Preset", "", "feel");
+}
+function tweakRows(easy) {
+  const objects = morphSource(easy) !== "clips";
+  const style = easy.morphStyle || "auto";
+  const timing = MORPH_TIMINGS.includes(easy.morphTiming) ? easy.morphTiming : "smooth";
+  const breathe = !!breatheValue(easy);
+  const drops = DROP_MODES.includes(easy.dropMode) ? easy.dropMode : "auto";
+  const notes = objects ? SHAPE_NOTES : SHAPE_NOTES_CLIPS;
+  const on = new Set(easy.effects || []);
+  const effects = `<div class="tw-row" data-midi-slot="effects"><span>Effects${NO_GPU}</span><div class="toggle chips" role="group" aria-label="Effects, any of them at once">
+      <button type="button" class="chip${on.size ? "" : " on"}" data-act="easy-effect-none" aria-pressed="${on.size ? "false" : "true"}" data-hint="None: the morphs, the beat FX and the Look alone. Any of the others can go on together.">None</button>
+      ${EFFECTS.map((id) => `<button type="button" class="chip${on.has(id) ? " on" : ""}" data-act="easy-effect" data-value="${esc(id)}" aria-pressed="${on.has(id) ? "true" : "false"}" data-hint="${esc(`${EFFECT_LABELS[id]}: ${EFFECT_NOTES[id] || ""}`)}">${esc(EFFECT_LABELS[id])}</button>`).join("")}
+    </div></div>`;
+  const rows = [
+    tweakSeg("easy-morph-style", style, ["auto"].concat(MORPH_STYLES).map((id) => [id, morphStyleLabel(id), MORPH_STYLE_NOTES[id] || ""]), "Morph style", NEXT_RENDER, "style"),
+    tweakSeg("easy-morph-timing", timing, MORPH_TIMINGS.map((id) => [id, MORPH_TIMING_LABELS[id], MORPH_TIMING_NOTES[id] || ""]), "Timing", NO_GPU, "timing"),
+    // the old Shape row, split in two (C9): Breathe and the Drops are separate choices
+    tweakSeg("easy-breathe", breathe ? "on" : "off", [["off", "Off", notes["breathe-off"]], ["on", "On", notes["breathe-on"]]], "Breathe", NO_GPU, "breathe"),
+    tweakSeg("easy-drops", drops, [["auto", "Auto", notes.auto], ["max", "Max", notes.max], ["off", "Off", notes.off]], "Drops", NO_GPU, "drops"),
+    effects,
+    tweakSeg("easy-look", easy.danceFx || "auto", ["auto", "off"].concat(LOOK_PRESETS).map((id) => [id, lookLabel(id), lookNote(id)]), "Look", NO_GPU, "look"),
+  ];
+  if (objects) {
+    const reading = ideaReading();
+    const chosen = ["off", "mix", "only"].includes(easy.scenes) ? easy.scenes : "off";
+    const fromLine = chosen === "off" && !easy.scenesChosen && !!(reading && reading.scenes && reading.scenes.length);
+    const scenes = fromLine ? "mix" : chosen;
+    const have = ((state.stills || {}).counts || {})[easy.vibe] || {};
+    const places = Number(have.settings || 0);
+    const backdrop = BACKDROPS.includes(easy.backdrop) && easy.backdrop !== "scenes" ? easy.backdrop : places >= PLACES_DEFAULT_MIN ? "places" : "plain";
+    rows.push(tweakSeg("easy-foreshadow", easy.foreshadow || "auto", [["auto", "Auto"], ["off", "Off"], ["trace", "Trace"], ["negative", "Negative"], ["slices", "Slices"], ["silhouette", "Silhouette"]]
+      .map(([id, text]) => [id, text, FORESHADOW_NOTES[id] || ""]), "Foreshadow", NO_GPU, "foreshadow"));
+    // W2: "Scenes" meant three things; the wide stills are Wide scenes, one control (the Backdrop's Scenes was the same as Only, C13)
+    rows.push(tweakSeg("easy-scenes", scenes, [["off", "Off", SCENES_NOTES.off], ["mix", "Mix in", SCENES_NOTES.mix], ["only", "Only", SCENES_NOTES.only]], "Wide scenes", NEXT_RENDER, "scenes"));
+    rows.push(scenes === "only"
+      ? `<div class="tw-row"><span>Backdrop${NEXT_RENDER}</span><span class="note">Wide scenes alone: no object stands on a backdrop.</span></div>`
+      : tweakSeg("easy-backdrop", backdrop, [["plain", "Plain", BACKDROP_NOTES.plain], ["places", "Places", BACKDROP_NOTES.places]], "Backdrop", NEXT_RENDER, "backdrop"));
+  }
+  return rows.join("");
+}
+// The monitor beside the feel: this song's Draft (a re-cut lands in it), else the sketch
+function tweakMonitor(easy, chosen) {
+  const id = easyVideoId();
+  if (id && cutOnSong(easy) && !easy.playedHere) {
+    const src = easy.reopenUrl || (state.job && state.job.video) || "";
+    return `<div class="player"><video id="player" playsinline controls preload="metadata" src="${esc(media(src))}"></video></div>
+      <p class="note">This song's Draft: the Re-cut in the step bar lands here.</p>`;
+  }
+  return `${sketchMonitor(easy, chosen)}<dl class="facts">${easyPlanFacts(easy)}</dl>`;
+}
+// The project's own rows (aspect, model tier, GPU tier, where it renders, Forms, Beat FX, Subject sway, End card, your
+// images, the library, the beat overlay, the recipe code, Polly, paid cloud, Connect an AI), in their plainest form, in
+// #hood-project: the Under the hood panel (hood.js) fills the same host with its own when it is on the page.
+function projectPanel(easy) {
+  const open = readDrawer("xeno-project");
+  if (easy.vibe && (!state.stills || state.stills.vibe !== easy.vibe) && !state.stillsLoading) {
+    state.stillsLoading = true;
+    setTimeout(() => { loadStills(true).finally(() => { state.stillsLoading = false; }); }, 0);
+  }
+  const bits = [easy.aspect || "9:16", TIER_LABEL[easy.tier] || "Draft", (easy.energyPreset || "dense") === "dense" ? "Dense" : "Flow",
+    easy.fx === false ? "Beat FX off" : "", easy.endCard ? "End card" : ""].filter(Boolean);
+  return `<details class="panel hood-project-panel" id="hood-project-panel"${open ? " open" : ""}>
+      <summary>Project · under the hood <small>${esc(bits.join(" · "))}</small></summary>
+      <div id="hood-project" data-hood-scope="project">${projectRows(easy)}</div>
+    </details>`;
+}
+function projectRows(easy) {
+  const clips = morphSource(easy) === "clips";
+  if (clips && easy.tier === "cloud") easy.tier = "draft";  // Cloud Final morphs object cuts only (cloud_final has no clips path)
+  const tier = easy.tier || "draft";
+  const aspect = easy.aspect || "9:16";
+  const vertical = tier === "final" ? (easy.vertical === "crop" ? "crop" : "native") : "crop";
+  const tiers = [["draft", "Draft"], ["fast", "Fast Final"], ["final", "Final"], ["cloud", "Cloud Final"]].filter((t) => !(clips && t[0] === "cloud"));
+  const row = (html) => `<div class="pj-row">${html}</div>`;
+  const block = (title, html) => `<div class="pj-block"><h4>${esc(title)}</h4>${html}</div>`;
+  return [
+    row(simpleSeg("easy-aspect", aspect, [["16:9", "16:9"], ["9:16", "9:16"], ["1:1", "1:1"]], "Aspect")
+      + (aspect === "9:16" && tier === "final" ? simpleSeg("easy-vertical", vertical, [["native", "Native"], ["crop", "Crop"]], "Vertical") : "")),
+    row(`${simpleSeg("easy-tier", tier, tiers, "Model tier")}<p class="note">${esc(tierNote(tier))}</p>${tier === "cloud" ? cloudFinalRow(easy) : ""}`),
+    row(machineRows(easy)),
+    row(`${wholeSong(easy) ? songCapRow(easy) : morphControl(easy, tier, aspect, vertical)}`),
+    // the whole song by passages (Render's Quality): its morphs at most and how many vibes it draws
+    wholeSong(easy) ? "" : block("The whole song, by passages", `${songCapRow(easy)}${morphSource(easy) !== "clips" ? songVibesRow(easy) : ""}`),
+    row(simpleSeg("easy-energy", easy.energyPreset || "dense", [["flow", "Flow"], ["dense", "Dense"]], "Energy")),
+    row(simpleSeg("easy-fx", easy.fx === false ? "off" : "on", [["on", "On"], ["off", "Off"]], "Beat FX")),
+    row(simpleSeg("easy-orbit", easy.stemOrbit === false ? "off" : "on", [["on", "On"], ["off", "Off"]], "Subject sway")),
+    row(simpleSeg("easy-card", easy.endCard ? "on" : "off", [["off", "Off"], ["on", "On"]], "End card")),
+    clips ? "" : block("Your images", ownRow(easy)),
+    clips ? "" : block("Library", stillsRow(easy)),
+    row(beatOverlayRow(easy)),
+    block("Recipe code", remixBox(easy)),
+    block("Performer", performerRow(easy)),
+    block("Paid cloud", cloudRows(easy)),
+    row(`<div class="simple-seg"><span>Connect an AI</span><div><button type="button" class="text" data-act="go" data-hash="connect">Any AI drives this desk over MCP &rarr;</button> <a class="text" href="/moves" target="_blank" rel="noopener">Moves (a dance to a clip) &rarr;</a></div></div>`),
+  ].join("");
+}
+// what each model tier renders with, one line (the chips say Draft, Fast Final, Final, Cloud Final)
+function tierNote(tier) {
+  const cloudInfo = (state.simpleOptions && state.simpleOptions.cloud_final) || {};
+  if (tier === "final") return finalEtaText();
+  if (tier === "fast") return "Fast Final: the Draft's morphs (LTX 0.9.5), each upscaled 4x to 1080x1920 and cut at full size.";
+  if (tier === "cloud") return `Cloud Final: ${cloudInfo.model || "LTX"} on Comfy Cloud, scaled to full size here; it spends credits.`;
+  return "Draft: LTX 0.9.5, the quick pass, on this GPU.";
+}
+function renderTweak(easy, chosen) {
+  const cut = !!easyVideoId() && cutOnSong(easy) && !easy.playedHere;
+  return `<div class="easy sl sl-tweak">
+    <section class="sl-strip"><div class="song-strip" data-song-strip="${cut ? "cut" : "desk"}" data-lanes="sections,shots,intensity" aria-label="The song strip"></div></section>
+    ${cut ? "" : planDock(easy)}
+    <div class="sl-tweak-grid">
+      <div class="sl-tweak-main" data-knob-rows="1">
+        <section class="panel tw-panel tw-feel" data-tour="easy-macros">
+          <div class="step-head"><h3>Feel</h3><span>${cut ? "Turn anything, then Re-cut: no GPU" : "A preset first, then the knobs"}</span></div>
+          ${feelRow(easy)}
+          <div class="simple-knobs"></div>
+        </section>
+        <section class="panel tw-panel">
+          <div class="tw-rows">${tweakRows(easy)}</div>
+          <p class="tw-hint" id="tw-hint" aria-live="polite">${esc(state.twHint || "Point at a choice, or tab to it, to read what it does. Re-cut rows change this Draft with no GPU; GPU rows change the next render.")}</p>
+        </section>
+        ${projectPanel(easy)}
       </div>
-      <div id="bundled-songs">${songsRow(easy)}</div>`;
-  const proto = easyLengthIsProto(easy);
-  return `<div class="easy easy-desk">
-    <header class="easy-intro">
-      <h2>Make a music video.</h2>
-      <p class="lede">One object keeps transforming into the next, every change on the beat. A song and a vibe make a quick prototype; refine it on its timeline, then render the whole song or Final. Free, local, open weights.</p>
-    </header>
-    <section class="easy-main">
-      <section class="easy-step" data-tour="easy-song" data-song-drop="1">
-        <div class="step-head"><h3>Song</h3>${songSet ? '<button type="button" class="text" data-act="easy-step" data-step="song">Change</button>' : ""}</div>
-        ${songBlock}
-        ${songSet ? "" : `<p class="note">${esc(easy.songLabel || "Drop a file here, use the bundled demo, or pick one of the bundled songs.")}</p>`}
-        <div class="song-strip" data-song-strip="desk" aria-label="The song strip"></div>
-      </section>
-      <section class="easy-step" data-tour="easy-vibe">
-        <div class="step-head"><h3>Vibe</h3><span>Pick one. You can try another after.</span></div>
-        <div class="vibe-grid" role="radiogroup" aria-label="Vibe">${vibeCards(easy, false, "featured")}</div>
-        ${moreVibes(easy)}
-        ${sourceRow(easy)}
-        ${morphSource(easy) !== "clips" ? ideaBlock(easy) : ""}
-      </section>
-      ${stemsMode(easy) ? stemsStep(easy) : ""}
-      <section class="panel span simple-knobs-panel" data-tour="easy-macros">
-        <h3>Knobs</h3>
-        <p class="note">Intensity is the beat pulse and flash. Speed is the cut density and the trail length. Chaos is the punches, stutters and how far the subject swings, and it wilds the cuts: wipes and chromatic rips at the handoffs as it climbs (the blocky smear too, sparingly, when Effects asks for it), strobe cuts past 0.7 (never two in two seconds), plain cuts at 0. Glow is the bloom. The look rides the vibe's own colours unless you pick one.</p>
-        <div class="simple-knobs"></div>
-        ${morphStyleRow(easy.morphStyle || "auto", "easy-morph-style")}
-        <p class="note morph-style-note">${esc(MORPH_STYLE_NOTES[easy.morphStyle || "auto"] || "")}</p>
-        ${timingRow(easy.morphTiming || "smooth", "easy-morph-timing")}
-        <p class="note morph-timing-note">${esc(MORPH_TIMING_NOTES[easy.morphTiming || "smooth"] || "")}</p>
-        ${shapeRow(easy)}
-        ${effectsRow(easy.effects, "easy-effect")}
-        ${lookRow(easy.danceFx || "auto", "easy-look")}
-        ${morphSource(easy) !== "clips" ? `${foreshadowRow(easy)}${scenesRow(easy)}${backdropRow(easy)}` : ""}
-        <p class="note look-note">${esc(lookNote(easy.danceFx || "auto"))}</p>
-      </section>
-      ${fineTune(easy)}
-      ${wipDrawer(easy)}
-      ${galleryPanel()}
-    </section>
-    <aside class="panel easy-side" data-tour="easy-make">
-      <div class="monitor" style="background-image:url(${esc(media(preview.still))})"><span class="monitor-pill">${esc(preview.name)} · sample</span></div>
-      <div class="filmstrip">${shotStrip(preview.id)}</div>
-      <dl class="facts">
-        ${easyPlanFacts(easy)}
-      </dl>
-      <p class="note house-line">${wholeSong(easy) ? esc(songMakeLine(easy)) : proto
-        ? `A ${esc(TIER_LABEL[easy.tier] || "Draft")} of ${esc(String(easyLength(easy)))} s around the drop, in minutes. Then refine it, and render the whole song or Final from its screen. Fine-tune → Length makes the whole song now.`
-        : `${esc(easy.aspect || "9:16")}, ${(easy.energyPreset || "dense") === "dense" ? "Dense" : "Flow"}, ${esc(TIER_LABEL[easy.tier] || "Draft")}, Beat FX and the house look. Fine-tune below the vibes if you want to; Final is one press on the cut's screen.`}</p>
-      ${songsLine()}
-      ${variationsRow(easy)}
-      ${easy.cloudPlan ? cloudCard(easy.cloudPlan) : ""}
-      <button type="button" class="ghost easy-showcase" data-act="easy-showcase">Watch a finished one · plays now</button>
-      <p class="note" id="easy-note">${esc(easy.note || "No ComfyUI? It plays in your browser.")}</p>
-      <p class="note tools-line"><button type="button" class="text" data-act="go" data-hash="setup">Setup &amp; models</button></p>
-      <p class="side-foot"><a class="ow-badge" href="${esc(media("/licences"))}" title="LTX-2.3 has a revenue threshold. FLUX.2 Klein 9B is non-commercial. This desk uses the Apache 2.0 4B.">Open weights</a></p>
-    </aside>
+      <aside class="sl-side" aria-label="The monitor">${tweakMonitor(easy, chosen)}</aside>
+    </div>
   </div>`;
 }
 
@@ -1688,15 +1772,6 @@ function songVibesRow(easy) {
   return `<div class="song-vibes">${simpleSeg("easy-song-vibes", songVibesValue(easy), SONG_VIBES, "Vibes")}
       <p class="note">${esc(songVibesNote(easy))}</p></div>`;
 }
-function songLengthNote(easy, secs) {
-  const s = state.simpleOptions && state.simpleOptions.song;
-  if (s && s.error) return s.error;
-  const clips = morphSource(easy) === "clips";  // a clips song (song_plan.clips_song): one clips cut over every passage
-  if (!s) return clips ? `Whole song (${clockText(secs)}): your clips as one cut over the song's passages, laid with the title on the last hit. Planning it...`
-    : `Whole song (${clockText(secs)}): the song's passages, each its own Make on the beat, laid together. Planning it...`;
-  if (clips) return `Whole song (${clockText(secs)}): your clips as one cut over the song's ${s.passages} passages, a morph between every two clips, cut on the beat and laid with the title on the last hit and the song at -16 LUFS. ${s.morphs} morphs in all; Draft ${songTierText(s, "draft")}.`;
-  return `Whole song (${clockText(secs)}): ${s.passages} passages, each its own Make of at most ${s.window_cap} morphs on the beat, queued one after another on a free GPU and laid together on the song's beats. ${s.morphs} morphs in all; Draft ${songTierText(s, "draft")}.`;
-}
 // How the passages' looks are drawn under the Vibes choice (song_vibes), so the Make line and the facts say what the
 // Vibes control says: a look a passage at Auto and All, else the vibes they share
 function songMakeLooks(easy) {
@@ -1993,43 +2068,6 @@ function finalEtaText() {
   const ready = info.ready ? "" : " Some Final files are missing on this machine, so it falls back to Draft.";
   const measured = info.eta_measured ? ` (measured here, ${info.cuts} Final cut${info.cuts === 1 ? "" : "s"})` : " (estimate, not yet measured on this card)";
   return `Final renders with LTX-2.5 when its files are installed, LTX-2.3 otherwise, at ${info.render}, upscaled to ${info.output}. About ${clockText(info.eta_s)}${measured}.${ready}`;
-}
-
-// Fine-tune: everything that is not song / vibe / Make, in one drawer that remembers whether it was open.
-function fineTune(easy) {
-  const open = readDrawer("xeno-finetune");
-  if (easy.vibe && (!state.stills || state.stills.vibe !== easy.vibe) && !state.stillsLoading) {
-    state.stillsLoading = true;
-    setTimeout(() => { loadStills(true).finally(() => { state.stillsLoading = false; }); }, 0);
-  }
-  const bits = [easy.aspect || "9:16", (easy.energyPreset || "dense") === "dense" ? "Dense" : "Flow", TIER_LABEL[easy.tier] || "Draft",
-    lookLabel(easy.danceFx || "auto"), easy.scenes && easy.scenes !== "off" ? `Scenes ${easy.scenes}` : "",
-    easy.backdrop ? `Backdrop ${easy.backdrop}` : ""].filter(Boolean);
-  return `<details class="fine-tune" id="fine-tune"${open ? " open" : ""}>
-      <summary>Fine-tune <small>${esc(bits.join(" · "))}</small></summary>
-      ${simpleOptions(easy)}
-      ${morphSource(easy) !== "clips" ? `${ownRow(easy)}${stillsRow(easy)}${chainRow(easy)}` : ""}
-      ${beatOverlayRow(easy)}
-      ${remixBox(easy)}
-    </details>`;
-}
-
-// Work in progress (docs/MORPH_ENGINE_PLAN.md §3, Tys 28 Oct: "everything else should be hidden behind a drop down tab
-// and be 'work in progress'"): what is on the desk but is not the morph engine, in one closed drawer under Fine-tune.
-// Each works as it did; it only lives here until it is finished.
-function wipDrawer(easy) {
-  const open = readDrawer("xeno-wip");
-  const item = (title, why, body) => `<div class="wip-item"><h4>${esc(title)}</h4><p class="note">${esc(why)}</p>${body}</div>`;
-  return `<details class="fine-tune wip-drawer" id="wip-drawer"${open ? " open" : ""}>
-      <summary>Work in progress <small>Polly · cloud · Moves · VJ and MIDI · Connect an AI</small></summary>
-      <p class="note wip-lede">Xenoform is the morph engine. These work, but they are not the engine and not finished, so they wait here.</p>
-      ${item("Performer", "Polly sings, drums or dances to the song in a few shots of the cut (MiniMax H3). The idea line no longer brings her in: switch her on here.", performerRow(easy))}
-      ${item("Paid cloud", "LTX-2.5 through a paid Comfy partner node: not open weights, off by default.", cloudRows(easy))}
-      ${item("Live", "Character dances, live visuals to the stems, a MIDI controller on the knobs.",
-        `<p class="note"><a href="/moves">Moves: make a character dance to a real dance clip (Wan Animate 2) &rarr;</a></p>
-        <p class="note"><a href="${esc(vjUrl())}" target="_blank" rel="noopener">VJ mode: live visuals to this song's stems &rarr;</a> · <button type="button" class="text" data-act="easy-midi">MIDI controller</button></p>`)}
-      ${item("Connect an AI", "Any AI drives the same desk over MCP.", `<button type="button" class="text" data-act="go" data-hash="connect">Connect an AI &rarr;</button>`)}
-    </details>`;
 }
 
 // How each morph changes (xenoform.morph_style, docs/MORPH_ENGINE_PLAN.md E1): Auto, or one style for every morph of
@@ -2588,50 +2626,6 @@ function libraryPicker(vibe, act, slot, used) {
       ${scenes.length ? `<div class="lib-group"><span>Scenes</span><div class="lib-tiles">${scenes.map(tile).join("")}</div></div>` : ""}
     </div>`;
 }
-function chainRow(easy) {
-  if (!easy.vibe) return "";
-  const key = chainKey();
-  if (!state.chain || state.chain.key !== key) scheduleChain(key);
-  const have = state.chain && state.chain.data;
-  const stale = !!(state.chain && state.chain.key !== key);
-  const pins = easy.pins || {};
-  const nPins = Object.keys(pins).length;
-  let strip = "";
-  let facts = "";
-  if (!easy.song) strip = `<p class="note">Choose a song and the chain appears here.</p>`;
-  else if (!have) strip = `<p class="note">Reading the chain...</p>`;
-  else if (have.error) strip = `<p class="note">${esc(have.error)}</p>`;
-  else {
-    const slots = (have.stills || []).map((s) => {
-      const title = `${s.index + 1}. ${s.noun}${s.kind === "scene" ? " (scene)" : s.kind === "setting" ? " (in a place)" : ""}${s.user ? " (your image)" : ""}${s.pinned ? " · pinned, click × to let the pick choose" : " · click to choose another"}`;
-      return `<div class="chain-slot${s.pinned ? " pinned" : ""}${s.kind === "scene" ? " is-scene" : ""}${easy.chainPick === s.index ? " picking" : ""}">
-          <button type="button" class="chain-pick" data-act="easy-chain-slot" data-slot="${s.index}" title="${esc(title)}" aria-label="${esc(title)}">${s.thumb ? `<img src="${esc(media(s.thumb))}" alt="" loading="lazy">` : `<span class="chain-user">yours</span>`}<i>${esc(s.noun)}</i></button>
-          ${s.pinned ? `<button type="button" class="unpin" data-act="easy-unpin" data-slot="${s.index}" title="Unpin: let the pick choose this slot" aria-label="Unpin slot ${s.index + 1}">×</button>` : ""}
-        </div>`;
-    }).join("");
-    strip = `<div class="chain-strip${stale ? " stale" : ""}" role="list" aria-label="The chain">${slots}</div>`;
-    facts = `${have.count} stills, ${have.morphs} morph${have.morphs === 1 ? "" : "s"}${have.long_song ? ", one a shot" : ""}${have.length_s ? ` on the ${have.length_s} s cut` : ""}${have.scene_mode && have.scene_mode !== "off" ? ` · scenes ${have.scene_mode}` : ""}${have.pinned && have.pinned.length ? ` · ${have.pinned.length} pinned` : ""}${have.dropped_pins && have.dropped_pins.length ? ` · ${have.dropped_pins.length} pin${have.dropped_pins.length === 1 ? "" : "s"} past the chain or gone from the library` : ""}`;
-  }
-  let picker = "";
-  if (have && !have.error && easy.chainPick != null && (have.stills || []).some((s) => s.index === easy.chainPick)) {
-    const slot = have.stills.find((s) => s.index === easy.chainPick);
-    const used = new Set(have.stills.filter((s) => s.index !== slot.index).map((s) => s.file));
-    picker = `<div class="chain-picker">
-        <p class="note">Slot ${slot.index + 1} is <b>${esc(slot.noun)}</b>${slot.kind === "scene" ? " (a scene)" : ""}. Pick what goes there instead; it holds through Make.
-          <button type="button" class="text" data-act="easy-chain-cancel">Cancel</button></p>
-        ${libraryPicker(easy.vibe, "easy-pin", slot.index, used)}
-      </div>`;
-  }
-  return `<div class="simple-seg own-row chain-row"><span>Chain</span>
-      <div class="chain-body">
-        <div class="chain-head"><span class="note">${esc(facts || "The stills this Make morphs through, in order")}</span>${nPins ? `<button type="button" class="text" data-act="easy-chain-reset" title="Let the pick choose every slot again">Unpin all</button>` : ""}</div>
-        ${strip}
-        ${picker}
-      </div>
-    </div>
-    <p class="note">The stills this Make will morph through, in order, the way the draft previews them. Click a slot to choose another object or scene from the library: a pinned slot holds through Make, the rest are picked fresh each time (the idea line, Scenes and Length move them). After the cut, the shots lane under the player swaps one object and re-renders only the two morphs that touch it.</p>`;
-}
-
 // The foreshadow layer: the next object arrives before its shot, the way a new sound is introduced before it takes
 // the song. Trace (its edges glowing in the vibe's tint), Negative (its luma-flipped ghost), Slices (strips of it
 // interleaving and multiplying) or Silhouette (its shape filled with the tint); the amount rides the "other" stem
@@ -2719,48 +2713,6 @@ function machineRows(easy) {
           <span class="note">${detected.label ? esc(detected.label) + " · " : ""}${ok ? "connected" : "not answering: Make will play the vibe's pictures in the browser, no render"} · open weights on this machine</span>
         </div>
       </div>`;
-}
-
-function simpleOptions(easy) {
-  const energy = easy.energyPreset || "dense";
-  const aspect = easy.aspect || "9:16";
-  // Cloud Final morphs object cuts only (cloud_final has no clips path): a clips cut leaves the chip out and renders here
-  const clips = morphSource(easy) === "clips";
-  if (clips && easy.tier === "cloud") easy.tier = "draft";
-  const tier = easy.tier || "draft";
-  const tiers = [["draft", "Draft"], ["fast", "Fast Final"], ["final", "Final"], ["cloud", "Cloud Final"]].filter((t) => !(clips && t[0] === "cloud"));
-  const orbit = easy.stemOrbit !== false;
-  const fx = easy.fx !== false;
-  const card = !!easy.endCard;
-  const vertical = tier === "final" ? (easy.vertical === "crop" ? "crop" : "native") : "crop";
-  const cloudInfo = (state.simpleOptions && state.simpleOptions.cloud_final) || {};
-  const vertNote = aspect !== "9:16" ? (aspect === "16:9" ? "" : " Each shot is reframed around the object as it changes.")
-    : vertical === "native" ? " Native vertical: rendered in portrait (448×768), upscaled to 1080×1920, the object centred whole."
-    : tier === "final" ? " Each shot is cropped from the 16:9 render around the object as it changes."
-    : tier === "cloud" ? ` Portrait: rendered at ${cloudInfo.render || "576x1024"} on Comfy Cloud, scaled to 1080×1920 here, the object centred whole.`
-    : tier === "fast" ? " Portrait: the Draft's portrait morphs (320×576), each upscaled to 1080×1920."
-    : " Portrait Draft: every still re-laid whole on black, the morphs rendered in portrait (320×576) and composed at 540×960, so wide objects are never clipped.";
-  return `<div class="simple-opts" data-tour="easy-options">
-      ${simpleSeg("easy-energy", energy, [["flow", "Flow"], ["dense", "Dense"]], "Energy")}
-      ${simpleSeg("easy-aspect", aspect, [["16:9", "16:9"], ["9:16", "9:16"], ["1:1", "1:1"]], "Aspect")}
-      ${simpleSeg("easy-length", wholeSong(easy) ? "song" : String(easyLength(easy)), [["0", "Full song"], ["60", "60 s"], ["30", "30 s"], ["song", "Whole song"], ["15", "15 s"]], "Length")}
-      <p class="note">${esc(lengthNote(easy))}</p>
-      ${simpleSeg("easy-tier", tier, tiers, "Model")}
-      ${clips ? `<p class="note">Cloud Final morphs object cuts only; a clips cut renders here.</p>` : ""}
-      ${tier === "cloud" ? cloudFinalRow(easy) : ""}
-      ${machineRows(easy)}
-      ${aspect === "9:16" && tier === "final" ? simpleSeg("easy-vertical", vertical, [["native", "Native"], ["crop", "Crop"]], "Vertical") : ""}
-      ${wholeSong(easy) ? songCapRow(easy) : morphControl(easy, tier, aspect, vertical)}
-      ${wholeSong(easy) && morphSource(easy) !== "clips" ? songVibesRow(easy) : ""}
-      ${simpleSeg("easy-fx", fx ? "on" : "off", [["on", "On"], ["off", "Off"]], "Beat FX")}
-      ${simpleSeg("easy-orbit", orbit ? "on" : "off", [["on", "On"], ["off", "Off"]], "Subject orbit")}
-      ${simpleSeg("easy-card", card ? "on" : "off", [["off", "Off"], ["on", "On"]], "End card")}
-      <p class="note">${esc(energy === "dense" ? "Dense: a song cuts two bars a shot and a bar on the drop, light punches on the downbeats, and loops a chain of up to 30 morphs so every handoff stays one continuous transformation; a clip under 20 s cuts a shot a bar, then every half bar from the drop, with stutters, holds and punches." : "Flow: one morph per section, cut on the bar.")}
-      ${esc(vertNote)}
-      ${esc(tier === "final" ? " " + finalEtaText() : tier === "fast" ? " Fast Final: the Draft's morphs (LTX 0.9.5), each upscaled 4x to 1080×1920 and cut at full size. The motion is the Draft's, the picture is full size, in a fraction of the Final's time."
-        : tier === "cloud" ? ` Cloud Final: ${cloudInfo.model || "LTX"} on Comfy Cloud, scaled to full size here.` : " Draft: LTX 0.9.5, the quick pass.")}
-      ${esc(easy.overlay ? "" : " Clean export: no waveform or text on the picture.")}</p>
-    </div>`;
 }
 
 // Morph count: Auto (from clip length + BPM) or a fixed number of forms, with a time/VRAM estimate.
@@ -3640,10 +3592,16 @@ function mountStrips() {
   document.querySelectorAll("#app [data-song-strip]").forEach((host) => {
     const where = host.dataset.songStrip || "desk";
     const model = stripModel(where);
+    if (host.dataset.lanes && !model.ghost) model.lanes = host.dataset.lanes.split(",");  // Tweak's strip is short
     model.overview = window.matchMedia("(max-width: 560px)").matches;
     window.XenoStrip.mount(host, model, stripHandlers(where, model));
   });
   paintPlayhead();
+  // Under the hood (the T4 session's hood.js) fills the project's host and a shot's fourth tab when it is on the page
+  const project = document.getElementById("hood-project");
+  if (project && window.XenoHood && typeof window.XenoHood.mount === "function") {
+    try { window.XenoHood.mount(project, { jobId: easyVideoId() || null, shotIndex: null }); } catch (err) { /* the plain rows stay */ }
+  }
   if (document.getElementById("sketch")) {  // the sketch shows where the song is, playing or not
     preloadSketch();
     const audio = document.getElementById("song-audio");
@@ -3988,14 +3946,6 @@ function easyVideoSeconds(easy) {
   const len = easyLength(easy || state.easy);
   return len && secs > len ? len : secs;
 }
-function lengthNote(easy) {
-  const secs = easySongSeconds();
-  const len = easyLength(easy);
-  if (wholeSong(easy)) return songLengthNote(easy, secs);
-  if (easyLengthIsProto(easy)) return `The prototype: ${len} s around the drop, quick to make. The whole song (${clockText(secs)}) is one press on the cut's screen, or pick Full song here.`;
-  if (!len) return `The whole song (${clockText(secs)}). Shorter cuts are centred on the drop.`;
-  return secs > len ? `${len} s around the drop, starting on a beat with short fades.` : `The song is already under ${len} s, so the whole song.`;
-}
 function easyPlanFacts(easy) {
   if (wholeSong(easy)) return songPlanFacts(easy);
   const plan = state.simpleOptions && state.simpleOptions.plan;
@@ -4031,11 +3981,9 @@ function easyTimeFact() {
     return `About ${clockText(n * e.seconds + 4 + 0.4 * easyVideoSeconds(state.easy))} ${where}: ${n} layer${n === 1 ? "" : "s"} of about ${clockText(e.seconds)} each (${clockText(e.gpu_seconds || 0)} morphs, ${clockText(e.look_seconds || 0)} look), then the layers laid together`;
   }
   if (plan && plan.estimate && plan.estimate.seconds) {
-    const e = plan.estimate;
-    if ((state.easy && state.easy.tier) === "cloud") {
-      return `About ${clockText(e.seconds)} (${clockText(e.gpu_seconds || 0)} of morphs on Comfy Cloud, ${clockText(e.look_seconds || 0)} look here)`;
-    }
-    return `About ${clockText(e.seconds)} on this GPU (${clockText(e.gpu_seconds || 0)} morphs, ${clockText(e.look_seconds || 0)} look)`;
+    // one estimate from one source (F10): the step bar's, its parts summing to the whole
+    const text = planTimeText(plan, (state.easy && state.easy.tier) === "cloud");
+    return text.charAt(0).toUpperCase() + text.slice(1);
   }
   const guess = easyEtaGuess();
   return `About ${clockText(guess)}${state.easy && state.easy.warm ? "" : " (first run)"}`;
@@ -4703,7 +4651,15 @@ function knobsFolded() {
 // cached morphs; the lane's Apply and the knobs' Re-cut used to be two buttons for the same thing (28 Oct).
 // (Scenes is not here: a re-cut keeps the cut's stills, so a Scenes choice waits for the next render)
 const KNOB_ACTS = { "easy-look": "Look", "easy-effect": "Effects", "easy-morph-timing": "Timing", "easy-foreshadow": "Foreshadow",
-  "easy-breathe": "Breathe", "easy-drops": "Drops" };
+  "easy-breathe": "Breathe", "easy-drops": "Drops", "easy-feel": "Feel", "easy-effect-none": "Effects" };
+// The one hint line under Tweak's rows (C15): the choice under the pointer or the keyboard says what it does, on touch too
+["mouseover", "focusin"].forEach((type) => document.addEventListener(type, (event) => {
+  const node = event.target && event.target.closest ? event.target.closest(".sl-tweak [data-hint]") : null;
+  const line = node && document.getElementById("tw-hint");
+  if (!line || line.textContent === node.dataset.hint) return;
+  line.textContent = node.dataset.hint;
+  if (state) state.twHint = node.dataset.hint;
+}));
 function touchKnob(row) {
   if (!state.easy) return;
   state.easy.knobsTouched = Object.assign({}, state.easy.knobsTouched || {}, { [row]: 1 });
@@ -5348,7 +5304,7 @@ document.addEventListener("click", async (event) => {
   const el = event.target.closest("[data-act]");
   if (!el || !state) return;
   const act = el.dataset.act;
-  if (KNOB_ACTS[act] && state.easy && state.easy.phase === "result" && el.closest(".easy-side")) touchKnob(KNOB_ACTS[act]);
+  if (KNOB_ACTS[act] && state.easy && state.easy.phase === "result" && el.closest(".easy-side, [data-knob-rows]")) touchKnob(KNOB_ACTS[act]);
   if (act === "palette") {
     openPalette();
   } else if (act === "palette-run") {
@@ -5965,6 +5921,13 @@ document.addEventListener("click", async (event) => {
     goStep(el.dataset.step || "source");
   } else if (act === "sketch-play") {
     toggleSketch();
+  } else if (act === "easy-feel") {
+    // a Feel preset sets the four knobs, the Look and the Morph style; Custom keeps them as they are
+    if (el.dataset.value !== "custom") applyFeelPreset(el.dataset.value || "house");
+    render();
+  } else if (act === "easy-effect-none") {
+    state.easy.effects = [];
+    render();
   } else if (act === "easy-plan-shot") {
     // a planned shot on the strip: the object it lands on opens under the strip, and the sketch plays from it
     const chain = state.chain && state.chain.data;
@@ -7398,7 +7361,7 @@ document.addEventListener("change", (ev) => {
 document.addEventListener("toggle", (ev) => {
   const el = ev.target;
   if (!el || !el.id) return;
-  const key = { "fine-tune": "xeno-finetune", "wip-drawer": "xeno-wip", "more-vibes": "xeno-more-vibes" }[el.id];
+  const key = { "hood-project-panel": "xeno-project", "more-vibes": "xeno-more-vibes" }[el.id];
   if (!key) return;
   try {
     localStorage.setItem(key, el.open ? "1" : "0");

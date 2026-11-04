@@ -811,7 +811,9 @@ def test_a_cropped_cut_keeps_a_setting_shot_centred(tmp_path):
 
 def test_the_desk_has_the_backdrop_row_next_to_scenes_and_sends_it():
     js = (Path(mp.OBJECTS).parents[0] / "app.js").read_text(encoding="utf-8")
-    assert "function backdropRow(easy)" in js and js.count("${scenesRow(easy)}${backdropRow(easy)}") == 2  # both knob blocks
+    assert "function backdropRow(easy)" in js and js.count("${scenesRow(easy)}${backdropRow(easy)}") == 1  # the cut's knob block
+    # Tweak's Backdrop: Plain or Places (its Scenes was the same as Wide scenes' Only, C13)
+    assert 'tweakSeg("easy-backdrop", backdrop, [["plain", "Plain", BACKDROP_NOTES.plain], ["places", "Places", BACKDROP_NOTES.places]], "Backdrop"' in js
     assert 'simpleSeg("easy-backdrop", current, [["plain", "Plain"], ["places", "Places"], ["scenes", "Scenes"]], "Backdrop")' in js
     assert 'act === "easy-backdrop"' in js and 'act === "easy-grow-settings"' in js and "Grow ${growPlaces} places" in js
     payload = js.split("function payload()")[1].split("function renderSetup")[0]

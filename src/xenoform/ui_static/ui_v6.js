@@ -80,10 +80,10 @@
     const [x0,y0]=p(a0),[x1,y1]=p(a1),[xe,ye]=p(135);
     return `<path d="M${x0} ${y0} A${r} ${r} 0 1 1 ${xe} ${ye}" stroke="rgba(28,28,30,.1)" stroke-width="3" fill="none" stroke-linecap="round"/>`+
       (v>0.001?`<path d="M${x0} ${y0} A${r} ${r} 0 ${270*v>180?1:0} 1 ${x1} ${y1}" stroke="url(#xfg)" stroke-width="3" fill="none" stroke-linecap="round"/>`:"");};
-  const knob=([k,l,hint])=>`<div class="xf-knob" data-k="${k}" role="slider" tabindex="0" aria-label="${l}" title="${hint||l}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct(M[k])}">
+  const knob=([k,l,hint])=>`<div class="xf-knob" data-k="${k}" data-midi-slot="macro:${k}" role="slider" tabindex="0" aria-label="${l}" title="${hint||l}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct(M[k])}">
       <div class="dial"><svg viewBox="0 0 54 54"><defs><linearGradient id="xfg" x1="0" x2="1"><stop offset="0" stop-color="#8f74ff"/><stop offset="1" stop-color="#4b33e6"/></linearGradient></defs>${ARC(M[k])}</svg>
       <div class="cap"><i style="transform:rotate(${-135+270*M[k]}deg)"></i></div></div><b>${l}</b><small>${pct(M[k])}</small></div>`;
-  const lane=([k,l,c])=>`<label class="xf-lane" title="${l}"><span><i style="background:${c}"></i>${l}</span>
+  const lane=([k,l,c])=>`<label class="xf-lane" title="${l}" data-midi-slot="${k}"><span><i style="background:${c}"></i>${l}</span>
       <input type="range" min="0" max="100" value="${pct(M[k])}" data-k="${k}" style="--c:${c};--p:${pct(M[k])}%" aria-label="${l} reaction"><output>${pct(M[k])}</output></label>`;
   const html=()=>`<section class="xf-macros" data-tour="easy-macros"><div class="xf-macros-head"><span>Knobs</span><button type="button" class="ghost" data-xf-reset>Reset</button></div>
       <div class="xf-knobs">${KNOBS.map(knob).join("")}</div>

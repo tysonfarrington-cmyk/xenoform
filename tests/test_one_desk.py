@@ -69,7 +69,7 @@ def test_the_prototype_stage():
 
 
 def test_the_cut_screen_is_refine_and_share():
-    result = APP.split("function renderCut(easy, chosen) {", 1)[1].split("function renderDesk(", 1)[0]
+    result = APP.split("function renderCut(easy, chosen) {", 1)[1].split("function renderSource(", 1)[0]
     assert "${shotsLane(easy)}" in result and "${renderRow(easy)}" in result and "shareRow(easy)" in result
     assert 'id="easy-guard"' in result and "guardDetails(state.job)" in result
     assert 'id="energy"' not in result  # the Energy slider re-cut the Director storyboard, never the video
