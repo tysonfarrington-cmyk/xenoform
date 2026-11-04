@@ -303,6 +303,7 @@ const X = {
         (s && s.last_message ? " · " + s.last_message.address + " " + JSON.stringify(s.last_message.args).replace(/[\[\]"]/g, "") : "")
       : (this.available === false ? "" : "Streams this page's bass, beat, scene and your MIDI knobs as OSC (docs/osc.md).");
     er.textContent = this.detail || "";
+    er.classList.toggle("xo-err", this.available !== false); // the install sentence of a desk without python-osc is a hint, not a fault
   },
   Sections
 };

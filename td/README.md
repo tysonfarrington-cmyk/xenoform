@@ -145,13 +145,14 @@ and 0 on release.
 - The `scene` channel says which loop the page is showing; TouchDesigner plays its own copy, so switch yours on `scene` or
   `is_beat` if you want the two to cut together.
 
-## 8. Picture into TouchDesigner
+## 8. Picture into TD
 
 A browser cannot hand TouchDesigner a texture (no Spout or Syphon from a web page), so the picture takes one of two routes,
 and the OSC above runs in parallel either way:
 
-1. **Screen Grab TOP.** Run the clean output window full screen on a second display (the perform window, `/vj?out=1`; until
-   it lands, `/vj?clean=1` and **F**) and point a Screen Grab TOP at that display.
+1. **Window capture: the Screen Grab TOP**, TouchDesigner's way to take what is on a display. Run the clean output window full
+   screen on a second display (the perform window, `/vj?out=1`; until it lands, `/vj?clean=1` and **F**) and point a Screen
+   Grab TOP at that display.
 2. **OBS to NDI.** OBS captures the window (or a Browser source of `/vj?clean=1`), its NDI output plugin (DistroAV) publishes
    it, and an **NDI In TOP** receives it.
 

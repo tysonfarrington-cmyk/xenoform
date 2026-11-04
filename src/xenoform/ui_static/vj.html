@@ -328,11 +328,11 @@ XenoMidi.init({page:'vj',toast,elements:{fx:'fx:next',every:'every',stemsb:'stem
   drums:v=>{S.gain.drums=v},bass:v=>{S.gain.bass=v},other:v=>{S.gain.other=v},vocals:v=>{S.gain.vocals=v},
   'stem:*':(n,v)=>{const name=stemName(n);if(name)setStemGain(name,v);else toast('No stem '+n+' (use this song\'s stems first)')}}});
 XenoMidi.panel($('midi-panel'));
-// OSC to TouchDesigner (osc_out.js, docs/osc.md): frame() is what the HUD and the picture use right now; the control goes under the MIDI panel in the help.
-XenoOsc.init({toast,frame:()=>Object.assign(XenoOsc.audio(an,buf,AC&&AC.sampleRate),{bass:bassS,high:highS,beat:S.beats,beat_env:beatPulse,
+// OSC to TouchDesigner (osc_out.js, docs/osc.md): frame() is what the HUD and the picture use right now; the control goes just above the MIDI panel in the help.
+if(window.XenoOsc){XenoOsc.init({toast,frame:()=>Object.assign(XenoOsc.audio(an,buf,AC&&AC.sampleRate),{bass:bassS,high:highS,beat:S.beats,beat_env:beatPulse,
  scene:S.cur,scene_name:(S.scenes[S.cur]||{}).name||'',transition:S.trans?Math.min(1,(performance.now()-S.t0)/S.dur):0,transition_fx:S.curFx,
  intensity:S.inten,bpm:S.bpm||0,t:trackEl?trackEl.currentTime:performance.now()/1000,stems:{drums:SE.drums,bass:SE.bass,other:SE.other,vocals:SE.vocals}})});
-XenoOsc.mount($('midi-panel'),'before');
+ XenoOsc.mount($('midi-panel'),'before')}
 if(Q.get('clean')==='1')document.body.classList.add('clean');if(Q.get('hud')==='1')hud();
 let idle;addEventListener('mousemove',()=>{$('ui').classList.remove('hide');clearTimeout(idle);idle=setTimeout(()=>{if(!$('help').classList.contains('show'))$('ui').classList.add('hide')},3500)});
 loadLibrary();listInputs().catch(()=>{});requestAnimationFrame(frame);

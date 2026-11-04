@@ -36,7 +36,7 @@ extras. Every address, its type and range: `GET /api/osc/addresses`, and the tab
 | `/xenoform/onset_env` `beat_env` | float 0..1 | jump to 1 on a transient or a beat, then fall away |
 | `/xenoform/is_onset` `is_beat` | float 0/1 | held at 1 for `pulse_ms` (50 ms) so a one-frame flag is not missed |
 | `/xenoform/is_drop` `mutate` | float | live estimate of the song's drop and how far it asks the picture to change |
-| `/xenoform/frame` `fps` `time` | int, float | frame counter (a rate meter), the page's frame rate, song position in seconds |
+| `/xenoform/frame` `fps` `time` | int, float | update counter (a rate meter), updates a second as measured, song position in seconds |
 | `/xenoform/section` `scene_name` | string | strings; the OSC In CHOP skips them, the OSC In DAT shows them |
 | `/xenoform/bpm` `beat` `scene` `transition` `transition_fx` `intensity` | float, int | what the live page is doing |
 | `/xenoform/stem/drums` `bass` `other` `vocals` | float 0..1 | the four stem energies that drive the picture |

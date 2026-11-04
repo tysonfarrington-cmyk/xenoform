@@ -420,6 +420,8 @@ class OscRelay:
 
     def _maybe_emit(self, now: float) -> bool:
         if not (self.settings["on"] and self.settings["send"]):
+            self._midi = []  # transient: not kept to be sent late, in a burst, when sending starts
+            self._moved.clear()
             return False
         if now - self._last_emit < 0.5 / self.settings["rate"]:  # faster than twice the rate: merged into the next update
             self.coalesced += 1
