@@ -129,7 +129,7 @@
    <tr><td>P · H</td><td>HUD · the monitor alone (hide the panels)</td></tr>
    <tr><td>R</td><td>Record: the output canvas with the song's sound (or the mic's), streamed to the desk as it goes, then an mp4 in My videos</td></tr>
    <tr><td>Stems</td><td><b>Use this song's stems</b> splits the loaded track on the desk (Demucs when installed, else the band split) so drums/bass/other/vocals drive the picture. Per-stem gains come from the desk's Stem reactions lanes.</td></tr>
-   <tr><td>MIDI</td><td>MiniLab 3 out of the box: pads A1–A8 = premium transitions 1–8, pads B1–B6 = dance presets, B7 strobe, B8 record · knob 1 / mod strip intensity · knob 2 switch rate · knobs 3–6 drums/bass/other/vocals gain · knobs 7–8 + faders = stem gains · encoder steps the transition. <b>L</b> = learn mode (click a control, move a knob); the pads, Blackout and Master fade learn too. No Web MIDI (Firefox/Safari)? Run <code>xenoform midi serve</code>.</td></tr>
+   <tr><td>MIDI</td><td><b>MIDI</b> (the button) or <b>L</b> opens the map beside the picture: your controller drawn with what every control does, and Learn (click a control, then move a knob or hit a pad); the pads, Blackout and Master fade learn too. MiniLab 3 out of the box: hold pads A1–A8 to show what the pads 1–8 hold over the song, let go and the picture is back where the song is · B1–B6 dance presets, B7 strobe, B8 record · knobs: intensity, switch rate, the stem gains. No Web MIDI (Firefox/Safari)? Run <code>xenoform midi serve</code>.</td></tr>
   </table><div id="midi-panel"></div>
  </aside>
  <div id="toast" class="pf-toast" role="status" aria-live="polite"></div>
@@ -526,21 +526,35 @@ addEventListener('keyup',e=>{if(!OUT&&/^Digit[1-8]$/.test(e.code))XP.release(+e.
 // MIDI: Web MIDI and the desk bridge (/ws/midi) through the shared mapping layer (midi.js). Default map = MiniLab 3.
 let intenToast=0;const stemName=n=>/^\d+$/.test(n)?((STEMS&&STEMS.stems)||[])[+n-1]||null:n;
 const PAD_TARGETS=[1,2,3,4,5,6,7,8].map(i=>'pad:'+i);
+// Held looks (t1-midi): a MIDI row on a dance preset, strobe, mirror or kaleido set to "On while held" is pressed onto
+// XenoMidi.holds by midi.js; the look applies while held and on release goes back to what it was; several stack, the
+// last one pressed wins where they disagree. The pads' own looks (S.hold, kind "look") are the engine's, not these.
+const isHold=e=>!!(e&&e.mode==='hold');
+const LOOKHOLD={snap:null};const isLookHold=id=>/^(dance:\d+|strobe|mirror|kaleido)$/.test(id);
+function applyLookHolds(){const held=XenoMidi.holds.list().filter(isLookHold);
+ if(!held.length){if(LOOKHOLD.snap){XP.set(LOOKHOLD.snap);LOOKHOLD.snap=null}return}
+ if(!LOOKHOLD.snap)LOOKHOLD.snap={fx:S.fx,mir:S.mir,stb:S.stb,kal:S.kal,inten:S.inten};const o=Object.assign({},LOOKHOLD.snap);
+ for(const id of held){if(id.startsWith('dance:')){const d=DANCE[+id.slice(6)];if(!d)continue;if(d.fx!=null)o.fx=String(d.fx);['mir','stb','inten'].forEach(k=>{if(d[k]!=null)o[k]=d[k]})}
+  else if(id!=='kaleido'||EXPERT)o[{strobe:'stb',mirror:'mir',kaleido:'kal'}[id]]=1}
+ XP.set(o)}
+if(!OUT)XenoMidi.holds.on(id=>{if(isLookHold(id))applyLookHolds()});
 // read: the value on screen, so a hardware knob takes over softly (t1-midi); targetName: a pad's scene in plain words
 if(!OUT)XenoMidi.init({page:'vj',toast,elements:{fx:'fx:next',every:'every',stemsb:'stem:1'},extraTargets:[...PAD_TARGETS,'blackout','master','glow','speed','chaos','play','cue:drop','output'],
  read:t=>XP.readTarget(t),targetName:t=>XP.targetName(t),
- onStatus:s=>{$('h-midi').textContent=s.inputs.length?s.inputs.length+' input(s)'+(s.bridge==='bridge'?' + bridge':''):s.bridge==='bridge'?'bridge':s.bridge==='sse'?'bridge (sse)':'none'},
+ onStatus:s=>{$('h-midi').textContent=s.device?s.device+(s.held&&s.held.length?' · held '+s.held.join(' '):''):s.inputs.length?s.inputs.length+' input(s)'+(s.bridge==='bridge'?' + bridge':''):s.bridge==='bridge'?'bridge':s.bridge==='sse'?'bridge (sse)':'none'},
  targets:{
   intensity:v=>{XP.set({inten:Math.max(0,Math.min(2,v))});const now=performance.now();if(now-intenToast>250){intenToast=now;toast('Intensity '+S.inten.toFixed(2))}},
   every:v=>{XP.set({every:EV[Math.min(4,Math.floor(v*4.999))]})},
   'fx:*':(n,v)=>{if(n==='next')XP.send('next');else if(n==='prev')XP.send('prev');else if(n==='auto')setFx('auto');
    else if(n==='step'){const i=KEYFX.indexOf(+S.fx),j=((i<0?0:i)+(v>0?1:-1)+KEYFX.length)%KEYFX.length;setFx(String(KEYFX[j]))}
    else{const f=KEYFX[+n-1];if(f!=null){setFx(String(f));XP.send('next',{fx:f})}}},
-  'dance:*':n=>dance(+n),
+  // a row in mode "hold" ("On while held") is played by the hold stack below (applyLookHolds): these see only the latching modes
+  'dance:*':(n,v,ev,e)=>{if(!isHold(e))dance(+n)},
   'pad:*':(n,v,ev,entry)=>{if(entry&&entry.mode==='hold')return;if(v>0)XP.press(+n);else XP.release(+n)},blackout:v=>XP.blackout(v>0),  // a hold row: midi.js holds it
   master:v=>XP.knob('master',v),glow:v=>XP.knob('glow',v),speed:v=>XP.knob('speed',v),chaos:v=>XP.knob('chaos',v),
   play:v=>{if(v>0)XP.togglePlay()},'cue:*':(n,v)=>{if(v>0)XP.cueDrop()},output:v=>{if(v>0)XP.openOutput()},
-  mirror:v=>setTog('mir','mir',v>0),strobe:v=>setTog('stb','stb',v>0),kaleido:v=>{if(EXPERT)setTog('kal','kal',v>0);else toast('Kaleido is expert only (?expert=1)')},
+  mirror:(v,ev,e)=>{if(!isHold(e))setTog('mir','mir',v>0)},strobe:(v,ev,e)=>{if(!isHold(e))setTog('stb','stb',v>0)},
+  kaleido:(v,ev,e)=>{if(isHold(e))return;if(EXPERT)setTog('kal','kal',v>0);else toast('Kaleido is expert only (?expert=1)')},
   record:v=>{if((v>0)!==XP.recording())XP.rec()},tap:()=>XP.send('tap'),hud:v=>{if((v>0)!==S.hud)hud()},
   drums:v=>{XP.set({gain:{drums:v}})},bass:v=>{XP.set({gain:{bass:v}})},other:v=>{XP.set({gain:{other:v}})},vocals:v=>{XP.set({gain:{vocals:v}})},
   'stem:*':(n,v)=>{const name=stemName(n);if(name)setStemGain(name,v);else toast('No stem '+n+' (use this song\'s stems first)')}}});

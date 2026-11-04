@@ -74,6 +74,7 @@
     const kn=document.querySelector(`.xf-knob[data-k="${CSS.escape(k)}"]`);if(kn)paint(kn,k);
     const r=document.querySelector(`.xf-lane input[data-k="${CSS.escape(k)}"]`);if(r){r.value=pct(M[k]);r.style.setProperty("--p",r.value+"%");r.nextElementSibling.textContent=r.value;}
     clearTimeout(window.XENO_MACRO_SET.t);window.XENO_MACRO_SET.t=setTimeout(save,150);};
+  window.XENO_MACRO_GET=k=>M[k]==null?null:M[k];  // what a knob or lane shows now (MIDI soft takeover reads it)
   const save=()=>{localStorage.setItem(KEY,JSON.stringify(M));document.dispatchEvent(new CustomEvent("xeno-knobs"));};  // the desk counts a turned knob as a change waiting for Apply
   const pct=v=>Math.round(v*100);
   const ARC=(v)=>{const a0=-135,a1=a0+270*v,r=25,c=27,p=a=>[c+r*Math.sin(a*Math.PI/180),c-r*Math.cos(a*Math.PI/180)];
@@ -88,7 +89,7 @@
   const html=()=>`<section class="xf-macros" data-tour="easy-macros"><div class="xf-macros-head"><span>Knobs</span><button type="button" class="ghost" data-xf-reset>Reset</button></div>
       <div class="xf-knobs">${KNOBS.map(knob).join("")}</div>
       <details class="xf-adv"${STEMS.open?" open":""}><summary>Stem reactions <small class="xf-stems-status">${statusText()}</small></summary><div class="xf-lanes${LANES.length>8?" xf-many":""}" data-count="${LANES.length}">${LANES.map(lane).join("")}</div></details>
-      <details class="xf-adv xf-midi"><summary>MIDI controller</summary><div class="xf-midi-panel"></div></details></section>`;
+      <details class="xf-adv xf-midi"><summary>MIDI controller <small class="xf-midi-status" data-xm-state="name"></small></summary><div class="xf-midi-panel"></div></details></section>`;
   function paint(el,k){const v=M[k];el.setAttribute("aria-valuenow",pct(v));el.querySelector("svg").innerHTML=el.querySelector("svg defs").outerHTML+ARC(v);
     el.querySelector(".cap i").style.transform=`rotate(${-135+270*v}deg)`;el.querySelector("small").textContent=pct(v);}
   function mount(){const host=document.querySelector(".simple-knobs")||document.querySelector(".simple-opts"); if(!host||host.querySelector(".xf-macros"))return;
@@ -102,7 +103,15 @@
     X.init({page:"desk",toast:t=>{const el=document.querySelector(".xf-stems-status");if(el){el.textContent=t;clearTimeout(midiInit.t);midiInit.t=setTimeout(()=>{if(el.textContent===t)el.textContent=statusText();},1800);}},
       targets:{"macro:*":(k,v)=>window.XENO_MACRO_SET(k,v),drums:v=>window.XENO_MACRO_SET("drums",v),bass:v=>window.XENO_MACRO_SET("bass",v),
         other:v=>window.XENO_MACRO_SET("other",v),vocals:v=>window.XENO_MACRO_SET("vocals",v),
-        "stem:*":(n,v)=>{const k=laneName(n);if(k&&M[k]!=null)window.XENO_MACRO_SET(k,v);}}});midiMount();}
+        "stem:*":(n,v)=>{const k=laneName(n);if(k&&M[k]!=null)window.XENO_MACRO_SET(k,v);}},
+      // soft takeover: a knob or fader moves its control only once it passes the value the desk shows
+      read:t=>{let m=/^macro:(.+)$/.exec(t);if(m)return M[m[1]];if(/^(drums|bass|other|vocals)$/.test(t))return M[t];
+        m=/^stem:(.+)$/.exec(t);if(m){const k=laneName(m[1]);return k&&M[k]!=null?M[k]:null;}return null;},
+      // the map's plain words: the knob's own label, the stem lane's name ("Stem 2 · Kick")
+      targetName:t=>{let m=/^macro:(.+)$/.exec(t);if(m){const kn=KNOBS.find(x=>x[0]===m[1]);return kn?kn[1]:null;}
+        m=/^stem:(\d+)$/.exec(t);if(m){const l=LANES[+m[1]-1];return l?"Stem "+m[1]+" · "+l[1]:null;}return null;},
+      // a lane learns by its place (stem:3), so the map works on the next song's stems as well
+      canonical:t=>{if(!/^stem:/.test(t)||/^stem:\d+$/.test(t))return t;const i=LANES.findIndex(l=>l[0]===t);return i>=0?"stem:"+(i+1):t;}});midiMount();}
   function midiMount(){const X=window.XenoMidi,el=document.querySelector(".xf-midi-panel");if(X&&X._desk&&el&&!el.firstChild)X.panel(el);}
   if(!window.XenoMidi){const sc=document.createElement("script");sc.src=(window.XENO_BASE||"")+"/static/midi.js";sc.onload=midiInit;document.head.appendChild(sc);}else midiInit();
   let drag=null;
