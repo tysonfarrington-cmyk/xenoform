@@ -36,7 +36,7 @@ def test_node_pack_registers_from_the_repo_root():
         assert name in module.NODE_CLASS_MAPPINGS
     assert module.WEB_DIRECTORY == "./comfy_pack/web"
     web = (path.parent / module.WEB_DIRECTORY).resolve()
-    assert (web / "xenoform_desk.js").is_file()
+    assert (web / "morph_timeline.js").is_file() and (web / "xenoform_desk.js").is_file()
     assert set(NODE_CLASS_MAPPINGS) == {"XenoformTryIt", "XenoformSetup"}
     assert "Xenoform Setup Check" in NODE_DISPLAY_NAME_MAPPINGS.values()
 

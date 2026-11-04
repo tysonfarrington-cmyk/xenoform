@@ -2,7 +2,9 @@
 
 A song becomes a music video of LTX morphs on the beat, inside ComfyUI. The nodes read the song (beats, sections, the
 drop), plan the cut the way the Xenoform desk does (shots on the beat, a chain of objects, each morph's style and
-timing), hand each morph to ComfyUI's own LTX 0.9.5 nodes, and cut the rendered morphs to the song.
+timing), hand each morph to ComfyUI's own LTX 0.9.5 nodes, and cut the rendered morphs to the song. The **Morph
+Timeline** opens the song strip full screen inside ComfyUI: move a cut along the beats, pin an object, draw the
+intensity; the edits are saved with the workflow.
 
 Everything is the song's: the canvas is its sections, beats and drops, and every shot is snapped to them. There is no
 camera and no 3D view.
@@ -44,6 +46,30 @@ the bundled songs (the tests measure it).
 | **Xenoform Morph Timeline** | `storyboard` | the edited `storyboard`, a summary | The editor (below). Without edits it passes the plan on. |
 | **Xenoform Morph Pair** | `storyboard`, an index (0 is the first morph) | the two guide images, the prompt, the negative, frame rate, width, height, length, steps, seed, cfg, the two guide compressions, guide B's strength, the slot's frames, the request as JSON | One morph's request, value for value what the desk sends LTX 0.9.5 through `workflows/xenoform_morph.json`: the guides go to `LTXVPreprocess` and `LTXVAddGuide` (frame 0 and frame -1), the prompts to `CLIPTextEncode`, the size and the 8k + 1 length to `EmptyLTXVLatentVideo`, the steps to `LTXVScheduler`, the seed to `RandomNoise`, the cfg to `CFGGuider`. |
 | **Xenoform Assemble** | `storyboard`, the decoded frames of each morph (`morph_1` is morph 0), fill, punch | the mp4's path, and a preview on the node | Each morph laid in its slot on the beat (first frame on still A, last on still B, so every handoff is continuous), re-timed by the plan (speed, ease, stutter, hold, skip, reverse, and the timing On the beat or Snap), the plan's punches scaled by each shot's intensity, muxed with the song by ffmpeg into `output/xenoform/`. A shot with no morph connected ends the cut there, or with fill `stills` plays a crossfade of its two stills, so the whole song can be heard with what is rendered. |
+
+## The Morph Timeline
+
+The button **Open the Morph Timeline** on the node opens the editor over the whole window. If the node has not run, the
+editor offers **Plan the song (no GPU)**: it queues this node alone (the analysis and the storyboard run, no morph is
+rendered) and the strip fills in. Right-click the node > **Queue Selected Output Nodes** does the same.
+
+The lanes, top to bottom: **SECTIONS** (colour-coded, the drop flagged), **WAVE** (the song's loudness), **BEATS** (bars
+heavier), **SHOTS** (one block a shot, on the beats), **INTENSITY** (keyframes on the beats; each shot takes the value
+at its start), **OBJECTS** (the still the chain lands on at each cut).
+
+- Wheel zooms; Shift+wheel or dragging the ruler pans; **Fit** shows the whole song; **Play** (Space) plays the song
+  with a playhead; click the ruler to seek.
+- Drag a cut along the beats (Shift snaps to bars, Alt is free). Double-click a shot to split it on the beat; Delete
+  joins the selected shot to the one before. A cut the plan has not seen yet is hatched until the next run.
+- Select a shot: its own **style** (Melt, Shatter, Bloom, Spin, Fold), **timing** (Smooth, On the beat, Snap), **Hold**
+  (it shows its first still), **seed**.
+- Click the intensity lane to add a point, drag it, Delete removes it, double-click types its value.
+- Click an object to pin a still of the pool at that cut; the rest of the chain fills around it, no still twice.
+- **Save** writes the edits into the workflow (a hidden widget on the node), **Plan the edits** saves and runs the node
+  alone, **Reset edits** returns to the plan, Ctrl+Z undoes.
+
+The edits are kept apart from the plan: change the vibe or the knobs upstream and the edits land on the new plan; edits
+made for another song are kept but not applied, and the summary says so.
 
 ## Honest limits
 
