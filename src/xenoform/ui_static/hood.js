@@ -15,7 +15,8 @@
      opts.project     () => ({rows, note}): the project scope's rows: {key, label, value, choices: [{value, label, on}],
                       act (the data-act its chips send), where, cost, hint, link: {label, act, hash, href}}; a project
                       mount without it leaves the host as its page drew it
-   window.XenoHood.progress(jobId, {shot, progress, detail, status}) paints a running edit in the panels of that cut.
+   window.XenoHood.progress(jobId, {shot, progress, detail, status}) paints a running edit in the panels of that cut, with
+                      its Stop (the panel posts the job's cancel itself; a host that follows the job reports how it ended).
    window.XenoHood.invalidate(jobId) forgets what was read for the cut, so the next mount reads it again (an edit landed).
 */
 (function () {
@@ -238,7 +239,8 @@
     const nextSeed = r.next_seed;
     const what = waiting.length ? `${waiting.length} change${waiting.length === 1 ? "" : "s"}: rendered with seed ${esc(current(entry, "seed"))}` : `Nothing changed: another take with the next seed${nextSeed != null ? ` (${esc(nextSeed)})` : ""}`;
     const progress = mine ? `<div class="hood-progress" role="status"><span class="hood-bar"><i style="width:${Math.round(100 * Math.max(0.03, Math.min(1, Number(job.progress) || 0)))}%"></i></span>
-        <span class="note">${esc(job.detail || "Re-rendering this shot on the GPU")} · the timeline stays usable</span></div>` : "";
+        <span class="note">${esc(job.detail || "Re-rendering this shot on the GPU")} · the timeline stays usable</span>
+        <button type="button" class="ghost" data-hood="stop"${job.stopping ? " disabled" : ""} title="The edit stops at its next safe point: the cut stays as it was unless it has already landed">Stop</button></div>` : "";
     const actions = mine ? progress : `<div class="hood-actions">
         <button type="button" class="generate" data-hood="rerender"${off || other ? " disabled" : ""}>Re-render this shot</button>
         <button type="button" class="ghost" data-hood="copy">Copy recipe</button>
@@ -481,6 +483,14 @@
         entry.note = typeof started === "string" && started ? started : entry.note || "That take did not come back.";
         redraw(entry);
       }
+    } else if (act === "stop") {
+      // Stop on the edit running here: the same cancel the making screen's Stop sends (Round 0 F7), so the edit stops at
+      // its next safe point (its queued morphs come off the GPU, nothing is written) and the job then says whether it
+      // stopped or had already landed; the line says so until the desk answers, and whoever follows the job reports it
+      const info = running.get(String(opts.jobId));
+      if (!info || info.stopping) return;
+      const res = await api(`/api/jobs/${encodeURIComponent(opts.jobId)}/cancel`, { method: "POST" }).catch(() => null);
+      if (res && res.ok) progress(opts.jobId, Object.assign({}, running.get(String(opts.jobId)) || info, { stopping: true, detail: "Stopping the edit at its next safe point" }));
     }
   }
 
@@ -518,8 +528,11 @@
 
   function progress(jobId, info) {
     const id = String(jobId);
-    if (info && info.status !== "done") running.set(id, info);
-    else running.delete(id);
+    const was = running.get(id);
+    if (info && info.status !== "done") {
+      info = Object.assign({}, was && was.stopping ? { stopping: true } : {}, info);  // a Stop pressed stays pressed until the job ends
+      running.set(id, info);
+    } else running.delete(id);
     cache.forEach((entry, key) => {
       if (key.split("|")[0] !== id) return;
       (entry.hosts || []).forEach((host) => {
@@ -531,6 +544,8 @@
           if (fill) fill.style.width = `${Math.round(100 * Math.max(0.03, Math.min(1, Number(info.progress) || 0)))}%`;
           const note = bar.querySelector(".note");
           if (note) note.textContent = `${info.detail || "Re-rendering this shot on the GPU"} · the timeline stays usable`;
+          const stop = bar.querySelector('[data-hood="stop"]');
+          if (stop) stop.disabled = !!info.stopping;
         } else {
           draw(host, host.__hood.opts);
         }

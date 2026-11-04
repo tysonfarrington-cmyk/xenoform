@@ -1456,27 +1456,34 @@ function projectRows(easy) {
   const aspect = easy.aspect || "9:16";
   const vertical = tier === "final" ? (easy.vertical === "crop" ? "crop" : "native") : "crop";
   const tiers = [["draft", "Draft"], ["fast", "Fast Final"], ["final", "Final"], ["cloud", "Cloud Final"]].filter((t) => !(clips && t[0] === "cloud"));
-  const row = (html) => `<div class="pj-row">${html}</div>`;
-  const block = (title, html) => `<div class="pj-block"><h4>${esc(title)}</h4>${html}</div>`;
+  // each row ends by saying where the setting lives (this browser's profile, this cut's record, the desk) and what a
+  // change costs (the next render, a re-cut with no GPU, credits, nothing), as Under the hood's own rows did (UI_REVIEW
+  // M4, C10): hood.css draws the tags
+  const lives = (where, cost) => `<span class="hood-tags pj-tags"><i class="hood-where">${esc(where)}</i>${cost ? `<i class="hood-tag${/gpu|credit/i.test(cost) ? " gpu" : ""}">${esc(cost)}</i>` : ""}</span>`;
+  const row = (html, where, cost) => `<div class="pj-row">${html}${where ? lives(where, cost) : ""}</div>`;
+  const block = (title, html, where, cost) => `<div class="pj-block"><h4>${esc(title)}</h4>${html}${where ? lives(where, cost) : ""}</div>`;
+  const browser = "this browser";
+  const render = tier === "cloud" ? "next render · cloud credits" : "next render · GPU";
+  const recut = "re-cut · no GPU";
   return [
     row(simpleSeg("easy-aspect", aspect, [["16:9", "16:9"], ["9:16", "9:16"], ["1:1", "1:1"]], "Aspect")
-      + (aspect === "9:16" && tier === "final" ? simpleSeg("easy-vertical", vertical, [["native", "Native"], ["crop", "Crop"]], "Vertical") : "")),
-    row(`${simpleSeg("easy-tier", tier, tiers, "Model tier")}<p class="note">${esc(tierNote(tier))}</p>${tier === "cloud" ? cloudFinalRow(easy) : ""}`),
-    row(machineRows(easy)),
-    row(`${wholeSong(easy) ? songCapRow(easy) : morphControl(easy, tier, aspect, vertical)}`),
+      + (aspect === "9:16" && tier === "final" ? simpleSeg("easy-vertical", vertical, [["native", "Native"], ["crop", "Crop"]], "Vertical") : ""), browser, render),
+    row(`${simpleSeg("easy-tier", tier, tiers, "Model tier")}<p class="note">${esc(tierNote(tier))}</p>${tier === "cloud" ? cloudFinalRow(easy) : ""}`, browser, render),
+    row(machineRows(easy), browser, "instant"),
+    row(`${wholeSong(easy) ? songCapRow(easy) : morphControl(easy, tier, aspect, vertical)}`, browser, render),
     // the whole song by passages (Render's Quality): its morphs at most and how many vibes it draws
-    wholeSong(easy) ? "" : block("The whole song, by passages", `${songCapRow(easy)}${morphSource(easy) !== "clips" ? songVibesRow(easy) : ""}`),
-    row(simpleSeg("easy-energy", easy.energyPreset || "dense", [["flow", "Flow"], ["dense", "Dense"]], "Energy")),
-    row(simpleSeg("easy-fx", easy.fx === false ? "off" : "on", [["on", "On"], ["off", "Off"]], "Beat FX")),
-    row(simpleSeg("easy-orbit", easy.stemOrbit === false ? "off" : "on", [["on", "On"], ["off", "Off"]], "Subject sway")),
-    row(simpleSeg("easy-card", easy.endCard ? "on" : "off", [["off", "Off"], ["on", "On"]], "End card")),
-    clips ? "" : block("Your images", ownRow(easy)),
-    clips ? "" : block("Library", stillsRow(easy)),
-    row(beatOverlayRow(easy)),
-    block("Recipe code", remixBox(easy)),
-    block("Performer (Polly)", performerRow(easy)),
-    block("Paid cloud", cloudRows(easy)),
-    row(`<div class="simple-seg"><span>Connect an AI</span><div><button type="button" class="text" data-act="go" data-hash="connect">Any AI drives this desk over MCP &rarr;</button> <a class="text" href="/moves" target="_blank" rel="noopener">Moves (a dance to a clip) &rarr;</a></div></div>`),
+    wholeSong(easy) ? "" : block("The whole song, by passages", `${songCapRow(easy)}${morphSource(easy) !== "clips" ? songVibesRow(easy) : ""}`, browser, render),
+    row(simpleSeg("easy-energy", easy.energyPreset || "dense", [["flow", "Flow"], ["dense", "Dense"]], "Energy"), browser, render),
+    row(simpleSeg("easy-fx", easy.fx === false ? "off" : "on", [["on", "On"], ["off", "Off"]], "Beat FX"), browser, recut),
+    row(simpleSeg("easy-orbit", easy.stemOrbit === false ? "off" : "on", [["on", "On"], ["off", "Off"]], "Subject sway"), browser, recut),
+    row(simpleSeg("easy-card", easy.endCard ? "on" : "off", [["off", "Off"], ["on", "On"]], "End card"), browser, recut),
+    clips ? "" : block("Your images", ownRow(easy), browser, render),
+    clips ? "" : block("Library", stillsRow(easy), "this machine (work/ui/objects)", "growing: GPU"),
+    row(beatOverlayRow(easy), browser, render),
+    block("Recipe code", remixBox(easy), "this cut", "instant"),
+    block("Performer (Polly)", performerRow(easy), browser, `${render} (minutes a shot)`),
+    block("Paid cloud", cloudRows(easy), "the desk (XENO_PAID_CLOUD)", "cloud credits"),
+    row(`<div class="simple-seg"><span>Connect an AI</span><div><button type="button" class="text" data-act="go" data-hash="connect">Any AI drives this desk over MCP &rarr;</button> <a class="text" href="/moves" target="_blank" rel="noopener">Moves (a dance to a clip) &rarr;</a></div></div>`, "the desk", "instant"),
   ].join("");
 }
 // what each model tier renders with, one line (the chips say Draft, Fast Final, Final, Cloud Final)
@@ -3625,6 +3632,7 @@ function shotEditTick(job) {
   }
   state.easy.shotEdit = null;
   state.easy.recutting = false;
+  state.job = Object.assign({}, job, { status: "done" });  // the cut, as it stands: its id must not drop with a failed or stopped edit (editEnded)
   if (window.XenoHood) {
     window.XenoHood.progress(edit.id, null);
     window.XenoHood.invalidate(edit.id);
@@ -6018,6 +6026,7 @@ function lostContact(id, why) {
   if (edit && edit.id === id && state.easy.phase !== "making") {  // an edit Under the hood: the cut's screen stays, the block stops
     state.easy.shotEdit = null;
     state.easy.recutting = false;
+    if (state.job && state.job.id === id) state.job = Object.assign({}, state.job, { status: "done" });  // the cut stays open: its id must not drop
     if (window.XenoHood) window.XenoHood.progress(id, null);
     const said = String(why || "").trim() || "it stopped answering";
     state.easy.note = `Lost contact with the desk: ${said}${/[.!?]$/.test(said) ? "" : "."} Reload this page once it answers again: an edit that finished shows on the cut.`;

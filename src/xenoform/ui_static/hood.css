@@ -50,6 +50,7 @@ details.hood-preset p { margin: 4px 0 0; font-size: 12px; line-height: 1.4; colo
 .hood-tags { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px 6px; }
 
 .hood-progress { display: grid; gap: 6px; }
+.hood-progress button { justify-self: start; }
 .hood-bar { display: block; height: 6px; border-radius: 3px; background: var(--x-well); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4); overflow: hidden; }
 .hood-bar i { display: block; height: 100%; border-radius: 3px; background: var(--x-accent); transition: width var(--x-t) var(--x-ease); }
 

@@ -527,6 +527,6 @@ def test_cli_import_refuses_a_non_folder(tmp_path):
 
 def test_front_end_has_the_library_row():
     js = (Path(mp.OBJECTS).parents[0] / "app.js").read_text(encoding="utf-8")
-    assert "function stillsRow(easy)" in js and 'block("Library", stillsRow(easy))' in js  # a row of the Project panel
+    assert "function stillsRow(easy)" in js and 'block("Library", stillsRow(easy)' in js  # a row of the Project panel
     assert 'data-act="easy-grow"' in js and 'id="easy-own-shapes"' in js and 'data-act="easy-make-shapes"' in js
     assert '"/api/stills/grow"' in js and "ownShapes" in js.split("const EASY_SAVED_KEYS")[1].split("\n")[0]

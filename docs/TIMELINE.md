@@ -223,7 +223,9 @@ editable, with Re-render this shot, Copy recipe, Reset to preset, the takes and 
 cut's screen, its progress on the shot's block on the song strip. Swap, Generate here and Dream here sit on the Shot
 tab, each naming the shots it replaces and lighting them on the strip. The project's own settings (aspect, model tier,
 GPU, Forms, Beat FX, Subject sway, End card, your images, the library, the recipe code, Polly, paid cloud) are the rows
-of Tweak's "Project · under the hood" panel.
+of Tweak's "Project · under the hood" panel, each ending with where it lives (this browser, this cut, the desk) and what
+a change costs (the next render, a re-cut with no GPU, credits, nothing). A re-render or a take running on a shot has a
+Stop in its panel: the edit stops at its next safe point and the cut says whether it stopped or had already landed.
 
 A clips cut (`source: "clips"`, `xenoform.clip_cut`) shows its clip shots by their clip's name and its morph shots as
 "from → to"; it is neither swappable nor re-renderable, and its Look, Colour, Effects, Order and Join edits re-cut as on

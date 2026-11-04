@@ -28,7 +28,7 @@ def test_the_module_is_self_contained_and_loaded_before_the_desk():
     for leak in ("state.easy", "postCutEdit(", "render()", "getElementById(", "easyVideoId", "state.lane"):
         assert leak not in HOOD, leak  # nothing about where it is mounted: the host gives the job, the shot and the hooks
     for part in ('data-hood="rerender"', 'data-hood="copy"', 'data-hood="reset"', 'data-hood="take"', 'data-hood="queue"',
-                 'data-hood="queue-yes"', "Open in ComfyUI", "download=", "/recipe", "/comfy", "class=\"generate\"", "class=\"ghost\"",
+                 'data-hood="queue-yes"', 'data-hood="stop"', "Open in ComfyUI", "download=", "/recipe", "/comfy", "class=\"generate\"", "class=\"ghost\"",
                  "hood-hint", "hood-preset", "preset:"):
         assert part in HOOD, part
     for field in ("prompt", "negative", "seed", "steps", "cfg", "frames", "guide_start", "guide_end", "compression", "style", "lora"):
@@ -165,3 +165,118 @@ def test_the_desks_span_rule_is_the_servers():
     for (first, secs, kind), span in zip(asks, got):
         want = dense.insert_span(shots, first, secs) if kind == "insert" else dream.span(shots, first, secs)
         assert tuple(span) == want, (first, secs, kind)
+
+
+# ---------------------------------------------------------------- the merge (integrate-4nov): Round 0's rules on the in-place edit
+def _whole(name: str) -> str:
+    return f"function {name} {{" + _fn(f"function {name} {{") + "\n}"
+
+
+def test_a_failed_stopped_or_lost_in_place_edit_keeps_the_cut_open():
+    """Round 0 F1/F7 on t4's path: since a failed edit ends "error" or "cancelled", shotEditTick must leave the job as the
+    cut (status done, as editEnded does) or easyVideoId() drops it and Download, Re-render and Under the hood lose the
+    cut; lostContact's in-place branch left it "running", with the same loss."""
+    script = "\n".join([
+        "let state = null; let easyTimer = null; const clearInterval = () => {}; const calls = [];",
+        "const render = () => calls.push(['render']); const tabTitle = () => {}; const paintShotEdit = (edit, job) => calls.push(['paint', job.detail]);",
+        "const window = { XenoHood: { progress: (id, info) => calls.push(['progress', id, info]), invalidate: (id) => calls.push(['invalidate', id]) } };",
+        _whole("shotEditTick(job)"), _whole("lostContact(id, why)"), _whole("easyVideoId()"),
+        "const fresh = () => ({ job: { id: 'c1', status: 'running', video_version: 1 }, lane: { id: 'c1' }, easy: { phase: 'result', note: '', recutting: true,",
+        "  shotEdit: { id: 'c1', shot: 2, detail: 'Re-rendering shot 3', version: 1 }, reopenId: '', reopenUrl: '/api/videos/c1/video' } });",
+        "const tick = (job) => { state.job = job; shotEditTick(job); };  // as poll() does",
+        "const end = () => ({ status: state.job.status, cut: easyVideoId(), recutting: state.easy.recutting, edit: state.easy.shotEdit, note: state.easy.note, lane: state.lane, url: state.easy.reopenUrl });",
+        "const out = {};",
+        "state = fresh(); tick({ id: 'c1', status: 'error', video_version: 1, edit_from: 1, error: 'The re-render did not run. ComfyUI is not answering.' }); out.failed = end();",
+        "state = fresh(); tick({ id: 'c1', status: 'cancelled', video_version: 1, edit_from: 1, detail: 'Stopped: the re-render did not land, and the cut is as it was.' }); out.stopped = end();",
+        "state = fresh(); tick({ id: 'c1', status: 'done', video_version: 2, edit_from: 1, detail: 'Re-render ready' }); out.landed = end();",
+        "state = fresh(); tick({ id: 'c1', status: 'running', video_version: 1, edit_from: 1, progress: 0.4, detail: 'Morph 1 of 1' }); out.running = end();",
+        "state = fresh(); lostContact('c1', 'it stopped answering'); out.lost = end();",
+        "out.cleared = calls.filter((c) => c[0] === 'progress' && c[2] === null).length;",
+        "process.stdout.write(JSON.stringify(out));",
+    ])
+    got = _node(script)
+    for name in ("failed", "stopped", "lost"):
+        case = got[name]
+        assert case["status"] == "done" and case["cut"] == "c1" and case["lane"] == {"id": "c1"} and case["url"] == "/api/videos/c1/video", name
+        assert case["recutting"] is False and case["edit"] is None, name
+    assert got["failed"]["note"] == "The re-render did not run. ComfyUI is not answering."
+    assert got["stopped"]["note"] == "Stopped: the re-render did not land, and the cut is as it was."
+    assert got["lost"]["note"].startswith("Lost contact with the desk: it stopped answering.")
+    landed = got["landed"]
+    assert landed["status"] == "done" and landed["cut"] == "c1" and landed["lane"] is None and landed["url"] == "/api/videos/c1/video?v=2"
+    assert landed["note"] == "Shot 3: Re-render ready."
+    assert got["running"]["cut"] == "c1" and got["running"]["recutting"] is True and got["running"]["edit"]["shot"] == 2  # still that cut while it runs (L7)
+    assert got["cleared"] == 4  # the block's progress cleared on every end, the lost one too
+    tick = _fn("function shotEditTick(job) {")
+    assert 'state.job = Object.assign({}, job, { status: "done" });' in tick and tick.index("recutting = false") < tick.index('status: "done"')
+    lost = _fn("function lostContact(id, why) {").split("if (!state || !state.easy || !state.job", 1)[0]
+    assert 'state.job = Object.assign({}, state.job, { status: "done" })' in lost
+
+
+def test_the_running_edits_panel_has_a_stop_that_posts_the_cancel():
+    """Round 0 F7/N1 on t4's path: an edit kept on the cut's screen never draws the making screen, so its Stop lives in
+    the panel's progress block; it posts the job's cancel once, reads as pressed until the job ends, and the desk's
+    shotEditTick reports how the edit ended."""
+    hood = json.dumps(str(STATIC / "hood.js"))
+    recipe = json.dumps(dict(_recipe(), rerender={"ok": True}, kind="morph", cost={"gpu_s": 60, "recut_s": 30}, choices={}, takes=[], source="record", workflow="/w.json"))
+    script = "\n".join([
+        f"const recipe = {recipe}; const posts = [];",
+        "global.window = { fetch: async (path, o) => { posts.push(path + ' ' + ((o && o.method) || 'GET')); return { ok: true, json: async () => recipe }; } };",
+        "global.document = { activeElement: null, querySelectorAll: () => [], dispatchEvent: () => {} }; global.CustomEvent = function () {}; global.navigator = {};",
+        f"require({hood});",
+        "const listeners = {};",
+        "const host = { isConnected: true, innerHTML: '', classList: { add() {} }, addEventListener: (t, fn) => { listeners[t] = fn; }, contains: () => true, querySelector: () => null, querySelectorAll: () => [] };",
+        "const el = { getAttribute: (k) => (k === 'data-hood' ? 'stop' : null), dataset: {} };",
+        "const click = { target: { closest: (sel) => (sel === '[data-hood]' ? el : null) }, preventDefault() {} };",
+        "const stop = () => (host.innerHTML.match(/<button[^>]*data-hood=\"stop\"[^>]*>/) || [''])[0];",
+        "const note = () => (host.innerHTML.match(/<span class=\"note\">([^<]*)<\\/span>/) || [])[1];",
+        "(async () => {",
+        "  window.XenoHood.mount(host, { jobId: 'c1', shotIndex: 6 });",
+        "  await new Promise((r) => setTimeout(r, 30));",
+        "  const out = { idle: { stop: stop(), actions: host.innerHTML.includes('hood-actions') } };",
+        "  window.XenoHood.progress('c1', { shot: 6, progress: 0.3, detail: 'Re-rendering shot 7', status: 'running' });",
+        "  out.running = { stop: stop(), actions: host.innerHTML.includes('hood-actions'), note: note() };",
+        "  await listeners.click(click);",
+        "  out.pressed = { stop: stop(), note: note(), posts: posts.slice() };",
+        "  window.XenoHood.progress('c1', { shot: 6, progress: 0.5, detail: 'Stopping the edit at its next safe point.', status: 'running' });  // the desk's next tick",
+        "  await listeners.click(click);",
+        "  out.again = { stop: stop(), note: note(), cancels: posts.filter((p) => p.endsWith('/cancel POST')).length };",
+        "  window.XenoHood.progress('c1', null);",
+        "  window.XenoHood.progress('c1', { shot: 6, progress: 0.1, detail: 'Re-rendering shot 7', status: 'running' });  // the next edit starts fresh",
+        "  out.next = { stop: stop() };",
+        "  process.stdout.write(JSON.stringify(out));",
+        "})();",
+    ])
+    got = _node(script)
+    assert got["idle"] == {"stop": "", "actions": True}  # no edit running: the actions, no Stop
+    assert got["running"]["actions"] is False and got["running"]["note"].startswith("Re-rendering shot 7")
+    assert 'data-hood="stop"' in got["running"]["stop"] and "disabled" not in got["running"]["stop"]
+    assert got["pressed"]["posts"] == ["/api/jobs/c1/shots/6/recipe GET", "/api/jobs/c1/cancel POST"]
+    assert "disabled" in got["pressed"]["stop"] and got["pressed"]["note"].startswith("Stopping the edit at its next safe point")
+    assert "disabled" in got["again"]["stop"] and got["again"]["cancels"] == 1  # pressed stays pressed; a second press posts nothing
+    assert "disabled" not in got["next"]["stop"]
+    assert ".hood-progress button" in CSS
+    # the desk never draws the making screen for an in-place edit, so its Stop is the panel's; Escape stays the making screen's
+    post = _fn("async function postCutEdit(id, route, body, detail, at, stage, title, opts) {")
+    assert "startMaking(" not in post.split("if (opts && opts.inPlace)", 1)[1].split("\n    else", 1)[0]
+
+
+def test_the_project_rows_say_where_each_setting_lives_and_what_it_costs():
+    """UI_REVIEW M4, C10, as t4's project scope said it: each row of Tweak's Project panel ends with where the setting
+    lives and what a change costs, drawn with hood.css's tags (t5's editable rows keep their controls)."""
+    rows = _fn("function projectRows(easy) {")
+    assert "const lives = (where, cost) =>" in rows and '<span class="hood-tags pj-tags"><i class="hood-where">' in rows
+    assert '<i class="hood-tag${/gpu|credit/i.test(cost) ? " gpu" : ""}">' in rows
+    assert 'const render = tier === "cloud" ? "next render · cloud credits" : "next render · GPU";' in rows and 'const recut = "re-cut · no GPU";' in rows
+    for part in ('"Aspect")', '"Model tier")}', 'row(machineRows(easy), browser, "instant")', '"Energy"), browser, render)',
+                 '"Beat FX"), browser, recut)', '"Subject sway"), browser, recut)', '"End card"), browser, recut)',
+                 'block("Your images", ownRow(easy), browser, render)', 'block("Library", stillsRow(easy), "this machine (work/ui/objects)", "growing: GPU")',
+                 'row(beatOverlayRow(easy), browser, render)', 'block("Recipe code", remixBox(easy), "this cut", "instant")',
+                 'block("Performer (Polly)", performerRow(easy), browser, `${render} (minutes a shot)`)',
+                 'block("Paid cloud", cloudRows(easy), "the desk (XENO_PAID_CLOUD)", "cloud credits")', '"the desk", "instant")'):
+        assert part in rows, part
+    calls = [line.strip() for line in rows.splitlines() if line.strip().startswith(("row(", "block(", 'clips ? "" : block(', 'wholeSong(easy) ? "" : block('))]
+    assert len(calls) >= 15
+    for call in calls:
+        assert call.endswith(("browser, render),", "browser, recut),", '"instant"),', '"cloud credits"),', '"growing: GPU"),', "(minutes a shot)`),")) or call.startswith("row(simpleSeg(\"easy-aspect\""), call
+    assert "#hood-project .pj-tags" in (STATIC / "songline.css").read_text(encoding="utf-8")

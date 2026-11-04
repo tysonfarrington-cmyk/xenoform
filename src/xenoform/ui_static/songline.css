@@ -146,6 +146,7 @@ button.ghost .cost-tag { background: var(--x-well); color: var(--x-text-2); box-
 #hood-project .pj-block { display: grid; gap: 8px; }
 #hood-project .pj-block > h4 { margin: 0; font-size: 13px; font-weight: 600; }
 #hood-project .note { margin: 0; }
+#hood-project .pj-tags { justify-content: flex-start; margin-top: 6px; }  /* where the setting lives and what it costs (hood.css draws the tags) */
 @media (max-width: 1000px) {
   .sl-tweak-grid { grid-template-columns: minmax(0, 1fr); }
   .sl-side { position: static; order: -1; }
