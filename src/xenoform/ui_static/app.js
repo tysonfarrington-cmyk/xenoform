@@ -1723,7 +1723,7 @@ function stepBar(easy, step) {
   }
   // Ctrl+Enter (Cmd+Enter on a Mac) presses the step's button: it says so, as desktop software does
   if (/^<button type="button" class="generate"/.test(primary)) primary = primary.replace(/<\/button>$/, `<kbd>${esc(shortcutLabel())}</kbd></button>`);
-  return `<div class="step-bar${making && !ownClock ? " easy-making" : ""}" id="step-bar" data-step="${esc(step)}" data-tour="easy-make">
+  return `<div class="step-bar${making && !ownClock ? " easy-making" : ""}" id="step-bar" data-step="${esc(step)}" data-gate="${missing && missing.gate ? "1" : ""}" data-tour="easy-make">
       <div class="step-facts">${facts}</div>
       <div class="step-actions">${secondary}${primary}</div>
     </div>`;
@@ -6486,6 +6486,7 @@ document.addEventListener("click", async (event) => {
     const row = (state.videos || []).find((item) => item.id === el.dataset.id);
     if (!row) return;
     if (row.status === "running") {  // still rendering (F14): Round 0's resumeMaking follows its job on the making screen
+      state.easy.step = "render";  // a Make shows on Render's progress view (t5), as the cut does just below
       await resumeMaking(row.id, keptMaking(), false);
       render();
       return;
@@ -7233,7 +7234,9 @@ async function refreshComfy() {
     loadSetup().then(() => {
       if (!state) return;
       // the first screen's facts say "no render" or a time by it; the cut's screen keeps its player, it is not redrawn for this
-      if (state.view === "setup" || onFirstScreen()) render();
+      // the step bar draws the gate itself: when what it drew is no longer the gate, it is redrawn
+      const bar = document.getElementById("step-bar");
+      if (state.view === "setup" || onFirstScreen() || (bar && (bar.dataset.gate === "1") !== !!setupGate())) render();
       else paintMakeGate();
     });
   }
@@ -7508,6 +7511,7 @@ function paintMakeGate() {
   const gate = setupGate();
   const buttons = document.querySelectorAll('[data-act="easy-make"]');
   buttons.forEach((button) => {  // both ways: a gate that lifts (Setup finished, a model put there by hand) gives the label back
+    if (button.closest("#step-bar")) return;  // the step bar draws the gate itself (missingModels), with its cost pill and kbd
     const label = button.querySelector("span") || button;
     if (gate) {
       if (button.dataset.gate !== "setup") {
