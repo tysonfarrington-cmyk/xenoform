@@ -20,7 +20,10 @@ APP = (STATIC / "app.js").read_text(encoding="utf-8")
 def test_one_design_layer_is_linked_where_the_old_two_were():
     assert not (STATIC / "ui_v4.css").exists() and not (STATIC / "ui_v6.css").exists()
     links = re.findall(r'href="(/static/[^"]+\.css)"', INDEX)
-    assert links == ["/static/theme.css", "/static/app.css", "/static/desk.css"]
+    # the one layer, then the components that bring their own sheet on its tokens (hood.css: Under the hood)
+    assert links[:3] == ["/static/theme.css", "/static/app.css", "/static/desk.css"] and links[3:] == ["/static/hood.css"]
+    hood = re.sub(r"/\*.*?\*/", "", (STATIC / "hood.css").read_text(encoding="utf-8"), flags=re.S)
+    assert "!important" not in hood and "var(--x-accent)" in hood
     for page in ("judges.html", "moves.html"):
         assert "desk.css" in (STATIC / page).read_text(encoding="utf-8"), page
     rules = re.sub(r"/\*.*?\*/", "", DESK, flags=re.S)  # the comments may name the old layers' habit

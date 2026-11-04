@@ -199,8 +199,9 @@ def test_the_desk_has_the_morph_row_and_the_timeline_chips():
     assert 'morph_style: (state.easy && state.easy.morphStyle) || "auto"' in body and "morph_styles: (state.easy && state.easy.carryStyles) || null" in body
     assert '"morphStyle"' in APP.split("const EASY_SAVED_KEYS = [", 1)[1].split("];", 1)[0]
     assert 'act === "easy-morph-style"' in APP and 'act === "easy-tl-style"' in APP
-    drawer = APP.split("function timelineDrawer(easy, lane, tl, picked) {", 1)[1].split("// Dream this span", 1)[0]
-    assert 'morphStyleRow(s.style || "melt", "easy-tl-style", s.index, false)' in drawer
+    # a shot's own style is a select Under the hood, rendered only by Re-render this shot (UI_REVIEW L3, hood.js)
+    hood = (Path(__file__).resolve().parents[1] / "src" / "xenoform" / "ui_static" / "hood.js").read_text(encoding="utf-8")
+    assert 'data-hood-in="style"' in hood and 'row(entry, "style", "Morph style"' in hood
     assert "if (style && MORPH_STYLES.includes(style)) body.style = style;" in APP
     final = APP.split('act === "easy-render-full" || act === "easy-render-final") {', 1)[1].split("} else if", 1)[0]
     assert "state.easy.carryStyles = lane.shots.map" in final and "state.easy.carryStyles = null" in final

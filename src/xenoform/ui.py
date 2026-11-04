@@ -1092,8 +1092,14 @@ def create_app(cfg: dict | None = None):
         except ValueError as exc:
             raise HTTPException(400, str(exc)) from exc
         base = f"/api/jobs/{job_id}/shots/{int(index)}"
-        out.update({"id": job_id, "layer": stem, "workflow": f"{base}/workflow.json" + (f"?layer={stem}" if stem else ""),
-                    "workflow_name": f"xenoform-{storage_id(job_id, fallback='cut')}-shot{int(index) + 1:02d}.json"})
+        tail = f"?layer={stem}" if stem else ""
+        out.update({"id": job_id, "layer": stem, "workflow": f"{base}/workflow.json{tail}",
+                    "workflow_name": f"xenoform-{storage_id(job_id, fallback='cut')}-shot{int(index) + 1:02d}.json",
+                    "comfy": str((cfg.get("comfy") or {}).get("base_url") or "http://127.0.0.1:8188"),
+                    "takes": [{**t, "url": f"{base}/takes/{t['n']}/clip.mp4{tail}"} for t in out.get("takes") or []]})
+        # the style the Make gave the shot: Reset to preset goes back to it (the first take's, else the one it plays)
+        out["make_style"] = next((t.get("style") for t in out["takes"] if t.get("source") == "make" and t.get("style")),
+                                 (out.get("used") or {}).get("style"))
         out.update(_shot_recipe_code(job_id, rec, int(index), out.get("used") or {}))
         return out
 
@@ -2361,6 +2367,9 @@ def create_app(cfg: dict | None = None):
             return {"id": video_id, "duration": 0.0, "shots": [], "sections": [], "overlays": [], "note": "This cut's shot record did not read."}
         out = lane.build(info, video_id)
         out["version"] = (folder / "xenoform.mp4").stat().st_mtime_ns  # the tiles' frame pictures change with the video
+        from xenoform.shot_recipe import cost_of
+
+        out["cost"] = cost_of(folder, info)  # a Draft morph and a re-cut on this machine: the drawer's cost tags (C10)
         return out
 
     @app.post("/api/videos/{video_id}/hook")
