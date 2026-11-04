@@ -68,8 +68,12 @@ Save as the shipped preset**. The desk writes `configs/midi_presets/minilab3.jso
 
 ## What is left (other sessions)
 
-- T2 (perform): its `/vj` rewrite gets the map with `XenoMidi.dock()` (or `XenoMidi.panel(el)`), soft takeover with
-  `init({read})` for its knob targets, and holds through `XenoMidi.holds` (the `pad:N` targets already match).
+- T2 (perform) matched this API on t2-perform (06e9042): `pad:N` holds through `XenoMidi.holds.on(fn(id, on, top,
+  stack))`, its `pad:*` handler skips hold rows, `init` passes `read` and `targetName`, L and a `#midib` button call
+  `toggleDock`, `?out=1` sets `clean`; T2 ran it with this branch's `midi.js`. **On merge, take t2-perform's
+  `vj.html` and this branch's `midi.js`, `midi_map.js` and `midi_map.css`**: my `vj.html` hooks (the hold hook in
+  `frame()`, `?job=` shots on the pads) give way to T2's control view. Worth checking after the merge: held looks (a
+  dance preset, strobe or mirror on a pad set to "On while held") were wired in my `vj.html` only.
 - T5 (strip): `data-midi-slot` controls get badges and Learn as they are; a marked group of chips is played by the
   map's fallback (a knob picks along it, a pad steps). The desk has no pad targets yet: Perform on the strip should
   press and release through `XenoMidi.holds`.
