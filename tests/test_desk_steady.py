@@ -89,7 +89,8 @@ def test_the_cut_column_never_runs_under_the_knobs_and_the_knobs_fold():
     css = (STATIC / "desk.css").read_text(encoding="utf-8")
     assert ".easy-result { display: grid; grid-template-columns: minmax(0, 1fr);" in css
     assert 'body[data-knobs="folded"] .easy-done' in css and ".lane-playhead" in css
-    assert 'data-act="easy-knobs-fold"' in APP and "paintPlayhead();" in _fn("function render()", "function renderTool(")
+    # the cut's column no longer holds the knobs (they are Tweak's), so it has nothing to fold
+    assert 'data-act="easy-knobs-fold"' not in APP and "paintPlayhead();" in _fn("function render()", "function renderTool(")
 
 
 def test_edit_in_resolve_opens_the_pack_where_it_is(tmp_path, monkeypatch):
@@ -467,7 +468,9 @@ def test_the_drawer_offers_the_order_edits_and_the_lane_shows_a_deleted_shot():
         assert f'act === "{act}"' in APP, act
     lane = (ROOT / "src" / "xenoform" / "lane.py").read_text(encoding="utf-8")
     assert 'row["dropped"] = True' in lane and 'row["plays"]' in lane
-    assert "dropped" in _fn("function shotsLane(easy)", "async function loadLane")
+    # the song strip draws a deleted shot (struck through, the drawer restores it)
+    assert "dropped: gone" in _fn("function cutShotsForStrip(", "function stripModel(")
+    assert "is-dropped" in (STATIC / "strip.js").read_text(encoding="utf-8") and ".xs-shot.is-dropped" in (STATIC / "strip.css").read_text(encoding="utf-8")
 
 
 def test_the_final_upscales_from_a_quarter_and_the_estimate_says_where_the_time_goes():

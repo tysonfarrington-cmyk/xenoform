@@ -1,0 +1,202 @@
+/* Songline (docs/UI_REVIEW.md section 6): the desk's five steps over the song strip. Loaded after desk.css and
+   strip.css; the desk's tokens and components only (button.generate, button.ghost, button.text, .toggle, .chip). */
+
+/* ---------------------------------------------------------------- the steps in the toolbar */
+.step-nav button.crumb:disabled { opacity: 0.38; cursor: not-allowed; }
+.step-nav button.crumb.now { cursor: default; }
+
+/* ---------------------------------------------------------------- the step bar: what this step does, its one button */
+.step-bar {
+  position: sticky; bottom: 0; z-index: 25;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap;
+  max-width: 1480px; margin: 16px auto 0; padding: 10px 12px 10px 16px;
+  background: var(--x-surface-2); border: 1px solid var(--x-line-2); border-radius: var(--x-r-lg);
+  box-shadow: 0 -10px 28px -14px rgba(0, 0, 0, 0.75), var(--x-hi);
+}
+.step-facts {
+  flex: 1 1 360px; min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px;
+  font-size: 13px; color: var(--x-text-2); font-variant-numeric: tabular-nums;
+}
+.step-facts b { color: var(--x-text); font-weight: 600; }
+.step-facts .note { margin: 0; }
+.step-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.step-actions button.generate, .step-actions .upload.solid { min-height: var(--x-h-lg); padding: 0 18px; font-size: 14px; }
+.step-actions .upload input[type="file"], .step-actions .upload.solid input[type="file"] { display: none; }
+.cost-tag {
+  display: inline-flex; align-items: center; height: 18px; padding: 0 6px; border-radius: var(--x-r-xs);
+  font: 600 10.5px/1 var(--x-font-ui); letter-spacing: 0.02em; white-space: nowrap;
+  color: inherit; background: rgba(0, 0, 0, 0.22); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+button.ghost .cost-tag { background: var(--x-well); color: var(--x-text-2); box-shadow: inset 0 0 0 1px var(--x-line-2); }
+/* the clock while an edit or a Make runs */
+.step-bar #easy-eta { color: var(--x-text); font-weight: 500; }
+.step-bar .track { position: relative; display: inline-block; flex: 0 1 180px; height: 4px; border-radius: 4px; background: var(--x-surface-4); overflow: hidden; }
+.step-bar .track > span { position: absolute; left: 0; top: 0; bottom: 0; background: var(--x-accent); box-shadow: 0 0 10px rgba(124, 108, 255, 0.7); transition: width 0.4s var(--x-ease); }
+/* the Render step's Quality: one segmented choice, its time beside it */
+.step-quality { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; flex-basis: 100%; }
+.step-quality .toggle button { min-height: 28px; min-width: 0; padding: 0 10px; font-size: 12.5px; }
+.step-facts .cloud-final-ok { flex-basis: 100%; }
+
+/* ---------------------------------------------------------------- the step screens */
+.easy.sl { grid-template-columns: minmax(0, 1fr); align-items: start; }
+.easy.sl > * { min-width: 0; }
+.sl-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 14px; padding: 2px 2px 0; }
+.sl-head h2 { font-size: 22px; font-weight: 600; margin: 0; }
+.sl-head .lede { flex: 1 1 420px; margin: 0; font-size: 13px; color: var(--x-text-3); max-width: none; }
+.sl-strip { min-width: 0; }
+
+/* Source: one action, the empty strip, My videos */
+.sl-songs { padding: 16px; display: grid; gap: 10px; }
+.sl-songs .step-head { margin-bottom: 0; }
+.sl-songs .songrow { margin-top: 0; }
+.sl-songs .song-shelf { margin-top: 0; }
+.sl-songs .note { margin: 0; }
+.sl-source[data-song-drop].is-dragging .sl-strip .xs { box-shadow: 0 0 0 2px var(--x-accent); }
+.sl-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; }
+
+/* Plan: the sketch monitor and the vibe rail over the strip, the dock under it */
+.sl-top { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 14px; align-items: start; }
+.sl-monitor { display: grid; gap: 6px; min-width: 0; }
+/* the monitor stays short enough that the strip is on the first screen at 1366x768; the rail scrolls in its height */
+.sl-plan { --sl-monitor-h: clamp(220px, 38vh, 420px); }
+.sketch {
+  position: relative; height: var(--sl-monitor-h); overflow: hidden; cursor: pointer;
+  border-radius: var(--x-r-lg); background: #000 center / cover no-repeat; box-shadow: inset 0 0 0 1px var(--x-line);
+}
+.sketch:focus-visible { outline: 2px solid var(--x-accent); outline-offset: 2px; }
+.sketch img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+.sketch-badge {
+  position: absolute; left: 10px; top: 10px; z-index: 2; display: inline-flex; align-items: center; height: 22px; padding: 0 8px;
+  border-radius: var(--x-r-xs); font: 600 11px/1 var(--x-font-ui); letter-spacing: 0.08em; text-transform: uppercase;
+  color: #fff; background: rgba(0, 0, 0, 0.62); border: 1px dashed rgba(255, 255, 255, 0.45);
+}
+.sketch-cap {
+  position: absolute; left: 10px; bottom: 10px; z-index: 2; max-width: calc(100% - 20px); padding: 3px 8px; border-radius: var(--x-r-xs);
+  font-size: 12px; color: #fff; background: rgba(0, 0, 0, 0.62); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sketch-play {
+  position: absolute; left: 50%; top: 50%; z-index: 2; display: grid; place-items: center; width: 56px; height: 56px; margin: -28px 0 0 -28px;
+  border-radius: 50%; padding-left: 4px; font-size: 20px; color: #fff; background: rgba(0, 0, 0, 0.55);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.3); transition: opacity var(--x-t) var(--x-ease);
+}
+.sketch.is-playing .sketch-play { opacity: 0; }
+@media (hover: hover) { .sketch.is-playing:hover .sketch-play { opacity: 0.6; } }
+.sketch.is-empty { display: grid; place-items: center; cursor: default; }
+.sketch.is-empty::before { content: ""; position: absolute; inset: 0; background: rgba(5, 5, 7, 0.72); }
+.sketch-note { position: relative; z-index: 1; max-width: 32em; margin: 0; padding: 0 20px; text-align: center; font-size: 13.5px; color: var(--x-text-2); }
+.sketch-line { margin: 0; font-size: 12px; color: var(--x-text-3); }
+.sl-rail { padding: 14px; display: grid; gap: 10px; align-content: start; max-height: calc(var(--sl-monitor-h, 420px) + 24px); overflow-y: auto; overscroll-behavior: contain; }
+.sl-rail .step-head { margin-bottom: 0; align-items: baseline; }
+.sl-rail .step-head span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.vibe-grid.vibe-rail { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.vibe-rail .vibe-meta { padding: 6px 8px 7px; }
+.vibe-rail .vibe-card strong { font-size: 12px; line-height: 1.2; }
+.vibe-rail .vibe-meta em { display: none; }
+.vibe-rail .vibe-tick { top: 6px; right: 6px; width: 20px; height: 20px; font-size: 11px; }
+.sl-rail .more-vibes { margin-top: 0; }
+.sl-rail .vibe-grid.vibe-more { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+.sl-rail .idea-field { margin-top: 2px; }
+.sl-dock { padding: 14px; display: grid; gap: 8px; }
+.dock-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 12px; }
+.dock-head b { font-size: 14px; }
+.dock-head .note { flex: 1 1 260px; margin: 0; }
+.sl-made { padding: 12px 16px; display: grid; gap: 8px; }
+.sl-made .note { margin: 0; }
+@media (max-width: 1100px) { .sl-top { grid-template-columns: minmax(0, 1fr) 340px; } }
+@media (max-width: 1000px) { .sl-top { grid-template-columns: minmax(0, 1fr); } }
+
+/* Tweak: the strip short, the feel under it (a preset, the knobs, the rows), the monitor beside, the project under */
+.sl-tweak-grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 14px; align-items: start; }
+.sl-tweak-main { display: grid; gap: 12px; min-width: 0; }
+.sl-side { position: sticky; top: calc(var(--x-bar) + 14px); display: grid; gap: 8px; min-width: 0; }
+.sl-side .player { border-radius: var(--x-r-lg); }
+.sl-side video { display: block; width: 100%; max-height: 52vh; background: #000; }
+.sl-side .sketch { height: auto; aspect-ratio: 16 / 9; }
+.tw-panel { padding: 14px 16px; display: grid; gap: 10px; }
+.tw-panel > .step-head { margin-bottom: 0; }
+.tw-feel .toggle button { min-width: 0; }
+.tw-rows { display: grid; gap: 8px; }
+.tw-row { display: grid; grid-template-columns: 132px minmax(0, 1fr); align-items: center; gap: 10px; }
+.tw-row > span:first-child { display: flex; align-items: center; gap: 6px; font: 500 12.5px/1.2 var(--x-font-ui); color: var(--x-text-2); white-space: nowrap; }
+.tw-row .toggle { width: fit-content; max-width: 100%; }
+.tw-row .toggle button { min-width: 0; padding: 0 10px; }
+.tw-row .cost-tag { height: 16px; font-size: 9.5px; color: var(--x-text-3); background: transparent; box-shadow: inset 0 0 0 1px var(--x-line-2); }
+.tw-row .cost-tag.is-gpu { color: var(--x-warn); box-shadow: inset 0 0 0 1px rgba(242, 177, 74, 0.4); }
+.tw-hint { min-height: 2.9em; margin: 2px 0 0; padding: 8px 10px; border-radius: var(--x-r-md); font-size: 12.5px; color: var(--x-text-2); background: var(--x-well); border: 1px solid var(--x-line); }
+.tw-hint b { color: var(--x-text); font-weight: 600; }
+.tw-panel .simple-knobs .xf-macros { margin: 0; }
+/* the project's rows: the plainest form, under the hood */
+.hood-project-panel { padding: 0; overflow: hidden; }
+.hood-project-panel > summary {
+  display: flex; align-items: center; gap: 10px; min-height: 46px; padding: 0 16px; cursor: pointer; list-style: none;
+  font-size: 14px; font-weight: 600; color: var(--x-text);
+}
+.hood-project-panel > summary::-webkit-details-marker { display: none; }
+.hood-project-panel > summary::before {
+  content: ""; width: 7px; height: 7px; border-right: 1.5px solid var(--x-text-2); border-bottom: 1.5px solid var(--x-text-2);
+  transform: rotate(-45deg); transition: transform var(--x-t) var(--x-ease); margin-right: 2px;
+}
+.hood-project-panel[open] > summary::before { transform: rotate(45deg); }
+.hood-project-panel > summary small { margin-left: auto; font-weight: 500; font-size: 12px; color: var(--x-text-3); }
+.hood-project-panel[open] > summary { border-bottom: 1px solid var(--x-line); }
+#hood-project { display: grid; gap: 12px; padding: 14px 16px 16px; }
+#hood-project .pj-row + .pj-row, #hood-project .pj-block + .pj-block { padding-top: 12px; border-top: 1px solid var(--x-line); }
+#hood-project .pj-block { display: grid; gap: 8px; }
+#hood-project .pj-block > h4 { margin: 0; font-size: 13px; font-weight: 600; }
+#hood-project .note { margin: 0; }
+@media (max-width: 1000px) {
+  .sl-tweak-grid { grid-template-columns: minmax(0, 1fr); }
+  .sl-side { position: static; order: -1; }
+}
+@media (max-width: 560px) {
+  .tw-row { grid-template-columns: 1fr; gap: 6px; }
+}
+
+/* Render while a Make runs: the stills draft on the monitor, what is happening beside it, the strip as the progress */
+.sl-render { --sl-monitor-h: clamp(220px, 38vh, 420px); }
+.sl-render .sl-monitor .monitor {
+  position: relative; height: var(--sl-monitor-h); aspect-ratio: auto; overflow: hidden;
+  border-radius: var(--x-r-lg); background: #000 center / cover no-repeat; box-shadow: inset 0 0 0 1px var(--x-line);
+}
+.sl-render .sl-monitor .monitor video.easy-preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.sl-render .monitor-pill { position: absolute; left: 10px; bottom: 10px; z-index: 2; }
+.sl-render .sl-rail .happen { margin: 2px 0 6px; }
+.sl-render .sl-rail #easy-chain { margin: 0; font-size: 12.5px; color: var(--x-text-2); }
+
+/* ---------------------------------------------------------------- Perform (a placeholder the perform session replaces) */
+.easy-perform { max-width: 760px; margin: 0 auto; }
+.perform-card { padding: 22px 24px; display: grid; gap: 10px; }
+.perform-card h2 { font-size: 24px; }
+
+/* ---------------------------------------------------------------- phones (C1, decision 13) */
+/* under 1000 px the screens are one column and nothing scrolls inside anything */
+@media (max-width: 1000px) {
+  .sl-rail { max-height: none; overflow: visible; }
+  /* one column: the monitor, then the strip (the canvas), then what was clicked on it, then the rail */
+  .sl-plan .sl-top, .sl-render .sl-top { display: contents; }
+  .sl-plan > *, .sl-render > * { order: 6; }
+  .sl-plan .sl-monitor, .sl-render .sl-monitor { order: 1; }
+  .sl-plan > .sl-strip, .sl-render > .sl-strip { order: 2; }
+  .sl-plan > .sl-dock { order: 3; }
+  .sl-plan .sl-rail, .sl-render .sl-rail { order: 4; }
+}
+/* at phone width the step bar sticks to the bottom with the step's button full width (C1: Make used to be 5 500 px
+   down, after My videos), the strip is the section overview with the Draft window (strip.css), the vibe rail two
+   cards a row, and the shortcut hint goes (no keyboard) */
+@media (max-width: 560px) {
+  .step-bar { margin: 12px -12px -40px; padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px)); border-radius: 12px 12px 0 0; gap: 8px; }
+  .step-facts { flex-basis: 100%; font-size: 12.5px; }
+  .step-facts .track { flex-basis: 100%; }
+  .step-actions { flex: 1 1 100%; justify-content: stretch; }
+  .step-actions > * { flex: 1 1 auto; }
+  .step-actions kbd { display: none; }
+  .step-quality .toggle { width: 100%; }
+  .step-quality .toggle button { flex: 1 1 auto; }
+  .vibe-grid.vibe-rail, .sl-rail .vibe-grid.vibe-more { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sl-plan, .sl-render { --sl-monitor-h: clamp(180px, 30vh, 260px); }
+  .sl-head h2 { font-size: 19px; }
+  .sl-head .lede { flex-basis: 100%; }
+  .tw-panel { padding: 12px; }
+  .sl-dock { padding: 12px; }
+  .xs-foot { font-size: 12px; color: var(--x-text-2); }
+}

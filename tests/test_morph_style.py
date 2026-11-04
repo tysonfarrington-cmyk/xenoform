@@ -193,8 +193,8 @@ def test_the_desk_has_the_morph_row_and_the_timeline_chips():
     notes = APP.split("const MORPH_STYLE_NOTES = {", 1)[1].split("};", 1)[0]
     for key, text in ms.NOTES.items():
         assert f'"{key}": {json.dumps(text)}' in notes, key  # the desk says what the engine does
-    desk = APP.split("simple-knobs-panel", 1)[1].split("</section>", 1)[0]
-    assert '${morphStyleRow(easy.morphStyle || "auto", "easy-morph-style")}' in desk
+    rows = APP.split("function tweakRows(easy) {", 1)[1].split("\n}\n", 1)[0]
+    assert 'tweakSeg("easy-morph-style", style, ["auto"].concat(MORPH_STYLES)' in rows
     body = APP.split("function payload() {", 1)[1].split("function vjUrl()", 1)[0]
     assert 'morph_style: (state.easy && state.easy.morphStyle) || "auto"' in body and "morph_styles: (state.easy && state.easy.carryStyles) || null" in body
     assert '"morphStyle"' in APP.split("const EASY_SAVED_KEYS = [", 1)[1].split("];", 1)[0]
@@ -205,5 +205,9 @@ def test_the_desk_has_the_morph_row_and_the_timeline_chips():
     assert "if (style && MORPH_STYLES.includes(style)) body.style = style;" in APP
     final = APP.split('act === "easy-render-full" || act === "easy-render-final") {', 1)[1].split("} else if", 1)[0]
     assert "state.easy.carryStyles = lane.shots.map" in final and "state.easy.carryStyles = null" in final
-    assert 'class="tl-style"' in APP and ".shots-lane .shot .tl-style" in CSS
+    # a shot whose morph is not a Melt names its style on its block on the song strip
+    strip_js = (ROOT / "src/xenoform/ui_static/strip.js").read_text(encoding="utf-8")
+    strip_css = (ROOT / "src/xenoform/ui_static/strip.css").read_text(encoding="utf-8")
+    assert 'style: s.style && s.style !== "melt" ? morphStyleLabel(s.style) : ""' in APP
+    assert 'class="xs-style"' in strip_js and ".xs-shot .xs-style" in strip_css
     assert "easy.morphStyle = recipe.morph_style" in APP

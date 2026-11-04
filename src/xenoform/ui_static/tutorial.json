@@ -3,12 +3,13 @@
     "easy-song": {
       "title": "Choose a song",
       "body": [
-        "Drop a track, or press Bundled demo.",
-        "This step does not start a picture."
+        "Pick one of the bundled songs, or drop a track anywhere on the page.",
+        "Its passages, beats and drops land on the strip, and the desk moves on to Plan by itself."
       ],
       "target": "[data-tour=easy-song]",
+      "desk": "source",
       "view": "simple",
-      "hit": "[data-act=easy-demo], #easy-file",
+      "hit": "[data-act=easy-song], [data-act=easy-demo], #easy-file",
       "on": [
         "click",
         "change"
@@ -17,10 +18,12 @@
     "easy-vibe": {
       "title": "Pick a vibe",
       "body": [
-        "Choose a card, and type an idea in one line if you have one.",
-        "The line can name things, a theme, a place or a feel; the cut follows it."
+        "Choose a card: its objects land on the beats of the strip and the monitor sketches them, no GPU.",
+        "Type an idea in one line if you have one; the cut follows it.",
+        "With no song chosen, the bundled demo stands in."
       ],
       "target": "[data-tour=easy-vibe]",
+      "desk": "plan",
       "view": "simple",
       "hit": "[data-act=easy-vibe]",
       "on": [
@@ -28,37 +31,40 @@
       ]
     },
     "easy-make": {
-      "title": "Make the prototype",
+      "title": "Render a Draft",
       "body": [
-        "Make renders a quick Draft: a long song becomes 30 s around the drop, in minutes.",
-        "On its screen you refine it on the timeline, re-cut it with the knobs, then render the whole song or Final."
+        "Render Draft spends the GPU on 30 s around the drop, in a few minutes, with open weights on this machine.",
+        "Tweak the feel first if you like: a preset, the knobs and the look; re-cutting a Draft spends no GPU."
       ],
-      "target": "[data-tour=easy-make]",
+      "target": "[data-tour=easy-make][data-step=plan], [data-tour=easy-make][data-step=tweak]",
+      "desk": "plan",
       "view": "simple",
+      "badge": true,
       "hit": "[data-act=easy-make]",
       "on": [
         "click"
       ],
       "simulate": "[data-act=easy-make]",
-      "sim": "Simulated. No GPU job was started. The bundled demo stands in."
+      "sim": "Simulated. No GPU job was started."
     },
-    "weights": {
-      "title": "Open weights",
+    "easy-strip": {
+      "title": "Inspect a shot",
       "body": [
-        "The default path is local open weights: Z-Image Turbo for stills, LTX 0.9.5 for Draft morphs and LTX-2.5 (LTX-2.3 where it is not installed) for Final morphs.",
-        "Add-ons stay off. The badge reads Open weights and links to the licence page."
+        "Click a shot or a seam on the strip: the inspector opens right under it.",
+        "On a plan it names the object the shot lands on; on a cut, the shot's look, its join and a re-roll.",
+        "Drag the Draft window along the song to cut another stretch."
       ],
-      "target": "",
-      "view": "simple",
-      "badge": true
+      "target": "[data-tour=easy-strip]",
+      "desk": "plan",
+      "view": "simple"
     },
-    "easy-macros": {
-      "title": "Turn the knobs",
+    "easy-perform": {
+      "title": "Perform it",
       "body": [
-        "Intensity, Speed, Chaos and Glow set how hard the cut hits; the Look chips set its colour.",
-        "Fine-tune under them holds the rest: length, aspect, the Model (Draft, Fast Final, Final, Cloud Final), your images and the chain; Polly and the rest wait in Work in progress."
+        "Perform plays a rendered cut live in its own window: pads hold a picture, the knobs ride the look, Rec records a take.",
+        "The step opens once a Draft is rendered."
       ],
-      "target": "[data-tour=easy-macros]",
+      "target": "[data-tour=easy-perform]",
       "view": "simple"
     }
   },
@@ -66,13 +72,13 @@
     {
       "id": "simple",
       "name": "The desk in a minute",
-      "blurb": "A song, a vibe, the knobs, then a prototype.",
+      "blurb": "A song, a vibe, a Draft, a shot on the strip, then Perform.",
       "steps": [
         "easy-song",
         "easy-vibe",
-        "easy-macros",
         "easy-make",
-        "weights"
+        "easy-strip",
+        "easy-perform"
       ]
     }
   ]

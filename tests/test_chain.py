@@ -239,8 +239,9 @@ def test_a_length_cut_previews_its_window_and_the_pins_reach_the_render(monkeypa
 
 
 def test_front_end_draws_the_chain_row_and_sends_the_pins():
-    assert "function chainRow(easy)" in APP and "${chainRow(easy)}" in APP
-    assert 'data-act="easy-chain-slot"' in APP and 'libraryPicker(easy.vibe, "easy-pin"' in APP and 'data-act="easy-unpin"' in APP
+    # the Chain row is the strip's objects lane (a pin a still, a click picks another under the strip, Plan's dock)
+    assert "function planDock(easy)" in APP and "${planDock(easy)}" in APP and '"data-act": "easy-chain-slot", "data-slot": k' in APP
+    assert 'libraryPicker(easy.vibe, "easy-pin"' in APP and 'data-act="easy-unpin"' in APP
     assert 'data-act="easy-chain-reset"' in APP and "/api/simple/chain" in APP and "async function loadChain" in APP
     payload = APP.split("function payload()")[1].split("function renderSetup")[0]
     assert "chain_pins:" in payload

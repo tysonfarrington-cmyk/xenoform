@@ -68,15 +68,24 @@ const media = (s) => s;
 const clockText = (s) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
 const vibeById = (id) => (id ? { id, name: id } : null);
 const easyProgressText = (job) => String((job && job.detail) || "");
+const loadCutSong = () => calls.push(["loadCutSong"]);
 """
+
+
+def _steps() -> str:
+    """t5's step machinery (docs/notes/t5-strip.md): setEasyPhase moves the step and syncStepHash keeps the URL with it."""
+    return "\n".join([_const("STEPS"), _fn("viewFromHash"), _fn("stepReach"), _fn("stepOf"), _fn("stepHash"), _fn("syncStepHash")]) + "\n"
 
 
 # ---------------------------------------------------------------- N3, N4: the URL names the job and the cut
 def test_the_url_names_the_job_and_the_cut():
     setter = _fn("setEasyPhase")
-    assert "#simple/${phase}${id ? `/${encodeURIComponent(id)}` : \"\"}" in setter
-    assert 'history.pushState(null, "", want)' in setter and 'history.replaceState(null, "", want)' in setter
+    assert "syncStepHash();" in setter and "#simple/" not in setter  # the step's URL (t5), never #simple/making/<job>
+    sync = _fn("syncStepHash")
+    assert 'history.pushState(null, "", want)' in sync and 'history.replaceState(null, "", want)' in sync
     assert "keepMaking(id)" in setter and "dropMaking()" in setter
+    route = _fn("reopenRoute")  # a #render/<id> or #perform/<id> goes to Round 0: the job asked of the desk, a cut reopened
+    assert "await resumeMaking(id, kept, false)" in route and "await reopenCut(id, { fromUrl: true })" in route
     assert 'reopenCut(cut, { fromUrl: true })' in _fn("easyPhaseFromHash")
     boot = _fn("boot")
     assert boot.index("urlTarget()") < boot.index("await loadSetup()")  # the job is asked about before the first full draw
@@ -84,12 +93,12 @@ def test_the_url_names_the_job_and_the_cut():
     gen = _fn("generate")
     assert gen.index("state.job.id = data.id;") < gen.index('setEasyPhase("making")') < gen.index("poll(data.id)")
     # video-open and a cut's URL open a cut the one way
-    assert "reopenRow(row);" in APP.split('act === "video-open"')[1].split("} else if")[0]
+    assert "reopenCut(row.id);" in APP.split('act === "video-open"')[1].split("} else if")[0]
 
 
 @NODE
 def test_set_easy_phase_keeps_the_job_and_the_cut_in_the_url(tmp_path):
-    code = STAGE + "\n".join([_fn("setEasyPhase"), _fn("easyVideoId"), _const("MAKING_KEY"), _fn("keepMaking"), _fn("keptMaking"),
+    code = STAGE + _steps() + "\n".join([_fn("setEasyPhase"), _fn("easyVideoId"), _const("MAKING_KEY"), _fn("keepMaking"), _fn("keptMaking"),
                               _fn("dropMaking")]) + r"""
 const out = {};
 state = { job: { id: "j1", status: "running" }, easy: { phase: "result", startedAt: 1000, recutting: true, making: { title: "Re-cutting" } } };
@@ -110,18 +119,18 @@ out.choose = location.hash;
 console.log(JSON.stringify(out));
 """
     got = _run(tmp_path, code)
-    assert got["making"]["hash"] == "#simple/making/j1"
+    assert got["making"]["hash"] == "#render/j1"
     kept = got["making"]["kept"]
     assert kept["id"] == "j1" and kept["at"] == 1000 and kept["recut"] is True and kept["making"] == {"title": "Re-cutting"}
-    assert got["result"] == {"hash": "#simple/result/j1", "kept": None, "move": "push"}
-    assert got["before"] == {"hash": "#simple/making", "kept": None}
-    assert got["reopened"] == "#simple/result/cut9" and got["choose"] == "#simple"
+    assert got["result"]["hash"] == "#render/j1" and got["result"]["kept"] is None
+    assert got["before"]["kept"] is None and got["before"]["hash"].startswith("#render")  # a Make before its job has an id is never kept
+    assert got["reopened"] == "#render/cut9" and got["choose"] == "#source"
 
 
 @NODE
 def test_a_reload_of_the_making_screen_takes_the_job_up_again(tmp_path):
     """N3: the page said "You can leave this page", and a reload orphaned the job; now boot asks the desk about it."""
-    code = STAGE + "\n".join([_fn("setEasyPhase"), _fn("easyVideoId"), _const("MAKING_KEY"), _fn("keepMaking"), _fn("keptMaking"),
+    code = STAGE + _steps() + "\n".join([_fn("setEasyPhase"), _fn("easyVideoId"), _const("MAKING_KEY"), _fn("keepMaking"), _fn("keptMaking"),
                               _fn("dropMaking"), _fn("resumeMaking")]) + r"""
 let answer = null;
 const api = async (path) => { calls.push(["api", path]); return answer; };
@@ -163,13 +172,13 @@ const out = {};
 """
     got = _run(tmp_path, code)
     r = got["running"]
-    assert r["phase"] == "making" and r["hash"] == "#simple/making/j1" and r["job"] == "j1" and r["at"] == 5000 and r["recut"] is True
+    assert r["phase"] == "making" and r["hash"] == "#render/j1" and r["job"] == "j1" and r["at"] == 5000 and r["recut"] is True
     assert r["title"] == "Re-rendering shot 4" and r["reopenId"] == "j1" and r["note"] == "Morph 1 of 2" and r["polled"] == [["poll", "j1"]]
     assert r["kept"] == "j1"
     assert got["done"] == [["reopen", "j1", {"fromUrl": True}]]  # finished meanwhile: its cut
     assert got["gone"][0][1] == "j1" and "the desk restarted" in got["gone"][0][2]["missing"]
     assert got["gone"][0][2]["note"] == "The desk restarted before the edit finished: the cut is as it was."
-    assert got["failed"] == {"phase": "choose", "note": "The render stopped: GPU out of memory.", "hash": "#simple"}
+    assert got["failed"] == {"phase": "choose", "note": "The render stopped: GPU out of memory.", "hash": "#source"}
     assert got["editFailed"][0][2]["note"] == "The edit stopped: The re-render did not run."  # an edit: back to its cut
     assert got["quiet"] == {"calls": ["api", "fromHash"], "phase": "choose"}
 
@@ -179,7 +188,7 @@ def test_a_cuts_url_reopens_it_with_its_facts_and_its_waiting_edits(tmp_path):
     """N4: #simple/result/<id> on a reload or a shared link opens that cut as its My videos row does, never Choose a
     song; a cut the gallery does not list opens from its folder; one that is not on this desk says so; the edits that
     waited for Apply come back."""
-    code = STAGE + "\n".join([_fn("setEasyPhase"), _fn("easyVideoId"), _const("MAKING_KEY"), _fn("keepMaking"), _fn("keptMaking"),
+    code = STAGE + _steps() + "\n".join([_fn("setEasyPhase"), _fn("easyVideoId"), _const("MAKING_KEY"), _fn("keepMaking"), _fn("keptMaking"),
                               _fn("dropMaking"), _fn("reopenRow"), _fn("rowFacts"), _fn("reopenCut"), _const("EDITS_KEY"),
                               _fn("keptEdits"), _fn("easyPhaseFromHash"), _fn("hashId")]) + r"""
 let shots = {};
@@ -215,10 +224,10 @@ const out = {};
     a = got["atOnce"]
     assert a["phase"] == "result" and a["url"] == "/api/videos/abc/video" and a["job"]["id"] == "abc" and a["job"]["status"] == "done"
     assert a["restore"] == "abc" and a["knobs"] == {"Look": 1}
-    assert got["facts"] == {"vibe": "ferrofluid", "note": "Took 8:49.", "recipe": "XF1-abc", "hash": "#simple/result/abc"}
+    assert got["facts"] == {"vibe": "ferrofluid", "note": "Took 8:49.", "recipe": "XF1-abc", "hash": "#render/abc"}
     assert got["unlisted"] == {"phase": "result", "id": "song7", "url": "/api/videos/song7/video"}
     m = got["missing"]
-    assert m["phase"] == "choose" and m["job"] is None and m["hash"] == "#simple" and "not on this desk" in m["note"]
+    assert m["phase"] == "choose" and m["job"] is None and m["hash"] == "#source" and "not on this desk" in m["note"]
 
 
 def test_the_lane_gives_back_the_edits_a_reloaded_cut_had_waiting():
@@ -241,10 +250,11 @@ def test_escape_on_the_making_screen_is_its_stop_button():
 
 # ---------------------------------------------------------------- N12: Change keeps the song until another is picked
 def test_change_keeps_the_song_until_another_is_picked():
-    desk = APP.split("function renderEasy() {", 1)[1].split("\nfunction ", 1)[0]
-    assert "const changing = songSet && !!easy.changingSong;" in desk
-    assert "${changing ? picker : \"\"}`" in desk and ": picker;" in desk  # the row stays, the picker opens under it
-    assert 'data-act="easy-song-keep">Cancel</button>' in desk and 'data-act="easy-step" data-step="song">Change</button>' in desk
+    # the Source step (t5's strip) shows the song on the desk and the bundled songs under it at once: a song is never
+    # dropped to pick another, so there is no Change to press (Round 0's Change and Cancel are not drawn there)
+    desk = APP.split("function renderSource(easy) {", 1)[1].split("\nfunction ", 1)[0]
+    assert "const facts = songSet" in desk and '<div id="bundled-songs">${songsRow(easy)}</div>' in desk
+    assert 'data-step="song">Change</button>' not in desk and 'state.easy.song = ""' not in desk
     change = APP.split('act === "easy-step"')[1].split("} else if")[0]
     assert "state.easy.changingSong = { song: state.easy.song, label: state.easy.songLabel };" in change
     assert 'state.easy.song = ""' not in change  # the song is no longer forgotten at the first click
@@ -483,7 +493,7 @@ const reply = (status, body) => ({ ok: status === 200, status, json: async () =>
 
 
 def _poll_code(scenario: str) -> str:
-    return POLL_STAGE + "\n".join([_fn("setEasyPhase"), _fn("easyVideoId"), _const("MAKING_KEY"), _fn("keepMaking"), _fn("dropMaking"),
+    return POLL_STAGE + _steps() + "\n".join([_fn("setEasyPhase"), _fn("easyVideoId"), _const("MAKING_KEY"), _fn("keepMaking"), _fn("dropMaking"),
                                    _fn("tookBreakdown"), _const("POLL_RETRY_MS"), "const pollMisses = {};",
                                    _fn("poll"), _fn("editEnded"), _fn("lostContact")]) + scenario
 
@@ -549,7 +559,7 @@ const end = () => ({ note: state.easy.note, phase: state.easy.phase, status: sta
     got = _run(tmp_path, code)
     landed = got["landed"]
     assert landed["note"] == "Re-render ready. It took 0:36." and landed["phase"] == "result" and landed["lane"] is None
-    assert landed["cut"] == "c1" and landed["hash"] == "#simple/result/c1" and landed["recutting"] is False and landed["making"] is None
+    assert landed["cut"] == "c1" and landed["hash"] == "#render/c1" and landed["recutting"] is False and landed["making"] is None
     failed = got["failed"]
     assert failed["note"] == "The re-render did not run. ComfyUI is not answering. The cut is as it was."
     assert failed["status"] == "done" and failed["cut"] == "c1" and failed["lane"] == {"id": "c1"}  # the cut stays open, as it was
@@ -638,8 +648,10 @@ console.log(JSON.stringify(out));
     assert got["recut"] == {"title": "Re-cutting", "eta": "0:05 elapsed · reading the morphs", "step": 0}  # its own clock, never 11:34
     assert got["recutLater"] == {"eta": "0:05 elapsed · cutting to the beat", "step": 1}
     assert got["gpu"] == {"title": "Re-rendering shot 4", "eta": "0:00 elapsed · on the GPU", "step": 0}
-    making = APP.split("function renderEasy() {", 1)[1].split("\nfunction ", 1)[0]
-    assert "<h2>${esc(makingTitle(easy))}.</h2>" in making and "EDIT_STEPS[makingKind(easy)].map(" in making
+    bar = _fn("stepBar")  # the making branch: the title, one clock, the edit's own two steps and its own progress
+    assert "<b>${esc(makingTitle(easy))}.</b><span id=\"easy-eta\"" in bar and "EDIT_STEPS[kind].map(" in bar
+    assert "Number(kind !== \"make\" ? job.progress : job.overall)" in bar and 'data-act="easy-stop">Stop</button>' in bar
+    assert 'id="easy-eta"' not in _fn("renderMaking")  # one clock on the screen (F3): the step bar's
     assert "kind !== \"make\" ? editStep(kind, job) :" in _fn("paintMaking")
     for fn in ("postCutEdit", "recutWithKnobs", "swapStill", "easyMake"):
         assert "startMaking(" in _fn(fn), fn
@@ -731,13 +743,10 @@ console.log(JSON.stringify(out));
 def test_the_length_chips_say_which_whole_song_and_run_by_length():
     """W1: "Full song" and "Whole song" were two different things (one Make of the track; the passage queue with its own
     screen and hours of GPU) in a shuffled order (Full song · 60 s · 30 s · Whole song · 15 s)."""
-    row = APP.split('simpleSeg("easy-length"', 1)[1].split('"Length")', 1)[0]
-    assert '[["15", "15 s"], ["30", "30 s"], ["60", "60 s"], ["0", "Whole song, one cut"], ["song", "Whole song, by passages"]]' in row
+    # the merge (integrate-4nov): t5 removed the Length row; Render's Quality names the two whole songs apart
+    assert 'simpleSeg("easy-length"' not in APP
+    assert '[["draft", "Draft, one cut"], ["passages", "By passages"], ["final", "Final"], ["cloud", "Cloud"]]' in APP
     assert '"Full song"' not in APP and "pick Full song" not in APP
-    assert "or pick Whole song, one cut here." in _fn("lengthNote") and "The whole song as one cut" in _fn("lengthNote")
-    assert all(line.startswith("Whole song, by passages (") for line in
-               [part.split("`", 1)[1] for part in _fn("songLengthNote").split("return ")[1:] if "`" in part][:1])
-    assert "Fine-tune → Length → Whole song makes it all now, as one cut or by passages." in APP
     song_md = (ROOT / "docs" / "SONG.md").read_text(encoding="utf-8")
     assert "Length → Whole song, by passages" in song_md and "Length Full song" not in song_md
 

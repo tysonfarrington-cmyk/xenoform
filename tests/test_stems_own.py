@@ -406,9 +406,8 @@ def _fn(start, end):
 
 
 def test_the_song_step_has_the_stems_line_with_its_two_controls():
-    # from the picker (Change opens it under the song too, UI review N12) through the song row
-    row = _fn("const picker = `", "const proto = easyLengthIsProto(easy);")
-    assert "${stemsLine()}" in row and 'data-act="easy-demo"' in row  # inside the songrow; the Bundled demo button untouched
+    row = _fn("function renderSource(easy) {", "${songsLine()}")
+    assert "${stemsLine()}" in row and "${songsRow(easy)}" in row  # inside the Source step's songrow, over the bundled chips
     line = _fn("function stemsLine()", "function paintStemsText(")
     assert 'id="stems-line"' in line and 'class="note stems-line"' in line
     assert 'data-act="easy-own-stems"' in line and "Use your own stems" in line and "type=\"file\" multiple" in line

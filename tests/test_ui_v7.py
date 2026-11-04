@@ -67,19 +67,17 @@ def test_app_js_fetches_the_catalogue_and_resolves_strips_through_pool():
 
 def test_simple_first_screen_is_three_decisions_with_fine_tune_behind_a_drawer():
     easy = APP.split("function renderEasy()")[1].split("// ---------------------------------------------------------------- Simple finishing")[0]
-    assert "A song and a vibe make a quick prototype" in easy
-    assert '<details class="fine-tune" id="fine-tune"' in APP and "<summary>Fine-tune" in APP
-    # the drawer holds the finishing options, the beat overlay and the recipe box; the first screen shows Make; paid
-    # cloud moved to the Work in progress drawer beside it (28 Oct)
-    tune = APP.split("function fineTune(easy)")[1].split("// Work in progress")[0]
-    for part in ("${simpleOptions(easy)}", "${beatOverlayRow(easy)}", "${remixBox(easy)}"):
-        assert part in tune
-    assert "cloudRows(easy)" not in tune and "${wipDrawer(easy)}" in easy
-    assert easy.count("${simpleOptions(easy)}") == 0 and "${fineTune(easy)}" in easy
-    assert 'readDrawer("xeno-finetune")' in APP and '"fine-tune": "xeno-finetune"' in APP
-    # ui_v6.js keeps mounting the macro strip (knobs, stem reactions, MIDI) into .simple-opts, now inside the drawer
+    assert "Start with a song: its sections, beats and drops land on the strip below." in easy  # Source's one line
+    # Fine-tune and Work in progress are the Project panel under the hood on Tweak (C5, C6): the finishing options, the
+    # beat overlay, the recipe box, paid cloud, remembered open or closed
+    assert '<details class="panel hood-project-panel" id="hood-project-panel"' in APP and "<summary>Project · under the hood" in APP
+    rows = APP.split("function projectRows(easy) {")[1].split("\n}\n")[0]
+    for part in ("beatOverlayRow(easy)", "remixBox(easy)", "cloudRows(easy)", "machineRows(easy)", "performerRow(easy)"):
+        assert part in rows, part
+    assert 'readDrawer("xeno-project")' in APP and '"hood-project-panel": "xeno-project"' in APP
+    # ui_v6.js mounts the macro strip (knobs, stem reactions, MIDI) into .simple-knobs, Tweak's Feel panel
     v6 = (STATIC / "ui_v6.js").read_text(encoding="utf-8")
-    assert 'document.querySelector(".simple-opts")' in v6
+    assert 'document.querySelector(".simple-knobs")' in v6
 
 
 def test_simple_house_defaults_and_the_look_row():
@@ -90,14 +88,14 @@ def test_simple_house_defaults_and_the_look_row():
     assert "stem_orbit: !(state.easy && state.easy.stemOrbit === false)" in APP
     for preset in ("warm-leak", "cool-echo", "noir-glow", "bloom-rush", "negative-rush", "cyan-flash"):
         assert f'"{preset}"' in APP
-    assert 'lookRow(easy.danceFx || "auto", "easy-look")' in APP
-    assert 'simpleSeg("easy-orbit"' in APP and "Subject orbit" in APP
+    assert 'tweakSeg("easy-look", easy.danceFx || "auto"' in APP
+    assert 'simpleSeg("easy-orbit"' in APP and "Subject sway" in APP  # the orbit, named for what it does
     assert 'act === "easy-look"' in APP and 'act === "easy-orbit"' in APP
-    # every option that used to sit on the first screen is still reachable inside the drawer
-    opts = APP.split("function simpleOptions(easy)")[1].split("// Morph count")[0]
+    # every option that used to sit in Fine-tune is still reachable in the Project panel under the hood
+    opts = APP.split("function projectRows(easy) {")[1].split("\n}\n")[0]
     for act in ("easy-energy", "easy-aspect", "easy-tier", "easy-fx", "easy-card", "easy-orbit"):
         assert act in opts, act
-    assert "easy-look" in APP.split("simple-knobs-panel")[1].split("</section>")[0]  # the Look row moved to the front (v7.1)
+    assert '"easy-look"' in APP.split("function tweakRows(easy) {")[1].split("\n}\n")[0]  # the Look row on Tweak
     assert '["16:9", "16:9"], ["9:16", "9:16"], ["1:1", "1:1"]' in opts
 
 
@@ -112,11 +110,10 @@ def test_more_vibes_drawer_lists_the_legacy_vibes_in_simple():
 def test_comfy_pill_shows_in_simple_and_links_to_vj_and_midi():
     assert 'body[data-desk] .comfy-status,\n' not in CSS
     assert 'body[data-desk] .comfy-status {' in CSS
-    assert 'VJ mode: live visuals' in APP and 'href="${esc(vjUrl())}" target="_blank"' in APP and 'data-act="easy-midi"' in APP  # the link carries the song and stems, in a new tab
-    assert "function openMidiDrawer()" in APP
-    # VJ mode and the MIDI controller live in the Work in progress drawer (28 Oct), not the side column or Share row
-    wip = APP.split("function wipDrawer(easy)")[1].split("const LOOK_PRESETS")[0]
-    assert 'VJ mode: live visuals' in wip and 'data-act="easy-midi"' in wip
+    # live visuals are the Perform step now: its button opens /vj with this cut, in a new window; the MIDI controller
+    # lives in the knob strip on Tweak (ui_v6.js)
+    assert 'window.open(media(`/vj?job=${encodeURIComponent(id)}`), "_blank", "noopener");' in APP and "function openMidiDrawer()" in APP
+    assert '<details class="xf-adv xf-midi"><summary>MIDI controller</summary>' in (STATIC / "ui_v6.js").read_text(encoding="utf-8")
     share = APP.split("function shareRow(easy)")[1].split("function renderRow(easy)")[0]
     assert "Play it live in VJ mode" not in share and "vjUrl()" not in share
 
@@ -151,7 +148,7 @@ def test_download_on_a_reopened_video_shares_that_job(client, tmp_path, monkeypa
     share = APP.split("async function shareCut(button)")[1].split("\n}\n")[0]
     assert "state.easy.reopenId" in share and "?job=${encodeURIComponent(jobId)}" in share
     reopen = APP.split('act === "video-open"')[1].split("} else if")[0]
-    assert "reopenRow(row);" in reopen  # the row and a cut's URL reopen the one way (UI review N4)
+    assert "reopenCut(row.id);" in reopen  # the row and a cut's URL reopen the one way (UI review N4)
     assert "state.job = { id: row.id" in APP.split("function reopenRow(row) {")[1].split("\n}\n")[0]
     # the server resolves a saved job folder even when the job record is gone (desk restarted)
     from xenoform import ui as ui_mod

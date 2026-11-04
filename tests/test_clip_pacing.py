@@ -339,4 +339,4 @@ def test_a_rest_never_fits_on_film():
 
 def test_the_shape_row_reaches_a_clips_cut():
     app = (ROOT / "src" / "xenoform" / "ui_static" / "app.js").read_text(encoding="utf-8")
-    assert "function shapeRow(easy)" in app and "SHAPE_NOTES_CLIPS" in app
+    assert "const notes = objects ? SHAPE_NOTES : SHAPE_NOTES_CLIPS;" in app.split("function tweakRows(easy) {")[1].split("\n}\n")[0]

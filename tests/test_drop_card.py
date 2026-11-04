@@ -96,9 +96,13 @@ def test_the_drop_card_names_the_main_run_and_the_window(frozen_songs, monkeypat
 
 
 def test_the_desk_card_shows_the_main_run_and_asks_with_the_shape():
+    # the drop card is retired (docs/UI_REVIEW.md 6.2): the song strip shows the drop runs, the main one hottest and named
+    # in its header, asked with the Shape (GET /api/simple/strip takes the Drops and Breathe and the Draft's length)
     app = (ROOT / "src" / "xenoform" / "ui_static" / "app.js").read_text(encoding="utf-8")
-    title = app.split("function dropCardTitle(opener) {", 1)[1].split("\n}\n", 1)[0]
-    assert "The main drop: ${clockText(Number(main.start || 0))}, ${Math.round(Number(main.seconds || 0))} s" in title
-    ask = app.split("function scheduleOpener() {", 1)[1].split("\nfunction paintOpener", 1)[0]
-    assert "length_s:" in ask and "drop_mode: easy.dropMode" in ask and "body.key = ask;" in ask
-    assert "opener.main ? dropCardTitle(opener)" in app.split("function paintOpener() {", 1)[1].split("\n}\n", 1)[0]
+    strip_js = (ROOT / "src" / "xenoform" / "ui_static" / "strip.js").read_text(encoding="utf-8")
+    assert "function dropCard()" not in app and "scheduleOpener" not in app and 'data-act="open-drop"' not in app
+    title = app.split("function stripTitle(song, easy) {", 1)[1].split("\n}\n", 1)[0]
+    assert "the main at ${clockText(main.start)}" in title
+    key = app.split("function stripKey() {", 1)[1].split("\n}\n", 1)[0]
+    assert 'easy.dropMode || "auto"' in key and "breatheValue(easy)" in key and "easyLength(easy) || 30" in key
+    assert 'const cls = `xs-pass${isDrop ? " is-drop" : ""}${p.main ? " is-main" : ""}`;' in strip_js

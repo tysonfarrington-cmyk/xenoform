@@ -21,22 +21,18 @@ def _fn(start: str, end: str) -> str:
 
 
 def test_the_drawer_holds_everything_that_is_not_the_engine():
-    wip = _fn("function wipDrawer(easy) {", "const LOOK_PRESETS")
-    assert '<details class="fine-tune wip-drawer" id="wip-drawer"' in wip and "<summary>Work in progress" in wip
-    assert 'simpleSeg("easy-clips"' not in wip  # clips never go into an object cut: Morph > Your clips is its own cut
-    for part in ("performerRow(easy)", "cloudRows(easy)", 'href="/moves"', "vjUrl()",
-                 'data-act="easy-midi"', 'data-hash="connect"'):
-        assert part in wip, part
-    assert 'readDrawer("xeno-wip")' in wip and '"wip-drawer": "xeno-wip"' in APP  # closed by default, remembered
-    desk = _fn("function renderEasy() {", "// Variations (xenoform.batch")
-    assert "${fineTune(easy)}\n      ${wipDrawer(easy)}" in desk
-    side = desk.split('<aside class="panel easy-side" data-tour="easy-make">', 1)[1]
-    for gone in ('href="/moves"', "VJ mode: live visuals", 'data-act="easy-midi"', 'data-hash="connect"'):
-        assert gone not in side, gone
-    assert "performerRow(easy)" not in _fn("function simpleOptions(easy) {", "// Morph count")
-    assert 'data-act="easy-paid-cloud"' not in _fn("function machineRows(easy) {", "function simpleOptions(easy)")
+    # Work in progress is gone (C6): Polly, paid cloud, Moves and Connect an AI are rows of the Project panel under the
+    # hood on Tweak, live visuals are the Perform step
+    rows = _fn("function projectRows(easy) {", "\n}\n")
+    assert 'simpleSeg("easy-clips"' not in rows  # clips never go into an object cut: Made from > Your clips is its own cut
+    for part in ("performerRow(easy)", "cloudRows(easy)", 'href="/moves"', 'data-hash="connect"'):
+        assert part in rows, part
+    assert "function wipDrawer(" not in APP and "function fineTune(" not in APP
+    panel = _fn("function projectPanel(easy) {", "\n}\n")
+    assert 'readDrawer("xeno-project")' in panel and '"hood-project-panel": "xeno-project"' in APP  # closed by default, remembered
+    assert 'data-act="easy-paid-cloud"' not in _fn("function machineRows(easy) {", "\n}\n")
     assert 'data-hash="connect"' not in INDEX.split('class="more-menu"', 1)[1].split("</details>", 1)[0]
-    assert ".wip-item {" in CSS and ".wip-drawer" in CSS
+    assert ".hood-project-panel" in (STATIC / "songline.css").read_text(encoding="utf-8")
 
 
 def test_your_images_stay_in_the_engine_and_your_clips_are_their_own_cut():
@@ -78,7 +74,7 @@ def test_the_making_screen_shows_the_chain_the_render_made(tmp_path):
     assert ui._read_chain(tmp_path / "nothing") is None
     (tmp_path / "simple" / "chain.json").write_text("not json", encoding="utf-8")
     assert ui._read_chain(tmp_path) is None
-    making = _fn('if (easy.phase === "making") {', 'if (easy.phase === "result"')
+    making = _fn("function renderMaking(easy, chosen) {", "function renderCut(easy, chosen) {")
     assert "state.job.chain" in making and "preview: Make may grow more for your line" in making
 
 
@@ -112,7 +108,7 @@ def test_run_simple_writes_the_chain_before_the_morphs(monkeypatch, tmp_path):
 
 
 def test_the_scenes_row_shows_what_the_line_turned_on():
-    row = _fn("function scenesRow(easy) {", "function machineRows(easy)")
+    row = _fn("function tweakRows(easy) {", "\n}\n")  # Tweak's Wide scenes row
     assert "reading.scenes" in row and "!easy.scenesChosen" in row and "pick Off to keep objects only" in row
     handler = APP.split('act === "easy-scenes") {', 1)[1].split("} else if", 1)[0]
     assert "state.easy.scenesChosen = true;" in handler
