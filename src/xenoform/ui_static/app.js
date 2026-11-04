@@ -2929,6 +2929,8 @@ async function loadCutSong(id, info) {
     return state.audioId === "demo";
   }
   if (song.bundled) {
+    // the list is read on the Source step alone: a reload or a link on #render/<id> lands on Render with it unread (t5 N5, N9)
+    if (!state.songs) await loadSongs();
     await useBundledSong(song.bundled, true);
     return state.audioId === song.audio_id;
   }
@@ -3590,27 +3592,6 @@ async function applyTimeline() {
     `Re-cutting ${lane.mode === "stems" ? `the ${lane.layer} layer ` : ""}from the cached morphs with ${n} timeline edit${n === 1 ? "" : "s"}`, at, "assemble",
     "Re-cutting");
 }
-// Re-render one shot's morph: the seed, length and prompt fields of the drawer, and ``style`` when a Morph chip asked
-// for another way the object changes (the shot keeps its own style otherwise).
-async function rerenderShot(index, style) {
-  const id = easyVideoId();
-  const lane = state.lane && state.lane.id === id ? state.lane : null;
-  if (!id || !lane) return;
-  const seedEl = document.getElementById("tl-seed");
-  const lenEl = document.getElementById("tl-render-s");
-  const varEl = document.getElementById("tl-variant");
-  const body = { shot: Number(index), variant: (varEl && varEl.value) || "auto" };
-  if (seedEl && seedEl.value !== "") body.seed = Number(seedEl.value);
-  if (lenEl && lenEl.value !== "") body.render_s = Number(lenEl.value);
-  if (style && MORPH_STYLES.includes(style)) body.style = style;
-  if (lane.mode === "stems") body.layer = lane.layer;  // a Stems cut: this layer's morph, then the layers laid again
-  const shot = lane.shots.find((x) => x.index === Number(index)) || {};
-  const how = body.style ? ` as ${morphStyleLabel(body.style)}` : "";
-  const where = lane.mode === "stems" ? ` on the ${lane.layer} layer` : "";
-  if (gpuEditWaits()) return;
-  await postCutEdit(id, "rerender", body, `Re-rendering shot ${Number(index) + 1}'s morph${how}${where} on the GPU`, shot.start,
-    undefined, `Re-rendering shot ${Number(index) + 1}${how}`);
-}
 async function insertRun(index) {
   const id = easyVideoId();
   const lane = state.lane && state.lane.id === id ? state.lane : null;
@@ -3673,8 +3654,7 @@ async function loadLane(id) {
     const kept = state.easy.restoreEdits === id ? keptEdits(id) : null;
     state.easy.restoreEdits = "";
     state.easy.tl = kept && kept.tl && state.lane && kept.tl.id === (state.lane.tl_key || state.lane.id) ? kept.tl : null;
-    state.easy.tlBeforeReset = null;  // a Reset's undo and a Morph style picked belong to the lane before this one
-    state.easy.tlStyle = null;
+    state.easy.tlBeforeReset = null;  // a Reset's undo belongs to the lane before this one
     if (state.easy.tlFor !== id) { state.easy.tlPick = null; state.easy.tlFor = id; }
   }
   render();
@@ -5413,20 +5393,23 @@ let ignoreJob = null;
 // The bundled songs (GET /api/songs): six of the author's own Suno instrumentals in examples/songs/, shipped with their
 // analyses, so a chip under Choose a song loads one at once. The list is fetched once, lazily, the way loadSetup fills
 // state.setup; a failed fetch shows nothing. The row lands in its own slot (#bundled-songs), so nothing else redraws.
-let songsAsking = false;
+let songsAsking = null;  // the fetch in flight: a second asker (a reopened cut's own bundled song, loadCutSong) waits for its answer
 async function loadSongs() {
-  if (!state || state.songs || songsAsking) return;
-  songsAsking = true;
-  try {
-    const response = await api("/api/songs");
-    const data = response.ok ? await response.json() : null;
-    if (state) state.songs = (data && data.songs) || [];
-  } catch (err) {
-    if (state) state.songs = [];
-  }
-  songsAsking = false;
-  const slot = document.getElementById("bundled-songs");
-  if (slot && state && state.easy && !state.easy.song) slot.innerHTML = songsRow(state.easy);
+  if (!state || state.songs) return;
+  if (songsAsking) return songsAsking;
+  songsAsking = (async () => {
+    try {
+      const response = await api("/api/songs");
+      const data = response.ok ? await response.json() : null;
+      if (state) state.songs = (data && data.songs) || [];
+    } catch (err) {
+      if (state) state.songs = [];
+    }
+    songsAsking = null;
+    const slot = document.getElementById("bundled-songs");
+    if (slot && state && state.easy && !state.easy.song) slot.innerHTML = songsRow(state.easy);
+  })();
+  return songsAsking;
 }
 
 function songClock(seconds) {
@@ -6179,11 +6162,6 @@ document.addEventListener("click", async (event) => {
     state.easy.swapSlot = Number(el.dataset.slot);
     state.easy.tlPick = null;
     render();
-  } else if (act === "easy-tl-rerender") {
-    // in the Morph style the chips picked for this shot, else its own (rerenderShot sends no style then)
-    const i = Number(el.dataset.index);
-    const pick = state.easy.tlStyle && state.easy.tlStyle.index === i && state.easy.tlStyle.for === easyVideoId() ? state.easy.tlStyle.style : undefined;
-    rerenderShot(i, pick);
   } else if (act === "easy-tl-insert") {
     insertRun(Number(el.dataset.index));
   } else if (act === "easy-tl-dream") {
@@ -6233,12 +6211,6 @@ document.addEventListener("click", async (event) => {
     render();
   } else if (act === "easy-morph-style") {
     state.easy.morphStyle = ["auto"].concat(MORPH_STYLES).includes(el.dataset.value) ? el.dataset.value : "auto";
-    render();
-  } else if (act === "easy-tl-style") {
-    // a selection for "Re-render this morph", which alone spends GPU (L3); the shot's own style clears it
-    const i = Number(el.dataset.index);
-    const own = ((state.lane && (state.lane.shots || []).find((x) => x.index === i)) || {}).style || "melt";
-    state.easy.tlStyle = el.dataset.value === own || !MORPH_STYLES.includes(el.dataset.value) ? null : { index: i, style: el.dataset.value, for: easyVideoId() };
     render();
   } else if (act === "easy-effect") {
     // the Effects row is a set: a chip toggles its effect on or off

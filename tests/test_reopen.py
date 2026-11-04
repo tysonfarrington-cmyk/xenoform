@@ -3,6 +3,8 @@
 took and its breakdown, its tier, the stretch of the song) and registers it with the desk, and ``POST .../song`` loads the
 cut's song again so Render works without choosing it; the desk clears a passage's label on a reopen."""
 import json
+import shutil
+import subprocess
 import time
 import wave
 from pathlib import Path
@@ -144,3 +146,65 @@ def test_the_desk_reopens_whole_and_clears_a_passages_label():
     rerender = APP.split('} else if (act === "video-rerender") {')[1].split("} else if (act ===")[0]
     assert "loadCutSong(id)" in rerender and "cardNote" in rerender and "easyMake()" in rerender
     assert "card-note" in APP.split("function galleryPanel()")[1].split("async function loadVideos")[0]
+
+
+SONG_HARNESS = r"""
+// The desk's real loadCutSong, loadSongs, songsRow, songHeld and useBundledSong against a stand-in for the rest of the
+// desk: a cut reopened from its URL (#render/<id>) whose song is a bundled one, before the Source step ever read the song
+// list (cold), and while that list's fetch is still in flight (the Source step drew its row first).
+const fs = require("fs");
+const src = fs.readFileSync(__APP__, "utf8").replace(/\r\n/g, "\n");
+function fn(start) { const rest = src.slice(src.indexOf(start)); return rest.slice(0, rest.indexOf("\n}\n", 1) + 3); }
+const code = [fn("async function loadCutSong(id, info) {"), src.slice(src.indexOf("let songsAsking"), src.indexOf("function songClock(seconds)")),
+  fn("function songClock(seconds) {"), fn("function songsRow(easy) {"), fn("function songHeld(easy) {"), fn("async function useBundledSong(id, keepStep) {")].join("\n");
+const desk = new Function(code + "\nreturn { loadCutSong, songsRow };")();
+const SONGS = [{ id: "ambient", title: "Ambient", seconds: 225.0, feel: "Slow and open" }];
+const tick = () => new Promise((r) => setTimeout(r, 1));
+let calls = [];
+global.api = async (path, init) => {
+  calls.push(path);
+  await tick();
+  if (path === "/api/songs") return { ok: true, json: async () => ({ songs: SONGS }) };
+  if (path === "/api/songs/load") { const id = JSON.parse(init.body).id; return { ok: true, json: async () => ({ audio_id: `song-${id}`, title: id }) }; }
+  throw new Error("unexpected " + path);
+};
+global.esc = (s) => String(s);
+global.window = { CSS: null };
+global.document = { querySelector: () => null, getElementById: () => null };
+global.render = () => {};
+global.setEasyPhase = (p) => { global.state.easy.phase = p; };
+global.adoptSession = (data) => { const previous = global.state; global.state = { audioId: data.audio_id, easy: previous.easy, songs: previous.songs }; };
+global.settleCut = async () => {};
+global.loadSimpleOptions = async () => {};
+global.useDemoSong = async () => {};
+const fresh = () => ({ songs: null, audioId: "demo", easy: { song: "", songLabel: "", phase: "result", step: "render", note: "" } });
+const info = { song: { audio_id: "song-ambient", bundled: "ambient", label: "Ambient" } };
+const end = (ready) => ({ ready, calls: calls.slice(), audioId: global.state.audioId, song: global.state.easy.song, step: global.state.easy.step });
+(async () => {
+  const out = {};
+  global.state = fresh(); calls = [];
+  out.cold = end(await desk.loadCutSong("c1", info));
+  global.state = fresh(); calls = [];
+  desk.songsRow(global.state.easy);  // the Source step drew its row first: the list's fetch is in flight
+  out.inFlight = end(await desk.loadCutSong("c1", info));
+  console.log(JSON.stringify(out));
+})();
+"""
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="node runs the desk's song functions")
+def test_a_reopened_cuts_bundled_song_loads_before_the_song_list_was_read(tmp_path):
+    """The merge (integrate-4nov, t5 N5/N9): a reload or a link on #render/<id> reopens the cut on Render, where the
+    bundled songs' list (loadSongs, read by the Source step's row alone) is still unread, so useBundledSong found no song
+    and the cut's song never loaded, its shots off the strip and Render unable to re-render; the same when the row's
+    fetch was still in flight. loadCutSong reads the list first, and loadSongs shares the fetch in flight."""
+    script = tmp_path / "song.js"
+    script.write_text(SONG_HARNESS.replace("__APP__", json.dumps(str(ROOT / "src/xenoform/ui_static/app.js"))), encoding="utf-8")
+    done = subprocess.run(["node", str(script)], capture_output=True, text=True, encoding="utf-8")
+    assert done.returncode == 0, done.stderr
+    out = json.loads(done.stdout.strip().splitlines()[-1])
+    for case in ("cold", "inFlight"):
+        got = out[case]
+        assert got["calls"] == ["/api/songs", "/api/songs/load"], case  # the list once, then the cut's song
+        assert got["ready"] is True and got["audioId"] == "song-ambient" and got["song"] == "ambient", case
+        assert got["step"] == "render", case  # a reopened cut's own song keeps Render

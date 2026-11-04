@@ -14,5 +14,6 @@ def test_the_morph_board_is_gone_from_the_desk():
     script = APP.read_text(encoding="utf-8")
     for gone in ("morph-source", "morph-method", 'id="morph-panel"', "Partners for this scene", "function loadMorph("):
         assert gone not in script, gone
-    assert "easy-tl-rerender" in script  # one morph re-rendered, on the cut's own timeline
+    hood = (ROOT / "src" / "xenoform" / "ui_static" / "hood.js").read_text(encoding="utf-8")
+    assert 'data-hood="rerender"' in hood and 'start("rerender", body' in script  # one morph re-rendered, Under the hood on the cut's own screen
     assert "shimmer" not in CSS.read_text(encoding="utf-8")

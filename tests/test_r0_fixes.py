@@ -700,10 +700,13 @@ console.log(JSON.stringify(out));
     assert got["clean"] is False and got["waiting"] is True
     assert got["note"] == ("Apply the 2 timeline edits waiting first (the bar at the bottom): this renders on the GPU from the "
                            "cut as it stands, and would drop them.")
-    for fn, call in (("rerenderShot", 'postCutEdit(id, "rerender"'), ("insertRun", 'postCutEdit(id, "insert"'),
-                     ("dreamRun", 'postCutEdit(id, "dream"'), ("swapStill", "/swap`")):
+    for fn, call in (("insertRun", 'postCutEdit(id, "insert"'), ("dreamRun", 'postCutEdit(id, "dream"'), ("swapStill", "/swap`")):
         body = _fn(fn)
         assert "if (gpuEditWaits()) return;" in body and body.index("gpuEditWaits()") < body.index(call), fn
+    # the merge (integrate-4nov): the re-render is Under the hood's (hood.js); mountHood's start refuses it the same way
+    # and hands the panel the reason
+    start = _fn("mountHood").split("const start = async (route, body, label, stage) => {", 1)[1].split("\n    };", 1)[0]
+    assert "if (gpuEditWaits()) return state.easy.note || false;" in start and start.index("gpuEditWaits()") < start.index("await postCutEdit(id, route, body")
 
 
 def test_stop_during_an_edit_waits_for_the_desk_and_a_make_stops_as_before():
@@ -769,17 +772,21 @@ def _branch(act: str) -> str:
 
 def test_a_morph_style_chip_picks_and_only_re_render_spends_gpu():
     """L3: a Morph chip in the Regenerate tab started a GPU re-render on one click."""
-    chip = _branch("easy-tl-style")
-    assert "rerenderShot" not in chip and "postCutEdit" not in chip and "state.easy.tlStyle = " in chip and "render();" in chip
-    button = _branch("easy-tl-rerender")
-    assert "state.easy.tlStyle.style" in button and "rerenderShot(i, pick);" in button
-    # the merge (integrate-4nov): t4 removed the Regenerate tab and its Morph chips; a shot's style is a select Under the
-    # hood (hood.js), and only its Re-render this shot button posts the re-render
+    # the merge (integrate-4nov): t4 removed the Regenerate tab with its Morph chips and its seed, length and variant
+    # fields, so Round 0's chip branch, its tlStyle pick and rerenderShot went too (nothing emitted them any more). A
+    # shot's style is a select Under the hood (hood.js): a change records the pick and loads that style's preset, and only
+    # Re-render this shot posts the re-render, through mountHood's postCutEdit
+    for gone in ('act === "easy-tl-style"', 'act === "easy-tl-rerender"', "tlStyle", "rerenderShot", '"tl-seed"', '"tl-render-s"', '"tl-variant"'):
+        assert gone not in APP, gone
     drawer = APP.split("function timelineDrawer(easy, lane, tl, picked) {", 1)[1].split("// Dream this span", 1)[0]
-    assert '"easy-tl-style"' not in drawer and 'data-act="easy-tl-rerender"' not in drawer
+    assert 'id="hood-shot" data-inspector-tab="hood"' in drawer and 'data-act="easy-tl-rerender"' not in drawer
     hood = (ROOT / "src" / "xenoform" / "ui_static" / "hood.js").read_text(encoding="utf-8")
     assert 'data-hood-in="style"' in hood and 'data-hood="rerender"' in hood
-    assert "state.easy.tlStyle = null;" in _fn("loadLane")  # a pick belongs to the lane it was made on
+    pick = hood.split('} else if (k === "style") {', 1)[1].split("} else {", 1)[0]
+    assert "entry.edits.style = raw;" in pick and "load(entry, opts, raw);" in pick and "rerender" not in pick and "postEdit" not in pick
+    button = hood.split('} else if (act === "rerender") {', 1)[1].split("} else if (act ===", 1)[0]
+    assert "bodyOf(entry, opts)" in button and 'opts.onRerender ? await opts.onRerender(body, info) : await postEdit(opts, "rerender", body, info.label)' in button
+    assert 'onRerender: (body, info) => start("rerender", body' in _fn("mountHood")
 
 
 @NODE

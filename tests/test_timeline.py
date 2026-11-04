@@ -481,9 +481,9 @@ def test_the_desk_draws_the_timeline_panel_and_posts_the_edits():
     assert 'if (act === "easy-tl-bound") state.easy.tlTab = "join";' in APP
     assert "async function postCutEdit" in fn and "/${route}`" in fn and "tlSeek" in fn
     assert "async function applyTimeline" in fn and "shot_overrides: tl.shots, boundary_overrides: tl.bounds" in fn
-    assert "async function rerenderShot" in fn and '"rerender"' in fn
+    assert 'onRerender: (body, info) => start("rerender", body' in fn  # the re-render is Under the hood's, posted through mountHood (4 Nov)
     for act in ("easy-tl-shot", "easy-tl-bound", "easy-tl-close", "easy-tl-play", "easy-tl-look", "easy-tl-fx-clear", "easy-tl-handoff",
-                "easy-tl-apply", "easy-tl-reset", "easy-tl-swap", "easy-tl-rerender"):
+                "easy-tl-apply", "easy-tl-reset", "easy-tl-swap"):
         assert f'act === "{act}"' in APP, act
     assert 'target.id === "tl-fx"' in APP and 'target.id === "tl-dress"' in APP
     knobs = APP.split("async function recutWithKnobs")[1].split("async function easyMake")[0]
