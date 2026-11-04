@@ -466,3 +466,72 @@ def test_the_rerender_route_passes_the_new_fields_and_refuses_bad_ones(tmp_path,
     finally:
         with ui_mod._LOCK:
             ui_mod._JOBS.pop("hood", None)
+
+
+# ---------------------------------------------------------------------------------------------- takes
+
+
+def _wait_done(desk, job_id: str, version: int) -> dict:
+    import time
+
+    for _ in range(100):
+        job = desk.get(f"/api/jobs/{job_id}").json()
+        if job["status"] == "done" and job.get("video_version", 0) >= version:
+            return job
+        time.sleep(0.1)
+    raise AssertionError(job)
+
+
+def test_takes_list_every_try_and_an_earlier_one_comes_back_without_a_render(tmp_path, monkeypatch):
+    from xenoform import ui as ui_mod
+
+    client = Client()
+    job = _draft_cut(tmp_path, monkeypatch, client)
+    first = _rec(job)
+    dense.rerender_morph(job, 1, seed=777, cfg={}, client=client)
+    dense.rerender_morph(job, 1, seed=888, overrides={"steps": 12}, cfg={}, client=client)
+    got = sr.takes(job, _rec(job), 1)
+    assert [(t["n"], t["source"], t["seed"]) for t in got] == [(0, "make", 4001), (1, "rerender", 777), (2, "rerender", 888)]
+    assert [t["current"] for t in got] == [False, False, True] and [t["usable"] for t in got] == [True, True, False]
+    assert got[2]["overrides"] == {"steps": 12, "seed": 888} and got[2]["steps"] == 12 and got[0]["clip"] == first["clips"][1]
+    desk = _desk(tmp_path, monkeypatch)
+    try:
+        listed = desk.get("/api/jobs/cut/shots/1/takes").json()
+        assert listed["current"] == 2 and [t["n"] for t in listed["takes"]] == [0, 1, 2] and "clip" not in listed["takes"][0]
+        clip = desk.get(listed["takes"][0]["url"])
+        assert clip.status_code == 200 and clip.content == Path(first["clips"][1]).read_bytes()
+        assert desk.post("/api/jobs/cut/shots/1/take", json={"n": 2}).status_code == 400  # playing already
+        assert desk.post("/api/jobs/cut/shots/1/take", json={"n": 9}).status_code == 400
+        queued = len(client.sent)
+        r = desk.post("/api/jobs/cut/shots/1/take", json={"n": 0})
+        assert r.status_code == 200 and r.json()["status"] == "running"
+        _wait_done(desk, "cut", 1)
+        rec = _rec(job)
+        assert len(client.sent) == queued  # nothing rendered
+        assert rec["clips"][1] == first["clips"][1] and rec["renders"][1] == first["renders"][1] and rec["taken"][-1]["n"] == 0
+        assert [t["current"] for t in sr.takes(job, rec, 1)] == [True, False, False]
+        recipe = desk.get("/api/jobs/cut/shots/1/recipe").json()
+        assert recipe["used"]["seed"] == 4001 and not any(recipe["differs"].values()) and len(recipe["takes"]) == 3
+        # a swap on the shot's landing still: the earlier takes morph between other stills now, so they cannot come back
+        new = next(r["file"] for r in mp.catalogue()["cosmic"] if r["file"] not in rec["stills"])
+        rec = dense.swap_still(job, 2, new, cfg={}, client=client)
+        after = sr.takes(job, rec, 1)
+        assert after[-1]["current"] and after[-1]["source"] == "swap"
+        assert not any(t["usable"] for t in after) and all("before a swap" in t["why"] for t in after[:-1])
+    finally:
+        with ui_mod._LOCK:
+            ui_mod._JOBS.pop("cut", None)
+
+
+def test_a_rerender_logged_before_the_takes_finds_the_makes_own_clip(tmp_path, monkeypatch):
+    client = Client()
+    job = _draft_cut(tmp_path, monkeypatch, client)
+    rec = dense.rerender_morph(job, 0, seed=55, cfg={}, client=client)
+    for r in rec["rerenders"]:
+        r.pop("before")  # as an older desk logged it
+    (job / "simple" / "simple.json").write_text(json.dumps(rec), encoding="utf-8")
+    got = sr.takes(job, rec, 0)
+    assert [t["source"] for t in got] == ["make", "rerender"] and Path(got[0]["clip"]).name == "local00.mp4"
+    assert got[0]["seed"] == 4000 and got[0]["usable"] is True
+    rec = dense.use_take(job, 0, 0, cfg={})
+    assert Path(rec["clips"][0]).name == "local00.mp4" and rec["renders"][0] is None  # the Make's request was not kept then

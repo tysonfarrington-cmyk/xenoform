@@ -2832,6 +2832,57 @@ def rerender_morph(job_dir: Path, shot: int, *, seed: int | None = None, render_
     return recut_from_cache(job_dir, {}, report=report, cfg=cfg)
 
 
+def use_take(job_dir: Path, shot: int, n: int, *, cfg: dict | None = None,
+             report: Callable[[str, float, str], None] | None = None) -> dict:
+    """Put an earlier take of one shot back (Under the hood's takes, ``shot_recipe.takes``): its clip, its request, its
+    style and length return to the shot with no render, the record logs it under ``taken``, and the cut re-composes from
+    the cached morphs (no GPU). A take that is playing already, one whose clip is gone and one made before a swap changed
+    the shot's stills are refused."""
+    from xenoform import shot_recipe as _sr
+
+    job_dir = Path(job_dir)
+    work = job_dir / "simple"
+    rec_path = work / "simple.json"
+    if not rec_path.is_file():
+        raise FileNotFoundError("This video has no cached morphs to put a take back on (it was not made by Simple mode).")
+    rec = json.loads(rec_path.read_text(encoding="utf-8"))
+    try:
+        j, k = int(shot), int(n)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("Which take? Name the shot and the take by their numbers.") from exc
+    got = _sr.takes(job_dir, rec, j)
+    take = next((t for t in got if t["n"] == k), None)
+    if take is None:
+        raise ValueError(f"Shot {j + 1} has {len(got)} take{'s' if len(got) != 1 else ''}; take {k} is not one of them.")
+    if take["current"]:
+        raise ValueError(f"Take {k} is the one shot {j + 1} plays already.")
+    if not take["usable"]:
+        raise ValueError(f"Take {k} cannot come back: {take['why']}.")
+    clips = [str(c) for c in rec.get("clips") or []]
+    renders = _renders_of(rec)
+    styles = _styles_of(rec)
+    clips[j] = str(take["clip"])
+    renders[j] = take["render"]
+    if take.get("style"):
+        styles[j] = str(take["style"])
+    if take.get("render_s"):
+        for lst in (rec.get("plan_shots") or [], rec.get("shots") or []):
+            if j < len(lst) and isinstance(lst[j], dict) and lst[j].get("render_s") != take["render_s"]:
+                lst[j].setdefault("plan_render_s", lst[j].get("render_s"))
+                seconds = float(lst[j].get("seconds") or 1.0)
+                lst[j]["render_s"] = take["render_s"]
+                lst[j]["speed"] = round(float(take["render_s"]) / max(seconds, 0.1), 3)
+    from datetime import datetime
+
+    rec.update({"clips": clips, "renders": renders, "morph_styles": styles,
+                "taken": list(rec.get("taken") or []) + [{"shot": j, "n": k, "clip": str(take["clip"]), "seed": take.get("seed"),
+                                                          "at": datetime.now().astimezone().isoformat(timespec="seconds")}]})
+    rec_path.write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
+    if report:
+        report("assemble", 0.2, f"Shot {j + 1} plays take {k} again: re-cutting (no GPU)")
+    return recut_from_cache(job_dir, {}, report=report, cfg=cfg)
+
+
 def insert_span(shots: list[dict], first: int, seconds: float) -> tuple[int, int]:
     """The run "Generate here" covers: shot ``first`` and the ones after it until ``seconds`` are covered (whole shots,
     never past the end, never into Polly or an own clip or another run). ``(first, last)``."""

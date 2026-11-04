@@ -501,6 +501,10 @@ def recipe(job_dir: Path, rec: dict, i: int, *, style: str | None = None, check:
     m = morph_of(rec, i)
     if m is not None:  # what a re-render with no seed given takes: the next in the shot's own sequence
         out["next_seed"] = int(rec.get("seed") or 2727) + m + 1009 * (tries + 1)
+    try:  # the takes, light: the clip's address is the route's to give
+        out["takes"] = [{k: v for k, v in t.items() if k not in ("render", "clip")} for t in takes(job_dir, rec, i)]
+    except (OSError, ValueError):
+        out["takes"] = []
     out["choices"] = {"styles": [{"id": k, "label": ms.LABELS[k], "note": ms.NOTES[k]} for k in ms.STYLES],
                       "frames": frame_choices(), "steps": list(STEPS_RANGE), "cfg": list(CFG_RANGE),
                       "compression": list(COMPRESSION_RANGE), "guide": [0.0, 1.0], "lora_strength": list(LORA_STRENGTH_RANGE),
@@ -539,6 +543,70 @@ def workflow_of(job_dir: Path, rec: dict, i: int) -> dict | None:
             title = ("Start still" if end == "start" else "End still" if end == "end" else "Still")
             node.setdefault("_meta", {})["title"] = f"{title}: {nouns[end]}" if end and nouns[end] else title
     return graph
+
+
+def _pair(req: dict | None) -> tuple[str, str] | None:
+    if not isinstance(req, dict) or not isinstance(req.get("from"), dict) or not isinstance(req.get("to"), dict):
+        return None
+    return str(req["from"].get("file") or ""), str(req["to"].get("file") or "")
+
+
+def takes(job_dir: Path, rec: dict, i: int) -> list[dict]:
+    """Every take shot ``i`` has had, oldest first: the Make's (the first re-render's ``before``; for a re-render logged
+    before that existed, the cut's own ``localNN`` clip), each re-render's, and the clip it plays now when a swap or a
+    generated run put it there. Each with its number ``n``, where it came from, its seed, style, frames and request (when
+    recorded), when it landed, whether it is the one playing (``current``) and whether it can be put back (``usable``:
+    its clip is on disk and it morphs between the shot's stills as they are now; a swap since makes another pair)."""
+    shots = _shots(rec)
+    if not 0 <= i < len(shots):
+        raise ValueError(f"This cut has {len(shots)} shots; shot {i} is not one of them.")
+    clips = [str(c) for c in rec.get("clips") or []]
+    renders = list(rec.get("renders") or [])
+    current_clip = clips[i] if i < len(clips) else ""
+    current_render = renders[i] if i < len(renders) and isinstance(renders[i], dict) else None
+    m = morph_of(rec, i)
+    base = int(rec.get("seed") or 2727)
+    out: list[dict] = []
+
+    def add(source: str, clip: str, render: dict | None, **more) -> None:
+        if not clip or any(t["clip"] == clip for t in out):
+            return
+        out.append({"n": len(out), "source": source, "clip": clip, "render": render,
+                    "seed": (render or {}).get("seed", more.pop("seed", None)), **more})
+
+    tries = [r for r in rec.get("rerenders") or [] if isinstance(r, dict) and r.get("shot") == i]
+    for k, r in enumerate(tries):
+        if k == 0:
+            before = r.get("before") if isinstance(r.get("before"), dict) else None
+            if before:
+                add("make", str(before.get("clip") or ""), before.get("render") if isinstance(before.get("render"), dict) else None,
+                    style=before.get("style"), render_s=before.get("render_s"), seed=base + m if m is not None else None)
+            elif m is not None and (Path(job_dir) / "simple" / f"local{m:02d}.mp4").is_file():
+                add("make", str(Path(job_dir) / "simple" / f"local{m:02d}.mp4"), None, seed=base + m)
+        add("rerender", str(r.get("clip") or ""), r.get("request") if isinstance(r.get("request"), dict) else None,
+            seed=r.get("seed"), style=r.get("style"), render_s=r.get("render_s"), at=r.get("at"),
+            overrides=r.get("overrides") or {}, variant=r.get("variant"))
+    if not any(t["clip"] == current_clip for t in out):  # the Make's own, or what a swap or a generated run put there
+        swapped = any(i in (sw.get("shots") or []) for sw in rec.get("swaps") or [] if isinstance(sw, dict))
+        source = "swap" if swapped else "generated" if _shots(rec)[i].get("generated") else "make"
+        add(source, current_clip, current_render, seed=(base + m) if (m is not None and source == "make") else None)
+    pair_now = _pair(current_render)
+    if pair_now is None and m is not None and m + 1 < len(rec.get("stills") or []):
+        pair_now = (str(rec["stills"][m]), str(rec["stills"][m + 1]))
+    touched = any(i in (sw.get("shots") or []) for sw in rec.get("swaps") or [] if isinstance(sw, dict))
+    for t in out:
+        t["current"] = t["clip"] == current_clip
+        pair = _pair(t["render"])
+        same = (pair == pair_now) if pair is not None else not touched
+        t["usable"] = (not t["current"]) and same and Path(t["clip"]).is_file()
+        t["why"] = "" if t["usable"] or t["current"] else ("its clip is gone" if not Path(t["clip"]).is_file()
+                                                            else "it morphs between the stills this shot had before a swap")
+        r = t["render"] or {}
+        t.update({"frames": r.get("frames"), "prompt": r.get("prompt"), "steps": r.get("steps"), "cfg": r.get("cfg"),
+                  "cached": r.get("cached"), "took_s": r.get("seconds")})
+        if t.get("style") is None:
+            t["style"] = r.get("style")
+    return out
 
 
 OVERRIDES = ("prompt", "negative", "steps", "cfg", "frames", "guide_start", "guide_end", "compression", "lora", "lora_strength")

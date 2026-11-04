@@ -1114,6 +1114,77 @@ def create_app(cfg: dict | None = None):
         return Response(json.dumps(graph, indent=1), media_type="application/json",
                         headers={"Content-Disposition": f'attachment; filename="{name}"', "Cache-Control": "no-store"})
 
+    def _takes_view(job_id: str, index: int, folder: Path, rec: dict, stem: str | None) -> list[dict]:
+        from xenoform import shot_recipe as _sr
+
+        try:
+            got = _sr.takes(folder, rec, int(index))
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        tail = f"?layer={stem}" if stem else ""
+        return [{**{k: v for k, v in t.items() if k != "clip"},
+                 "url": f"/api/jobs/{job_id}/shots/{int(index)}/takes/{t['n']}/clip.mp4{tail}"} for t in got]
+
+    @app.get("/api/jobs/{job_id}/shots/{index}/takes")
+    def shot_takes_route(job_id: str, index: int, layer: str = "") -> dict:
+        """Every take one shot has had (``shot_recipe.takes``): the Make's, each re-render's with its seed and full request,
+        the one playing now, and whether each can be put back, with an address to play each take's own clip."""
+        folder, rec, stem = _shot_record(job_id, layer or None)
+        rows = _takes_view(job_id, index, folder, rec, stem)
+        return {"id": job_id, "shot": int(index), "layer": stem, "takes": rows,
+                "current": next((t["n"] for t in rows if t["current"]), None)}
+
+    @app.get("/api/jobs/{job_id}/shots/{index}/takes/{n}/clip.mp4")
+    def shot_take_clip(job_id: str, index: int, n: int, layer: str = "") -> FileResponse:
+        """One take's own morph clip, as it came from ComfyUI (before the cut's look): to see a take before putting it back."""
+        from xenoform import shot_recipe as _sr
+
+        folder, rec, _stem = _shot_record(job_id, layer or None)
+        try:
+            take = next((t for t in _sr.takes(folder, rec, int(index)) if t["n"] == int(n)), None)
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        path = Path(str(take["clip"])) if take else None
+        if path is None or not path.is_file():
+            raise HTTPException(404, "That take's clip is not on this machine.")
+        return FileResponse(path, media_type="video/mp4", headers={"Cache-Control": "no-store"})
+
+    @app.post("/api/jobs/{job_id}/shots/{index}/take")
+    def shot_take_use(job_id: str, index: int, body: dict | None = None) -> dict:
+        """Put an earlier take of one shot back (``dense.use_take``): no render, its clip and request return and the cut
+        re-composes from the cached morphs (a re-cut's time, no GPU). Body: ``n`` (the take's number), ``layer`` for a
+        Stems cut."""
+        from xenoform.dense import use_take
+
+        body = body or {}
+        job, folder = _cut_job_for_edit(job_id, "put a take back on")
+        try:
+            n = int(body.get("n"))
+        except (TypeError, ValueError):
+            raise HTTPException(400, "Which take? Name it by its number.")
+        lfolder, rec, stem = _shot_record(job_id, body.get("layer") or None)
+        take = next((t for t in _takes_view(job_id, index, lfolder, rec, stem) if t["n"] == n), None)
+        if take is None:
+            raise HTTPException(400, f"Shot {int(index) + 1} has no take {n}.")
+        if take["current"]:
+            raise HTTPException(400, f"Take {n} is the one shot {int(index) + 1} plays already.")
+        if not take["usable"]:
+            raise HTTPException(400, f"Take {n} cannot come back: {take['why']}.")
+        with _LOCK:
+            job.update({"status": "running", "stage": "assemble", "progress": 0.05, "error": None,
+                        "detail": f"Putting take {n} back on shot {int(index) + 1}: re-cutting (no GPU)"})
+
+        def run(report):
+            go = lambda d, rep: use_take(d, int(index), n, cfg=cfg, report=rep)  # noqa: E731
+            if stem is None:
+                return go(folder, report)
+            from xenoform import stems_mode as _sm
+
+            return _sm.layer_edit(folder, stem, go, kind="take", report=report, detail={"shot": int(index), "n": n})
+
+        _run_edit(job, job_id, "take", "Take put back", "The take did not come back.", run)
+        return {"id": job_id, "status": "running", "shot": int(index), "n": n, **({"layer": stem} if stem else {})}
+
     @app.post("/api/jobs/{job_id}/insert")
     def insert_job(job_id: str, body: dict | None = None) -> dict:
         """"Generate 10 s here" (``dense.insert_generated``, docs/TIMELINE.md 1.6): a fresh Draft chain over the span from
