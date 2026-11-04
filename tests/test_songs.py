@@ -383,6 +383,21 @@ function end() { return { audioId: global.state.audioId, song: global.state.easy
   a = desk.useBundledSong("ambient"); b = desk.useBundledSong("glitch-out"); await tick();
   pending["glitch-out"](false); await b; await tick(); out.afterFailure = end();
   pending["ambient"](true); await a; await tick(); out.failedThenLate = end();
+  // F: a chip held, then one that fails: the held song comes back, named and held (N12)
+  fresh();
+  a = desk.useBundledSong("ambient"); await tick(); pending["ambient"](true); await a; await tick();
+  b = desk.useBundledSong("glitch-out"); await tick(); pending["glitch-out"](false); await b; await tick();
+  out.heldComesBack = end();
+  // G: a file held, then a chip that fails: the file comes back
+  fresh();
+  global.state.easy.song = "file"; global.state.easy.songLabel = "my-track.wav"; global.state.easy.phase = "vibe";
+  a = desk.useBundledSong("ambient"); await tick(); pending["ambient"](false); await a; await tick();
+  out.fileComesBack = end();
+  // H: the demo still loading when a chip is clicked and fails: no song named, and the demo's late answer dropped
+  fresh();
+  a = desk.useDemoSong(); b = desk.useBundledSong("ambient"); await tick();
+  pending["ambient"](false); await b; await tick(); out.demoInFlight = end();
+  pending["demo"](true); await a; await tick(); out.demoInFlightLate = end();
   console.log(JSON.stringify(out));
 })();
 """
@@ -392,7 +407,8 @@ function end() { return { audioId: global.state.audioId, song: global.state.easy
 def test_two_chips_in_quick_succession_leave_one_song_named_and_held(tmp_path):
     """The reviewer's race (29 Oct): Ambient then Glitch Out clicked while the first load is in flight. Whichever
     answer lands first, the desk ends up naming and holding the last song chosen; a chip and the demo in either order
-    behave the same; and a failed second click leaves the desk at the song step, not on the first song's answer."""
+    behave the same; and a failed second click leaves the desk at the song step, not on the first song's answer. A song
+    the desk already holds (a chip's, a file) comes back when the next chip fails; one still loading does not."""
     script = tmp_path / "race.js"
     script.write_text(RACE_HARNESS.replace("__APP__", json.dumps(str(STATIC / "app.js"))), encoding="utf-8")
     got = json.loads(subprocess.run(["node", str(script)], capture_output=True, text=True, encoding="utf-8", check=True).stdout)
@@ -404,6 +420,11 @@ def test_two_chips_in_quick_succession_leave_one_song_named_and_held(tmp_path):
     assert got["demoThenChip"]["audioId"] == "song-ambient" and got["demoThenChip"]["song"] == "ambient", got["demoThenChip"]
     assert got["afterFailure"]["song"] == "" and got["afterFailure"]["phase"] == "choose" and "did not load" in got["afterFailure"]["note"]
     assert got["failedThenLate"]["audioId"] == "abc1234567" and got["failedThenLate"]["song"] == ""  # the late answer is dropped
+    held = got["heldComesBack"]
+    assert held["song"] == "ambient" and held["audioId"] == "song-ambient" and held["phase"] == "choose" and "did not load" in held["note"], held
+    assert got["fileComesBack"]["song"] == "file" and got["fileComesBack"]["label"] == "my-track.wav" and got["fileComesBack"]["audioId"] == "abc1234567", got["fileComesBack"]
+    assert got["demoInFlight"]["song"] == "" and got["demoInFlight"]["audioId"] == "abc1234567", got["demoInFlight"]
+    assert got["demoInFlightLate"]["song"] == "" and got["demoInFlightLate"]["audioId"] == "abc1234567", got["demoInFlightLate"]
 
 
 # ---------------------------------------------------------------- the docs

@@ -255,8 +255,13 @@ def test_change_keeps_the_song_until_another_is_picked():
     desk = APP.split("function renderSource(easy) {", 1)[1].split("\nfunction ", 1)[0]
     assert "const facts = songSet" in desk and '<div id="bundled-songs">${songsRow(easy)}</div>' in desk
     assert 'data-step="song">Change</button>' not in desk and 'state.easy.song = ""' not in desk
-    # the merge (integrate-4nov): t5 draws no Change button, so the song on the desk is the fallback
-    assert "const was = state.easy.changingSong || (state.easy.song ? { song: state.easy.song, label: state.easy.songLabel } : null);" in _fn("useBundledSong")
+    # the merge (integrate-4nov): t5 draws no Change button, so the song on the desk is the fallback, once the desk holds
+    # it (a chip clicked while another still loads names a song the desk never held: test_songs' race, that one is not
+    # brought back, and its late answer is dropped)
+    assert "const was = state.easy.changingSong || (songHeld(state.easy) ? { song: state.easy.song, label: state.easy.songLabel } : null);" in _fn("useBundledSong")
+    held = _fn("songHeld")
+    assert 'if (easy.song === "demo") return state.audioId === "demo";' in held and "return state.audioId === `song-${easy.song}`;" in held
+    assert 'if (easy.song === "file") return state.audioId !== "demo" && !String(state.audioId).startsWith("song-");' in held
     change = APP.split('act === "easy-step"')[1].split("} else if")[0]
     assert "state.easy.changingSong = { song: state.easy.song, label: state.easy.songLabel };" in change
     assert 'state.easy.song = ""' not in change  # the song is no longer forgotten at the first click

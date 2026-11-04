@@ -5215,6 +5215,16 @@ function songsRow(easy) {
   return `<div class="song-shelf"><span class="shelf-label">Bundled songs</span><div class="toggle chips song-chips" role="group" aria-label="Bundled songs">${chips}${demo}</div></div>`;
 }
 
+// The song the desk names is the one it holds: a bundled song or the demo once its answer is in (a chip still loading
+// names a song the desk does not hold yet), a file once analysed (an upload's id is the analysis's own, never "demo"
+// or song-<id>). What a failed load may fall back to.
+function songHeld(easy) {
+  if (!state || !easy || !easy.song || !state.audioId) return false;
+  if (easy.song === "demo") return state.audioId === "demo";
+  if (easy.song === "file") return state.audioId !== "demo" && !String(state.audioId).startsWith("song-");
+  return state.audioId === `song-${easy.song}`;
+}
+
 // A chip: the song's shipped analysis comes back at once (POST /api/songs/load) and the desk adopts it as it adopts the
 // demo. The chip says Loading… in its own text until the payload is in; nothing redraws before that.
 async function useBundledSong(id, keepStep) {
@@ -5226,8 +5236,9 @@ async function useBundledSong(id, keepStep) {
     chip.textContent = "Loading…";
     chip.disabled = true;
   }
-  // the song on the desk (or the one kept by Change) comes back if this one fails to load
-  const was = state.easy.changingSong || (state.easy.song ? { song: state.easy.song, label: state.easy.songLabel } : null);
+  // the song on the desk (or the one kept by Change) comes back if this one fails to load, when the desk holds it: a
+  // chip clicked while another still loads names a song the desk never held, and that one is not brought back
+  const was = state.easy.changingSong || (songHeld(state.easy) ? { song: state.easy.song, label: state.easy.songLabel } : null);
   state.easy.changingSong = null;
   state.easy.song = song.id;
   state.easy.songLabel = song.title;
