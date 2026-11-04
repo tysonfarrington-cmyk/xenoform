@@ -105,7 +105,7 @@ def test_the_insert_route_runs_the_run_and_refuses_plainly(tmp_path, monkeypatch
     calls = []
     done = threading.Event()
 
-    def fake_insert(job_dir, first, *, seconds=10.0, pins=None, seed=None, cfg=None, report=None, client=None):
+    def fake_insert(job_dir, first, *, seconds=10.0, pins=None, seed=None, cfg=None, report=None, client=None, cancel=None):
         calls.append(("insert", Path(job_dir).name, first, seconds, pins, seed))
         done.set()
         return {"look": {}, "recuts": 2, "inserts": [{"first": first}]}

@@ -55,7 +55,11 @@ def _job(plan=PLAN, body=None) -> dict:
 # ------------------------------------------------------------------ mapper
 
 def test_phase_mapper_follows_the_fixed_order_and_never_goes_back():
-    assert list(jt.PHASES) == ["analyze", "draft", "morphs", "performer", "cut", "card", "save", "qa", "done"]
+    assert list(jt.PHASES) == ["analyze", "draft", "grow", "morphs", "performer", "cut", "card", "save", "qa", "done"]
+    # the stills a Make grows for its idea are a phase of their own, before the morphs (UI review F2)
+    assert jt.phase_for("restyle", "Growing 13 flowers objects for this idea (about 98 s)", "draft") == "grow"
+    assert jt.phase_for("restyle", "Growing 2 scenes (a moonlit shore) for your line (about 12 s)", "draft") == "grow"
+    assert jt.phase_for("restyle", "14 shots on the beat, 13 morphs (2 s each), no object twice", "grow") == "morphs"
     assert jt.phase_for("analyze", "Reading the track") == "analyze"
     assert jt.phase_for("animatic", "Scene 1 of 2", "analyze") == "draft"
     assert jt.phase_for("assemble", "Animatic locked to the track", None) == "draft"  # the stills draft...

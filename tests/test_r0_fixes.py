@@ -6,9 +6,12 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
+import threading
+import time
 from pathlib import Path
 
 import pytest
+from fastapi.testclient import TestClient
 
 ROOT = Path(__file__).resolve().parents[1]
 STATIC = ROOT / "src" / "xenoform" / "ui_static"
@@ -28,6 +31,11 @@ def _fn(name: str) -> str:
 def _const(name: str) -> str:
     """One top-level ``const`` line of app.js."""
     return f"const {name} = " + APP.split(f"\nconst {name} = ", 1)[1].split("\n", 1)[0]
+
+
+def _obj(name: str) -> str:
+    """One top-level ``const`` object of app.js that spans lines (to its closing brace at the start of a line)."""
+    return f"const {name} = " + APP.split(f"\nconst {name} = ", 1)[1].split("\n}", 1)[0] + "\n};"
 
 
 def _run(tmp_path: Path, code: str) -> dict:
@@ -160,6 +168,7 @@ const out = {};
     assert r["kept"] == "j1"
     assert got["done"] == [["reopen", "j1", {"fromUrl": True}]]  # finished meanwhile: its cut
     assert got["gone"][0][1] == "j1" and "the desk restarted" in got["gone"][0][2]["missing"]
+    assert got["gone"][0][2]["note"] == "The desk restarted before the edit finished: the cut is as it was."
     assert got["failed"] == {"phase": "choose", "note": "The render stopped: GPU out of memory.", "hash": "#simple"}
     assert got["editFailed"][0][2]["note"] == "The edit stopped: The re-render did not run."  # an edit: back to its cut
     assert got["quiet"] == {"calls": ["api", "fromHash"], "phase": "choose"}
@@ -244,3 +253,441 @@ def test_change_keeps_the_song_until_another_is_picked():
         assert "state.easy.changingSong = null;" in _fn(loader), loader
     chip = _fn("useBundledSong")
     assert "state.easy.song = was ? was.song : \"\";" in chip  # a song that fails to load gives the kept one back
+
+
+# ---------------------------------------------------------------- F1, F7: an edit ends as what it was, on the desk
+def _edit_cut(tmp_path, monkeypatch, name="r0-edit"):
+    from xenoform import ui as ui_mod
+
+    monkeypatch.setattr(ui_mod, "work_dir", lambda: tmp_path)
+    client = TestClient(ui_mod.create_app())
+    folder = tmp_path / "jobs" / name
+    (folder / "simple").mkdir(parents=True)
+    shots = [{"start": i * 2.0, "end": (i + 1) * 2.0, "seconds": 2.0, "morph": i} for i in range(4)]
+    (folder / "simple" / "simple.json").write_text(json.dumps({"plan_shots": shots, "shots": shots, "clips": ["c"] * 4,
+                                                                "stills": ["v/0.jpg"] * 5, "tier": "draft"}), encoding="utf-8")
+    (folder / "xenoform.mp4").write_bytes(b"old")
+    return client, ui_mod, folder
+
+
+def _settle(client, job_id, until, tries=200):
+    job = {}
+    for _ in range(tries):
+        job = client.get(f"/api/jobs/{job_id}").json()
+        if until(job):
+            return job
+        time.sleep(0.02)
+    return job
+
+
+def test_a_failed_edit_is_an_error_with_its_reason_and_the_cut_as_it_was(tmp_path, monkeypatch):
+    """F1: a re-cut, swap, re-render, insert or dream that threw came back as done with "...did not run" in its detail,
+    so the desk said "Your cut is ready" over the old cut."""
+    from xenoform import dense as dense_mod
+
+    client, ui_mod, folder = _edit_cut(tmp_path, monkeypatch)
+
+    def boom(job_dir, shot, **_kw):
+        raise RuntimeError("the GPU queue refused the morph")
+
+    def recut_boom(job_dir, overrides=None, report=None, cfg=None):
+        raise FileNotFoundError("The cached morphs for this video are gone; render it again.")
+
+    monkeypatch.setattr(dense_mod, "rerender_morph", boom)
+    monkeypatch.setattr(dense_mod, "recut_from_cache", recut_boom)
+    try:
+        assert client.post("/api/jobs/r0-edit/rerender", json={"shot": 1}).status_code == 200
+        job = _settle(client, "r0-edit", lambda j: j["status"] != "running")
+        assert job["status"] == "error" and job["detail"].startswith("The re-render did not run.") and job["error"] == job["detail"]
+        assert job["edit"] == "rerender" and job["edit_from"] == 0 and job["video_version"] == 0  # no new version
+        assert job["overall"] is None and job["eta_s"] is None  # none of a Make's clock rides along with an edit (F6)
+        assert client.post("/api/jobs/r0-edit/recut", json={}).status_code == 200  # an error is not "still rendering"
+        job = _settle(client, "r0-edit", lambda j: j["status"] != "running")
+        assert job["status"] == "error" and job["detail"].startswith("Re-cut did not run. ") and job["error"] == job["detail"]
+        assert (folder / "xenoform.mp4").read_bytes() == b"old"
+    finally:
+        with ui_mod._LOCK:
+            ui_mod._JOBS.pop("r0-edit", None)
+
+
+def test_stop_during_an_edit_takes_its_gpu_work_off_and_never_says_cancelled_early(tmp_path, monkeypatch):
+    """F7: Stop during an edit said "cancelled" while the GPU went on and the edit landed anyway. Now the cancel reaches
+    the edit's GPU wait (the queued morphs come off ComfyUI, nothing is written) and the job says what really became of it."""
+    from xenoform import dense as dense_mod
+    from xenoform.turbo import JobCancelled
+
+    client, ui_mod, folder = _edit_cut(tmp_path, monkeypatch)
+    waiting, release = threading.Event(), threading.Event()
+
+    def waits_for_stop(job_dir, shot, *, cancel=None, report=None, **_kw):
+        waiting.set()
+        for _ in range(500):
+            if cancel and cancel():
+                raise JobCancelled("Cancelled. 1 queued morph removed from the GPU queue.")
+            time.sleep(0.01)
+        return {}
+
+    def lands_anyway(job_dir, shot, *, cancel=None, report=None, **_kw):
+        waiting.set()
+        release.wait(5)  # Stop arrives here, after the GPU work: the re-compose goes on
+        return {"rerenders": [{"shot": shot}]}
+
+    try:
+        monkeypatch.setattr(dense_mod, "rerender_morph", waits_for_stop)
+        assert client.post("/api/jobs/r0-edit/rerender", json={"shot": 2}).status_code == 200 and waiting.wait(5)
+        answer = client.post("/api/jobs/r0-edit/cancel").json()
+        assert answer["status"] == "running" and answer["detail"].startswith("Stopping")  # never "cancelled" while it runs
+        job = _settle(client, "r0-edit", lambda j: j["status"] != "running")
+        assert job["status"] == "cancelled" and job["detail"] == "Stopped: the re-render did not land, and the cut is as it was."
+        assert job["video_version"] == 0 and (folder / "xenoform.mp4").read_bytes() == b"old"
+        waiting.clear()
+        monkeypatch.setattr(dense_mod, "rerender_morph", lands_anyway)
+        assert client.post("/api/jobs/r0-edit/rerender", json={"shot": 2}).status_code == 200 and waiting.wait(5)
+        client.post("/api/jobs/r0-edit/cancel")
+        release.set()
+        job = _settle(client, "r0-edit", lambda j: j["status"] != "running")
+        assert job["status"] == "done" and job["video_version"] == 1 and job["edit_from"] == 0
+        assert job["detail"] == "Re-render ready. Stop came too late to undo it, so the edit landed."
+
+        def recut(job_dir, overrides=None, report=None, cfg=None):  # a re-cut (no GPU) stops at its next report
+            waiting.set()
+            for k in range(500):
+                report("assemble", 0.6, f"Cutting shot {k % 4 + 1} of 4 to the beat")
+                time.sleep(0.01)
+            return {}
+
+        waiting.clear()
+        monkeypatch.setattr(dense_mod, "recut_from_cache", recut)
+        assert client.post("/api/jobs/r0-edit/recut", json={}).status_code == 200 and waiting.wait(5)
+        client.post("/api/jobs/r0-edit/cancel")
+        job = _settle(client, "r0-edit", lambda j: j["status"] != "running")
+        assert job["status"] == "cancelled" and "the re-cut did not land" in job["detail"] and job["video_version"] == 1
+    finally:
+        release.set()
+        with ui_mod._LOCK:
+            ui_mod._JOBS.pop("r0-edit", None)
+
+
+def test_the_cancel_reaches_the_gpu_wait_of_every_edit():
+    """The desk's cancel is passed to the Draft pair render (cloud_morph._local_clips takes the queued morphs off
+    ComfyUI) by the re-render, the generated run and the swap, and the dream asks it before each frame."""
+    from xenoform import dense
+    from xenoform.turbo import JobCancelled
+
+    with pytest.raises(JobCancelled):
+        dense._render_pairs([{"index": 0, "seconds": 2.0, "render_s": 2, "frames": 48}], [{}, {}], Path("."), {"mock": True},
+                            seed=1, vibe="", cfg=None, state={}, cancel=lambda: True)
+    src = (ROOT / "src" / "xenoform" / "dense.py").read_text(encoding="utf-8")
+    rerender = src.split("def rerender_morph(", 1)[1].split("\ndef ", 1)[0]
+    insert = src.split("def insert_generated(", 1)[1].split("\ndef ", 1)[0]
+    swap = src.split("def swap_still(", 1)[1].split("\ndef ", 1)[0]
+    assert "cancel=cancel)[0]" in rerender and "styles=run_styles, cancel=cancel)" in insert
+    assert "seed + m, vibe, client, cancel, state" in swap and swap.index("if cancel and cancel():") < swap.index("rec_path.write_text")
+    assert rerender.index("cancel=cancel") < rerender.index('(work / "simple.json").write_text')  # nothing is written first
+    dream = (ROOT / "src" / "xenoform" / "dream.py").read_text(encoding="utf-8")
+    frames = dream.split("def dream_frames(", 1)[1].split("\ndef ", 1)[0]
+    assert "if cancel and cancel():" in frames and "cancel=cancel)" in dream.split("def dream_span(", 1)[1]
+
+
+# ---------------------------------------------------------------- F2: the grow is a phase, the bar moves through it
+PLAN = {"analyze": 3.0, "draft": 6.0, "grow": 0.0, "morphs": 90.0, "performer": 0.0, "cut": 30.0, "card": 0.0, "save": 1.0, "qa": 10.0}
+
+
+def _timed(plan=None):
+    from xenoform import job_timing as jt
+
+    return {"id": "t", "status": "running", "detail": "", **jt.start_fields(dict(plan or PLAN), {"quality_tier": "draft"})}
+
+
+def test_a_grow_is_a_phase_with_its_own_estimate_and_the_bar_moves_through_it():
+    """F2: five minutes of "Growing 13 flowers objects (about 98 s)" sat at 2 % under a countdown that never counted it."""
+    from xenoform import job_timing as jt
+
+    job = _timed()
+    jt.tick(job, "analyze", 1.0, "Track already analyzed", 3.0)
+    jt.tick(job, "animatic", 1.0, "Animatic locked to the track", 9.0)
+    jt.tick(job, "restyle", 0.03, "Growing 13 flowers objects for this idea (about 98 s)", 9.0)
+    t = job["timing"]
+    assert t["phase"] == "grow" and t["plan"]["grow"] == 98.0 and sum(t["weights"].values()) == pytest.approx(1.0)
+    assert job["eta_s"] == pytest.approx(98.0 + 90.0 + 30.0 + 1.0 + 10.0, abs=1.0)  # the clock counts the grow
+    at_start = job["overall"]
+    half = jt.live(job, 9.0 + 49.0)  # half the grow in, and nothing reported
+    assert half["overall"] > at_start + 0.15 and half["eta_s"] == pytest.approx(job["eta_s"] - 49.0, abs=2.0)
+    grow_end = sum(t["weights"][p] for p in ("analyze", "draft", "grow"))
+    late = jt.live(job, 9.0 + 900.0)  # a grow that overruns sits short of its end, never past it
+    assert late["overall"] < grow_end and late["overall"] == pytest.approx(grow_end - 0.05 * t["weights"]["grow"], abs=1e-3)
+    jt.tick(job, "restyle", 0.05, "14 shots on the beat, 13 morphs (2 s each), no object twice", 120.0)
+    assert t["phase"] == "morphs" and job["overall"] >= late["overall"] - 1e-6
+    jt.finish(job, 250.0)
+    assert [s["phase"] for s in job["stages"]][:4] == ["analyze", "draft", "grow", "morphs"] and job["breakdown"]["grow"] == 111.0
+    assert jt.live(job, 300.0) == {}  # nothing to add once done (and an edit, which keeps no timing of its own)
+
+
+def test_morph_n_of_m_bounds_the_bar_and_a_silent_morph_moves_it_one_step_at_most():
+    from xenoform import job_timing as jt
+
+    # morph_pass reports 0.12 + 0.8 n/m: on the Draft range the bar said 100 % at the seventh of 13 morphs
+    assert jt.stage_frac("morphs", 0.12 + 0.8 * 7 / 13, "draft", "Morph 7 of 13 · a nautilus into a jellyfish") == pytest.approx(7 / 13)
+    assert jt.morph_count("Final: morph 3 of 6 on LTX-2.5") == (3, 6) and jt.morph_count("13 morphs queued on the GPU") is None
+    job = _timed()
+    jt.tick(job, "restyle", 0.1 + 0.45 * 3 / 13, "Morph 3 of 13 · about 300 s left", 60.0)
+    t = job["timing"]
+    assert t["stage_frac"] == pytest.approx(3 / 13) and t["step"] == pytest.approx(1 / 13)
+    w = t["weights"]
+    before = w["analyze"] + w["draft"] + w["grow"]
+    moved = jt.live(job, 60.0 + 3.0)  # a few seconds into the fourth morph: the bar moves on
+    assert moved["overall"] > job["overall"]
+    stuck = jt.live(job, 60.0 + 3000.0)  # a morph that never ends never passes the next morph's mark
+    assert stuck["overall"] <= before + w["morphs"] * (4 / 13) + 1e-6
+
+
+def test_the_job_route_serves_the_moving_bar(tmp_path, monkeypatch):
+    from xenoform import job_timing as jt
+    from xenoform import ui as ui_mod
+
+    monkeypatch.setattr(ui_mod, "work_dir", lambda: tmp_path)
+    client = TestClient(ui_mod.create_app())
+    job = _timed()
+    job["t0"] = time.monotonic() - 60.0
+    jt.tick(job, "restyle", 0.03, "Growing 2 scenes (a moonlit shore) for your line (about 40 s)", 10.0)
+    stored = job["overall"]
+    with ui_mod._LOCK:
+        ui_mod._JOBS["r0-live"] = job
+    try:
+        got = client.get("/api/jobs/r0-live").json()
+        assert got["overall"] > stored and got["eta_s"] < 40.0 + 90.0 + 30.0 + 1.0 + 10.0
+        assert job["overall"] == got["overall"]  # kept, so the next report cannot pull the bar back
+    finally:
+        with ui_mod._LOCK:
+            ui_mod._JOBS.pop("r0-live", None)
+
+
+# ---------------------------------------------------------------- the client: poll, the edit's end, the refusals
+POLL_STAGE = STAGE + r"""
+let timers = [];
+const setTimeout = (fn) => timers.push(fn);
+const drain = async () => { for (let i = 0; i < 50 && timers.length; i++) { const fn = timers.shift(); await fn(); await new Promise((r) => Promise.resolve().then(r)); } };
+let ignoreJob = null;
+const watchJob = () => {};
+const showEasyPreview = () => {};
+const paintMaking = () => {};
+const paintJob = () => {};
+let title = "";
+const tabTitle = (t) => { title = t || ""; };
+const notifyReady = () => { title = "ready"; };
+const document = { getElementById: () => null, querySelector: () => null };
+let answers = [];
+const api = async (path) => { calls.push(["api", path]); const a = answers.length > 1 ? answers.shift() : answers[0]; if (a === "throw") throw new Error("offline"); return a; };
+const reply = (status, body) => ({ ok: status === 200, status, json: async () => body });
+"""
+
+
+def _poll_code(scenario: str) -> str:
+    return POLL_STAGE + "\n".join([_fn("setEasyPhase"), _fn("easyVideoId"), _const("MAKING_KEY"), _fn("keepMaking"), _fn("dropMaking"),
+                                   _fn("tookBreakdown"), _const("POLL_RETRY_MS"), "const pollMisses = {};",
+                                   _fn("poll"), _fn("editEnded"), _fn("lostContact")]) + scenario
+
+
+@NODE
+def test_poll_asks_again_then_says_it_lost_contact_and_stops_the_clock(tmp_path):
+    """F4: a non-OK answer or a thrown fetch made poll() return silently; the making screen hung with its clock going."""
+    code = _poll_code(r"""
+(async () => {
+  const out = {};
+  state = { job: { id: "j1", status: "running" }, easy: { phase: "making", note: "", making: { kind: "make" } } };
+  easyTimer = 7;
+  answers = ["throw", reply(500, {}), reply(404, { detail: "No such cut. It may be from before the desk restarted." })];
+  await poll("j1");
+  await drain();
+  out.lost = { lost: state.easy.lost, note: state.easy.note, timer: easyTimer, phase: state.easy.phase, title, asks: calls.filter((c) => c[0] === "api").length };
+  state = { job: { id: "j2", status: "running" }, easy: { phase: "making", note: "", making: { kind: "make" } } };
+  calls.length = 0;
+  answers = ["throw", reply(200, { id: "j2", status: "running", detail: "Morph 1 of 3 · about 70 s left" })];
+  await poll("j2");
+  await drain();
+  out.recovered = { lost: state.easy.lost || null, job: state.job.detail, asks: calls.filter((c) => c[0] === "api").length };
+  console.log(JSON.stringify(out));
+})();
+""")
+    got = _run(tmp_path, code)
+    lost = got["lost"]
+    assert lost["lost"]["id"] == "j1" and lost["timer"] is None and lost["phase"] == "making" and lost["title"] == "Lost contact · Xenoform"
+    assert lost["note"].startswith("Lost contact with the desk: No such cut. It may be from before the desk restarted.")
+    assert lost["asks"] == 6  # the first ask and five more, with backoff
+    assert got["recovered"]["lost"] is None and got["recovered"]["job"].startswith("Morph 1 of 3")
+
+
+@NODE
+def test_an_edit_comes_back_to_the_cut_saying_how_it_ended(tmp_path):
+    """F1, F6, F7: a landed edit says so in its own time; a failed or stopped one says why and keeps the cut open."""
+    code = _poll_code(r"""
+const fresh = () => ({ job: { id: "c1", status: "running" }, lane: { id: "c1" }, easy: { phase: "making", note: "", recutting: true,
+  making: { kind: "gpu", title: "Re-rendering shot 2" }, startedAt: Date.now() - 36000, reopenId: "", reopenUrl: "" } });
+const end = () => ({ note: state.easy.note, phase: state.easy.phase, status: state.job.status, cut: easyVideoId(), lane: state.lane,
+                     recutting: state.easy.recutting, making: state.easy.making, hash: location.hash });
+(async () => {
+  const out = {};
+  state = fresh();
+  answers = [reply(200, { id: "c1", status: "done", video_version: 2, edit_from: 1, detail: "Re-render ready" })];
+  await poll("c1");
+  out.landed = end();
+  state = fresh();
+  answers = [reply(200, { id: "c1", status: "error", video_version: 1, edit_from: 1, error: "The re-render did not run. ComfyUI is not answering." })];
+  await poll("c1");
+  out.failed = end();
+  state = fresh();
+  answers = [reply(200, { id: "c1", status: "cancelled", video_version: 1, edit_from: 1, detail: "Stopped: the re-render did not land, and the cut is as it was." })];
+  await poll("c1");
+  out.stopped = end();
+  state = fresh();  // an older desk reports a failed edit as done with its old version
+  answers = [reply(200, { id: "c1", status: "done", video_version: 1, edit_from: 1, detail: "Re-cut did not run. The song file is gone." })];
+  await poll("c1");
+  out.olderDesk = end();
+  console.log(JSON.stringify(out));
+})();
+""")
+    got = _run(tmp_path, code)
+    landed = got["landed"]
+    assert landed["note"] == "Re-render ready. It took 0:36." and landed["phase"] == "result" and landed["lane"] is None
+    assert landed["cut"] == "c1" and landed["hash"] == "#simple/result/c1" and landed["recutting"] is False and landed["making"] is None
+    failed = got["failed"]
+    assert failed["note"] == "The re-render did not run. ComfyUI is not answering. The cut is as it was."
+    assert failed["status"] == "done" and failed["cut"] == "c1" and failed["lane"] == {"id": "c1"}  # the cut stays open, as it was
+    assert got["stopped"]["note"] == "Stopped: the re-render did not land, and the cut is as it was." and got["stopped"]["cut"] == "c1"
+    assert got["olderDesk"]["note"] == "Re-cut did not run. The song file is gone. The cut is as it was."
+    assert "Your cut is ready" not in json.dumps(got)
+
+
+@NODE
+def test_a_finished_make_keeps_the_desks_warning_beside_took(tmp_path):
+    """F9: a tier dropped for memory, the cloud fell back: the done line used to replace it with "Took X"."""
+    code = _poll_code(r"""
+(async () => {
+  const out = {};
+  for (const [key, detail] of [["tier", "GPU memory: dropped to the 8 GB tier. Cut ready in 526.0s · 13 morphs over 14 objects"],
+                               ["plain", "Cut ready in 526.0s · 13 morphs over 14 objects"],
+                               ["warning", "Cloud quality did not run (no credits). The free local draft is the cut."]]) {
+    state = { job: { id: "m1", status: "running" }, easy: { phase: "making", note: "", making: { kind: "make" } } };
+    answers = [reply(200, { id: "m1", status: "done", took_s: 529, breakdown: { morphs: 482, cut: 36 }, detail })];
+    await poll("m1");
+    out[key] = state.easy.note;
+  }
+  console.log(JSON.stringify(out));
+})();
+""")
+    got = _run(tmp_path, code)
+    assert got["plain"] == "Took 8:49 · morphs 8:02 · cut 0:36."
+    assert got["tier"] == "Took 8:49 · morphs 8:02 · cut 0:36. GPU memory: dropped to the 8 GB tier."
+    assert got["warning"] == "Took 8:49 · morphs 8:02 · cut 0:36. Cloud quality did not run (no credits). The free local draft is the cut."
+
+
+@NODE
+def test_a_refused_make_says_the_desks_reason(tmp_path):
+    """F5: a 429 ("Two cuts are already rendering") was written over by "Playing the pictures", and an unread 500 or a
+    thrown fetch left the making screen stuck."""
+    code = STAGE + r"""
+let answer = null;
+const api = async () => { if (answer === "throw") throw new Error("offline"); return answer; };
+const paintJob = () => {};
+const payload = () => ({});
+const poll = () => calls.push(["poll"]);
+const setEasyPhase = () => {};
+""" + _fn("generate") + r"""
+(async () => {
+  const out = {};
+  for (const [key, a] of [["refused", { ok: false, status: 429, json: async () => ({ detail: "Two cuts are already rendering. Cancel one, or wait." }) }],
+                          ["broken", { ok: false, status: 500, json: async () => { throw new Error("not json"); } }],
+                          ["offline", "throw"]]) {
+    state = { job: null, live: true, quality: "turbo", easy: { phase: "making" } };
+    answer = a;
+    await generate();
+    out[key] = state.job;
+  }
+  console.log(JSON.stringify(out));
+})();
+"""
+    got = _run(tmp_path, code)
+    assert got["refused"]["status"] == "error" and got["refused"]["error"] == "Two cuts are already rendering. Cancel one, or wait."
+    assert got["broken"]["error"] == "The desk refused it (HTTP 500)." and got["offline"]["error"] == "The desk did not answer."
+    make = APP.split("async function easyMake()")[1].split("\nfunction ")[0]
+    assert "The render did not start: ${why}" in make and "const why = String(state.job.error" in make
+
+
+@NODE
+def test_an_edit_has_its_own_clock_title_and_steps_and_one_eta_on_screen(tmp_path):
+    """F6: an edit showed the Make's "11:34 elapsed", four ticked steps and "Making the prototype."; F3: two clocks."""
+    code = STAGE + "\n".join([_fn("startMaking"), _fn("makingKind"), _fn("makingTitle"), _obj("EDIT_STEPS"), _fn("editStep"),
+                              _fn("easyEtaText"), _fn("easyStageWord")]) + r"""
+const easyEtaLive = () => 0;
+const out = {};
+state = { job: { id: "c1", status: "running", stage: "assemble", detail: "Re-cutting from the cached morphs (no GPU)", eta_s: 0, overall: 1 },
+          easy: { startedAt: Date.now() - 694000, madeLength: 30 } };
+out.makeTitle = makingTitle(state.easy);
+startMaking("recut", "Re-cutting");
+state.easy.startedAt -= 5000;
+out.recut = { title: makingTitle(state.easy), eta: easyEtaText(), step: editStep("recut", state.job) };
+state.job.detail = "Cutting shot 11 of 13 to the beat";
+out.recutLater = { eta: easyEtaText(), step: editStep("recut", state.job) };
+startMaking("gpu", "Re-rendering shot 4");
+state.job = { status: "running", stage: "restyle", detail: "Re-rendering shot 4's morph" };
+out.gpu = { title: makingTitle(state.easy), eta: easyEtaText(), step: editStep("gpu", state.job) };
+console.log(JSON.stringify(out));
+"""
+    got = _run(tmp_path, code)
+    assert got["makeTitle"] == "Making the prototype"
+    assert got["recut"] == {"title": "Re-cutting", "eta": "0:05 elapsed · reading the morphs", "step": 0}  # its own clock, never 11:34
+    assert got["recutLater"] == {"eta": "0:05 elapsed · cutting to the beat", "step": 1}
+    assert got["gpu"] == {"title": "Re-rendering shot 4", "eta": "0:00 elapsed · on the GPU", "step": 0}
+    making = APP.split("function renderEasy() {", 1)[1].split("\nfunction ", 1)[0]
+    assert "<h2>${esc(makingTitle(easy))}.</h2>" in making and "EDIT_STEPS[makingKind(easy)].map(" in making
+    assert "kind !== \"make\" ? editStep(kind, job) :" in _fn("paintMaking")
+    for fn in ("postCutEdit", "recutWithKnobs", "swapStill", "easyMake"):
+        assert "startMaking(" in _fn(fn), fn
+    tick = _fn("tickEasy")
+    assert "Number(edit ? job.progress : job.overall)" in tick and "if (state.easy.lost) return;" in tick
+
+
+def test_the_status_line_keeps_one_clock():
+    """F3: the header said "about 5:43 left" and the status line "about 723 s left"."""
+    code_fn = _fn("easyProgressText")
+    assert "about \\d+ s left" in code_fn
+    import re
+
+    pattern = re.compile(r"[\s,·-]*about \d+ s left", re.I)
+    assert pattern.sub("", "Morph 3 of 13 · about 723 s left").strip() == "Morph 3 of 13"
+    assert pattern.sub("", "Splitting the stems (40 %, about 120 s left)").strip() == "Splitting the stems (40 %)"
+    assert pattern.sub("", "Polly drums - about 30 s left").strip() == "Polly drums"
+    assert pattern.sub("", "Growing 13 flowers objects for this idea (about 98 s)") == "Growing 13 flowers objects for this idea (about 98 s)"
+
+
+@NODE
+def test_a_gpu_edit_waits_for_the_timeline_edits_pending_apply(tmp_path):
+    """N2: a re-render, a morph style, Generate here, Dream here or a swap re-composed from the record and the lane
+    then read it again, so the edits waiting for Apply were gone."""
+    code = STAGE + _fn("gpuEditWaits") + r"""
+let dirty = 0;
+const timelineDirty = () => dirty;
+const easyVideoId = () => "c1";
+state = { lane: { id: "c1" }, easy: { note: "" } };
+const out = { clean: gpuEditWaits() };
+dirty = 2;
+out.waiting = gpuEditWaits();
+out.note = state.easy.note;
+console.log(JSON.stringify(out));
+"""
+    got = _run(tmp_path, code)
+    assert got["clean"] is False and got["waiting"] is True
+    assert got["note"] == ("Apply the 2 timeline edits waiting first (the bar at the bottom): this renders on the GPU from the "
+                           "cut as it stands, and would drop them.")
+    for fn, call in (("rerenderShot", 'postCutEdit(id, "rerender"'), ("insertRun", 'postCutEdit(id, "insert"'),
+                     ("dreamRun", 'postCutEdit(id, "dream"'), ("swapStill", "/swap`")):
+        body = _fn(fn)
+        assert "if (gpuEditWaits()) return;" in body and body.index("gpuEditWaits()") < body.index(call), fn
+
+
+def test_stop_during_an_edit_waits_for_the_desk_and_a_make_stops_as_before():
+    stop = APP.split('act === "easy-stop") {', 1)[1].split("} else if (act ===", 1)[0]
+    edit = stop.split("if (state.easy.recutting && job.status === \"running\" && job.id) {", 1)[1].split("\n    }\n", 1)[0]
+    assert "state.easy.stopping = true;" in edit and "/cancel`" in edit and "ignoreJob" not in edit and "setEasyPhase" not in edit
+    assert "ignoreJob = job.id;" in stop and 'state.easy.note = "Stopped. Anything still queued on the GPU was cancelled.";' in stop
+    assert "state.easy.stopping ? state.easy.note : easyProgressText(job)" in _fn("poll")

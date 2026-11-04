@@ -172,8 +172,9 @@ async function resumeMaking(id, kept, quiet) {
       return;
     }
     state.easy.note = `The render ${why}`;
-  } else if (status === 404) {  // the desk restarted: the cut, if it was saved before
-    reopenCut(id, { fromUrl: true, missing: "The render that was running is gone: the desk restarted before it finished." });
+  } else if (status === 404) {  // the desk restarted: the cut, if it was saved before (an edit of it did not land)
+    reopenCut(id, { fromUrl: true, missing: "The render that was running is gone: the desk restarted before it finished.",
+      note: k.recut ? "The desk restarted before the edit finished: the cut is as it was." : "" });
     return;
   } else {
     state.easy.note = "The desk did not say what became of the render that was running. Reload once it answers.";
@@ -1049,7 +1050,7 @@ function renderEasy() {
       <div class="easy-make-head">
         <div>
           <p class="eyebrow">${esc(chosen.name)} · ${esc(easy.songLabel || "Song")}${easy.madeLength ? ` · ${esc(String(easy.madeLength))} s prototype` : ""}${easy.madeTier && easy.madeTier !== "draft" ? ` · ${esc(TIER_LABEL[easy.madeTier] || easy.madeTier)}` : ""}</p>
-          <h2>${easy.madeLength ? "Making the prototype." : "Making your video."}</h2>
+          <h2>${esc(makingTitle(easy))}.</h2>
         </div>
         <div class="easy-make-actions">
           <span id="easy-eta" aria-live="polite">${esc(easyEtaText())}</span>
@@ -1066,12 +1067,17 @@ function renderEasy() {
         </div>
         <aside class="panel">
           <h3>What is happening</h3>
-          <ol class="happen" id="easy-happen">
+          <ol class="happen" id="easy-happen">${makingKind(easy) !== "make"
+            ? EDIT_STEPS[makingKind(easy)].map((step, i) => {
+              const at = editStep(makingKind(easy), state.job || {});
+              return `<li class="${i < at ? "done" : i === at ? "now" : "wait"}">${esc(step)}</li>`;
+            }).join("")
+            : `
             <li class="${heard}">Listened to the song</li>
             <li class="${wrote}">Wrote the story</li>
             <li class="${painting}">Painting the shots</li>
             <li class="wait">Cutting to the beat</li>
-          </ol>
+          `}</ol>
           <p class="eyebrow" id="easy-chain-label">${esc(storyLabel)}</p>
           <p id="easy-chain">${esc(story)}</p>
           ${lineNote}
@@ -2979,24 +2985,40 @@ async function dreamRun(index) {
   const seconds = Number((lenEl && lenEl.value) || 2);
   const depth = (depthEl && depthEl.value) || "light";
   const shot = lane.shots.find((x) => x.index === Number(index)) || {};
-  await postCutEdit(id, "dream", { first: Number(index), seconds, depth }, `Dreaming ${seconds} s from shot ${Number(index) + 1} on the GPU (${depth})`, shot.start);
+  if (gpuEditWaits()) return;
+  await postCutEdit(id, "dream", { first: Number(index), seconds, depth }, `Dreaming ${seconds} s from shot ${Number(index) + 1} on the GPU (${depth})`, shot.start,
+    undefined, `Dreaming ${seconds} s from shot ${Number(index) + 1}`);
+}
+
+// A GPU edit re-composes the cut from what its record holds, and the lane then reads the record again: timeline edits
+// waiting for Apply would be gone under it (UI review N2). It waits for them instead, and says so.
+function gpuEditWaits(what = "this renders on the GPU from the cut as it stands") {
+  const id = easyVideoId();
+  const lane = state.lane && state.lane.id === id ? state.lane : null;
+  const n = lane && state.easy ? timelineDirty(state.easy, lane) : 0;
+  if (!n) return false;
+  state.easy.note = `Apply the ${n} timeline edit${n === 1 ? "" : "s"} waiting first (the bar at the bottom): ${what}, and would drop ${n === 1 ? "it" : "them"}.`;
+  render();
+  return true;
 }
 
 // A timeline edit that goes through the job (the re-cut with the overrides, a re-render, a generated run): the making
-// screen shows it, the lane reloads when it lands and the player seeks to what was clicked.
-async function postCutEdit(id, route, body, detail, at, stage) {
+// screen shows it with its own clock, title and steps, the lane reloads when it lands and the player seeks to what was
+// clicked. ``stage`` "assemble" is an edit with no GPU (a re-cut, the layers laid again).
+async function postCutEdit(id, route, body, detail, at, stage, title) {
   if (!id || !state.easy) return false;
   try {
     const res = await api(`/api/jobs/${encodeURIComponent(id)}/${route}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      state.easy.note = err.detail || "That did not start.";
+      state.easy.note = typeof err.detail === "string" ? err.detail : "That did not start.";
       render();
       return false;
     }
     state.job = Object.assign({}, state.job || {}, { id, status: "running", stage: stage || "restyle", progress: 0.05, detail });
     state.easy.tlSeek = at != null ? Number(at) : null;
     state.easy.recutting = true;
+    startMaking(stage === "assemble" ? "recut" : "gpu", title || detail);
     setEasyPhase("making");
     render();
     poll(id);
@@ -3018,7 +3040,8 @@ async function applyTimeline() {
   const body = { shot_overrides: tl.shots, boundary_overrides: tl.bounds };
   if (lane.mode === "stems") body.layer = lane.layer;  // a Stems cut: the edits are this layer's
   await postCutEdit(id, "recut", body,
-    `Re-cutting ${lane.mode === "stems" ? `the ${lane.layer} layer ` : ""}from the cached morphs with ${n} timeline edit${n === 1 ? "" : "s"}`, at, "assemble");
+    `Re-cutting ${lane.mode === "stems" ? `the ${lane.layer} layer ` : ""}from the cached morphs with ${n} timeline edit${n === 1 ? "" : "s"}`, at, "assemble",
+    "Re-cutting");
 }
 // Re-render one shot's morph: the seed, length and prompt fields of the drawer, and ``style`` when a Morph chip asked
 // for another way the object changes (the shot keeps its own style otherwise).
@@ -3037,7 +3060,9 @@ async function rerenderShot(index, style) {
   const shot = lane.shots.find((x) => x.index === Number(index)) || {};
   const how = body.style ? ` as ${morphStyleLabel(body.style)}` : "";
   const where = lane.mode === "stems" ? ` on the ${lane.layer} layer` : "";
-  await postCutEdit(id, "rerender", body, `Re-rendering shot ${Number(index) + 1}'s morph${how}${where} on the GPU`, shot.start);
+  if (gpuEditWaits()) return;
+  await postCutEdit(id, "rerender", body, `Re-rendering shot ${Number(index) + 1}'s morph${how}${where} on the GPU`, shot.start,
+    undefined, `Re-rendering shot ${Number(index) + 1}${how}`);
 }
 async function insertRun(index) {
   const id = easyVideoId();
@@ -3046,14 +3071,17 @@ async function insertRun(index) {
   const lenEl = document.getElementById("tl-insert-s");
   const seconds = Number((lenEl && lenEl.value) || 10);
   const shot = lane.shots.find((x) => x.index === Number(index)) || {};
+  if (gpuEditWaits()) return;
   await postCutEdit(id, "insert", { first: Number(index), seconds, pins: (state.easy && state.easy.pins) || {} },
-    `Generating ${seconds} s of new morphs from shot ${Number(index) + 1} on the GPU`, shot.start);
+    `Generating ${seconds} s of new morphs from shot ${Number(index) + 1} on the GPU`, shot.start, undefined,
+    `Generating ${seconds} s from shot ${Number(index) + 1}`);
 }
 
 // Swap one still of the finished cut (the lane's picker): the desk re-renders the two morphs that touch it on the GPU
 // and re-composes; the job runs like a re-cut, the making screen shows it, the lane reloads when it is done.
 async function swapStill(id, slot, file) {
   if (!id || !state.easy || slot == null || !file) return;
+  if (gpuEditWaits()) return;
   const lane = state.lane && state.lane.id === id ? state.lane : null;
   const swap = { slot: Number(slot), file };
   if (lane && lane.mode === "stems") swap.layer = lane.layer;  // a Stems cut: this layer's still, then the layers laid again
@@ -3069,6 +3097,7 @@ async function swapStill(id, slot, file) {
     state.easy.swapSlot = null;
     state.easy.swapMode = false;
     state.easy.recutting = true;
+    startMaking("gpu", "Swapping an object");
     setEasyPhase("making");
     render();
     poll(id);
@@ -3405,8 +3434,14 @@ function easyStageWord(job) {
 function easyEtaText() {
   const easy = state && state.easy;
   if (!easy || !easy.startedAt) return "About half a minute";
+  if (easy.lost) return "Lost contact with the desk";
   const job = state.job || {};
   const elapsed = (Date.now() - easy.startedAt) / 1000;
+  const kind = makingKind(easy);
+  if (kind !== "make") {  // an edit: its own clock from its own start, and what it is doing; it has no plan to count down
+    const words = kind === "gpu" ? ["on the GPU", "cutting to the beat"] : ["reading the morphs", "cutting to the beat"];
+    return `${clockText(elapsed)} elapsed · ${easy.stopping ? "stopping" : words[Math.min(1, editStep(kind, job))]}`;
+  }
   const draft = job.video ? "Draft playing · " : "";
   const word = easyStageWord(job);
   const served = job.eta_s === null || job.eta_s === undefined ? NaN : Number(job.eta_s);
@@ -3421,7 +3456,7 @@ function easyEtaText() {
 // "· morphs 2:10 · Polly 17:48 · cut 0:52 · check 0:14" from the job's per-phase seconds, when the server sent them.
 function tookBreakdown(breakdown) {
   if (!breakdown || typeof breakdown !== "object") return "";
-  const names = [["morphs", "morphs"], ["performer", "Polly"], ["cut", "cut"], ["qa", "check"]];
+  const names = [["grow", "new stills"], ["morphs", "morphs"], ["performer", "Polly"], ["cut", "cut"], ["qa", "check"]];
   const parts = names.filter(([key]) => Number(breakdown[key]) >= 1).map(([key, label]) => `${label} ${clockText(breakdown[key])}`);
   return parts.length ? ` · ${parts.join(" · ")}` : "";
 }
@@ -3431,7 +3466,8 @@ function tookBreakdown(breakdown) {
 function easyProgressText(job) {
   const detail = String((job && job.detail) || "").trim();
   if (!detail || detail === "Starting") return "Starting the GPU pass.";
-  return detail;
+  // one clock on the screen, the header's (UI review F3): the line's own "· about 723 s left" counted something else
+  return detail.replace(/[\s,·-]*about \d+ s left/gi, "").trim();
 }
 
 // Same basis as easyEtaGuess: about 1:00 on a first run with the GPU idle, about 0:50 warm.
@@ -3500,18 +3536,54 @@ function tickEasy() {
     easyTimer = null;
     return;
   }
+  if (state.easy.lost) return;  // lost contact with the desk: the clock stops where it was (F4)
   const label = document.getElementById("easy-eta");
   if (label) label.textContent = easyEtaText();
   const bar = document.querySelector(".easy-making .track span");
   if (bar) {
     const job = state.job || {};
     const elapsed = (Date.now() - state.easy.startedAt) / 1000;
-    // the server's weighted progress when it sends one (job.overall); else elapsed against the plan's estimate, never pinned at 95 %
-    const overall = Number(job.overall);
-    const frac = Number.isFinite(overall) && overall > 0 ? overall : Math.min(0.9, elapsed / Math.max(1, easyEtaLive()));
+    // the server's weighted progress when it sends one (job.overall); else elapsed against the plan's estimate, never
+    // pinned at 95 %. An edit has no plan of its own: its bar is the edit's own progress (job.progress), never the
+    // Make's finished 100 % (F6)
+    const edit = makingKind(state.easy) !== "make";
+    const overall = Number(edit ? job.progress : job.overall);
+    const frac = Number.isFinite(overall) && overall > 0 ? overall : Math.min(0.9, elapsed / Math.max(1, edit ? 60 : easyEtaLive()));
     bar.style.width = `${Math.round(Math.max(0.02, Math.min(1, frac)) * 100)}%`;
-    tabTitle(`(${Math.round(Math.max(0.02, Math.min(1, frac)) * 100)}%) Making · Xenoform`);
+    tabTitle(`(${Math.round(Math.max(0.02, Math.min(1, frac)) * 100)}%) ${edit ? makingTitle(state.easy) : "Making"} · Xenoform`);
   }
+}
+
+// Every job on the making screen has its own start, title and steps (UI review F6): an edit used to show the Make's
+// clock ("11:34 elapsed"), its four ticked steps and "Making the prototype." over a 36 s re-cut. ``kind`` is "make", "gpu"
+// (an edit that renders on the GPU first: re-render, a morph style, swap, Generate here, Dream here) or "recut" (no GPU).
+function startMaking(kind, title) {
+  const easy = state.easy;
+  easy.making = { kind, title: title || "" };
+  easy.startedAt = Date.now();
+  easy.firstMorph = null;
+  easy.lastEta = undefined;
+  easy.jobAt = 0;
+  easy.lost = null;
+  easy.stopping = false;
+  if (easyTimer) clearInterval(easyTimer);
+  easyTimer = setInterval(tickEasy, 1000);
+}
+function makingKind(easy) {
+  return (easy && easy.making && easy.making.kind) || "make";
+}
+function makingTitle(easy) {
+  return (easy && easy.making && easy.making.title) || (easy && easy.madeLength ? "Making the prototype" : "Making your video");
+}
+// What an edit does, in the order it does it, for the making screen's "What is happening" list.
+const EDIT_STEPS = {
+  gpu: ["New morphs on the GPU (Draft)", "Cut back in on the beat, no GPU"],
+  recut: ["Reading the cached morphs and your edits", "Cutting to the beat, no GPU"],
+};
+function editStep(kind, job) {
+  if (job.status && job.status !== "running") return 2;
+  if (kind === "gpu") return job.stage === "restyle" ? 0 : 1;
+  return /cutting shot|house look|cutting to the beat|burning|saving/i.test(String(job.detail || "")) ? 1 : 0;
 }
 
 // Step away while it renders (a Final is twenty minutes): the tab title counts up, and when the cut is ready the tab
@@ -3650,6 +3722,7 @@ async function recutWithKnobs() {
     }
     state.job = Object.assign({}, state.job || {}, {id, status: "running", stage: "assemble", progress: 0.05, detail: "Re-cutting from the cached morphs"});
     state.easy.recutting = true;
+    startMaking("recut", "Re-cutting");
     setEasyPhase("making");
     render();
     poll(id);
@@ -3730,11 +3803,9 @@ async function easyMake() {
   state.easy.madeLength = easyLength(state.easy);
   state.easy.madeTier = state.easy.tier || "draft";
   state.easy.failed = false;
-  state.easy.startedAt = Date.now();
-  state.easy.firstMorph = null;
+  state.easy.recutting = false;
+  startMaking("make", "");  // its own clock, the Make's title and steps (F6)
   state.easy.eta = state.comfyOk === false ? EASY_ETA_BROWSER_S : easyPlanEta() || easyEtaGuess();
-  if (easyTimer) clearInterval(easyTimer);
-  easyTimer = setInterval(tickEasy, 1000);
   setEasyPhase("making");
   askToNotify();  // a Make is the user's click: the one moment a browser lets a page ask
   state.easy.note = "Reading the song. A few seconds.";
@@ -3776,7 +3847,9 @@ async function easyMake() {
     state.quality = "live";
     setEasyPhase("result");
     state.easy.playedHere = true;
-    state.easy.note = "Playing the pictures for this vibe.";
+    const why = String(state.job.error || "").trim();  // the desk's refusal, said (F5)
+    state.easy.note = why ? `The render did not start: ${why}${/[.!?]$/.test(why) ? "" : "."} Playing the pictures for this vibe instead.`
+      : "Playing the pictures for this vibe.";
     render();
   }
 }
@@ -4225,9 +4298,12 @@ function playheadLoop() {
 // The making screen's live parts, painted in place on every poll: the step the render is on, and the chain once the
 // render has picked it. That chain replaces the pre-Make preview, which never knew the stills Make grows for the line;
 // the screen used to keep the preview's 41 stills up through a whole Final that rendered 15 (28 Oct).
-const MAKING_STEP = { analyze: 0, draft: 1, morphs: 2, cut: 3, assemble: 3, card: 3, save: 3, qa: 3, done: 4 };
+const MAKING_STEP = { analyze: 0, draft: 1, grow: 2, morphs: 2, performer: 2, restyle: 2, cut: 3, assemble: 3, card: 3, save: 3, qa: 3, done: 4 };
 function paintMaking(job) {
-  const at = MAKING_STEP[String((job.timing && job.timing.phase) || job.stage || "")];  // job_timing's canonical phase
+  // job_timing's canonical phase for a Make; an edit's own two steps from its stage (the job keeps the Make's finished
+  // timing, which ticked all four of the Make's steps over a re-cut, F6)
+  const kind = makingKind(state && state.easy);
+  const at = kind !== "make" ? editStep(kind, job) : MAKING_STEP[String((job.timing && job.timing.phase) || job.stage || "")];
   if (at != null) {
     document.querySelectorAll("#easy-happen li").forEach((li, i) => { li.className = i < at ? "done" : i === at ? "now" : "wait"; });
   }
@@ -4709,14 +4785,24 @@ async function generate() {
     error: null,
   };
   render();
-  const response = await api("/api/generate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload()),
-  });
-  const data = await response.json();
-  if (!response.ok) {
-    state.job = { status: "error", stage: "analyze", progress: 0, detail: data.detail || "Could not start", error: data.detail, mode: state.live ? "live" : "dry-run" };
+  // a refused Make (429: two cuts already rendering) or a desk that does not answer says why; an unread 500 used to
+  // leave the making screen stuck, and the refusal was written over by "Playing the pictures" (UI review F5)
+  let response = null;
+  let data = {};
+  try {
+    response = await api("/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload()),
+    });
+    data = (await response.json().catch(() => ({}))) || {};
+  } catch (err) {
+    response = null;
+  }
+  if (!response || !response.ok) {
+    const why = typeof data.detail === "string" && data.detail ? data.detail
+      : response ? `The desk refused it (HTTP ${response.status}).` : "The desk did not answer.";
+    state.job = { status: "error", stage: "analyze", progress: 0, detail: why, error: why, mode: state.live ? "live" : "dry-run" };
     paintJob();
     return;
   }
@@ -4725,33 +4811,57 @@ async function generate() {
   poll(data.id);
 }
 
+// A poll that gets no answer (a desk restarting, a dropped request, a 404 for a job the desk no longer knows) asks again
+// after these waits; then the making screen says it lost contact, with the desk's own words, and its clock stops. It
+// used to return silently and hang there for good while the clock kept counting (UI review F4).
+const POLL_RETRY_MS = [400, 800, 1600, 3200, 6400];
+const pollMisses = {};
 async function poll(id) {
   if (ignoreJob === id) return;
-  const response = await api(`/api/jobs/${id}`);
-  if (!response.ok || ignoreJob === id) return;
-  const job = await response.json();
+  let job = null;
+  let why = "";
+  try {
+    const response = await api(`/api/jobs/${id}`);
+    if (response.ok) job = await response.json();
+    else why = (await response.json().then((b) => (b && typeof b.detail === "string" ? b.detail : ""), () => "")) || `The desk answered ${response.status}.`;
+  } catch (err) {
+    job = null;
+  }
   if (ignoreJob === id) return;
+  if (!job) {
+    const misses = (pollMisses[id] = (pollMisses[id] || 0) + 1);
+    if (misses <= POLL_RETRY_MS.length) {
+      setTimeout(() => poll(id), POLL_RETRY_MS[misses - 1]);
+      return;
+    }
+    delete pollMisses[id];
+    lostContact(id, why);
+    return;
+  }
+  delete pollMisses[id];
   state.job = job;
   watchJob(job);
   if (state.easy && job.eta_s !== state.easy.lastEta) { state.easy.lastEta = job.eta_s; state.easy.jobAt = Date.now(); }
   if (state.easy && state.easy.phase === "making") {
+    if (state.easy.recutting && job.status !== "running") {  // an edit of the cut ended: back to the cut, saying how
+      editEnded(job);
+      return;
+    }
     if (job.video) showEasyPreview(job.video);
     if (job.status === "done") {
       notifyReady(job, false);
       setEasyPhase("result");
       state.easy.playedHere = false;
       state.easy.warm = true;
-      if (state.easy.recutting) {  // a re-cut or a swap: the lane reads the record again and a reopened player reloads
-        state.easy.recutting = false;
-        state.lane = null;
-        state.easy.editUrl = "";  // the pack laid out the cut before this edit: Edit in Resolve makes the new one
-        if (state.easy.reopenUrl) state.easy.reopenUrl = `${String(state.easy.reopenUrl).split("?")[0]}?v=${job.video_version || Date.now()}`;
-      }
+      state.easy.making = null;
       const took = Number(job.took_s || job.seconds || 0);
       state.easy.took = took;
+      // the desk's warning or tier note beside Took (the cloud fell back, a tier dropped for memory, the frame fill did
+      // not run): the done line used to replace it with "Took X" (UI review F9)
+      const warn = String(job.detail || "").replace(/\s*(?:cut|animatic) ready in [\d.]+\s*s\b.*$/i, "").trim();
       state.easy.note = String(job.detail || "").startsWith("The animatic is ready")
         ? job.detail
-        : took ? `Took ${clockText(took)}${tookBreakdown(job.breakdown)}.` : "Your cut is ready.";
+        : took ? `Took ${clockText(took)}${tookBreakdown(job.breakdown)}.${warn ? ` ${warn}` : ""}` : warn || "Your cut is ready.";
       render();
       return;
     }
@@ -4764,15 +4874,59 @@ async function poll(id) {
       state.easy.note = why ? `The render stopped: ${why} Playing the pictures for this vibe instead.` : "Playing the pictures for this vibe.";
       if (job.status === "error") notifyReady(job, true); else tabTitle();
       state.easy.failed = job.status === "error";
+      state.easy.making = null;
       render();
       return;
     }
     const line = document.getElementById("easy-progress");
-    if (line) line.textContent = easyProgressText(job);
+    if (line) line.textContent = state.easy.stopping ? state.easy.note : easyProgressText(job);
     paintMaking(job);
   }
   paintJob();
   if (job.status === "running") setTimeout(() => poll(id), 400);
+}
+
+// An edit of the cut ended (UI review F1, F6, F7): back on the cut's screen, in the edit's own time, with what became of
+// it: a new version ("Re-cut ready. It took 0:36."), or the reason it did not land and the cut as it was. A failed edit
+// used to come back as done ("Your cut is ready" over the old cut); a stopped one said "cancelled" while the GPU went on.
+// The cut stays open whatever the edit's status (its id must not drop with a failed edit).
+function editEnded(job) {
+  const easy = state.easy;
+  const took = clockText((Date.now() - (Number(easy.startedAt) || Date.now())) / 1000);
+  const landed = job.status === "done" && (job.edit_from == null || Number(job.video_version || 0) !== Number(job.edit_from));
+  const detail = String(job.detail || "").trim();
+  const said = (text) => `${text}${/[.!?]$/.test(text) ? "" : "."}`;
+  easy.recutting = false;
+  easy.stopping = false;
+  easy.making = null;
+  state.job = Object.assign({}, job, { status: "done" });  // the cut, as it stands; how the edit ended is the note
+  if (landed) {
+    notifyReady(job, false);
+    state.lane = null;  // the lane reads the record again and a reopened player reloads
+    easy.editUrl = "";  // the pack laid out the cut before this edit: Edit in Resolve makes the new one
+    if (easy.reopenUrl) easy.reopenUrl = `${String(easy.reopenUrl).split("?")[0]}?v=${job.video_version || Date.now()}`;
+    easy.note = `${said(detail || "Ready")} It took ${took}.`;
+  } else {
+    tabTitle();
+    easy.note = job.status === "cancelled" ? said(detail || "Stopped: the cut is as it was")
+      : `${said(String(job.error || detail || "The edit did not run").trim())} The cut is as it was.`;
+  }
+  setEasyPhase("result");
+  easy.playedHere = false;
+  render();
+}
+
+// The desk stopped answering about the job: the making screen says so with the desk's own words, and its clock stops;
+// a reload asks again once the desk is back (a render that finished opens as its cut).
+function lostContact(id, why) {
+  if (!state || !state.easy || !state.job || state.job.id !== id || state.easy.phase !== "making") return;
+  state.easy.lost = { id, why };
+  if (easyTimer) clearInterval(easyTimer);
+  easyTimer = null;
+  const words = String(why || "").trim() || "it stopped answering";
+  state.easy.note = `Lost contact with the desk: ${words}${/[.!?]$/.test(words) ? "" : "."} Reload this page once it answers again: a render that finished opens as its cut.`;
+  tabTitle("Lost contact · Xenoform");
+  render();
 }
 
 document.addEventListener("click", async (event) => {
@@ -5130,9 +5284,10 @@ document.addEventListener("click", async (event) => {
   } else if (act === "easy-stems-relay") {
     const id = easyVideoId();
     const mix = state.easy.stemsMix && state.easy.stemsMix.id === id ? state.easy.stemsMix : null;
-    if (id && mix) {
+    if (id && mix && !gpuEditWaits("the layers are laid again from the cut as it stands")) {
       state.easy.stemsMix = null;
-      await postCutEdit(id, "composite", { prominence: mix.prominence, blend: mix.blend }, "Laying the layers together again (no GPU, no re-cut)", null, "assemble");
+      await postCutEdit(id, "composite", { prominence: mix.prominence, blend: mix.blend }, "Laying the layers together again (no GPU, no re-cut)", null, "assemble",
+        "Laying the layers together again");
     }
   } else if (act === "easy-orbit") {
     state.easy.stemOrbit = el.dataset.value !== "off";
@@ -5339,11 +5494,26 @@ document.addEventListener("click", async (event) => {
     if (v && v.id && v.id === state.easy.fromSong && v.video) openSongResult(v);
     else if (state.easy.fromSong) loadSongView(state.easy.fromSong).then(() => { if (state.easy.songRun && state.easy.songRun.video) openSongResult(state.easy.songRun); });
   } else if (act === "easy-stop") {
-    if (state.job && state.job.status === "running" && state.job.id) {
-      ignoreJob = state.job.id;
-      api(`/api/jobs/${state.job.id}/cancel`, { method: "POST" }).catch(() => {});
+    const job = state.job || {};
+    if (state.easy.recutting && job.status === "running" && job.id) {
+      // an edit of the cut stops at its next safe point (its queued morphs come off the GPU, nothing is written) and
+      // then says what became of it: stopped, or landed before Stop reached it. It used to say "cancelled" while the
+      // GPU went on and the edit landed anyway (UI review F7); poll() brings the cut back when it has ended.
+      if (state.easy.stopping) return;
+      state.easy.stopping = true;
+      state.easy.note = "Stopping the edit at its next safe point: the cut stays as it was unless it has already landed.";
+      const line = document.getElementById("easy-progress");
+      if (line) line.textContent = state.easy.note;
+      tickEasy();
+      api(`/api/jobs/${encodeURIComponent(job.id)}/cancel`, { method: "POST" }).catch(() => {});
+      return;
+    }
+    if (job.status === "running" && job.id) {
+      ignoreJob = job.id;
+      api(`/api/jobs/${job.id}/cancel`, { method: "POST" }).catch(() => {});
     }
     setEasyPhase("choose");
+    state.easy.making = null;
     state.easy.note = "Stopped. Anything still queued on the GPU was cancelled.";
     render();
   } else if (act === "easy-preset") {

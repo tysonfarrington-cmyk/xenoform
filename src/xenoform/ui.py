@@ -773,32 +773,58 @@ def create_app(cfg: dict | None = None):
         for key in ("shot_overrides", "boundary_overrides"):
             if key in body and isinstance(body.get(key), (dict, list)):
                 overrides[key] = body[key]
-        with _LOCK:
-            job.update({"status": "running", "stage": "assemble", "progress": 0.05, "detail": "Re-cutting from the cached morphs",
-                        "error": None})
+        cancel = _edit_start(job, job_id, "recut", "assemble", "Re-cutting from the cached morphs")
 
         def on_progress(stage: str, frac: float, detail: str) -> None:
+            if cancel.is_set():  # no GPU here, and the cut is published only once composed: Stop ends it at once
+                from xenoform.turbo import JobCancelled
+
+                raise JobCancelled("Stopped")
             with _LOCK:
                 job.update({"stage": stage, "progress": float(frac), "detail": detail})
 
         def run() -> None:
+            from xenoform.turbo import JobCancelled
+
             try:
                 rec = recut_from_cache(folder, overrides, report=on_progress, cfg=cfg)
                 with _LOCK:
                     version = int(job.get("video_version") or 0) + 1
                     job.update({"status": "done", "stage": "done", "progress": 1.0, "video_version": version,
-                                "video": f"/api/jobs/{job_id}/video?v={version}", "detail": "Re-cut ready",
+                                "video": f"/api/jobs/{job_id}/video?v={version}", "detail": _edit_landed("Re-cut ready", cancel),
                                 "look": rec.get("look"), "recuts": rec.get("recuts")})
+            except JobCancelled:
+                _edit_stopped(job, "the re-cut")
             except Exception as exc:
                 log.exception("recut %s", job_id)
-                from xenoform.errors import plain_error
-
-                with _LOCK:
-                    job.update({"status": "done", "stage": "done", "progress": 1.0, "detail": f"Re-cut did not run. {plain_error(exc)}",
-                                "error": None})
+                _edit_failed(job, "Re-cut did not run.", exc)
 
         threading.Thread(target=run, name=f"recut-{job_id}", daemon=True).start()
         return {"id": job_id, "status": "running"}
+
+    # A timeline edit on a finished cut (UI review F1, F6, F7): it starts with its own state (no error, none of the
+    # Make's clock or bar, the video version it starts from) and a cancel event of its own; it ends done with a new
+    # video version, error with the reason (a failed edit used to report done, so the desk said "Your cut is ready"
+    # over the old cut), or cancelled when Stop reached it before the cut was replaced.
+    def _edit_start(job: dict, job_id: str, name: str, stage: str, detail: str) -> threading.Event:
+        cancel = threading.Event()
+        with _LOCK:
+            job.update({"status": "running", "stage": stage, "progress": 0.05, "detail": detail, "error": None,
+                        "edit": name, "edit_from": int(job.get("video_version") or 0), "eta_s": None, "overall": None})
+            _CANCEL[job_id] = cancel
+        return cancel
+
+    def _edit_failed(job: dict, failed: str, exc: Exception) -> None:
+        from xenoform.errors import plain_error
+
+        sentence = f"{failed} {plain_error(exc)}"
+        with _LOCK:
+            job.update({"status": "error", "stage": "done", "progress": 1.0, "detail": sentence, "error": sentence})
+
+    def _edit_stopped(job: dict, what: str) -> None:
+        with _LOCK:
+            job.update({"status": "cancelled", "stage": "done", "progress": 1.0, "error": None,
+                        "detail": f"Stopped: {what} did not land, and the cut is as it was."})
 
     def _stems_layer_for_edit(rec: dict, body: dict) -> str | None:
         """A Stems cut's swap or re-render is one layer's (``stems_mode.layer_edit``): the body's ``layer``, a stem the
@@ -880,35 +906,33 @@ def create_app(cfg: dict | None = None):
             raise HTTPException(400, f"{file} is not in the stills library.")
         if file in files:
             raise HTTPException(400, f"{file.split('/')[-1]} is already in this cut; a still appears once.")
-        with _LOCK:
-            job.update({"status": "running", "stage": "restyle", "progress": 0.05, "detail": f"Swapping still {slot + 1}: re-rendering the morphs that touch it",
-                        "error": None})
+        cancel = _edit_start(job, job_id, "swap", "restyle", f"Swapping still {slot + 1}: re-rendering the morphs that touch it")
 
         def on_progress(stage: str, frac: float, detail: str) -> None:
             with _LOCK:
                 job.update({"stage": stage, "progress": float(frac), "detail": detail})
 
         def run() -> None:
+            from xenoform.turbo import JobCancelled
+
             try:
                 if layer is not None:  # the layer's two morphs, its re-cut, then the layers laid together again (no GPU)
                     from xenoform import stems_mode as _sm
 
-                    rec = _sm.layer_edit(folder, layer, lambda d, rep: swap_still(d, slot, file, cfg=cfg, report=rep),
+                    rec = _sm.layer_edit(folder, layer, lambda d, rep: swap_still(d, slot, file, cfg=cfg, report=rep, cancel=cancel.is_set),
                                          kind="swap", report=on_progress, detail={"slot": slot, "file": file})
                 else:
-                    rec = swap_still(folder, slot, file, cfg=cfg, report=on_progress)
+                    rec = swap_still(folder, slot, file, cfg=cfg, report=on_progress, cancel=cancel.is_set)
                 with _LOCK:
                     version = int(job.get("video_version") or 0) + 1
                     job.update({"status": "done", "stage": "done", "progress": 1.0, "video_version": version,
-                                "video": f"/api/jobs/{job_id}/video?v={version}", "detail": "Swap ready",
+                                "video": f"/api/jobs/{job_id}/video?v={version}", "detail": _edit_landed("Swap ready", cancel),
                                 "look": rec.get("look"), "recuts": rec.get("recuts"), "swaps": len(rec.get("swaps") or [])})
+            except JobCancelled:
+                _edit_stopped(job, "the swap")
             except Exception as exc:
                 log.exception("swap %s", job_id)
-                from xenoform.errors import plain_error
-
-                with _LOCK:
-                    job.update({"status": "done", "stage": "done", "progress": 1.0, "detail": f"The swap did not run. {plain_error(exc)}",
-                                "error": None})
+                _edit_failed(job, "The swap did not run.", exc)
 
         threading.Thread(target=run, name=f"swap-{job_id}", daemon=True).start()
         return {"id": job_id, "status": "running", "slot": slot, "file": file}
@@ -931,28 +955,34 @@ def create_app(cfg: dict | None = None):
             raise HTTPException(400, f"This video has no cached morphs to {verb}.")
         return job, folder
 
-    def _run_edit(job: dict, job_id: str, name: str, ready: str, failed: str, fn) -> None:
+    def _edit_landed(ready: str, cancel: threading.Event) -> str:
+        """The done line of an edit; one that Stop reached only once its GPU work was over lands all the same, and says so."""
+        return f"{ready}. Stop came too late to undo it, so the edit landed." if cancel.is_set() else ready
+
+    def _run_edit(job: dict, job_id: str, name: str, ready: str, failed: str, fn, cancel: threading.Event) -> None:
         """Run a timeline edit (a GPU pair render and the re-compose) on a thread, the job showing its progress and
-        bumping its video version when the re-cut lands, as the swap does."""
+        bumping its video version when the re-cut lands, as the swap does. ``fn(report, cancel)``: ``cancel`` reaches the
+        GPU wait (the queued morphs are taken off ComfyUI and nothing is written), never the re-compose that follows."""
         def on_progress(stage: str, frac: float, detail: str) -> None:
             with _LOCK:
                 job.update({"stage": stage, "progress": float(frac), "detail": detail})
 
         def run() -> None:
+            from xenoform.turbo import JobCancelled
+
             try:
-                rec = fn(on_progress)
+                rec = fn(on_progress, cancel.is_set)
                 with _LOCK:
                     version = int(job.get("video_version") or 0) + 1
                     job.update({"status": "done", "stage": "done", "progress": 1.0, "video_version": version,
-                                "video": f"/api/jobs/{job_id}/video?v={version}", "detail": ready,
+                                "video": f"/api/jobs/{job_id}/video?v={version}", "detail": _edit_landed(ready, cancel),
                                 "look": rec.get("look"), "recuts": rec.get("recuts"), "swaps": len(rec.get("swaps") or []),
                                 "rerenders": len(rec.get("rerenders") or []), "inserts": len(rec.get("inserts") or [])})
+            except JobCancelled:
+                _edit_stopped(job, f"the {name.replace('insert', 'generated run').replace('rerender', 're-render')}")
             except Exception as exc:
                 log.exception("%s %s", name, job_id)
-                from xenoform.errors import plain_error
-
-                with _LOCK:
-                    job.update({"status": "done", "stage": "done", "progress": 1.0, "detail": f"{failed} {plain_error(exc)}", "error": None})
+                _edit_failed(job, failed, exc)
 
         threading.Thread(target=run, name=f"{name}-{job_id}", daemon=True).start()
 
@@ -1018,13 +1048,12 @@ def create_app(cfg: dict | None = None):
         under = _under_insert(shots[shot])
         if under:
             raise HTTPException(400, f"Shot {shot + 1} is {under}: it plays no morph of the chain to re-render.")
-        with _LOCK:
-            job.update({"status": "running", "stage": "restyle", "progress": 0.05, "error": None,
-                        "detail": f"Re-rendering shot {shot + 1}'s morph" + (f" on the {layer} layer" if layer else "")})
+        cancel = _edit_start(job, job_id, "rerender", "restyle",
+                             f"Re-rendering shot {shot + 1}'s morph" + (f" on the {layer} layer" if layer else ""))
 
-        def rerender(report):
+        def rerender(report, stop):
             go = lambda d, rep: rerender_morph(d, shot, seed=seed, render_s=render_s, variant=variant,  # noqa: E731
-                                               style=style, cfg=cfg, report=rep)
+                                               style=style, cfg=cfg, report=rep, cancel=stop)
             if layer is None:
                 return go(folder, report)
             from xenoform import stems_mode as _sm  # one layer's morph and re-cut, then the layers laid again (no GPU)
@@ -1032,7 +1061,7 @@ def create_app(cfg: dict | None = None):
             return _sm.layer_edit(folder, layer, go, kind="rerender", report=report,
                                   detail={"shot": shot, "seed": seed, "render_s": render_s, "variant": variant, "style": style})
 
-        _run_edit(job, job_id, "rerender", "Re-render ready", "The re-render did not run.", rerender)
+        _run_edit(job, job_id, "rerender", "Re-render ready", "The re-render did not run.", rerender, cancel)
         return {"id": job_id, "status": "running", "shot": shot, "seed": seed, "render_s": render_s, "variant": variant, "style": style,
                 **({"layer": layer} if layer else {})}
 
@@ -1076,11 +1105,11 @@ def create_app(cfg: dict | None = None):
             first, last = insert_span(shots, first, seconds)
         except ValueError as exc:
             raise HTTPException(400, str(exc))
-        with _LOCK:
-            job.update({"status": "running", "stage": "restyle", "progress": 0.05,
-                        "detail": f"Generating {last - first + 1} morph{'s' if last != first else ''} over shots {first + 1} to {last + 1}", "error": None})
+        cancel = _edit_start(job, job_id, "insert", "restyle",
+                             f"Generating {last - first + 1} morph{'s' if last != first else ''} over shots {first + 1} to {last + 1}")
         _run_edit(job, job_id, "insert", "Generated run ready", "The generated run did not run.",
-                  lambda report: insert_generated(folder, first, seconds=seconds, pins=pins, seed=seed, cfg=cfg, report=report))
+                  lambda report, stop: insert_generated(folder, first, seconds=seconds, pins=pins, seed=seed, cfg=cfg, report=report,
+                                                        cancel=stop), cancel)
         return {"id": job_id, "status": "running", "first": first, "last": last, "seconds": seconds}
 
     @app.post("/api/jobs/{job_id}/dream")
@@ -1123,11 +1152,10 @@ def create_app(cfg: dict | None = None):
             first, last = _dream.span(shots, first, seconds)
         except ValueError as exc:
             raise HTTPException(400, str(exc))
-        with _LOCK:
-            job.update({"status": "running", "stage": "restyle", "progress": 0.05,
-                        "detail": f"Dreaming over shots {first + 1} to {last + 1}", "error": None})
+        cancel = _edit_start(job, job_id, "dream", "restyle", f"Dreaming over shots {first + 1} to {last + 1}")
         _run_edit(job, job_id, "dream", "Dream ready", "The dream did not run.",
-                  lambda report: _dream.dream_span(folder, first, seconds=seconds, depth=depth, seed=seed, cfg=cfg, report=report))
+                  lambda report, stop: _dream.dream_span(folder, first, seconds=seconds, depth=depth, seed=seed, cfg=cfg, report=report,
+                                                         cancel=stop), cancel)
         return {"id": job_id, "status": "running", "first": first, "last": last, "seconds": seconds, "depth": depth}
 
     @app.post("/api/morph/board")
@@ -2979,6 +3007,9 @@ def create_app(cfg: dict | None = None):
             job = _JOBS.get(job_id)
             if job is None:
                 raise HTTPException(404, "No such cut. It may be from before the desk restarted.")
+            # the bar and the clock move on through a step that reports nothing for minutes (a grow, a Final morph),
+            # kept in the job so the bar never goes back at the next report (job_timing.live, UI review F2)
+            job.update(job_timing.live(job, job_timing.elapsed(job)))
             return {key: value for key, value in job.items() if key != "path"}
 
     @app.post("/api/jobs/{job_id}/cancel")
@@ -2990,7 +3021,11 @@ def create_app(cfg: dict | None = None):
             event = _CANCEL.get(job_id)
             if event is not None:
                 event.set()
-            if job.get("status") == "running":
+            if job.get("status") == "running" and job.get("edit"):
+                # an edit of a cut stops at its next safe point (the GPU wait, or anywhere in a re-cut) and says then
+                # whether it stopped or had already landed; it never reads "cancelled" while it still runs (F7)
+                job["detail"] = "Stopping the edit at its next safe point."
+            elif job.get("status") == "running":
                 job["status"] = "cancelled"
                 job["detail"] = "Cancelled. The card changed."
             return {key: value for key, value in job.items() if key != "path"}

@@ -1024,7 +1024,9 @@ def composite_route(job_id: str, body: dict | None = None) -> dict:
         if job.get("status") == "running":
             raise HTTPException(409, "That video is still rendering.")
         job.update({"status": "running", "stage": "assemble", "progress": 0.05, "error": None,
-                    "detail": "Laying the layers together again (no GPU)"})
+                    "detail": "Laying the layers together again (no GPU)",
+                    # an edit of the cut, as the timeline's are (ui._edit_start): none of the Make's clock, its version
+                    "edit": "composite", "edit_from": int(job.get("video_version") or 0), "eta_s": None, "overall": None})
 
     def on_progress(stage: str, frac: float, detail: str) -> None:
         with ui._LOCK:
@@ -1042,9 +1044,9 @@ def composite_route(job_id: str, body: dict | None = None) -> dict:
             log.exception("composite %s", job_id)
             from xenoform.errors import plain_error
 
-            with ui._LOCK:
-                job.update({"status": "done", "stage": "done", "progress": 1.0, "error": None,
-                            "detail": f"The layers were not laid again. {plain_error(exc)}"})
+            sentence = f"The layers were not laid again. {plain_error(exc)}"
+            with ui._LOCK:  # an error with its reason, never "done" (UI review F1)
+                job.update({"status": "error", "stage": "done", "progress": 1.0, "error": sentence, "detail": sentence})
 
     threading.Thread(target=go, name=f"composite-{job_id}", daemon=True).start()
     return {"id": job_id, "status": "running"}

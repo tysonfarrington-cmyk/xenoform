@@ -415,7 +415,8 @@ def test_the_rerender_route_runs_the_edit_and_refuses_plainly(tmp_path, monkeypa
     calls = []
     done = threading.Event()
 
-    def fake_rerender(job_dir, shot, *, seed=None, render_s=None, variant="auto", style=None, cfg=None, report=None, client=None):
+    def fake_rerender(job_dir, shot, *, seed=None, render_s=None, variant="auto", style=None, cfg=None, report=None, client=None,
+                      cancel=None):
         calls.append(("rerender", Path(job_dir).name, shot, seed, render_s, variant) + ((style,) if style else ()))
         if report:
             report("restyle", 0.3, "Re-rendering shot 2")
