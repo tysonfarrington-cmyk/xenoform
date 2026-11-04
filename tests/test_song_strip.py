@@ -117,7 +117,7 @@ def test_the_desk_feeds_the_strip():
     assert "if (!lane || !lane.window || !cutOnSong(easy)) return 0;" in start
     assert "held > 0 && start + (Number(lane.duration) || 0) > held + 0.5 ? 0 : start" in start
     assert APP.count("Number(lane.window.song_start) || 0 : 0") == 0 and APP.count("state.lane.window.song_start") == 0
-    assert APP.count("cutSongStart(") == 6
+    assert APP.count("cutSongStart(") == 7  # and planLineFor, the Timeline header's clocks
 
 
 def test_the_inspector_docks_under_the_strip_with_a_fourth_tab():
@@ -156,3 +156,40 @@ def test_on_a_phone_the_strip_is_the_overview_and_the_step_bar_sticks():
     narrow = css.split("@media (max-width: 1000px) {")[-1].split("\n}\n")[0]  # the one-column block, the last of them
     assert ".sl-plan > .sl-strip, .sl-render > .sl-strip { order: 2; }" in narrow
     assert ".xs-overview .xs-body, .xs-overview .xs-tools { display: none; }" in CSS
+
+
+def test_the_phone_desk_says_what_the_strip_gives_and_the_steps_fit():
+    # the 4 Nov desk checks (integrate-4nov): at phone width the strip is the passages overview with no shot to click, so
+    # the Timeline header's hint says a shot opens on a wider screen (decision 13: no inspector on a phone); the five
+    # steps fit 375 px (the step you are on keeps its name, the others their number or tick) instead of a hidden
+    # sideways scroll that cut Perform off; and the header's plan line reads the strip's clock
+    import shutil
+    import subprocess
+
+    panel = APP.split('const songCut = lane.mode === "song";')[1].split("\nfunction ")[0]
+    assert '<span class="hint-wide">click a shot, or the seam between two, to change it</span><span class="hint-phone">' in panel
+    assert "planLineFor(easy, lane)" in panel and "lane.plan_line ||" not in panel
+    assert '<span class="crumb-label">${STEP_LABELS[key]}</span></button>' in APP
+    desk = (STATIC / "desk.css").read_text(encoding="utf-8")
+    assert desk.index(".lane-head .hint-phone { display: none; }") < desk.index("@media (max-width: 560px) {")
+    phone = desk.split("@media (max-width: 560px) {")[1].split("\n}\n")[0]
+    assert ".lane-head .hint-wide { display: none; }" in phone and ".lane-head .hint-phone { display: inline; }" in phone
+    assert ".stagebar .easy-crumbs .crumb:not(.now) .crumb-label {" in phone and "clip-path: inset(50%)" in phone
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    fn = "function planLineFor(" + APP.split("function planLineFor(")[1].split("\n}\n")[0] + "\n}\n"
+    clock = "function clockText(" + APP.split("function clockText(")[1].split("\n}\n")[0] + "\n}\n"
+    script = clock + fn + """
+let held = 0;
+const cutSongStart = () => held;
+const lane = { plan_line: "1 drop, the main at 2:22; 2 passages", window: { song_start: 127.667 } };
+const out = [planLineFor({}, lane)];
+held = 127.667; out.push(planLineFor({}, lane));
+out.push(planLineFor({}, { plan_line: "passage 5 of 14 of the song, a drop at 1:32", window: null }));
+console.log(JSON.stringify(out));
+"""
+    r = subprocess.run([node, "-e", script], capture_output=True, text=True, timeout=60, encoding="utf-8")
+    assert r.returncode == 0, r.stderr
+    assert r.stdout.strip() == '["1 drop, the main at 0:14; 2 passages","1 drop, the main at 2:22; 2 passages",' \
+                               '"passage 5 of 14 of the song, a drop at 1:32"]'

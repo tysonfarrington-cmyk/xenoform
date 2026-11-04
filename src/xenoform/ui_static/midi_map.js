@@ -169,13 +169,17 @@ function closePop(keep){if(!pop)return;const p=pop;pop=null;if(p.off)p.off();if(
 // ---------------------------------------------------------------- badges on the page's controls
 function badgeFor(el){let b=badges.get(el);if(b)return b;b=document.createElement("button");b.type="button";b.className="xm-badge";
  b.onclick=e=>{e.preventDefault();e.stopPropagation();const t=targetOf(el);if(t)openPop(el,{kind:"target",target:t})};layer.appendChild(b);badges.set(el,b);return b}
+// out of sight though it keeps a box: hidden, or inside a closed <details> (Chrome lays its content out, and the
+// panel the hit test finds there contains it)
+function folded(el){if(el.closest("[hidden],.hide"))return true;if(el.checkVisibility)return!el.checkVisibility();
+ const d=el.closest("details:not([open])");return!!d&&!(d.querySelector(":scope>summary")||{contains:()=>0}).contains(el)}
 function paintBadges(){if(!layer){layer=document.createElement("div");layer.className="xm-badges";layer.setAttribute("data-xm-ui","");document.body.appendChild(layer)}
- const show=X.devices.length>0||X.learnMode,seen=new Set();layer.hidden=!show;
- if(show)for(const el of mappables()){const t=targetOf(el);if(!t)continue;const rows=X.rowsOf(t),label=rows.length?shortOf(rows[0].source):X.learnMode?"+":"";
-  const r=el.getBoundingClientRect();if(!label||!r.width||!r.height||r.bottom<0||r.top>innerHeight||el.closest("[hidden],.hide"))continue;
+ const show=X.devices.length>0||X.learnMode,seen=new Set(),done=new Set();layer.hidden=!show;
+ if(show)for(const el of mappables()){const t=targetOf(el);if(!t||done.has(X.canonical(t)))continue;const rows=X.rowsOf(t),label=rows.length?shortOf(rows[0].source):X.learnMode?"+":"";
+  const r=el.getBoundingClientRect();if(!label||!r.width||!r.height||r.bottom<0||r.top>innerHeight||folded(el))continue;
   const cx=Math.min(innerWidth-1,Math.max(0,r.left+r.width/2)),cy=Math.min(innerHeight-1,Math.max(0,r.top+r.height/2)),hit=document.elementFromPoint(cx,cy);
   if(hit&&!(el===hit||el.contains(hit)||hit.contains(el)))continue;  // under a dialog, a menu or a sticky header
-  const b=badgeFor(el);seen.add(el);b.textContent=label;b.classList.toggle("is-free",!rows.length);b.dataset.target=X.canonical(t);
+  const b=badgeFor(el);seen.add(el);done.add(X.canonical(t));b.textContent=label;b.classList.toggle("is-free",!rows.length);b.dataset.target=X.canonical(t);
   b.setAttribute("aria-label",rows.length?label+" drives "+X.name(t)+": change":"Learn "+X.name(t));
   b.style.left=Math.round(Math.min(innerWidth-24,r.right-12))+"px";b.style.top=Math.round(Math.max(2,r.top-9))+"px";b.hidden=false}
  for(const [el,b] of badges)if(!seen.has(el)){if(!el.isConnected){b.remove();badges.delete(el)}else b.hidden=true}}
@@ -216,10 +220,12 @@ function drive(t,v,ev,row){let el=null;try{el=document.querySelector(`[data-midi
  const mode=(row&&row.mode)||"abs",lo=row?+row.min||0:0,hi=row&&row.max!=null?+row.max:1,f=Math.max(0,Math.min(1,(v-lo)/((hi-lo)||1)));
  if(el.matches('input[type="range"]')){const a=el.min===""?0:+el.min,b=el.max===""?100:+el.max;el.value=String(a+(b-a)*f);el.dispatchEvent(new Event("input",{bubbles:true}));return}
  if(el.matches("select")){const i=Math.min(el.options.length-1,Math.floor(f*el.options.length));if(i>=0&&el.selectedIndex!==i){el.selectedIndex=i;el.dispatchEvent(new Event("change",{bubbles:true}))}return}
+ // a pad (a note) presses on its hit and nothing on its release, whatever the row's mode: its velocity picks nothing
+ const pad=!!(ev&&ev.type==="note"),hit=pad&&(ev.value|0)>0;
  const kids=el.matches("button,a")?[]:[...el.querySelectorAll("button:not([disabled]),.chip:not([disabled])")];
- if(kids.length){if(mode==="abs"){const i=Math.min(kids.length-1,Math.floor(f*kids.length));if(el._xmIdx!==i){el._xmIdx=i;kids[i].click()}}
-  else if(v>lo||mode==="toggle"){const cur=kids.findIndex(k=>k.classList.contains("on"));kids[(cur+1)%kids.length].click()}return}
- if(mode==="abs"){const up=f>=.5;if(up&&!el._xmUp)el.click();el._xmUp=up}else if(mode!=="hold"||v>lo)el.click()}
+ if(kids.length){if(mode==="abs"&&!pad){const i=Math.min(kids.length-1,Math.floor(f*kids.length));if(el._xmIdx!==i){el._xmIdx=i;kids[i].click()}}
+  else if(pad?hit:v>lo||mode==="toggle"){let cur=-1;kids.forEach((k,i)=>{if(k.classList.contains("on"))cur=i});kids[(cur+1)%kids.length].click()}return}  // from the last one on: a pick-any row adds the next
+ if(mode==="abs"&&!pad){const up=f>=.5;if(up&&!el._xmUp)el.click();el._xmUp=up}else if(pad?hit:mode!=="hold"||v>lo)el.click()}
 if(!X.handlers["*"])X.handlers["*"]=drive;
 
 // ---------------------------------------------------------------- mounting

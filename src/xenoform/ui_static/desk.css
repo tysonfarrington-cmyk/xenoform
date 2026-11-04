@@ -761,6 +761,7 @@ dialog .settings-detail .note, dialog .about-detail .note { margin: 6px 0 0; }
 .easy-side .variations-row { display: flex; flex-direction: column; gap: 8px; margin: 14px 0 4px; padding-top: 12px; border-top: 1px solid var(--x-line-2); }
 .easy-side .variations-row .note { margin: 0; }
 
+.lane-head .hint-phone { display: none; }
 @media (max-width: 560px) {
   body[data-desk] .comfy-status { padding: 0 9px; font-size: 0; gap: 0; }
   body[data-desk] .comfy-status::before { margin: 0; }
@@ -769,6 +770,15 @@ dialog .settings-detail .note, dialog .about-detail .note { margin: 6px 0 0; }
   .morph-count .seg-label { grid-column: 1 / -1; }
   .vibe-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .easy-intro .lede { display: none; }
+  /* the five steps fit a phone without a hidden sideways scroll: the step you are on keeps its name, the others show
+     their number or tick (the name stays for a screen reader and in the title) */
+  .stagebar .easy-crumbs .crumb:not(.now), .stagebar .easy-crumbs button.crumb:not(.now) { position: relative; padding: 0 6px; }
+  .stagebar .easy-crumbs .crumb:not(.now) .crumb-label {
+    position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+  }
+  /* the strip is the passages overview here: no shot to click, so the timeline's hint says so */
+  .lane-head .hint-wide { display: none; }
+  .lane-head .hint-phone { display: inline; }
 }
 @media (prefers-reduced-motion: reduce) {
   #app[data-enter] > *, .happen li.now::before { animation: none; }

@@ -323,3 +323,20 @@ def test_status_says_whether_the_websocket_can_upgrade(monkeypatch):
     assert stems_api.ws_upgrade_available() is True
     js = (stems_api.Path(stems_api.__file__).parent / "ui_static" / "midi.js").read_text(encoding="utf-8")
     assert "/api/midi/status" in js and "websocket!==false" in js
+
+
+def test_badges_skip_a_folded_row_and_a_pad_steps_a_chip_row():
+    # the 4 Nov desk checks (integrate-4nov): a stem lane inside the closed Stem reactions <details> keeps a layout box in
+    # Chrome and the hit test found the panel around it, so two phantom K7 badges floated under the MIDI row (SEL matches
+    # the lane's label and its input): folded() asks checkVisibility (else a closed <details>), and one badge per target.
+    # A pad learned onto a row of chips (feel, effects) took mode "abs", so its velocity picked the chip and its note-off
+    # snapped back to the first: a note now steps along the row on its hit and does nothing on its release.
+    face = (stems_api.Path(stems_api.__file__).parent / "ui_static" / "midi_map.js").read_text(encoding="utf-8")
+    paint = face.split("function paintBadges(){")[1].split("\nlet moved=0;")[0]
+    assert "if(!t||done.has(X.canonical(t)))continue;" in paint and "folded(el))continue;" in paint
+    assert "done.add(X.canonical(t))" in paint and 'el.closest("[hidden],.hide"))continue' not in paint
+    assert 'function folded(el){if(el.closest("[hidden],.hide"))return true;if(el.checkVisibility)return!el.checkVisibility();' in face
+    drive = face.split("function drive(t,v,ev,row){")[1].split("\nif(!X.handlers")[0]
+    assert 'const pad=!!(ev&&ev.type==="note"),hit=pad&&(ev.value|0)>0;' in drive
+    assert 'if(mode==="abs"&&!pad){const i=' in drive and 'else if(pad?hit:v>lo||mode==="toggle")' in drive
+    assert 'if(mode==="abs"&&!pad){const up=f>=.5;' in drive and "else if(pad?hit:mode!==\"hold\"||v>lo)el.click()" in drive

@@ -265,7 +265,7 @@ function stepNav(easy) {
     const cls = `crumb${now ? " now" : ""}${done ? " done" : ""}`;
     const title = `${STEP_HINTS[key]}${reach[key] ? "" : key === "render" ? " Render a Draft first." : key === "perform" ? " A rendered cut first." : " A song first."}`;
     const tour = key === "perform" ? ' data-tour="easy-perform"' : "";  // the tutorial's last step points here, cut or none
-    return `<button type="button" class="${cls}" data-act="easy-go-step" data-step="${key}"${tour}${now ? ' aria-current="step"' : ""}${reach[key] ? "" : " disabled"} title="${esc(title)}">${STEP_LABELS[key]}</button>`;
+    return `<button type="button" class="${cls}" data-act="easy-go-step" data-step="${key}"${tour}${now ? ' aria-current="step"' : ""}${reach[key] ? "" : " disabled"} title="${esc(title)}"><span class="crumb-label">${STEP_LABELS[key]}</span></button>`;
   });
   return `<nav class="easy-crumbs step-nav" aria-label="Steps">${items.join('<span class="crumb-sep" aria-hidden="true">›</span>')}</nav>`;
 }
@@ -3241,10 +3241,10 @@ function shotsLane(easy) {
   const swapping = canSwap && !!easy.swapMode;
   const tl = timelineState(easy, lane);
   const picked = easy.tlPick && easy.tlFor === id ? easy.tlPick : null;
-  const facts = [lane.plan_line || "", `${lane.shots.length} shots`, lane.morphs ? `${lane.morphs} morphs over ${lane.objects} objects` : "", lane.pace ? `${lane.pace} pace` : "",
+  const facts = [planLineFor(easy, lane), `${lane.shots.length} shots`, lane.morphs ? `${lane.morphs} morphs over ${lane.objects} objects` : "", lane.pace ? `${lane.pace} pace` : "",
     (lane.sections || []).length > 1 && !songCut ? `${lane.sections.length} passages` : "", lane.swaps ? `${lane.swaps} swap${lane.swaps === 1 ? "" : "s"}` : "",
     lane.rerenders ? `${lane.rerenders} re-render${lane.rerenders === 1 ? "" : "s"}` : "", lane.inserts ? `${lane.inserts} generated run${lane.inserts === 1 ? "" : "s"}` : "", lane.dreams ? `${lane.dreams} dream${lane.dreams === 1 ? "" : "s"}` : ""].filter(Boolean).join(" · ");
-  const hint = swapping ? "click a shot to swap the object it lands on" : songCut ? "click a passage to open its own cut and edit it there" : "click a shot, or the seam between two, to change it";
+  const hint = swapping ? "click a shot to swap the object it lands on" : songCut ? "click a passage to open its own cut and edit it there" : `<span class="hint-wide">click a shot, or the seam between two, to change it</span><span class="hint-phone">on a phone the strip shows the passages: a shot opens to change on a wider screen</span>`;
   const toggle = swapping ? `<button type="button" class="text lane-swap-toggle" data-act="easy-swap-mode" aria-pressed="true">Done swapping</button>` : "";
   const picker = swapping ? swapPicker(easy, lane) : "";
   const pending = timelineDirty(easy, lane);
@@ -3887,6 +3887,14 @@ function cutSongStart(easy, lane) {
   const start = Number(lane.window.song_start) || 0;
   const held = Number(state && state.duration) || 0;
   return held > 0 && start + (Number(lane.duration) || 0) > held + 0.5 ? 0 : start;
+}
+// The plan's line speaks song time ("1 drop, the main at 2:22"): when the strip under it is laid in cut time (the desk
+// holds the cut's own stretch, or not its song), its clocks move back by the window's start, so the two read alike
+function planLineFor(easy, lane) {
+  const line = String((lane && lane.plan_line) || "");
+  const shift = (Number(lane && lane.window && lane.window.song_start) || 0) - cutSongStart(easy, lane);
+  if (!line || shift < 0.5) return line;
+  return line.replace(/\b(\d+):([0-5]\d)\b/g, (m, a, b) => { const t = Number(a) * 60 + Number(b) - shift; return t > -0.5 ? clockText(t) : m; });
 }
 function stripTitle(song, easy) {
   const runs = (song.passages || []).filter((p) => p.drop_run != null);
