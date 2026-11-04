@@ -295,6 +295,8 @@ function payload() {
 function vjUrl() {
   const audio = (state && state.audioId) || "demo";
   const params = new URLSearchParams({ track: audio });
+  const job = state ? easyVideoId() : "";  // Perform plays this cut's clips, song and stems first (/vj?job=, perform_api)
+  if (job) params.set("job", job);
   const stems = window.XENO_STEMS ? window.XENO_STEMS() : null;
   if (stems && stems.id) {
     params.set("stemsId", stems.id);
@@ -987,7 +989,7 @@ function renderEasy() {
     const actions = showcase
       ? `<button type="button" class="generate" data-act="easy-again">Make your own</button>
             <button type="button" class="ghost" data-act="easy-download">Download the showcase</button>`
-      : `<button type="button" class="generate" data-act="easy-download">Download</button>`;
+      : `<button type="button" class="generate" data-act="easy-download">Download</button><a class="ghost" href="${esc(vjUrl())}" target="_blank" rel="noopener" title="Play this cut live: its clips on the song's beats, pads, a REC take">Perform it</a>`;
     const proto = !showcase && Number(easy.madeLength) > 0;
     const songCut = !showcase && songResult(easy);  // the whole song laid together: its passages under the player
     const fromSong = !showcase && !songCut && easy.fromSong;  // a passage of a whole song, opened from its timeline
@@ -2422,7 +2424,7 @@ function takeCard(row) {
   return `<figure class="gallery-card is-take" data-aspect="${esc(row.aspect)}">
         <video muted playsinline preload="metadata" loop src="${url}#t=1.5"></video>
         <figcaption><strong>${esc(row.song || "Live take")}</strong>
-          <span>${esc(["Live take", row.size, row.seconds ? clockText(Number(row.seconds)) : "", row.status === "error" ? "webm only" : ""].filter(Boolean).join(" Â· "))}</span>
+          <span>${esc(["Live take", row.size, row.seconds ? clockText(Number(row.seconds)) : "", row.status === "error" ? "webm only" : ""].filter(Boolean).join(" · "))}</span>
           <span class="mono">${esc(String(row.created || "").replace("T", " ").slice(0, 16))}</span>
           <span class="gallery-actions"><a class="ghost" href="${url}" target="_blank" rel="noopener">Play</a><a class="ghost" href="${url}" download>Download</a></span>
         </figcaption>
