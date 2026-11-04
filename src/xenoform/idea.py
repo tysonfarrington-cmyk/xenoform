@@ -670,8 +670,8 @@ def summary(reading: dict) -> str:
     if things or own:
         bits.append("Objects: " + ", ".join(things + own) + (f" (the {reading['theme']} theme)" if reading.get("theme") else "") + ".")
     perf = reading.get("performer")
-    if perf:  # read, but she renders only when switched on in Work in progress
-        bits.append("Polly: " + PERFORMER_WORDS.get(str(perf.get("style") or "auto"), "performing") + " (in Work in progress).")
+    if perf:  # read, but she renders only when switched on in Tweak's Project · under the hood panel
+        bits.append("Polly: " + PERFORMER_WORDS.get(str(perf.get("style") or "auto"), "performing") + " (when switched on in Tweak → Project · under the hood).")
     feel = reading.get("feel")
     if feel:
         knobs = [f"{k.capitalize()} {round(float(v) * 100)}" for k, v in (feel.get("macros") or {}).items()]

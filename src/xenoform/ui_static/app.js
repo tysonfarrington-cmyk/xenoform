@@ -2621,7 +2621,7 @@ function ideaReadingHtml(easy) {
   }
   if (have.performer) {
     rows.who.push(ideaChip("who", have.performer.cue || have.performer.style || "performing"));
-    extra.who = `<span class="ir-note">${Number(easy.performer || 0) > 0 ? "Polly performs it" : "Polly is off (Work in progress)"}</span>`;
+    extra.who = `<span class="ir-note">${Number(easy.performer || 0) > 0 ? "Polly performs it" : "Polly is off (Tweak → Project · under the hood → Performer)"}</span>`;
   }
   const body = ideaRows(rows, extra);
   if (!body) return `<p class="note ir-foot">Nothing to morph between yet: name things (a nautilus, a jellyfish), a place or how it feels.</p>`;
