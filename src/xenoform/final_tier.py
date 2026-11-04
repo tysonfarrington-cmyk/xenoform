@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import logging
 import os
+import time
 from pathlib import Path
 from typing import Callable
 
@@ -240,9 +241,11 @@ def final_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
                 draft: Callable[[list[int]], dict[int, Path]] | None = None,
                 vertical: bool = False, state: dict | None = None,
                 styles: list[str] | None = None, relay: bool = True, prompt_text: str | None = None,
-                negative_text: str | None = None) -> tuple[list[Path], list[dict]]:
+                negative_text: str | None = None, requests: list | None = None) -> tuple[list[Path], list[dict]]:
     """Render every shot on LTX-2.3 (+ ClearReality). Returns clips and one note per fallback. ``styles`` is how each
-    shot's object changes (``morph_style``; Melt when not given).
+    shot's object changes (``morph_style``; Melt when not given). ``requests``, when given, is filled with each shot's
+    request as it was sent and the time it took (``shot_recipe``); a shot that falls back to Draft is the ``draft``
+    callback's to record.
 
     ``vertical`` renders native 9:16 (448x768 -> 1080x1920) from portrait stills. A shot
     that falls all the way back to Draft comes back 16:9 and the compositor crops it.
@@ -287,7 +290,9 @@ def final_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
 
     name = model()
     from xenoform import morph_cache as mc
+    from xenoform import shot_recipe as sr
 
+    sr.slots(requests, len(shots))
     hits: list[int] = []  # the shots the morph cache answered
     if name == "ltx25":
         from xenoform import cloud_final
@@ -315,8 +320,14 @@ def final_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
         dest = Path(work) / f"final{i:02d}.mp4"
         # the morph cache first (morph_cache): the same request rendered before is copied, never sent to the GPU again
         key = mc.key_for(g, {a_node: stills[i]["path"], b_node: stills[i + 1]["path"]}, name) if isinstance(g, dict) else None
+        started = time.perf_counter()
+        req = sr.request(g, engine=name, stills=(stills[i], stills[i + 1]), nodes=(a_node, b_node), key=key[0] if key else None,
+                         style=styles[i] if styles and i < len(styles) else "melt", kinds=kinds,
+                         render_s=float(shot.get("render_s") or shot["seconds"])) if requests is not None and isinstance(g, dict) else None
         if mc.get(name, key, dest):
             hits.append(i)
+            if requests is not None:
+                requests[i] = sr.done(req, seconds=0.0, cached=True)
             return dest
         wf = client.workflows.from_json(g)
         wf.set_input(a_node, "image", asset(stills[i]["path"]))
@@ -329,6 +340,8 @@ def final_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
             raise RuntimeError(f"Final shot {i + 1} finished with no video.")
         next((o for o in outs if getattr(o, "type", None) == "video"), outs[0]).to_file(str(dest))
         mc.put(name, key, dest)
+        if requests is not None:
+            requests[i] = sr.done(req, seconds=time.perf_counter() - started, cached=False)
         return dest
 
     clips: dict[int, Path] = {}

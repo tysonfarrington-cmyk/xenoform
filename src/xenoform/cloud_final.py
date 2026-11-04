@@ -163,9 +163,11 @@ def cloud_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
                 cancel: Callable[[], bool] | None = None, report: Callable[[str, float, str], None] | None = None,
                 draft: Callable[[list[int]], dict[int, Path]] | None = None, vertical: bool = True,
                 state: dict | None = None, styles: list[str] | None = None, backend=None,
-                name: str | None = None) -> tuple[list[Path], list[dict]]:
+                name: str | None = None, requests: list | None = None) -> tuple[list[Path], list[dict]]:
     """Render every shot's morph on Comfy Cloud. Returns the clips (at the render size; the caller scales them) and
     one note per shot that fell back to its Draft morph. ``name`` picks the graph (``model()`` when not given).
+    ``requests``, when given, is filled with each shot's request as it was sent and its wall time, upload to download
+    (``shot_recipe``); a shot that falls back to Draft is the ``draft`` callback's to record.
 
     The morph cache (``morph_cache``, engine ``ltx25cloud`` or ``ltx23cloud``) answers first: a shot whose request was
     rendered on Comfy Cloud before is copied from it, and nothing of it is uploaded or sent, so it spends no credit. The
@@ -206,16 +208,26 @@ def cloud_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
             text = lead(stills[i].get("noun"), stills[i + 1].get("noun")) + text
         g = graph_for(name, guard_prompt(text, state), negative=negative, length=length, seed=int(seed) + i, width=w,
                       height=h, prefix=f"xenoform/cloud{i:02d}", **knobs)
-        return {"graph": g, "out_dir": work / "cloud" / f"{i:02d}",
+        return {"graph": g, "out_dir": work / "cloud" / f"{i:02d}", "style": style, "kinds": kinds,
+                "render_s": float(shots[i].get("render_s") or shots[i]["seconds"]),
                 "inputs": {a_node: Path(stills[i]["path"]), b_node: Path(stills[i + 1]["path"])}}
+
+    from xenoform import shot_recipe as sr
 
     jobs = [job(i) for i in range(len(shots))]
     engine = name + "cloud"  # ltx25cloud / ltx23cloud: the cache never answers a Cloud shot with a local render
+    sr.slots(requests, len(shots))
     clips: dict[int, Path] = {}
     for i, j in enumerate(jobs):  # the morph cache first: a hit is copied and never sent
         j["key"] = mc.key_for(j["graph"], j["inputs"], engine)
+        if requests is not None:  # the record of what is sent, taken before the backend uploads anything
+            j["request"] = sr.request(j["graph"], engine=engine, stills=(stills[i], stills[i + 1]), nodes=(a_node, b_node),
+                                      key=j["key"][0] if j["key"] else None, style=j["style"], kinds=j["kinds"],
+                                      render_s=j["render_s"])
         if mc.get(engine, j["key"], work / f"cloud{i:02d}.mp4"):
             clips[i] = work / f"cloud{i:02d}.mp4"
+            if requests is not None:
+                requests[i] = sr.done(j.get("request"), seconds=0.0, cached=True)
     pending = [i for i in range(len(jobs)) if i not in clips]
     if clips and report:
         report("restyle", 0.12, f"Cloud Final: {len(clips)} of {len(jobs)} morphs kept from earlier renders, nothing sent for them")
@@ -235,6 +247,7 @@ def cloud_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
             while pending and len(running) < backend.max_parallel and not (cancel and cancel()):
                 i = pending.pop(0)
                 j = jobs[i]
+                j["sent"] = sr.now()
                 running[pool.submit(backend.run, j["graph"], j["out_dir"], inputs=j["inputs"])] = i
             if not running:
                 break  # cancelled with nothing left in flight
@@ -250,6 +263,9 @@ def cloud_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
                     shutil.move(str(videos[0]), dest)
                     clips[i] = dest
                     mc.put(engine, jobs[i].get("key"), dest)  # kept: the same request never spends a credit again
+                    if requests is not None:
+                        requests[i] = sr.done(jobs[i].get("request"), seconds=sr.now() - float(jobs[i].get("sent") or sr.now()),
+                                              cached=False)
                 except Exception as exc:  # noqa: BLE001 - a failed shot falls back to its Draft morph
                     failed.append(i)
                     notes.append({"shot": i, "fallback": "ltx095-draft", "why": str(exc)[:200]})

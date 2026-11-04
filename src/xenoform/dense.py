@@ -1533,11 +1533,32 @@ def stamp_still_kinds(shots: list[dict], stills: list[dict]) -> list[dict]:
 
 
 def _draft_clips(shots, stills, work, cfg, seed, vibe, client, cancel, state=None, report=None, size=None, styles=None,
-                 prompt=None, negative=None):
+                 prompt=None, negative=None, requests=None):
     from xenoform.cloud_morph import _local_clips
 
     return _local_clips(shots, stills, work, cfg, seed, vibe, client=client, cancel=cancel, state=state, report=report,
-                        size=size, styles=styles, prompt=prompt, negative=negative)
+                        size=size, styles=styles, prompt=prompt, negative=negative, requests=requests)
+
+
+def _tier_of(opt: dict, engine: str) -> str:
+    """The quality a cut was made at, as Under the hood names it: draft, fast (Fast Final), final, cloud."""
+    return "cloud" if opt.get("cloud") else "final" if engine == "ltx23" else "fast" if opt.get("fast") else "draft"
+
+
+def _keep_renders(work: Path, reqs: list, shots: list[dict], *, tier: str, finish: str = "") -> list:
+    """The cut's ``renders``: one a shot beside ``clips`` (the request of the morph it plays, ``shot_recipe.per_shot``),
+    each tagged with the cut's tier and how its clip was finished (an upscale, a scale), each graph kept under
+    ``simple/requests/``."""
+    from xenoform import shot_recipe as sr
+
+    stored: dict[int, dict | None] = {}
+    for m, req in enumerate(reqs):
+        if isinstance(req, dict):
+            tagged = {**req, "tier": tier, **({"finish": finish} if finish else {})}
+            if tier != "draft" and req.get("engine") == "ltx095":
+                tagged["fallback"] = True  # the cut's model failed on this shot: its Draft morph stands in
+            stored[m] = sr.store(work, tagged)
+    return sr.per_shot(shots, [stored.get(m) for m in range(len(reqs))])
 
 
 def _gathers_taste(fn: Callable) -> Callable:
@@ -1736,6 +1757,9 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
 
         stills = portrait_stills(stills, work, DRAFT_916[0], DRAFT_916[1], background=background)
         notes.append({"native_draft": f"{DRAFT_916[0]}x{DRAFT_916[1]} portrait morphs from re-laid stills"})
+    # each render shot's request as it was queued and the time it took (shot_recipe): the cut's ``renders`` below
+    reqs: list = [None] * len(render_shots)
+    finish = ""
     if engine == "mock":
         from xenoform.cloud_morph import _mock_clips
 
@@ -1754,8 +1778,10 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
         def draft(indices: list[int]) -> dict[int, Path]:
             got = {}
             for k, i in enumerate(indices):
+                one: list = []
                 got[i] = _draft_clips([render_shots[i]], [stills[i], stills[i + 1]], work, cfg, seed + i, vibe, client, cancel, state,
-                                      styles=[render_styles[i]])[0]
+                                      styles=[render_styles[i]], requests=one)[0]
+                reqs[i] = one[0] if one else None
                 renamed = work / f"draft_fallback{i:02d}.mp4"
                 shutil.move(str(got[i]), renamed)
                 got[i] = renamed
@@ -1763,8 +1789,10 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
 
         # its fallback notes join the cut's (they used to replace them: a Final lost its grown-for-the-line note)
         clips, final_notes = final_clips(render_shots, stills, work, cfg, seed, vibe, client=client, cancel=cancel, report=report,
-                                         draft=draft, vertical=native, state=state, styles=render_styles)
+                                         draft=draft, vertical=native, state=state, styles=render_styles, requests=reqs)
         notes.extend(final_notes)
+        if final_tier.model() == "ltx25":
+            finish = f"scaled here to {final_tier.sizes(native)['out'][0]}x{final_tier.sizes(native)['out'][1]} with Lanczos"
     elif engine == "ltx25cloud":
         from xenoform import cloud_final, upscale_pass
 
@@ -1778,14 +1806,17 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
                 pair = [stills[i], stills[i + 1]]
                 if vertical:
                     pair = portrait_stills(pair, work, DRAFT_916[0], DRAFT_916[1], background=background)
+                one: list = []
                 clip = _draft_clips([render_shots[i]], pair, work, cfg, seed + i, vibe, client, cancel, state,
-                                    size=DRAFT_916 if vertical else None, styles=[render_styles[i]])[0]
+                                    size=DRAFT_916 if vertical else None, styles=[render_styles[i]], requests=one)[0]
+                reqs[i] = one[0] if one else None
                 got[i] = work / f"draft_fallback{i:02d}.mp4"
                 shutil.move(str(clip), got[i])
             return got
 
         clips, cloud_notes = cloud_final.cloud_clips(render_shots, stills, work, cfg, seed, vibe, cancel=cancel, report=report,
-                                                     draft=draft, vertical=vertical, state=state, styles=render_styles)
+                                                     draft=draft, vertical=vertical, state=state, styles=render_styles,
+                                                     requests=reqs)
         notes.extend(cloud_notes)
         # the clips go to full size at their own aspect (as Fast Final's do); the cut composes at the aspect's size, so a
         # 1:1 cut is cropped around the object rather than squashed to a square
@@ -1796,18 +1827,20 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
         notes.append({"cloud_final": f"{len(clips) - len(cloud_notes)} of {len(clips)} morphs rendered with {cloud_final.label()} on "
                                      f"Comfy Cloud (open weights), scaled here to {full[0]}x{full[1]}"})
         notes.extend(up_notes)
+        finish = f"rendered on Comfy Cloud, scaled here to {full[0]}x{full[1]} with Lanczos"
     else:
         clips = _draft_clips(render_shots, stills, work, cfg, seed, vibe, client, cancel, state, report=report,
-                             size=DRAFT_916 if native_draft else None, styles=render_styles)
+                             size=DRAFT_916 if native_draft else None, styles=render_styles, requests=reqs)
         if opt["fast"] and engine == "ltx095":
             from xenoform import upscale_pass
 
             # portrait Draft clips go to 1080x1920, landscape ones to 1920x1080; the cut composes at the aspect's size
-            clips, fast_notes = upscale_pass.upscale_clips(clips, work, upscale_pass.OUT_916 if native_draft else upscale_pass.OUT_169,
-                                                           cfg, client=client, cancel=cancel, report=report, fps=fps)
+            full = upscale_pass.OUT_916 if native_draft else upscale_pass.OUT_169
+            clips, fast_notes = upscale_pass.upscale_clips(clips, work, full, cfg, client=client, cancel=cancel, report=report, fps=fps)
             size = upscale_pass.out_size(opt["aspect"])
             notes.append({"fast_final": f"{len(clips)} Draft morphs upscaled to {size[0]}x{size[1]} ({upscale_pass.MODEL})"})
             notes.extend(fast_notes)
+            finish = f"upscaled to {full[0]}x{full[1]} with {upscale_pass.MODEL} (Fast Final)"
     if long_song:
         clips = [clips[ci] for ci in chain["assign"]]  # one entry per shot, walking the loop
         shot_styles = [render_styles[int(ci)] for ci in chain["assign"]]  # what each shot's morph was rendered as
@@ -1999,7 +2032,10 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
                      "draft_size": list(DRAFT_916) if native_draft else None},
             "swaps": [],
             "families": sorted({_fam for _fam in (s.get("family") or "" for s in stills) if _fam}),
-            "plan_shots": plan_shots, "clips": [str(c) for c in clips], "audio_path": str(audio_path),
+            "plan_shots": plan_shots, "clips": [str(c) for c in clips],
+            # what each shot's morph was rendered with, one a shot beside ``clips`` (Under the hood, shot_recipe)
+            "renders": _keep_renders(work, reqs, shots, tier=_tier_of(opt, engine), finish=finish),
+            "audio_path": str(audio_path),
             "transitions": transitions, "boundary_fx": boundary_fx, "drop": plan.get("drop"), "size": list(size) if size else None,
             "fps": fps, "seed": seed,
             # how each shot's morph changes: the setting (auto or a style) and the style a shot was rendered in
@@ -2579,15 +2615,34 @@ def _prepare_rows(rows: list[dict], prep: dict, work: Path) -> list[dict]:
 
 
 def _render_pairs(render_shots: list[dict], rows: list[dict], dest_dir: Path, prep: dict, *, seed: int, vibe: str, cfg: dict | None,
-                  state: dict, client=None, report=None, styles: list[str] | None = None) -> list[Path]:
+                  state: dict, client=None, report=None, styles: list[str] | None = None,
+                  requests: list | None = None) -> list[Path]:
     """``len(render_shots)`` morphs over ``rows`` (one more still than shots) through the Draft path, the cut's engine,
-    each in its ``styles`` entry (``morph_style``; Melt when not given)."""
+    each in its ``styles`` entry (``morph_style``; Melt when not given); ``requests`` is filled as ``_local_clips`` fills
+    it (the mock engine sends none)."""
     if prep.get("mock"):
         from xenoform.cloud_morph import _mock_clips
 
         return _mock_clips(render_shots, rows, dest_dir, *(prep.get("draft_size") or (768, 432)))
     return _draft_clips(render_shots, rows, dest_dir, cfg or {}, seed, vibe, client, None, state, report=report,
-                        size=prep.get("draft_size"), styles=styles)
+                        size=prep.get("draft_size"), styles=styles, requests=requests)
+
+
+def _renders_of(rec: dict) -> list:
+    """The record's ``renders``, one a clip (a record from before them: None for every shot)."""
+    n = len(rec.get("clips") or [])
+    got = list(rec.get("renders") or [])[:n]
+    return got + [None] * (n - len(got))
+
+
+def _edit_render(work: Path, req: dict | None, rec: dict) -> dict | None:
+    """A request a timeline edit rendered, kept as the cut's renders are (``_keep_renders``): its graph under
+    ``simple/requests/``, tagged Draft (the edits render Draft morphs)."""
+    from xenoform import shot_recipe as sr
+
+    if not isinstance(req, dict):
+        return None
+    return sr.store(work, {**req, "tier": "draft"})
 
 
 def _styles_of(rec: dict) -> list[str]:
@@ -2710,11 +2765,16 @@ def rerender_morph(job_dir: Path, shot: int, *, seed: int | None = None, render_
         report("restyle", 0.1, f"Re-rendering shot {j + 1}: {pair[0].get('noun') or '?'} -> {pair[1].get('noun') or '?'} "
                                f"({_ms.LABELS[style]}, seed {seed}, {render_s} s{'' if variant == 'auto' else ', ' + variant})")
     started = time.perf_counter()
+    one: list = []
     got = _render_pairs([render_shot], ready, dest_dir, prep, seed=seed, vibe=vibe, cfg=cfg, state=state, client=client,
-                        styles=[style])[0]
+                        styles=[style], requests=one)[0]
     dest = dest_dir / f"morph{m:02d}.mp4"
     shutil.move(str(got), dest)
+    renders = _renders_of(rec)
+    before = {"clip": clips[j], "render": renders[j], "style": styles[j], "render_s": old_render_s}  # the take this one replaces
+    made = _edit_render(work, one[0] if one else None, rec)
     clips[j] = str(dest)
+    renders[j] = made
     styles[j] = style
     if render_s != old_render_s:  # the shot keeps its frames on the beat; the source length and the play speed move
         for lst in (rec.get("plan_shots") or [], rec.get("shots") or []):
@@ -2723,10 +2783,11 @@ def rerender_morph(job_dir: Path, shot: int, *, seed: int | None = None, render_
                 lst[j]["speed"] = round(render_s / max(seconds, 0.1), 3)
     from datetime import datetime
 
-    rec.update({"clips": clips, "morph_styles": styles,
+    rec.update({"clips": clips, "morph_styles": styles, "renders": renders,
                 "rerenders": rerenders + [{"shot": j, "morph": m, "seed": seed, "render_s": render_s, "variant": variant, "style": style,
                                            "clip": str(dest), "seconds": round(time.perf_counter() - started, 2),
-                                           "at": datetime.now().astimezone().isoformat(timespec="seconds")}]})
+                                           "at": datetime.now().astimezone().isoformat(timespec="seconds"),
+                                           "request": made, "before": before}]})
     (work / "simple.json").write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
     if report:
         report("assemble", 0.55, "Re-cutting with the new morph (no GPU)")
@@ -2827,15 +2888,18 @@ def insert_generated(job_dir: Path, first: int, *, seconds: float = 10.0, pins: 
 
     run_styles = _ms.for_cut({**state, "morph_styles": None, "macros": macros(state)}, span, rec.get("drop"))
     started = time.perf_counter()
+    made: list = []
     got = _render_pairs(render_shots, ready, dest_dir, prep, seed=seed, vibe=vibe, cfg=cfg, state=state, client=client, report=pair_report,
-                        styles=run_styles)
+                        styles=run_styles, requests=made)
     styles = _styles_of(rec)
+    renders = _renders_of(rec)
     new_clips = []
     for q, path in enumerate(got):
         dest = dest_dir / f"morph{q:02d}.mp4"
         shutil.move(str(path), dest)
         new_clips.append(str(dest))
         clips[first + q] = str(dest)
+        renders[first + q] = _edit_render(work, made[q] if q < len(made) else None, rec)
         if first + q < len(styles):
             styles[first + q] = run_styles[q]
     idx = len(inserts)
@@ -2853,7 +2917,7 @@ def insert_generated(job_dir: Path, first: int, *, seconds: float = 10.0, pins: 
              "nouns": nouns, "kinds": [_stills.kind_of(r) for r in rows], "clips": new_clips, "pins": {str(a): b for a, b in pins_map.items()},
              "seed": seed, "render_s": [r["render_s"] for r in render_shots], "styles": run_styles,
              "took_s": round(time.perf_counter() - started, 2), "at": datetime.now().astimezone().isoformat(timespec="seconds")}
-    rec.update({"clips": clips, "inserts": inserts + [entry], "morph_styles": styles})
+    rec.update({"clips": clips, "inserts": inserts + [entry], "morph_styles": styles, "renders": renders})
     (work / "simple.json").write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
     try:
         _stills.mark_used(vibe, [str(r.get("file")) for r in rows if not r.get("user")])
@@ -2994,6 +3058,7 @@ def swap_still(job_dir: Path, slot: int, file: str, *, cfg: dict | None = None,
     ready = dict(zip(need, prepared))
     started = time.perf_counter()
     new_clips: dict[int, str] = {}
+    new_renders: dict[int, dict | None] = {}
     for m, j in sorted(targets.items()):
         shot = shots[j]
         render_s = int(shot.get("render_s") or (rec.get("chain") or {}).get("clip_s") or max(2, int(round(float(shot.get("seconds") or 2.0)))))
@@ -3002,16 +3067,18 @@ def swap_still(job_dir: Path, slot: int, file: str, *, cfg: dict | None = None,
         if report:
             report("restyle", 0.1 + 0.4 * len(new_clips) / len(targets),
                    f"Re-rendering morph {m + 1} of {n - 1}: {pair[0].get('noun') or '?'} -> {pair[1].get('noun') or '?'}")
+        one: list = []
         if mock:
             from xenoform.cloud_morph import _mock_clips
 
             got = _mock_clips([render_shot], pair, swap_dir, *(draft_size or (768, 432)))[0]
         else:
             got = _draft_clips([render_shot], pair, swap_dir, cfg or {}, seed + m, vibe, client, None, state, size=draft_size,
-                               styles=[shot_styles[j] if j < len(shot_styles) else "melt"])[0]  # the shot keeps its style
+                               styles=[shot_styles[j] if j < len(shot_styles) else "melt"], requests=one)[0]  # the shot keeps its style
         dest = swap_dir / f"morph{m:02d}.mp4"
         shutil.move(str(got), dest)
         new_clips[j] = str(dest)
+        new_renders[j] = _edit_render(work, one[0] if one else None, rec)
     files[slot] = file
     scene_files.discard(old)
     setting_files.discard(old)
@@ -3019,13 +3086,15 @@ def swap_still(job_dir: Path, slot: int, file: str, *, cfg: dict | None = None,
         scene_files.add(file)
     elif _stills.kind_of(new) == "setting":
         setting_files.add(file)
+    renders = _renders_of(rec)
     for j, path in new_clips.items():
         clips[j] = path
+        renders[j] = new_renders.get(j)
     for lst in (rec.get("plan_shots") or [], rec.get("shots") or []):  # the kinds the two touched shots now morph between
         stamp_still_kinds([s for s in lst if isinstance(s, dict)], rows)
     from datetime import datetime
 
-    rec.update({"stills": files, "scene_files": [f for f in files if f in scene_files], "clips": clips,
+    rec.update({"stills": files, "scene_files": [f for f in files if f in scene_files], "clips": clips, "renders": renders,
                 "setting_files": [f for f in files if f in setting_files],
                 "families": sorted({fam for fam in (_stills.family_of(str(r.get("noun") or "")) for r in rows) if fam}),
                 "swaps": swaps + [{"slot": slot, "from": old, "to": file, "morphs": sorted(targets), "shots": sorted(targets.values()),

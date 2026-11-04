@@ -664,17 +664,23 @@ def _job_result(client, job):
 
 def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, client=None, cancel=None,
                  state: dict | None = None, report=None, size: tuple[int, int] | None = None,
-                 styles: list[str] | None = None, prompt: str | None = None, negative: str | None = None) -> list[Path]:
+                 styles: list[str] | None = None, prompt: str | None = None, negative: str | None = None,
+                 requests: list | None = None) -> list[Path]:
     """Free: one LTX 0.9.5 A->B morph per shot through the existing morph graph.
 
     ``size`` overrides the render size (Draft 9:16 renders portrait 320x576 from re-laid stills); ``styles`` is how
     each shot's object changes (``morph_style``: melt, shatter, bloom, spin, fold; Melt when not given).
 
     The morph cache (``morph_cache``) is asked first: a shot whose request (both stills' bytes, the prompt, the seed,
-    the whole graph) was rendered before is copied from it and never queued; a shot rendered here is kept in it."""
+    the whole graph) was rendered before is copied from it and never queued; a shot rendered here is kept in it.
+    ``requests``, when given, is filled with each shot's request as it was queued (``shot_recipe.request``) and the
+    time its clip took, the record Under the hood reads."""
     from xenoform import morph_cache as mc
     from xenoform import morph_pass as mp
+    from xenoform import shot_recipe as sr
 
+    sr.slots(requests, len(shots))
+    reqs: dict[int, dict | None] = {}
     render_w, render_h = (int(size[0]), int(size[1])) if size else (mp.WIDTH, mp.HEIGHT)
     client = client or _client(cfg)
     graph = mp._graph_path(work, "ltx095")
@@ -718,6 +724,10 @@ def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, cli
         # the request, keyed before anything is uploaded: the same one rendered before is copied and never queued
         keys[i] = mc.key_for(getattr(wf, "json", None) or {}, {"6": stills[i]["path"], "7": stills[i + 1]["path"]}, "ltx095") \
             if isinstance(getattr(wf, "json", None), dict) else None
+        if requests is not None and isinstance(getattr(wf, "json", None), dict):  # the record, before the stills go up
+            reqs[i] = sr.request(wf.json, engine="ltx095", stills=(stills[i], stills[i + 1]), nodes=("6", "7"),
+                                 key=keys[i][0] if keys[i] else None, style=style, kinds=kinds,
+                                 render_s=float(shot.get("render_s") or shot["seconds"]))
         dest = work / f"local{i:02d}.mp4"
         if mc.get("ltx095", keys[i], dest):
             cached[i] = dest
@@ -729,11 +739,14 @@ def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, cli
         jobs.append(queued[i])
     clips = []
     started = time.perf_counter()
+    last = started  # the GPU runs the queue one morph at a time: each takes from the one before's end to its own
     rendered = 0
     for i in range(len(shots)):
         dest = work / f"local{i:02d}.mp4"
         if i in cached:
             clips.append(cached[i])
+            if requests is not None:
+                requests[i] = sr.done(reqs.get(i), seconds=0.0, cached=True)
             if report:
                 report("restyle", 0.1 + 0.45 * (i + 1) / len(shots), f"Morph {i + 1} of {len(shots)} (kept from an earlier render)")
             continue
@@ -745,6 +758,10 @@ def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, cli
         clips.append(dest)
         mc.put("ltx095", keys.get(i), dest)
         rendered += 1
+        if requests is not None:
+            now = time.perf_counter()
+            requests[i] = sr.done(reqs.get(i), seconds=now - last, cached=False)
+            last = now
         if report:  # the desk re-estimates from the real pace of "Morph k of N"
             pace = (time.perf_counter() - started) / rendered
             left = int(round(pace * (len(jobs) - rendered)))
