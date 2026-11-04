@@ -691,3 +691,37 @@ def test_stop_during_an_edit_waits_for_the_desk_and_a_make_stops_as_before():
     assert "state.easy.stopping = true;" in edit and "/cancel`" in edit and "ignoreJob" not in edit and "setEasyPhase" not in edit
     assert "ignoreJob = job.id;" in stop and 'state.easy.note = "Stopped. Anything still queued on the GPU was cancelled.";' in stop
     assert "state.easy.stopping ? state.easy.note : easyProgressText(job)" in _fn("poll")
+
+
+# ---------------------------------------------------------------- P1: the player outlives the redraw
+@NODE
+def test_the_cuts_player_outlives_a_redraw_that_plays_the_same_file(tmp_path):
+    """P1: every click rebuilt the cut's screen with its <video>, so a shot click stopped the video, jumped it to 0 and
+    buffered the file again."""
+    draw = _fn("render")
+    assert draw.index("const player = keepPlayer(app);") < draw.index("app.innerHTML") < draw.index("putPlayerBack(app, player);")
+    code = _fn("keepPlayer") + _fn("putPlayerBack") + r"""
+const video = (src) => ({ src, removed: false, replacedBy: null, getAttribute(k) { return k === "src" ? this.src : null; },
+                          remove() { this.removed = true; }, replaceWith(n) { this.replacedBy = n; } });
+const app = { node: null, querySelector() { return this.node; } };
+const out = {};
+const playing = video("/api/videos/abc/video");
+app.node = playing;
+let kept = keepPlayer(app);
+const sameFile = video("/api/videos/abc/video");
+app.node = sameFile;
+putPlayerBack(app, kept);
+out.same = { taken: playing.removed, back: sameFile.replacedBy === playing };
+app.node = playing;
+kept = keepPlayer(app);
+const newVersion = video("/api/videos/abc/video?v=3");
+app.node = newVersion;
+putPlayerBack(app, kept);
+out.other = newVersion.replacedBy;
+app.node = null;
+out.none = keepPlayer(app);
+console.log(JSON.stringify(out));
+"""
+    got = _run(tmp_path, code)
+    assert got["same"] == {"taken": True, "back": True}  # the playing node goes back in the new markup's place
+    assert got["other"] is None and got["none"] is None  # another file gets the new node; no player, nothing kept

@@ -3995,8 +3995,10 @@ function render() {
   const pageSwitch = !!lastScreen && pageBefore !== state.view;
   if (pageSwitch) pageScroll[pageBefore] = place.y;
   lastScreen = screen;
+  const player = keepPlayer(app);
   // One desk: the stages (Song, Vibe, Prototype, Refine, Share) or a tool page. There is no second desk to switch to.
   app.innerHTML = (state.view === "setup" || state.view === "connect") ? renderTool(state.view) : renderEasy();
+  putPlayerBack(app, player);
   // the stage strip lives in the toolbar, like the steps of a desktop tool, on every screen
   const strip = document.getElementById("stage-slot");
   if (strip) strip.innerHTML = state.easy ? easyCrumbs(Object.assign({}, state.easy, state.view === "simple" ? {} : { phase: "tool" })) : "";
@@ -4015,6 +4017,25 @@ function render() {
   else restorePlace(place);
   paintPlayhead();
   paintPending();
+}
+
+// The cut's player outlives the redraw (UI review P1). render() builds #app anew, and every click on the cut's screen
+// (a shot, a tab, a look or FX chip) used to throw the <video> away with it: a shot click seeked the player and then
+// rebuilt it, so the video stopped, jumped to 0 and buffered the no-store file again. The node is taken out before
+// the swap and put back in the new markup's place when that markup plays the same file; it is back in the document in
+// the same task, so the browser never pauses it, and its time, play state and buffer stay. Another file (a new version
+// after an edit, another cut, the showcase) gets the new node.
+function keepPlayer(app) {
+  const node = app.querySelector("video#player");
+  if (!node) return null;
+  const src = node.getAttribute("src") || "";
+  node.remove();
+  return { node, src };
+}
+function putPlayerBack(app, kept) {
+  if (!kept) return;
+  const fresh = app.querySelector("video#player");
+  if (fresh && (fresh.getAttribute("src") || "") === kept.src) fresh.replaceWith(kept.node);
 }
 
 // Setup & models and Connect an AI as full pages on the desk (the "..." menu, the line under Make, #setup and #connect).
