@@ -758,7 +758,8 @@ def build_relay_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="xenoform osc relay",
         description="Read the live page's frames from the desk (websocket /ws/osc, or server-sent events) and send them as OSC "
-                    "from this process: for TouchDesigner on another machine, or a desk whose Python has no python-osc.",
+                    "from this process: for TouchDesigner on another machine, or to start and stop the sending apart from the desk. "
+                    "The desk still needs python-osc (pip install 'xenoform[osc]'), and so does this.",
     )
     p.add_argument("--host", help=f"Where TouchDesigner listens (default: the config's osc.host, {DEFAULT_HOST}).")
     p.add_argument("--port", type=int, help=f"OSC In CHOP port (default: the config's osc.port, {DEFAULT_PORT}).")
