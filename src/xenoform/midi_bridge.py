@@ -101,13 +101,20 @@ def mode_for(target: str, kind: str, profile_mode: str = "") -> str:
         return "rel"
     if re.match(r"^(pad|scene):|^blackout$", target):
         return "hold"
-    if kind != "note":
-        return "abs"
     if target in _TOGGLE_TARGETS:
         return "toggle"
     if re.match(r"^(fx:|dance:|cue:|tap$|play$)", target):
         return "trigger"
     return "abs"
+
+
+def _cc_press(entry: dict, ev: dict, state: dict) -> bool:
+    """A CC press (midi.js ccPress): the value comes up through 64, or a button that only sends 127 sends it again (a
+    knob never repeats a value), so a knob on Tap fires once a turn past half, not on every tick."""
+    key = f"~{entry.get('target')}>{ev.get('type')}:{int((entry.get('source') or {}).get('ch') or 0)}:{int(ev.get('num', 0))}"
+    was, v = int(state.get(key, 0)), int(ev.get("value", 0))
+    state[key] = v
+    return v >= 64 and (was < 64 or was == v)
 
 
 def profile_mapping(profile: str = "minilab3", page: str = "vj") -> list[dict]:
@@ -226,11 +233,11 @@ def apply(entry: dict, ev: dict, state: dict) -> tuple[str, float] | None:
     elif mode == "hold":
         val = lo if is_release(ev) else hi
     elif mode == "toggle":
-        if v == 0:  # a note-off, or a CC button coming back up
+        if (v == 0) if ev.get("type") == "note" else not _cc_press(entry, ev, state):  # a note-off; a CC that is not a press
             return None
         val = hi if float(state.get(tgt, lo)) <= lo else lo
     else:  # trigger
-        if v == 0:
+        if (v == 0) if ev.get("type") == "note" else not _cc_press(entry, ev, state):
             return None
         val = hi
     state[tgt] = val

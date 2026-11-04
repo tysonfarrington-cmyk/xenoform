@@ -83,6 +83,12 @@ def test_profiles_and_modes():
     gvj = {(m["source"]["type"], m["source"]["num"]): m for m in mb.profile_mapping("generic", "vj")}
     assert gvj[("note", 36)]["target"] == "pad:1" and gvj[("note", 36)]["mode"] == "hold" and gvj[("note", 44)]["target"] == "dance:1"
     assert mb.mode_for("pad:3", "cc") == "hold" and mb.mode_for("intensity", "cc") == "abs" and mb.mode_for("fx:2", "note") == "trigger"
+    # a CC on a one-shot target fires on the press, not on every tick: up through 64, or a 127-only button again
+    tap = {"source": {"type": "cc", "ch": 1, "num": 20}, "target": "tap", "mode": mb.mode_for("tap", "cc"), "min": 0, "max": 1}
+    assert tap["mode"] == "trigger" and mb.mode_for("record", "cc") == "toggle"
+    st2 = {}
+    fired = [mb.apply(tap, {"type": "cc", "num": 20, "value": v}, st2) is not None for v in (10, 70, 90, 30, 127, 127, 0)]
+    assert fired == [False, True, False, False, True, True, False]
     st = {}
     cc = by[("cc", 74)]
     assert mb.apply(cc, {"type": "cc", "num": 74, "value": 127}, st) == ("intensity", 2.0)
@@ -130,6 +136,31 @@ def test_soft_takeover_is_wired_on_both_pages():
     assert "window.XENO_MACRO_GET=" in v6 and "read:t=>" in v6
     vj = (static / "vj.html").read_text(encoding="utf-8")
     assert "read:t=>{if(t==='intensity')return S.inten;" in vj
+
+
+def test_the_map_lives_on_the_same_screen():
+    """UI_REVIEW 6.5, C7, V3, A5: midi_map.js badges every mappable control, draws the controller (Map), opens Learn as
+    a popover anchored to the control, names its buttons and undoes a Remove; /vj docks it (never the ? modal), the
+    desk shows it in the Knobs panel's MIDI row; midi.js loads it on demand."""
+    static = stems_api.Path(stems_api.__file__).parent / "ui_static"
+    face = (static / "midi_map.js").read_text(encoding="utf-8")
+    for needle in ("window.XenoMidiMap=", "[data-midi],[data-midi-slot],.xf-knob[data-k],.xf-lane input[data-k]", "Move a knob or hit a pad",
+                   'class="generate xm-done">Done', 'class="ghost xm-clear"', "Removed ${esc(undo.what)}", "xm-undo-go\">Undo",
+                   'aria-label="${esc("Learn "+n+" again")}"', 'aria-label="${esc("Remove "+s+" from "+n)}"', "Save as the shipped preset",
+                   "Reset to default", 'getElementById("midi-panel")', "X.on(\"event\"", "X.away(row)"):
+        assert needle in face, needle
+    css = (static / "midi_map.css").read_text(encoding="utf-8")
+    assert "!important" not in css and "body.clean .xm-dock, body.clean .xm-badges, body.clean .xm-pop" in css
+    assert not [c for c in set(stems_api.re.findall(r"#[0-9a-fA-F]{3,8}\b", css)) if c.lower() != "#fff"]  # the desk's tokens only
+    js = (static / "midi.js").read_text(encoding="utf-8")
+    assert 'api("/static/midi_map.js")' in js and 'api("/static/midi_map.css")' in js and "toggleDock(open)" in js
+    assert "#xeno-midi-panel" not in js  # the old in-page table is gone
+    vj = (static / "vj.html").read_text(encoding="utf-8")
+    help_box = vj.split('<div id="help">', 1)[1].split("</div></div>", 1)[0]
+    assert "midi-panel" not in help_box and '<div id="midi-panel" hidden></div>' in vj  # V3: docked, not in the modal
+    assert "XenoMidi.dock();" in vj and 'id="midib"' in vj and "XenoMidi.toggleDock(true)" in vj
+    v6 = (static / "ui_v6.js").read_text(encoding="utf-8")
+    assert 'data-xm-state="name"' in v6 and "canonical:t=>" in v6 and "targetName:t=>" in v6
 
 
 # ---------------------------------------------------------------- lazy mido

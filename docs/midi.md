@@ -5,8 +5,8 @@ Plug a controller in and the picture is in your hands: hold a pad and its scene 
 ## Plug in an Arturia MiniLab 3
 
 1. USB in. Leave the controller on its **Arturia** program (the default after power-up; hold Shift and tap the first pad row if it was left in DAW mode). The map below is the factory Arturia-mode template.
-2. Open `http://127.0.0.1:47317/vj` in Chrome, Edge or Opera and allow MIDI when asked. The HUD (P) shows `MIDI: 1 input(s)`.
-3. Firefox or Safari (no Web MIDI): run `xenoform midi serve` in a terminal; the HUD shows `MIDI: bridge`.
+2. Open `http://127.0.0.1:47317/vj` in Chrome, Edge or Opera and allow MIDI when asked. The page says "Minilab3 connected · Arturia MiniLab 3", the **MIDI** button gets a green dot and the bar's controls wear their badges; the HUD (P) names the controller.
+3. Firefox or Safari (no Web MIDI): run `xenoform midi serve` in a terminal; the page hears the controller through the bridge, by the same name.
 
 ## The default map
 
@@ -54,9 +54,14 @@ A name with a port number on the end is the same device as the name without it (
 
 A table saved by the first `midi.js` (one map a page, no device names) is taken over by the first controller of its profile that connects, if it was your own work; an untouched copy of the factory map of the time is left behind, so the new hold pads come in.
 
-## Learn mode
+## The map on the screen, and Learn
 
-Press **L** on the VJ page (or the **Learn mode** button in the MIDI panel of the help overlay, `?`), click the control you want (a transition, mirror, strobe, record, HUD, a stem knob on the desk), then move a knob or hit a pad. Done; the row appears in the panel. Each row has its own **learn** and **×**. The panel also names the controller and its map, **Start from** (a built-in profile, when a controller's name was not recognised), **Reset to default**, **Export JSON** (downloads `xenoform-midi-vj.json`), **Import JSON** (paste and press Import) and **Save as the shipped preset**. On the desk the panel sits under Knobs → **MIDI controller**.
+The map lives where the controls are (`ui_static/midi_map.js` and `midi_map.css`, loaded by `midi.js` on demand). On the desk it is the Knobs panel's **MIDI controller** row (its title names the controller with a green dot); on `/vj` it is a panel docked beside the picture, opened by the **MIDI** button in the bar (never inside the `?` help), and hidden with everything else under `?clean=1`.
+
+- **The panel** names the controller, how it arrives (Web MIDI or the bridge) and whose map plays (its default, a shipped preset, or *your map*), with a light that flashes on every message. **Map** draws the controller from its profile (the MiniLab 3's knobs in two rows of four, the faders, pads A and B, the strips and encoder) with what each control does on this page in plain words ("Intensity", "Drums level", "Pad 3 · ice-crystal · close"); zones with nothing on the page fold into one line. **List** shows the same as rows, each with a light, the control's badge name, the target, the mode, and **Learn** and **Remove** buttons that say what they act on; Remove offers **Undo** for 8 s. An arrow (▲/▼) marks a control that soft takeover is holding back. Under **More**: Reset to default, Export, Import (a file), Start from, Save as the shipped preset.
+- **Badges.** While a controller is connected every control on the page that MIDI can drive wears the name of the control bound to it: K1, F2, A3, B7, Mod, Enc (`[data-midi]` and `[data-midi-slot]` elements, the desk's knobs and stem lanes, `/vj`'s bar). A badge flashes when its control moves.
+- **Learn.** Click a badge, or press **Learn** (or **L** on `/vj`) and click any control on the page: a popover opens at the control, listening ("Move a knob or hit a pad…"). Move one and it binds; the popover shows what it heard (CC 74 · ch 1, K1) with the mode in plain words (Follows the control, Steps, On while held, Press on press off, Fires on press) and the range. **Done** (or a click outside) keeps it, **Clear** removes it with Undo, **Esc** or **Cancel** puts the map back as it was. Clicking a drawn control on the Map opens the same popover the other way round: pick what that control does from the page's targets. The desk's stem lanes learn by their place (`stem:3`), so a map made on one song works on the next.
+- A control the page marks with `data-midi` but gives no handler is still playable: a knob picks along a row of chips, a pad steps to the next one, a marked range or select follows the knob, a marked button presses. Only marked controls; MIDI never presses anything else.
 
 ## The Python bridge
 

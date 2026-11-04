@@ -89,7 +89,7 @@
   const html=()=>`<section class="xf-macros" data-tour="easy-macros"><div class="xf-macros-head"><span>Knobs</span><button type="button" class="ghost" data-xf-reset>Reset</button></div>
       <div class="xf-knobs">${KNOBS.map(knob).join("")}</div>
       <details class="xf-adv"${STEMS.open?" open":""}><summary>Stem reactions <small class="xf-stems-status">${statusText()}</small></summary><div class="xf-lanes${LANES.length>8?" xf-many":""}" data-count="${LANES.length}">${LANES.map(lane).join("")}</div></details>
-      <details class="xf-adv xf-midi"><summary>MIDI controller</summary><div class="xf-midi-panel"></div></details></section>`;
+      <details class="xf-adv xf-midi"><summary>MIDI controller <small class="xf-midi-status" data-xm-state="name"></small></summary><div class="xf-midi-panel"></div></details></section>`;
   function paint(el,k){const v=M[k];el.setAttribute("aria-valuenow",pct(v));el.querySelector("svg").innerHTML=el.querySelector("svg defs").outerHTML+ARC(v);
     el.querySelector(".cap i").style.transform=`rotate(${-135+270*v}deg)`;el.querySelector("small").textContent=pct(v);}
   function mount(){const host=document.querySelector(".simple-knobs")||document.querySelector(".simple-opts"); if(!host||host.querySelector(".xf-macros"))return;
@@ -106,7 +106,12 @@
         "stem:*":(n,v)=>{const k=laneName(n);if(k&&M[k]!=null)window.XENO_MACRO_SET(k,v);}},
       // soft takeover: a knob or fader moves its control only once it passes the value the desk shows
       read:t=>{let m=/^macro:(.+)$/.exec(t);if(m)return M[m[1]];if(/^(drums|bass|other|vocals)$/.test(t))return M[t];
-        m=/^stem:(.+)$/.exec(t);if(m){const k=laneName(m[1]);return k&&M[k]!=null?M[k]:null;}return null;}});midiMount();}
+        m=/^stem:(.+)$/.exec(t);if(m){const k=laneName(m[1]);return k&&M[k]!=null?M[k]:null;}return null;},
+      // the map's plain words: the knob's own label, the stem lane's name ("Stem 2 · Kick")
+      targetName:t=>{let m=/^macro:(.+)$/.exec(t);if(m){const kn=KNOBS.find(x=>x[0]===m[1]);return kn?kn[1]:null;}
+        m=/^stem:(\d+)$/.exec(t);if(m){const l=LANES[+m[1]-1];return l?"Stem "+m[1]+" · "+l[1]:null;}return null;},
+      // a lane learns by its place (stem:3), so the map works on the next song's stems as well
+      canonical:t=>{if(!/^stem:/.test(t)||/^stem:\d+$/.test(t))return t;const i=LANES.findIndex(l=>l[0]===t);return i>=0?"stem:"+(i+1):t;}});midiMount();}
   function midiMount(){const X=window.XenoMidi,el=document.querySelector(".xf-midi-panel");if(X&&X._desk&&el&&!el.firstChild)X.panel(el);}
   if(!window.XenoMidi){const sc=document.createElement("script");sc.src=(window.XENO_BASE||"")+"/static/midi.js";sc.onload=midiInit;document.head.appendChild(sc);}else midiInit();
   let drag=null;

@@ -66,7 +66,7 @@
  <span class="sep"></span>
  <button id="stemsb" title="Split the loaded track into stems on the desk, then drive the picture from them">Use this song's stems</button>
  <span class="sep"></span>
- <button id="hudb" title="P" data-midi="hud">HUD</button><button id="recb" class="rec" title="R" data-midi="record">● Rec</button><button id="fs" title="F">Fullscreen</button><button id="helpb" title="?">?</button>
+ <button id="hudb" title="P" data-midi="hud">HUD</button><button id="recb" class="rec" title="R" data-midi="record">● Rec</button><button id="fs" title="F">Fullscreen</button><button id="midib" title="The MIDI map, docked beside the picture (L: learn)" data-xm-toggle data-xm-state="dot" aria-expanded="false">MIDI</button><button id="helpb" title="?">?</button>
 </div>
 <div id="help"><div class="glass"><h2>Controls</h2><table>
  <tr><td>Space / →</td><td>Next scene with the current transition</td></tr>
@@ -80,8 +80,9 @@
  <tr><td>P · H · F</td><td>HUD · Hide controls · Fullscreen</td></tr>
  <tr><td>R</td><td>Record a clean clip (webm, with audio)</td></tr>
  <tr><td>Stems</td><td><b>Use this song's stems</b> splits the loaded track on the desk (Demucs when installed, else the band split) and reloads with <code>?stems=</code> so drums/bass/other/vocals drive the picture. Per-stem gains come from the desk's Stem reactions lanes.</td></tr>
- <tr><td>MIDI</td><td>MiniLab 3 out of the box: hold pads A1–A8 to show a scene (the cut's shots with <code>?job=</code>) over the song; let go and the picture is back where the song is · pads B1–B6 = dance presets, B7 strobe, B8 record · knob 1 / mod strip intensity · knob 2 switch rate · knobs 3–6 drums/bass/other/vocals gain · knobs 7–8 + faders = stem gains · encoder steps the transition. <b>L</b> = learn mode (click a control, move a knob). No Web MIDI (Firefox/Safari)? Run <code>xenoform midi serve</code>.</td></tr>
-</table><div id="midi-panel"></div></div></div>
+ <tr><td>MIDI</td><td><b>MIDI</b> (the button) opens the map beside the picture: your controller drawn with what every control does; every control on this bar wears its badge. <b>L</b> = learn (click a control, then move a knob or hit a pad). MiniLab 3 out of the box: hold pads A1–A8 to show a scene (the cut's shots with <code>?job=</code>) over the song, let go and the picture is back where the song is · B1–B6 dance presets, B7 strobe, B8 record · knobs: intensity, switch rate, the stem gains. No Web MIDI (Firefox/Safari)? Run <code>xenoform midi serve</code>.</td></tr>
+</table></div></div>
+<div id="midi-panel" hidden></div>
 <div id="toast" class="glass"></div>
 <script src="/static/midi.js"></script>
 <script>
@@ -311,7 +312,7 @@ addEventListener('keydown',e=>{if(e.target.tagName==='SELECT')return;const k=e.k
  else if(/^[kK]$/.test(k)){if(EXPERT)tog('kal','kal');else toast('Kaleido is expert only (?expert=1)')}else if(/^[mM]$/.test(k))tog('mir','mir');else if(/^[sS]$/.test(k))tog('stb','stb');
  else if(/^[tT]$/.test(k))tap();else if(/^[pP]$/.test(k))hud();else if(/^[hH]$/.test(k))$('ui').classList.toggle('hide');
  else if(/^[rR]$/.test(k))record();else if(/^[fF]$/.test(k))document.documentElement.requestFullscreen();else if(k==='?')$('help').classList.toggle('show')
- else if(/^[lL]$/.test(k)){XenoMidi.setLearnMode(!XenoMidi.learnMode);if(XenoMidi.learnMode)$('help').classList.add('show')}});
+ else if(/^[lL]$/.test(k)){XenoMidi.setLearnMode(!XenoMidi.learnMode);if(XenoMidi.learnMode)XenoMidi.toggleDock(true)}});
 // MIDI: Web MIDI and the desk bridge (/ws/midi) through the shared mapping layer (midi.js). Default map = MiniLab 3.
 const setTog=(k,btn,on)=>{S[k]=on?1:0;$(btn).classList.toggle('on',!!S[k])};
 let intenToast=0;const stemName=n=>/^\d+$/.test(n)?((STEMS&&STEMS.stems)||[])[+n-1]||null:n;
@@ -319,7 +320,9 @@ XenoMidi.init({page:'vj',toast,elements:{fx:'fx:next',every:'every',stemsb:'stem
  // soft takeover: what a knob's target shows now (the switch rate is a stepped choice, so it follows at once)
  read:t=>{if(t==='intensity')return S.inten;if(S.gain[t]!=null)return S.gain[t];const m=/^stem:(.+)$/.exec(t);
   if(m){const name=stemName(m[1]);if(!name)return null;const g=gains()['stem:'+name];return g==null?1:g}return null},
- onStatus:s=>{$('h-midi').textContent=s.inputs.length?s.inputs.length+' input(s)'+(s.bridge==='bridge'?' + bridge':''):s.bridge==='bridge'?'bridge':s.bridge==='sse'?'bridge (sse)':'none'},
+ onStatus:s=>{$('h-midi').textContent=s.device?s.device+(s.held.length?' · held '+s.held.join(' '):''):s.inputs.length?s.inputs.length+' input(s)':s.bridge==='bridge'?'bridge':s.bridge==='sse'?'bridge (sse)':'none'},
+ // plain words in the map: a pad says which scene (or shot of the cut) it holds
+ targetName:t=>{const m=/^pad:(\d+)$/.exec(t);if(!m)return null;const sc=padScene(+m[1]);return'Pad '+m[1]+(sc?' · '+sc.name:'')},
  targets:{
   intensity:v=>{S.inten=Math.max(0,Math.min(2,v));const now=performance.now();if(now-intenToast>250){intenToast=now;toast('Intensity '+S.inten.toFixed(2))}},
   every:v=>{S.every=EV[Math.min(4,Math.floor(v*4.999))];$('every').value=S.every},
@@ -364,7 +367,8 @@ if(JOB)fetch('/api/videos/'+encodeURIComponent(JOB)+'/shots').then(r=>r.ok?r.jso
 // what is on screen and where the song is, for a script checking that a hold leaves the timeline alone
 Object.assign(window.VJ,{pads:PADS,shown:()=>{const H=heldScene();return H?H.name:(S.scenes[S.cur]||{}).name||''},
  timeline:()=>({cur:S.cur,nxt:S.nxt,trans:S.trans,beats:S.beats,t:trackEl?trackEl.currentTime:0,playing:!!(trackEl&&!trackEl.paused)})});
-XenoMidi.panel($('midi-panel'));
+// the MIDI map docks beside the picture in #midi-panel (UI_REVIEW V3: never inside the ? modal); MIDI toggles it
+XenoMidi.dock();$('midib').onclick=()=>XenoMidi.toggleDock();
 if(Q.get('clean')==='1')document.body.classList.add('clean');if(Q.get('hud')==='1')hud();
 let idle;addEventListener('mousemove',()=>{$('ui').classList.remove('hide');clearTimeout(idle);idle=setTimeout(()=>{if(!$('help').classList.contains('show'))$('ui').classList.add('hide')},3500)});
 loadLibrary();listInputs().catch(()=>{});requestAnimationFrame(frame);

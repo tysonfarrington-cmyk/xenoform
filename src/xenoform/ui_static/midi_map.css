@@ -1,0 +1,186 @@
+/* Xenoform MIDI map (midi_map.js): the controller on the same screen as the controls. The desk's tokens (theme.css)
+   only. On the desk the buttons are desk.css's own components (button.ghost, button.generate, button.text, .toggle); /vj
+   has no desk.css, so the same looks are given here under body:not([data-desk]), where they cannot touch the desk. */
+
+/* ---------------------------------------------------------------- the panel */
+.xm { display: grid; gap: 10px; min-width: 0; font: 400 12.5px/1.45 var(--x-font-ui); color: var(--x-text); text-align: left; }
+.xm p { margin: 0; }
+.xm code, .xm-pop code { font: 11.5px/1.3 var(--x-font-mono); color: var(--x-text-2); }
+.xm-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.xm-state { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 8px; align-items: center; flex: 1 1 11em; min-width: 0; }
+.xm-state .xm-light { grid-row: span 2; }
+.xm-state b { overflow: hidden; font-size: 13px; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; }
+.xm-state small { grid-column: 2; overflow: hidden; font-size: 11.5px; color: var(--x-text-3); white-space: nowrap; text-overflow: ellipsis; }
+.xm .xm-acts.toggle { width: auto; flex: none; }
+.xm .xm-acts.toggle button { flex: none; min-width: 0; }
+.xm-pick { max-width: 100%; }
+.xm-note { font-size: 12px; color: var(--x-text-3); }
+.xm-hint { font-size: 12px; color: var(--x-accent-hi); }
+.xm-undo { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 12px; color: var(--x-text-2); }
+.xm-undo[hidden] { display: none; }
+
+/* the activity light: grey, green while a controller is there, violet for a moment when a control sends */
+.xm-light {
+  display: inline-block; flex: none; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--x-surface-4); box-shadow: inset 0 0 0 1px var(--x-line-2);
+  transition: background-color var(--x-t) var(--x-ease), box-shadow var(--x-t) var(--x-ease);
+}
+.xm-state.is-on .xm-light { background: var(--x-ok); box-shadow: 0 0 0 3px rgba(60, 207, 142, 0.15); }
+.xm .hot > .xm-light, .xm-light.hot, .xm-pop .xm-light.hot { background: var(--x-accent-hi); box-shadow: 0 0 0 3px var(--x-accent-ring); transition: none; }
+
+/* ---------------------------------------------------------------- Map: the controller drawn */
+.xm-board { display: grid; gap: 12px; }
+.xm-zone { display: grid; gap: 6px; }
+.xm-zone-name { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--x-text-3); }
+.xm-grid { display: grid; grid-template-columns: repeat(var(--xm-cols, 4), minmax(0, 1fr)); gap: 6px; }
+.xm-grid-pad { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); }
+.xm .xm-ctl {
+  position: relative; display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: 3px;
+  min-width: 0; min-height: 48px; margin: 0; padding: 6px 8px; border-radius: var(--x-r-md);
+  font: inherit; color: var(--x-text); text-align: left; cursor: pointer;
+  background: var(--x-surface-2); border: 1px solid var(--x-line-2); box-shadow: var(--x-hi);
+}
+.xm .xm-ctl b { font: 600 11px/1 var(--x-font-mono); color: var(--x-accent-hi); }
+.xm .xm-ctl span {
+  display: -webkit-box; overflow: hidden; font-size: 11.5px; line-height: 1.25; color: var(--x-text);
+  -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word;
+}
+.xm .xm-ctl.is-free span { color: var(--x-text-3); }
+.xm .xm-ctl .xm-light { position: absolute; top: 7px; right: 7px; width: 6px; height: 6px; }
+.xm .xm-knob b::before { content: ""; display: inline-block; width: 9px; height: 9px; margin-right: 4px; vertical-align: -1px; border-radius: 50%; border: 1.5px solid currentColor; }
+.xm .xm-fader b::before { content: ""; display: inline-block; width: 3px; height: 10px; margin-right: 5px; vertical-align: -1px; border-radius: 2px; background: currentColor; }
+.xm .xm-pad { border-radius: var(--x-r-sm); }
+@media (hover: hover) { .xm .xm-ctl:hover { background: var(--x-surface-3); border-color: var(--x-line-3); } }
+.xm .xm-ctl:focus-visible { outline: 2px solid var(--x-accent); outline-offset: 2px; }
+.xm .xm-ctl.hot { border-color: var(--x-accent); transition: none; }
+/* soft takeover: the control is away from the value it drives; the arrow says which way to turn it */
+.xm-catch { font-style: normal; font-size: 11px; line-height: 1; color: var(--x-warn); }
+.xm .xm-ctl .xm-catch { position: absolute; right: 6px; bottom: 6px; }
+
+/* ---------------------------------------------------------------- List: one row a mapping */
+.xm-rows { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.xm-row { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; min-height: 36px; padding: 3px 4px 3px 8px; border-radius: var(--x-r-sm); }
+@media (hover: hover) { .xm-row:hover { background: var(--x-surface-2); } }
+.xm-row.hot { background: var(--x-accent-soft); transition: none; }
+.xm-short { flex: none; min-width: 32px; font: 600 11px/1 var(--x-font-mono); color: var(--x-accent-hi); }
+.xm-what { display: grid; flex: 1 1 9em; min-width: 0; }
+.xm-what span, .xm-what small { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.xm-what small { font-size: 11px; color: var(--x-text-3); }
+.xm .xm-row button.text { min-height: 28px; padding: 0 6px; font-size: 12px; }
+
+/* ---------------------------------------------------------------- More */
+.xm-more summary {
+  display: flex; align-items: center; gap: 6px; min-height: 28px; font-size: 12px; color: var(--x-text-2); cursor: pointer; list-style: none;
+}
+.xm-more summary::-webkit-details-marker { display: none; }
+/* .xm in front: the desk's ".xf-adv[open] summary::before" reaches into the MIDI row and must not draw this one */
+.xm .xm-more summary::before { content: "+"; width: 12px; font-weight: 600; color: var(--x-text-3); }
+.xm .xm-more[open] summary::before { content: "\2212"; }
+@media (hover: hover) { .xm-more summary:hover { color: #fff; } }
+.xm-more-body { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding-top: 6px; }
+.xm-more-body .xm-note { flex-basis: 100%; }
+.xm-from { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--x-text-2); }
+.xm label.text {
+  display: inline-flex; align-items: center; gap: 6px; min-height: var(--x-h-sm); padding: 0 8px; border-radius: var(--x-r-sm);
+  font: 500 13px/1.2 var(--x-font-ui); color: var(--x-text-2); cursor: pointer;
+}
+@media (hover: hover) { .xm label.text:hover { color: #fff; background: var(--x-surface-2); } }
+.xm label.text:focus-within { outline: 2px solid var(--x-accent); outline-offset: 2px; }
+
+/* ---------------------------------------------------------------- the Learn popover */
+.xm-pop {
+  position: fixed; z-index: 70; display: grid; gap: 10px; padding: 12px; border-radius: var(--x-r-lg);
+  font: 400 12.5px/1.45 var(--x-font-ui); color: var(--x-text); text-align: left;
+  background: var(--x-surface-2); border: 1px solid var(--x-line-2); box-shadow: var(--x-shadow-pop);
+}
+.xm-pop p { margin: 0; }
+.xm-pop-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.xm-pop-head b { font-size: 13.5px; font-weight: 600; }
+.xm-listen { display: flex; align-items: center; gap: 8px; color: var(--x-text-2); }
+.xm-heard { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+.xm-heard small { color: var(--x-text-3); }
+.xm-light.is-listening { background: var(--x-accent); animation: xm-listen 1.2s var(--x-ease) infinite; }
+@keyframes xm-listen { 50% { box-shadow: 0 0 0 5px var(--x-accent-soft); } }
+@media (prefers-reduced-motion: reduce) { .xm-light.is-listening { animation: none; } }
+.xm-pop-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.xm-pop-row label { display: flex; align-items: center; gap: 6px; min-width: 0; color: var(--x-text-2); }
+.xm-pop-row select { min-width: 0; max-width: 220px; }
+.xm-pop input[type="number"] { width: 76px; }
+.xm-pop-foot { display: flex; gap: 8px; }
+
+/* ---------------------------------------------------------------- badges on the page's controls */
+.xm-badges { position: fixed; inset: 0; z-index: 35; pointer-events: none; }
+.xm-badges[hidden], .xm-badge[hidden] { display: none; }
+.xm-badges .xm-badge {
+  position: absolute; min-width: 24px; height: 18px; margin: 0; padding: 0 5px; border-radius: 9px; pointer-events: auto;
+  font: 600 11px/16px var(--x-font-mono); text-align: center; color: #fff; cursor: pointer;
+  background: var(--x-accent-lo); border: 1px solid rgba(255, 255, 255, 0.18); box-shadow: var(--x-shadow-1);
+}
+@media (hover: hover) { .xm-badges .xm-badge:hover { background: var(--x-accent); } }
+.xm-badges .xm-badge.is-free { color: var(--x-text-2); background: var(--x-surface-3); border-style: dashed; }
+.xm-badges .xm-badge.hot { background: var(--x-accent-hi); box-shadow: 0 0 0 3px var(--x-accent-ring); transition: none; }
+.xm-badges .xm-badge:focus-visible { outline: 2px solid var(--x-accent-hi); outline-offset: 1px; }
+.xm-badges .xm-badge:active { transform: none; }
+
+/* the controller's state on a page's own button or title ([data-xm-state]: /vj's MIDI button, the desk's MIDI row) */
+[data-xm-state].xm-on::before {
+  content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 6px; vertical-align: 1px; border-radius: 50%;
+  background: var(--x-ok); box-shadow: 0 0 0 3px rgba(60, 207, 142, 0.15);
+}
+
+/* Learn mode: every control MIDI can drive is outlined; a click opens its popover */
+body.midi-learn :is([data-midi], [data-midi-slot], .xf-knob[data-k], .xf-lane) { outline: 2px dashed var(--x-accent); outline-offset: 2px; cursor: crosshair; }
+
+/* ---------------------------------------------------------------- /vj: the docked panel (UI_REVIEW V3: never a modal) */
+.xm-dock {
+  position: fixed; top: 16px; right: 16px; z-index: 30; box-sizing: border-box;
+  width: min(380px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto; padding: 14px;
+  border-radius: var(--x-r-lg); background: var(--x-surface); border: 1px solid var(--x-line-2); box-shadow: var(--x-shadow-pop);
+}
+.xm-dock[hidden] { display: none; }
+/* the dock's head: the controller and Close on the first line, the view and Learn on the second, a picker below */
+.xm-in-dock .xm-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+.xm-in-dock .xm-state { grid-column: 1; grid-row: 1; }
+.xm-in-dock .xm-close { grid-column: 2; grid-row: 1; justify-self: end; }
+.xm-in-dock .xm-acts { grid-column: 1; grid-row: 2; justify-self: start; }
+.xm-in-dock .xm-learn { grid-column: 2; grid-row: 2; }
+.xm-in-dock .xm-pick { grid-column: 1 / -1; grid-row: 3; }
+/* the output (?clean=1, the perform window) carries none of it */
+body.clean .xm-dock, body.clean .xm-badges, body.clean .xm-pop { display: none; }
+
+/* ---------------------------------------------------------------- the desk's components, for /vj (no desk.css there) */
+body:not([data-desk]) :is(.xm, .xm-pop) button.ghost {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: var(--x-h-sm); padding: 0 12px;
+  border-radius: var(--x-r-md); font: 500 12.5px/1.2 var(--x-font-ui); color: var(--x-text); white-space: nowrap;
+  background: var(--x-surface-2); border: 1px solid var(--x-line-2); box-shadow: var(--x-hi), var(--x-shadow-1);
+}
+body:not([data-desk]) :is(.xm, .xm-pop) button.ghost.on { color: #fff; background: var(--x-accent-soft); border-color: var(--x-accent); }
+body:not([data-desk]) :is(.xm, .xm-pop) button.generate {
+  display: inline-flex; align-items: center; justify-content: center; min-height: var(--x-h-sm); padding: 0 14px;
+  border-radius: var(--x-r-md); font: 600 12.5px/1.2 var(--x-font-ui); color: #fff;
+  background: var(--x-accent); border: 1px solid rgba(255, 255, 255, 0.14); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+body:not([data-desk]) :is(.xm, .xm-pop) button.text {
+  display: inline-flex; align-items: center; gap: 6px; min-height: var(--x-h-sm); padding: 0 8px; border-radius: var(--x-r-sm);
+  font: 500 12.5px/1.2 var(--x-font-ui); color: var(--x-text-2); background: transparent; border: 0; box-shadow: none;
+}
+@media (hover: hover) {
+  body:not([data-desk]) :is(.xm, .xm-pop) button.ghost:hover:not(:disabled) { color: #fff; background: var(--x-surface-3); border-color: var(--x-line-3); }
+  body:not([data-desk]) :is(.xm, .xm-pop) button.generate:hover:not(:disabled) { background: var(--x-accent-hi); }
+  body:not([data-desk]) :is(.xm, .xm-pop) button.text:hover:not(:disabled) { color: #fff; background: var(--x-surface-3); }
+}
+body:not([data-desk]) :is(.xm, .xm-pop) button:disabled { opacity: 0.4; cursor: not-allowed; }
+body:not([data-desk]) .xm .toggle {
+  display: flex; gap: 2px; padding: 2px; border-radius: var(--x-r-md);
+  background: var(--x-well); border: 1px solid var(--x-line); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+body:not([data-desk]) .xm .toggle button {
+  min-height: 26px; padding: 0 10px; border-radius: var(--x-r-sm); font: 500 12.5px/1 var(--x-font-ui);
+  color: var(--x-text-2); background: transparent; border: 0; box-shadow: none;
+}
+body:not([data-desk]) .xm .toggle button.on { color: #fff; background: var(--x-surface-4); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 1px 3px rgba(0, 0, 0, 0.55); }
+body:not([data-desk]) :is(.xm, .xm-pop) :is(select, input[type="number"]) {
+  min-height: var(--x-h-sm); padding: 0 8px; border-radius: var(--x-r-md); font: 400 12.5px/1.3 var(--x-font-ui);
+  color: var(--x-text); background: var(--x-well); border: 1px solid var(--x-line-2); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+body:not([data-desk]) :is(.xm, .xm-pop) :is(button, select, input):focus-visible { outline: 2px solid var(--x-accent); outline-offset: 2px; }

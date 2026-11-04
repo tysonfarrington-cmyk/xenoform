@@ -56,10 +56,13 @@ const VJ_TARGETS=["intensity","every",...n8.map(i=>"pad:"+i),"fx:next","fx:prev"
 const DESK_TARGETS=["macro:intensity","macro:speed","macro:chaos","macro:glow","drums","bass","other","vocals",
  "stem:1","stem:2","stem:3","stem:4","stem:5","stem:6","stem:7","stem:8"];
 const range=t=>t==="intensity"?[0,2]:[0,1];
-// the mode a new binding gets: a pad target holds (note or CC button alike), an encoder steps, a knob follows, a note on
-// a switch toggles, on an action fires once
-function modeFor(target,type,profileMode){if(profileMode==="rel")return"rel";if(HOLDS.test(target))return"hold";if(type!=="note")return"abs";
+// the mode a new binding gets: a pad target holds, a switch toggles and an action fires once (on a note or a CC button
+// alike), an encoder steps, anything else follows the control
+function modeFor(target,type,profileMode){if(profileMode==="rel")return"rel";if(HOLDS.test(target))return"hold";
  if(TOGGLES.includes(target))return"toggle";if(TRIGGERS.test(target))return"trigger";return"abs"}
+// a CC press: the value comes up through 64, or a button that only ever sends 127 sends it again (a knob never repeats
+// a value), so a knob on Tap or Record fires once a turn past half, not on every tick
+function ccPress(e,ev,state){const k="~"+e.target+">"+srcKey(ev),was=state[k]==null?0:state[k],v=ev.value|0;state[k]=v;return v>=64&&(was<64||was===v)}
 function profileMapping(profile,page){const p=PROFILES[profile]||PROFILES.generic,T=p[page]||{};const out=[];
  for(const c of p.controls){const t=T[c.id];if(!t)continue;const[lo,hi]=range(t);
   out.push({source:{type:c.type,ch:c.ch,num:c.num},target:t,mode:modeFor(t,c.type,c.mode),min:lo,max:hi,label:c.label})}return out}
@@ -79,9 +82,9 @@ const isRelease=ev=>ev.type==="note"?(ev.value|0)===0:(ev.value|0)<64;
 function resolve(e,ev,state){const t=e.target,mode=e.mode||"abs",lo=+e.min||0,hi=e.max==null?1:+e.max,v=ev.value|0;let val,kind="set";
  if(mode==="abs")val=lo+(hi-lo)*v/127;
  else if(mode==="rel"){const d=relDelta(v);if(t==="fx:step"){if(!d)return null;val=d}else val=Math.max(lo,Math.min(hi,(state[t]==null?lo:state[t])+(hi-lo)*d/100))}
- else if(mode==="toggle"){if(v===0)return null;val=(state[t]==null?lo:state[t])<=lo?hi:lo}
+ else if(mode==="toggle"){if(ev.type==="note"?v===0:!ccPress(e,ev,state))return null;val=(state[t]==null?lo:state[t])<=lo?hi:lo}
  else if(mode==="hold"){const on=!isRelease(ev);kind=on?"press":"release";val=on?hi:lo}
- else{if(v===0)return null;val=hi}
+ else{if(ev.type==="note"?v===0:!ccPress(e,ev,state))return null;val=hi}
  state[t]=val;return{target:t,value:val,kind}}
 // The hold stack: pads are temporary overriders. press(id) puts a pad on top (last in wins), release(id) takes it off
 // wherever it is, top() is what shows now (optionally the top one of a family: top("pad:")), clear() lets go of all,
@@ -279,14 +282,35 @@ const X={
   if(m&&h[m[1]+":*"])return h[m[1]+":*"](m[2],val,ev,entry);
   if(h["*"])h["*"](target,val,ev,entry)},
  // ---- mapping edits
- bind(target,ev){const type=ev.type,prof=PROFILES[this.profile]||PROFILES.generic;
-  const pc=prof.controls.find(c=>c.type===type&&c.num===ev.num&&(!c.ch||c.ch===ev.ch));const[lo,hi]=range(target);
-  this.mappings=this.mappings.filter(e=>e.target!==target&&!(matches(e,ev)));
-  this.mappings.push({source:{type,ch:ev.ch,num:ev.num},target,mode:modeFor(target,type,pc&&pc.mode),min:lo,max:hi,label:pc?pc.label:srcName({type,num:ev.num,ch:ev.ch})});
-  this.learnTarget=null;this.save();this.toast("MIDI: "+srcName({type,num:ev.num,ch:ev.ch})+" → "+target);this.render()},
- learn(target){this.learnTarget=target||null;if(target)this.toast("Move a knob or hit a pad for "+target+"…");this.render()},
+ // one control drives one target and a target hears one control: binding a source to a target drops both old rows
+ setRow(source,target,patch){const s={type:source.type,ch:+source.ch||0,num:+source.num},pc=controlOf(this.profile,s),[lo,hi]=range(target);
+  this.mappings=this.mappings.filter(e=>e.target!==target&&srcKey(e.source)!==srcKey(s));
+  const row=Object.assign({source:s,target,mode:modeFor(target,s.type,pc&&pc.mode),min:lo,max:hi,label:pc?pc.label:srcName(s)},patch||{});
+  this.mappings.push(row);this.save();this.render();return row},
+ bind(target,ev){const row=this.setRow({type:ev.type,ch:ev.ch,num:ev.num},target);this.learnTarget=null;
+  if(!this._quiet)this.toast("MIDI: "+srcName(row.source)+" → "+this.name(target));this.emit("learned",row,ev);this.render()},
+ learn(target,quiet){this.learnTarget=target||null;this._quiet=!!quiet;if(target&&!quiet)this.toast("Move a knob or hit a pad for "+this.name(target)+"…");
+  this.emit("learn",this.learnTarget);this.render()},
  setLearnMode(on){this.learnMode=!!on;document.body.classList.toggle("midi-learn",this.learnMode);if(!on)this.learnTarget=null;
-  this.toast(this.learnMode?"Learn: click a control, then move a knob":"Learn off");this.render()},
+  this.toast(this.learnMode?"Learn: click a control on the page, then move a knob or hit a pad":"Learn off");this.emit("learn",this.learnTarget);this.render()},
+ // plain words for a target, the page's own first (a pad's scene, a stem's name), then the shared ones
+ name(t){const f=this._opts.targetName;let n=null;try{n=f&&f(t)}catch(e){}return n||targetName(t)},
+ // the target a page control learns (the desk's "stem:Kick" lane learns as stem:3, so the map works on every song)
+ canonical(t){const f=this._opts.canonical;let c=null;try{c=f&&f(t)}catch(e){}return c||t},
+ rowsOf(t){const a=[t,this.canonical(t)];return this.mappings.filter(e=>a.includes(e.target))},
+ rowOf(source){const k=srcKey(source);return this.mappings.find(e=>srcKey(e.source)===k)||null},
+ updateRow(row,patch){const i=this.mappings.findIndex(e=>rowKey(e)===rowKey(row));if(i<0)return null;
+  if(patch&&patch.target&&patch.target!==row.target)this.mappings=this.mappings.filter((e,j)=>j===i||e.target!==patch.target);
+  const at=this.mappings.findIndex(e=>rowKey(e)===rowKey(row)),next=Object.assign({},this.mappings[at],patch||{});
+  this.mappings[at]=next;this.save();this.render();return next},
+ // Remove (with the map's Undo): the rows taken out, each with where it was
+ removeRows(pred){const out=[];this.mappings.forEach((e,i)=>{if(pred(e))out.push({row:e,i})});if(!out.length)return out;
+  this.mappings=this.mappings.filter(e=>!pred(e));this.save();this.render();return out},
+ putBack(list){for(const {row,i} of (list||[]).slice().sort((a,b)=>a.i-b.i)){this.mappings=this.mappings.filter(e=>rowKey(e)!==rowKey(row)&&e.target!==row.target&&srcKey(e.source)!==srcKey(row.source));
+   this.mappings.splice(Math.min(i,this.mappings.length),0,row)}this.save();this.render()},
+ // the targets this page can drive: its own list, the page's extras, and every control on it that wears data-midi
+ targets(){const base=this.page==="desk"?DESK_TARGETS:VJ_TARGETS,dom=window.XenoMidiMap?window.XenoMidiMap.domTargets():[];
+  return[...new Set(base.concat(this._opts.extraTargets||[],dom))]},
  unmap(i){const gone=this.mappings.splice(i,1)[0];this.save();this.render();return gone},
  // put back a row Remove took out (the map's Undo)
  restore(row,i){if(!row)return;this.mappings=this.mappings.filter(e=>rowKey(e)!==rowKey(row));this.mappings.splice(i==null?this.mappings.length:Math.min(i,this.mappings.length),0,row);this.save();this.render()},
@@ -345,57 +369,21 @@ const X={
   map:this.personal?"your map":this.choice?this.choice.label:"",saved:this.saved}},
  _status(light){const s=this.status();if(this._opts.onStatus)this._opts.onStatus(s);this.emit("status",s,light);if(!light||this.count%8===0)this._paintStatus()},
  toast(t){if(this._opts.toast)this._opts.toast(t)},
- // ---- learn mode: a click on any control picks the target, the next knob/pad binds it
- _clickTarget(el){const m=el.closest&&el.closest("[data-midi]");if(m)return m.dataset.midi;
-  const k=el.closest&&el.closest(".xf-knob[data-k]");if(k)return"macro:"+k.dataset.k;
-  const l=el.closest&&el.closest(".xf-lane input[data-k],.xf-lane");if(l){const i=l.matches("input")?l:l.querySelector("input[data-k]");if(i)return i.dataset.k}
-  const map=this._opts.elements||{};const e=el.closest&&el.closest("[id]");return e&&map[e.id]||null},
- // ---- panel (inputs, profile, mappings, learn, export/import)
- panel(el){this._el=el;if(!document.getElementById("xeno-midi-css")){const s=document.createElement("style");s.id="xeno-midi-css";s.textContent=`
-  #xeno-midi-panel{font:12px/1.5 inherit;color:inherit}#xeno-midi-panel h3{margin:10px 0 4px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.7}
-  #xeno-midi-panel .mrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:4px 0}#xeno-midi-panel table{width:100%;border-collapse:collapse;max-height:240px}
-  #xeno-midi-panel td{padding:2px 6px;border-bottom:1px solid rgba(128,128,128,.18);vertical-align:middle}#xeno-midi-panel select,#xeno-midi-panel button,#xeno-midi-panel input{font:inherit;padding:2px 8px;border-radius:999px;border:1px solid rgba(128,128,128,.35);background:rgba(128,128,128,.08);color:inherit;cursor:pointer}
-  #xeno-midi-panel .wrap{max-height:230px;overflow:auto}#xeno-midi-panel .on{background:#f4f3fb;color:#0a0a10}#xeno-midi-panel textarea{width:100%;height:70px;font:11px/1.3 monospace;background:rgba(0,0,0,.25);color:inherit;border:1px solid rgba(128,128,128,.3);border-radius:8px}
-  #xeno-midi-panel .pulse{display:inline-block;width:8px;height:8px;border-radius:50%;background:#7b84ff;opacity:.3;margin-right:6px}#xeno-midi-panel .pulse.hot{opacity:1;box-shadow:0 0 12px #7b84ff}
-  body.midi-learn [data-midi],body.midi-learn .xf-knob,body.midi-learn .xf-lane{outline:2px dashed #7b84ff;outline-offset:2px;cursor:crosshair}`;document.head.appendChild(s)}
-  this.render();return this},
- _paintStatus(){const el=this._el&&this._el.querySelector("#xm-status");if(!el)return;const s=this.status();
-  el.innerHTML=`<span class="pulse${Date.now()/1000-((s.last&&s.last.t)||0)<.4?" hot":""}"></span>${s.inputs.length?s.inputs.join(", "):"no Web MIDI input"} · bridge: ${s.bridge} · ${s.events} events`+
-   (s.last?` · last ${srcName(s.last)} = ${s.last.value}`:"")},
- render(){const el=this._el;if(!el)return;const T=(this.page==="desk"?DESK_TARGETS:VJ_TARGETS).concat((this._opts.extraTargets||[]));
-  const opts=T.map(t=>`<option value="${t}">${t}</option>`).join("");
-  const devs=this.devices.length>1?`<select id="xm-dev" aria-label="Controller">${this.devices.map(d=>`<option${sameDevice(d.name,this.device)?" selected":""}>${d.name}</option>`).join("")}</select>`:"";
-  el.innerHTML=`<div id="xeno-midi-panel" data-tour="midi">
-   <div class="mrow"><b>MIDI</b><span id="xm-status"></span></div>
-   <div class="mrow">${devs}<span>${this.device||"No controller yet"} · ${this.personal?"your map":this.choice?this.choice.label:""}</span>
-    <label>Start from <select id="xm-prof">${Object.keys(PROFILES).map(k=>`<option value="${k}"${k===this.profile?" selected":""}>${PROFILES[k].label}</option>`).join("")}</select></label>
-    <button id="xm-learn" class="${this.learnMode?"on":""}">${this.learnMode?"Learn: click a control…":"Learn mode (L)"}</button>
-    <button id="xm-reset">Reset to default</button><button id="xm-export">Export JSON</button><button id="xm-ship">Save as the shipped preset</button>
-    <label><input type="checkbox" id="xm-share"${this.share?" checked":""}> share with other pages</label></div>
-   ${this.learnTarget?`<div class="mrow">Waiting for a knob or pad for <b>${this.learnTarget}</b> · <button id="xm-cancel">cancel</button></div>`:""}
-   <div class="wrap"><table><tbody>${this.mappings.map((m,i)=>`<tr><td>${m.label||srcName(m.source)}</td><td><small>${srcName(m.source)}</small></td><td><b>${m.target}</b></td><td>${m.mode} <span class="xm-away" data-away="${i}"></span></td>
-    <td><button data-learn="${m.target}">learn</button> <button data-del="${i}" title="remove">×</button></td></tr>`).join("")}</tbody></table></div>
-   <div class="mrow"><select id="xm-new">${opts}</select><button id="xm-add">+ map (then move a knob)</button></div>
-   <div class="mrow"><textarea id="xm-json" placeholder="Paste a mapping JSON here and press Import"></textarea></div>
-   <div class="mrow"><button id="xm-import">Import JSON</button><small>Saved per controller on this desk (${this.mapsFile||"~/.xenoform/midi_map.json"}) and in this browser. The Python bridge: <code>xenoform midi serve</code>.</small></div></div>`;
-  const $=s=>el.querySelector(s);$("#xm-prof").onchange=e=>this.setProfile(e.target.value);$("#xm-learn").onclick=()=>this.setLearnMode(!this.learnMode);
-  $("#xm-reset").onclick=()=>this.reset();$("#xm-share").onchange=e=>{this.share=e.target.checked};const dv=$("#xm-dev");if(dv)dv.onchange=e=>this.setDevice(e.target.value);
-  $("#xm-ship").onclick=()=>this.shipPreset().then(j=>this.toast("Shipped preset saved: "+j.path)).catch(e=>this.toast("Not saved: "+e.message));
-  $("#xm-export").onclick=()=>{const t=this.exportJSON();$("#xm-json").value=t;const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([t],{type:"application/json"}));a.download=`xenoform-midi-${this.page}.json`;a.click();this.toast("Mapping exported")};
-  $("#xm-import").onclick=()=>{try{const n=this.importJSON($("#xm-json").value);this.toast(n+" mappings imported")}catch(e){this.toast("Import failed: "+e.message)}};
-  $("#xm-add").onclick=()=>this.learn($("#xm-new").value);const c=$("#xm-cancel");if(c)c.onclick=()=>this.learn(null);
-  el.querySelectorAll("[data-learn]").forEach(b=>b.onclick=()=>this.learn(b.dataset.learn));el.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>this.unmap(+b.dataset.del));
-  el.addEventListener("click",e=>e.stopPropagation());this._paintStatus();this._paintAway()},
- // the catch-up arrow a row: the knob is away from the value it drives, turn it this way past the value to take over
- _paintAway(){if(this._opts.onAway)this._opts.onAway();const el=this._el;if(!el)return;
-  el.querySelectorAll("[data-away]").forEach(s=>{const m=this.mappings[+s.dataset.away],a=m&&this.away(m);
-   const pct=v=>Math.round(100*(v-(+m.min||0))/((m.max==null?1:+m.max)-(+m.min||0)||1));
-   s.textContent=a?(a.dir>0?"▲":"▼"):"";s.title=a?`The control is at ${pct(a.hw)}, the screen at ${pct(a.screen)}: turn it ${a.dir>0?"up":"down"} past ${pct(a.screen)} to take over`:""})},
+ // ---- the map's face lives in midi_map.js (+ midi_map.css): the panel in a host (the desk's Knobs panel), the docked
+ // panel on /vj, the badges on the page's controls and the Learn popover. panel()/dock() load it once, on demand, so a
+ // page that loads /static/midi.js alone can still show the map.
+ _face(){if(window.XenoMidiMap)return Promise.resolve(window.XenoMidiMap);if(this._loading)return this._loading;
+  return this._loading=new Promise((ok,no)=>{if(!document.querySelector('link[data-xm-css]')){const l=document.createElement("link");l.rel="stylesheet";
+    l.href=api("/static/midi_map.css");l.setAttribute("data-xm-css","");document.head.appendChild(l)}
+   const s=document.createElement("script");s.src=api("/static/midi_map.js");s.onload=()=>window.XenoMidiMap?ok(window.XenoMidiMap):no(new Error("midi_map.js did not load"));
+   s.onerror=()=>no(new Error("midi_map.js did not load"));document.head.appendChild(s)})},
+ panel(el,o){this._el=el;this._face().then(F=>F.mount(el,Object.assign({page:this.page},o||{}))).catch(e=>console.error("midi map",e));return this},
+ dock(o){this._face().then(F=>F.dock(Object.assign({page:this.page},o||{}))).catch(e=>console.error("midi map",e));return this},
+ toggleDock(open){return this._face().then(F=>F.toggle(open)).catch(e=>console.error("midi map",e))},
+ render(){if(window.XenoMidiMap)window.XenoMidiMap.refresh()},
+ _paintStatus(){},
+ // the catch-up arrow a row (the map paints it): the knob is away from the value it drives
+ _paintAway(){if(this._opts.onAway)this._opts.onAway();this.emit("away")},
  ...core};
-// learn-mode click capture (before the page's own handlers)
-document.addEventListener("click",e=>{if(!X.learnMode||!e.target||(e.target.closest&&e.target.closest("#xeno-midi-panel")))return;
- const t=X._clickTarget(e.target);if(!t)return;e.preventDefault();e.stopPropagation();X.learn(t)},true);
-document.addEventListener("pointerdown",e=>{if(!X.learnMode||!e.target||(e.target.closest&&e.target.closest("#xeno-midi-panel")))return;
- if(X._clickTarget(e.target)){e.preventDefault();e.stopPropagation()}},true);
 root.XenoMidiCore=core;root.XenoMidi=X;
 })(typeof window!=="undefined"?window:this);
