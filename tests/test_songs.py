@@ -276,10 +276,11 @@ def test_load_answers_the_desks_comfy_endpoint_not_the_example_configs(quiet_spl
 
 # ---------------------------------------------------------------- the desk
 def test_the_song_step_has_a_chip_for_every_bundled_song():
-    block = _fn("const songBlock = songSet", "const proto = easyLengthIsProto(easy);")
-    assert 'data-act="easy-demo">Bundled demo</button>' in block  # the demo button stays where it was
-    assert '<div id="bundled-songs">${songsRow(easy)}</div>' in block  # the row lands under the actions, in its own slot
+    block = _fn("function renderSource(easy) {", "${songsLine()}")
+    assert '<div id="bundled-songs">${songsRow(easy)}</div>' in block  # the row sits on the Source step, in its own slot
     row = _fn("function songsRow(easy)", "async function useBundledSong(id, keepStep)")
+    # the demo is one of the chips, by name (C3): never shown as chosen until it is picked
+    assert 'data-act="easy-demo" title="A 12 s demo synthesised here">Bundled demo<small>0:12</small></button>' in row
     assert 'data-act="easy-song"' in row and 'data-id="${esc(song.id)}"' in row and "Bundled songs" in row
     assert 'title="${esc(song.feel || "")}"' in row and "<small>${songClock(song.seconds)}</small>" in row
     assert 'class="chip${easy.song === song.id ? " on" : ""}"' in row  # the loaded song's chip carries on, like the demo button

@@ -4684,13 +4684,21 @@ function knobsFolded() {
 // (Scenes is not here: a re-cut keeps the cut's stills, so a Scenes choice waits for the next render)
 const KNOB_ACTS = { "easy-look": "Look", "easy-effect": "Effects", "easy-morph-timing": "Timing", "easy-foreshadow": "Foreshadow",
   "easy-breathe": "Breathe", "easy-drops": "Drops", "easy-feel": "Feel", "easy-effect-none": "Effects" };
+// each knob's line in the same place (the old paragraph under the knobs, one knob at a time; ui_v6 draws the knobs)
+const KNOB_HINTS = {
+  intensity: "Intensity is the beat pulse and the flash.",
+  speed: "Speed is the cut density and the trail length.",
+  chaos: "Chaos is the punches, the stutters and how far the subject swings, and it wilds the cuts: wipes and chromatic rips at the handoffs as it climbs (the blocky smear too, sparingly, when Effects asks for it), strobe cuts past 0.7 (never two in two seconds), plain cuts at 0.",
+  glow: "Glow is the bloom and the halation. The look rides the vibe's own colours unless you pick one.",
+};
 // The one hint line under Tweak's rows (C15): the choice under the pointer or the keyboard says what it does, on touch too
 ["mouseover", "focusin"].forEach((type) => document.addEventListener(type, (event) => {
-  const node = event.target && event.target.closest ? event.target.closest(".sl-tweak [data-hint]") : null;
-  const line = node && document.getElementById("tw-hint");
-  if (!line || line.textContent === node.dataset.hint) return;
-  line.textContent = node.dataset.hint;
-  if (state) state.twHint = node.dataset.hint;
+  const node = event.target && event.target.closest ? event.target.closest(".sl-tweak [data-hint], .sl-tweak .xf-knob[data-k]") : null;
+  const hint = node && (node.dataset.hint || KNOB_HINTS[node.dataset.k]);
+  const line = hint && document.getElementById("tw-hint");
+  if (!line || line.textContent === hint) return;
+  line.textContent = hint;
+  if (state) state.twHint = hint;
 }));
 function touchKnob(row) {
   if (!state.easy) return;
