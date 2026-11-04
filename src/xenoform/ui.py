@@ -1094,7 +1094,30 @@ def create_app(cfg: dict | None = None):
         base = f"/api/jobs/{job_id}/shots/{int(index)}"
         out.update({"id": job_id, "layer": stem, "workflow": f"{base}/workflow.json" + (f"?layer={stem}" if stem else ""),
                     "workflow_name": f"xenoform-{storage_id(job_id, fallback='cut')}-shot{int(index) + 1:02d}.json"})
+        out.update(_shot_recipe_code(job_id, rec, int(index), out.get("used") or {}))
         return out
+
+    def _shot_recipe_code(job_id: str, rec: dict, index: int, used: dict) -> dict:
+        """The shot's Copy recipe: the cut's own recipe code with this shot's hand-set values in its ``shots`` (keyed by
+        the morph it plays), so the same song and the code make this shot as it is now; the cut's code when the shot
+        has none of its own."""
+        from xenoform import shot_recipe as _sr
+        from xenoform.simple_recipe import RecipeError, decode, encode
+
+        meta = _read_meta(work_dir() / "jobs" / storage_id(job_id, fallback=""))
+        code = str(meta.get("recipe") or "")
+        if not code:
+            return {"recipe_code": "", "recipe_shot": False}
+        try:
+            state = decode(code)
+        except RecipeError:
+            return {"recipe_code": "", "recipe_shot": False}
+        own = {k: v for k, v in (used.get("overrides") or {}).items()} if isinstance(used.get("overrides"), dict) else {}
+        m = _sr.morph_of(rec, index)
+        if not (own and m is not None):
+            return {"recipe_code": code, "recipe_shot": False}
+        state["shot_renders"] = {str(m): own}
+        return {"recipe_code": encode(state), "recipe_shot": True}
 
     @app.get("/api/jobs/{job_id}/shots/{index}/workflow.json")
     def shot_workflow_route(job_id: str, index: int, layer: str = "") -> Response:

@@ -233,6 +233,7 @@ function payload() {
     idea:(state.easy && state.easy.idea) || "",
     song: (state.easy && state.easy.songLabel) || "",
     cut_plan: (state.easy && (state.easy.cloud || state.easy.remixPlan) && (state.easy.cutPlan || state.easy.remixPlan)) || null,
+    shot_renders: (state.easy && state.easy.shotRenders) || null,  // a pasted shot recipe's own values (Under the hood)
     // (no video_model: the tier picks the engine; the Final is LTX-2.5 wherever its files are installed, LTX-2.3 otherwise)
     brief: state.brief || "",
     mode: "simple",  // one desk, one engine: every Make is the Simple cut (dense.run_simple); Stems overrides it below
@@ -3103,6 +3104,8 @@ function applySimpleRecipe(recipe) {
   easy.ownFolder = recipe.own_folder || "";
   easy.stemOrbit = recipe.stem_orbit !== false;
   easy.remixPlan = recipe.cut_plan || null;
+  // a shot's Copy recipe (Under the hood): those shots' own render values, sent with the next Make
+  easy.shotRenders = recipe.shot_renders && typeof recipe.shot_renders === "object" && Object.keys(recipe.shot_renders).length ? recipe.shot_renders : null;
   state.seed = recipe.seed || state.seed;
 }
 
@@ -5061,6 +5064,8 @@ document.addEventListener("click", async (event) => {
     try {
       applySimpleRecipe(await decodeSimpleRecipe(code));
       state.easy.note = state.easy.song ? "Recipe loaded. Make my video renders it." : "Recipe loaded. Choose a song, then Make.";
+      const own = state.easy.shotRenders ? Object.keys(state.easy.shotRenders).length : 0;
+      if (own) state.easy.note += ` It carries ${own} shot${own === 1 ? "'s" : "s'"} own render values (Under the hood), used on a Draft.`;
     } catch (err) {
       state.easy.note = String(err.message || err);
     }

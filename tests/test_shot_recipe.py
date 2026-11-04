@@ -535,3 +535,61 @@ def test_a_rerender_logged_before_the_takes_finds_the_makes_own_clip(tmp_path, m
     assert got[0]["seed"] == 4000 and got[0]["usable"] is True
     rec = dense.use_take(job, 0, 0, cfg={})
     assert Path(rec["clips"][0]).name == "local00.mp4" and rec["renders"][0] is None  # the Make's request was not kept then
+
+
+# ---------------------------------------------------------------------------------------------- a shot's Copy recipe
+
+
+def test_a_recipe_code_carries_shots_own_values_and_old_codes_read_as_before():
+    from xenoform import simple_recipe as R
+
+    base = {"vibe": "cosmic", "seed": 4000, "energy_preset": "dense", "aspect": "9:16", "quality_tier": "draft"}
+    old = R.encode(base)
+    assert "shot_renders" not in R.decode(old)
+    own = {"2": {"prompt": "a key folds", "seed": 9, "style": "fold", "steps": 12, "lora": "a.safetensors", "lora_strength": 0.5},
+           "x": {"prompt": "junk"}, "3": {"steps": 900}, "4": "nope"}
+    code = R.encode({**base, "shot_renders": own})
+    back = R.decode(code)
+    assert back["shot_renders"] == {"2": {"prompt": "a key folds", "steps": 12, "lora": "a.safetensors", "lora_strength": 0.5,
+                                          "seed": 9, "style": "fold"}}  # the damaged entries dropped, as unknown keys are
+    assert {k: v for k, v in back.items() if k != "shot_renders"} == R.decode(old)
+    out, styles, notes = sr.for_make({"shot_renders": back["shot_renders"]}, 5)
+    assert styles == {2: "fold"} and out[2] == {"prompt": "a key folds", "steps": 12, "seed": 9} and out[0] is None
+    assert notes == ["shot 3's LoRA a.safetensors is not on this machine: it renders without one"]
+    assert sr.for_make({}, 5) == (None, {}, [])
+
+
+def test_a_draft_make_renders_a_pasted_shots_own_values(tmp_path, monkeypatch):
+    client = Client()
+    monkeypatch.setattr(beatfx, "compose", _fake_compose({}))
+    monkeypatch.setattr(S, "usage", lambda: {})
+    job = tmp_path / "jobs" / "own"
+    job.mkdir(parents=True)
+    state = {"vibe": "cosmic", "aspect": "16:9", "quality_tier": "draft", "energy_preset": "dense", "seed": 4000,
+             "shot_renders": {"1": {"prompt": "a key folds into a moth", "seed": 31, "style": "fold", "cfg": 2.0}}}
+    dense.run_simple({"duration": 12.0, "beats": [i * 0.5 for i in range(24)]}, DEMO, job / "xenoform.mp4", job, {}, state,
+                     lambda *a: None, client=client, engine="ltx095")
+    rec = _rec(job)
+    assert client.sent[1]["3"]["inputs"]["text"] == "a key folds into a moth" and client.sent[1]["13"]["inputs"]["noise_seed"] == 31
+    assert client.sent[1]["14"]["inputs"]["cfg"] == 2.0 and client.sent[0]["13"]["inputs"]["noise_seed"] == 4000
+    assert rec["morph_styles"][1] == "fold" and rec["renders"][1]["overrides"] == {"prompt": "a key folds into a moth", "seed": 31, "cfg": 2.0}
+    assert {"shot_renders": {"shots": [1]}} in rec["fallbacks"]
+
+
+def test_the_recipe_route_gives_the_shots_own_recipe_code(tmp_path, monkeypatch):
+    from xenoform import simple_recipe as R
+
+    client = Client()
+    job = _draft_cut(tmp_path, monkeypatch, client)
+    cut_code = R.encode({"vibe": "cosmic", "seed": 4000, "energy_preset": "dense", "aspect": "16:9", "quality_tier": "draft"})
+    (job / "meta.json").write_text(json.dumps({"simple": True, "recipe": cut_code}), encoding="utf-8")
+    desk = _desk(tmp_path, monkeypatch)
+    plain = desk.get("/api/jobs/cut/shots/1/recipe").json()
+    assert plain["recipe_code"] == cut_code and plain["recipe_shot"] is False
+    dense.rerender_morph(job, 1, seed=55, overrides={"prompt": "a lantern blooms", "steps": 14}, cfg={}, client=client)
+    own = desk.get("/api/jobs/cut/shots/1/recipe").json()
+    assert own["recipe_shot"] is True and own["recipe_code"] != cut_code
+    back = R.decode(own["recipe_code"])
+    assert back["shot_renders"] == {"1": {"prompt": "a lantern blooms", "steps": 14, "seed": 55}} and back["seed"] == 4000
+    assert desk.post("/api/simple/recipe/encode", json={**R.decode(cut_code), "shot_renders": back["shot_renders"]}).json()["recipe"] \
+        == own["recipe_code"]  # the desk's own encode route takes the shots' values too

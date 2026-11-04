@@ -1830,8 +1830,17 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
         notes.extend(up_notes)
         finish = f"rendered on Comfy Cloud, scaled here to {full[0]}x{full[1]} with Lanczos"
     else:
+        from xenoform import shot_recipe as _sr
+
+        # a pasted recipe code's own values for some shots (a shot's Copy recipe, Under the hood): their morphs take them
+        own, own_styles, own_notes = _sr.for_make(state, len(render_shots))
+        for m_i, st in own_styles.items():
+            render_styles[m_i] = st
+        if own or own_styles:
+            notes.append({"shot_renders": {"shots": sorted(set(own_styles) | {k for k, v in enumerate(own or []) if v}),
+                                           **({"notes": own_notes} if own_notes else {})}})
         clips = _draft_clips(render_shots, stills, work, cfg, seed, vibe, client, cancel, state, report=report,
-                             size=DRAFT_916 if native_draft else None, styles=render_styles, requests=reqs)
+                             size=DRAFT_916 if native_draft else None, styles=render_styles, requests=reqs, overrides=own)
         if opt["fast"] and engine == "ltx095":
             from xenoform import upscale_pass
 

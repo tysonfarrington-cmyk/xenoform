@@ -674,6 +674,64 @@ def clean_overrides(raw: dict | None, *, loras: list[str] | None = None) -> dict
     return out
 
 
+MAX_SHOT_RENDERS = 64  # a recipe code carries at most this many shots' own values
+
+
+def clean_shot_renders(raw: Any, *, check_lora: bool = False) -> dict[str, dict]:
+    """The shots' own values a recipe code carries (``shot_renders``: morph index -> a re-render's values, the seed and
+    the style among them), each checked as ``clean_overrides`` checks a re-render's; a damaged entry is dropped as an
+    unknown key is. ``check_lora`` (a Make on this machine) also asks that each LoRA is in the loras folder; a code read
+    elsewhere keeps the name."""
+    from xenoform.morph_style import STYLES
+
+    out: dict[str, dict] = {}
+    if not isinstance(raw, dict):
+        return out
+    for key, value in sorted(raw.items(), key=lambda kv: str(kv[0]))[:MAX_SHOT_RENDERS]:
+        if not str(key).isdigit() or not isinstance(value, dict) or int(key) > 999:
+            continue
+        name = str(value.get("lora") or "")
+        try:
+            ov = clean_overrides({k: value.get(k) for k in OVERRIDES if k in value}, loras=None if check_lora else [name])
+        except ValueError:
+            continue
+        seed = value.get("seed")
+        if isinstance(seed, (int, float)) and not isinstance(seed, bool) and 0 <= int(seed) < 2 ** 53:
+            ov["seed"] = int(seed)
+        style = str(value.get("style") or "").strip().lower()
+        if style in STYLES:
+            ov["style"] = style
+        if ov:
+            out[str(int(key))] = ov
+    return out
+
+
+def for_make(state: dict, count: int) -> tuple[list | None, dict[int, str], list[str]]:
+    """A Make's own values a shot from a pasted recipe code (``shot_renders``), as the Draft loop takes them: one dict a
+    render shot (None when no shot has any), the styles they set, and a line for each LoRA this machine does not have
+    (that shot renders without it)."""
+    raw = clean_shot_renders((state or {}).get("shot_renders"))
+    if not raw:
+        return None, {}, []
+    have = set(lora_files())
+    out: list = [None] * int(count)
+    styles: dict[int, str] = {}
+    notes: list[str] = []
+    for key, ov in raw.items():
+        m = int(key)
+        if not 0 <= m < count:
+            continue
+        ov = dict(ov)
+        if ov.get("lora") and ov["lora"] not in have:
+            notes.append(f"shot {m + 1}'s LoRA {ov['lora']} is not on this machine: it renders without one")
+            ov.pop("lora", None)
+            ov.pop("lora_strength", None)
+        if ov.get("style"):
+            styles[m] = ov.pop("style")
+        out[m] = ov or None
+    return (out if any(out) else None), styles, notes
+
+
 def lora_files() -> list[str]:
     """The LoRA files this machine has (``<models>/loras``), the names a re-render may give; [] when there is no folder."""
     try:
