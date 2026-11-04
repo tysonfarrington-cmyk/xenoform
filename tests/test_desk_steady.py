@@ -89,7 +89,8 @@ def test_the_cut_column_never_runs_under_the_knobs_and_the_knobs_fold():
     css = (STATIC / "desk.css").read_text(encoding="utf-8")
     assert ".easy-result { display: grid; grid-template-columns: minmax(0, 1fr);" in css
     assert 'body[data-knobs="folded"] .easy-done' in css and ".lane-playhead" in css
-    assert 'data-act="easy-knobs-fold"' in APP and "paintPlayhead();" in _fn("function render()", "function renderTool(")
+    # the cut's column no longer holds the knobs (they are Tweak's), so it has nothing to fold
+    assert 'data-act="easy-knobs-fold"' not in APP and "paintPlayhead();" in _fn("function render()", "function renderTool(")
 
 
 def test_edit_in_resolve_opens_the_pack_where_it_is(tmp_path, monkeypatch):

@@ -12,14 +12,13 @@ APP = (ROOT / "src" / "xenoform" / "ui_static" / "app.js").read_text(encoding="u
 
 
 def test_the_shape_row_sits_beside_timing_in_both_knob_blocks():
-    result = APP.split('<div class="energy-head"><h3>Knobs</h3>')[1].split("easy-recut-knobs")[0]
-    assert result.index("timingRow(") < result.index("${shapeRow(easy)}") < result.index("effectsRow(")
+    assert '<div class="energy-head"><h3>Knobs</h3>' not in APP and "function shapeRow(easy)" not in APP  # the cut's knob column is Tweak's
     # Tweak splits the Shape in two (C9): Breathe and the Drops, after Timing and before Effects
     rows = APP.split("function tweakRows(easy) {")[1].split("\n}\n")[0]
     assert rows.index('tweakSeg("easy-morph-timing"') < rows.index('tweakSeg("easy-breathe"') < rows.index('tweakSeg("easy-drops"') < rows.index("    effects,") or \
         rows.index('tweakSeg("easy-morph-timing"') < rows.index('tweakSeg("easy-breathe"') < rows.index('tweakSeg("easy-drops"') < rows.index("    effects,")
-    row = APP.split("function shapeRow(easy)")[1].split("\n}\n")[0]
-    assert 'chip("easy-breathe", "on", "Breathe"' in row and '"easy-drops"' in row and "DROP_MODES.map" in row
+    assert 'tweakSeg("easy-breathe", breathe ? "on" : "off", [["off", "Off", notes["breathe-off"]], ["on", "On", notes["breathe-on"]]], "Breathe"' in rows
+    assert 'tweakSeg("easy-drops", drops, [["auto", "Auto", notes.auto], ["max", "Max", notes.max], ["off", "Off", notes.off]], "Drops"' in rows
     assert 'const DROP_MODES = ["auto", "max", "off"];' in APP
 
 

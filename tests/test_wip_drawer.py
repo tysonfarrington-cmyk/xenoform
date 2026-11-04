@@ -108,7 +108,7 @@ def test_run_simple_writes_the_chain_before_the_morphs(monkeypatch, tmp_path):
 
 
 def test_the_scenes_row_shows_what_the_line_turned_on():
-    row = _fn("function scenesRow(easy) {", "function machineRows(easy)")
+    row = _fn("function tweakRows(easy) {", "\n}\n")  # Tweak's Wide scenes row
     assert "reading.scenes" in row and "!easy.scenesChosen" in row and "pick Off to keep objects only" in row
     handler = APP.split('act === "easy-scenes") {', 1)[1].split("} else if", 1)[0]
     assert "state.easy.scenesChosen = true;" in handler

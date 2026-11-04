@@ -88,7 +88,7 @@ def test_simple_house_defaults_and_the_look_row():
     assert "stem_orbit: !(state.easy && state.easy.stemOrbit === false)" in APP
     for preset in ("warm-leak", "cool-echo", "noir-glow", "bloom-rush", "negative-rush", "cyan-flash"):
         assert f'"{preset}"' in APP
-    assert 'lookRow(easy.danceFx || "auto", "easy-look")' in APP
+    assert 'tweakSeg("easy-look", easy.danceFx || "auto"' in APP
     assert 'simpleSeg("easy-orbit"' in APP and "Subject sway" in APP  # the orbit, named for what it does
     assert 'act === "easy-look"' in APP and 'act === "easy-orbit"' in APP
     # every option that used to sit in Fine-tune is still reachable in the Project panel under the hood

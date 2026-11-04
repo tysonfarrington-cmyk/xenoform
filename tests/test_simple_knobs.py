@@ -22,7 +22,7 @@ DEMO = ROOT / "examples" / "demo.wav"
 def test_knobs_and_look_sit_on_the_first_screen():
     # Tweak: the Feel presets, then the knob strip (ui_v6.js mounts it in .simple-knobs), then the rows with the Look
     assert '<section class="panel tw-panel tw-feel" data-tour="easy-macros">' in APP and '<div class="simple-knobs"></div>' in APP
-    assert 'tweakSeg("easy-look", easy.danceFx || "auto"' in APP and APP.count('lookRow(easy.danceFx || "auto", "easy-look")') == 1
+    assert 'tweakSeg("easy-look", easy.danceFx || "auto"' in APP and APP.count('lookRow(easy.danceFx || "auto", "easy-look")') == 0
     assert 'data-midi-slot="macro:${k}"' in V6 and 'data-midi-slot="${k}"' in V6  # the MIDI session badges each knob and lane
     assert 'document.querySelector(".simple-knobs")' in V6 and "<span>Knobs</span>" in V6
     assert 'title="${hint||l}"' in V6 and "punches, stutters and orbit swing" in V6

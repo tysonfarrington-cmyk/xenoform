@@ -152,6 +152,17 @@ button.ghost .cost-tag { background: var(--x-well); color: var(--x-text-2); box-
   .tw-row { grid-template-columns: 1fr; gap: 6px; }
 }
 
+/* Render while a Make runs: the stills draft on the monitor, what is happening beside it, the strip as the progress */
+.sl-render { --sl-monitor-h: clamp(220px, 38vh, 420px); }
+.sl-render .sl-monitor .monitor {
+  position: relative; height: var(--sl-monitor-h); aspect-ratio: auto; overflow: hidden;
+  border-radius: var(--x-r-lg); background: #000 center / cover no-repeat; box-shadow: inset 0 0 0 1px var(--x-line);
+}
+.sl-render .sl-monitor .monitor video.easy-preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.sl-render .monitor-pill { position: absolute; left: 10px; bottom: 10px; z-index: 2; }
+.sl-render .sl-rail .happen { margin: 2px 0 6px; }
+.sl-render .sl-rail #easy-chain { margin: 0; font-size: 12.5px; color: var(--x-text-2); }
+
 /* ---------------------------------------------------------------- Perform (a placeholder the perform session replaces) */
 .easy-perform { max-width: 760px; margin: 0 auto; }
 .perform-card { padding: 22px 24px; display: grid; gap: 10px; }

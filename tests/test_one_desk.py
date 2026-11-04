@@ -79,7 +79,8 @@ def test_the_cut_screen_is_refine_and_share():
         assert item in share, item
     assert "vjUrl()" not in share  # VJ mode is in Work in progress (docs/MORPH_ENGINE_PLAN.md, 28 Oct)
     render_row = _fn("function renderRow(easy) {", "function renderEasy()")
-    assert 'data-act="easy-render-full"' in render_row and 'data-act="easy-render-final"' in render_row
+    # the whole song is the step bar's one violet button on Render; this row offers the sharp version of a Draft
+    assert 'data-act="easy-render-final"' in render_row and 'data-act="easy-render-song">Render the whole song' in APP
     handler = APP.split('act === "easy-render-full" || act === "easy-render-final") {', 1)[1].split("} else if", 1)[0]
     assert "state.easy.lengthS = 0;" in handler and 'state.easy.tier = "final";' in handler and "easyMake()" in handler
     # Download is the file at full size; Share cut is the 720p copy (Download used to be that copy too)
