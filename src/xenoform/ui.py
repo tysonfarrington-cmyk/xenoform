@@ -2796,6 +2796,103 @@ def create_app(cfg: dict | None = None):
             })
         return {"videos": rows}
 
+    @app.get("/api/videos/{video_id}/reopen")
+    def video_reopen(video_id: str) -> dict:
+        """A saved cut reopened whole (UI_REVIEW N14): its job as the cut's screen reads it (registered with the desk, so
+        the timeline's edits and the poll find it after a restart), with the guardrail notes, how long it took and the
+        breakdown, its tier, its recipe and whether its song is loaded here (``song``: the id, the name, ``loaded``,
+        ``bundled`` for a shipped song, ``file`` when the upload is still on disk for ``POST .../song`` to load)."""
+        folder = _video_dir(video_id)
+        meta = _read_meta(folder)
+        try:
+            rec = json.loads((folder / "simple" / "simple.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            rec = {}
+        try:
+            took = json.loads((folder / "took.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            took = {}
+        notes = _read_notes(folder, rec)
+        with _LOCK:
+            job = _JOBS.get(video_id)
+            if job is None or job.get("status") in ("error", "cancelled"):
+                job = {"id": video_id, "status": "done", "stage": "done", "progress": 1.0, "video_version": 0,
+                       "video": f"/api/jobs/{video_id}/video?v=0", "path": str(folder / "xenoform.mp4"), "error": None}
+                _JOBS[video_id] = job
+            for key, value in (("guardrails", notes.get("guardrails")), ("tier_note", notes.get("tier_note")),
+                               ("took_s", took.get("took_s") or job_timing.seconds_for(folder, None)),
+                               ("breakdown", took.get("breakdown")), ("tier", meta.get("quality_tier"))):
+                if value and not job.get(key):
+                    job[key] = value
+            job["reopened"] = True
+            view = {k: v for k, v in job.items() if k != "path"}
+        audio_id = str(meta.get("audio_id") or "")
+        with _LOCK:
+            loaded = audio_id == "demo" or (audio_id in _AUDIO and audio_id in _FEATURES)
+        audio = Path(str(rec.get("audio_path") or "")) if rec.get("audio_path") else None
+        seconds = None  # the whole song's length: a cut shorter than it was a prototype of a stretch
+        if audio and audio.is_file():
+            try:
+                import soundfile as _soundfile
+
+                seconds = round(float(_soundfile.info(str(audio)).duration), 2)
+            except Exception:  # noqa: BLE001 - a format soundfile does not read: the length stays unknown
+                seconds = None
+        song = {"audio_id": audio_id, "label": str(meta.get("song") or ""), "loaded": loaded,
+                "bundled": audio_id[len("song-"):] if audio_id.startswith("song-") else None,
+                "file": bool(audio and audio.is_file()), "window": rec.get("window"), "seconds": seconds}
+        return {"id": video_id, "job": view, "song": song, "recipe": str(meta.get("recipe") or ""),
+                "vibe": str(meta.get("vibe") or rec.get("vibe") or ""), "tier": str(meta.get("quality_tier") or "draft"),
+                "aspect": str(meta.get("aspect") or rec.get("aspect") or ""), "detail": str(notes.get("detail") or "")}
+
+    @app.post("/api/videos/{video_id}/song")
+    def video_song(video_id: str) -> dict:
+        """The song a saved cut was made from, loaded on the desk again (UI_REVIEW N14: Render needs it): the upload the
+        record names, analysed as ``/api/analyze`` does (the analysis kept in memory was lost with a restart), under the
+        cut's own song id, answered as the session the desk adopts. A shipped song is the desk's to load
+        (``/api/songs/load``); a file gone from the machine is said plainly."""
+        import librosa
+
+        from xenoform.analyze import analyze_audio
+
+        folder = _video_dir(video_id)
+        meta = _read_meta(folder)
+        audio_id = storage_id(str(meta.get("audio_id") or ""), fallback="demo")
+        if audio_id == "demo" or audio_id.startswith("song-"):
+            raise HTTPException(409, "This cut's song ships with the desk: load it with its chip.")
+        try:
+            rec = json.loads((folder / "simple" / "simple.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            rec = {}
+        with _LOCK:
+            path, features = _AUDIO.get(audio_id), _FEATURES.get(audio_id)
+        if path is None or features is None:
+            candidates = [Path(str(rec.get("audio_path") or ""))] if rec.get("audio_path") else []
+            candidates += sorted((work_dir() / "uploads").glob(f"{audio_id}.*"))
+            path = next((p for p in candidates if p.is_file() and p.suffix.lower() in
+                         {".wav", ".mp3", ".flac", ".ogg", ".aiff", ".aif", ".m4a"}), None)
+            if path is None:
+                raise HTTPException(404, "The song this cut was made from is no longer on this machine: choose it again "
+                                         "on the first screen to render.")
+            try:
+                audio, sr = librosa.load(path, sr=None, mono=True)
+                features = analyze_audio(audio, int(sr), fps=float(cfg["fps"]), onset_tau=float(cfg["analyze"]["onset_tau"]),
+                                         beat_tau=float(cfg["analyze"]["beat_tau"]),
+                                         section_min_seconds=float(cfg["analyze"]["section_min_seconds"]))
+            except Exception as exc:
+                from xenoform.errors import audio_read_error
+
+                log.exception("reopen analyze failed")
+                raise HTTPException(400, audio_read_error(exc)) from exc
+            with _LOCK:
+                _AUDIO[audio_id] = Path(path)
+                _FEATURES[audio_id] = features
+        payload = session_payload(features, audio_id=audio_id, title=str(meta.get("song") or Path(path).stem), video="",
+                                  endpoint=str(cfg["comfy"].get("base_url") or ""))
+        payload["video_label"] = "No picture yet — generate a cut"
+        payload["reference"] = ""
+        return payload
+
     @app.post("/api/recipe/encode")
     def recipe_encode(body: dict) -> dict:
         try:
@@ -3627,7 +3724,9 @@ def _run_job(job_id: str, audio_path: Path, body: dict, cfg: dict, out: Path, ca
                 job["detail"] = f"{note} {job.get('detail') or ''}".strip()
                 job["tier_note"] = note
             took = job_timing.finish(job, job_timing.elapsed(job))  # took_s (QA included), breakdown, the done stage
+            notes = {k: job.get(k) for k in ("guardrails", "detail", "tier_note") if job.get(k)}
         job_timing.write_took(work, took)  # beside the cut, so My videos keeps the numbers after a desk restart
+        _write_notes(work, notes)  # and its guardrail notes, so a Reopen shows them (N14)
     except JobCancelled as exc:
         with _LOCK:
             job = _JOBS[job_id]
@@ -3710,6 +3809,35 @@ def _read_meta(folder: Path) -> dict:
         return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
     except ValueError:
         return {}
+
+
+NOTES_FILE = "notes.json"  # a finished Make's guardrail notes and closing line, beside the cut
+
+
+def _write_notes(folder: Path, notes: dict) -> None:
+    """The cut's guardrail notes (the clamps, the taste file's lines, the checks' flags) and the Make's closing line,
+    kept beside it so a Reopen after a restart shows the cut's screen as it was (UI_REVIEW N14). Never raises."""
+    try:
+        (Path(folder) / NOTES_FILE).write_text(json.dumps(notes, indent=1, default=str), encoding="utf-8")
+    except OSError as exc:
+        log.warning("%s not written: %s", NOTES_FILE, exc)
+
+
+def _read_notes(folder: Path, rec: dict | None = None) -> dict:
+    """What a Reopen shows of a cut's notes: ``notes.json``, else (a cut from before it was kept) the taste file's lines
+    the record holds."""
+    try:
+        got = json.loads((Path(folder) / NOTES_FILE).read_text(encoding="utf-8"))
+        if isinstance(got, dict):
+            return got
+    except (OSError, ValueError):
+        pass
+    lines: list[str] = []
+    for block in ("taste", "taste_recut"):
+        for line in ((rec or {}).get(block) or {}).get("lines") or []:
+            if str(line) not in lines:
+                lines.append(str(line))
+    return {"guardrails": {"applied": [], "warnings": [], "messages": lines}} if lines else {}
 
 
 def _pool_count(body: dict) -> int | None:

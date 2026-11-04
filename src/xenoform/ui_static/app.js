@@ -2410,10 +2410,80 @@ function galleryPanel() {
             <button type="button" class="text" data-act="video-rerender" data-id="${esc(row.id)}"${row.recipe ? "" : " disabled"}>Re-render</button>
             <button type="button" class="text" data-act="video-copy" data-id="${esc(row.id)}"${row.recipe ? "" : " disabled"}>Copy recipe</button>
           </span>
+          ${state.easy && state.easy.cardNote && state.easy.cardNote.id === row.id ? `<span class="note card-note" role="status">${esc(state.easy.cardNote.text)}</span>` : ""}
         </figcaption>
       </figure>`)
     .join("");
   return `<section class="panel span gallery" id="my-videos"><h3>My videos</h3><div class="gallery-grid">${cards}</div></section>`;
+}
+
+// A saved cut reopened whole (UI_REVIEW N14): GET /api/videos/<id>/reopen gives back the job as the cut's own screen read
+// it (the guardrail notes, how long it took and its breakdown, its tier, its window of the song) and says whether its
+// song is loaded here; the song is then loaded again (a shipped song by its chip, an upload from the record), so Render
+// works without choosing the song first.
+async function reopenWhole(row) {
+  const id = row.id;
+  let data = null;
+  try {
+    const res = await api(`/api/videos/${encodeURIComponent(id)}/reopen`);
+    if (res.ok) data = await res.json();
+  } catch (err) {
+    data = null;
+  }
+  if (!data || !state.easy || state.easy.reopenId !== id) return;
+  state.job = Object.assign({}, state.job || {}, data.job || {}, { id, status: "done", video: row.url, reopened: true });
+  const took = Number((data.job && data.job.took_s) || row.seconds || 0);
+  state.easy.took = took;
+  state.easy.note = took ? `Took ${clockText(took)}${tookBreakdown(data.job && data.job.breakdown)}.` : state.easy.note;
+  if (data.tier) state.easy.madeTier = data.tier;
+  const span = (data.song && data.song.window) || null;  // the stretch of the song the cut was made from
+  const whole = Number((data.song && data.song.seconds) || 0);
+  if (span && Number(span.length_s) > 0 && whole > Number(span.length_s) + 1) state.easy.madeLength = Number(span.length_s);
+  render();
+  await loadCutSong(id, data);
+}
+
+// The cut's own song on the desk again: true once it is the desk's song. ``info`` is the reopen answer when at hand.
+async function loadCutSong(id, info) {
+  let data = info;
+  if (!data) {
+    try {
+      const res = await api(`/api/videos/${encodeURIComponent(id)}/reopen`);
+      data = res.ok ? await res.json() : null;
+    } catch (err) {
+      data = null;
+    }
+  }
+  const song = (data && data.song) || {};
+  if (!song.audio_id) return false;
+  if (song.audio_id === state.audioId && state.easy.song) return true;  // the desk holds it already
+  if (song.audio_id === "demo") {
+    await useDemoSong();
+    return state.audioId === "demo";
+  }
+  if (song.bundled) {
+    await useBundledSong(song.bundled);
+    return state.audioId === song.audio_id;
+  }
+  if (!song.file) return false;
+  state.easy.songNote = `Loading ${song.label || "the song"} for this cut…`;
+  let payload = null;
+  try {
+    const res = await api(`/api/videos/${encodeURIComponent(id)}/song`, { method: "POST" });
+    payload = res.ok ? await res.json() : null;
+  } catch (err) {
+    payload = null;
+  }
+  state.easy.songNote = "";
+  if (!payload || !state || !state.easy) return false;
+  const keep = { lane: state.lane, stemsLane: state.stemsLane, videos: state.videos, wholeSongs: state.wholeSongs };
+  adoptSession(payload);  // keeps the job and the desk's own choices; the cut's lane and the gallery stay as they were
+  Object.assign(state, keep);
+  state.easy.song = "file";
+  state.easy.songLabel = song.label || payload.title || "Song";
+  await settleCut({ full: false });
+  loadSimpleOptions().then(() => render());
+  return true;
 }
 
 async function loadVideos() {
@@ -4998,6 +5068,7 @@ document.addEventListener("click", async (event) => {
   } else if (act === "video-open") {
     const row = (state.videos || []).find((item) => item.id === el.dataset.id);
     if (!row) return;
+    state.easy.fromSong = "";  // a reopened cut is its own, never "A passage of the whole song" (UI_REVIEW N10)
     state.easy.reopenId = row.id;
     state.easy.knobsTouched = {};
     if (row.vibe && vibeById(row.vibe)) state.easy.vibe = row.vibe;
@@ -5018,23 +5089,32 @@ document.addEventListener("click", async (event) => {
     state.easy.playedHere = false;
     setEasyPhase("result");
     render();
+    reopenWhole(row);  // the notes, the breakdown and the song, as the cut's own screen had them (UI_REVIEW N14)
   } else if (act === "video-copy") {
     const code = await easyRecipeFor(el.dataset.id);
     state.easy.note = code && (await copyText(code)) ? "Recipe code copied." : code ? `Recipe: ${code}` : "No recipe code for that video.";
     render();
   } else if (act === "video-rerender") {
-    const code = await easyRecipeFor(el.dataset.id);
+    // the card answers on the card (UI_REVIEW N13): the cut's own song is loaded first, so the Make is that song's
+    const id = el.dataset.id;
+    const code = await easyRecipeFor(id);
     if (!code) return;
+    state.easy.cardNote = { id, text: "Loading this cut's recipe and its song…" };
+    render();
     try {
       applySimpleRecipe(await decodeSimpleRecipe(code));
-      if (!state.easy.song) {
-        state.easy.note = "Recipe loaded. Choose the song again, then Make.";
+      const ready = await loadCutSong(id);
+      if (!ready) {
+        state.easy.cardNote = { id, text: "Recipe loaded, but this cut's song is not on this machine: choose it again on the first screen, then Make." };
         render();
+        const song = document.querySelector("[data-tour=easy-song]");
+        if (song && song.scrollIntoView) song.scrollIntoView({ behavior: "smooth", block: "start" });
         return;
       }
+      state.easy.cardNote = null;
       easyMake();
     } catch (err) {
-      state.easy.note = String(err.message || err);
+      state.easy.cardNote = { id, text: String(err.message || err) };
       render();
     }
   } else if (act === "easy-cloud-confirm") {
@@ -5185,6 +5265,7 @@ document.addEventListener("click", async (event) => {
   } else if (act === "easy-showcase") {
     state.easy.playedHere = false;
     state.easy.showcaseVibe = "";
+    state.easy.fromSong = "";  // the showcase is no passage of a whole song (UI_REVIEW N10)
     setEasyPhase("showcase");
     state.easy.note = SHOWCASE_NOTE;
     render();
@@ -5192,6 +5273,7 @@ document.addEventListener("click", async (event) => {
     if (player && player.play) player.play().catch(() => {});
   } else if (act === "easy-again") {
     state.easy.note = "";
+    state.easy.fromSong = "";  // back on the song: the next cut opened is its own (UI_REVIEW N10)
     setEasyPhase("choose");
     render();
     window.scrollTo({ top: 0, behavior: "smooth" });
