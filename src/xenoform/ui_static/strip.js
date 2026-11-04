@@ -345,6 +345,8 @@
       }, { passive: false });
     }
     if (model.playhead != null) setPlayhead(id, model.playhead);
+    // a redraw of the page that holds the strip may put its own scroll back after this: the view by song time wins
+    queueMicrotask(() => { if (host.isConnected && !model.overview) applyView(host, model, v); });
   }
 
   function hostOf(id) {

@@ -1378,7 +1378,7 @@ function renderTweak(easy, chosen) {
   const cut = !!easyVideoId() && cutOnSong(easy) && !easy.playedHere;
   return `<div class="easy sl sl-tweak">
     <section class="sl-strip"><div class="song-strip" data-song-strip="${cut ? "cut" : "desk"}" data-lanes="sections,shots,intensity" aria-label="The song strip"></div></section>
-    ${cut ? "" : planDock(easy)}
+    ${cut ? inspectorDock(easy) : planDock(easy)}
     <div class="sl-tweak-grid">
       <div class="sl-tweak-main" data-knob-rows="1">
         <section class="panel tw-panel tw-feel" data-tour="easy-macros">
@@ -3064,23 +3064,7 @@ function shotsLane(easy) {
     lane.rerenders ? `${lane.rerenders} re-render${lane.rerenders === 1 ? "" : "s"}` : "", lane.inserts ? `${lane.inserts} generated run${lane.inserts === 1 ? "" : "s"}` : "", lane.dreams ? `${lane.dreams} dream${lane.dreams === 1 ? "" : "s"}` : ""].filter(Boolean).join(" · ");
   const hint = swapping ? "click a shot to swap the object it lands on" : songCut ? "click a passage to open its own cut and edit it there" : "click a shot, or the seam between two, to change it";
   const toggle = swapping ? `<button type="button" class="text lane-swap-toggle" data-act="easy-swap-mode" aria-pressed="true">Done swapping</button>` : "";
-  let picker = "";
-  if (swapping && easy.swapSlot != null) {
-    const slot = lane.stills.find((x) => x.index === easy.swapSlot);
-    if (slot) {
-      const used = new Set(lane.stills.map((x) => x.file));
-      const shot = lane.shots.find((x) => x.still === slot.index);
-      const opens = slot.index === 0;  // the chain's first still: no shot lands on it, the cut opens on it
-      const ends = slot.index === lane.stills.length - 1;
-      const verb = opens ? "opens on" : "lands on";
-      const touched = opens || ends ? "the one morph that touches it is" : "the two morphs that touch it are";
-      picker = `<div class="lane-swap">
-          <p class="note">${opens ? "The cut" : shot ? `Shot ${shot.index + 1}` : "The cut"} ${verb} <b>${esc(slot.noun)}</b>${slot.kind === "scene" ? " (a scene)" : ""}${slot.swapped ? ", swapped in earlier" : ""}. Pick what it ${verb} instead: ${touched} rendered again on the GPU and the cut re-composed (a morph's worth of the render time above each, plus the re-cut), the rest of the cut stays as it is.
-            <button type="button" class="text" data-act="easy-swap-cancel">Cancel</button></p>
-          ${libraryPicker(lane.vibe || easy.resultVibe || easy.vibe, "easy-swap", slot.index, used)}
-        </div>`;
-    }
-  }
+  const picker = swapping ? swapPicker(easy, lane) : "";
   const pending = timelineDirty(easy, lane);
   const anyEdits = Object.keys(tl.shots).length + Object.keys(tl.bounds).length + Object.keys(lane.shot_overrides || {}).length + Object.keys(lane.boundary_overrides || {}).length;
   const applyRow = lane.editable !== false && !swapping
@@ -3102,6 +3086,51 @@ function shotsLane(easy) {
       ${drawer}
       ${applyRow}
     </div>`;
+}
+
+// The swap's picker, under the strip: the still a slot opens or lands on, and the vibe's library to pick another
+function swapPicker(easy, lane) {
+  if (easy.swapSlot == null || !Array.isArray(lane.stills)) return "";
+  const slot = lane.stills.find((x) => x.index === easy.swapSlot);
+  if (!slot) return "";
+  const used = new Set(lane.stills.map((x) => x.file));
+  const shot = lane.shots.find((x) => x.still === slot.index);
+  const opens = slot.index === 0;  // the chain's first still: no shot lands on it, the cut opens on it
+  const ends = slot.index === lane.stills.length - 1;
+  const verb = opens ? "opens on" : "lands on";
+  const touched = opens || ends ? "the one morph that touches it is" : "the two morphs that touch it are";
+  return `<div class="lane-swap">
+      <p class="note">${opens ? "The cut" : shot ? `Shot ${shot.index + 1}` : "The cut"} ${verb} <b>${esc(slot.noun)}</b>${slot.kind === "scene" ? " (a scene)" : ""}${slot.swapped ? ", swapped in earlier" : ""}. Pick what it ${verb} instead: ${touched} rendered again on the GPU and the cut re-composed (a morph's worth of the render time above each, plus the re-cut), the rest of the cut stays as it is.
+        <button type="button" class="text" data-act="easy-swap-cancel">Cancel</button></p>
+      ${libraryPicker(lane.vibe || easy.resultVibe || easy.vibe, "easy-swap", slot.index, used)}
+    </div>`;
+}
+// The shot inspector docked under the strip (docs/UI_REVIEW.md 6.4) on the steps that show a cut without its timeline
+// panel (Tweak): today's drawer for the shot or seam clicked on the strip, or the swap's picker
+function inspectorDock(easy) {
+  const id = easyVideoId();
+  const lane = id && state.lane && state.lane.id === id ? state.lane : null;
+  if (!lane || !(lane.shots || []).length || lane.mode === "song") return "";
+  const swapping = lane.swappable !== false && Array.isArray(lane.stills) && lane.stills.length > 0 && !!easy.swapMode;
+  if (swapping) {
+    return `<section class="panel sl-dock sl-inspector" aria-label="Swap an object">
+        <div class="dock-head"><b>Swap an object</b><span class="note">click a shot or a pin on the strip: the still it lands on</span>
+          <button type="button" class="text" data-act="easy-swap-mode" aria-pressed="true">Done swapping</button></div>
+        ${swapPicker(easy, lane)}
+      </section>`;
+  }
+  const picked = easy.tlPick && easy.tlFor === id ? easy.tlPick : null;
+  if (!picked) return "";
+  return `<section class="panel sl-dock sl-inspector" aria-label="The shot">${timelineDrawer(easy, lane, timelineState(easy, lane), picked)}</section>`;
+}
+// L9: where a shot sits, as a musician says it: in the song (its time, its bar and beat) and in the cut, and how many
+// beats it holds
+function shotWhen(lane, s) {
+  const onSong = cutOnSong(state.easy) && !!lane.window;
+  const off = onSong ? Number(lane.window.song_start) || 0 : 0;
+  const beats = Math.max(1, Math.round(Number(s.seconds) / Math.max(0.05, beatPeriod(lane))));
+  const where = onSong ? `${clockText(off + Number(s.start))} in the song${barBeat(off + Number(s.start)) ? `, ${barBeat(off + Number(s.start))}` : ""} · ${clockText(s.start)} in the cut` : clockText(s.start);
+  return `${where} · ${s.seconds} s, ${beats} beat${beats === 1 ? "" : "s"}`;
 }
 
 // A shot's own colour (Tys, 28 Oct: "there should be some options you can play with effects, colours"): five sliders,
@@ -3129,12 +3158,13 @@ function shotEffectsRow(o, index) {
 // The drawer under the timeline: one shot, in four tabs (Tys, 28 Oct: "the time line is a bit confusing to use").
 // Shot: how it plays and where it sits; Look: its look, colour, effects and FX; Join: the seam into it (Morph or Cut,
 // moved a beat, dressed with a transition); Regenerate: what the GPU can redo (object cuts). A seam opens Join.
-const TL_TABS = [["shot", "Shot"], ["look", "Look"], ["join", "Join"], ["gpu", "Regenerate"]];
+const TL_TABS = [["shot", "Shot"], ["look", "Look"], ["join", "Join"], ["gpu", "Regenerate"], ["hood", "Under the hood"]];
 const TL_TAB_NOTES = {
   shot: "How this shot plays and where it sits. The beat timing never moves.",
   look: "This shot's own look, colour and effects. Leave them as the cut and the knobs decide.",
   join: "The seam into this shot: a morph that flows or a cut that jumps, moved a beat, dressed with a transition.",
   gpu: "These render again on the GPU (Draft): about a morph's time each, then the re-cut.",
+  hood: "What made this shot: the render's own settings, to read and change.",
 };
 function timelineDrawer(easy, lane, tl, picked) {
   if (!picked) return "";
@@ -3150,7 +3180,7 @@ function timelineDrawer(easy, lane, tl, picked) {
   const under = s.performer ? "Polly's shot" : s.own ? "your clip" : s.generated != null ? "a generated run" : "";
   const canGpu = lane.rerenderable !== false && s.still != null && !under;
   const dream = dreamRow(lane, s, choices);
-  const tabs = TL_TABS.filter(([id]) => (id !== "join" || s.index > 0) && (id !== "gpu" || canGpu || dream));
+  const tabs = TL_TABS.filter(([id]) => (id !== "join" || s.index > 0) && (id !== "gpu" || canGpu || dream) && (id !== "hood" || !under));
   const tab = tabs.some(([id]) => id === easy.tlTab) ? easy.tlTab : "look";
   const edited = {
     shot: held || o.source != null || !!o.drop || !!o.timing,
@@ -3162,7 +3192,7 @@ function timelineDrawer(easy, lane, tl, picked) {
       <button type="button" class="text tl-step" data-act="easy-tl-step" data-value="-1"${s.index < 1 ? " disabled" : ""} aria-label="The shot before">◀</button>
       <b>Shot ${s.index + 1} <small>of ${n}</small></b>
       <button type="button" class="text tl-step" data-act="easy-tl-step" data-value="1"${s.index >= n - 1 ? " disabled" : ""} aria-label="The shot after">▶</button>
-      <span class="note">${esc(clockText(s.start))} · ${esc(String(s.seconds))} s${label ? ` · ${esc(label)}` : ""}${under ? ` · ${esc(under)}` : ""}</span>
+      <span class="note">${esc(shotWhen(lane, s))}${label ? ` · ${esc(label)}` : ""}${under ? ` · ${esc(under)}` : ""}</span>
       <button type="button" class="text" data-act="easy-tl-close">Close</button></div>
     <div class="tl-tabs" role="tablist">${tabs.map(([id, name]) => `<button type="button" role="tab" class="tl-tab${id === tab ? " on" : ""}" data-act="easy-tl-tab" data-value="${id}" aria-selected="${id === tab ? "true" : "false"}">${name}${edited[id] ? '<i class="tl-dot" aria-label="edited"></i>' : ""}</button>`).join("")}</div>
     <p class="note tl-tab-note">${esc(TL_TAB_NOTES[tab])}</p>`;
@@ -3215,7 +3245,11 @@ function timelineDrawer(easy, lane, tl, picked) {
       ${dream}
       ${lane.mode === "stems" ? `<p class="note tl-layer-note">${esc(`The ${stemLabel(lane.layer)} layer: Swap and Re-render render its own morphs, then the layers are laid together again with no GPU. ${lane.layer_note || ""}`)}</p>` : ""}`;
   }
-  return `<div class="tl-drawer" id="tl-drawer">${head}<div class="tl-tab-body">${body}</div></div>`;
+  // the fourth tab's host: Under the hood (hood.js, window.XenoHood.mount) fills it when the tab is open
+  const hood = tab === "hood"
+    ? `<div id="hood-shot" data-inspector-tab="hood" data-job="${esc(lane.id)}" data-index="${s.index}"><p class="note">${window.XenoHood ? "Reading the settings this shot was rendered with…" : "The settings this shot was rendered with (its prompt, seed, steps and model) open here once the Under the hood panel is on this desk."}</p></div>`
+    : `<div id="hood-shot" data-inspector-tab="hood" data-job="${esc(lane.id)}" data-index="${s.index}" hidden></div>`;
+  return `<div class="tl-drawer" id="tl-drawer">${head}<div class="tl-tab-body">${tab === "hood" ? "" : body}</div>${hood}</div>`;
 }
 
 // Dream this span (xenoform.dream): Z-Image Turbo img2img over 1 to 3 s from this shot, every other frame (12 a second),
@@ -3506,6 +3540,10 @@ function cutShotsForStrip(easy, lane, off) {
 function stripModel(where) {
   const easy = state.easy || {};
   const id = easyVideoId();
+  if (where === "cut" && id && (!state.lane || state.lane.id !== id) && state.laneLoading !== id) {  // Tweak shows the cut without its timeline panel
+    state.laneLoading = id;
+    setTimeout(() => loadLane(id), 0);
+  }
   const lane = where === "cut" && id && state.lane && state.lane.id === id && (state.lane.shots || []).length ? state.lane : null;
   const song = easy.song ? songStrip() : null;
   const onSong = !!(lane && song && cutOnSong(easy));
@@ -3601,6 +3639,10 @@ function mountStrips() {
   const project = document.getElementById("hood-project");
   if (project && window.XenoHood && typeof window.XenoHood.mount === "function") {
     try { window.XenoHood.mount(project, { jobId: easyVideoId() || null, shotIndex: null }); } catch (err) { /* the plain rows stay */ }
+  }
+  const shotHood = document.querySelector('#app [data-inspector-tab="hood"]:not([hidden])');
+  if (shotHood && window.XenoHood && typeof window.XenoHood.mount === "function") {
+    try { window.XenoHood.mount(shotHood, { jobId: shotHood.dataset.job || easyVideoId(), shotIndex: Number(shotHood.dataset.index) }); } catch (err) { /* the note stays */ }
   }
   if (document.getElementById("sketch")) {  // the sketch shows where the song is, playing or not
     preloadSketch();
@@ -4312,6 +4354,7 @@ function rememberScrollers(root) {
   const out = {};
   const seen = {};
   for (const node of root.querySelectorAll("*")) {
+    if (node.classList && node.classList.contains("xs-view")) continue;  // the song strip keeps its place by song time (strip.js)
     const key = scrollerKey(node, seen);
     if (node.scrollTop || node.scrollLeft) out[key] = [node.scrollTop, node.scrollLeft];
   }

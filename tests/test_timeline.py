@@ -473,7 +473,7 @@ def test_the_desk_draws_the_timeline_panel_and_posts_the_edits():
     assert 'data-act="easy-tl-swap"' in fn and 'data-act="easy-tl-rerender"' in fn
     assert 'id="tl-seed"' in fn and 'id="tl-render-s"' in fn and 'id="tl-variant"' in fn
     # one drawer for a shot in four tabs, a seam opens its Join tab, and a step between shots (28 Oct timeline pass)
-    assert 'const TL_TABS = [["shot", "Shot"], ["look", "Look"], ["join", "Join"], ["gpu", "Regenerate"]];' in fn
+    assert 'const TL_TABS = [["shot", "Shot"], ["look", "Look"], ["join", "Join"], ["gpu", "Regenerate"], ["hood", "Under the hood"]];' in fn
     assert 'data-act="easy-tl-tab"' in fn and 'data-act="easy-tl-step"' in fn and "/frame.jpg?t=" in strip
     assert 'if (act === "easy-tl-bound") state.easy.tlTab = "join";' in APP
     assert "async function postCutEdit" in fn and "/${route}`" in fn and "tlSeek" in fn

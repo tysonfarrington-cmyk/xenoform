@@ -109,3 +109,22 @@ def test_the_desk_feeds_the_strip():
     assert "length_start: draggedStart(easy) != null" in APP.split("async function loadSimpleOptions()")[1].split("\n}\n")[0]
     # a cut sits on the song only when it was made from the song on the desk
     assert 'state.easy.cutSongLabel = row.song || "";' in APP and 'state.easy.cutSongLabel = state.easy.songLabel || "";' in APP
+
+
+def test_the_inspector_docks_under_the_strip_with_a_fourth_tab():
+    # the drawer of a shot or a seam clicked on the strip docks under it on Tweak (Render keeps it in its timeline panel)
+    tweak = APP.split("function renderTweak(easy, chosen) {")[1].split("\n}\n")[0]
+    assert "${cut ? inspectorDock(easy) : planDock(easy)}" in tweak
+    dock = APP.split("function inspectorDock(easy) {")[1].split("\n}\n")[0]
+    assert "timelineDrawer(easy, lane, timelineState(easy, lane), picked)" in dock and "swapPicker(easy, lane)" in dock
+    # the fourth tab's host for the Under the hood session (window.XenoHood.mount(host, {jobId, shotIndex}))
+    drawer = APP.split("function timelineDrawer(easy, lane, tl, picked) {")[1].split("// Dream this span")[0]
+    assert 'id="hood-shot" data-inspector-tab="hood"' in drawer and "hidden></div>" in drawer
+    assert "window.XenoHood.mount(shotHood, { jobId: shotHood.dataset.job || easyVideoId(), shotIndex: Number(shotHood.dataset.index) })" in APP
+    assert "window.XenoHood.mount(project, { jobId: easyVideoId() || null, shotIndex: null })" in APP
+    # the head speaks song time, bar and beat as well as the clock (L9)
+    when = APP.split("function shotWhen(lane, s) {")[1].split("\n}\n")[0]
+    assert "in the song" in when and "barBeat(off + Number(s.start))" in when and "in the cut" in when and "beat${beats === 1" in when
+    assert "${esc(shotWhen(lane, s))}" in drawer
+    # the strip keeps its own place across a redraw (by song time, not the page's pixel restore)
+    assert 'if (node.classList && node.classList.contains("xs-view")) continue;' in APP
