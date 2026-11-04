@@ -88,9 +88,13 @@ def test_one_apply_for_the_knobs_and_the_timeline():
 def test_the_cut_column_never_runs_under_the_knobs_and_the_knobs_fold():
     css = (STATIC / "desk.css").read_text(encoding="utf-8")
     assert ".easy-result { display: grid; grid-template-columns: minmax(0, 1fr);" in css
-    assert 'body[data-knobs="folded"] .easy-done' in css and ".lane-playhead" in css
-    # the cut's column no longer holds the knobs (they are Tweak's), so it has nothing to fold
-    assert 'data-act="easy-knobs-fold"' not in APP and "paintPlayhead();" in _fn("function render()", "function renderTool(")
+    assert ".lane-playhead" in css
+    # the cut's column no longer holds the knobs (they are Tweak's), so it has nothing to fold: the button went with
+    # t5, and the stored flag's reader and the rules that emptied the column went with it (integrate-4nov: a browser
+    # that had folded the knobs on an earlier desk opened every cut to an empty 76 px column with no way back)
+    assert 'data-act="easy-knobs-fold"' not in APP and "knobsFolded" not in APP and "xeno-knobs-folded" not in APP
+    assert 'body[data-knobs="folded"]' not in css and ".knobs-fold" not in css
+    assert "paintPlayhead();" in _fn("function render()", "function renderTool(")
 
 
 def test_edit_in_resolve_opens_the_pack_where_it_is(tmp_path, monkeypatch):

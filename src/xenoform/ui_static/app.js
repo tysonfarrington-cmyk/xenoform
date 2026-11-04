@@ -4985,7 +4985,6 @@ function render() {
   const strip = document.getElementById("stage-slot");
   if (strip) strip.innerHTML = state.easy ? stepNav(Object.assign({}, state.easy, state.view === "simple" ? {} : { phase: "tool" })) : "";
   document.body.dataset.phase = state.view === "simple" ? ((state.easy && state.easy.phase) || "choose") : state.view;
-  document.body.dataset.knobs = knobsFolded() ? "folded" : "open";
   saveEasy();
   paintJob();
   mountLive();
@@ -5250,10 +5249,6 @@ function guardSentence(line) {
     return `<button type="button" class="text guard-shot" data-act="easy-guard-shot" data-at="${t}"${shot ? ` data-index="${shot.index}"` : ""} title="Open this shot on the timeline">${esc(label)}</button>`;
   });
   return `${html}${rule ? ` <small class="guard-rule">rule ${esc(rule)}</small>` : ""}`;
-}
-// The knobs column folds to a slim tab on the cut's screen (remembered), so the video and the timeline get the width.
-function knobsFolded() {
-  try { return localStorage.getItem("xeno-knobs-folded") === "1"; } catch (err) { return false; }
 }
 
 // Changes waiting on a cut: the knob rows turned since the last re-cut (a set of rows, so three clicks on Look are one
@@ -6222,9 +6217,6 @@ document.addEventListener("click", async (event) => {
   } else if (act === "easy-tl-handoff") {
     // a Cut at a boundary is a Hold on the shot before it (docs/TIMELINE.md): one edit, seen from either side
     setShotOverride(state.easy, state.lane, Number(el.dataset.index) - 1, "play", el.dataset.value === "cut" ? "hold" : "morph");
-    render();
-  } else if (act === "easy-knobs-fold") {
-    try { localStorage.setItem("xeno-knobs-folded", knobsFolded() ? "0" : "1"); } catch (err) {}
     render();
   } else if (act === "easy-tl-apply" || act === "easy-apply") {
     recutWithKnobs();

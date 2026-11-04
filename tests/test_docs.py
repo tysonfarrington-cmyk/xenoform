@@ -130,3 +130,11 @@ def test_the_public_docs_point_at_the_steps_not_the_fine_tune_drawer():
     assert "the drawer under Fine-tune" not in readme and "**Render the whole song**" in readme and "By passages" in readme
     assert "Render → Quality → By passages" in _read("docs/SONG.md")
     assert "**Render the whole song**" in _read("docs/REPRODUCE.md")
+    # the served /licences page and performer.md, missed by the first sweeps: the row that names "MiniMax H3" is the
+    # Performer row's note in Tweak's Project panel
+    licences = _read("docs/LICENCES.md")
+    assert "the Fine-tune row" not in licences
+    assert "the Performer row's note does, in Tweak → Project · under the hood → Performer (Polly)" in licences
+    performer = _read("docs/performer.md")
+    assert "Fine-tune →" not in performer
+    assert "(Tweak → Project · under the hood → Performer (Polly), off by default)" in performer

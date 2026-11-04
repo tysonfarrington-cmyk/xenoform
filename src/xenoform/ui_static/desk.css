@@ -793,14 +793,6 @@ dialog .settings-detail .note, dialog .about-detail .note { margin: 6px 0 0; }
 .pending-bar .note { margin: 0; }
 .pending-bar .generate { width: auto; margin: 0; padding: 8px 16px; }
 
-/* the knobs column folds to a slim tab on the cut's screen */
-.easy-side .knobs-fold { float: right; margin: -4px -4px 0 8px; padding: 3px 9px; font-size: 12px; border-radius: var(--x-r-sm); background: transparent; border: 1px solid var(--x-line); color: var(--x-text-2); cursor: pointer; }
-.easy-side .knobs-fold:hover { color: var(--x-text); background: var(--x-surface-2); }
-body[data-knobs="folded"] .easy-done { grid-template-columns: minmax(0, 1fr) 76px; }
-body[data-knobs="folded"] .easy-done > .easy-side > :not(.knobs-fold) { display: none; }
-body[data-knobs="folded"] .easy-done > .easy-side { padding: 8px; overflow: visible; }
-body[data-knobs="folded"] .easy-done > .easy-side .knobs-fold { float: none; margin: 0; width: 100%; }
-
 /* the idea line's examples: one of each kind it reads, the kind in front */
 .idea-chip .idea-kind { margin-right: 4px; font-size: 10.5px; letter-spacing: 0.02em; text-transform: uppercase; color: var(--x-text-3); }
 
