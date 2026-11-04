@@ -300,28 +300,56 @@ def create_app(cfg: dict | None = None):
         base = desk_base(request.headers.get("x-xeno-base", ""))
         return HTMLResponse(_desk_html(base))
 
-    @app.get("/judges")
-    def judges(request: Request):
+    def _side_header(base: str, name: str) -> str:
+        """The header every side page wears (Judges, Variations, Moves, Licences, Credits): the desk's brand, the page's
+        name, the Open weights badge and the one way back. The five pages differ in the name only (UI review S1)."""
+        import html as html_lib
+
+        home = html_lib.escape(f"{base}/" if base else "/", quote=True)
+        licences = html_lib.escape(f"{base}/licences", quote=True)
+        here = ' aria-current="page"' if name == "Licences" else ""
+        return (
+            '<header class="top side-top">\n'
+            f'  <a class="brand" href="{home}"><span><span class="studio">Tyso Studio</span><strong>Xenoform</strong>'
+            "<em>Every drop is a transformation.</em></span></a>\n"
+            f'  <p class="side-title">{html_lib.escape(name)}</p>\n'
+            f'  <a class="ow-badge" href="{licences}"{here} title="LTX-2.3 has a revenue threshold. FLUX.2 Klein 9B is '
+            'non-commercial. This desk uses the Apache 2.0 4B.">Open weights</a>\n'
+            f'  <a class="ghost side-back" href="{home}">&larr; Back to the desk</a>\n'
+            "</header>"
+        )
+
+    def _side_page(request: Request, filename: str, name: str):
+        """A page of ui_static inside the side shell: the header goes where the file says <!--side-header-->. The base
+        path the desk is served under (x-xeno-base, the Comfy mount) prefixes the static files and the links, and the page
+        reads it from <body data-base> for its own API calls."""
         from fastapi.responses import HTMLResponse
+        import html as html_lib
 
         base = desk_base(request.headers.get("x-xeno-base", ""))
-        html = (static / "judges.html").read_text(encoding="utf-8")
-        prefix = f"{base}/static/" if base else "/static/"
+        html = (static / filename).read_text(encoding="utf-8")
+        prefix = html_lib.escape(f"{base}/static/" if base else "/static/", quote=True)
         html = html.replace("<head>", f'<head><base href="{prefix}">', 1)
+        html = html.replace('<body data-desk="1">', f'<body data-desk="1" data-base="{html_lib.escape(base, quote=True)}">', 1)
         if base:
             html = html.replace('href="/licences"', f'href="{base}/licences"')
             html = html.replace('href="/credits"', f'href="{base}/credits"')
-        return HTMLResponse(html)
+        return HTMLResponse(html.replace("<!--side-header-->", _side_header(base, name), 1))
 
-    def _markdown_page(request: Request, title: str, path: Path) -> HTMLResponse:
+    @app.get("/judges")
+    def judges(request: Request):
+        return _side_page(request, "judges.html", "Judges")
+
+    def _markdown_page(request: Request, title: str, path: Path, name: str):
         from fastapi.responses import HTMLResponse
         import html as html_lib
 
         base = desk_base(request.headers.get("x-xeno-base", ""))
         text = path.read_text(encoding="utf-8") if path.is_file() else "This note is missing."
-        body = _render_markdown(text)
-        static_href = f"{base}/static/" if base else "/static/"
-        home = f"{base}/" if base else "/"
+        # a table scrolls inside its own box, so a phone scrolls the table and never the page (side.css .doc-scroll)
+        body = _render_markdown(text).replace("<table>", '<div class="doc-scroll"><table>').replace("</table>", "</table></div>")
+        static_href = html_lib.escape(f"{base}/static/" if base else "/static/", quote=True)
+        mount = html_lib.escape(base, quote=True)
         page = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -330,25 +358,26 @@ def create_app(cfg: dict | None = None):
   <title>{html_lib.escape(title)}</title>
   <link rel="stylesheet" href="{static_href}theme.css" />
   <link rel="stylesheet" href="{static_href}app.css" />
+  <link rel="stylesheet" href="{static_href}desk.css" />
+  <link rel="stylesheet" href="{static_href}side.css" />
 </head>
-<body>
-  <header class="top">
-    <a class="brand" href="{home}"><strong>Xenoform</strong></a>
-    <a class="ow-badge" href="{base}/licences">Open weights</a>
-    <a href="{base}/credits">Picture credits</a>
-  </header>
-  <main class="judges"><article class="panel doc">{body}</article></main>
+<body data-desk="1" data-base="{mount}">
+  {_side_header(base, name)}
+  <main class="side-page">
+    <article class="panel doc">{body}</article>
+    <p class="side-foot"><a href="{mount}/licences">Open weights licences</a> &middot; <a href="{mount}/credits">Picture credits</a></p>
+  </main>
 </body>
 </html>"""
         return HTMLResponse(page)
 
     @app.get("/licences")
     def licences_page(request: Request):
-        return _markdown_page(request, "Xenoform licences", repo_root() / "docs" / "LICENCES.md")
+        return _markdown_page(request, "Xenoform licences", repo_root() / "docs" / "LICENCES.md", "Licences")
 
     @app.get("/credits")
     def credits_page(request: Request):
-        return _markdown_page(request, "Xenoform credits", repo_root() / "CREDITS.md")
+        return _markdown_page(request, "Xenoform credits", repo_root() / "CREDITS.md", "Credits")
 
     @app.get("/media/audio/{audio_id}")
     def media_audio(audio_id: str) -> FileResponse:
@@ -1383,15 +1412,28 @@ def create_app(cfg: dict | None = None):
         raise HTTPException(status_code=404, detail="not in the library (run scripts/fetch_library.py)")
 
     @app.get("/moves")
-    def moves_page() -> FileResponse:
-        return FileResponse(Path(__file__).parent / "ui_static" / "moves.html")
+    def moves_page(request: Request):
+        return _side_page(request, "moves.html", "Moves")
 
     @app.get("/api/moves")
     def moves_list(all: bool = False) -> dict:
         from xenoform import moves as mv
 
-        return {"moves": mv.moves(include_avoid=all), "style": mv.DEFAULT_STYLE,
-                "size": f"{mv.W}x{mv.H}", "frames": mv.FRAMES}
+        # a picture for each clip that is on this machine (the page draws a placeholder for the others)
+        rows = [{**m, "thumb": f"/api/moves/{m['id']}/thumb.jpg"} if m["local"] else m for m in mv.moves(include_avoid=all)]
+        return {"moves": rows, "style": mv.DEFAULT_STYLE, "size": f"{mv.W}x{mv.H}", "frames": mv.FRAMES, "fps": mv.FPS}
+
+    @app.get("/api/moves/{move_id}/thumb.jpg")
+    def moves_thumb(move_id: str) -> FileResponse:
+        """One frame of a downloaded driving clip, as the model sees it (cover-cropped to 9:16), cached under
+        work/ui/moves/thumbs. 404 for an unknown move and for one that is not downloaded."""
+        from xenoform import moves as mv
+
+        try:
+            path = mv.thumb(move_id, work_dir() / "moves" / "thumbs")
+        except mv.MovesError as exc:
+            raise HTTPException(404, str(exc)) from exc
+        return FileResponse(path, media_type="image/jpeg", headers={"Cache-Control": "no-cache"})
 
     @app.post("/api/moves/render")
     async def moves_render(request: Request) -> dict:
@@ -2329,8 +2371,8 @@ def create_app(cfg: dict | None = None):
                 "items": items, "left_s": round(left, 1), "measured": rates}
 
     @app.get("/variations")
-    def variations_page() -> FileResponse:
-        return FileResponse(Path(__file__).parent / "ui_static" / "variations.html")
+    def variations_page(request: Request):
+        return _side_page(request, "variations.html", "Variations")
 
     @app.get("/api/batches")
     def batches_index(seconds: float = 0.0) -> dict:
@@ -2644,6 +2686,10 @@ def create_app(cfg: dict | None = None):
                 "engine": simple.get("engine") or "",
                 "url": f"/api/videos/{folder.name}/video",
                 "hook": (folder / "hook.mp4").is_file(),
+                # a cut is listed as soon as its first picture is on disk, the animatic of a Make that is still on the GPU
+                # (UI review F14): the card says "rendering" and offers Open, not Re-render of a file that is not finished
+                "status": str((live or {}).get("status") or "done"),
+                "progress": float((live or {}).get("progress") or 0.0) if live else 1.0,
             })
         return {"videos": rows}
 
@@ -3266,11 +3312,14 @@ def create_app(cfg: dict | None = None):
             raise HTTPException(400, plain_error(exc)) from exc
 
     @app.get("/api/setup")
-    def setup_index() -> dict:
+    def setup_index(comfy: str = "") -> dict:
+        """The machine check. ``comfy`` is the address the browser's header pings (Settings moves it); a Setup that asked
+        another ComfyUI than the pill said "connected" to read as a lie (UI review M3). Only http(s) addresses count."""
         from xenoform.live_mode import interpolator_name, live_ai_status, tensorrt_status
         from xenoform.models_setup import inspect_setup
 
-        payload = inspect_setup(comfy_url=str(cfg["comfy"].get("base_url") or ""))
+        asked = comfy.strip() if comfy.strip().lower().startswith(("http://", "https://")) else ""
+        payload = inspect_setup(comfy_url=asked or str(cfg["comfy"].get("base_url") or ""))
         payload["extras"] = [live_ai_status(), tensorrt_status()]
         payload["interpolate"] = interpolator_name()
         return payload

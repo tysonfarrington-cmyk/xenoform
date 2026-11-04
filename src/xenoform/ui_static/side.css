@@ -1,0 +1,75 @@
+/* The side pages: Judges, Variations, Moves, Licences and Credits wear one shell (UI review S1, 4 Nov 2026).
+   Loaded last, after theme.css (the tokens), app.css (the layout) and desk.css (the toolbar, the buttons, the panels).
+   ui.py builds the header once (_side_header) and every page carries it unchanged but for the page's name; this file only
+   adds what the five pages share: the name in the header, the one back control, the content column, the lede, the doc
+   tables, the foot, and a file picker the keyboard can reach. Tokens only, and nothing here needs the last word. */
+
+/* ---------------------------------------------------------------- the header */
+/* desk.css lets .top wrap below 860 px and hides the badge there; the side header stays one row of 56 px and keeps the
+   badge down to 640 px, where the page's name and the way back matter more. .top.side-top outranks .top in any query. */
+.top.side-top { flex-wrap: nowrap; gap: 14px; height: var(--x-bar); min-height: var(--x-bar); padding: 0 16px; }
+.top.side-top .ow-badge { display: inline-flex; flex: none; margin-left: 0; }
+.side-top .side-title {
+  flex: 1 1 auto; min-width: 0; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font: 500 13px/1.2 var(--x-font-ui); letter-spacing: 0; text-align: center; color: var(--x-text-2);
+}
+.side-top .side-back { flex: none; min-height: var(--x-h-md); }
+.side-top .ow-badge[aria-current="page"] { border-color: color-mix(in srgb, var(--x-ok) 55%, transparent); }
+
+/* ---------------------------------------------------------------- the content column */
+.side-page { display: grid; align-content: start; gap: 14px; width: min(100% - 32px, 980px); margin: 24px auto 56px; }
+.side-page.wide { width: min(100% - 32px, 1180px); }
+.side-page > * { min-width: 0; }
+.side-page [hidden] { display: none; }
+.side-intro { display: grid; gap: 6px; }
+.side-page h1 { margin: 0; font-size: 24px; font-weight: 600; line-height: 1.2; }
+.side-page .lede { margin: 0; max-width: 72ch; font-size: 14px; line-height: 1.5; color: var(--x-text-2); }
+.side-page .panel { padding: 16px; }
+.side-page .panel > h2 { margin-bottom: 10px; }
+.side-page .panel > .kicker { margin: 0 0 4px; color: var(--x-text-2); }  /* desk.css has it at --x-text-3, 4:1 on a panel */
+.side-field { display: grid; gap: 6px; font-size: 13px; font-weight: 500; color: var(--x-text-2); }
+.side-field textarea { width: 100%; min-height: 84px; resize: vertical; }
+
+/* the foot: the two licence pages, one line, on every side page */
+.side-foot { margin: 0; font-size: 13px; line-height: 1.5; color: var(--x-text-2); }
+.side-foot a { color: var(--x-text-2); text-decoration: underline; text-decoration-color: var(--x-line-3); text-underline-offset: 3px; }
+.side-foot a.ow-badge { text-decoration: none; }
+@media (hover: hover) { .side-foot a:hover { color: var(--x-text); text-decoration-color: currentColor; } }
+
+/* ---------------------------------------------------------------- a file picker (.upload) the keyboard reaches */
+/* app.css hides the input of an .upload with display:none, so a Tab skipped it; here it is clipped away instead, still
+   focusable, and the label shows the ring while the input has keyboard focus. */
+.side-page .upload { position: relative; }
+.side-page .upload input[type="file"] {
+  display: block; position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden;
+  clip-path: inset(50%); white-space: nowrap; opacity: 0;
+}
+.side-page .upload:focus-within { outline: none; }
+.side-page .upload:has(input:focus-visible) { outline: 2px solid var(--x-accent); outline-offset: 2px; }
+
+/* ---------------------------------------------------------------- Licences and Credits (docs/LICENCES.md, CREDITS.md) */
+.side-page .doc { padding: 24px; line-height: 1.55; overflow-wrap: break-word; }
+.doc h1 { font-size: 26px; font-weight: 600; line-height: 1.2; margin: 0 0 12px; }
+.doc h2 { margin: 28px 0 10px; padding-top: 18px; border-top: 1px solid var(--x-line); font-size: 18px; }
+.doc h1 + h2, .doc h1 + p + h2 { border-top: 0; }
+.doc ul { padding-left: 20px; }
+.doc li + li { margin-top: 4px; }
+.doc a { color: var(--x-accent-hi); text-underline-offset: 3px; }
+.doc th { color: var(--x-text); font-weight: 600; white-space: nowrap; }
+.doc code { padding: 1px 5px; border-radius: var(--x-r-xs); background: var(--x-well); }
+/* a table scrolls inside its own box (ui.py wraps each one), so a narrow screen scrolls the table and never the page */
+.doc-scroll { margin: 8px 0 16px; overflow-x: auto; }
+.doc-scroll table { min-width: 560px; }
+
+/* ---------------------------------------------------------------- narrow screens */
+@media (max-width: 640px) {
+  .top.side-top { gap: 8px; padding: 0 12px; }
+  .top.side-top .ow-badge { display: none; }  /* the foot of the page still names it */
+  .top.side-top .brand { gap: 8px; padding-right: 0; }
+  .side-top .side-title { text-align: left; }
+  .side-top .side-back { padding: 0 10px; font-size: 13px; }
+  .side-page { width: min(100% - 24px, 980px); margin: 16px auto 40px; }
+  .side-page.wide { width: min(100% - 24px, 1180px); }
+  .side-page .panel { padding: 14px; }
+  .side-page .doc { padding: 16px; }
+}

@@ -1,50 +1,248 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>Xenoform Moves</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="/static/theme.css">
-<link rel="stylesheet" href="/static/app.css">
-<link rel="stylesheet" href="/static/desk.css">
-<style>body{max-width:980px;margin:24px auto;padding:0 16px}
-h1{font-family:var(--x-font-display);font-size:24px;margin:10px 0 6px}h2{margin:18px 0 8px}
-.moves{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
-.move{background:var(--x-surface);border:1px solid var(--x-line-2);border-radius:10px;padding:12px;cursor:pointer;transition:border-color 90ms,background-color 90ms}
-@media (hover:hover){.move:hover{border-color:var(--x-line-3);background:var(--x-surface-2)}}
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="desk.css">
+<link rel="stylesheet" href="side.css">
+<style>
+.pick-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+.pick-thumb{width:40px;height:56px;object-fit:cover;border-radius:var(--x-r-sm);background:var(--x-well);box-shadow:inset 0 0 0 1px var(--x-line-2)}
+.pick-name{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;color:var(--x-text-2)}
+.panel .note{margin:8px 0 0}
+.panel .side-field{margin-top:14px}
+.moves{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:12px;align-items:start}
+.move{display:flex;flex-direction:column;overflow:hidden;background:var(--x-surface-2);border:1px solid var(--x-line-2);border-radius:var(--x-r-lg);transition:border-color var(--x-t-fast) var(--x-ease),box-shadow var(--x-t) var(--x-ease)}
+@media (hover:hover){.move:hover{border-color:var(--x-line-3)}}
 .move.sel{border-color:var(--x-accent);box-shadow:0 0 0 1px var(--x-accent)}
-.fit{font-size:12px;opacity:.75}label{display:block;margin:10px 0}textarea{width:100%;min-height:70px}
-video{max-height:70vh}</style></head>
-<body>
-<p><a href="/">&larr; Back to the desk</a></p>
-<h1>Moves</h1>
-<p>Pick a character picture and a move. Wan Animate 2 copies the dancer's motion frame by frame onto your character, so the motion is continuous. Local, open weights, 480&times;832, 3.4 s, about 12 GB.</p>
-<label>Character picture (full body, plain background works best) <input type="file" id="img" accept="image/png,image/jpeg,image/webp"></label>
-<label>Describe the character (face, hair, clothes) <textarea id="look" placeholder="A 22-year-old woman with fair skin, light freckles, grey-blue eyes, a soft ash-silver bob, white bomber jacket, light blue jeans, white sneakers"></textarea></label>
-<p class="fit">Always added: closed-mouth smile, calm expression, detailed hands.</p>
-<h2>Move</h2><div class="moves" id="moves">Loading...</div>
-<p><button id="go" class="generate" disabled>Render this move</button> <span id="status"></span></p>
-<div id="out"></div>
+.move-pick{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:4px;width:100%;padding:0 0 6px;text-align:left;font:inherit;color:var(--x-text);background:none;border:0;border-radius:0;box-shadow:none;cursor:pointer}
+.move-pick:active:not(:disabled){transform:none}
+.move-pick:focus-visible{outline-offset:-2px}
+/* a move with no picture yet: a colour from its id, the category word, a play glyph */
+.move-art{position:relative;display:grid;place-items:center;aspect-ratio:9/16;margin-bottom:4px;overflow:hidden;background:linear-gradient(165deg,hsl(var(--hue) 40% 30%),hsl(var(--hue2) 36% 13%))}
+.move-art::before{content:"";position:absolute;width:44px;height:44px;border-radius:50%;background:color-mix(in srgb,var(--x-text) 14%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--x-text) 30%,transparent)}
+.move-art::after{content:"";position:absolute;width:14px;height:16px;margin-left:3px;background:var(--x-text);clip-path:polygon(0 0,100% 50%,0 100%)}
+.move-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.move-art.has-img::before,.move-art.has-img::after,.move-art.has-img .move-word{display:none}
+.move-word{position:absolute;left:10px;right:10px;bottom:10px;font:600 11px/1.2 var(--x-font-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--x-text-2)}
+.move-title{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;min-height:2.6em;padding:0 10px;font-size:13.5px;font-weight:600;line-height:1.3}
+.move-meta,.move-state{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 10px;font-size:12px;color:var(--x-text-2)}
+/* how well the clip suits the model, on the picture's corner */
+.fit{position:absolute;top:8px;left:8px;z-index:1;display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:var(--x-r-xs);font:600 11px/1 var(--x-font-ui);color:var(--x-text);background:color-mix(in srgb,var(--x-bg) 80%,transparent);box-shadow:inset 0 0 0 1px var(--x-line-3)}
+.fit-best{color:var(--x-ok)}
+.fit-good{color:var(--x-accent-hi)}
+.move-foot{display:flex;align-items:center;gap:8px;padding:2px 10px 10px}
+.move-info{display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:0 9px 0 6px;border-radius:var(--x-r-sm);font:500 12px/1 var(--x-font-ui);color:var(--x-text-2);background:transparent;border:1px solid var(--x-line-2);box-shadow:none}
+.move-info .i{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;font:700 10px/1 var(--x-font-display);box-shadow:inset 0 0 0 1.5px currentColor}
+.move-info[aria-expanded="true"]{color:var(--x-text);background:var(--x-surface-3);border-color:var(--x-line-3)}
+@media (hover:hover){.move-info:hover{color:var(--x-text);background:var(--x-surface-3)}}
+@media (pointer:coarse){.move-info{min-height:var(--x-h-lg)}}
+.move-source{padding:10px;border-top:1px solid var(--x-line);background:var(--x-well);font-size:12.5px;line-height:1.45;color:var(--x-text-2)}
+.move-source p{margin:0 0 4px}
+.move-source p:last-child{margin-bottom:0}
+.move-source b{font-weight:600;color:var(--x-text)}
+.go-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
+.why{font-size:13px;color:var(--x-text-2)}
+.why[data-state="ready"]{color:var(--x-ok)}
+.go-status{margin:10px 0 0;min-height:1.4em;font-size:13px;color:var(--x-text-2)}
+#out video{display:block;width:min(100%,360px);max-height:70vh;margin-top:12px;border-radius:var(--x-r-lg);background:var(--zinc-950)}
+</style></head>
+<body data-desk="1">
+<!--side-header-->
+<main class="side-page">
+  <div class="side-intro">
+    <h1>Moves</h1>
+    <p class="lede">Wan Animate 2 copies a dancer's motion onto your character, frame by frame, on this machine (open weights, 480&times;832, 3.4 s, about 12 GB).</p>
+  </div>
+  <section class="panel" aria-labelledby="h-char">
+    <p class="kicker">1 &middot; Character</p>
+    <h2 id="h-char">Choose a picture</h2>
+    <div class="pick-row">
+      <label class="upload">Choose a character picture<input type="file" id="img" accept="image/png,image/jpeg,image/webp"></label>
+      <img class="pick-thumb" id="img-thumb" alt="Preview of the chosen picture" hidden>
+      <span class="pick-name" id="img-name">No picture chosen</span>
+    </div>
+    <p class="note">A full-body picture on a plain background works best.</p>
+    <label class="side-field" for="look">Describe the character (face, hair, clothes)
+      <textarea id="look" placeholder="A 22-year-old woman with fair skin, light freckles, grey-blue eyes, a soft ash-silver bob, white bomber jacket, light blue jeans, white sneakers"></textarea>
+    </label>
+    <p class="note">Always added: closed-mouth smile, calm expression, detailed hands.</p>
+  </section>
+  <section class="panel" aria-labelledby="h-move">
+    <p class="kicker">2 &middot; Move</p>
+    <h2 id="h-move">Pick a move</h2>
+    <div class="moves" id="moves" role="group" aria-labelledby="h-move"><p class="note">Loading&hellip;</p></div>
+  </section>
+  <section class="panel" aria-labelledby="h-go">
+    <p class="kicker">3 &middot; Render</p>
+    <h2 id="h-go">Make the video</h2>
+    <div class="go-row">
+      <button type="button" id="go" class="generate" disabled aria-describedby="why">Render this move</button>
+      <span id="why" class="why" role="status">Choose a character picture first</span>
+    </div>
+    <p id="status" class="go-status" role="status"></p>
+    <div id="out"></div>
+  </section>
+  <p class="side-foot"><a href="/licences">Open weights licences</a> &middot; <a href="/credits">Picture credits</a></p>
+</main>
 <script>
-let pick = null;
 const $ = (id) => document.getElementById(id);
-async function load() {
-  const res = await fetch("/api/moves"); const data = await res.json();
-  $("moves").innerHTML = data.moves.map((m) => `<div class="move" data-id="${m.id}"><b>${m.title}</b><div class="fit">${m.fit}${m.fit_note ? " - " + m.fit_note : ""}${m.local ? "" : " - not downloaded"}</div><div class="fit">${m.attribution}</div></div>`).join("");
-  document.querySelectorAll(".move").forEach((el) => el.onclick = () => {
-    document.querySelectorAll(".move").forEach((x) => x.classList.remove("sel")); el.classList.add("sel"); pick = el.dataset.id; $("go").disabled = false; });
+const BASE = document.body.dataset.base || "";
+const api = (path) => BASE + path;
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const FIT = { best: "Best fit", good: "Good fit", ok: "OK fit", avoid: "Poor fit" };
+const FIT_TIP = "How well this clip suits Wan Animate 2: best, good or OK";
+const st = { moves: [], pick: "", file: null, busy: false, seconds: 3.4, preview: "" };
+
+function hueOf(id) {
+  let h = 0;
+  for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) % 360;
+  return h;
 }
-async function poll(id) {
-  const res = await fetch(`/api/moves/jobs/${id}`); const job = await res.json();
-  $("status").textContent = job.status + (job.error ? ": " + job.error : "");
-  if (job.status === "done") { $("out").innerHTML = `<video controls autoplay loop src="${job.url}"></video>`; $("go").disabled = false; return; }
-  if (job.status === "error") { $("go").disabled = false; return; }
+
+function card(m) {
+  const id = esc(m.id), h = hueOf(m.id);
+  const art = m.thumb ? `<img src="${esc(api(m.thumb))}" alt="" loading="lazy" decoding="async">` : "";
+  const link = /^https:\/\//.test(m.source_url || "") ? `<p><a href="${esc(m.source_url)}" target="_blank" rel="noopener noreferrer">View the original clip</a></p>` : "";
+  return `<div class="move" data-id="${id}">
+    <button type="button" class="move-pick" aria-pressed="false">
+      <span class="move-art${m.thumb ? " has-img" : ""}" style="--hue:${h};--hue2:${(h + 55) % 360}"><span class="move-word" aria-hidden="true">${esc(m.category_name)}</span>${art}<span class="fit fit-${esc(m.fit)}" title="${esc(FIT_TIP)}">${esc(FIT[m.fit] || m.fit)}</span></span>
+      <span class="move-title">${esc(m.title)}</span>
+      <span class="move-meta">${esc(m.category_name)}</span>
+      <span class="move-state">${m.local ? "Downloaded" : "Not downloaded"}</span>
+    </button>
+    <div class="move-foot">
+      <button type="button" class="move-info" aria-expanded="false" aria-controls="src-${id}" aria-label="Source and licence of ${esc(m.title)}" title="Where this clip comes from"><span class="i" aria-hidden="true">i</span>Source</button>
+    </div>
+    <div class="move-source" id="src-${id}" hidden>
+      <p><b>By</b> ${esc(m.author)}</p>
+      <p><b>Licence</b> ${esc(m.licence_short)}</p>
+      ${m.fit_note ? `<p><b>Fit</b> ${esc(m.fit_note)}</p>` : ""}
+      ${link}
+    </div>
+  </div>`;
+}
+
+// What the Render button waits for, in the order you meet it; the line beside it always says what enables it.
+function waiting() {
+  if (st.busy) return { ok: false, html: "Rendering on this machine. The video appears below when it is done." };
+  if (!st.file) return { ok: false, html: "Choose a character picture first" };
+  const m = st.moves.find((x) => x.id === st.pick);
+  if (!m) return { ok: false, html: "Pick a move" };
+  if (!m.local) return { ok: false, html: `This move is not downloaded yet: run <code>python scripts/fetch_moves.py ${esc(m.id)}</code>` };
+  return { ok: true, html: `Ready: renders on this machine, about ${st.seconds.toFixed(1)} s of video` };
+}
+function sync() {
+  const w = waiting();
+  $("go").disabled = !w.ok;
+  $("why").innerHTML = w.html;
+  $("why").dataset.state = w.ok ? "ready" : "wait";
+}
+
+function choose(id) {
+  st.pick = id;
+  document.querySelectorAll(".move").forEach((el) => {
+    const on = el.dataset.id === id;
+    el.classList.toggle("sel", on);
+    el.querySelector(".move-pick").setAttribute("aria-pressed", on ? "true" : "false");
+  });
+  sync();
+}
+
+function onFile() {
+  st.file = $("img").files[0] || null;
+  if (st.preview) URL.revokeObjectURL(st.preview);
+  st.preview = st.file ? URL.createObjectURL(st.file) : "";
+  if (st.preview) $("img-thumb").src = st.preview; else $("img-thumb").removeAttribute("src");
+  $("img-thumb").hidden = !st.file;
+  $("img-name").textContent = st.file ? st.file.name : "No picture chosen";
+  sync();
+}
+
+async function load() {
+  let data;
+  try {
+    const res = await fetch(api("/api/moves"));
+    if (!res.ok) throw new Error(String(res.status));
+    data = await res.json();
+  } catch (err) {
+    $("moves").innerHTML = `<p class="note">The desk is not answering. Is it running?</p>`;
+    return;
+  }
+  st.moves = data.moves || [];
+  st.seconds = (data.frames || 81) / (data.fps || 24);
+  $("moves").innerHTML = st.moves.map(card).join("");
+  if (st.pick) choose(st.pick); else sync();
+}
+
+$("moves").addEventListener("click", (event) => {
+  const info = event.target.closest(".move-info");
+  if (info) {
+    const open = info.getAttribute("aria-expanded") !== "true";
+    info.setAttribute("aria-expanded", String(open));
+    $(info.getAttribute("aria-controls")).hidden = !open;
+    return;
+  }
+  const pick = event.target.closest(".move-pick");
+  if (pick) choose(pick.closest(".move").dataset.id);
+});
+// a picture that does not load leaves the drawn placeholder (error events do not bubble: listen while they go down)
+$("moves").addEventListener("error", (event) => {
+  if (event.target.tagName !== "IMG") return;
+  const art = event.target.closest(".move-art");
+  if (art) art.classList.remove("has-img");
+  event.target.remove();
+}, true);
+$("img").addEventListener("change", onFile);
+
+function finish(words) {
+  st.busy = false;
+  $("status").textContent = words;
+  sync();
+}
+async function poll(id, misses = 0) {
+  let job;
+  try {
+    const res = await fetch(api(`/api/moves/jobs/${id}`));
+    job = await res.json();
+    if (res.status === 404) { finish(job.detail || "That render is gone."); return; }
+    if (!res.ok) throw new Error(String(res.status));
+  } catch (err) {
+    if (misses < 20) { setTimeout(() => poll(id, misses + 1), 3000); return; }
+    finish("The desk stopped answering. Is it running?");
+    return;
+  }
+  if (job.status === "done") {
+    $("out").innerHTML = `<video controls autoplay loop playsinline src="${esc(api(job.url))}"></video>`;
+    finish("Done.");
+    return;
+  }
+  if (job.status === "error") { finish("Failed: " + (job.error || "the render stopped.")); return; }
+  $("status").textContent = "Rendering…";
   setTimeout(() => poll(id), 3000);
 }
+
 $("go").onclick = async () => {
-  const file = $("img").files[0]; if (!file) { $("status").textContent = "Pick a character picture first."; return; }
-  const body = new FormData(); body.append("file", file); body.append("move", pick); body.append("appearance", $("look").value);
-  $("go").disabled = true; $("status").textContent = "Starting...";
-  const res = await fetch("/api/moves/render", {method: "POST", body}); const job = await res.json();
-  if (!res.ok) { $("status").textContent = job.detail || "Could not start."; $("go").disabled = false; return; }
+  if ($("go").disabled) return;
+  const body = new FormData();
+  body.append("file", st.file);
+  body.append("move", st.pick);
+  body.append("appearance", $("look").value);
+  st.busy = true;
+  $("status").textContent = "Starting…";
+  sync();
+  let res, job;
+  try {
+    res = await fetch(api("/api/moves/render"), { method: "POST", body });
+    job = await res.json();
+  } catch (err) {
+    finish("The desk is not answering. Is it running?");
+    return;
+  }
+  if (!res.ok) { finish(job.detail || "Could not start."); return; }
   poll(job.id);
 };
+
+onFile();
 load();
 </script></body></html>

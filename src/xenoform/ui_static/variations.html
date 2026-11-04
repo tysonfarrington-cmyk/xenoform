@@ -1,13 +1,12 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>Xenoform Variations</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="/static/theme.css">
-<link rel="stylesheet" href="/static/app.css">
-<link rel="stylesheet" href="/static/desk.css">
-<style>body{max-width:1180px;margin:24px auto;padding:0 16px}
-h1{font-family:var(--x-font-display);font-size:24px;margin:10px 0 6px}
-h2{font-size:17px;margin:0}
-.batch{background:var(--x-surface);border:1px solid var(--x-line-2);border-radius:12px;padding:14px;margin:16px 0}
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="desk.css">
+<link rel="stylesheet" href="side.css">
+<style>h2{font-size:17px;margin:0}
+.batch{background:var(--x-surface);border:1px solid var(--x-line-2);border-radius:12px;padding:14px;margin:0 0 16px}
 .batch-head{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:baseline;justify-content:space-between}
 .batch-head .actions{display:flex;gap:8px}
 .meta{font-size:13px;opacity:.75;margin:4px 0 0}
@@ -23,17 +22,24 @@ h2{font-size:17px;margin:0}
 .label{font-weight:600;font-size:14px}
 .knobs{opacity:.75}
 .status{font-size:12px;opacity:.8}
-.status.error{color:var(--x-danger, #ff6b6b);opacity:1}
+.status.error{color:var(--x-bad);opacity:1}
 .empty{opacity:.75}
 </style></head>
-<body>
-<p><a href="/">&larr; Back to the desk</a></p>
-<h1>Variations</h1>
-<p>Several Drafts of one idea, each varying one thing (the seed, the vibe or the feel), made one after another while you sleep. Watch them side by side, then render the one you like at Final. Queue them from the desk: Prototype, under Make.</p>
-<p class="meta" id="measured"></p>
-<div id="list"><p class="empty">Loading...</p></div>
+<body data-desk="1">
+<!--side-header-->
+<main class="side-page wide">
+  <div class="side-intro">
+    <h1>Variations</h1>
+    <p class="lede">Several Drafts of one idea, each varying one thing (the seed, the vibe or the feel), made one after another while you sleep. Watch them side by side, then render the one you like at Final. Queue them from the desk: Prototype, under Make.</p>
+    <p class="meta" id="measured"></p>
+  </div>
+  <div id="list"><p class="empty">Loading...</p></div>
+  <p class="side-foot"><a href="/licences">Open weights licences</a> &middot; <a href="/credits">Picture credits</a></p>
+</main>
 <script>
 const $ = (id) => document.getElementById(id);
+const BASE = document.body.dataset.base || "";
+const api = (path) => BASE + path;
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 function span(seconds) {
   const s = Math.max(0, Math.round(Number(seconds || 0)));
@@ -58,8 +64,8 @@ function knobs(k) {
 function frame(b, it) {
   if (it.status === "done" && it.video) {
     const key = `${b.id}:${it.k}`;
-    if (playing.has(key)) return `<div class="frame"><video src="${esc(it.video)}" poster="${esc(it.poster)}" controls autoplay loop playsinline></video></div>`;
-    return `<div class="frame" style="background-image:url('${esc(it.poster)}')"><button type="button" class="generate play" data-play="${esc(key)}">Play</button></div>`;
+    if (playing.has(key)) return `<div class="frame"><video src="${esc(api(it.video))}" poster="${esc(api(it.poster))}" controls autoplay loop playsinline></video></div>`;
+    return `<div class="frame" style="background-image:url('${esc(api(it.poster))}')"><button type="button" class="generate play" data-play="${esc(key)}">Play</button></div>`;
   }
   const pct = it.status === "running" ? Math.round(Number(it.progress || 0) * 100) : 0;
   const words = it.status === "running" ? `${pct} %${it.eta_s ? ` · about ${span(it.eta_s)} left` : ""}` : (STATUS[it.status] || it.status);
@@ -79,7 +85,7 @@ function card(b, it) {
       <span class="knobs">${esc([it.vibe, it.look !== "auto" ? it.look : "", knobs(it.knobs)].filter(Boolean).join(" · "))}</span>
       ${b.vary === "feel" || final ? `<span class="knobs">${esc(it.idea)}</span>` : ""}
       <span class="status${it.status === "error" ? " error" : ""}">${esc(detail)}</span>
-      ${it.status === "done" && it.job_id ? `<a class="status" href="/api/videos/${esc(it.job_id)}/video" download="xenoform-${esc(it.job_id)}.mp4">Download</a>` : ""}
+      ${it.status === "done" && it.job_id ? `<a class="status" href="${esc(api(`/api/videos/${encodeURIComponent(it.job_id)}/video`))}" download="xenoform-${esc(it.job_id)}.mp4">Download</a>` : ""}
       ${button}
     </div></div>`;
 }
@@ -110,7 +116,7 @@ function show(html) {
 }
 async function load() {
   try {
-    const res = await fetch("/api/batches");
+    const res = await fetch(api("/api/batches"));
     const data = await res.json();
     const m = data.measured || {};
     const bits = [];
@@ -127,8 +133,8 @@ async function load() {
     setTimeout(load, 15000);
   }
 }
-async function post(url) {
-  const res = await fetch(url, { method: "POST" });
+async function post(path) {
+  const res = await fetch(api(path), { method: "POST" });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     alert(body.detail || "That did not work.");
