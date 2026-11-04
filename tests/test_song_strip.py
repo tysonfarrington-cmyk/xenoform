@@ -101,7 +101,7 @@ def test_the_strip_component():
 def test_the_desk_feeds_the_strip():
     model = APP.split("function stripModel(where) {")[1].split("\nfunction ")[0]
     assert "songStrip()" in model and "cutShotsForStrip(easy, lane, off)" in model and "draftWindow(song, easy)" in model
-    assert 'state: "sketch"' in model and "chain.window_start" in model and "lane.window.song_start" in model
+    assert 'state: "sketch"' in model and "chain.window_start" in model and "cutSongStart(easy, lane)" in model
     assert "/api/simple/strip?" in APP and "mountStrips();  // the song strip (strip.js)" in APP
     # the dragged window rides on the Make body and the estimate (the server already reads length_start)
     body = APP.split("function payload() {")[1].split("function vjUrl()")[0]
@@ -109,6 +109,15 @@ def test_the_desk_feeds_the_strip():
     assert "length_start: draggedStart(easy) != null" in APP.split("async function loadSimpleOptions()")[1].split("\n}\n")[0]
     # a cut sits on the song only when it was made from the song on the desk
     assert 'state.easy.cutSongLabel = row.song || "";' in APP and 'state.easy.cutSongLabel = state.easy.songLabel || "";' in APP
+    # the merge (integrate-4nov): where the cut starts on the song held is cutSongStart, its window's start, or 0 when the
+    # desk holds only the cut's own stretch (Round 0's reopen loads a trimmed upload's 30 s, the window names the whole
+    # song's 2:08): the shots, the seams, the playhead, a seek and the shot's head all read it, so no shot is laid past
+    # the song's end under the last seam
+    start = APP.split("function cutSongStart(easy, lane) {")[1].split("\n}\n")[0]
+    assert "if (!lane || !lane.window || !cutOnSong(easy)) return 0;" in start
+    assert "held > 0 && start + (Number(lane.duration) || 0) > held + 0.5 ? 0 : start" in start
+    assert APP.count("Number(lane.window.song_start) || 0 : 0") == 0 and APP.count("state.lane.window.song_start") == 0
+    assert APP.count("cutSongStart(") == 6
 
 
 def test_the_inspector_docks_under_the_strip_with_a_fourth_tab():

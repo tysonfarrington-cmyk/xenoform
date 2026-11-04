@@ -70,7 +70,7 @@ function withMissingRequired(json) {
       await route.fulfill({ response, json: withMissingRequired(await response.json()) });
     });
     await clean.goto(BASE + '/#simple', { waitUntil: 'domcontentloaded' });
-    await clean.waitForSelector('[data-act="easy-make"][data-gate="setup"]', { timeout: 30000 });
+    await clean.waitForSelector('#step-bar[data-gate="1"]', { timeout: 30000 });  // the gate mark lives on the step bar
     await settle(clean, 1500);
     await shot(clean, `desk-make-gate-${size.tag}`, 'the first screen while LTX 0.9.5 is missing: Make reads Get the 11.5 GB model (answer mocked)', { full: false, mocked: true });
     await clean.evaluate(() => { location.hash = '#setup'; });
@@ -111,6 +111,7 @@ function withMissingRequired(json) {
       s.videos = [
         { id: 'run00001', created: '2026-11-04T14:02:00', seconds: 95, vibe: 'chrome-mercury', song: 'Glitch Out', recipe: 'xf1.a', energy: 'dense', aspect: '9:16', tier: 'draft', url: '/api/videos/31680167/video', hook: false, status: 'running', progress: 0.42 },
         { id: 'done0002', created: '2026-11-04T13:00:00', seconds: 300, vibe: 'neon-noir', song: 'Glitch Out', recipe: 'xf1.b', energy: 'dense', aspect: '9:16', tier: 'draft', url: '/api/videos/31680167/video', hook: false, status: 'done', progress: 1 }];
+      s.easy.song = '';  // back to Source with no song held, where My videos lists the cuts
       setEasyPhase('choose'); render();
       document.getElementById('my-videos').scrollIntoView();
     });

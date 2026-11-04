@@ -3310,7 +3310,7 @@ function inspectorDock(easy) {
 // beats it holds
 function shotWhen(lane, s) {
   const onSong = cutOnSong(state.easy) && !!lane.window;
-  const off = onSong ? Number(lane.window.song_start) || 0 : 0;
+  const off = onSong ? cutSongStart(state.easy, lane) : 0;
   const beats = Math.max(1, Math.round(Number(s.seconds) / Math.max(0.05, beatPeriod(lane))));
   const where = onSong ? `${clockText(off + Number(s.start))} in the song${barBeat(off + Number(s.start)) ? `, ${barBeat(off + Number(s.start))}` : ""} · ${clockText(s.start)} in the cut` : clockText(s.start);
   return `${where} · ${s.seconds} s, ${beats} beat${beats === 1 ? "" : "s"}`;
@@ -3878,6 +3878,16 @@ function cutOnSong(easy) {
   const song = String(easy.songLabel || "");
   return !!label && !!song && (label === song || label.startsWith(`${song} (`));
 }
+// Where the cut starts on the song the desk holds, in seconds: its record's window (lane.window.song_start) when the
+// cut is of that song, 0 when it is not, and 0 when the desk holds only the cut's own stretch (Round 0's reopen loads a
+// trimmed upload's song, the 30 s the Make was given, while the window names the time in the whole song): a window
+// that would run past the song held would lay every shot past its end.
+function cutSongStart(easy, lane) {
+  if (!lane || !lane.window || !cutOnSong(easy)) return 0;
+  const start = Number(lane.window.song_start) || 0;
+  const held = Number(state && state.duration) || 0;
+  return held > 0 && start + (Number(lane.duration) || 0) > held + 0.5 ? 0 : start;
+}
 function stripTitle(song, easy) {
   const runs = (song.passages || []).filter((p) => p.drop_run != null);
   const main = runs.find((p) => p.main);
@@ -3987,7 +3997,7 @@ function stripModel(where) {
     wave: base.wave || [], title: song && (onSong || !lane) ? stripTitle(base, easy) : `<b>This cut</b> · ${esc(clockText(base.duration))} · its song is not on the desk` });
   if (base.drop != null) model.marks = [{ t: Number(base.drop), kind: "drop", title: `the drop the analysis found · ${clockText(base.drop)}` }];
   if (lane) {
-    const off = onSong && lane.window ? Number(lane.window.song_start) || 0 : 0;
+    const off = onSong ? cutSongStart(easy, lane) : 0;
     const shots = cutShotsForStrip(easy, lane, off);
     model.shots = shots;
     model.intensity = shots.filter((s) => s.intensity != null).map((s) => ({ start: s.start, end: s.end, v: s.intensity }));
@@ -4077,7 +4087,7 @@ function stripProgress(model, where) {
     return;
   }
   const at = easy.tlSeek;
-  const off = cutOnSong(easy) && state.lane && state.lane.window ? Number(state.lane.window.song_start) || 0 : 0;
+  const off = cutSongStart(easy, state.lane);
   if (at != null) model.shots.forEach((s) => { if (off + Number(at) >= s.start - 1e-3 && off + Number(at) < s.end) s.state = "rendering"; });
   model.busy = true;
   model.badge = "Re-cutting";
@@ -4140,7 +4150,7 @@ function seekSong(where, t) {
   const player = document.getElementById("player");
   const lane = state.lane;
   if (where === "cut" && player && lane) {
-    const off = cutOnSong(state.easy) && lane.window ? Number(lane.window.song_start) || 0 : 0;
+    const off = cutSongStart(state.easy, lane);
     const inCut = at - off;
     if (inCut >= 0 && inCut <= (Number(lane.duration) || player.duration || 0)) {
       try { player.currentTime = inCut; } catch (err) { /* not seekable yet */ }
@@ -5329,7 +5339,7 @@ function paintPlayhead() {
   const player = document.getElementById("player");
   if (player && window.XenoStrip && document.querySelector('[data-song-strip="cut"]') && state && state.lane) {
     // the song strip under a cut: the player's time is the cut's, the strip's the song's (lane.window)
-    const off = cutOnSong(state.easy) && state.lane.window ? Number(state.lane.window.song_start) || 0 : 0;
+    const off = cutSongStart(state.easy, state.lane);
     window.XenoStrip.setPlayhead("cut", off + (player.currentTime || 0), !player.paused && !player.ended);
   }
   if (!head || !track || !player) return;
