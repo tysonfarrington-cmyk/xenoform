@@ -219,3 +219,335 @@ def add_lora(graph: dict, name: str, strength: float, model_node: str = "1") -> 
 
 def now() -> float:
     return time.perf_counter()
+
+
+# ------------------------------------------------------------------------------------------------ the recipe Under the hood shows
+
+ENGINE_LABELS = {"ltx095": "LTX-Video 0.9.5 (Draft)", "ltx23": "LTX-2.3 22B (Final)", "ltx25": "LTX-2.5 22B (Final)",
+                 "ltx25cloud": "LTX-2.5 22B on Comfy Cloud", "ltx23cloud": "LTX-2.3 22B on Comfy Cloud", "mock": "mock cross-fade (test)"}
+TIER_LABELS = {"draft": "Draft", "fast": "Fast Final", "final": "Final", "cloud": "Cloud Final"}
+# one line a row, shown when the row has focus: what the value does to a morph
+HINTS = {
+    "model": "The weights that drew this morph. Draft is LTX-Video 0.9.5 (2B, seconds a morph); Final is LTX-2.3 or 2.5 "
+             "(22B, sharper, minutes a morph).",
+    "prompt": "What the morph is asked to show between the two stills. The stills carry the objects; the words carry the "
+              "change, the light and the look.",
+    "negative": "What the model is steered away from: text, a second object, a cut, flicker.",
+    "from": "The still the morph starts on. Swap it on the Shot tab.",
+    "to": "The still the morph lands on, and the next shot starts from. Swap it on the Shot tab.",
+    "seed": "The noise the morph grows from. Another seed is another take of the same request; the same seed and values "
+            "give the same clip back.",
+    "steps": "How many denoising passes. More is finer and slower, about in proportion; under 10 gets mushy, past 30 "
+             "gains little.",
+    "cfg": "How hard the words pull against the guide stills. Around 3 is the Draft's own; higher follows the prompt more "
+           "and can burn or flicker.",
+    "frames": "How long the morph is rendered (LTX takes 8k + 1 frames). The shot keeps its beats: a longer morph plays "
+              "faster in it, a shorter one slower.",
+    "size": "The size the morph renders at; the cut scales it to its own size afterwards.",
+    "guide_start": "How firmly the first frame holds the start still, 0 to 1.",
+    "guide_end": "How firmly the last frame lands on the end still, 0 to 1. Lower lets the morph wander before it "
+                 "arrives; 1 pins it.",
+    "compression": "How much each guide still is softened before it steers the morph, 0 to 100 (start, end). More gives "
+                   "the morph freedom; a scene stays at 0 or it loses its texture.",
+    "style": "How the object changes: Melt, Shatter, Bloom, Spin or Fold. It rewrites the prompt's opening.",
+    "lora": "A LoRA trained for LTX-Video 0.9.5 nudges the model's look; strength around 0.5 to 1. One made for another "
+            "model fails or does nothing.",
+}
+EDITABLE = ("prompt", "negative", "seed", "steps", "cfg", "frames", "guide_start", "guide_end", "compression", "style", "lora")
+COMPARED = ("model", "prompt", "negative", "seed", "steps", "cfg", "frames", "width", "height", "guide_start", "guide_end",
+            "compression", "style", "lora")
+DEFAULT_MORPH_S = 25.0  # a Draft morph on a 12 GB card when the cut measured none (docs/MORPH_ENGINE_PLAN.md)
+DEFAULT_RECUT_S = 30.0
+
+
+def frame_choices() -> list[int]:
+    """The lengths a morph may render at: every 8k + 1 frames from 25 (about 1 s) to 121 (5 s)."""
+    return list(range(FRAMES_RANGE[0], FRAMES_RANGE[1] + 1, 8))
+
+
+def _shots(rec: dict) -> list[dict]:
+    return [s for s in (rec.get("plan_shots") or rec.get("shots") or []) if isinstance(s, dict)]
+
+
+def _kind_of(rec: dict, f: str) -> str:
+    return "scene" if f in set(rec.get("scene_files") or []) else "setting" if f in set(rec.get("setting_files") or []) else "object"
+
+
+def morph_of(rec: dict, i: int) -> int | None:
+    """The chain morph shot ``i`` plays (its render index), None for a shot that plays none."""
+    shots = _shots(rec)
+    if not 0 <= i < len(shots):
+        return None
+    s = shots[i]
+    if s.get("performer") or s.get("own") or s.get("generated") or s.get("dream"):
+        return None
+    m = s.get("morph", s.get("clip"))
+    n = len(rec.get("stills") or [])
+    if m is None and len(rec.get("clips") or []) == n - 1:  # a record from before the morph index: one morph a shot
+        m = i
+    return int(m) if m is not None and 0 <= int(m) < max(0, n - 1) else None
+
+
+def shot_kind(rec: dict, i: int) -> tuple[str, str]:
+    """What shot ``i`` plays, in a word and a sentence: a morph of the chain, a morph of a generated run, Polly, your
+    clip, or a dream over it."""
+    s = _shots(rec)[i]
+    now_shots = rec.get("shots") or []
+    cur = now_shots[i] if i < len(now_shots) and isinstance(now_shots[i], dict) else s
+    if s.get("performer") or cur.get("performer"):
+        return "performer", "Polly's shot: MiniMax H3 sings or plays to the song here. It is not a morph, so there is no morph request to show."
+    if s.get("own") or cur.get("own"):
+        return "own", "One of your clips plays here, trimmed to the beat. Nothing was generated for it."
+    if s.get("dream") or cur.get("dream"):
+        return "dream", ("Dreamed over: Z-Image Turbo re-dreamed this span frame by frame from the morph under it. The "
+                         "values below are the morph's, as it was before the dream.")
+    if s.get("generated") or cur.get("generated"):
+        return "generated", "A generated run (Generate here): its own chain of morphs, rendered over this span."
+    return "morph", ""
+
+
+def preset_of(rec: dict, i: int, style: str | None = None) -> dict | None:
+    """What the vibe's preset gives shot ``i`` today: the Draft request a Make would send for its morph (the prompt for
+    its pair and style with the guardrails' hint, the tuned steps, cfg, compression and end guide, the cut's seed for
+    that morph, the length from its seconds of source, the cut's render size), built from the same settings the Draft
+    loop sends (``cloud_morph.draft_settings``) and read back with ``named``. None for a shot that plays no chain morph."""
+    from xenoform import morph_pass as mp
+    from xenoform.cloud_morph import draft_settings
+
+    m = morph_of(rec, i)
+    if m is None:
+        return None
+    files = [str(f) for f in rec.get("stills") or []]
+    kinds = mp.pair_kinds({"kind": _kind_of(rec, files[m])}, {"kind": _kind_of(rec, files[m + 1])})
+    styles = [str(x) for x in rec.get("morph_styles") or []]
+    style = (style or (styles[i] if i < len(styles) else "") or "melt").strip().lower()
+    vibe = str(rec.get("vibe") or "")
+    prep = rec.get("prep") if isinstance(rec.get("prep"), dict) else {}
+    state = dict(rec.get("recut_state") or {})
+    if prep.get("background") == "black":  # the cut's own ground, as the render's prompt hint had it
+        state["still_background"] = "black"
+    size = tuple(prep.get("draft_size") or (mp.WIDTH, mp.HEIGHT)) if prep.get("native_draft") else (mp.WIDTH, mp.HEIGHT)
+    s = _shots(rec)[i]
+    render_s = s.get("render_s") or (rec.get("chain") or {}).get("clip_s") or max(2, int(round(float(s.get("seconds") or 2.0))))
+    graph = json.loads(mp.GRAPH.read_text(encoding="utf-8"))
+    for node, field, value in draft_settings({"render_s": render_s, "seconds": float(s.get("seconds") or 2.0)}, kinds,
+                                             seed=int(rec.get("seed") or 2727) + m, vibe=vibe, style=style, size=size,
+                                             state=state):
+        graph.setdefault(node, {}).setdefault("inputs", {})[field] = value
+    out = {"engine": "ltx095", **named(graph, ("6", "7")), "style": style, "kinds": list(kinds), "render_s": render_s}
+    out["seed_rule"] = f"the cut's seed {int(rec.get('seed') or 2727)} + {m}"
+    return out
+
+
+def _round(v: Any) -> Any:
+    if isinstance(v, bool) or v is None:
+        return v
+    if isinstance(v, (int, float)):
+        return round(float(v), 4)
+    if isinstance(v, (list, tuple)):
+        return [_round(x) for x in v]
+    if isinstance(v, dict):
+        return {k: _round(x) for k, x in sorted(v.items())}
+    return str(v).strip()
+
+
+def differs(used: dict, preset: dict | None) -> dict:
+    """Per compared field, whether the used value differs from the preset's (False everywhere without a preset)."""
+    if not preset:
+        return {k: False for k in COMPARED}
+    return {k: _round(used.get(k)) != _round(preset.get(k)) for k in COMPARED}
+
+
+def _legacy(job_dir: Path, rec: dict, i: int) -> tuple[dict | None, str]:
+    """A shot rendered before the record existed: the graph ComfyUI wrote into its clip, read as a recorded request
+    would be ("clip"), else nothing ("none")."""
+    from xenoform import morph_cache as mc
+    from xenoform.lane import noun_of
+
+    clips = list(rec.get("clips") or [])
+    clip = Path(str(clips[i])) if i < len(clips) else None
+    graph = mc.embedded_graph(clip) if clip and clip.is_file() else None
+    if not graph:
+        return None, "none"
+    m = morph_of(rec, i)
+    files = [str(f) for f in rec.get("stills") or []]
+    styles = [str(x) for x in rec.get("morph_styles") or []]
+
+    def row(k: int | None) -> dict:
+        if k is None or not 0 <= k < len(files):
+            return still_of(None)
+        return {"file": files[k], "path": "", "noun": noun_of(files[k]), "kind": _kind_of(rec, files[k])}
+
+    nodes = ("6", "7") if "6" in graph and "7" in graph else ("100", "101") if "100" in graph else None
+    shots = _shots(rec)
+    got = mc.key_from_clip(clip)
+    used = {"engine": mc.engine_of(graph, clip.name) or ("ltx095" if "ltx-video-2b" in json.dumps(graph) else ""),
+            **named(graph, nodes), "from": row(m), "to": row(None if m is None else m + 1),
+            "style": styles[i] if i < len(styles) else None, "render_s": shots[i].get("render_s") if i < len(shots) else None,
+            "key": got[0] if got else None}
+    return used, "clip"
+
+
+def cost_of(job_dir: Path, rec: dict) -> dict:
+    """What a re-render of one shot costs on this machine: the cut's own measured seconds a Draft morph (the renders'
+    times, else took.json's morph phase over its morphs), then the re-cut (took.json's cut phase), else the defaults."""
+    measured = [r for r in list(rec.get("renders") or []) + [x.get("request") for x in rec.get("rerenders") or [] if isinstance(x, dict)]
+                if isinstance(r, dict) and not r.get("cached") and r.get("engine") == "ltx095" and float(r.get("seconds") or 0) > 1]
+    times = sorted(float(r["seconds"]) for r in measured)
+    basis = "measured on this cut"
+    try:
+        took = json.loads((Path(job_dir) / "took.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        took = {}
+    parts = took.get("breakdown") if isinstance(took.get("breakdown"), dict) else {}
+    morphs = len({str(c) for c in rec.get("clips") or []}) or 1
+    draft = str(rec.get("tier") or "draft") == "draft" and not rec.get("fast") and not rec.get("cloud")
+    if times:
+        gpu = times[len(times) // 2]
+    elif float(parts.get("morphs") or 0) > 0 and draft:
+        gpu = float(parts["morphs"]) / morphs
+        basis = "this cut's morph time over its morphs"
+    else:
+        gpu, basis = DEFAULT_MORPH_S, "a Draft morph on a 12 GB card"
+    recut = float(parts.get("cut") or 0) or DEFAULT_RECUT_S
+    return {"gpu_s": int(round(gpu)), "recut_s": int(round(recut)), "basis": basis}
+
+
+def rerender_gate(rec: dict, i: int) -> tuple[bool, str]:
+    """Whether shot ``i`` can be re-rendered from Under the hood, and why not in a sentence (L8)."""
+    if str(rec.get("mode") or "") == "song":
+        return False, "A whole song is laid together from its passages: open the passage and re-render the shot there."
+    if str(rec.get("source") or "") == "clips":
+        return False, "A clips cut morphs between your clips; its shots are made again with a new Make."
+    tier = "cloud" if rec.get("cloud") else "fast" if rec.get("fast") else str(rec.get("tier") or "draft")
+    if tier in ("final", "fast", "cloud"):
+        return False, (f"This cut is {TIER_LABELS.get(tier, tier)}: a shot re-renders as a Draft morph, which would be the one "
+                       "soft shot in a sharp cut. Make the cut again to change it.")
+    kind, _ = shot_kind(rec, i)
+    if kind in ("performer", "own"):
+        return False, "This shot plays no morph of the chain, so there is nothing to re-render."
+    if kind in ("generated", "dream"):
+        return False, ("This shot is part of a " + ("generated run" if kind == "generated" else "dream")
+                       + ": make the run again from the Shot tab.")
+    if morph_of(rec, i) is None:
+        return False, "This shot plays no morph of the chain, so there is nothing to re-render."
+    return True, ""
+
+
+def _seed_file(job_dir: Path) -> dict | None:
+    try:
+        seed = json.loads((Path(job_dir) / "seed.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return {k: seed.get(k) for k in ("seed", "video_model", "quality", "fps", "width", "height") if k in seed} or None
+
+
+def recipe(job_dir: Path, rec: dict, i: int, *, style: str | None = None, check: bool = True) -> dict:
+    """Under the hood for shot ``i``: the values its morph was rendered with (``used``: the record's request, else the
+    graph ComfyUI wrote into the clip, said so in ``source`` and ``note``), the preset's (``preset_of``) and per field
+    whether they differ, whether the clip's own graph confirms the record (``verified``), whether it can be re-rendered
+    and what that costs, and the choices the editable rows offer."""
+    from xenoform import morph_cache as mc
+    from xenoform import morph_style as ms
+
+    shots = _shots(rec)
+    if not 0 <= i < len(shots):
+        raise ValueError(f"This cut has {len(shots)} shots; shot {i} is not one of them.")
+    s = shots[i]
+    out: dict[str, Any] = {"shot": i, "shots": len(shots), "start": s.get("start"), "end": s.get("end"),
+                           "seconds": s.get("seconds"), "section": s.get("section") or ""}
+    kind, sentence = shot_kind(rec, i)
+    out.update({"kind": kind, "note": sentence})
+    plays = ((rec.get("shot_overrides") or {}).get(str(i)) or {}).get("source")
+    if plays is not None and str(plays).lstrip("-").isdigit() and int(plays) != i and 0 <= int(plays) < len(shots):
+        out["plays"] = int(plays)  # Move or Duplicate: the slot shows another shot's morph
+    renders = list(rec.get("renders") or [])
+    used = renders[i] if i < len(renders) and isinstance(renders[i], dict) else None
+    source = "record"
+    if used is None and kind in ("morph", "dream"):
+        used, source = _legacy(job_dir, rec, i)
+        if used is not None:
+            out["note"] = (out["note"] + " " if out["note"] else "") + (
+                "Read from the clip itself: this cut was made before the desk kept each morph's request, and ComfyUI "
+                "wrote the graph it ran into the clip.")
+    if used is None:
+        source = "none"
+        if kind in ("morph", "dream", "generated"):
+            out["note"] = (out["note"] + " " if out["note"] else "") + (
+                "Not recorded: this cut was made before the desk kept each morph's request, and its clip carries no "
+                "graph. The preset below is what the vibe gives this shot today.")
+            sf = _seed_file(job_dir)
+            if sf:
+                out["seed_file"] = sf
+    used = dict(used or {})
+    tier = "cloud" if rec.get("cloud") else "fast" if rec.get("fast") else str(rec.get("tier") or "draft")
+    engine = str(used.get("engine") or ("ltx095" if tier in ("draft", "fast") else ""))
+    preset = preset_of(rec, i, style=style) if kind == "morph" and engine == "ltx095" else None
+    out.update({"recorded": source == "record", "source": source, "engine": engine,
+                "engine_label": ENGINE_LABELS.get(engine, engine or "unknown"), "tier": tier,
+                "tier_label": TIER_LABELS.get(tier, tier), "used": used, "preset": preset,
+                "differs": differs(used, preset) if used else {k: False for k in COMPARED},
+                "edited": sorted((used.get("overrides") or {}).keys()) if isinstance(used.get("overrides"), dict) else []})
+    verified = None
+    clips = list(rec.get("clips") or [])
+    if check and source == "record" and used.get("key") and not used.get("finish") and i < len(clips):
+        clip = Path(str(clips[i]))
+        got = mc.key_from_clip(clip, engine) if clip.is_file() else None
+        verified = None if got is None else got[0] == used["key"]
+    out["verified"] = verified
+    ok, why = rerender_gate(rec, i)
+    out["rerender"] = {"ok": ok, "why": why}
+    out["cost"] = cost_of(job_dir, rec)
+    tries = sum(1 for r in rec.get("rerenders") or [] if isinstance(r, dict) and r.get("shot") == i)
+    m = morph_of(rec, i)
+    if m is not None:  # what a re-render with no seed given takes: the next in the shot's own sequence
+        out["next_seed"] = int(rec.get("seed") or 2727) + m + 1009 * (tries + 1)
+    out["choices"] = {"styles": [{"id": k, "label": ms.LABELS[k], "note": ms.NOTES[k]} for k in ms.STYLES],
+                      "frames": frame_choices(), "steps": list(STEPS_RANGE), "cfg": list(CFG_RANGE),
+                      "compression": list(COMPRESSION_RANGE), "guide": [0.0, 1.0], "lora_strength": list(LORA_STRENGTH_RANGE),
+                      "loras": lora_files(), "fps": FPS}
+    out["hints"] = dict(HINTS)
+    return out
+
+
+def workflow_of(job_dir: Path, rec: dict, i: int) -> dict | None:
+    """The API graph shot ``i``'s morph ran, as ComfyUI loads it: the stored request's graph, else the one the clip
+    carries (its LoadImage names are the names the stills were uploaded under), each guide still's node titled."""
+    from xenoform import morph_cache as mc
+
+    renders = list(rec.get("renders") or [])
+    req = renders[i] if i < len(renders) and isinstance(renders[i], dict) else None
+    graph = graph_of(Path(job_dir) / "simple", req) if req else None
+    if graph is None:
+        clips = list(rec.get("clips") or [])
+        clip = Path(str(clips[i])) if i < len(clips) else None
+        graph = mc.embedded_graph(clip) if clip and clip.is_file() else None
+        if graph:
+            for node in graph.values():
+                if isinstance(node, dict):
+                    node.pop("is_changed", None)  # ComfyUI's own note on the run, not an input
+    if not graph:
+        return None
+    files = [str(f) for f in rec.get("stills") or []]
+    m = morph_of(rec, i)
+    from xenoform.lane import noun_of
+
+    nouns = {"start": (req or {}).get("from", {}).get("noun") or (noun_of(files[m]) if m is not None and m < len(files) else ""),
+             "end": (req or {}).get("to", {}).get("noun") or (noun_of(files[m + 1]) if m is not None and m + 1 < len(files) else "")}
+    for nid, node in graph.items():
+        if isinstance(node, dict) and node.get("class_type") == "LoadImage":
+            end = "start" if nid in ("6", "100") else "end" if nid in ("7", "101") else ""
+            title = ("Start still" if end == "start" else "End still" if end == "end" else "Still")
+            node.setdefault("_meta", {})["title"] = f"{title}: {nouns[end]}" if end and nouns[end] else title
+    return graph
+
+
+def lora_files() -> list[str]:
+    """The LoRA files this machine has (``<models>/loras``), the names a re-render may give; [] when there is no folder."""
+    try:
+        from xenoform.models_setup import models_root
+
+        folder = Path(models_root()) / "loras"
+        return sorted(p.name for p in folder.iterdir() if p.is_file() and p.suffix.lower() in (".safetensors", ".pt", ".ckpt"))
+    except Exception:  # noqa: BLE001 - no models folder: no LoRA to offer
+        return []

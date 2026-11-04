@@ -244,7 +244,7 @@ def _demo_features() -> dict:
 
 def create_app(cfg: dict | None = None):
     from fastapi import FastAPI, HTTPException
-    from fastapi.responses import FileResponse, JSONResponse
+    from fastapi.responses import FileResponse, JSONResponse, Response
     from fastapi.staticfiles import StaticFiles
 
     cfg = cfg or load_desk_config()
@@ -1035,6 +1035,64 @@ def create_app(cfg: dict | None = None):
         _run_edit(job, job_id, "rerender", "Re-render ready", "The re-render did not run.", rerender)
         return {"id": job_id, "status": "running", "shot": shot, "seed": seed, "render_s": render_s, "variant": variant, "style": style,
                 **({"layer": layer} if layer else {})}
+
+    # ---------------------------------------------------------- Under the hood (docs/UI_REVIEW.md 6.4, shot_recipe)
+
+    def _shot_record(job_id: str, layer: str | None = None) -> tuple[Path, dict, str | None]:
+        """The folder and record a shot's Under the hood reads: the cut's ``simple/simple.json``, or for a Stems cut the
+        named layer's own (its folder, its record). Answers after a desk restart: it reads the folder, not the job."""
+        folder = work_dir() / "jobs" / storage_id(job_id, fallback="")
+        path = folder / "simple" / "simple.json"
+        if not path.is_file():
+            raise HTTPException(404, "This video has no shot record on this machine.")
+        try:
+            rec = json.loads(path.read_text(encoding="utf-8"))
+        except ValueError:
+            raise HTTPException(400, "This cut's record did not read.")
+        if str(rec.get("mode") or "") == "stems":
+            from xenoform import stems_mode as _sm
+
+            try:
+                row, rec = _sm.layer_record(rec, layer)
+            except (OSError, ValueError) as exc:
+                raise HTTPException(400, str(exc)) from exc
+            return Path(str(row["folder"])), rec, str(row["stem"])
+        return folder, rec, None
+
+    @app.get("/api/jobs/{job_id}/shots/{index}/recipe")
+    def shot_recipe_route(job_id: str, index: int, style: str = "", layer: str = "") -> dict:
+        """Under the hood for one shot (``shot_recipe.recipe``): every value its morph was rendered with beside what the
+        vibe's preset gives it today, a ``differs`` flag a field, whether the clip's own graph confirms the record, the
+        re-render gate and its cost, and the workflow's address. ``style`` asks for the preset in another morph style."""
+        from xenoform import shot_recipe as _sr
+
+        folder, rec, stem = _shot_record(job_id, layer or None)
+        try:
+            out = _sr.recipe(folder, rec, int(index), style=style.strip().lower() or None)
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        base = f"/api/jobs/{job_id}/shots/{int(index)}"
+        out.update({"id": job_id, "layer": stem, "workflow": f"{base}/workflow.json" + (f"?layer={stem}" if stem else ""),
+                    "workflow_name": f"xenoform-{storage_id(job_id, fallback='cut')}-shot{int(index) + 1:02d}.json"})
+        return out
+
+    @app.get("/api/jobs/{job_id}/shots/{index}/workflow.json")
+    def shot_workflow_route(job_id: str, index: int, layer: str = "") -> Response:
+        """The API graph one shot's morph ran (``shot_recipe.workflow_of``), as a .json ComfyUI loads: drop it on ComfyUI
+        or open it there (Open in ComfyUI). The two guide stills are named as ComfyUI's input folder has them."""
+        from xenoform import shot_recipe as _sr
+
+        folder, rec, _stem = _shot_record(job_id, layer or None)
+        try:
+            graph = _sr.workflow_of(folder, rec, int(index))
+        except (IndexError, ValueError) as exc:
+            raise HTTPException(400, str(exc)) from exc
+        if graph is None:
+            raise HTTPException(404, "This shot's graph was not kept: it was rendered before the desk kept each request, "
+                                     "and its clip carries none.")
+        name = f"xenoform-{storage_id(job_id, fallback='cut')}-shot{int(index) + 1:02d}.json"
+        return Response(json.dumps(graph, indent=1), media_type="application/json",
+                        headers={"Content-Disposition": f'attachment; filename="{name}"', "Cache-Control": "no-store"})
 
     @app.post("/api/jobs/{job_id}/insert")
     def insert_job(job_id: str, body: dict | None = None) -> dict:

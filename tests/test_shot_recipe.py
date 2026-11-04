@@ -280,3 +280,98 @@ def test_a_final_and_a_cloud_shot_record_their_own_request(tmp_path, monkeypatch
     cloud_final.cloud_clips(shots, stills[:2], tmp_path / "cl", {}, 20, "cosmic", vertical=False, backend=Backend(), requests=creqs)
     assert creqs[0]["engine"] == "ltx25cloud" and creqs[0]["seed"] == 20 and creqs[0]["guide_end"] == cloud_final.LOOSE["end_strength"]
     assert creqs[0]["prompt"].startswith("The thing 0 slowly") and creqs[0]["cached"] is False
+
+
+# ---------------------------------------------------------------------------------------------- the recipe routes
+
+
+def _desk(tmp_path, monkeypatch):
+    from fastapi.testclient import TestClient
+
+    from xenoform import ui as ui_mod
+
+    monkeypatch.setattr(ui_mod, "work_dir", lambda: tmp_path)
+    return TestClient(ui_mod.create_app())
+
+
+def _clip_with_graph(path: Path, graph: dict) -> Path:
+    """A tiny mp4 carrying a graph in its ``prompt`` tag, as ComfyUI's SaveVideo writes one."""
+    import subprocess
+
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=c=black:s=64x112:r=24:d=0.5", "-pix_fmt", "yuv420p",
+                    "-metadata", f"prompt={json.dumps(graph)}", "-movflags", "use_metadata_tags", str(path)], check=True)
+    return path
+
+
+def test_the_recipe_route_shows_the_used_values_beside_the_preset_and_flags_what_differs(tmp_path, monkeypatch):
+    client = Client()
+    job = _draft_cut(tmp_path, monkeypatch, client)
+    desk = _desk(tmp_path, monkeypatch)
+    r = desk.get("/api/jobs/cut/shots/1/recipe")
+    assert r.status_code == 200
+    got = r.json()
+    rec = _rec(job)
+    assert got["source"] == "record" and got["recorded"] is True and got["kind"] == "morph" and got["engine"] == "ltx095"
+    assert got["used"]["seed"] == 4001 and got["preset"]["seed"] == 4001 and got["preset"]["seed_rule"] == "the cut's seed 4000 + 1"
+    assert not any(got["differs"].values()), got["differs"]  # an untouched shot is the preset, field for field
+    assert got["used"]["prompt"] == got["preset"]["prompt"] and got["used"]["steps"] == got["preset"]["steps"]
+    assert got["rerender"] == {"ok": True, "why": ""} and got["cost"]["gpu_s"] > 0 and got["next_seed"] == 4000 + 1 + 1009
+    assert got["workflow"] == "/api/jobs/cut/shots/1/workflow.json" and got["workflow_name"] == "xenoform-cut-shot02.json"
+    assert got["choices"]["frames"][0] == 25 and got["choices"]["frames"][-1] == 121 and got["hints"]["cfg"]
+    assert got["verified"] is None  # the fake clips carry no graph to check against
+    # the workflow: the graph as it was queued, as a file ComfyUI opens
+    w = desk.get("/api/jobs/cut/shots/1/workflow.json")
+    assert w.status_code == 200 and "attachment" in w.headers["content-disposition"] and "shot02.json" in w.headers["content-disposition"]
+    graph = w.json()
+    assert graph["13"]["inputs"]["noise_seed"] == 4001 and graph["6"]["_meta"]["title"] == f"Start still: {rec['renders'][1]['from']['noun']}"
+    assert {k: v for k, v in graph.items() if k not in ("6", "7")} == {k: v for k, v in client.sent[1].items() if k not in ("6", "7")}
+    # another style: its preset prompt
+    other = desk.get("/api/jobs/cut/shots/1/recipe?style=shatter").json()
+    assert other["preset"]["style"] == "shatter" and other["preset"]["prompt"] != got["preset"]["prompt"] and other["differs"]["prompt"]
+    # a re-render with a seed of its own: only the seed differs from the preset
+    dense.rerender_morph(job, 1, seed=777, cfg={}, client=client)
+    after = desk.get("/api/jobs/cut/shots/1/recipe").json()
+    assert after["used"]["seed"] == 777 and [k for k, v in after["differs"].items() if v] == ["seed"]
+    assert after["next_seed"] == 4000 + 1 + 2 * 1009
+    assert desk.get("/api/jobs/cut/shots/99/recipe").status_code == 400 and desk.get("/api/jobs/nope/shots/0/recipe").status_code == 404
+    assert rec["renders"][1]["seed"] == 4001  # the record before the re-render said what the Make sent
+
+
+def test_a_cut_from_before_the_record_reads_its_clips_graph_or_says_it_was_not_recorded(tmp_path, monkeypatch):
+    client = Client()
+    job = _draft_cut(tmp_path, monkeypatch, client)
+    rec = _rec(job)
+    sent = client.sent[2]
+    orig = rec["renders"][2]
+    graph = json.loads(json.dumps(sent))
+    for nid, end in (("6", "from"), ("7", "to")):  # what ComfyUI notes of each LoadImage: the sha256 of the still it read
+        graph[nid]["is_changed"] = [mc.sha256_file(orig[end]["path"])]
+    clip = _clip_with_graph(job / "simple" / "old02.mp4", graph)
+    assert mc.embedded_graph(clip) is not None
+    rec["clips"][2] = str(clip)
+    rec.pop("renders")
+    (job / "simple" / "simple.json").write_text(json.dumps(rec), encoding="utf-8")
+    (job / "seed.json").write_text(json.dumps({"seed": 4000, "video_model": "ltx-095", "quality": "turbo"}), encoding="utf-8")
+    desk = _desk(tmp_path, monkeypatch)
+    got = desk.get("/api/jobs/cut/shots/2/recipe").json()
+    assert got["source"] == "clip" and got["recorded"] is False and "Read from the clip itself" in got["note"]
+    assert got["used"]["seed"] == 4002 and got["used"]["prompt"] == sent["3"]["inputs"]["text"] and not any(got["differs"].values())
+    assert got["used"]["key"] == orig["key"]  # the clip's own graph and still hashes name the request the record had
+    w = desk.get("/api/jobs/cut/shots/2/workflow.json").json()
+    assert w["13"]["inputs"]["noise_seed"] == 4002 and "is_changed" not in w["6"]
+    # a clip that carries nothing: said plainly, the preset and the Seed file's data shown
+    nothing = desk.get("/api/jobs/cut/shots/3/recipe").json()
+    assert nothing["source"] == "none" and "Not recorded" in nothing["note"] and nothing["used"] == {}
+    assert nothing["preset"]["seed"] == 4003 and nothing["seed_file"]["seed"] == 4000 and nothing["rerender"]["ok"] is True
+    assert desk.get("/api/jobs/cut/shots/3/workflow.json").status_code == 404
+
+
+def test_a_final_cut_shows_its_values_and_says_why_it_does_not_re_render(tmp_path, monkeypatch):
+    client = Client()
+    job = _draft_cut(tmp_path, monkeypatch, client)
+    rec = _rec(job)
+    for tier, flags, word in (("final", {}, "Final"), ("draft", {"fast": True}, "Fast Final"), ("draft", {"cloud": True}, "Cloud Final")):
+        (job / "simple" / "simple.json").write_text(json.dumps({**rec, "tier": tier, **flags}), encoding="utf-8")
+        got = _desk(tmp_path, monkeypatch).get("/api/jobs/cut/shots/0/recipe").json()
+        assert got["rerender"]["ok"] is False and word in got["rerender"]["why"] and got["used"]["seed"] == 4000
+        assert got["tier_label"] == word
