@@ -17,7 +17,7 @@ TouchDesigner side: [td/README.md](../td/README.md) (ten minutes from nothing to
 
 ## Turn it on
 
-1. Open `/vj`, press **?** and find **OSC to TouchDesigner** under the MIDI panel. Pick the host and port (the defaults,
+1. Open `/vj`, press **?** and find **OSC to TouchDesigner** just above the MIDI panel. Pick the host and port (the defaults,
    `127.0.0.1` and `7000`, are what an OSC In CHOP on port 7000 expects) and press **Send OSC**.
 2. Or without the page: `curl -X PUT http://127.0.0.1:47317/api/osc -H "Content-Type: application/json" -d "{\"on\": true}"`.
    The page streams while `on` is true, including after a reload.
@@ -73,10 +73,13 @@ counted, never raised), `listeners` and the parameters it holds.
 
 ## Rate
 
-The page posts every animation frame (coalesced to about `rate`), the desk sends one bundle per post: frames that arrive
-together are merged (newest values; a beat or onset flag from any of them stays) and anything faster than twice `rate` (a
-144 Hz screen) is merged into the next update. Measured on this PC with a 60 Hz poster over HTTP and over the websocket:
-every channel arrives at 60 Hz (see [notes/t3-td-bridge.md](notes/t3-td-bridge.md)).
+The page sends `rate` updates a second from a fixed-rate scheduler that both the animation frame and a timer feed, so a page
+that renders at 30 fps (a busy GPU) still sends 60 and a covered window is carried by the timer (browsers slow the timers of
+hidden pages to about one a second unless the page is playing audio, so keep `/vj` visible). The desk sends one bundle per
+post: frames that arrive together are merged (newest values; a beat or onset flag from any of them stays) and anything faster
+than twice `rate` (a 144 Hz screen) is merged into the next update. Measured on this PC with the real `/vj` page playing a
+song, rendering at 30 fps in the app's browser pane: all 27 frame channels arrived at 59.8 messages a second and never below
+59 in any second over 25 s; see [notes/t3-td-bridge.md](notes/t3-td-bridge.md).
 
 ## The headless relay
 

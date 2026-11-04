@@ -91,6 +91,14 @@ def osc_available() -> bool:
     return True
 
 
+def websocket_capable() -> bool:
+    """Whether this desk can upgrade a websocket (uvicorn needs the websockets or wsproto package for it). The page asks
+    before it opens /ws/osc, so a desk without the package never logs a failed upgrade; it posts instead."""
+    import importlib.util
+
+    return any(importlib.util.find_spec(name) is not None for name in ("websockets", "wsproto"))
+
+
 def osc_version() -> str:
     try:
         from importlib.metadata import version
@@ -336,7 +344,8 @@ class OscRelay:
     # ---- settings
     def public(self) -> dict:
         with self._lock:
-            return {**self.settings, "available": osc_available(), "python_osc": osc_version(), "addresses": len(CHANNELS)}
+            return {**self.settings, "available": osc_available(), "python_osc": osc_version(), "addresses": len(CHANNELS),
+                    "websocket": websocket_capable()}
 
     def configure(self, patch: Any) -> dict:
         """Apply some settings (``on``, ``send``, ``host``, ``port``, ``rate``, ``bundle``, ``strings``, ``pulse_ms``). Raises
