@@ -122,7 +122,7 @@ def test_the_public_docs_point_at_the_steps_not_the_fine_tune_drawer():
     app = _read("src/xenoform/ui_static/app.js")
     assert 'id="fine-tune"' not in app and "function fineTune(" not in app and 'simpleSeg("easy-length"' not in app
     assert "Project · under the hood" in app and "The whole song, by passages" in app and "Render the whole song" in app
-    for rel in ("README.md", "docs/REPRODUCE.md", "docs/SONG.md"):
+    for rel in ("README.md", "docs/REPRODUCE.md", "docs/SONG.md", "docs/stills.md", "docs/footage.md"):
         page = _read(rel)
         assert "Fine-tune" not in page, rel
         assert "Project · under the hood" in page, rel

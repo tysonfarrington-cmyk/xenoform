@@ -263,10 +263,9 @@ def test_change_keeps_the_song_until_another_is_picked():
     held = _fn("songHeld")
     assert 'if (easy.song === "demo") return state.audioId === "demo";' in held and "return state.audioId === `song-${easy.song}`;" in held
     assert 'if (easy.song === "file") return state.audioId !== "demo" && !String(state.audioId).startsWith("song-");' in held
-    change = APP.split('act === "easy-step"')[1].split("} else if")[0]
-    assert "state.easy.changingSong = { song: state.easy.song, label: state.easy.songLabel };" in change
-    assert 'state.easy.song = ""' not in change  # the song is no longer forgotten at the first click
-    assert "state.easy.changingSong = null;" in APP.split('act === "easy-song-keep"')[1].split("} else if")[0]
+    # Round 0's N12 Cancel is superseded by t5's Source step: no button is drawn, so neither is its handler
+    assert 'data-act="easy-step"' not in APP and 'act === "easy-step"' not in APP
+    assert 'data-act="easy-song-keep"' not in APP and 'act === "easy-song-keep"' not in APP
     for loader in ("useBundledSong", "useDemoSong", "uploadSong"):
         assert "state.easy.changingSong = null;" in _fn(loader), loader
     chip = _fn("useBundledSong")

@@ -4,7 +4,7 @@ A preset is a vibe, an idea line, the stills pinned slot by slot (the Make body'
 chain was loved with: morph style, timing, effects, look, foreshadow, the four knobs, the seed and the Backdrop (``plain``:
 every loved chain stood on the vibe's own studio ground, so a vibe that has grown places does not change it) and the
 Shape (``breathe`` and ``drop_mode``: every loved chain was cut before the Shape row, so a row that does not say is
-Breathe off with Drops off, and a re-make comes out as it was). The desk shows them as chips beside the idea line (``GET /api/presets``); a click sets the vibe, the line, the pins and the Fine-tune rows in one
+Breathe off with Drops off, and a re-make comes out as it was). The desk shows them as chips beside the idea line (``GET /api/presets``); a click sets the vibe, the line, the pins and Tweak's rows in one
 go, and never the tier (a preset made on Cloud Final does not tick the credits box: a Make is still the user's to start).
 
 ``load()`` reads the file (a missing or bad file means none; a bad row is dropped, a bad field falls back to the desk's

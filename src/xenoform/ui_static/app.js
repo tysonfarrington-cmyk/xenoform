@@ -6634,14 +6634,6 @@ document.addEventListener("click", async (event) => {
       return;
     }
     shareCut(el);
-  } else if (act === "easy-step") {
-    // Change: the picker opens under the song, which is kept until another one is picked (or Cancel)
-    if (el.dataset.step === "song") state.easy.changingSong = { song: state.easy.song, label: state.easy.songLabel };
-    setEasyPhase("choose");
-    render();
-  } else if (act === "easy-song-keep") {
-    state.easy.changingSong = null;
-    render();
   } else if (act === "song-watch") {
     const row = (state.wholeSongs || []).find((s) => s.id === el.dataset.id);
     if (!row) return;

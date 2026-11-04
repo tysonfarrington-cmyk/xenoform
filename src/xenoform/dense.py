@@ -1717,13 +1717,13 @@ def run_simple(directed: dict, audio_path: Path, out_path: Path, work: Path, cfg
     scene_files = [s["file"] for s in stills if s.get("kind") == "scene"]  # which stills of the chain are scenes
     if scene_choice != "off" and not scene_files:
         notes.append({"scenes": f"{scene_choice} asked, but the {vibe} pool has no scenes yet: objects only "
-                                f"(Fine-tune > Library > Grow scenes, or xenoform stills grow {vibe} --kind scene)"})
+                                f"(Tweak > Project · under the hood > Library > Grow scenes, or xenoform stills grow {vibe} --kind scene)"})
     elif scene_files:
         report("restyle", 0.08, f"{len(scene_files)} scene{'s' if len(scene_files) != 1 else ''} in the chain ({scene_choice})")
     setting_files = [s["file"] for s in stills if s.get("kind") == "setting"]  # which stills stand in a place
     if backdrop == "places" and not setting_files:
         notes.append({"backdrop": f"places asked, but the {vibe} pool has no settings yet: plain objects "
-                                  f"(Fine-tune > Library > Grow places, or xenoform stills grow {vibe} --kind setting)"})
+                                  f"(Tweak > Project · under the hood > Library > Grow places, or xenoform stills grow {vibe} --kind setting)"})
     elif setting_files:
         report("restyle", 0.08, f"{len(setting_files)} object{'s' if len(setting_files) != 1 else ''} in their places")
     # how each morph changes (morph_style): the shot list a Final carries over from its prototype, the setting, or Auto
