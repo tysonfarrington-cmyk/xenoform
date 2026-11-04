@@ -2,7 +2,7 @@
 
 Stage 5 of `docs/MUSIC_VIDEO_PLAN.md` (section 7). What the hand-made Glitch Out montage of 29 Oct did by hand
 (`docs/demo/tools/montage.py`: 30 s window cuts laid end to end by song time, a look a stretch, the title on the last
-hit) is a Make: **Fine-tune → Length → Whole song, by passages**, then **Make the whole song**.
+hit) is a Render: **Render → Quality → By passages**, then **Render the whole song**.
 
 ## What it does
 
@@ -107,21 +107,21 @@ passages over the shots, each with its look and its window's job; a click opens 
 stays behind the usual credits tick: a whole song on Cloud is its windows' credits, the estimate says how many
 (3.6 to 6 credits a morph: 464 for 128 morphs measured on 29 Oct, about 6 for a single 3 s morph).
 
-Not yet: a Stems cut is not made whole (it is one Make: Length Whole song, one cut); no performer shots in a whole song; a passage
+Not yet: a Stems cut is not made whole (it is one Render: Quality Draft, one cut); no performer shots in a whole song; a passage
 cut in two (Final) carries on from the still its first window landed on, so that still shows at the join twice by
 design (the morph continues through it).
 
 ## Clips
 
 A whole song takes your clips (1 Nov): **Morph → Your clips** (a folder, the files dropped on the desk, or the free film
-pack), then **Length → Whole song, by passages** and **Make the whole song**. It is the same maker, with one difference: a clips song
+pack), then **Render → Quality → By passages** and **Render the whole song**. It is the same maker, with one difference: a clips song
 is one Make, not a window a passage.
 
 1. **Planned by its passages** (`song_plan.clips_passages`). The song plan is the one an objects song gets (`whole`: the
    pacing engine over the whole song at the Shape row's Breathe and Drops), and its passages are the same; the clips cut
    is laid out on it as any clips cut is (`clip_cut.fit`, below), so each passage's morphs are the morphs the cut plays
    in it and the estimate is the cut's own.
-2. **One window, the whole song** (`windows[0].whole`). Its body is a clips cut of your clips at Length Whole song, one cut (the
+2. **One window, the whole song** (`windows[0].whole`). Its body is a clips cut of your clips at Quality Draft, one cut (the
    song as it is, no trim), carrying the whole song plan (`song_passage.plan`) and a context with no passage of its own
    (`whole`, no `passage_start`): the Make plays the song plan as planned and shapes it passage by passage, as any cut
    is shaped (`pacing.song_context` reads only a passage's window). One picture keeps every passage in sync by its own

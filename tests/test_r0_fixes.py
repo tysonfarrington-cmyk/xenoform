@@ -255,6 +255,8 @@ def test_change_keeps_the_song_until_another_is_picked():
     desk = APP.split("function renderSource(easy) {", 1)[1].split("\nfunction ", 1)[0]
     assert "const facts = songSet" in desk and '<div id="bundled-songs">${songsRow(easy)}</div>' in desk
     assert 'data-step="song">Change</button>' not in desk and 'state.easy.song = ""' not in desk
+    # the merge (integrate-4nov): t5 draws no Change button, so the song on the desk is the fallback
+    assert "const was = state.easy.changingSong || (state.easy.song ? { song: state.easy.song, label: state.easy.songLabel } : null);" in _fn("useBundledSong")
     change = APP.split('act === "easy-step"')[1].split("} else if")[0]
     assert "state.easy.changingSong = { song: state.easy.song, label: state.easy.songLabel };" in change
     assert 'state.easy.song = ""' not in change  # the song is no longer forgotten at the first click
@@ -748,7 +750,8 @@ def test_the_length_chips_say_which_whole_song_and_run_by_length():
     assert '[["draft", "Draft, one cut"], ["passages", "By passages"], ["final", "Final"], ["cloud", "Cloud"]]' in APP
     assert '"Full song"' not in APP and "pick Full song" not in APP
     song_md = (ROOT / "docs" / "SONG.md").read_text(encoding="utf-8")
-    assert "Length → Whole song, by passages" in song_md and "Length Full song" not in song_md
+    assert "Render → Quality → By passages" in song_md and "Length → Whole song" not in song_md
+    assert "Length Full song" not in song_md and "Length Whole song" not in song_md
 
 
 # ---------------------------------------------------------------- L3, L5: nothing on the timeline spends at one click

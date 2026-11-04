@@ -5226,7 +5226,8 @@ async function useBundledSong(id, keepStep) {
     chip.textContent = "Loading…";
     chip.disabled = true;
   }
-  const was = state.easy.changingSong;  // a song picked after Change: the old one comes back if this one fails to load
+  // the song on the desk (or the one kept by Change) comes back if this one fails to load
+  const was = state.easy.changingSong || (state.easy.song ? { song: state.easy.song, label: state.easy.songLabel } : null);
   state.easy.changingSong = null;
   state.easy.song = song.id;
   state.easy.songLabel = song.title;
