@@ -35,6 +35,27 @@ Assemble.
 runs the desk's own librosa code; without it, the same steps run in numpy and give the same beats, sections and drop on
 the bundled songs (the tests measure it).
 
+## The nodes
+
+| Node | In | Out | What it does |
+| --- | --- | --- | --- |
+| **Xenoform Song Analysis** | a song from the list (the bundled demo, the repository's six bundled songs, any audio file in ComfyUI's `input/`), or a `LoadAudio` AUDIO, or a desk `features.json` | `song`, a summary, tempo, duration | The desk's analysis: per-frame bands and energy, beats on a 24 fps clock, onsets, sections labelled calm, build, drop, release or sustain, and the main drop (the biggest one-bar jump in loudness). |
+| **Xenoform Storyboard** | `song`, a vibe, an idea line, the knobs (energy Dense or Flow, forms, speed, chaos, intensity, morph style, morph timing, pace, aspect, seed), optionally a folder of your own images | `storyboard`, a summary, the morph count | The shot list a desk Make would plan: Dense cuts a bar before the drop and a half bar after it, with punches, stutters and a hold; Flow one shot about every 5 s; a whole song over 20 s the story plan, one morph a shot and no object twice. The chain of objects (the vibe's curated pool, the object your idea line names first), each morph's style (Auto: Melt, Shatter on the drop, Bloom at the opening) and timing. |
+| **Xenoform Morph Timeline** | `storyboard` | the edited `storyboard`, a summary | The editor (below). Without edits it passes the plan on. |
+| **Xenoform Morph Pair** | `storyboard`, an index (0 is the first morph) | the two guide images, the prompt, the negative, frame rate, width, height, length, steps, seed, cfg, the two guide compressions, guide B's strength, the slot's frames, the request as JSON | One morph's request, value for value what the desk sends LTX 0.9.5 through `workflows/xenoform_morph.json`: the guides go to `LTXVPreprocess` and `LTXVAddGuide` (frame 0 and frame -1), the prompts to `CLIPTextEncode`, the size and the 8k + 1 length to `EmptyLTXVLatentVideo`, the steps to `LTXVScheduler`, the seed to `RandomNoise`, the cfg to `CFGGuider`. |
+| **Xenoform Assemble** | `storyboard`, the decoded frames of each morph (`morph_1` is morph 0), fill, punch | the mp4's path, and a preview on the node | Each morph laid in its slot on the beat (first frame on still A, last on still B, so every handoff is continuous), re-timed by the plan (speed, ease, stutter, hold, skip, reverse, and the timing On the beat or Snap), the plan's punches scaled by each shot's intensity, muxed with the song by ffmpeg into `output/xenoform/`. A shot with no morph connected ends the cut there, or with fill `stills` plays a crossfade of its two stills, so the whole song can be heard with what is rendered. |
+
+## Honest limits
+
+- The pacing engine of the desk (Breathe's rests, the drop runs and their heat) is not in the pack: a whole song plans
+  as the desk does with Breathe and Drops off.
+- The chain is the vibe's curated order with the idea line's object first; the desk's taste file, object families,
+  grown stills and usage history are the desk's.
+- The Assemble is the plain cut: no beat FX layer, no transitions, no look pass, no end card (the desk does those).
+- Draft only: LTX 0.9.5 at 512x288 (320x576 for 9:16). The desk's Final and Cloud tiers stay on the desk.
+- The editor edits the plan's cuts, styles, timings, holds, seeds, intensity and pins; it does not render. Each Queue
+  renders every Morph Pair again when anything upstream of it changed (ComfyUI's cache is per input).
+
 ## For Tys, after the contest
 
 Install through the Manager from the git URL (above) and restart ComfyUI once: it loads custom nodes only at start, so

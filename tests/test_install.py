@@ -18,8 +18,8 @@ from xenoform.workflow_embed import png_with_workflow, read_workflow_png
 
 
 def test_node_pack_registers_from_the_repo_root():
-    """The repository cloned into custom_nodes: the node pack (no nodes yet) and the desk's two, one web folder (the
-    pack's, which holds the desk's tab)."""
+    """The repository cloned into custom_nodes: the node pack's five nodes and the desk's two, one web folder (the
+    pack's, which holds the Morph Timeline editor and the desk's tab)."""
     import sys
 
     path = Path(__file__).resolve().parents[1] / "__init__.py"
@@ -32,6 +32,8 @@ def test_node_pack_registers_from_the_repo_root():
         sys.modules.pop(spec.name, None)
     assert "XenoformTryIt" in module.NODE_CLASS_MAPPINGS
     assert module.NODE_DISPLAY_NAME_MAPPINGS["XenoformTryIt"] == "Xenoform Try It"
+    for name in ("XenoformSongAnalysis", "XenoformStoryboard", "XenoformMorphTimeline", "XenoformMorphPair", "XenoformAssemble"):
+        assert name in module.NODE_CLASS_MAPPINGS
     assert module.WEB_DIRECTORY == "./comfy_pack/web"
     web = (path.parent / module.WEB_DIRECTORY).resolve()
     assert (web / "xenoform_desk.js").is_file()
