@@ -42,13 +42,15 @@ Press **L** on the VJ page (or the **Learn mode** button in the MIDI panel of th
 ## The Python bridge
 
 ```
-pip install "xenoform[midi]"          # mido + python-rtmidi (nothing else needs them)
+pip install "xenoform[midi]"          # mido + python-rtmidi + websockets (nothing else needs them)
 xenoform midi list                    # ports
 xenoform midi serve                   # first MiniLab (or --port NAME) -> http://127.0.0.1:47317
 xenoform midi serve --desk http://127.0.0.1:47330 --quiet
 ```
 
-`serve` reads the port, normalises every message to `{"type": "cc"|"note"|"pitch"|"prog"|"touch", "ch": 1..16, "num", "value": 0..127, "t"}` and posts batches (every 8 ms) to `POST /api/midi/event`. The desk fans them out to every page on the websocket `/ws/midi`, and to `GET /api/midi/stream` (server-sent events) for a page or a server without websockets. `GET /api/midi/status` shows listeners, the last event and whether mido is installed. Any script can post the same JSON to drive a page. Without mido every command stops with the install line and nothing else changes.
+`serve` reads the port, normalises every message to `{"type": "cc"|"note"|"pitch"|"prog"|"touch", "ch": 1..16, "num", "value": 0..127, "t"}` and posts batches (every 8 ms) to `POST /api/midi/event` with the port's name in `X-Xeno-Midi-Device`. The desk fans them out to every page on the websocket `/ws/midi`, and to `GET /api/midi/stream` (server-sent events) for a page or a server without websockets. `GET /api/midi/status` shows listeners, the last event, whether mido is installed (`bridge`), whether the desk can upgrade a websocket (`websocket`: uvicorn needs the `websockets` package the extra brings) and the port each source reads (`devices`); the websocket's `hello` carries `devices` too, so a page with no Web MIDI of its own still knows which controller it hears. A page asks the status first and goes straight to SSE when the websocket cannot upgrade, so a desk without the extra logs no failed `/ws/midi`. Any script can post the same JSON to drive a page. Without mido every command stops with the install line and nothing else changes.
+
+Add `?webmidi=0` to a page's URL to take the controller from the bridge only: Web MIDI opens every input it listens to, and on Windows an open input is exclusive, so a second window must not hold the port another app needs.
 
 ## Recording a take
 

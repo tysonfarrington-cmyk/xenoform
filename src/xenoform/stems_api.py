@@ -781,6 +781,7 @@ class MidiHub:
         self.listeners: dict[int, asyncio.Queue] = {}
         self._next = 1
         self.sources: dict[str, float] = {}
+        self.devices: dict[str, str] = {}  # source -> the MIDI port it reads (the bridge sends X-Xeno-Midi-Device)
 
     def subscribe(self) -> tuple[int, asyncio.Queue]:
         q: asyncio.Queue = asyncio.Queue(maxsize=512)
@@ -814,10 +815,18 @@ class MidiHub:
 
     def status(self) -> dict:
         return {"listeners": len(self.listeners), "seq": self.seq, "sources": dict(self.sources),
-                "last": self.recent[-1] if self.recent else None}
+                "devices": dict(self.devices), "last": self.recent[-1] if self.recent else None}
 
 
 hub = MidiHub()
+
+
+def ws_upgrade_available() -> bool:
+    """uvicorn upgrades ``/ws/midi`` only when ``websockets`` or ``wsproto`` is installed (the ``[midi]`` extra brings
+    websockets). Without either a page goes straight to the SSE stream instead of logging a failed websocket."""
+    import importlib.util
+
+    return any(importlib.util.find_spec(name) is not None for name in ("websockets", "wsproto"))
 
 
 def _events_from(body) -> list[dict]:
@@ -842,6 +851,9 @@ async def midi_event(request: Request) -> dict:
     except Exception as exc:
         raise HTTPException(400, "Send JSON.") from exc
     src = str(request.headers.get("x-xeno-midi-source") or (body.get("source") if isinstance(body, dict) else "") or "http")[:32]
+    dev = str(request.headers.get("x-xeno-midi-device") or (body.get("device") if isinstance(body, dict) else "") or "")[:64]
+    if dev:  # the port the bridge reads: a page with no Web MIDI of its own picks that device's map by this name
+        hub.devices[src] = dev
     evs = _events_from(body)
     for ev in evs:
         hub.publish(ev, source=src)
@@ -852,7 +864,7 @@ async def midi_event(request: Request) -> dict:
 def midi_status() -> dict:
     from xenoform.midi_bridge import backend_available
 
-    return {**hub.status(), "bridge": backend_available()}
+    return {**hub.status(), "bridge": backend_available(), "websocket": ws_upgrade_available()}
 
 
 @router.get("/api/midi/stream")
@@ -909,7 +921,7 @@ async def midi_ws(ws: WebSocket) -> None:
 
     sender = asyncio.ensure_future(pump())
     try:
-        await ws.send_json({"type": "hello", "seq": hub.seq, "listeners": len(hub.listeners)})
+        await ws.send_json({"type": "hello", "seq": hub.seq, "listeners": len(hub.listeners), "devices": dict(hub.devices)})
         while True:
             data = await ws.receive_text()
             try:

@@ -154,7 +154,10 @@ def test_record_and_automation_to_envelopes(tmp_path, monkeypatch):
 
 
 # ---------------------------------------------------------------- the desk hub
-def test_websocket_fan_out_and_http_ingest():
+def test_websocket_fan_out_and_http_ingest(monkeypatch):
+    # the status line reports the backend as it is; pin it, so the answer does not depend on whether this machine has
+    # the [midi] extra installed (the shared venv does since 4 Nov) or a controller plugged in
+    monkeypatch.setattr(mb, "backend_available", lambda: {"available": False, "detail": mb.INSTALL_HINT})
     stems_api.hub.__init__()
     c = TestClient(create_app())
     with c.websocket_connect("/ws/midi?name=vj") as a, c.websocket_connect("/ws/midi") as b:
@@ -163,14 +166,17 @@ def test_websocket_fan_out_and_http_ingest():
         got = b.receive_json()
         assert got["type"] == "note" and got["num"] == 36 and got["src"] == "vj" and got["seq"] == 1
         r = c.post("/api/midi/event", json={"events": [{"type": "cc", "ch": 1, "num": 74, "value": 10}, {"type": "clock"}]},
-                   headers={"X-Xeno-Midi-Source": "bridge"})
+                   headers={"X-Xeno-Midi-Source": "bridge", "X-Xeno-Midi-Device": "Minilab3 0"})
         assert r.json()["sent"] == 1 and r.json()["listeners"] == 2
         assert a.receive_json()["src"] == "bridge" and b.receive_json()["num"] == 74
         a.send_text("not json")
         a.send_json({"bytes": [0xB0, 1, 99]})
         assert b.receive_json()["value"] == 99
+        with c.websocket_connect("/ws/midi") as late:  # a page that joins later learns the bridge's port from hello
+            assert late.receive_json()["devices"] == {"bridge": "Minilab3 0"}
     st = c.get("/api/midi/status").json()
     assert st["seq"] == 3 and st["listeners"] == 0 and "bridge" in st["sources"] and st["bridge"]["available"] is False
+    assert st["devices"] == {"bridge": "Minilab3 0"} and st["websocket"] is stems_api.ws_upgrade_available()
     assert c.post("/api/midi/event", content=b"nope", headers={"Content-Type": "application/json"}).status_code == 400
     assert c.post("/api/midi/event", json="x").status_code == 400
     # SSE catch-up for browsers without a websocket: replay since a seq, then stop at the limit
@@ -201,8 +207,25 @@ def test_post_events_uses_the_hub_endpoint(monkeypatch):
         captured["url"] = req.full_url
         captured["body"] = json.loads(req.data)
         captured["src"] = req.get_header("X-xeno-midi-source")
+        captured["dev"] = req.get_header("X-xeno-midi-device")
         return R()
 
     monkeypatch.setattr(urllib.request, "urlopen", fake_open)
     assert mb.post_events("http://127.0.0.1:47317/", [{"type": "cc", "ch": 1, "num": 1, "value": 1, "t": 0}])["sent"] == 1
     assert captured["url"] == "http://127.0.0.1:47317/api/midi/event" and captured["body"]["events"][0]["num"] == 1 and captured["src"] == "bridge"
+    assert captured["dev"] is None
+    mb.post_events("http://127.0.0.1:47317", [{"type": "cc", "ch": 1, "num": 1, "value": 1, "t": 0}], device="Minilab3 0")
+    assert captured["dev"] == "Minilab3 0"  # the port the bridge reads, so the pages pick its map by name
+
+
+def test_status_says_whether_the_websocket_can_upgrade(monkeypatch):
+    """Without websockets or wsproto uvicorn cannot upgrade /ws/midi; the status says so and midi.js goes to SSE."""
+    import importlib.util
+
+    real = importlib.util.find_spec
+    monkeypatch.setattr(importlib.util, "find_spec", lambda name, *a: None if name in ("websockets", "wsproto") else real(name, *a))
+    assert stems_api.ws_upgrade_available() is False
+    monkeypatch.setattr(importlib.util, "find_spec", lambda name, *a: object() if name == "wsproto" else real(name, *a))
+    assert stems_api.ws_upgrade_available() is True
+    js = (stems_api.Path(stems_api.__file__).parent / "ui_static" / "midi.js").read_text(encoding="utf-8")
+    assert "/api/midi/status" in js and "websocket!==false" in js

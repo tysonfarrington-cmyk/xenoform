@@ -59,6 +59,9 @@ const X={
  page:"vj",profile:"minilab3",mappings:[],handlers:{},state:{},inputs:[],ws:null,es:null,wsState:"off",learnTarget:null,learnMode:false,
  share:false,last:null,count:0,log:[],_opts:{},_el:null,_timer:null,
  init(opts){opts=opts||{};this._opts=opts;this.page=opts.page||"vj";const st=load();this.profile=st.profile;
+  // ?webmidi=0: the bridge only. Web MIDI opens every input it binds, and on Windows an open input is exclusive, so a
+  // second window (or a test page) that must not take the controller from another app asks for the bridge alone.
+  if(/[?&]webmidi=0(&|$)/.test(location.search||""))opts.webmidi=false;
   const stored=st.mappings[this.page];this.mappings=Array.isArray(stored)&&stored.length?stored:profileMapping(this.profile,this.page);
   Object.assign(this.handlers,opts.targets||{});
   if(navigator.requestMIDIAccess&&opts.webmidi!==false)navigator.requestMIDIAccess().then(acc=>{const bind=()=>{this.inputs=[];acc.inputs.forEach(inp=>{this.inputs.push(inp.name||"MIDI input");
@@ -98,12 +101,17 @@ const X={
  importJSON(text){const j=typeof text==="string"?JSON.parse(text):text;const rows=Array.isArray(j)?j:j.mappings||(j.pages&&j.pages[this.page]);
   if(!Array.isArray(rows))throw new Error("not a mapping file");this.mappings=rows.filter(r=>r&&r.source&&r.target).map(r=>({source:{type:r.source.type,ch:+r.source.ch||0,num:+r.source.num},target:String(r.target),mode:r.mode||"abs",min:+r.min||0,max:r.max==null?1:+r.max,label:r.label}));
   if(j.profile&&PROFILES[j.profile])this.profile=j.profile;this.save();this.render();return this.mappings.length},
- // ---- the desk websocket (Python bridge fan-out), SSE when there is no websocket
- connect(){const base=(window.XENO_BASE||"");if(this.ws||this.es)return;let url;
+ // ---- the desk websocket (Python bridge fan-out), SSE when there is no websocket. The desk says first whether it can
+ // upgrade one (/api/midi/status "websocket": the [midi] extra brings the websockets package); if not, straight to SSE,
+ // so a desk without the extra no longer logs a failed /ws/midi on every page load.
+ connect(){const base=(window.XENO_BASE||"");if(this.ws||this.es||this._asking)return;
+  if(this._canWs==null&&window.fetch){this._asking=true;fetch(base+"/api/midi/status").then(r=>r.ok?r.json():{}).catch(()=>({})).then(j=>{
+    this._asking=false;this._canWs=j.websocket!==false;this.bridgeDevices=j.devices||{};this.connect()});return}
+  if(this._canWs===false)return this.sse(base);let url;
   try{url=(location.protocol==="https:"?"wss://":"ws://")+location.host+base+"/ws/midi?name="+encodeURIComponent(this.page)}catch(e){return}
   let opened=false;const ws=new WebSocket(url);this.ws=ws;this.wsState="connecting";
   ws.onopen=()=>{opened=true;this.wsState="bridge";this._retry=0;this._status()};
-  ws.onmessage=m=>{try{const ev=JSON.parse(m.data);if(ev&&ev.type&&ev.type!=="hello")this.handle(ev,"bridge")}catch(e){}};
+  ws.onmessage=m=>{try{const ev=JSON.parse(m.data);if(ev&&ev.type==="hello")this.bridgeDevices=ev.devices||{};else if(ev&&ev.type)this.handle(ev,"bridge")}catch(e){}};
   ws.onclose=ws.onerror=()=>{if(this.ws!==ws)return;this.ws=null;this.wsState="off";this._status();
    if(!opened&&(this._retry=(this._retry||0)+1)>=2)return this.sse(base);clearTimeout(this._timer);this._timer=setTimeout(()=>this.connect(),2500*Math.min(6,this._retry||1))}},
  sse(base){if(this.es||!window.EventSource)return;const es=new EventSource(base+"/api/midi/stream");this.es=es;this.wsState="sse";

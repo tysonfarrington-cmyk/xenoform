@@ -266,10 +266,14 @@ def _read(inp, seconds: float | None, on_event, idle: float = 0.004) -> int:
     return n
 
 
-def post_events(desk: str, events: list[dict], *, source: str = "bridge", timeout: float = 2.0) -> dict:
-    """Send a batch to the desk's ``POST /api/midi/event`` (stdlib only)."""
+def post_events(desk: str, events: list[dict], *, source: str = "bridge", device: str = "", timeout: float = 2.0) -> dict:
+    """Send a batch to the desk's ``POST /api/midi/event`` (stdlib only). ``device`` is the port the bridge reads; the
+    desk passes it to the pages, which pick that controller's map by its name (as they do for a Web MIDI input)."""
+    headers = {"Content-Type": "application/json", "X-Xeno-Midi-Source": source}
+    if device:
+        headers["X-Xeno-Midi-Device"] = device
     req = urllib.request.Request(desk.rstrip("/") + "/api/midi/event", data=json.dumps({"events": events}).encode("utf-8"),
-                                 headers={"Content-Type": "application/json", "X-Xeno-Midi-Source": source}, method="POST")
+                                 headers=headers, method="POST")
     with urllib.request.urlopen(req, timeout=timeout) as r:  # noqa: S310 (localhost desk)
         return json.loads(r.read().decode("utf-8") or "{}")
 
@@ -280,7 +284,7 @@ def serve(port: str | None = None, desk: str = "http://127.0.0.1:47317", *, seco
     ``batch_ms`` so a knob sweep is one request, not a hundred. Returns the number of events sent."""
     mido = backend or _backend()
     name = _pick_port(mido, port)
-    send = post or (lambda evs: post_events(desk, evs))
+    send = post or (lambda evs: post_events(desk, evs, device=name))
     pending: list[dict] = []
     sent = 0
     last_flush = time.monotonic()
