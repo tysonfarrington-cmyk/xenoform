@@ -90,13 +90,15 @@ function widgetOf(node, name) {
 }
 
 function hideWidget(node, name) {
+  // each step on its own: a frontend whose widget class makes one of these read-only still gets the others
   const w = widgetOf(node, name);
   if (!w) return;
-  w.hidden = true;
-  w.type = "hidden";
-  w.computeSize = () => [0, -4];
-  if (w.options) w.options.hidden = true;
-  for (const key of ["element", "inputEl"]) if (w[key]?.style) w[key].style.display = "none";
+  const tryIt = (fn) => { try { fn(); } catch (e) { /* read-only here */ } };
+  tryIt(() => { w.hidden = true; });
+  tryIt(() => { w.type = "hidden"; });
+  tryIt(() => { w.computeSize = () => [0, -4]; });
+  tryIt(() => { if (w.options) w.options.hidden = true; });
+  for (const key of ["element", "inputEl"]) tryIt(() => { if (w[key]?.style) w[key].style.display = "none"; });
 }
 
 function readEdits(node, board) {
@@ -125,11 +127,10 @@ function showText(node, text) {
   let w = widgetOf(node, "xf_summary");
   if (!w) {
     w = node.addWidget("text", "xf_summary", "", () => {}, { serialize: false });
-    w.serialize = false;
-    w.disabled = true;
+    try { w.serialize = false; w.disabled = true; } catch (e) { /* the option above says it */ }
   }
   w.value = value.split("\n")[0];
-  w.label = "";
+  try { w.label = ""; } catch (e) { /* a read-only label keeps its name */ }
   node._xfText = value;
   node.setDirtyCanvas?.(true, true);
 }
@@ -932,7 +933,8 @@ app.registerExtension({
       nodeType.prototype.onNodeCreated = function () {
         const r = onNodeCreated?.apply(this, arguments);
         hideWidget(this, "timeline");
-        this.addWidget("button", "Open the Morph Timeline", null, () => openEditor(this));
+        const open = this.addWidget("button", "Open the Morph Timeline", null, () => openEditor(this), { serialize: false });
+        try { open.serialize = false; } catch (e) { /* the option above says it */ }
         this.setSize?.([Math.max(this.size[0], 300), Math.max(this.size[1], 120)]);
         return r;
       };

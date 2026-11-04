@@ -99,3 +99,12 @@ Install through the Manager from the git URL (above) and restart ComfyUI once: i
 nothing here is in the running ComfyUI until then. Then fill in `PublisherId` in `pyproject.toml` (this folder's, to
 publish the pack alone; the repository root has its own `[tool.comfy]` for the whole repository) and run
 `comfy node publish` to put it on the Registry, where the Manager's search finds it.
+
+## Developing
+
+- `python comfy_pack/tools/sync_bundle.py` copies the demo song, the bundled stills and the vibe data from the
+  repository (`--check` says what is stale).
+- `python comfy_pack/tools/build_demo_workflow.py` writes the demo workflow from the node definitions (`--check`).
+- The tests are `tests/test_comfy_pack_*.py` in the repository: every node's function on the demo song and the frozen
+  analyses, the planner and the request against the desk's own, the workflow against the node definitions, the import
+  with no desk on the path, and an import with ComfyUI's own Python when its folder is found.

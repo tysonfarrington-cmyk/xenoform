@@ -245,11 +245,14 @@ def cut_plan_from(board: dict, cuts: list[float]) -> dict:
     bounds = [0.0] + _clean_cuts(cuts, duration) + [round(duration, 4)]
     base = board.get("shots") or []
     effects = list((board.get("plan") or {}).get("raw_effects") or [])
+    chain_s = (board.get("plan") or {}).get("clip_s") if (board.get("plan") or {}).get("long_song") else None
     shots = []
     for a, b in zip(bounds[:-1], bounds[1:]):
         home = next((s for s in base if float(s["start"]) - 1e-6 <= a < float(s["end"])), base[-1] if base else None)
         ratio = float(home["render_s"]) / max(float(home["seconds"]), 0.1) if home else 1.0
-        render_s = P.snap_up(max(2.0, (b - a) * ratio - 0.15))
+        # a long song's chain renders every morph at its own length (dense.run_simple); a short clip's shot keeps the
+        # play speed of the planned shot it starts in
+        render_s = int(chain_s) if chain_s else P.snap_up(max(2.0, (b - a) * ratio - 0.15))
         ease = str(home.get("ease") or "") if home and abs(float(home["start"]) - a) < 1e-3 else ""
         fx = [dict(e) for e in effects if a - 1e-6 <= float(e.get("t", a)) < b]
         shot = {"start": round(a, 4), "end": round(b, 4), "render_s": render_s, "effects": fx}

@@ -86,12 +86,10 @@ def bundled_songs() -> dict[str, Path]:
 def song_choices() -> list[str]:
     names = list(bundled_songs())
     base = _input_dir()
-    if base and base.is_dir():
-        for p in sorted(base.rglob("*")):
-            if p.is_file() and p.suffix.lower() in S.AUDIO_EXTS:
-                rel = p.relative_to(base).as_posix()
-                if rel not in names:
-                    names.append(rel)
+    if base and base.is_dir():  # the top of the input folder, as LoadAudio lists it
+        for p in sorted(base.iterdir()):
+            if p.is_file() and p.suffix.lower() in S.AUDIO_EXTS and p.name not in names:
+                names.append(p.name)
     return names or [DEMO_SONG]
 
 

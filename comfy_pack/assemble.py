@@ -161,34 +161,54 @@ def ffmpeg_exe() -> str:
     return exe
 
 
+def _count(clip) -> int:
+    """How many frames a morph input carries (an IMAGE batch, an array), without converting it."""
+    if clip is None:
+        return 0
+    shape = getattr(clip, "shape", None)
+    if shape is None:
+        return len(clip)
+    return int(shape[0]) if len(shape) == 4 else (1 if len(shape) == 3 else 0)
+
+
+def _shot_frames(board: dict, i: int, shot: dict, clip, size: tuple[int, int]):
+    """The frames shot ``i`` plays, one at a time: its morph re-timed into its slot, else its stills' crossfade."""
+    if _count(clip):
+        frames = to_frames(clip)
+        prog = looks.progress(frames) if shot.get("timing") else None
+        for j in shot_indices(shot, len(frames), prog):
+            yield frames[j]
+        return
+    a = _resize(stills.load_rgb(board["stills"][i]["path"]), size)
+    b = _resize(stills.load_rgb(board["stills"][i + 1]["path"]), size)
+    n = int(shot["frames"])
+    if shot.get("hold"):
+        for _ in range(n):
+            yield a
+        return
+    yield from crossfade(a, b, n)
+
+
 def assemble(board: dict, clips: dict[int, object], out_path: str | Path, *, fill: str = "stop", punch: bool = True,
              song_path: str | Path | None = None, size: tuple[int, int] | None = None, crf: int = 20) -> dict:
-    """Write the cut. ``clips`` maps a shot index to its rendered morph (frames). Returns what was written."""
+    """Write the cut. ``clips`` maps a shot index to its rendered morph (frames). Returns what was written. The shots
+    are streamed to ffmpeg one at a time, so a cut holds one morph's frames in memory, not all of them."""
     shots = board.get("shots") or []
     if not shots:
         raise ValueError("The storyboard has no shots to assemble.")
     fill = fill if fill in FILLS else "stop"
     size = tuple(size or board.get("out_size") or looks.OUT_SIZE.get(board.get("aspect", "16:9"), (768, 432)))
-    played: list[dict] = []
-    sources: list[tuple[str, np.ndarray]] = []
-    for i, shot in enumerate(shots):
-        frames = to_frames(clips.get(i)) if clips.get(i) is not None else None
-        if frames is not None and len(frames):
-            prog = looks.progress(frames) if shot.get("timing") else None
-            idx = shot_indices(shot, len(frames), prog)
-            sources.append(("morph", frames[idx]))
-        elif fill == "stills":
-            a = _resize(stills.load_rgb(board["stills"][i]["path"]), size)
-            b = _resize(stills.load_rgb(board["stills"][i + 1]["path"]), size)
-            hold = shot.get("hold")
-            sources.append(("stills", np.repeat(a[None], int(shot["frames"]), axis=0) if hold else crossfade(a, b, int(shot["frames"]))))
-        else:
+    played: list[int] = []
+    for i in range(len(shots)):
+        if not _count(clips.get(i)) and fill != "stills":
             break
-        played.append(shot)
+        played.append(i)
     if not played:
         raise ValueError("No morph is rendered for the first shot: connect morph_1, or set fill to stills.")
-    curve = punch_curve(played) if punch else np.zeros(sum(int(s["frames"]) for s in played), np.float32)
-    seconds = sum(int(s["frames"]) for s in played) / float(FPS)
+    kinds = ["morph" if _count(clips.get(i)) else "stills" for i in played]
+    played_shots = [shots[i] for i in played]
+    curve = punch_curve(played_shots) if punch else np.zeros(sum(int(s["frames"]) for s in played_shots), np.float32)
+    seconds = sum(int(s["frames"]) for s in played_shots) / float(FPS)
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     w, h = size
@@ -201,13 +221,11 @@ def assemble(board: dict, clips: dict[int, object], out_path: str | Path, *, fil
             str(out_path)]
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
     k = 0
-    kinds = []
     try:
-        for kind, frames in sources:
-            kinds.append(kind)
-            for frame in frames:
+        for i in played:
+            for frame in _shot_frames(board, i, shots[i], clips.get(i), size):
                 frame = _resize(frame, size)
-                if punch and curve[k] > 0.01:
+                if punch and k < len(curve) and curve[k] > 0.01:
                     frame = apply_punch(frame, float(curve[k]))
                 proc.stdin.write(np.ascontiguousarray(frame, dtype=np.uint8).tobytes())
                 k += 1
@@ -217,6 +235,6 @@ def assemble(board: dict, clips: dict[int, object], out_path: str | Path, *, fil
         code = proc.wait()
     if code:
         raise RuntimeError(f"ffmpeg could not write the cut (exit {code}): {err.strip()[-400:]}")
-    return {"path": str(out_path), "frames": k, "seconds": round(seconds, 3), "shots": len(played), "of": len(shots),
+    return {"path": str(out_path), "frames": k, "seconds": round(seconds, 3), "shots": len(played_shots), "of": len(shots),
             "morphs": kinds.count("morph"), "sketched": kinds.count("stills"), "size": [w, h], "audio": has_audio,
             "song_seconds": round(float((board.get("song") or {}).get("duration") or 0.0), 3)}
