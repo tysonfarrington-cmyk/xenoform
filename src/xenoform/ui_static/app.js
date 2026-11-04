@@ -214,6 +214,7 @@ async function resumeMaking(id, kept, quiet) {
   if (job && job.status === "running") {
     Object.assign(state.easy, { recutting: !!k.recut, making: k.making || null, reopenId: k.reopenId || "", reopenUrl: k.reopenUrl || "",
       fromSong: k.fromSong || "", playedHere: false, showcase: false, failed: false, firstMorph: null, lost: null });
+    if (job.vibe && vibeById(job.vibe)) state.easy.vibe = job.vibe;  // the Make's vibe: Plan is ticked in a fresh browser too
     if (k.resultVibe) state.easy.resultVibe = k.resultVibe;
     if (k.madeTier) state.easy.madeTier = k.madeTier;
     if (k.madeLength !== undefined) state.easy.madeLength = k.madeLength;
@@ -3039,8 +3040,9 @@ async function reopenRoute() {
   const job = state.job || {};
   if (easyVideoId() === id || (job.status === "running" && String(job.id || "") === id)) return false;
   const kept = keptMaking();
-  const listed = (state.videos || []).some((item) => item.id === id);
-  if (listed && !(kept && kept.id === id)) await reopenCut(id, { fromUrl: true });
+  // a row My videos lists as still rendering (F14: its animatic is on disk) is a running job, as video-open treats it
+  const row = (state.videos || []).find((item) => item.id === id);
+  if (row && row.status !== "running" && !(kept && kept.id === id)) await reopenCut(id, { fromUrl: true });
   else await resumeMaking(id, kept, false);
   render();
   return true;

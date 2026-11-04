@@ -3362,6 +3362,7 @@ def create_app(cfg: dict | None = None):
             "shot_looks": [str(s.get("dance_fx") or "") for s in (body.get("scenes") or []) if isinstance(s, dict)],
             "stems_path": str(body.get("stems_path") or ""),
             "song": song_view,
+            "vibe": str(body.get("vibe") or ""),  # a resumed Make in a fresh browser ticks Plan (app.js resumeMaking)
             # Honest timing (job_timing): t0 / started, the planned seconds per phase for this song and Make, and the
             # overall fraction, ETA and phase boundaries _run_job's on_progress keeps up to date.
             **job_timing.start_fields(job_timing.plan_for(features, body, audio_path), body),

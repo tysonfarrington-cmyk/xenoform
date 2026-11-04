@@ -365,10 +365,11 @@ def test_a_make_records_its_song_in_the_job(desk, tmp_path, monkeypatch):
 
     monkeypatch.setattr("xenoform.director.run_directed", fake)
     demo = desk.get("/api/demo").json()
-    job_id = desk.post("/api/generate", json={**demo, "tiny": True, "song_label": "Bundled demo"}).json()["id"]
+    job_id = desk.post("/api/generate", json={**demo, "tiny": True, "song_label": "Bundled demo", "vibe": "none"}).json()["id"]
     try:
         job = desk.get(f"/api/jobs/{job_id}").json()
         assert job["song"] == {"audio_id": "demo", "label": "Bundled demo", "bundled": None, "file": False}
+        assert job["vibe"] == "none"  # a resumed Make in a fresh browser ticks Plan (resumeMaking)
     finally:
         gate.set()
         for _ in range(200):

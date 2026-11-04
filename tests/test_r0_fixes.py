@@ -143,9 +143,9 @@ const kept = { id: "j1", at: 5000, recut: true, making: { title: "Re-rendering s
 const out = {};
 (async () => {
   fresh();
-  answer = { ok: true, status: 200, json: async () => ({ id: "j1", status: "running", stage: "restyle", detail: "Morph 1 of 2" }) };
+  answer = { ok: true, status: 200, json: async () => ({ id: "j1", status: "running", stage: "restyle", detail: "Morph 1 of 2", vibe: "none" }) };
   await resumeMaking("j1", kept, false);
-  out.running = { phase: state.easy.phase, hash: location.hash, job: state.job.id, at: state.easy.startedAt, recut: state.easy.recutting,
+  out.running = { phase: state.easy.phase, hash: location.hash, job: state.job.id, at: state.easy.startedAt, recut: state.easy.recutting, vibe: state.easy.vibe,
                   title: state.easy.making.title, reopenId: state.easy.reopenId, note: state.easy.note, polled: calls.filter((c) => c[0] === "poll"),
                   kept: JSON.parse(store["xeno-making"]).id };
   fresh();
@@ -176,12 +176,36 @@ const out = {};
     assert r["phase"] == "making" and r["hash"] == "#render/j1" and r["job"] == "j1" and r["at"] == 5000 and r["recut"] is True
     assert r["title"] == "Re-rendering shot 4" and r["reopenId"] == "j1" and r["note"] == "Morph 1 of 2" and r["polled"] == [["poll", "j1"]]
     assert r["kept"] == "j1"
+    assert r["vibe"] == "none"  # the job's vibe: a fresh browser ticks Plan while it runs (stepDone needs easy.vibe)
     assert got["done"] == [["reopen", "j1", {"fromUrl": True}]]  # finished meanwhile: its cut
     assert got["gone"][0][1] == "j1" and "the desk restarted" in got["gone"][0][2]["missing"]
     assert got["gone"][0][2]["note"] == "The desk restarted before the edit finished: the cut is as it was."
     assert got["failed"] == {"phase": "choose", "note": "The render stopped: GPU out of memory.", "hash": "#source"}
     assert got["editFailed"][0][2]["note"] == "The edit stopped: The re-render did not run."  # an edit: back to its cut
     assert got["quiet"] == {"calls": ["api", "fromHash"], "phase": "choose"}
+
+
+@NODE
+def test_a_route_to_a_job_my_videos_lists_as_rendering_resumes_its_making(tmp_path):
+    """Desk walk round 2: #render/<job> on an open desk, for a Make whose animatic My videos already lists as running
+    (F14), opened it as a finished cut ("Your video is ready"); it is a running job, as video-open treats it."""
+    code = STAGE + _fn("easyVideoId") + "\n" + _fn("keptMaking") + "\n" + _const("MAKING_KEY") + "\n" + _fn("reopenRoute") + r"""
+const reopenCut = async (id, opts) => calls.push(["reopen", id, opts || {}]);
+const resumeMaking = async (id, kept, quiet) => calls.push(["resume", id, quiet]);
+const out = {};
+(async () => {
+  for (const status of ["running", "done"]) {
+    calls.length = 0;
+    state = { job: null, videos: [{ id: "r1", status }], easy: { routeJob: "r1" } };
+    await reopenRoute();
+    out[status] = calls.filter((c) => c[0] !== "render");
+  }
+  console.log(JSON.stringify(out));
+})();
+"""
+    got = _run(tmp_path, code)
+    assert got["running"] == [["resume", "r1", False]]
+    assert got["done"] == [["reopen", "r1", {"fromUrl": True}]]
 
 
 @NODE
