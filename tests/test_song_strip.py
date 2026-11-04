@@ -120,8 +120,12 @@ def test_the_inspector_docks_under_the_strip_with_a_fourth_tab():
     # the fourth tab's host for the Under the hood session (window.XenoHood.mount(host, {jobId, shotIndex}))
     drawer = APP.split("function timelineDrawer(easy, lane, tl, picked) {")[1].split("// Dream this span")[0]
     assert 'id="hood-shot" data-inspector-tab="hood"' in drawer and "hidden></div>" in drawer
-    assert "window.XenoHood.mount(shotHood, { jobId: shotHood.dataset.job || easyVideoId(), shotIndex: Number(shotHood.dataset.index) })" in APP
-    assert "window.XenoHood.mount(project, { jobId: easyVideoId() || null, shotIndex: null })" in APP
+    # the merge (integrate-4nov): t4's mountHood at the end of render() mounts both hosts (the project rows provider, the
+    # re-render's progress on the shot's block); mountStrips no longer does
+    mount = APP.split("function mountHood() {")[1].split("\n}\n")[0]
+    assert 'getElementById("hood-shot")' in mount and "!shotHost.hidden" in mount and "window.XenoHood.mount(shotHost, {" in mount
+    assert "onRerender:" in mount and "window.XenoHood.mount(projectHost, { jobId: id || \"\", shotIndex: null, project: hoodProject })" in mount
+    assert "XenoHood.mount" not in APP.split("function mountStrips() {")[1].split("\n}\n")[0]
     # the head speaks song time, bar and beat as well as the clock (L9)
     when = APP.split("function shotWhen(lane, s) {")[1].split("\n}\n")[0]
     assert "in the song" in when and "barBeat(off + Number(s.start))" in when and "in the cut" in when and "beat${beats === 1" in when

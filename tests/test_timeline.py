@@ -471,10 +471,12 @@ def test_the_desk_draws_the_timeline_panel_and_posts_the_edits():
     assert 'data-act="easy-apply"' in bar and "timeline edit" in bar
     assert "function timelineDrawer" in fn and 'data-act="easy-tl-play"' in fn and 'data-act="easy-tl-handoff"' in fn and 'id="tl-dress"' in fn
     assert 'lookRow(o.look || "auto", "easy-tl-look", s.index)' in fn and 'id="tl-fx"' in fn and 'data-act="easy-tl-fx-clear"' in fn
-    assert 'data-act="easy-tl-swap"' in fn and 'data-act="easy-tl-rerender"' in fn
-    assert 'id="tl-seed"' in fn and 'id="tl-render-s"' in fn and 'id="tl-variant"' in fn
+    # Swap stays on the Shot tab; the re-render, its seed, its length and its prompt live Under the hood (hood.js, 4 Nov)
+    hood = (ROOT / "src/xenoform/ui_static/hood.js").read_text(encoding="utf-8")
+    assert 'data-act="easy-tl-swap"' in fn and 'data-hood="rerender"' in hood
+    assert 'data-hood-in="seed"' in hood and 'data-hood-in="frames"' in hood and 'data-hood-in="prompt"' in hood
     # one drawer for a shot in four tabs, a seam opens its Join tab, and a step between shots (28 Oct timeline pass)
-    assert 'const TL_TABS = [["shot", "Shot"], ["look", "Look"], ["join", "Join"], ["gpu", "Regenerate"], ["hood", "Under the hood"]];' in fn
+    assert 'const TL_TABS = [["shot", "Shot"], ["look", "Look"], ["join", "Join"], ["hood", "Under the hood"]];' in fn
     assert 'data-act="easy-tl-tab"' in fn and 'data-act="easy-tl-step"' in fn and "/frame.jpg?t=" in strip
     assert 'if (act === "easy-tl-bound") state.easy.tlTab = "join";' in APP
     assert "async function postCutEdit" in fn and "/${route}`" in fn and "tlSeek" in fn

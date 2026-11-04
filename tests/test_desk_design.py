@@ -20,10 +20,12 @@ APP = (STATIC / "app.js").read_text(encoding="utf-8")
 def test_one_design_layer_is_linked_where_the_old_two_were():
     assert not (STATIC / "ui_v4.css").exists() and not (STATIC / "ui_v6.css").exists()
     links = re.findall(r'href="(/static/[^"]+\.css)"', INDEX)
-    # the song strip (strip.css) and the steps over it (songline.css) after the desk's own layer, on its tokens
-    assert links == ["/static/theme.css", "/static/app.css", "/static/desk.css", "/static/strip.css", "/static/songline.css"]
-    for sheet in ("strip.css", "songline.css"):
+    # the song strip (strip.css) and the steps over it (songline.css) after the desk's own layer, then the components that
+    # bring their own sheet on its tokens (hood.css: Under the hood)
+    assert links == ["/static/theme.css", "/static/app.css", "/static/desk.css", "/static/strip.css", "/static/songline.css", "/static/hood.css"]
+    for sheet in ("strip.css", "songline.css", "hood.css"):
         assert "!important" not in re.sub(r"/\*.*?\*/", "", (STATIC / sheet).read_text(encoding="utf-8"), flags=re.S), sheet
+    assert "var(--x-accent)" in re.sub(r"/\*.*?\*/", "", (STATIC / "hood.css").read_text(encoding="utf-8"), flags=re.S)
     for page in ("judges.html", "moves.html"):
         assert "desk.css" in (STATIC / page).read_text(encoding="utf-8"), page
     rules = re.sub(r"/\*.*?\*/", "", DESK, flags=re.S)  # the comments may name the old layers' habit

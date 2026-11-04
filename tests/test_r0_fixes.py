@@ -69,6 +69,7 @@ const clockText = (s) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).pad
 const vibeById = (id) => (id ? { id, name: id } : null);
 const easyProgressText = (job) => String((job && job.detail) || "");
 const loadCutSong = () => calls.push(["loadCutSong"]);
+const reopenWhole = () => calls.push(["reopenWhole"]);  // t4: reopenRow ends by reopening the cut whole (notes, song)
 """
 
 
@@ -398,7 +399,8 @@ def test_the_cancel_reaches_the_gpu_wait_of_every_edit():
     rerender = src.split("def rerender_morph(", 1)[1].split("\ndef ", 1)[0]
     insert = src.split("def insert_generated(", 1)[1].split("\ndef ", 1)[0]
     swap = src.split("def swap_still(", 1)[1].split("\ndef ", 1)[0]
-    assert "cancel=cancel)[0]" in rerender and "styles=run_styles, cancel=cancel)" in insert
+    # the merge (integrate-4nov): t4's requests= and overrides= ride after the cancel
+    assert "styles=[style], cancel=cancel, requests=one," in rerender and "styles=run_styles, cancel=cancel, requests=made)" in insert
     assert "seed + m, vibe, client, cancel, state" in swap and swap.index("if cancel and cancel():") < swap.index("rec_path.write_text")
     assert rerender.index("cancel=cancel") < rerender.index('(work / "simple.json").write_text')  # nothing is written first
     dream = (ROOT / "src" / "xenoform" / "dream.py").read_text(encoding="utf-8")
@@ -771,9 +773,12 @@ def test_a_morph_style_chip_picks_and_only_re_render_spends_gpu():
     assert "rerenderShot" not in chip and "postCutEdit" not in chip and "state.easy.tlStyle = " in chip and "render();" in chip
     button = _branch("easy-tl-rerender")
     assert "state.easy.tlStyle.style" in button and "rerenderShot(i, pick);" in button
+    # the merge (integrate-4nov): t4 removed the Regenerate tab and its Morph chips; a shot's style is a select Under the
+    # hood (hood.js), and only its Re-render this shot button posts the re-render
     drawer = APP.split("function timelineDrawer(easy, lane, tl, picked) {", 1)[1].split("// Dream this span", 1)[0]
-    assert "easy.tlStyle.index === s.index && easy.tlStyle.for === lane.id ? easy.tlStyle.style : ownStyle" in drawer
-    assert "Re-render this morph${wantStyle !== ownStyle ? ` as ${esc(morphStyleLabel(wantStyle))}` : \"\"}" in drawer
+    assert '"easy-tl-style"' not in drawer and 'data-act="easy-tl-rerender"' not in drawer
+    hood = (ROOT / "src" / "xenoform" / "ui_static" / "hood.js").read_text(encoding="utf-8")
+    assert 'data-hood-in="style"' in hood and 'data-hood="rerender"' in hood
     assert "state.easy.tlStyle = null;" in _fn("loadLane")  # a pick belongs to the lane it was made on
 
 

@@ -405,6 +405,7 @@ function payload() {
     idea:(state.easy && state.easy.idea) || "",
     song: (state.easy && state.easy.songLabel) || "",
     cut_plan: (state.easy && (state.easy.cloud || state.easy.remixPlan) && (state.easy.cutPlan || state.easy.remixPlan)) || null,
+    shot_renders: (state.easy && state.easy.shotRenders) || null,  // a pasted shot recipe's own values (Under the hood)
     // (no video_model: the tier picks the engine; the Final is LTX-2.5 wherever its files are installed, LTX-2.3 otherwise)
     brief: state.brief || "",
     mode: "simple",  // one desk, one engine: every Make is the Simple cut (dense.run_simple); Stems overrides it below
@@ -2876,18 +2877,80 @@ function galleryPanel() {
             <button type="button" class="text" data-act="video-rerender" data-id="${esc(row.id)}"${row.recipe ? "" : " disabled"}>Re-render</button>
             <button type="button" class="text" data-act="video-copy" data-id="${esc(row.id)}"${row.recipe ? "" : " disabled"}>Copy recipe</button>
           </span>
+          ${state.easy && state.easy.cardNote && state.easy.cardNote.id === row.id ? `<span class="note card-note" role="status">${esc(state.easy.cardNote.text)}</span>` : ""}
         </figcaption>
       </figure>`)
     .join("");
   return `<section class="panel span gallery" id="my-videos"><h3>My videos</h3><div class="gallery-grid">${cards}</div></section>`;
 }
 
-// The bundled song a reopened cut is of, when no song is on the desk: its shots sit on the strip (reopenRow).
-async function loadCutSong(row) {
-  if (!state.songs) await loadSongs();
-  const label = String(row.song || "");
-  const song = ((state && state.songs) || []).find((s) => s && s.title && (label === s.title || label.startsWith(`${s.title} (`)));
-  if (song && state.easy && !state.easy.song) useBundledSong(song.id, true);
+// A saved cut reopened whole (UI_REVIEW N14): GET /api/videos/<id>/reopen gives back the job as the cut's own screen read
+// it (the guardrail notes, how long it took and its breakdown, its tier, its window of the song) and says whether its
+// song is loaded here; the song is then loaded again (a shipped song by its chip, an upload from the record), so Render
+// works without choosing the song first.
+async function reopenWhole(row) {
+  const id = row.id;
+  let data = null;
+  try {
+    const res = await api(`/api/videos/${encodeURIComponent(id)}/reopen`);
+    if (res.ok) data = await res.json();
+  } catch (err) {
+    data = null;
+  }
+  if (!data || !state.easy || state.easy.reopenId !== id) return;
+  state.job = Object.assign({}, state.job || {}, data.job || {}, { id, status: "done", video: row.url, reopened: true });
+  const took = Number((data.job && data.job.took_s) || row.seconds || 0);
+  state.easy.took = took;
+  state.easy.note = took ? `Took ${clockText(took)}${tookBreakdown(data.job && data.job.breakdown)}.` : state.easy.note;
+  if (data.tier) state.easy.madeTier = data.tier;
+  const span = (data.song && data.song.window) || null;  // the stretch of the song the cut was made from
+  const whole = Number((data.song && data.song.seconds) || 0);
+  if (span && Number(span.length_s) > 0 && whole > Number(span.length_s) + 1) state.easy.madeLength = Number(span.length_s);
+  render();
+  await loadCutSong(id, data);
+}
+
+// The cut's own song on the desk again: true once it is the desk's song. ``info`` is the reopen answer when at hand.
+async function loadCutSong(id, info) {
+  let data = info;
+  if (!data) {
+    try {
+      const res = await api(`/api/videos/${encodeURIComponent(id)}/reopen`);
+      data = res.ok ? await res.json() : null;
+    } catch (err) {
+      data = null;
+    }
+  }
+  const song = (data && data.song) || {};
+  if (!song.audio_id) return false;
+  if (song.audio_id === state.audioId && state.easy.song) return true;  // the desk holds it already
+  if (song.audio_id === "demo") {
+    await useDemoSong();
+    return state.audioId === "demo";
+  }
+  if (song.bundled) {
+    await useBundledSong(song.bundled);
+    return state.audioId === song.audio_id;
+  }
+  if (!song.file) return false;
+  state.easy.songNote = `Loading ${song.label || "the song"} for this cut…`;
+  let payload = null;
+  try {
+    const res = await api(`/api/videos/${encodeURIComponent(id)}/song`, { method: "POST" });
+    payload = res.ok ? await res.json() : null;
+  } catch (err) {
+    payload = null;
+  }
+  state.easy.songNote = "";
+  if (!payload || !state || !state.easy) return false;
+  const keep = { lane: state.lane, stemsLane: state.stemsLane, videos: state.videos, wholeSongs: state.wholeSongs };
+  adoptSession(payload);  // keeps the job and the desk's own choices; the cut's lane and the gallery stay as they were
+  Object.assign(state, keep);
+  state.easy.song = "file";
+  state.easy.songLabel = song.label || payload.title || "Song";
+  await settleCut({ full: false });
+  loadSimpleOptions().then(() => render());
+  return true;
 }
 // the job or cut a #render/<id> or #perform/<id> URL names, at boot and on hashchange, when it is not the one on the
 // desk: Round 0 takes it up. A cut My videos lists reopens as its row does, with the edits it had waiting
@@ -3204,16 +3267,65 @@ function shotEffectsRow(o, index) {
 }
 
 // The drawer under the timeline: one shot, in four tabs (Tys, 28 Oct: "the time line is a bit confusing to use").
-// Shot: how it plays and where it sits; Look: its look, colour, effects and FX; Join: the seam into it (Morph or Cut,
-// moved a beat, dressed with a transition); Regenerate: what the GPU can redo (object cuts). A seam opens Join.
-const TL_TABS = [["shot", "Shot"], ["look", "Look"], ["join", "Join"], ["gpu", "Regenerate"], ["hood", "Under the hood"]];
+// Shot: how it plays and where it sits, and the GPU edits that replace it (Swap, Generate here, Dream here, each naming
+// and lighting the shots it replaces); Look: its look, colour, effects and FX; Join: the seam into it (Morph or Cut,
+// moved a beat, dressed with a transition); Under the hood (hood.js, docs/UI_REVIEW.md 6.4): every value its morph was
+// rendered with, editable, and Re-render this shot. A seam opens Join.
+const TL_TABS = [["shot", "Shot"], ["look", "Look"], ["join", "Join"], ["hood", "Under the hood"]];
 const TL_TAB_NOTES = {
-  shot: "How this shot plays and where it sits. The beat timing never moves.",
+  shot: "How this shot plays and where it sits, and what can make it again on the GPU. The beat timing never moves.",
   look: "This shot's own look, colour and effects. Leave them as the cut and the knobs decide.",
   join: "The seam into this shot: a morph that flows or a cut that jumps, moved a beat, dressed with a transition.",
-  gpu: "These render again on the GPU (Draft): about a morph's time each, then the re-cut.",
-  hood: "What made this shot: the render's own settings, to read and change.",
+  hood: "Every value this shot's morph was rendered with, beside the vibe's preset. Change any, then re-render this shot.",
 };
+// The shots a GPU edit from shot ``first`` replaces, as the desk picks them (dense.insert_span, dream.span): whole shots
+// until ``seconds`` are covered, the next one only while it brings the span nearer, never into Polly or your clip (a
+// generated run stops at a dream or a run too).
+function editSpan(shots, first, seconds, kind) {
+  const range = kind === "dream" ? [1, 3] : [3, 20];
+  const want = Math.max(range[0], Math.min(range[1], Number(seconds) || (kind === "dream" ? 2 : 10)));
+  const blocks = (s) => s.performer || s.own || (kind !== "dream" && (s.generated != null || s.dream != null));
+  let total = 0;
+  let last = first;
+  for (let j = first; j < shots.length; j += 1) {
+    const s = shots[j];
+    if (blocks(s) && j > first) break;
+    const len = Number(s.seconds) || 0;
+    if (j > first && Math.abs(total + len - want) >= Math.abs(total - want) - 1e-6) break;
+    total += len;
+    last = j;
+    if (total >= want - 1e-6) break;
+  }
+  return [first, last];
+}
+function replacesText(a, b) {
+  return a === b ? `replaces shot ${a + 1}` : `replaces shots ${a + 1} to ${b + 1}`;
+}
+// What a GPU edit costs on this machine (the lane's cost: this cut's own measured seconds a Draft morph, then the re-cut)
+function gpuCost(lane, morphs) {
+  const c = lane.cost || {};
+  const gpu = Number(c.gpu_s) || 25;
+  const recut = Number(c.recut_s) || 30;
+  return `GPU · ${morphs} morph${morphs === 1 ? "" : "s"}, about ${clockText(gpu * morphs)}, then a ${clockText(recut)} re-cut`;
+}
+// Swap, Generate here and Dream here: each names and lights the shots it would replace before anything runs (UI_REVIEW L6)
+function shotGpuRows(lane, s, choices, canGpu, dream) {
+  if (!canGpu && !dream) return lane.rerenderable === false && lane.mode !== "song"
+    ? `<p class="note tl-gpu-why">This cut's shots are not made again one at a time (a Final, Fast Final, Cloud Final or clips cut): Under the hood shows what each was rendered with.</p>` : "";
+  const next = lane.shots.find((x) => x.index === s.index + 1 && x.morph != null && s.still != null && x.morph === s.still);
+  const swapTo = next ? next.index : s.index;
+  const insertS = choices.insert_seconds || [5, 10, 15];
+  const [ia, ib] = editSpan(lane.shots, s.index, 10, "insert");
+  const swap = canGpu ? `<div class="tl-gpu-row"><button type="button" class="ghost" data-act="easy-tl-swap" data-slot="${s.still}" data-span="${s.index}-${swapTo}">Swap the object it lands on</button>
+        <span class="tl-span">${esc(swapTo === s.index ? "re-renders this shot's morph" : `re-renders shots ${s.index + 1} and ${swapTo + 1}`)}</span>
+        <span class="hood-tag gpu">${esc(gpuCost(lane, swapTo === s.index ? 1 : 2))}</span></div>` : "";
+  const insert = canGpu && lane.insertable !== false ? `<div class="tl-gpu-row"><button type="button" class="ghost" data-act="easy-tl-insert" data-index="${s.index}" data-span="${ia}-${ib}" id="tl-insert-go">Generate here</button>
+        <label>length <select id="tl-insert-s" aria-label="Seconds to generate">${insertS.map((v) => `<option value="${v}"${v === 10 ? " selected" : ""}>${v} s</option>`).join("")}</select></label>
+        <span class="tl-span" id="tl-insert-span">${esc(replacesText(ia, ib))}</span>
+        <span class="hood-tag gpu" id="tl-insert-cost">${esc(gpuCost(lane, ib - ia + 1))}</span></div>` : "";
+  const layer = lane.mode === "stems" ? `<p class="note tl-layer-note">${esc(`The ${stemLabel(lane.layer)} layer: Swap and Re-render render its own morphs, then the layers are laid together again with no GPU. ${lane.layer_note || ""}`)}</p>` : "";
+  return `<div class="tl-gpu">${swap}${insert}${dream}${layer}</div>`;
+}
 function timelineDrawer(easy, lane, tl, picked) {
   if (!picked) return "";
   const s = lane.shots.find((x) => x.index === picked.index);
@@ -3228,13 +3340,13 @@ function timelineDrawer(easy, lane, tl, picked) {
   const under = s.performer ? "Polly's shot" : s.own ? "your clip" : s.generated != null ? "a generated run" : "";
   const canGpu = lane.rerenderable !== false && s.still != null && !under;
   const dream = dreamRow(lane, s, choices);
-  const tabs = TL_TABS.filter(([id]) => (id !== "join" || s.index > 0) && (id !== "gpu" || canGpu || dream) && (id !== "hood" || !under));
+  const tabs = TL_TABS.filter(([id]) => (id !== "join" || s.index > 0) && (id !== "hood" || !under));
   const tab = tabs.some(([id]) => id === easy.tlTab) ? easy.tlTab : "look";
   const edited = {
     shot: held || o.source != null || !!o.drop || !!o.timing,
     look: !!o.look || !!o.grade || Array.isArray(o.effects) || o.fx_intensity != null,
     join: !!bo.fx || !!bo.shift || prevHeld,
-    gpu: false,
+    hood: !!s.rerendered,
   };
   const head = `<div class="tl-drawer-head">
       <button type="button" class="text tl-step" data-act="easy-tl-step" data-value="-1"${s.index < 1 ? " disabled" : ""} aria-label="The shot before">◀</button>
@@ -3250,7 +3362,8 @@ function timelineDrawer(easy, lane, tl, picked) {
         <button type="button" class="chip${held ? "" : " on"}" data-act="easy-tl-play" data-index="${s.index}" data-value="morph" aria-pressed="${held ? "false" : "true"}">${s.own ? "Play" : "Morph"}</button>
         <button type="button" class="chip${held ? " on" : ""}" data-act="easy-tl-play" data-index="${s.index}" data-value="hold" aria-pressed="${held ? "true" : "false"}">Hold</button></div></div>
       ${shotOrderRow(lane, tl, s)}
-      ${under || held ? "" : timingRow(o.timing || "auto", "easy-tl-timing", s.index, lane.morph_timing || "smooth")}`;
+      ${under || held ? "" : timingRow(o.timing || "auto", "easy-tl-timing", s.index, lane.morph_timing || "smooth")}
+      ${shotGpuRows(lane, s, choices, canGpu, dream)}`;
   } else if (tab === "look") {
     const fxVal = o.fx_intensity != null ? Number(o.fx_intensity) : null;
     body = `${lookRow(o.look || "auto", "easy-tl-look", s.index)}
@@ -3276,32 +3389,128 @@ function timelineDrawer(easy, lane, tl, picked) {
       ${cutShiftRow(lane, tl, s)}
       <div class="simple-seg tl-dress-row"><span>Transition</span><select id="tl-dress" data-index="${s.index}" aria-label="Transition at this seam">${options}</select></div>`;
   } else {
-    const insertS = choices.insert_seconds || [5, 10, 15];
-    const renderS = choices.render_s || [2, 5];
-    const lengthOpts = [];
-    for (let v = renderS[0]; v <= renderS[1]; v += 1) lengthOpts.push(v);
-    const variants = choices.rerender_variants || ["auto"];
-    const variantName = (v) => (v === "auto" ? "by the stills" : v === "object" ? "object to object" : v === "scene" ? "scene to scene" : v.replace("-", " to "));
-    // a Morph chip picks the style "Re-render this morph" renders in; only that button spends GPU (UI review L3: a chip
-    // started a GPU re-render on one click, looking like the Look tab's toggles that wait for Apply)
-    const ownStyle = s.style || "melt";
-    const wantStyle = easy.tlStyle && easy.tlStyle.index === s.index && easy.tlStyle.for === lane.id ? easy.tlStyle.style : ownStyle;
-    body = `${canGpu ? `${morphStyleRow(wantStyle, "easy-tl-style", s.index, false)}
-      <div class="tl-gpu-row"><button type="button" class="ghost" data-act="easy-tl-swap" data-slot="${s.still}">Swap the object it lands on</button></div>
-      <div class="tl-gpu-row"><button type="button" class="ghost" data-act="easy-tl-rerender" data-index="${s.index}">Re-render this morph${wantStyle !== ownStyle ? ` as ${esc(morphStyleLabel(wantStyle))}` : ""}</button>
-        <label>seed <input id="tl-seed" type="number" placeholder="next" min="0" step="1" aria-label="Seed, empty for the next one" /></label>
-        <label>length <select id="tl-render-s" aria-label="Seconds of source"><option value="">as it is</option>${lengthOpts.map((v) => `<option value="${v}">${v} s</option>`).join("")}</select></label>
-        <label>prompt <select id="tl-variant" aria-label="Prompt variant">${variants.map((v) => `<option value="${esc(v)}">${esc(variantName(v))}</option>`).join("")}</select></label></div>
-      ${lane.insertable === false ? "" : `<div class="tl-gpu-row"><button type="button" class="ghost" data-act="easy-tl-insert" data-index="${s.index}">Generate here</button>
-        <label>length <select id="tl-insert-s" aria-label="Seconds to generate">${insertS.map((v) => `<option value="${v}"${v === 10 ? " selected" : ""}>${v} s</option>`).join("")}</select></label></div>`}` : ""}
-      ${dream}
-      ${lane.mode === "stems" ? `<p class="note tl-layer-note">${esc(`The ${stemLabel(lane.layer)} layer: Swap and Re-render render its own morphs, then the layers are laid together again with no GPU. ${lane.layer_note || ""}`)}</p>` : ""}`;
+    // Under the hood (hood.js): its host (#hood-shot, below) is filled after the render by mountHood
+    body = "";
   }
   // the fourth tab's host: Under the hood (hood.js, window.XenoHood.mount) fills it when the tab is open
   const hood = tab === "hood"
     ? `<div id="hood-shot" data-inspector-tab="hood" data-job="${esc(lane.id)}" data-index="${s.index}"><p class="note">${window.XenoHood ? "Reading the settings this shot was rendered with…" : "The settings this shot was rendered with (its prompt, seed, steps and model) open here once the Under the hood panel is on this desk."}</p></div>`
     : `<div id="hood-shot" data-inspector-tab="hood" data-job="${esc(lane.id)}" data-index="${s.index}" hidden></div>`;
   return `<div class="tl-drawer" id="tl-drawer">${head}<div class="tl-tab-body">${tab === "hood" ? "" : body}</div>${hood}</div>`;
+}
+
+// Under the hood mounted where the desk draws a host for it: the open shot's (#hood-shot, the drawer's fourth tab) and
+// the cut's own rows with no shot open (#hood-project under the timeline). A re-render goes through postCutEdit with the
+// cut's screen kept: its progress shows on the shot's tile and in the panel (UI_REVIEW L7).
+function mountHood() {
+  if (!window.XenoHood) return;
+  const id = easyVideoId();
+  const lane = state.lane && state.lane.id === id ? state.lane : null;
+  const shotHost = document.getElementById("hood-shot");
+  if (shotHost && !shotHost.hidden && id && lane) {  // the drawer keeps a hidden host while another tab is open
+    const index = Number(shotHost.dataset.index);
+    const shot = lane.shots.find((x) => x.index === index) || {};
+    const layer = lane.mode === "stems" ? lane.layer : null;
+    const start = async (route, body, label, stage) => {
+      const ok = await postCutEdit(id, route, body, label, shot.start, stage, undefined, { inPlace: true, shot: index });
+      return ok || state.easy.note || false;
+    };
+    window.XenoHood.mount(shotHost, {
+      jobId: id, shotIndex: index, layer,
+      onRerender: (body, info) => start("rerender", body, `${info.label} on the GPU`, "restyle"),
+      onTake: (n, info) => start(`shots/${index}/take`, Object.assign({ n }, layer ? { layer } : {}), info.label, "assemble"),
+      onSelect: (k) => { state.easy.tlPick = { kind: "shot", index: k }; state.easy.tlTab = "hood"; render(); },
+    });
+  }
+  const projectHost = document.getElementById("hood-project");
+  if (projectHost) window.XenoHood.mount(projectHost, { jobId: id || "", shotIndex: null, project: hoodProject });
+}
+
+// UI_REVIEW L6: the shots a GPU edit would replace light up on the timeline while its button has the pointer or the focus
+function lightSpan(el, on) {
+  document.querySelectorAll('[data-song-strip="cut"] .xs-shot.span-lit').forEach((t) => t.classList.remove("span-lit"));
+  if (!on || !el) return;
+  const [a, b] = String(el.dataset.span || "").split("-").map(Number);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return;
+  for (let i = a; i <= b; i += 1) {  // the cut's shots are the song strip's blocks (strip.js)
+    document.querySelectorAll(`[data-song-strip="cut"] .xs-shot[data-index="${i}"]`).forEach((t) => t.classList.add("span-lit"));
+  }
+}
+["mouseover", "focusin"].forEach((type) => document.addEventListener(type, (event) => {
+  const el = event.target && event.target.closest ? event.target.closest("[data-span]") : null;
+  if (el) lightSpan(el, true);
+}));
+["mouseout", "focusout"].forEach((type) => document.addEventListener(type, (event) => {
+  const el = event.target && event.target.closest ? event.target.closest("[data-span]") : null;
+  if (el && !(event.relatedTarget && el.contains(event.relatedTarget))) lightSpan(el, false);
+}));
+// a run's or a dream's length moves the span it replaces: the line, the lit shots and the cost follow
+document.addEventListener("change", (event) => {
+  const target = event.target;
+  if (!state || !state.lane || !target || !(target.id === "tl-insert-s" || target.id === "tl-dream-s")) return;
+  const dream = target.id === "tl-dream-s";
+  const go = document.getElementById(dream ? "tl-dream-go" : "tl-insert-go");
+  if (!go) return;
+  const [a, b] = editSpan(state.lane.shots || [], Number(go.dataset.index), Number(target.value), dream ? "dream" : "insert");
+  go.dataset.span = `${a}-${b}`;
+  const line = document.getElementById(dream ? "tl-dream-span" : "tl-insert-span");
+  if (line) line.textContent = replacesText(a, b);
+  const cost = document.getElementById("tl-insert-cost");
+  if (!dream && cost) cost.textContent = gpuCost(state.lane, b - a + 1);
+});
+// a re-cut row Under the hood (Beat FX, Subject sway, End card) waits in the bar at the bottom, as the knobs' rows do
+// (on the window: the click reaches it after the desk's own dispatcher on the document has set the value)
+const HOOD_RECUT_ACTS = { "easy-fx": "Beat FX", "easy-orbit": "Subject sway", "easy-card": "End card" };
+window.addEventListener("click", (event) => {
+  const el = event.target && event.target.closest ? event.target.closest(".hood-project [data-act]") : null;
+  const act = el && el.dataset.act;
+  if (act && HOOD_RECUT_ACTS[act] && state && state.easy && state.easy.phase === "result") touchKnob(HOOD_RECUT_ACTS[act]);
+});
+
+// The cut's own rows Under the hood (no shot open): what Fine-tune and Work in progress set, each in one plain line that
+// says where it lives (this browser, this cut, the desk) and what it costs (UI_REVIEW M4, C10). The chips send the acts
+// Fine-tune's rows send, so they change the same settings.
+function hoodProject() {
+  const easy = state.easy || {};
+  const pick = (act, value, choices) => choices.map(([v, label]) => ({ value: v, label, on: String(value) === String(v) }));
+  const hw = (state.simpleOptions && state.simpleOptions.hardware) || {};
+  const tiers = [["auto", "Auto"]].concat((hw.tiers || [{ id: "cpu", label: "CPU" }, { id: "8gb", label: "8 GB" }, { id: "12gb", label: "12 GB" }, { id: "24gb", label: "24 GB+" }]).map((t) => [t.id, t.label]));
+  const tierNote = { draft: "Draft: LTX-Video 0.9.5, minutes on this GPU", fast: "Fast Final: the Draft's morphs upscaled 4x", final: "Final: LTX-2.3 or 2.5, much longer on this GPU", cloud: "Cloud Final: Comfy Cloud, spends credits" };
+  const tier = easy.tier || "draft";
+  const browser = "this browser";
+  const rows = [
+    { key: "aspect", label: "Aspect", act: "easy-aspect", choices: pick("easy-aspect", easy.aspect || "9:16", [["16:9", "16:9"], ["9:16", "9:16"], ["1:1", "1:1"]]),
+      where: browser, cost: "next render · GPU", hint: "The shape of the next render: 9:16 for phones, 16:9 for screens, 1:1 square. This cut stays as it was made." },
+    { key: "tier", label: "Model", act: "easy-tier", choices: pick("easy-tier", tier, [["draft", "Draft"], ["fast", "Fast Final"], ["final", "Final"], ["cloud", "Cloud Final"]]),
+      where: browser, cost: tier === "cloud" ? "cloud credits" : "next render · GPU", hint: tierNote[tier] || "" },
+    { key: "gpu", label: "GPU", act: "easy-gpu", choices: pick("easy-gpu", easy.gpuTier || "auto", tiers), where: browser, cost: "instant",
+      hint: "How much of the card a render may use: Auto reads the card; a smaller tier is slower and safer." },
+    { key: "endpoint", label: "Renders on", value: `ComfyUI at ${(state && state.endpoint) || "http://127.0.0.1:8188"} · ${state && state.comfyOk ? "connected" : "not answering"}`,
+      where: "this browser", cost: "", hint: "The address the desk checks ComfyUI at. Renders go through the desk's proxy on this machine whatever it says." },
+    { key: "forms", label: "Forms", value: easy.morphs && easy.morphs !== "auto" ? `${easy.morphs} morphs` : "Auto: from the song's length and tempo", where: browser,
+      cost: "next render · GPU", hint: "How many morphs the next render makes. Set it on the first screen, Fine-tune." },
+    { key: "fx", label: "Beat FX", act: "easy-fx", choices: pick("easy-fx", easy.fx !== false ? "on" : "off", [["on", "On"], ["off", "Off"]]), where: browser,
+      cost: "re-cut · no GPU", hint: "Punches, holds and stutters on the beats. Changing it re-cuts this cut from its morphs, no GPU." },
+    { key: "orbit", label: "Subject sway", act: "easy-orbit", choices: pick("easy-orbit", easy.stemOrbit !== false ? "on" : "off", [["on", "On"], ["off", "Off"]]), where: browser,
+      cost: "re-cut · no GPU", hint: "The object sways with the stems between the beats (Fine-tune calls it Subject orbit)." },
+    { key: "card", label: "End card", act: "easy-card", choices: pick("easy-card", easy.endCard ? "on" : "off", [["off", "Off"], ["on", "On"]]), where: browser,
+      cost: "re-cut · no GPU", hint: "The recipe code burnt into the last seconds, so anyone can make it again." },
+    { key: "overlay", label: "Beat overlay", act: "easy-overlay-set", choices: pick("easy-overlay-set", easy.overlay ? "on" : "off", [["off", "Off"], ["on", "On"]]), where: browser,
+      cost: "next render · GPU", hint: "The waveform and the beat marks drawn on the picture. Off is a clean export." },
+    { key: "images", label: "Your images", value: easy.ownFolder ? easy.ownFolder : "none: the vibe's library leads the chain", where: browser, cost: "next render · GPU",
+      hint: "A folder of your own images leads the chain; set it on the first screen, Fine-tune." },
+    { key: "library", label: "Library", value: `the stills of the ${easy.resultVibe || easy.vibe || "chosen"} vibe`, where: "this machine (work/ui/objects)",
+      cost: "growing: GPU", hint: "The stills the chain draws on. Grow more on the first screen (Z-Image, seconds a still)." },
+    { key: "recipe", label: "Recipe code", value: easy.recipe || "none yet", copy: easy.recipe || "", where: "this cut", cost: "instant",
+      hint: "One line that makes this cut again with the same song, or a remix with another." },
+    { key: "performer", label: "Performer", act: "easy-performer", choices: pick("easy-performer", String(easy.performer || 0), [["0", "Off"], ["2", "2 shots"], ["4", "4 shots"]]),
+      where: browser, cost: "next render · GPU (minutes a shot)", hint: "Polly sings, drums or dances to the song in a few shots (MiniMax H3)." },
+    { key: "paid", label: "Paid cloud", value: state.paidCloud ? "on: LTX-2.5 partner node" : "off (open weights only)", where: "the desk (XENO_PAID_CLOUD)", cost: "cloud credits",
+      hint: "LTX-2.5 through a paid Comfy partner node: not open weights, off by default." },
+    { key: "connect", label: "Connect an AI", value: "any AI drives the same desk over MCP", where: "the desk", cost: "instant",
+      link: { label: "Connect an AI →", act: "go", hash: "connect" }, hint: "The desk's tools for an assistant: the same Make, re-cut and edits." },
+  ];
+  return { rows, note: "The cut's own settings and the next render's. Open a shot on the timeline for its morph's values." };
 }
 
 // Dream this span (xenoform.dream): Z-Image Turbo img2img over 1 to 3 s from this shot, every other frame (12 a second),
@@ -3311,10 +3520,12 @@ function dreamRow(lane, s, choices) {
   const lengths = choices.dream_seconds || [1, 2, 3];
   const perFrame = Number(choices.dream_s_per_frame) || 2.6;
   const est = (n) => clockText(46 + perFrame * n * 12);
+  const [da, db] = editSpan(lane.shots || [], s.index, 2, "dream");  // the shots it replaces, named and lit (UI_REVIEW L6)
   return `<div class="tl-gpu tl-dream">
-        <div class="tl-gpu-row"><button type="button" class="ghost" data-act="easy-tl-dream" data-index="${s.index}">Dream here</button>
+        <div class="tl-gpu-row"><button type="button" class="ghost" data-act="easy-tl-dream" data-index="${s.index}" data-span="${da}-${db}" id="tl-dream-go">Dream here</button>
           <label>length <select id="tl-dream-s" aria-label="Seconds to dream">${lengths.map((v) => `<option value="${v}"${v === 2 ? " selected" : ""}>${v} s · about ${esc(est(v))}</option>`).join("")}</select></label>
-          <label>depth <select id="tl-dream-depth" aria-label="How far the dream strays"><option value="light">light</option><option value="deep">deep</option></select></label></div>
+          <label>depth <select id="tl-dream-depth" aria-label="How far the dream strays"><option value="light">light</option><option value="deep">deep</option></select></label>
+          <span class="tl-span" id="tl-dream-span">${esc(replacesText(da, db))}</span><span class="hood-tag gpu">GPU · Z-Image Turbo</span></div>
         <p class="note">${s.dream != null ? "This shot is dreamed already; dreaming again dreams over the dream. " : ""}Z-Image Turbo re-dreams every other frame of this shot and the next ones (12 a second, each held and blended into the next): the object keeps its place while its surface and its meaning drift, StreamDiffusion style. About ${esc(String(perFrame))} s of GPU a frame, cut in like a generated run.</p>
       </div>`;
 }
@@ -3346,8 +3557,10 @@ function gpuEditWaits(what = "this renders on the GPU from the cut as it stands"
 
 // A timeline edit that goes through the job (the re-cut with the overrides, a re-render, a generated run): the making
 // screen shows it with its own clock, title and steps, the lane reloads when it lands and the player seeks to what was
-// clicked. ``stage`` "assemble" is an edit with no GPU (a re-cut, the layers laid again).
-async function postCutEdit(id, route, body, detail, at, stage, title) {
+// clicked. ``stage`` "assemble" is an edit with no GPU (a re-cut, the layers laid again). ``opts.inPlace`` (Under the
+// hood's re-render and takes) keeps the cut's screen: the edit shows on shot ``opts.shot``'s block on the strip and in
+// its panel, and the timeline stays usable (UI_REVIEW L7; shotEditTick follows it).
+async function postCutEdit(id, route, body, detail, at, stage, title, opts) {
   if (!id || !state.easy) return false;
   try {
     const res = await api(`/api/jobs/${encodeURIComponent(id)}/${route}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -3360,8 +3573,11 @@ async function postCutEdit(id, route, body, detail, at, stage, title) {
     state.job = Object.assign({}, state.job || {}, { id, status: "running", stage: stage || "restyle", progress: 0.05, detail });
     state.easy.tlSeek = at != null ? Number(at) : null;
     state.easy.recutting = true;
-    startMaking(stage === "assemble" ? "recut" : "gpu", title || detail);
-    setEasyPhase("making");
+    if (opts && opts.inPlace) state.easy.shotEdit = { id, shot: Number(opts.shot), detail, version: Number((state.job && state.job.video_version) || 0) };
+    else {
+      startMaking(stage === "assemble" ? "recut" : "gpu", title || detail);
+      setEasyPhase("making");
+    }
     render();
     poll(id);
     return true;
@@ -3371,6 +3587,39 @@ async function postCutEdit(id, route, body, detail, at, stage, title) {
     return false;
   }
 }
+// An edit kept on the cut's screen (postCutEdit's inPlace): while it runs, its shot's tile fills with the progress and
+// the panel says the stage; when it lands the lane and the player read the cut again and the panel reads the shot again.
+function paintShotEdit(edit, job) {
+  document.querySelectorAll(`[data-song-strip="cut"] .xs-shot[data-index="${edit.shot}"]`).forEach((tile) => {  // its block on the strip
+    tile.classList.add("is-rendering");
+    tile.style.setProperty("--p", String(Math.max(0.03, Math.min(1, Number(job.progress) || 0))));
+  });
+  if (window.XenoHood) window.XenoHood.progress(edit.id, { shot: edit.shot, progress: job.progress, detail: job.detail, status: "running" });
+}
+function shotEditTick(job) {
+  const edit = state.easy.shotEdit;
+  if (job.status === "running") {
+    paintShotEdit(edit, job);
+    return;
+  }
+  state.easy.shotEdit = null;
+  state.easy.recutting = false;
+  if (window.XenoHood) {
+    window.XenoHood.progress(edit.id, null);
+    window.XenoHood.invalidate(edit.id);
+  }
+  // a failed edit still reads as done while the server says so in its detail (UI_REVIEW F1, the Round 0 fix)
+  const failed = job.status === "error" || job.status === "cancelled" || /did not (run|come back)/.test(String(job.detail || ""));
+  const landed = Number(job.video_version || 0) > Number(edit.version || 0);
+  if (!failed && landed) {
+    state.lane = null;  // the lane reads the record again; the player takes the new file
+    state.easy.editUrl = "";
+    if (state.easy.reopenUrl) state.easy.reopenUrl = `${String(state.easy.reopenUrl).split("?")[0]}?v=${job.video_version || Date.now()}`;
+  }
+  state.easy.note = failed ? String(job.error || job.detail || "The edit did not run.") : `Shot ${edit.shot + 1}: ${String(job.detail || "ready")}.`;
+  render();
+}
+
 async function applyTimeline() {
   const id = easyVideoId();
   const lane = state.lane && state.lane.id === id ? state.lane : null;
@@ -3494,7 +3743,8 @@ function easyVideoId() {
 }
 
 // Reopen a cut on the desk from its My videos row: its file, vibe, tier, recipe and how long it took, on Render (or
-// Perform); and when no song is on the desk and the cut is of a bundled song, that song too, so its shots sit on the strip.
+// Perform); then reopenWhole gives back its guardrail notes and breakdown and loads the cut's own song, so its shots sit on
+// the strip and Render works without choosing the song first.
 function reopenRow(row) {
   state.easy.reopenId = row.id;
   state.easy.knobsTouched = {};
@@ -3510,7 +3760,7 @@ function reopenRow(row) {
   rowFacts(row);
   if (!["render", "perform"].includes(state.easy.step)) state.easy.step = "render";
   setEasyPhase("result");
-  if (!state.easy.song) loadCutSong(row);
+  reopenWhole(row);  // the notes, the breakdown and the cut's own song, as the cut's own screen had them (UI_REVIEW N14)
 }
 function rowFacts(row) {
   state.easy.cutSongLabel = row.song || "";  // "Glitch Out (30 s cut)": its shots sit on the strip when that song is loaded
@@ -3548,7 +3798,6 @@ async function reopenCut(id, opts = {}) {
     const note = state.easy.note;
     rowFacts(row);
     if (opts.note) state.easy.note = note;
-    if (!state.easy.song) loadCutSong(row);
   } else if (!found) {
     state.easy.reopenId = "";
     state.easy.reopenUrl = "";
@@ -3695,7 +3944,9 @@ function cutShotsForStrip(easy, lane, off) {
       : lane.mode === "song" ? { "data-act": "easy-seek", "data-at": s.start } : { "data-act": "easy-tl-shot", "data-index": s.index, "data-at": s.start };
     return {
       index: s.index, n: s.index + 1, start: off + Number(s.start), end: off + Number(s.end), section: s.section,
-      state: pending || knobs ? "stale" : "done", label: s.to || s.from || "", title,
+      // an edit Under the hood running on it (UI_REVIEW L7, postCutEdit's inPlace): its block renders while the cut stays
+      state: easy.shotEdit && easy.shotEdit.id === lane.id && easy.shotEdit.shot === s.index ? "rendering" : pending || knobs ? "stale" : "done",
+      label: s.to || s.from || "", title,
       picked: pick ? easy.swapSlot === s.still : !!(picked && picked.index === s.index), held, edited, dropped: gone, rest: !!s.rest,
       style: s.style && s.style !== "melt" ? morphStyleLabel(s.style) : "",
       thumb: media(`/api/videos/${encodeURIComponent(lane.id)}/frame.jpg?t=${mid.toFixed(2)}&w=160&v=${lane.version || 0}`),
@@ -3838,15 +4089,7 @@ function mountStrips() {
     window.XenoStrip.mount(host, model, stripHandlers(where, model));
   });
   paintPlayhead();
-  // Under the hood (the T4 session's hood.js) fills the project's host and a shot's fourth tab when it is on the page
-  const project = document.getElementById("hood-project");
-  if (project && window.XenoHood && typeof window.XenoHood.mount === "function") {
-    try { window.XenoHood.mount(project, { jobId: easyVideoId() || null, shotIndex: null }); } catch (err) { /* the plain rows stay */ }
-  }
-  const shotHood = document.querySelector('#app [data-inspector-tab="hood"]:not([hidden])');
-  if (shotHood && window.XenoHood && typeof window.XenoHood.mount === "function") {
-    try { window.XenoHood.mount(shotHood, { jobId: shotHood.dataset.job || easyVideoId(), shotIndex: Number(shotHood.dataset.index) }); } catch (err) { /* the note stays */ }
-  }
+  // Under the hood (hood.js) fills #hood-project and a shot's #hood-shot from mountHood at the end of render()
   if (document.getElementById("sketch")) {  // the sketch shows where the song is, playing or not
     preloadSketch();
     const audio = document.getElementById("song-audio");
@@ -3988,6 +4231,8 @@ function applySimpleRecipe(recipe) {
   easy.ownFolder = recipe.own_folder || "";
   easy.stemOrbit = recipe.stem_orbit !== false;
   easy.remixPlan = recipe.cut_plan || null;
+  // a shot's Copy recipe (Under the hood): those shots' own render values, sent with the next Make
+  easy.shotRenders = recipe.shot_renders && typeof recipe.shot_renders === "object" && Object.keys(recipe.shot_renders).length ? recipe.shot_renders : null;
   state.seed = recipe.seed || state.seed;
 }
 
@@ -4738,6 +4983,7 @@ function render() {
   if (window.XENO_IDEAS) window.XENO_IDEAS.mount();
   if (window.XENO_KNOBS_MOUNT) window.XENO_KNOBS_MOUNT();  // the knob strip (ui_v6.js) in now, not a frame after the place is put back
   mountStrips();  // the song strip (strip.js) into its hosts, keeping its zoom and scroll
+  mountHood();  // Under the hood (hood.js) into the hosts this render drew
   if (window.XENO_TUTORIAL) window.XENO_TUTORIAL.sync();
   if (pageSwitch) { if (document.body.dataset.tour !== "1") window.scrollTo(0, pageScroll[state.view] || 0); }  // the tour places itself
   else restorePlace(place);
@@ -4959,7 +5205,38 @@ function guardDetails(job) {
   const clamps = lines.length - qa - taste;
   const head = [clamps ? `${clamps} setting${clamps === 1 ? "" : "s"} adjusted` : "", taste ? `${taste} taste note${taste === 1 ? "" : "s"}` : "",
     qa ? `${qa} check${qa === 1 ? "" : "s"} flagged` : ""].filter(Boolean).join(" · ");
-  return `<details class="guardnotes"><summary>Guardrails: ${esc(head)}</summary><ul>${lines.map((m) => `<li>${esc(m)}</li>`).join("")}</ul></details>`;
+  return `<details class="guardnotes"><summary>Guardrails: ${esc(head)}</summary><ul>${lines.map((m) => `<li>${guardSentence(m)}</li>`).join("")}</ul></details>`;
+}
+// One guardrail line as a plain sentence (UI_REVIEW F13): the [qa] and [taste] tags said in words, the taste file's rule
+// name set aside, and each time in it a link that opens its shot on the timeline and plays from there.
+function guardSentence(line) {
+  let text = String(line == null ? "" : line).trim();
+  const tag = (text.match(/^\[(qa|taste)\]\s*/) || [])[1] || "";
+  if (tag) text = text.replace(/^\[(qa|taste)\]\s*/, "");
+  let rule = "";
+  const named = text.match(/\s*\(([a-z0-9]+(?:-[a-z0-9]+)+)\)\s*$/);
+  if (named) {
+    rule = named[1];
+    text = text.slice(0, named.index);
+  }
+  if (tag === "qa") {
+    const flag = text.match(/^(\d+) ([a-z][a-z -]*?) flags? at (.+)$/);
+    const fixed = text.match(/^lag fixed: (.+)$/);
+    text = flag ? `The check after the render saw ${flag[2]} at ${flag[3]}` : fixed ? `The check after the render fixed a lag (${fixed[1]})` : `The check after the render: ${text}`;
+  } else if (tag === "taste") {
+    text = `Your taste file: ${text}`;
+  }
+  text = text.replace(/\s*\(× (\d+)\)$/, " ($1 times)").replace(/;\s+/g, ". ").trim();
+  text = text.charAt(0).toUpperCase() + text.slice(1);
+  if (!/[.!?)]$/.test(text)) text += ".";
+  const lane = state && state.lane && state.lane.id === easyVideoId() ? state.lane : null;
+  const html = esc(text).replace(/\b(\d+(?:\.\d+)?)s\b/g, (all, num) => {
+    const t = Number(num);
+    const shot = lane ? (lane.shots || []).find((s) => t >= Number(s.start) && t < Number(s.end)) : null;
+    const label = `${clockText(t)}${shot ? ` (shot ${shot.index + 1})` : ""}`;
+    return `<button type="button" class="text guard-shot" data-act="easy-guard-shot" data-at="${t}"${shot ? ` data-index="${shot.index}"` : ""} title="Open this shot on the timeline">${esc(label)}</button>`;
+  });
+  return `${html}${rule ? ` <small class="guard-rule">rule ${esc(rule)}</small>` : ""}`;
 }
 // The knobs column folds to a slim tab on the cut's screen (remembered), so the video and the timeline get the width.
 function knobsFolded() {
@@ -5647,6 +5924,11 @@ async function poll(id) {
   state.job = job;
   watchJob(job);
   if (state.easy && job.eta_s !== state.easy.lastEta) { state.easy.lastEta = job.eta_s; state.easy.jobAt = Date.now(); }
+  if (state.easy && state.easy.shotEdit && state.easy.shotEdit.id === id && state.easy.phase !== "making") {
+    shotEditTick(job);  // an edit Under the hood started: its tile and its panel, the cut's screen kept (UI_REVIEW L7)
+    if (job.status === "running") setTimeout(() => poll(id), 400);
+    return;
+  }
   if (state.easy && state.easy.phase === "making") {
     if (state.easy.recutting && job.status !== "running") {  // an edit of the cut ended: back to the cut, saying how
       editEnded(job);
@@ -5878,6 +6160,21 @@ document.addEventListener("click", async (event) => {
   } else if (act === "easy-tl-close") {
     state.easy.tlPick = null;
     render();
+  } else if (act === "easy-guard-shot") {
+    // a guardrail note's time (UI_REVIEW F13): its shot opens on the timeline and the player goes there
+    const at = Number(el.dataset.at) || 0;
+    const lane = state.lane;
+    const shot = lane && (el.dataset.index != null ? lane.shots.find((x) => x.index === Number(el.dataset.index))
+      : lane.shots.find((x) => at >= Number(x.start) && at < Number(x.end)));
+    if (shot) {
+      state.easy.tlPick = { kind: "shot", index: shot.index };
+      state.easy.tlFor = easyVideoId();
+    }
+    const player = document.getElementById("player");
+    if (player) player.currentTime = at;
+    render();
+    const panel = document.querySelector(".shots-lane");
+    if (panel && panel.scrollIntoView) panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
   } else if (act === "easy-tl-play") {
     setShotOverride(state.easy, state.lane, Number(el.dataset.index), "play", el.dataset.value);
     render();
@@ -6167,6 +6464,8 @@ document.addEventListener("click", async (event) => {
     try {
       applySimpleRecipe(await decodeSimpleRecipe(code));
       state.easy.note = state.easy.song ? "Recipe loaded. Make my video renders it." : "Recipe loaded. Choose a song, then Make.";
+      const own = state.easy.shotRenders ? Object.keys(state.easy.shotRenders).length : 0;
+      if (own) state.easy.note += ` It carries ${own} shot${own === 1 ? "'s" : "s'"} own render values (Under the hood), used on a Draft.`;
     } catch (err) {
       state.easy.note = String(err.message || err);
     }
@@ -6175,25 +6474,33 @@ document.addEventListener("click", async (event) => {
     const row = (state.videos || []).find((item) => item.id === el.dataset.id);
     if (!row) return;
     state.easy.step = "render";
-    reopenCut(row.id);
+    reopenCut(row.id);  // its reopenRow ends in reopenWhole: the notes, the breakdown and the song (UI_REVIEW N14)
     render();
   } else if (act === "video-copy") {
     const code = await easyRecipeFor(el.dataset.id);
     state.easy.note = code && (await copyText(code)) ? "Recipe code copied." : code ? `Recipe: ${code}` : "No recipe code for that video.";
     render();
   } else if (act === "video-rerender") {
-    const code = await easyRecipeFor(el.dataset.id);
+    // the card answers on the card (UI_REVIEW N13): the cut's own song is loaded first, so the Make is that song's
+    const id = el.dataset.id;
+    const code = await easyRecipeFor(id);
     if (!code) return;
+    state.easy.cardNote = { id, text: "Loading this cut's recipe and its song…" };
+    render();
     try {
       applySimpleRecipe(await decodeSimpleRecipe(code));
-      if (!state.easy.song) {
-        state.easy.note = "Recipe loaded. Choose the song again, then Make.";
+      const ready = await loadCutSong(id);
+      if (!ready) {
+        state.easy.cardNote = { id, text: "Recipe loaded, but this cut's song is not on this machine: choose it again on the first screen, then Make." };
         render();
+        const song = document.querySelector("[data-tour=easy-song]");
+        if (song && song.scrollIntoView) song.scrollIntoView({ behavior: "smooth", block: "start" });
         return;
       }
+      state.easy.cardNote = null;
       easyMake();
     } catch (err) {
-      state.easy.note = String(err.message || err);
+      state.easy.cardNote = { id, text: String(err.message || err) };
       render();
     }
   } else if (act === "easy-cloud-confirm") {
@@ -6373,6 +6680,7 @@ document.addEventListener("click", async (event) => {
   } else if (act === "easy-showcase") {
     state.easy.playedHere = false;
     state.easy.showcaseVibe = "";
+    state.easy.fromSong = "";  // the showcase is no passage of a whole song (UI_REVIEW N10)
     setEasyPhase("showcase");
     state.easy.note = SHOWCASE_NOTE;
     render();
@@ -6380,6 +6688,7 @@ document.addEventListener("click", async (event) => {
     if (player && player.play) player.play().catch(() => {});
   } else if (act === "easy-again") {
     state.easy.note = "";
+    state.easy.fromSong = "";  // back on the song: the next cut opened is its own (UI_REVIEW N10)
     setEasyPhase("choose");
     render();
     window.scrollTo({ top: 0, behavior: "smooth" });

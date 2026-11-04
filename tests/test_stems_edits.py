@@ -109,5 +109,6 @@ def test_the_drawer_routes_swap_and_re_render_to_the_layer_and_says_what_stays_o
     assert 'if (lane && lane.mode === "stems") swap.layer = lane.layer;' in swap and "JSON.stringify(swap)" in swap
     rerender = app.split("async function rerenderShot(index, style) {", 1)[1].split("\n}\n", 1)[0]
     assert 'if (lane.mode === "stems") body.layer = lane.layer;' in rerender
-    drawer = app.split("function timelineDrawer(easy, lane, tl, picked) {", 1)[1].split("\n}\n", 1)[0]
-    assert 'lane.insertable === false ? ""' in drawer and "lane.layer_note" in drawer
+    # the Shot tab's GPU rows (Swap, Generate here, Dream here) say what a layer keeps off (shotGpuRows, 4 Nov)
+    rows = app.split("function shotGpuRows(lane, s, choices, canGpu, dream) {", 1)[1].split("\n}\n", 1)[0]
+    assert "lane.insertable !== false" in rows and "lane.layer_note" in rows

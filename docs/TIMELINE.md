@@ -151,7 +151,9 @@ and writes, beside the keys the record already has:
 | `recut_state`, `macros` | every re-cut | the knobs, look, orbit, foreshadow, scenes as they stand |
 | **`shot_overrides`** | the re-cut with overrides | `{"<i>": {"play": "hold" \| "morph", "look": "auto" \| "off" \| preset, "fx_intensity": 0..1}}`, only the keys set; an index past the cut or an empty entry is dropped |
 | **`boundary_overrides`** | the re-cut with overrides | `{"<i>": {"fx": "auto" \| "none" \| premium kind \| boundary kind}}` for i from 1 |
-| **`rerenders`** | the rerender | `[{"shot", "morph", "seed", "render_s", "variant", "clip", "seconds", "at"}]` |
+| **`rerenders`** | the rerender | `[{"shot", "morph", "seed", "render_s", "variant", "clip", "seconds", "at", "overrides", "request", "before"}]`: since 4 Nov each try keeps the values set by hand, its full request (as `renders` keeps one) and the take it replaced (`before`: clip, request, style, length) |
+| **`renders`** | run_simple, swap, rerender, insert, take | one a shot beside `clips` (Under the hood, `shot_recipe`): the morph's request as it was queued (engine, model files, prompt, negative, seed, steps, cfg, frames, size, both guides' strengths, compression, style, LoRA, the stills, the cache key, the tier, how long it took, whether the cache answered); its API graph is kept once under `simple/requests/<key>.json` and named in `graph`. None for Polly, your clip, and a cut from before 4 Nov |
+| **`taken`** | the take route | `[{"shot", "n", "clip", "seed", "at"}]`: an earlier take put back with no render |
 | **`inserts`** | the insert | `[{"first", "last", "start", "end", "seconds", "stills", "clips", "pins", "seed", "at"}]` |
 | `recuts` | every re-cut | a count; the desk's `video_version` moves with it |
 
@@ -167,7 +169,12 @@ re-cut, as today.
 | `GET /api/videos/{id}/shots` | | none | the timeline (`lane.build`): the shots with their object, slot, section, boundary, the transition or kind into them and their overrides (`hold`, `look`, `fx_intensity`), the overlays (Polly, own, generated), the sections, the chain, and the choices the panel offers (`transition_kinds`: id, label, note and group for every premium, core and boundary kind) |
 | `POST /api/jobs/{id}/recut` | the knobs as today, plus `shot_overrides` and `boundary_overrides` (whole maps; each replaces the record's when present) | CPU, about 30 s | `dense.recut_from_cache`: re-composes from the cached clips with the knobs and the overrides, persists both |
 | `POST /api/jobs/{id}/swap` | `slot`, `file` | GPU, two morphs | as today; the re-compose keeps the overrides |
-| **`POST /api/jobs/{id}/rerender`** | `shot`; optional `seed`, `render_s` (2 to 5), `variant` (`auto`, `object`, `scene-object`, `object-scene`, `scene`) | GPU, one morph | `dense.rerender_morph` (1.5) |
+| **`POST /api/jobs/{id}/rerender`** | `shot`; optional `seed`, `render_s` (2 to 5), `variant` (`auto`, `object`, `scene-object`, `object-scene`, `scene`), `style`, and Under the hood's own values: `prompt`, `negative`, `steps` (1 to 100), `cfg` (1 to 20), `frames` (8k + 1, 25 to 121), `guide_start`, `guide_end` (0 to 1), `compression` (one number or a start and end pair, 0 to 100), `lora` with `lora_strength` (a file of the loras folder: a `LoraLoaderModelOnly` goes in only then), `timing` | GPU, one morph | `dense.rerender_morph` (1.5); a value out of range is a plain-words 400 (`shot_recipe.clean_overrides`) |
+| `GET /api/jobs/{id}/shots/{i}/recipe` | `style`, `layer` (query) | none | Under the hood: every value the shot's morph ran with (`used`: the record, else the graph ComfyUI wrote into the clip), the preset's (what the vibe gives it today) with `differs` a field, `verified` (the clip's own graph gives the recorded key), the re-render gate with its reason, the cost, the takes, the shot's recipe code |
+| `GET /api/jobs/{id}/shots/{i}/workflow.json` | | none | the API graph the shot ran, as a file ComfyUI opens (Open in ComfyUI) |
+| `POST /api/jobs/{id}/shots/{i}/comfy` | `confirm: true` | GPU on ComfyUI | Open in ComfyUI's queue option: the stills uploaded and the graph queued on the desk's own ComfyUI |
+| `GET /api/jobs/{id}/shots/{i}/takes` | | none | every take the shot has had, with its seed, its request, whether it can come back and its own clip's address |
+| `POST /api/jobs/{id}/shots/{i}/take` | `n` | CPU, a re-cut | an earlier take put back (`dense.use_take`), no render |
 | **`POST /api/jobs/{id}/insert`** | `first`; optional `seconds` (5, 10, 15; default 10), `pins` (`{"<k>": file}`), `seed` | GPU, one morph a shot | `dense.insert_generated` (1.6) |
 
 All three GPU routes run as the swap runs: the job goes `running`, the making screen shows the progress, the desk polls
@@ -209,6 +216,13 @@ seams between them are handles on the tiles themselves (`.lane-joins`), not a ro
 shot, in tabs: **Shot** (Play, Order, Timing), **Look** (Look, Colour, Effects, Beat FX), **Join** (Flow or Cut, Move it,
 Transition: the seam into this shot; a click on a seam opens it), **Regenerate** (style, swap, re-render, Generate here,
 Dream here; object cuts). ◀ ▶ step to the shot before and after. Every edit waits in the one Apply bar.
+
+**4 Nov, Under the hood** (docs/UI_REVIEW.md 6.4): the fourth tab is **Under the hood** (`ui_static/hood.js`), which
+replaces Regenerate: every value the shot's morph was rendered with, beside the vibe's preset (violet where it differs),
+editable, with Re-render this shot, Copy recipe, Reset to preset, the takes and Open in ComfyUI. The re-render keeps the
+cut's screen, its progress on the shot's tile. Swap, Generate here and Dream here sit on the Shot tab, each naming the
+shots it replaces and lighting them on the timeline. With no shot open, "Under the hood" under the timeline holds the
+cut's own settings, each saying where it lives and what it costs.
 
 A clips cut (`source: "clips"`, `xenoform.clip_cut`) shows its clip shots by their clip's name and its morph shots as
 "from → to"; it is neither swappable nor re-renderable, and its Look, Colour, Effects, Order and Join edits re-cut as on

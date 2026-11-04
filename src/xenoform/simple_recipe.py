@@ -3,7 +3,9 @@
 ``xf1.<base64url(zlib(json))>``. It carries the vibe, idea line, seed, energy preset,
 aspect, quality tier, finishing switches and an optional cut plan, so anyone with the
 same song gets the same film, and can paste it to remix. Unknown keys are dropped;
-values are clamped to what the desk offers.
+values are clamped to what the desk offers. A shot's Copy recipe (Under the hood) adds
+``shots``: the shots' own render values by morph index, which a Draft Make sends for
+those morphs (``shot_recipe.for_make``).
 """
 
 from __future__ import annotations
@@ -89,12 +91,21 @@ def _clean(state: dict) -> dict:
     plan = state.get("cut_plan")
     if isinstance(plan, dict) and plan.get("shots"):
         out["plan"] = {"shots": plan["shots"], **({"stills": plan["stills"]} if plan.get("stills") else {})}
+    shots = _shot_renders(state.get("shot_renders"))
+    if shots:  # Under the hood's own values for some shots (a shot's Copy recipe): morph index -> its values
+        out["shots"] = shots
     return out
+
+
+def _shot_renders(raw) -> dict:
+    from xenoform.shot_recipe import clean_shot_renders
+
+    return clean_shot_renders(raw)
 
 
 _SHORT = {"vibe": "v", "idea": "i", "seed": "s", "energy": "e", "aspect": "a", "tier": "t", "fx": "f",
           "overlay": "o", "card": "c", "song": "g", "plan": "p", "vertical": "vm", "morphs": "n", "foreshadow": "fs",
-          "style": "ms", "timing": "mt", "effects": "ef", "breathe": "br", "drops": "dm"}
+          "style": "ms", "timing": "mt", "effects": "ef", "breathe": "br", "drops": "dm", "shots": "sh"}
 # a code from before the shape keys made its cut with Breathe off and the Drops off (the cut as it was), so those are
 # the codec's defaults: a new code carries the shape it was made in, an old one decodes to the cut it made
 _DEFAULTS = {"idea": "", "seed": 2727, "energy": "flow", "aspect": "16:9", "tier": "draft", "fx": True,
@@ -130,7 +141,7 @@ def decode(code: str) -> dict:
                     "vertical_mode": data.get("vertical"), "cut_plan": data.get("plan"),
                     "morph_count": data.get("morphs"), "foreshadow": data.get("foreshadow"), "morph_style": data.get("style"),
                     "morph_timing": data.get("timing"), "effects": data.get("effects"),
-                    "breathe": data.get("breathe"), "drop_mode": data.get("drops")})
+                    "breathe": data.get("breathe"), "drop_mode": data.get("drops"), "shot_renders": data.get("shots")})
     state = {"vibe": clean["vibe"], "idea": clean["idea"], "seed": clean["seed"], "energy_preset": clean["energy"],
              "aspect": clean["aspect"], "quality_tier": clean["tier"], "beat_fx": clean["fx"],
              "beat_overlay": clean["overlay"], "end_card": clean["card"], "song": clean.get("song", ""),
@@ -147,6 +158,8 @@ def decode(code: str) -> dict:
         state["morph_timing"] = clean["timing"]
     if clean["effects"]:
         state["effects"] = clean["effects"]
+    if clean.get("shots"):
+        state["shot_renders"] = clean["shots"]
     if "plan" in clean:
         from xenoform.cloud_morph import CutPlanError, custom_shots
 

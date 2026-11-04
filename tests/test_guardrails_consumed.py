@@ -33,7 +33,9 @@ def test_director_uses_guard_prompts():
     assert "guard_prompts(" in inspect.getsource(director.run_directed)
     src = inspect.getsource(final_tier.final_clips)
     assert "guard_prompt(" in src and "negative=negative" in src
-    assert "guard_prompt(" in inspect.getsource(cloud_morph._local_clips)
+    # the Draft loop sends cloud_morph.draft_settings, which guards the prompt (Under the hood reads its preset there, 4 Nov)
+    assert "draft_settings(" in inspect.getsource(cloud_morph._local_clips)
+    assert "guard_prompt(" in inspect.getsource(cloud_morph.draft_settings)
 
 
 def test_final_graph_takes_negative():
