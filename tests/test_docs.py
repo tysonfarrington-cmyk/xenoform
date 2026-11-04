@@ -84,9 +84,10 @@ def test_changelog_has_the_release():
 
 
 def test_the_chain_row_and_the_swap_are_in_the_public_docs():
-    """The chain, chosen (26 Oct): the README names the Chain row and the lane's swap, the changelog carries the keys."""
+    """The chain, chosen (26 Oct): the README names the chain (Plan's strip since the t5-strip merge) and the lane's swap,
+    the changelog carries the keys."""
     readme = _read("README.md")
-    assert "Fine-tune → Chain" in readme and "Swap an object" in readme and "chain_pins" in readme
+    assert "Plan → the strip's Objects lane" in readme and "Swap an object" in readme and "chain_pins" in readme
     unreleased = _read("CHANGELOG.md").split("## 0.3.3")[1].split("## 0.3.2")[0]
     assert "chain_pins" in unreleased and "/api/jobs/{id}/swap" in unreleased and "/api/simple/chain" in unreleased
     stills = _read("docs/stills.md")
@@ -112,3 +113,20 @@ def test_scenes_are_in_the_public_docs():
     assert "scene_stills" in unreleased and "configs/scenes.json" in unreleased
     stills = _read("docs/stills.md")
     assert "## Scenes" in stills and "--kind scene" in stills
+
+
+def test_the_public_docs_point_at_the_steps_not_the_fine_tune_drawer():
+    """The t5-strip merge (integrate-4nov): the Fine-tune drawer, its Length row and the Work in progress drawer are gone
+    from the desk, so the README, the reproduce page and SONG.md point at the step bar, Tweak's rows, the Project ·
+    under the hood panel and Render's Quality instead."""
+    app = _read("src/xenoform/ui_static/app.js")
+    assert 'id="fine-tune"' not in app and "function fineTune(" not in app and 'simpleSeg("easy-length"' not in app
+    assert "Project · under the hood" in app and "The whole song, by passages" in app and "Render the whole song" in app
+    for rel in ("README.md", "docs/REPRODUCE.md", "docs/SONG.md"):
+        page = _read(rel)
+        assert "Fine-tune" not in page, rel
+        assert "Project · under the hood" in page, rel
+    readme = _read("README.md")
+    assert "the drawer under Fine-tune" not in readme and "**Render the whole song**" in readme and "By passages" in readme
+    assert "Render → Quality → By passages" in _read("docs/SONG.md")
+    assert "**Render the whole song**" in _read("docs/REPRODUCE.md")

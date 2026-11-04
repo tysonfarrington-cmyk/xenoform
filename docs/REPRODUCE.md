@@ -36,28 +36,28 @@ On Windows the same two commands are `.venv\Scripts\python.exe -m pip install -e
 
 ## 5. The demo cut on the desk (about 4 minutes on a 12 GB card)
 
-The desk is a song, a vibe and Make. Leave everything in the **Fine-tune** drawer at its default: that is the `demo_house` profile from `configs/defaults_demo.json`, the look used in the demo video.
+The desk is five steps over the song strip (Source, Plan, Tweak, Render, Perform), each with one button in the step bar at the bottom. Leave Tweak's rows and its **Project · under the hood** panel at their defaults: that is the `demo_house` profile from `configs/defaults_demo.json`, the look used in the demo video.
 
 1. Song: **Bundled demo** (or one of the bundled songs' chips, or drop your own file).
 2. Vibe: **Liquid chrome** (`chrome-mercury`, the first featured card) gives the chrome-pour chain; any of the 11 featured vibes works the same way.
-3. **Make**. The stills cut plays within seconds, then the GPU pass replaces it with LTX 0.9.5 morphs from still to still. On an RTX 3080 Ti a 20 s clip with 7 morphs takes about a minute warm, about two minutes if ComfyUI has just had another model loaded. A full song keeps two bars a shot (a bar on the drop) with one morph per shot and no object twice; Draft affords 48 morphs, Final 12 and Cloud Final 16, and past that the song is re-planned with fewer, longer shots. A four-minute song on Draft is about 20 minutes, and the panel beside Make shows the shot count, morph count and estimate before you press it. For a quick result set **Length** to 60 s in the Fine-tune drawer: a one-minute cut centred on the drop, about six minutes.
+3. **Render Draft** (the step bar's button on Plan or Tweak). The stills cut plays within seconds, then the GPU pass replaces it with LTX 0.9.5 morphs from still to still. On an RTX 3080 Ti a 20 s clip with 7 morphs takes about a minute warm, about two minutes if ComfyUI has just had another model loaded. A full song keeps two bars a shot (a bar on the drop) with one morph per shot and no object twice; Draft affords 48 morphs, Final 12 and Cloud Final 16, and past that the song is re-planned with fewer, longer shots. A four-minute song on Draft is about 20 minutes, and the step bar shows the shot count, morph count and estimate before you press it. A long song's first Draft is the Draft window on the strip, 30 s around the main drop (drag it along the song to prototype another stretch); the whole song comes after, from the **Render** step's Quality (**By passages**, or one cut, Final or Cloud) with **Render the whole song**.
 
 What the defaults give you, and where each one lives:
 
 | Setting | Demo value | Where |
 | --- | --- | --- |
 | Aspect | 9:16 native, 1080x1920 at 24 fps | `defaults_demo.json` → `format` |
-| Energy | Dense (a song: two bars a shot, a bar on the drop; a clip under 20 s: a shot every bar, every half bar after the drop) | Fine-tune → Energy |
-| Library | The vibe's objects: twelve shipped; Grow 36 more renders catalogue subjects on this GPU (about 6 s each, checked against the pool); Your own shapes renders what you type and leads with it | Fine-tune → Library |
-| Foreshadow | The next object arrives before its shot: Trace, Negative, Slices or Silhouette, riding the other stem under Intensity, a bar early with Speed; Auto traces on a dark vibe and slices on a bright one | Fine-tune → Foreshadow |
+| Energy | Dense (a song: two bars a shot, a bar on the drop; a clip under 20 s: a shot every bar, every half bar after the drop) | Tweak → Project · under the hood → Energy |
+| Library | The vibe's objects: twelve shipped; Grow 36 more renders catalogue subjects on this GPU (about 6 s each, checked against the pool); Your own shapes renders what you type and leads with it | Tweak → Project · under the hood → Library |
+| Foreshadow | The next object arrives before its shot: Trace, Negative, Slices or Silhouette, riding the other stem under Intensity, a bar early with Speed; Auto traces on a dark vibe and slices on a bright one | Tweak → Foreshadow row |
 | Forms | 15 morphs per 20 s (auto) | `look.morph_forms` |
 | Look (`dance_fx`) | `auto`: **cyan-flash** on the intro shot (1.25), **cool-echo** on the body (1.4), **bloom-rush** on a flower shot (1.5), **negative-rush** into the end card (1.2, the last 14 frames ramp to a full negative) | `defaults_demo.json` → `dance_fx` |
 | Stem orbit | on: yaw up to 28 degrees from the bass, kicks from strong drum hits | `stem_orbit` |
 | Transitions | `flow-morph`, `echo-trail`, `lens-breath`, at most 2 of a type, at most 3 shots in the first 15 s | `transitions` |
 | Audio | -14 LUFS, -2 dBTP | `audio` |
-| End card | off by default; switch it on for the demo's ending: recipe code plus `github.com/tysonfarrington-cmyk/xenoform` burned into the last two seconds, with the negative-rush ramp into it | Fine-tune → End card |
+| End card | off by default; switch it on for the demo's ending: recipe code plus `github.com/tysonfarrington-cmyk/xenoform` burned into the last two seconds, with the negative-rush ramp into it | Tweak → Project · under the hood → End card |
 
-To get the demo's Final quality instead of Draft, set Model to **Final** in the Fine-tune drawer (LTX-2.5 when its files are installed, LTX-2.3 otherwise; Fast Final is the Draft upscaled to 1080p). LTX-2.3 runs in two stages at 448x768 native portrait and Real-ESRGAN to 1080x1920, about 90 to 240 seconds a shot; LTX-2.5 takes 5 to 7 minutes a 3 s shot at 576x1024. The desk shows an estimate first.
+To get the demo's Final quality instead of Draft, set **Model tier** to **Final** in Tweak's Project · under the hood panel, so the step bar's button reads Render at Final (or press **Render at Final** on the Render step once a Draft is on the desk; LTX-2.5 when its files are installed, LTX-2.3 otherwise; Fast Final is the Draft upscaled to 1080p). LTX-2.3 runs in two stages at 448x768 native portrait and Real-ESRGAN to 1080x1920, about 90 to 240 seconds a shot; LTX-2.5 takes 5 to 7 minutes a 3 s shot at 576x1024. The desk shows an estimate first.
 
 ## 6. Stems (1 minute)
 
