@@ -36,17 +36,24 @@ def test_old_director_urls_land_on_the_desk():
     view = _fn("function viewFromHash() {", "function setEasyPhase(")
     assert 'if (name === "setup" || name === "connect") return name;' in view and 'return "simple";' in view
     # #director, #notes, #scene, #simple/desk ... are tidied to #simple (Back and the logo then agree)
-    assert 'history.replaceState(null, "", "#simple")' in _fn("function easyPhaseFromHash()", "function easyCrumbs(")
+    # the old hashes land on the step they meant (#simple/result on Render, #simple on Plan) and are tidied to it
+    hashes = _fn("function easyPhaseFromHash()", "function stepNav(")
+    assert 'state.easy.step = sub === "result" || sub === "making" ? "render" : state.easy.song ? "plan" : "source";' in hashes
+    assert 'history.replaceState(null, "", want)' in hashes
     brand = _fn('const brandLink = document.querySelector(".brand");', 'window.addEventListener("hashchange"')
     assert brand.index("history.pushState") < brand.index('setEasyPhase("choose")')  # Back returns to a tool page
 
 
 def test_the_stage_strip():
-    crumbs = _fn("function easyCrumbs(easy) {", "const EASY_SAVED_KEYS")
-    assert 'const order = ["song", "vibe", "make", "refine", "share"];' in crumbs
-    assert 'make: "Prototype"' in crumbs and 'share: "Share"' in crumbs and '"Refine"' in crumbs
-    handler = APP.split('act === "easy-crumb") {', 1)[1].split("} else if", 1)[0]
-    assert 'share: "#easy-share"' in handler and 'refine: ".shots-lane, .tl-panel"' in handler
+    # Source > Plan > Tweak > Render > Perform (docs/UI_REVIEW.md 6.1): the five steps in the toolbar, a step a button
+    # once it can be reached, the step in the URL
+    assert 'const STEPS = ["source", "plan", "tweak", "render", "perform"];' in APP
+    nav = _fn("function stepNav(easy) {", "// Ctrl+Enter")
+    assert 'data-act="easy-go-step" data-step="${key}"' in nav and '${reach[key] ? "" : " disabled"}' in nav and 'aria-current="step"' in nav
+    handler = APP.split('act === "easy-go-step") {', 1)[1].split("} else if", 1)[0]
+    assert 'goStep(el.dataset.step || "source");' in handler
+    hash = _fn("function stepHash(easy) {", "function goStep(")
+    assert 'return `#${s}${job ? `/${job}` : ""}`;' in hash and "history.pushState(null, \"\", want)" in hash
 
 
 def test_the_prototype_stage():
@@ -54,13 +61,15 @@ def test_the_prototype_stage():
     length = _fn("function easyLength(easy) {", "function easyLengthIsProto(")
     assert "return easySongSeconds() > PROTO_MAX_S ? PROTO_S : 0;" in length
     assert "length_s: easyLength(state.easy)," in APP
-    assert "Make a ${esc(String(easyLength(easy)))} s prototype" in APP
+    # one word for the first render (W6): the step bar's Render Draft
+    assert 'const draftLabel = (easy.tier || "draft") === "draft" ? "Render Draft" : `Render at ${TIER_LABEL[easy.tier] || "Final"}`;' in APP
+    assert "Make a ${esc(String(easyLength(easy)))} s prototype" not in APP
     make = _fn("async function easyMake() {", "function placeKey(")
     assert "state.easy.madeLength = easyLength(state.easy);" in make and 'state.easy.madeTier = state.easy.tier || "draft";' in make
 
 
 def test_the_cut_screen_is_refine_and_share():
-    result = APP.split('if (easy.phase === "result" || easy.phase === "showcase") {', 1)[1].split("const preview = easy.vibe", 1)[0]
+    result = APP.split("function renderCut(easy, chosen) {", 1)[1].split("function renderDesk(", 1)[0]
     assert "${shotsLane(easy)}" in result and "${renderRow(easy)}" in result and "shareRow(easy)" in result
     assert 'id="easy-guard"' in result and "guardDetails(state.job)" in result
     assert 'id="energy"' not in result  # the Energy slider re-cut the Director storyboard, never the video

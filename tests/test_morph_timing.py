@@ -154,7 +154,7 @@ def test_the_desk_has_the_timing_rows():
         assert f'"{key}": {json.dumps(text)}' in notes, key
     desk = APP.split("simple-knobs-panel", 1)[1].split("</section>", 1)[0]
     assert '${timingRow(easy.morphTiming || "smooth", "easy-morph-timing")}' in desk
-    result = APP.split('if (easy.phase === "result" || easy.phase === "showcase") {', 1)[1].split("const preview = easy.vibe", 1)[0]
+    result = APP.split("function renderCut(easy, chosen) {", 1)[1].split("function renderDesk(", 1)[0]
     assert '${timingRow(easy.morphTiming || "smooth", "easy-morph-timing")}' in result  # beside Re-cut: no GPU
     assert 'morph_timing: (state.easy && state.easy.morphTiming) || "smooth"' in APP
     assert 'morph_timing: state.easy.morphTiming || "smooth",' in APP.split("async function recutWithKnobs()", 1)[1].split("try {", 1)[0]

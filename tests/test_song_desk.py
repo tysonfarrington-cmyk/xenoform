@@ -45,14 +45,15 @@ def test_the_make_hands_the_body_to_the_song_route_after_the_credits_tick():
     song = _fn("easySongMake")
     assert 'api("/api/song", { method: "POST"' in song and "body: JSON.stringify({ body, song_cap: state.easy.songCap" in song
     assert "state.easy.cloudFinalOk = false;" in song and 'setEasyPhase("making")' in song and "pollSong(data.id)" in song
-    assert "<span>Make the whole song</span>" in APP
+    # the whole song is a Quality of the Render step: by passages, Final or Cloud make it as its passages
+    assert 'data-act="easy-render-song">Render the whole song' in APP and 'easy.wholeSong = q !== "draft";' in APP
 
 
 def test_the_making_screen_says_n_of_m_and_stops_and_resumes_the_whole():
     making = _fn("songMaking")
     assert "passages done" in making and "${v.done || 0} of ${v.of || 0}" in making
     assert 'data-act="song-stop"' in making and 'data-act="song-resume"' in making and "songPassagesTrack(v, total, { open: false })" in making
-    assert "if (easy.phase === \"making\" && easy.songRun && !easy.recutting) return songMaking(easy, chosen);" in APP
+    assert "if (easy.phase === \"making\" && easy.songRun && !easy.recutting) body = songMaking(easy, chosen);" in APP
     poll = _fn("pollSong")
     assert "/api/song/" in poll and 'view.status === "done"' in poll and "openSongResult(view)" in poll
     for act in ("song-stop", "song-resume", "song-assemble", "song-open-passage", "song-back", "song-watch"):

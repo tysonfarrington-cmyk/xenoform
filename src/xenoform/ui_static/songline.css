@@ -1,0 +1,50 @@
+/* Songline (docs/UI_REVIEW.md section 6): the desk's five steps over the song strip. Loaded after desk.css and
+   strip.css; the desk's tokens and components only (button.generate, button.ghost, button.text, .toggle, .chip). */
+
+/* ---------------------------------------------------------------- the steps in the toolbar */
+.step-nav button.crumb:disabled { opacity: 0.38; cursor: not-allowed; }
+.step-nav button.crumb.now { cursor: default; }
+
+/* ---------------------------------------------------------------- the step bar: what this step does, its one button */
+.step-bar {
+  position: sticky; bottom: 0; z-index: 25;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap;
+  max-width: 1480px; margin: 16px auto 0; padding: 10px 12px 10px 16px;
+  background: var(--x-surface-2); border: 1px solid var(--x-line-2); border-radius: var(--x-r-lg);
+  box-shadow: 0 -10px 28px -14px rgba(0, 0, 0, 0.75), var(--x-hi);
+}
+.step-facts {
+  flex: 1 1 360px; min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px;
+  font-size: 13px; color: var(--x-text-2); font-variant-numeric: tabular-nums;
+}
+.step-facts b { color: var(--x-text); font-weight: 600; }
+.step-facts .note { margin: 0; }
+.step-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.step-actions button.generate, .step-actions .upload.solid { min-height: var(--x-h-lg); padding: 0 18px; font-size: 14px; }
+.step-actions .upload input[type="file"], .step-actions .upload.solid input[type="file"] { display: none; }
+.cost-tag {
+  display: inline-flex; align-items: center; height: 18px; padding: 0 6px; border-radius: var(--x-r-xs);
+  font: 600 10.5px/1 var(--x-font-ui); letter-spacing: 0.02em; white-space: nowrap;
+  color: inherit; background: rgba(0, 0, 0, 0.22); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+button.ghost .cost-tag { background: var(--x-well); color: var(--x-text-2); box-shadow: inset 0 0 0 1px var(--x-line-2); }
+/* the clock while an edit or a Make runs */
+.step-bar #easy-eta { color: var(--x-text); font-weight: 500; }
+.step-bar .track { position: relative; display: inline-block; flex: 0 1 180px; height: 4px; border-radius: 4px; background: var(--x-surface-4); overflow: hidden; }
+.step-bar .track > span { position: absolute; left: 0; top: 0; bottom: 0; background: var(--x-accent); box-shadow: 0 0 10px rgba(124, 108, 255, 0.7); transition: width 0.4s var(--x-ease); }
+/* the Render step's Quality: one segmented choice, its time beside it */
+.step-quality { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; flex-basis: 100%; }
+.step-quality .toggle button { min-height: 28px; min-width: 0; padding: 0 10px; font-size: 12.5px; }
+.step-facts .cloud-final-ok { flex-basis: 100%; }
+
+/* ---------------------------------------------------------------- Perform (a placeholder the perform session replaces) */
+.easy-perform { max-width: 760px; margin: 0 auto; }
+.perform-card { padding: 22px 24px; display: grid; gap: 10px; }
+.perform-card h2 { font-size: 24px; }
+
+@media (max-width: 560px) {
+  .step-bar { margin: 12px -4px 0; padding: 8px 10px; border-radius: 12px 12px 0 0; gap: 8px; }
+  .step-facts { flex-basis: 100%; font-size: 12.5px; }
+  .step-actions { flex: 1 1 100%; justify-content: stretch; }
+  .step-actions > * { flex: 1 1 auto; }
+}

@@ -78,7 +78,7 @@ def test_the_making_screen_shows_the_chain_the_render_made(tmp_path):
     assert ui._read_chain(tmp_path / "nothing") is None
     (tmp_path / "simple" / "chain.json").write_text("not json", encoding="utf-8")
     assert ui._read_chain(tmp_path) is None
-    making = _fn('if (easy.phase === "making") {', 'if (easy.phase === "result"')
+    making = _fn("function renderMaking(easy, chosen) {", "function renderCut(easy, chosen) {")
     assert "state.job.chain" in making and "preview: Make may grow more for your line" in making
 
 
