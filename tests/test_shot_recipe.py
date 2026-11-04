@@ -367,6 +367,20 @@ def test_a_cut_from_before_the_record_reads_its_clips_graph_or_says_it_was_not_r
     assert desk.get("/api/jobs/cut/shots/3/workflow.json").status_code == 404
 
 
+def test_a_landed_request_takes_the_still_names_comfyui_gave_them(tmp_path):
+    g = json.loads(json.dumps(GRAPH))
+    ran = json.loads(json.dumps(g))
+    ran["7"]["inputs"]["image"] = "04_jellyfish (5).png"  # ComfyUI's input folder had the name already
+    clip = _clip_with_graph(tmp_path / "local00.mp4", ran)
+    stills = _pair(tmp_path)
+    req = sr.request(g, engine="ltx095", stills=(stills[0], stills[1]), nodes=("6", "7"))
+    assert req["graph"]["7"]["inputs"]["image"] == "still1.png"
+    landed = sr.done(req, seconds=3.0, cached=False, clip=clip)
+    assert landed["graph"]["7"]["inputs"]["image"] == "04_jellyfish (5).png" and landed["graph"]["6"]["inputs"]["image"] == "shot-a.png"
+    cloud = sr.done({**req, "engine": "ltx25cloud"}, seconds=3.0, cached=False, clip=clip)
+    assert cloud["graph"]["7"]["inputs"]["image"] == "still1.png"  # Comfy Cloud's names are not this machine's
+
+
 def test_a_final_cut_shows_its_values_and_says_why_it_does_not_re_render(tmp_path, monkeypatch):
     client = Client()
     job = _draft_cut(tmp_path, monkeypatch, client)

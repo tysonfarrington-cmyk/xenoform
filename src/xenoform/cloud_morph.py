@@ -783,7 +783,7 @@ def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, cli
         if i in cached:
             clips.append(cached[i])
             if requests is not None:
-                requests[i] = sr.done(reqs.get(i), seconds=0.0, cached=True)
+                requests[i] = sr.done(reqs.get(i), seconds=0.0, cached=True, clip=cached[i])
             if report:
                 report("restyle", 0.1 + 0.45 * (i + 1) / len(shots), f"Morph {i + 1} of {len(shots)} (kept from an earlier render)")
             continue
@@ -797,7 +797,7 @@ def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, cli
         rendered += 1
         if requests is not None:
             now = time.perf_counter()
-            requests[i] = sr.done(reqs.get(i), seconds=now - last, cached=False)
+            requests[i] = sr.done(reqs.get(i), seconds=now - last, cached=False, clip=dest)
             last = now
         if report:  # the desk re-estimates from the real pace of "Morph k of N"
             pace = (time.perf_counter() - started) / rendered

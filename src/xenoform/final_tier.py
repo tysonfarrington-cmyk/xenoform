@@ -327,7 +327,7 @@ def final_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
         if mc.get(name, key, dest):
             hits.append(i)
             if requests is not None:
-                requests[i] = sr.done(req, seconds=0.0, cached=True)
+                requests[i] = sr.done(req, seconds=0.0, cached=True, clip=dest)
             return dest
         wf = client.workflows.from_json(g)
         wf.set_input(a_node, "image", asset(stills[i]["path"]))
@@ -341,7 +341,7 @@ def final_clips(shots: list[dict], stills: list[dict], work: Path, cfg: dict, se
         next((o for o in outs if getattr(o, "type", None) == "video"), outs[0]).to_file(str(dest))
         mc.put(name, key, dest)
         if requests is not None:
-            requests[i] = sr.done(req, seconds=time.perf_counter() - started, cached=False)
+            requests[i] = sr.done(req, seconds=time.perf_counter() - started, cached=False, clip=dest)
         return dest
 
     clips: dict[int, Path] = {}

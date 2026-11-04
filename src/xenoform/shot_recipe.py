@@ -131,12 +131,26 @@ def request(graph: dict, *, engine: str, stills: tuple[dict, dict], nodes: tuple
     return out
 
 
-def done(req: dict | None, *, seconds: float, cached: bool) -> dict | None:
-    """The request with the time its clip took (0 when the morph cache answered) and when it landed."""
+def done(req: dict | None, *, seconds: float, cached: bool, clip: Any = None) -> dict | None:
+    """The request with the time its clip took (0 when the morph cache answered) and when it landed. With ``clip`` (a
+    local engine's), each guide still takes the name ComfyUI really gave it: its input folder renames a still whose name
+    is taken (``04_jellyfish (5).png``), and the clip's own graph says so; that is the name the workflow download needs."""
     if req is None:
         return None
-    return {**req, "seconds": round(max(0.0, float(seconds)), 2), "cached": bool(cached),
-            "at": datetime.now().astimezone().isoformat(timespec="seconds")}
+    out = {**req, "seconds": round(max(0.0, float(seconds)), 2), "cached": bool(cached),
+           "at": datetime.now().astimezone().isoformat(timespec="seconds")}
+    if clip is not None and isinstance(out.get("graph"), dict) and not str(out.get("engine") or "").endswith("cloud"):
+        from xenoform import morph_cache as mc
+
+        ran = mc.embedded_graph(Path(str(clip))) if Path(str(clip)).is_file() else None
+        if ran:
+            g = json.loads(json.dumps(out["graph"]))
+            for nid, node in g.items():
+                name = ((ran.get(nid) or {}).get("inputs") or {}).get("image") if isinstance(node, dict) else None
+                if isinstance(node, dict) and node.get("class_type") == "LoadImage" and isinstance(name, str) and name:
+                    node.setdefault("inputs", {})["image"] = name
+            out["graph"] = g
+    return out
 
 
 def slots(requests: list | None, n: int) -> None:
@@ -521,14 +535,20 @@ def workflow_of(job_dir: Path, rec: dict, i: int) -> dict | None:
     renders = list(rec.get("renders") or [])
     req = renders[i] if i < len(renders) and isinstance(renders[i], dict) else None
     graph = graph_of(Path(job_dir) / "simple", req) if req else None
+    clips = list(rec.get("clips") or [])
+    clip = Path(str(clips[i])) if i < len(clips) else None
+    ran = mc.embedded_graph(clip) if clip and clip.is_file() and not str((req or {}).get("engine") or "").endswith("cloud") else None
     if graph is None:
-        clips = list(rec.get("clips") or [])
-        clip = Path(str(clips[i])) if i < len(clips) else None
-        graph = mc.embedded_graph(clip) if clip and clip.is_file() else None
+        graph = ran
         if graph:
             for node in graph.values():
                 if isinstance(node, dict):
                     node.pop("is_changed", None)  # ComfyUI's own note on the run, not an input
+    elif ran:  # the names ComfyUI gave the stills (it renames one whose name is taken), as the clip records them
+        for nid, node in graph.items():
+            name = ((ran.get(nid) or {}).get("inputs") or {}).get("image")
+            if isinstance(node, dict) and node.get("class_type") == "LoadImage" and isinstance(name, str) and name:
+                node.setdefault("inputs", {})["image"] = name
     if not graph:
         return None
     files = [str(f) for f in rec.get("stills") or []]
