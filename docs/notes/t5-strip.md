@@ -90,8 +90,12 @@ commits only, nothing pushed or merged. Before and after pictures: [docs/ui_revi
 
 - **Round 0 (r0-fixes).** The URL: this branch writes `#source #plan #tweak #render/<job> #perform/<job>`;
   `easyPhaseFromHash()` reads the step and puts a job id in `state.easy.routeJob`, and `reopenRoute()` reopens it at
-  boot and on hashchange. Round 0's `urlTarget()` already accepts `#render/<job>`: send a running job through its
-  `resumeMaking(id)` and keep this branch's step routing for the rest. Both branches define `reopenCut`: here
+  boot and on hashchange. Round 0 parses the URL in one place, `urlTarget()`, which already accepts `#render/<job>`
+  (it still writes `#simple/making/<job>` and `#simple/result/<cut>` so it stands alone). At the merge `reopenRoute()`
+  hands `state.easy.routeJob` to Round 0: `resumeMaking(id, keptMaking(), false)` for a job (running: its progress
+  with its own clock and poll; done: `reopenCut(id)`; gone: the cut if saved, else a plain note), or
+  `reopenCut(id, {fromUrl: true})` for a cut; this branch's step routing keeps the rest (Round 0's r0-fixes notes
+  have the details). Both branches define `reopenCut`: here
   `reopenCut(row)` (a My videos row with its bundled song), there `reopenCut(id, {fromUrl, note, missing})`; keep
   Round 0's and have `reopenRoute()` and the Source list call it. `setEasyPhase()` is step-aware here (`makeStep`,
   `syncStepHash()`) and keeps/drops `xeno-making` there: merge both bodies. `renderMaking()` is rewritten here as
