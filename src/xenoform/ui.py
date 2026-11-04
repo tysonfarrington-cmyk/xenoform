@@ -1469,8 +1469,11 @@ def create_app(cfg: dict | None = None):
         detail = (f"{n_img} image{'s' if n_img != 1 else ''} for an object cut, {n_clip} clip{'s' if n_clip != 1 else ''} for a clips cut."
                   + (f" Left out: {img_left} image{'s' if img_left != 1 else ''} past {own_media.MAX_ITEMS}." if img_left else "")
                   + (f" Left out: {clip_left} clip{'s' if clip_left != 1 else ''} past {own_media.MAX_CLIPS}." if clip_left else ""))
+        # the names the cut will use, in its order, so the desk can show what came in (F12: "1 clip here." was all)
+        names = {"images": [Path(p).name for p in found["images"]],
+                 "clips": [{"name": Path(c["path"]).name, "seconds": round(float(c.get("seconds") or 0), 1)} for c in found["clips"]]}
         return {"id": own_id, "folder": str(dest), "images": n_img, "clips": n_clip, "images_left": img_left, "clips_left": clip_left,
-                "max_images": own_media.MAX_ITEMS, "max_clips": own_media.MAX_CLIPS, "detail": detail}
+                "max_images": own_media.MAX_ITEMS, "max_clips": own_media.MAX_CLIPS, "detail": detail, "names": names}
 
     @app.get("/api/stills")
     def stills_route(vibe: str = "") -> dict:

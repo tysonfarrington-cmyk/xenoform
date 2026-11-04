@@ -1507,7 +1507,7 @@ function stepBar(easy, step) {
   const draftLabel = (easy.tier || "draft") === "draft" ? "Render Draft" : `Render at ${TIER_LABEL[easy.tier] || "Final"}`;
   const getModel = missing ? `<button type="button" class="generate" data-act="go" data-hash="setup" title="${esc(`Not on this machine yet: ${missing.names.join(", ")}`)}">${esc(missing.label)}</button>` : "";
   const draftCost = (() => {
-    const t = planTime(plan);
+    const t = ownClips(easy).length ? null : planTime(plan);  // the plan's minutes are the vibe's objects', not your clips'
     return t ? costTag(`GPU · ~${Math.max(1, Math.round(t.total / 60))} min`) : costTag("GPU");
   })();
   let facts = "";
@@ -1531,8 +1531,11 @@ function stepBar(easy, step) {
     if (!missing && easy.song) secondary = `<label class="upload">Another song<input id="easy-file" type="file" accept="audio/*,.wav,.mp3,.flac,.ogg" aria-label="Choose another song" /></label>`;
   } else if (step === "plan" || step === "tweak") {
     const draftHere = !!easyVideoId() && cutOnSong(easy) && state.easy.phase === "result";
-    const shots = plan && plan.shots ? `${plan.shots} shots on the beat, ${plan.morphs || plan.shots} morphs` : "";
-    const time = state.comfyOk === false ? "no render: ComfyUI is not answering, so a Draft plays the vibe's stills in the browser" : planTimeText(plan, cloud);
+    const clips = ownClips(easy).length;
+    // a clips cut morphs your clips into one another, not the vibe's objects: the plan's count and clock are the objects'
+    const shots = clips ? `${clips} clip${clips === 1 ? "" : "s"} in turn, ${clips - 1} morph${clips - 1 === 1 ? "" : "s"} between them, on the beat`
+      : plan && plan.shots ? `${plan.shots} shots on the beat, ${plan.morphs || plan.shots} morphs` : "";
+    const time = clips ? "" : state.comfyOk === false ? "no render: ComfyUI is not answering, so a Draft plays the vibe's stills in the browser" : planTimeText(plan, cloud);
     const pending = pendingCount(easy);
     if (!easy.vibe) facts = "Pick a vibe: its objects land on the beats of the strip, sketched from its stills.";
     else if (step === "tweak" && draftHere) {
@@ -2338,6 +2341,11 @@ function ideaBlock(easy) {
 function morphSource(easy) {
   return easy && easy.morphSource === "clips" ? "clips" : easy && easy.morphSource === "stems" ? "stems" : "objects";
 }
+// the clips dropped on the Your clips row, by name in the order they play (POST /api/own names them); none for a typed
+// folder or the film pack, whose files the desk has not listed
+function ownClips(easy) {
+  return easy && morphSource(easy) === "clips" && easy.ownId && Array.isArray(easy.ownNames) ? easy.ownNames : [];
+}
 function sourceRow(easy) {
   const src = morphSource(easy);
   const seg = simpleSeg("easy-source", src, [["objects", "Objects"], ["clips", "Your clips"], ["stems", "Stems"]], "Made from");  // C8: one row a word ("Morph" named this and the style row)
@@ -2354,7 +2362,8 @@ function sourceRow(easy) {
       <button type="button" class="ghost" data-act="easy-film-pack" title="Public-domain film clips from archive.org, downloaded in Setup &amp; models">Free film pack</button>
       ${easy.ownId ? `<button type="button" class="ghost" data-act="easy-own-clear">Clear files</button>` : ""}
     </div>
-    <p class="note">${esc(note)}${askSetup ? ` <button type="button" class="text" data-act="go" data-hash="setup">Setup &amp; models</button>` : ""}</p>`;
+    <p class="note">${esc(note)}${askSetup ? ` <button type="button" class="text" data-act="go" data-hash="setup">Setup &amp; models</button>` : ""}</p>
+    ${ownClips(easy).length ? `<p class="note own-names"><b>In turn:</b> ${ownClips(easy).map((c, i) => `${i + 1}. ${esc(c.name)}${c.seconds ? ` (${esc(String(c.seconds))} s)` : ""}`).join(" · ")}</p>` : ""}`;
 }
 
 // The Chain row: the stills this Make will morph through, in order, as the stills draft previews them
@@ -5408,6 +5417,7 @@ document.addEventListener("click", async (event) => {
   } else if (act === "easy-own-clear") {
     state.easy.ownId = "";
     state.easy.ownNote = "";
+    state.easy.ownNames = [];
     render();
   } else if (act === "easy-film-pack") {
     pickFilmPack();
@@ -5665,11 +5675,12 @@ document.addEventListener("click", async (event) => {
       // Your images and Your clips each keep their own folder and note: the film pack picked for clips used to show
       // under Your images ("The free film pack: 24 clips ...") once the row went back to Objects
       const kept = state.easy.ownBySource || (state.easy.ownBySource = {});
-      kept[from] = { folder: state.easy.ownFolder || "", id: state.easy.ownId || "", note: state.easy.ownNote || "" };
+      kept[from] = { folder: state.easy.ownFolder || "", id: state.easy.ownId || "", note: state.easy.ownNote || "", names: state.easy.ownNames || [] };
       const back = kept[to] || {};
       state.easy.ownFolder = back.folder || "";
       state.easy.ownId = back.id || "";
       state.easy.ownNote = back.note || "";
+      state.easy.ownNames = back.names || [];
     }
     state.easy.morphSource = to;
     if (to === "stems") loadStemsMode(false);
@@ -6059,6 +6070,7 @@ document.addEventListener("input", (event) => {
     state.easy.ownFolder = target.value;
     state.easy.ownId = "";  // one source at a time: a typed folder replaces dropped files
     state.easy.ownNote = "";
+    state.easy.ownNames = [];
   } else if (target.classList && (target.classList.contains("stem-pro-in") || target.classList.contains("stem-mix-pro"))) {
     // a Stems prominence: the Stems step's row, or on the cut's screen the mix waiting for Lay them again; the readout follows
     const v = Math.round(Number(target.value) * 100) / 100;
@@ -6648,6 +6660,9 @@ async function uploadOwn(files) {
   state.easy.ownFolder = "";
   // worded for the Morph row in use: an object cut takes the images, a clips cut the clips, never both
   const clipsCut = morphSource(state.easy) === "clips";
+  // what came in, by name and in the order the cut uses them (F12): the Your clips row lists them, the step bar counts them
+  const names = data.names || {};
+  state.easy.ownNames = clipsCut ? (names.clips || []) : (names.images || []).map((name) => ({ name }));
   const n = Number(clipsCut ? data.clips : data.images) || 0;
   const left = Number(clipsCut ? data.clips_left : data.images_left) || 0;
   state.easy.ownNote = clipsCut
