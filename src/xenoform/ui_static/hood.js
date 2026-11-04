@@ -469,16 +469,16 @@
       const info = { changed, label: changed.length ? `Re-rendering shot ${Number(opts.shotIndex) + 1} with ${changed.length} change${changed.length === 1 ? "" : "s"}` : `Re-rendering shot ${Number(opts.shotIndex) + 1}: another take` };
       entry.note = "";
       const started = opts.onRerender ? await opts.onRerender(body, info) : await postEdit(opts, "rerender", body, info.label);
-      if (!started) {
-        entry.note = entry.note || "That did not start.";
+      if (started !== true) {  // the host's answer is true, or the reason it did not start
+        entry.note = typeof started === "string" && started ? started : entry.note || "That did not start.";
         redraw(entry);
       }
     } else if (act === "take") {
       const n = Number(el.dataset.n);
       const info = { label: `Putting take ${n} back on shot ${Number(opts.shotIndex) + 1} (no GPU, a re-cut)` };
       const started = opts.onTake ? await opts.onTake(n, info) : await postEdit(opts, `shots/${Number(opts.shotIndex)}/take`, { n, layer: opts.layer || undefined }, info.label);
-      if (!started) {
-        entry.note = entry.note || "That take did not come back.";
+      if (started !== true) {
+        entry.note = typeof started === "string" && started ? started : entry.note || "That take did not come back.";
         redraw(entry);
       }
     }

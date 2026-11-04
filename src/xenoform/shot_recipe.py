@@ -665,7 +665,7 @@ def clean_overrides(raw: dict | None, *, loras: list[str] | None = None) -> dict
             continue  # an empty prompt asks for nothing: the preset's stands
         out[key] = text
     if raw.get("steps") not in (None, ""):
-        out["steps"] = _number(raw["steps"], "steps", *STEPS_RANGE, whole=True)
+        out["steps"] = _number(raw["steps"], "number of steps", *STEPS_RANGE, whole=True)
     if raw.get("cfg") not in (None, ""):
         out["cfg"] = _number(raw["cfg"], "CFG", *CFG_RANGE)
     if raw.get("frames") not in (None, ""):

@@ -33,6 +33,9 @@ def test_the_module_is_self_contained_and_loaded_before_the_desk():
         assert part in HOOD, part
     for field in ("prompt", "negative", "seed", "steps", "cfg", "frames", "guide_start", "guide_end", "compression", "style", "lora"):
         assert f'data-hood-in="{field}"' in HOOD, field
+    # a host's answer is true, or the reason it did not start: the panel says the reason (a refused value, a busy cut)
+    assert HOOD.count("if (started !== true) {") == 2 and 'typeof started === "string" && started ? started' in HOOD
+    assert "return ok || state.easy.note || false;" in _fn("function mountHood() {")
 
 
 def test_the_drawer_mounts_it_as_the_fourth_tab_and_the_cut_rows_with_no_shot_open():
