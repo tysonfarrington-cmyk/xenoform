@@ -128,3 +128,18 @@ def test_the_inspector_docks_under_the_strip_with_a_fourth_tab():
     assert "${esc(shotWhen(lane, s))}" in drawer
     # the strip keeps its own place across a redraw (by song time, not the page's pixel restore)
     assert 'if (node.classList && node.classList.contains("xs-view")) continue;' in APP
+
+
+def test_on_a_phone_the_strip_is_the_overview_and_the_step_bar_sticks():
+    # decision 13 / C1: at phone width the strip is the section overview with the Draft window and a line saying where
+    # it sits, the screens are one column with the strip right under the monitor, and the step bar sticks to the bottom
+    line = APP.split("function overviewLine(model) {")[1].split("\n}\n")[0]
+    assert "w.label" in line and "the main drop at" in line
+    assert 'model.overview = window.matchMedia("(max-width: 560px)").matches;' in APP and "model.foot = overviewLine(model)" in APP
+    css = (STATIC / "songline.css").read_text(encoding="utf-8")
+    assert ".step-bar {\n  position: sticky; bottom: 0;" in css
+    phone = css.split("@media (max-width: 560px) {")[-1].split("\n}\n")[0]  # the phones block, the last of them
+    assert ".step-actions > * { flex: 1 1 auto; }" in phone and "env(safe-area-inset-bottom" in phone
+    narrow = css.split("@media (max-width: 1000px) {")[-1].split("\n}\n")[0]  # the one-column block, the last of them
+    assert ".sl-plan > .sl-strip, .sl-render > .sl-strip { order: 2; }" in narrow
+    assert ".xs-overview .xs-body, .xs-overview .xs-tools { display: none; }" in CSS

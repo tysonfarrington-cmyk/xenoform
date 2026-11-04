@@ -3610,6 +3610,8 @@ function mountStrips() {
     if (host.dataset.lanes && !model.ghost) model.lanes = host.dataset.lanes.split(",");  // Tweak's strip is short
     if (!model.ghost) stripProgress(model, where);
     model.overview = window.matchMedia("(max-width: 560px)").matches;
+    // at phone width the strip is the section overview (C1, decision 13): one line says where the Draft sits
+    if (model.overview && !model.ghost) model.foot = overviewLine(model);
     window.XenoStrip.mount(host, model, stripHandlers(where, model));
   });
   paintPlayhead();
@@ -3628,6 +3630,15 @@ function mountStrips() {
     paintSketch(audio ? audio.currentTime || 0 : 0, !!(audio && !audio.paused && !audio.ended));
     if (audio && !audio.paused) songHead();
   }
+}
+function overviewLine(model) {
+  const shots = model.shots || [];
+  const w = model.window;
+  const done = shots.filter((s) => s.state === "done" || s.state === "stale").length;
+  const parts = [w ? `<b>${esc(w.label || "Draft")}</b>` : "", shots.length ? `${shots.length} shots${done && done < shots.length ? `, ${done} rendered` : ""}` : ""];
+  const drop = (model.passages || []).find((p) => p.main);
+  if (drop) parts.push(`the main drop at ${clockText(drop.start)}`);
+  return parts.filter(Boolean).join(" · ");
 }
 // the strip is the section overview at phone width and the full lanes above it: a resize across the line redraws it
 let stripWide = null;
