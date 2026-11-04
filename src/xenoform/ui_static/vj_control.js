@@ -205,7 +205,25 @@
   };
   let FONT = "";
   const font = (w, px) => (FONT || (FONT = getComputedStyle(document.body).fontFamily), `${w} ${px}px ${FONT}`);
-  const LANE = { sec: [4, 34], beat: [38, 52], shot: [56, 86], pad: [90, 104] };
+  const LANE = { sec: [4, 32], energy: [35, 47], beat: [50, 62], shot: [65, 91], pad: [94, 106] };
+  // the stems' energy across the song, one column a pixel: computed once a song and width, not every frame
+  let ENERGY = { key: "", cols: null };
+  function energyCols(w, dur) {
+    const st = typeof STEMS !== "undefined" ? STEMS : null;
+    const key = st ? `${XC.stemsUrl()}:${w}:${dur.toFixed(2)}` : "";
+    if (!st || !dur) return null;
+    if (ENERGY.key === key) return ENERGY.cols;
+    const fps = st.fps || 24, roles = ["drums", "bass", "other", "vocals"].filter((r) => Array.isArray(st[r]) && st[r].length);
+    const cols = new Float32Array(Math.ceil(w)), drum = new Float32Array(Math.ceil(w));
+    for (let x = 0; x < cols.length; x++) {
+      const a = Math.floor((x / w) * dur * fps), b = Math.max(a + 1, Math.floor(((x + 1) / w) * dur * fps));
+      let e = 0, d = 0;
+      for (const r of roles) { const v = st[r]; for (let i = a; i < b && i < v.length; i++) { e = Math.max(e, +v[i] || 0); if (r === "drums") d = Math.max(d, +v[i] || 0); } }
+      cols[x] = e; drum[x] = d;
+    }
+    ENERGY = { key, cols: { all: cols, drums: drum } };
+    return ENERGY.cols;
+  }
   function stripLayout() {
     const dpr = devicePixelRatio || 1, w = Math.max(200, strip.clientWidth), h = strip.clientHeight || 132;
     if (strip.width !== Math.round(w * dpr) || strip.height !== Math.round(h * dpr)) { strip.width = Math.round(w * dpr); strip.height = Math.round(h * dpr); }
@@ -233,10 +251,19 @@
       const name = label(p).toUpperCase();
       if (x1 - x0 > g.measureText(name).width + 10) { g.fillStyle = "#fff"; g.fillText(name, x0 + 6, (LANE.sec[0] + LANE.sec[1]) / 2); }
     });
-    if (song && song.wave && song.wave.length) {  // the waveform, faint, over the sections
-      g.fillStyle = "rgba(255,255,255,.16)";
-      const n = song.wave.length, mid = (LANE.sec[0] + LANE.sec[1]) / 2, amp = (LANE.sec[1] - LANE.sec[0]) / 2 - 2;
-      for (let i = 0; i < n; i++) { const v = Math.abs(+song.wave[i] || 0) * amp; g.fillRect((i / n) * w, mid - v, Math.max(1, w / n), v * 2); }
+    // the energy lane: the stems' envelopes (all four, the drums brighter), else the desk's waveform
+    const eh = LANE.energy[1] - LANE.energy[0], cols = energyCols(w, dur);
+    g.fillStyle = "rgba(255,255,255,.05)"; g.fillRect(0, LANE.energy[0], w, eh);
+    if (cols) {
+      for (let x = 0; x < cols.all.length; x++) {
+        const v = Math.min(1, cols.all[x]) * eh, dv = Math.min(1, cols.drums[x]) * eh;
+        g.fillStyle = "rgba(124,108,255,.55)"; g.fillRect(x, LANE.energy[1] - v, 1, v);
+        if (dv > 0.5) { g.fillStyle = "rgba(255,138,92,.8)"; g.fillRect(x, LANE.energy[1] - dv, 1, Math.min(2, dv)); }
+      }
+    } else if (song && song.wave && song.wave.length) {
+      g.fillStyle = "rgba(255,255,255,.28)";
+      const n = song.wave.length;
+      for (let i = 0; i < n; i++) { const v = Math.min(1, Math.abs(+song.wave[i] || 0)) * eh; g.fillRect((i / n) * w, LANE.energy[1] - v, Math.max(1, w / n), v); }
     }
     // beats and bars
     const beats = (song && song.beats) || [], bars = new Set(((song && song.bars) || []).map((b) => b.toFixed(3)));
@@ -762,6 +789,7 @@
     },
   };
   VJ.go = (o) => window.XP.go(o);
+  VJ.loadTrack = (file) => XC.loadTrack(file);  // the old page's automation names
 
   function init() {
     $("screen").prepend($("stage"));  // the canvas sits in the monitor; in the output window it fills the screen
@@ -773,6 +801,7 @@
       if (S.trackId) XC.trackFromDesk(S.trackId).then(() => deskSong(S.trackId)).catch(() => toast("That track is no longer on the desk; load it again"));
     }
     if (Q.get("stems")) { $("stemsb").textContent = "Stems on"; $("stemsb").classList.add("on"); }
+    if (Q.get("hud") === "1") set({ hud: true });
     XC.listInputs().catch(() => {});
     recover();
     requestAnimationFrame(loop);
