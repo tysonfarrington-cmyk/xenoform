@@ -1,0 +1,14 @@
+# The desk's pinned dependencies, for its own .venv (Python 3.12): install.bat, install.ps1, install.sh and CI read this
+# file. Not for ComfyUI's Python: ComfyUI-Manager reads requirements.txt, which is the node pack's (it needs nothing
+# ComfyUI does not already ship).
+numpy==2.5.4
+librosa==1.0.0
+soundfile==0.14.0
+comfy-sdk==0.5.0
+comfy-api-proxy==0.1.6
+fastapi==0.143.3
+uvicorn==0.54.0
+python-multipart==0.0.32
+aiohttp==3.11.18
+opencv-python-headless==5.0.0.93
+pillow==13.0.0

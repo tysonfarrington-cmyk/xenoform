@@ -121,7 +121,7 @@ Three steps. The first cut needs no GPU, no model and no account. You need **Pyt
 
 <details><summary>Install and launcher details</summary>
 
-**Install.** `install.bat` (Windows) or `bash install.sh` creates `.venv` with Python 3.12, installs the pinned `requirements.txt` (`comfy-sdk` 0.5.0, `comfy-api-proxy` 0.1.6, `opencv-python-headless`, librosa, FastAPI), the `xenoform` package itself and Demucs for stem separation (the `stems` extra, with a CPU torch wheel of about 200 MB; `install.bat -NoStems` or `bash install.sh --no-stems` skips it and the desk uses the band split). The installer finds Python 3.12 on `PATH`, through the `py` launcher, or through `uv`. Linking the pack into `ComfyUI/custom_nodes` is optional: `install.ps1 -LinkNodes` or `bash install.sh --link-nodes`; the desk is then also at `http://127.0.0.1:8188/xenoform`.
+**Install.** `install.bat` (Windows) or `bash install.sh` creates `.venv` with Python 3.12, installs the pinned `requirements-desk.txt` (`comfy-sdk` 0.5.0, `comfy-api-proxy` 0.1.6, `opencv-python-headless`, librosa, FastAPI), the `xenoform` package itself and Demucs for stem separation (the `stems` extra, with a CPU torch wheel of about 200 MB; `install.bat -NoStems` or `bash install.sh --no-stems` skips it and the desk uses the band split). The installer finds Python 3.12 on `PATH`, through the `py` launcher, or through `uv`. Linking the pack into `ComfyUI/custom_nodes` is optional: `install.ps1 -LinkNodes` or `bash install.sh --link-nodes`; the desk is then also at `http://127.0.0.1:8188/xenoform`.
 
 Extras: `pip install -e .[midi]` (mido, python-rtmidi), `.[stems]` (Demucs; the installers add it by default), `.[agent]` (the MCP SDK; `Xenoform-MCP.bat` installs it on first run), `.[dev]` (pytest), `.[gpu]` (moderngl), `.[osc]`.
 
@@ -251,8 +251,10 @@ Everything deeper than the four knobs sits on the same desk: **Fine-tune** under
 ```
 Xenoform.bat, Xenoform-MCP.bat         Windows launchers (desk, MCP server)
 install.bat, install.ps1, install.sh   create .venv with Python 3.12 and install the package
-pyproject.toml, requirements.txt       pinned dependencies (comfy-sdk 0.5.0, comfy-api-proxy 0.1.6)
-__init__.py, web/                      optional ComfyUI node pack entry (Try It, Setup Check)
+pyproject.toml, requirements-desk.txt  pinned dependencies (comfy-sdk 0.5.0, comfy-api-proxy 0.1.6)
+requirements.txt                       what ComfyUI-Manager installs into ComfyUI's Python: nothing
+__init__.py, comfy_pack/               the ComfyUI node pack (Song Analysis, Storyboard, Morph Timeline, Morph Pair,
+                                       Assemble, and the desk's Try It and Setup Check): comfy_pack/README.md
 src/xenoform/
   ui.py, ui_static/                    the desk, /vj, /moves, /judges, /licences, /credits
   dense.py, morph_pass.py, final_tier.py, portrait.py   cut plan, morph chain, Draft and Final tiers

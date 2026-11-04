@@ -1,12 +1,7 @@
-# Pinned to the versions the smoke tests install. ComfyUI Manager reads this file.
-numpy==2.5.4
-librosa==1.0.0
-soundfile==0.14.0
-comfy-sdk==0.5.0
-comfy-api-proxy==0.1.6
-fastapi==0.143.3
-uvicorn==0.54.0
-python-multipart==0.0.32
-aiohttp==3.11.18
-opencv-python-headless==5.0.0.93
-pillow==13.0.0
+# ComfyUI-Manager installs these into ComfyUI's own Python when it installs this repository from its git URL.
+# The node pack (comfy_pack/) needs nothing ComfyUI does not already ship: numpy, Pillow, torch and PyAV, plus ffmpeg
+# on PATH or the imageio-ffmpeg ComfyUI installs usually carry, for the Assemble. librosa is used when it is present
+# (the desk's own analysis); without it the pack runs the same steps in numpy. So nothing is listed here: an entry
+# would be pip-installed over ComfyUI's own versions.
+#
+# The desk (the Xenoform app in src/) has its own .venv and its own pins: requirements-desk.txt, read by install.bat.

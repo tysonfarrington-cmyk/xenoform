@@ -22,7 +22,7 @@ from xenoform.video import write_mp4
 
 
 def test_requirements_pin_sdk_and_proxy():
-    text = (repo_root() / "requirements.txt").read_text(encoding="utf-8")
+    text = (repo_root() / "requirements-desk.txt").read_text(encoding="utf-8")
     assert "comfy-sdk==0.5.0" in text
     assert "comfy-api-proxy==0.1.6" in text
 

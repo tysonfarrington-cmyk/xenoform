@@ -19,10 +19,11 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Fresh virtualenv
         run: python -m venv .venv
-      - name: Install the node pack the way ComfyUI Manager does
+      - name: Install the desk and the node pack (ComfyUI-Manager installs requirements.txt, which lists nothing)
         run: |
           .venv/bin/pip install --upgrade pip
           .venv/bin/pip install -r requirements.txt
+          .venv/bin/pip install -r requirements-desk.txt
           .venv/bin/pip install -e ".[dev,agent]"
       - name: Import, node registration, /xenoform, tiny dry-run
         run: .venv/bin/pytest tests/test_install.py
