@@ -593,3 +593,62 @@ def test_the_recipe_route_gives_the_shots_own_recipe_code(tmp_path, monkeypatch)
     assert back["shot_renders"] == {"1": {"prompt": "a lantern blooms", "steps": 14, "seed": 55}} and back["seed"] == 4000
     assert desk.post("/api/simple/recipe/encode", json={**R.decode(cut_code), "shot_renders": back["shot_renders"]}).json()["recipe"] \
         == own["recipe_code"]  # the desk's own encode route takes the shots' values too
+
+
+# ---------------------------------------------------------------------------------------------- Open in ComfyUI
+
+
+class FakeHTTP:
+    """ComfyUI's upload and prompt endpoints, faked: nothing leaves the test."""
+
+    def __init__(self, *, error: str = ""):
+        self.calls: list[tuple] = []
+        self.error = error
+
+    def post(self, url, files=None, data=None, json=None, timeout=None):
+        self.calls.append((url, sorted(files) if files else None, data, json))
+        error = self.error
+
+        class R:
+            status_code = 200
+            content = b"{}"
+
+            def json(self):
+                if url.endswith("/upload/image"):
+                    return {"name": f"up_{len(outer.calls)}.png", "subfolder": "xf", "type": "input"}
+                return {"error": {"message": error}, "node_errors": {"3": "bad"}} if error else {"prompt_id": "p1", "number": 7, "node_errors": {}}
+
+        outer = self
+        return R()
+
+
+def test_open_in_comfyui_queues_the_shot_with_its_stills_only_after_a_confirm(tmp_path, monkeypatch):
+    stills = _pair(tmp_path)
+    graph = json.loads(json.dumps(GRAPH))
+    graph["6"]["is_changed"] = ["x"]
+    http = FakeHTTP()
+    got = sr.queue_on_comfy(graph, {"6": stills[0]["path"], "7": stills[1]["path"]}, "http://127.0.0.1:8188/", http=http)
+    assert got["prompt_id"] == "p1" and got["number"] == 7
+    assert [c[0] for c in http.calls] == ["http://127.0.0.1:8188/upload/image"] * 2 + ["http://127.0.0.1:8188/prompt"]
+    sent = http.calls[-1][3]["prompt"]
+    assert sent["6"]["inputs"]["image"] == "xf/up_1.png" and sent["7"]["inputs"]["image"] == "xf/up_2.png" and "is_changed" not in sent["6"]
+    with pytest.raises(RuntimeError, match="did not queue"):
+        sr.queue_on_comfy(graph, {}, "http://127.0.0.1:8188", http=FakeHTTP(error="Value not in list"))
+    # the route: refused without the confirm, then the cut's own shot queued
+    client = Client()
+    _draft_cut(tmp_path, monkeypatch, client)
+    desk = _desk(tmp_path, monkeypatch)
+    r = desk.post("/api/jobs/cut/shots/1/comfy", json={})
+    assert r.status_code == 400 and "spends its GPU" in r.json()["detail"]
+    seen = {}
+
+    def fake_queue(g, st, base, **kw):
+        seen.update(graph=g, stills=st, base=base)
+        return {"prompt_id": "p9", "number": 3, "graph": g}
+
+    monkeypatch.setattr(sr, "queue_on_comfy", fake_queue)
+    r = desk.post("/api/jobs/cut/shots/1/comfy", json={"confirm": True})
+    assert r.status_code == 200 and r.json()["prompt_id"] == "p9" and seen["base"] == "http://127.0.0.1:8188"
+    rec = _rec(job_dir := tmp_path / "jobs" / "cut")
+    assert seen["stills"] == {"6": rec["renders"][1]["from"]["path"], "7": rec["renders"][1]["to"]["path"]} and job_dir.is_dir()
+    assert seen["graph"]["13"]["inputs"]["noise_seed"] == rec["renders"][1]["seed"]

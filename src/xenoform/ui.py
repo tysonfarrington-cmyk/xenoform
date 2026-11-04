@@ -1137,6 +1137,35 @@ def create_app(cfg: dict | None = None):
         return Response(json.dumps(graph, indent=1), media_type="application/json",
                         headers={"Content-Disposition": f'attachment; filename="{name}"', "Cache-Control": "no-store"})
 
+    @app.post("/api/jobs/{job_id}/shots/{index}/comfy")
+    def shot_comfy_route(job_id: str, index: int, body: dict | None = None) -> dict:
+        """Open in ComfyUI, the queue option (decision 7): the shot's graph queued on the desk's own ComfyUI with its two
+        stills uploaded there (``shot_recipe.queue_on_comfy``). It spends that GPU, so the body must say ``confirm``; the
+        default is the download (``workflow.json``). The clip lands in ComfyUI's output folder, not in the cut."""
+        from xenoform import shot_recipe as _sr
+
+        body = body or {}
+        base = str((cfg.get("comfy") or {}).get("base_url") or "http://127.0.0.1:8188")
+        if body.get("confirm") is not True:
+            raise HTTPException(400, f"This queues the shot on ComfyUI at {base} and spends its GPU there: confirm it first, "
+                                     "or download the workflow instead.")
+        folder, rec, _stem = _shot_record(job_id, body.get("layer") or None)
+        graph = _sr.workflow_of(folder, rec, int(index))
+        if graph is None:
+            raise HTTPException(404, "This shot's graph was not kept, so there is nothing to queue.")
+        renders = list(rec.get("renders") or [])
+        req = renders[int(index)] if int(index) < len(renders) and isinstance(renders[int(index)], dict) else {}
+        a, b = ("100", "101") if "100" in graph else ("6", "7")
+        stills = {a: str((req.get("from") or {}).get("path") or ""), b: str((req.get("to") or {}).get("path") or "")}
+        try:
+            got = _sr.queue_on_comfy(graph, stills, base)
+        except RuntimeError as exc:
+            raise HTTPException(502, str(exc)) from exc
+        except Exception as exc:  # noqa: BLE001 - ComfyUI not answering
+            raise HTTPException(502, f"ComfyUI at {base} did not answer: {exc}") from exc
+        return {"id": job_id, "shot": int(index), "comfy": base, "prompt_id": got["prompt_id"], "number": got["number"],
+                "note": f"Queued on ComfyUI at {base}: open it there to watch the shot and tweak its graph."}
+
     def _takes_view(job_id: str, index: int, folder: Path, rec: dict, stem: str | None) -> list[dict]:
         from xenoform import shot_recipe as _sr
 

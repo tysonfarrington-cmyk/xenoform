@@ -732,6 +732,41 @@ def for_make(state: dict, count: int) -> tuple[list | None, dict[int, str], list
     return (out if any(out) else None), styles, notes
 
 
+def queue_on_comfy(graph: dict, stills: dict[str, str], base_url: str, *, http=None, timeout: float = 20.0) -> dict:
+    """Open in ComfyUI, the queue option (decision 7: download by default, this behind a confirm): each guide still the
+    graph names is uploaded to ComfyUI's input folder (``/upload/image``; ``stills`` maps a LoadImage node to the file to
+    send, a node with no file keeps the name the clip's own graph had), then the graph is queued (``/prompt``) on the
+    desk's own ComfyUI. It spends that ComfyUI's GPU; the clip lands in its output folder, not in the cut. Returns the
+    prompt id and queue number, or raises RuntimeError with ComfyUI's reason."""
+    if http is None:
+        import requests as http
+    base = str(base_url or "").rstrip("/")
+    if not base.startswith(("http://", "https://")):
+        raise RuntimeError("The desk has no ComfyUI address to queue on.")
+    g = json.loads(json.dumps(graph))
+    for nid, path in (stills or {}).items():
+        node = g.get(str(nid))
+        if not isinstance(node, dict) or not path or not Path(path).is_file():
+            continue
+        with open(path, "rb") as fh:
+            r = http.post(f"{base}/upload/image", files={"image": (Path(path).name, fh, "image/png")},
+                          data={"type": "input", "overwrite": "false"}, timeout=timeout)
+        if getattr(r, "status_code", 500) >= 400:
+            raise RuntimeError(f"ComfyUI would not take the still {Path(path).name} ({getattr(r, 'status_code', '?')}).")
+        got = r.json()
+        name = str(got.get("name") or Path(path).name)
+        node.setdefault("inputs", {})["image"] = f"{got['subfolder']}/{name}" if got.get("subfolder") else name
+    for node in g.values():
+        if isinstance(node, dict):
+            node.pop("is_changed", None)
+    r = http.post(f"{base}/prompt", json={"prompt": g, "client_id": "xenoform-under-the-hood"}, timeout=timeout)
+    body = r.json() if getattr(r, "content", b"") else {}
+    if getattr(r, "status_code", 500) >= 400 or body.get("node_errors"):
+        why = (body.get("error") or {}).get("message") if isinstance(body.get("error"), dict) else body.get("error")
+        raise RuntimeError(f"ComfyUI did not queue the shot: {why or body.get('node_errors') or getattr(r, 'status_code', '?')}")
+    return {"prompt_id": body.get("prompt_id"), "number": body.get("number"), "graph": g}
+
+
 def lora_files() -> list[str]:
     """The LoRA files this machine has (``<models>/loras``), the names a re-render may give; [] when there is no folder."""
     try:
