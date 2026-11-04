@@ -740,3 +740,54 @@ def test_the_length_chips_say_which_whole_song_and_run_by_length():
     assert "Fine-tune → Length → Whole song makes it all now, as one cut or by passages." in APP
     song_md = (ROOT / "docs" / "SONG.md").read_text(encoding="utf-8")
     assert "Length → Whole song, by passages" in song_md and "Length Full song" not in song_md
+
+
+# ---------------------------------------------------------------- L3, L5: nothing on the timeline spends at one click
+def _branch(act: str) -> str:
+    """The body of one ``act`` branch of the desk's click handler."""
+    return APP.split(f'}} else if (act === "{act}") {{', 1)[1].split("\n  } else if (act ===", 1)[0]
+
+
+def test_a_morph_style_chip_picks_and_only_re_render_spends_gpu():
+    """L3: a Morph chip in the Regenerate tab started a GPU re-render on one click."""
+    chip = _branch("easy-tl-style")
+    assert "rerenderShot" not in chip and "postCutEdit" not in chip and "state.easy.tlStyle = " in chip and "render();" in chip
+    button = _branch("easy-tl-rerender")
+    assert "state.easy.tlStyle.style" in button and "rerenderShot(i, pick);" in button
+    drawer = APP.split("function timelineDrawer(easy, lane, tl, picked) {", 1)[1].split("// Dream this span", 1)[0]
+    assert "easy.tlStyle.index === s.index && easy.tlStyle.for === lane.id ? easy.tlStyle.style : ownStyle" in drawer
+    assert "Re-render this morph${wantStyle !== ownStyle ? ` as ${esc(morphStyleLabel(wantStyle))}` : \"\"}" in drawer
+    assert "state.easy.tlStyle = null;" in _fn("loadLane")  # a pick belongs to the lane it was made on
+
+
+@NODE
+def test_reset_the_timeline_waits_for_apply_and_can_be_undone(tmp_path):
+    """L5: Reset the timeline re-cut at once and wiped every saved edit, with no confirm and no undo."""
+    reset = _branch("easy-tl-reset")
+    assert "applyTimeline" not in reset and "recutWithKnobs" not in reset and "postCutEdit" not in reset
+    code = "\n".join([_fn("timelineState"), _fn("canonOverride"), _fn("timelineDirty")]) + r"""
+let state = null;
+const calls = [];
+const render = () => calls.push("render");
+const api = () => calls.push("api");
+function reset(el) {""" + reset + r"""}
+function undo(el) {""" + _branch("easy-tl-reset-undo") + r"""}
+state = { lane: { id: "c1", shot_overrides: { "2": { play: "hold" } }, boundary_overrides: {} }, easy: {} };
+const tl = timelineState(state.easy, state.lane);
+tl.shots["4"] = { look: "noir-glow" };  // an edit waiting for Apply, beside the hold the cut already has
+const out = { before: timelineDirty(state.easy, state.lane) };
+reset({ dataset: {} });
+out.reset = { dirty: timelineDirty(state.easy, state.lane), shots: state.easy.tl.shots, kept: state.easy.tlBeforeReset.shots };
+undo({ dataset: {} });
+out.undone = { dirty: timelineDirty(state.easy, state.lane), shots: state.easy.tl.shots, kept: state.easy.tlBeforeReset };
+out.calls = calls;
+console.log(JSON.stringify(out));
+"""
+    got = _run(tmp_path, code)
+    assert got["before"] == 1
+    assert got["reset"] == {"dirty": 1, "shots": {}, "kept": {"2": {"play": "hold"}, "4": {"look": "noir-glow"}}}  # the hold's removal waits
+    assert got["undone"] == {"dirty": 1, "shots": {"2": {"play": "hold"}, "4": {"look": "noir-glow"}}, "kept": None}
+    assert "api" not in got["calls"]  # nothing went to the desk
+    lane = _fn("shotsLane")
+    assert 'data-act="easy-tl-reset-undo">Undo the reset</button>' in lane and "Apply takes every edit off the cut" in lane
+    assert "state.easy.tlBeforeReset = null;" in _fn("loadLane")

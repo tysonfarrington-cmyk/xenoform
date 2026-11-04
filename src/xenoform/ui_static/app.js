@@ -2824,10 +2824,11 @@ function shotsLane(easy) {
   }
   const pending = timelineDirty(easy, lane);
   const anyEdits = Object.keys(tl.shots).length + Object.keys(tl.bounds).length + Object.keys(lane.shot_overrides || {}).length + Object.keys(lane.boundary_overrides || {}).length;
+  const undoReset = !!(easy.tlBeforeReset && easy.tlBeforeReset.id === tl.id);  // a Reset waiting for Apply (L5)
   const applyRow = lane.editable !== false && !swapping
     ? `<div class="lane-apply-row">
-        ${anyEdits ? `<button type="button" class="text" data-act="easy-tl-reset">Reset the timeline</button>` : ""}
-        <span class="note">${pending ? `${pending} edit${pending === 1 ? "" : "s"} waiting for Apply (the bar at the bottom).` : "Edits wait for Apply in the bar at the bottom, and stay with the cut."}</span>
+        ${undoReset ? `<button type="button" class="text" data-act="easy-tl-reset-undo">Undo the reset</button>` : anyEdits ? `<button type="button" class="text" data-act="easy-tl-reset">Reset the timeline</button>` : ""}
+        <span class="note">${pending ? `${pending} edit${pending === 1 ? "" : "s"} waiting for Apply (the bar at the bottom)${undoReset ? ": Apply takes every edit off the cut" : ""}.` : "Edits wait for Apply in the bar at the bottom, and stay with the cut."}</span>
       </div>`
     : "";
   const drawer = swapping || songCut ? "" : timelineDrawer(easy, lane, tl, picked);
@@ -2948,9 +2949,13 @@ function timelineDrawer(easy, lane, tl, picked) {
     for (let v = renderS[0]; v <= renderS[1]; v += 1) lengthOpts.push(v);
     const variants = choices.rerender_variants || ["auto"];
     const variantName = (v) => (v === "auto" ? "by the stills" : v === "object" ? "object to object" : v === "scene" ? "scene to scene" : v.replace("-", " to "));
-    body = `${canGpu ? `${morphStyleRow(s.style || "melt", "easy-tl-style", s.index, false)}
+    // a Morph chip picks the style "Re-render this morph" renders in; only that button spends GPU (UI review L3: a chip
+    // started a GPU re-render on one click, looking like the Look tab's toggles that wait for Apply)
+    const ownStyle = s.style || "melt";
+    const wantStyle = easy.tlStyle && easy.tlStyle.index === s.index && easy.tlStyle.for === lane.id ? easy.tlStyle.style : ownStyle;
+    body = `${canGpu ? `${morphStyleRow(wantStyle, "easy-tl-style", s.index, false)}
       <div class="tl-gpu-row"><button type="button" class="ghost" data-act="easy-tl-swap" data-slot="${s.still}">Swap the object it lands on</button></div>
-      <div class="tl-gpu-row"><button type="button" class="ghost" data-act="easy-tl-rerender" data-index="${s.index}">Re-render this morph</button>
+      <div class="tl-gpu-row"><button type="button" class="ghost" data-act="easy-tl-rerender" data-index="${s.index}">Re-render this morph${wantStyle !== ownStyle ? ` as ${esc(morphStyleLabel(wantStyle))}` : ""}</button>
         <label>seed <input id="tl-seed" type="number" placeholder="next" min="0" step="1" aria-label="Seed, empty for the next one" /></label>
         <label>length <select id="tl-render-s" aria-label="Seconds of source"><option value="">as it is</option>${lengthOpts.map((v) => `<option value="${v}">${v} s</option>`).join("")}</select></label>
         <label>prompt <select id="tl-variant" aria-label="Prompt variant">${variants.map((v) => `<option value="${esc(v)}">${esc(variantName(v))}</option>`).join("")}</select></label></div>
@@ -3126,6 +3131,8 @@ async function loadLane(id) {
     const kept = state.easy.restoreEdits === id ? keptEdits(id) : null;
     state.easy.restoreEdits = "";
     state.easy.tl = kept && kept.tl && state.lane && kept.tl.id === (state.lane.tl_key || state.lane.id) ? kept.tl : null;
+    state.easy.tlBeforeReset = null;  // a Reset's undo and a Morph style picked belong to the lane before this one
+    state.easy.tlStyle = null;
     if (state.easy.tlFor !== id) { state.easy.tlPick = null; state.easy.tlFor = id; }
   }
   render();
@@ -5112,21 +5119,30 @@ document.addEventListener("click", async (event) => {
   } else if (act === "easy-tl-apply" || act === "easy-apply") {
     recutWithKnobs();
   } else if (act === "easy-tl-reset") {
+    // Reset is an edit like the others: the timeline back to the cut as it was made, waiting for Apply (UI review L5:
+    // it re-cut at once and wiped every saved edit, with no confirm and no undo); Undo the reset brings back what was there
     if (state.lane) {
       const tl = timelineState(state.easy, state.lane);
+      state.easy.tlBeforeReset = { id: tl.id, shots: JSON.parse(JSON.stringify(tl.shots)), bounds: JSON.parse(JSON.stringify(tl.bounds)) };
       tl.shots = {};
       tl.bounds = {};
-      const persisted = Object.keys(state.lane.shot_overrides || {}).length + Object.keys(state.lane.boundary_overrides || {}).length;
-      if (persisted) applyTimeline();
-      else render();
+      render();
     }
+  } else if (act === "easy-tl-reset-undo") {
+    const kept = state.easy.tlBeforeReset;
+    if (state.lane && kept && kept.id === timelineState(state.easy, state.lane).id) state.easy.tl = { id: kept.id, shots: kept.shots, bounds: kept.bounds };
+    state.easy.tlBeforeReset = null;
+    render();
   } else if (act === "easy-tl-swap") {
     state.easy.swapMode = true;
     state.easy.swapSlot = Number(el.dataset.slot);
     state.easy.tlPick = null;
     render();
   } else if (act === "easy-tl-rerender") {
-    rerenderShot(Number(el.dataset.index));
+    // in the Morph style the chips picked for this shot, else its own (rerenderShot sends no style then)
+    const i = Number(el.dataset.index);
+    const pick = state.easy.tlStyle && state.easy.tlStyle.index === i && state.easy.tlStyle.for === easyVideoId() ? state.easy.tlStyle.style : undefined;
+    rerenderShot(i, pick);
   } else if (act === "easy-tl-insert") {
     insertRun(Number(el.dataset.index));
   } else if (act === "easy-tl-dream") {
@@ -5178,7 +5194,11 @@ document.addEventListener("click", async (event) => {
     state.easy.morphStyle = ["auto"].concat(MORPH_STYLES).includes(el.dataset.value) ? el.dataset.value : "auto";
     render();
   } else if (act === "easy-tl-style") {
-    rerenderShot(Number(el.dataset.index), el.dataset.value);
+    // a selection for "Re-render this morph", which alone spends GPU (L3); the shot's own style clears it
+    const i = Number(el.dataset.index);
+    const own = ((state.lane && (state.lane.shots || []).find((x) => x.index === i)) || {}).style || "melt";
+    state.easy.tlStyle = el.dataset.value === own || !MORPH_STYLES.includes(el.dataset.value) ? null : { index: i, style: el.dataset.value, for: easyVideoId() };
+    render();
   } else if (act === "easy-effect") {
     // the Effects row is a set: a chip toggles its effect on or off
     const on = new Set(state.easy.effects || []);
