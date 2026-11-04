@@ -348,7 +348,7 @@ function heldScene(){const H=PADS.held;if(!H||H.v.readyState<2)return null;
 function applyPads(){const top=XenoMidi.holds.top('pad:'),sc=top?padScene(+top.slice(4)):null,was=PADS.held;
  if(was&&was!==sc&&was!==S.scenes[S.cur]&&!(S.trans&&was===S.scenes[S.nxt]))was.v.pause();
  PADS.held=sc;if(top&&!sc)toast('Nothing on '+top.replace(':',' ')+' yet');
- if(sc&&sc!==was){if(sc.start!=null)sc.v.currentTime=sc.start;sc.v.play().catch(()=>{})}}
+ if(sc&&sc!==was){if(sc.start!=null&&Math.abs(sc.v.currentTime-sc.start)>.04)sc.v.currentTime=sc.start;sc.v.play().catch(()=>{})}}
 // Held looks (a pad switched to "On while held" on a dance preset, strobe, mirror or kaleido): applied while held, and
 // on release the look goes back to what it was; several stack, the last one pressed wins where they disagree.
 const LOOKS={snap:null};const isLook=id=>/^(dance:\d+|strobe|mirror|kaleido)$/.test(id);
@@ -362,6 +362,7 @@ XenoMidi.holds.on(id=>{if(/^pad:\d+$/.test(id))applyPads();else if(isLook(id))ap
 if(JOB)fetch('/api/videos/'+encodeURIComponent(JOB)+'/shots').then(r=>r.ok?r.json():null).then(j=>{
  const rows=((j&&j.shots)||[]).filter(s=>!s.dropped&&s.end>s.start).slice(0,8),src='/api/videos/'+encodeURIComponent(JOB)+'/video';
  PADS.shots=rows.map(s=>{const v=document.createElement('video');v.src=src;v.muted=true;v.playsInline=true;v.preload='auto';v.crossOrigin='anonymous';
+  v.addEventListener('loadedmetadata',()=>{v.currentTime=s.start},{once:true});  // its first frame decoded before any press
   return{v,name:'shot '+(s.index+1)+(s.to||s.from?' · '+(s.to||s.from):''),start:s.start,end:s.end}});
  if(PADS.shots.length)toast('Pads 1-'+PADS.shots.length+' hold the shots of this cut')}).catch(()=>{});
 // what is on screen and where the song is, for a script checking that a hold leaves the timeline alone

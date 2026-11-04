@@ -103,10 +103,11 @@ function wire(v){const el=v.el,q=s=>el.querySelector(s);
  el.querySelectorAll(".xm-row").forEach(li=>{const row=X.mappings.find(e=>rowKey(e)===li.dataset.key);if(!row)return;
   li.querySelector(".xm-relearn").onclick=ev=>openPop(ev.currentTarget,{kind:"target",target:row.target});
   li.querySelector(".xm-remove").onclick=()=>{const gone=X.removeRows(e=>rowKey(e)===rowKey(row));offerUndo(gone,shortOf(row.source)+" → "+X.name(row.target))}})}
-function render(v){const more=v.el.querySelector(".xm-more"),open=more&&more.open,focus=document.activeElement&&v.el.contains(document.activeElement)?
-  [...document.activeElement.classList].find(c=>/^xm-/.test(c)):null;
+function render(v){const more=v.el.querySelector(".xm-more"),open=more&&more.open,a=document.activeElement,mine=a&&v.el.contains(a);
+ const ctl=mine&&a.dataset&&a.dataset.ctl,focus=mine&&!ctl?[...a.classList].find(c=>/^xm-/.test(c)):null;
  v.el.innerHTML=panelHTML(v);wire(v);if(open)v.el.querySelector(".xm-more").open=true;
- if(focus){const f=v.el.querySelector("."+focus);if(f)f.focus()}if(undo)paintUndo()}
+ const f=ctl?v.el.querySelector(`.xm-ctl[data-ctl="${CSS.escape(ctl)}"]`):focus?v.el.querySelector("."+focus):null;if(f)f.focus({preventScroll:true});
+ if(undo)paintUndo();if(pop&&!pop.anchor.isConnected)place()}
 function refresh(){if(queued)return;queued=1;const go=()=>{queued=0;views.forEach(v=>{if(v.el.isConnected)render(v)});paintState();paintBadges()};
  (window.requestAnimationFrame&&document.visibilityState==="visible"?requestAnimationFrame:setTimeout)(go,0);setTimeout(()=>{if(queued)go()},60)}
 // the desk's row title and /vj's MIDI button say whether a controller is there
@@ -138,7 +139,14 @@ function popHTML(spec){const target=spec.kind==="target"?X.canonical(spec.target
   <div class="xm-pop-row"><label>Does <select class="xm-target"><option value="">Nothing</option>${T.map(t=>`<option value="${esc(t)}"${row&&row.target===t?" selected":""}>${esc(X.name(t))}</option>`).join("")}</select></label></div>
   ${row?`<div class="xm-pop-row"><label>Mode <select class="xm-mode">${modeOptions(spec.source.type,row.mode)}</select></label></div>${rangeHTML(row)}`:""}
   <div class="xm-pop-foot"><button type="button" class="generate xm-done">Done</button><button type="button" class="ghost xm-clear"${row?"":" disabled"}>Clear</button></div>`}
-function place(){if(!pop)return;const r=pop.anchor.getBoundingClientRect(),w=Math.min(300,innerWidth-16),el=pop.el;el.style.width=w+"px";
+// the anchor re-rendered under the popover (a binding changed the panel, the desk redrew its knobs): find its successor,
+// the drawn control with the same id or the page control with the same target; else stay where it was
+function reanchor(){if(!pop||pop.anchor.isConnected)return;const s=pop.spec;let n=null;
+ if(s.kind==="source"&&s.id)n=document.querySelector(`.xm-ctl[data-ctl="${CSS.escape(s.id)}"]`);
+ else if(s.kind==="target"){const c=X.canonical(s.target);n=mappables().find(e=>{const t=targetOf(e);return t&&X.canonical(t)===c})||null}
+ if(n)pop.anchor=n}
+function place(){if(!pop)return;reanchor();const live=pop.anchor.isConnected,r=live?pop.anchor.getBoundingClientRect():pop.rect;if(!r)return;if(live)pop.rect=r;
+ const w=Math.min(300,innerWidth-16),el=pop.el;el.style.width=w+"px";
  const h=el.offsetHeight||200,below=r.bottom+8+h<=innerHeight||r.top<h+16;
  el.style.left=Math.max(8,Math.min(innerWidth-w-8,r.left+r.width/2-w/2))+"px";el.style.top=Math.max(8,below?r.bottom+8:r.top-h-8)+"px"}
 function paintPop(){if(!pop)return;const p=pop,el=p.el;el.innerHTML=popHTML(p.spec);const q=s=>el.querySelector(s);

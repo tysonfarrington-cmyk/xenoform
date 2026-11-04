@@ -211,8 +211,9 @@ const X={
  _setDevices(list,via){const before=this.devices.map(d=>d.name);
   this.devices=this.devices.filter(d=>d.via!==(via==="webmidi"?"Web MIDI":"bridge")).concat(list).filter((d,i,a)=>a.findIndex(o=>sameDevice(o.name,d.name))===i);
   const names=this.devices.map(d=>d.name);
-  for(const n of names)if(!before.some(b=>sameDevice(b,n)))this.toast(n+" connected · "+pickDefault(n,this.presets).label+(this._own(n)?" (your map)":""));
-  for(const b of before)if(!names.some(n=>sameDevice(n,b)))this.toast(b+" unplugged");
+  const side=n=>/^MIDIIN\d/i.test(n);  // the MiniLab's extra ports come and go with it: one toast is enough
+  for(const n of names)if(!side(n)&&!before.some(b=>sameDevice(b,n)))this.toast(n+" connected · "+pickDefault(n,this.presets).label+(this._own(n)?" (your map)":""));
+  for(const b of before)if(!side(b)&&!names.some(n=>sameDevice(n,b)))this.toast(b+" unplugged");
   if(!names.some(n=>sameDevice(n,this.device))&&names.length)this.setDevice(primaryDevice(names,this.presets),true);
   this.emit("devices",this.devices);this._status()},
  _bridgeSeen(dev){if(dev&&!this.devices.some(d=>sameDevice(d.name,dev)))this._setDevices(this.devices.filter(d=>d.via==="bridge").concat([{name:dev,via:"bridge"}]),"bridge")},
@@ -264,7 +265,7 @@ const X={
    if(mode==="abs"&&ev.type!=="note"){const k=rowKey(e),d=takeover.decide(k,r.value,screen,e.min==null?0:e.min,e.max==null?1:e.max);
     if(!d.apply){this._awayChanged(k);continue}this._awayChanged(k)}
    if(r.kind==="press"){const was=this._held[sk]||(this._held[sk]=[]);if(was.some(h=>h.t===r.target))continue;
-    was.push({t:r.target,lo:+e.min||0,dev:ev.dev||"",row:e});holds.press(r.target)}
+    was.push({t:r.target,lo:+e.min||0,dev:ev.dev||"",via:origin,row:e});holds.press(r.target)}
    this.fire(r.target,r.value,ev,e)}
   if(this._opts.onEvent)this._opts.onEvent(ev,hit,origin);this.emit("event",ev,hit,origin);this._status(true)},
  // the value a target shows now, from the page (init({read})), for soft takeover; null when the page does not say
@@ -273,8 +274,9 @@ const X={
  away(row){return takeover.away(rowKey(row))},
  _awayChanged(k){const a=takeover.away(k),sig=a?Math.round(a.hw*1000)+":"+Math.round(a.screen*1000):"";this._aways=this._aways||{};
   if(this._aways[k]===sig)return;this._aways[k]=sig;this._paintAway()},
- // an input went away (unplugged mid-hold): let go of what its pads held, the page snaps back
- _gone(names){for(const k of Object.keys(this._held)){const keep=this._held[k].filter(h=>!h.dev||names.includes(h.dev));
+ // a Web MIDI input went away (unplugged mid-hold): let go of what its pads held, the page snaps back (a pad held
+ // through the bridge is not Web MIDI's to let go)
+ _gone(names){for(const k of Object.keys(this._held)){const keep=this._held[k].filter(h=>h.via!=="webmidi"||!h.dev||names.includes(h.dev));
    for(const h of this._held[k])if(!keep.includes(h))holds.release(h.t);if(keep.length)this._held[k]=keep;else delete this._held[k]}},
  releaseAll(){this._held={};holds.clear()},
  fire(target,val,ev,entry){const h=this.handlers;const m=/^([a-z]+):(.+)$/.exec(target);
