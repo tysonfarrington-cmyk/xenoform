@@ -2579,14 +2579,20 @@ def _prepare_rows(rows: list[dict], prep: dict, work: Path) -> list[dict]:
 
 
 def _render_pairs(render_shots: list[dict], rows: list[dict], dest_dir: Path, prep: dict, *, seed: int, vibe: str, cfg: dict | None,
-                  state: dict, client=None, report=None, styles: list[str] | None = None) -> list[Path]:
+                  state: dict, client=None, report=None, styles: list[str] | None = None,
+                  cancel: Callable[[], bool] | None = None) -> list[Path]:
     """``len(render_shots)`` morphs over ``rows`` (one more still than shots) through the Draft path, the cut's engine,
-    each in its ``styles`` entry (``morph_style``; Melt when not given)."""
+    each in its ``styles`` entry (``morph_style``; Melt when not given). ``cancel`` (the desk's Stop on an edit) takes
+    the queued morphs off ComfyUI and raises ``JobCancelled`` before anything is written."""
     if prep.get("mock"):
         from xenoform.cloud_morph import _mock_clips
 
+        if cancel and cancel():
+            from xenoform.turbo import JobCancelled
+
+            raise JobCancelled("Cancelled before the morphs were made.")
         return _mock_clips(render_shots, rows, dest_dir, *(prep.get("draft_size") or (768, 432)))
-    return _draft_clips(render_shots, rows, dest_dir, cfg or {}, seed, vibe, client, None, state, report=report,
+    return _draft_clips(render_shots, rows, dest_dir, cfg or {}, seed, vibe, client, cancel, state, report=report,
                         size=prep.get("draft_size"), styles=styles)
 
 
@@ -2635,7 +2641,7 @@ def _under_insert(shot: dict) -> str:
 
 def rerender_morph(job_dir: Path, shot: int, *, seed: int | None = None, render_s: int | None = None, variant: str = "auto",
                    style: str | None = None, cfg: dict | None = None, report: Callable[[str, float, str], None] | None = None,
-                   client=None) -> dict:
+                   client=None, cancel: Callable[[], bool] | None = None) -> dict:
     """Re-render the morph one shot of a finished Simple cut plays, with another seed, length, prompt variant or style
     (docs/TIMELINE.md 1.5; ``style`` is how the object changes, ``morph_style``, the shot's own when not given), and
     re-compose.
@@ -2711,7 +2717,7 @@ def rerender_morph(job_dir: Path, shot: int, *, seed: int | None = None, render_
                                f"({_ms.LABELS[style]}, seed {seed}, {render_s} s{'' if variant == 'auto' else ', ' + variant})")
     started = time.perf_counter()
     got = _render_pairs([render_shot], ready, dest_dir, prep, seed=seed, vibe=vibe, cfg=cfg, state=state, client=client,
-                        styles=[style])[0]
+                        styles=[style], cancel=cancel)[0]  # Stop (the desk's cancel) reaches the GPU wait, before any write
     dest = dest_dir / f"morph{m:02d}.mp4"
     shutil.move(str(got), dest)
     clips[j] = str(dest)
@@ -2758,7 +2764,8 @@ def insert_span(shots: list[dict], first: int, seconds: float) -> tuple[int, int
 
 
 def insert_generated(job_dir: Path, first: int, *, seconds: float = 10.0, pins: dict | list | None = None, seed: int | None = None,
-                     cfg: dict | None = None, report: Callable[[str, float, str], None] | None = None, client=None) -> dict:
+                     cfg: dict | None = None, report: Callable[[str, float, str], None] | None = None, client=None,
+                     cancel: Callable[[], bool] | None = None) -> dict:
     """"Generate 10 s here": a fresh Draft chain over a span of a finished Simple cut, inserted as a run of shots, and
     the cut re-composed (docs/TIMELINE.md 1.6).
 
@@ -2828,7 +2835,7 @@ def insert_generated(job_dir: Path, first: int, *, seconds: float = 10.0, pins: 
     run_styles = _ms.for_cut({**state, "morph_styles": None, "macros": macros(state)}, span, rec.get("drop"))
     started = time.perf_counter()
     got = _render_pairs(render_shots, ready, dest_dir, prep, seed=seed, vibe=vibe, cfg=cfg, state=state, client=client, report=pair_report,
-                        styles=run_styles)
+                        styles=run_styles, cancel=cancel)
     styles = _styles_of(rec)
     new_clips = []
     for q, path in enumerate(got):
@@ -2907,7 +2914,8 @@ def _still_rows(files: list[str], scene_files: set, setting_files: set | None = 
 
 
 def swap_still(job_dir: Path, slot: int, file: str, *, cfg: dict | None = None,
-               report: Callable[[str, float, str], None] | None = None, client=None) -> dict:
+               report: Callable[[str, float, str], None] | None = None, client=None,
+               cancel: Callable[[], bool] | None = None) -> dict:
     """Swap one still of a finished Simple cut (the shots lane's swap) and re-render only the morphs that touch it.
 
     Still ``slot`` of the record's chain becomes ``file`` (a library row: an object or a scene of any vibe). The two
@@ -3002,12 +3010,16 @@ def swap_still(job_dir: Path, slot: int, file: str, *, cfg: dict | None = None,
         if report:
             report("restyle", 0.1 + 0.4 * len(new_clips) / len(targets),
                    f"Re-rendering morph {m + 1} of {n - 1}: {pair[0].get('noun') or '?'} -> {pair[1].get('noun') or '?'}")
+        if cancel and cancel():  # the desk's Stop: nothing of the swap is written yet
+            from xenoform.turbo import JobCancelled
+
+            raise JobCancelled("Cancelled before the swap's morphs were made.")
         if mock:
             from xenoform.cloud_morph import _mock_clips
 
             got = _mock_clips([render_shot], pair, swap_dir, *(draft_size or (768, 432)))[0]
         else:
-            got = _draft_clips([render_shot], pair, swap_dir, cfg or {}, seed + m, vibe, client, None, state, size=draft_size,
+            got = _draft_clips([render_shot], pair, swap_dir, cfg or {}, seed + m, vibe, client, cancel, state, size=draft_size,
                                styles=[shot_styles[j] if j < len(shot_styles) else "melt"])[0]  # the shot keeps its style
         dest = swap_dir / f"morph{m:02d}.mp4"
         shutil.move(str(got), dest)

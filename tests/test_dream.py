@@ -171,7 +171,7 @@ def test_the_route_refuses_plainly_and_runs_the_dream(tmp_path, monkeypatch):
     (folder / "xenoform.mp4").write_bytes(b"mp4")
     got, done = {}, threading.Event()
 
-    def fake(job_dir, first, *, seconds=2.0, depth="light", seed=None, cfg=None, report=None, client=None):
+    def fake(job_dir, first, *, seconds=2.0, depth="light", seed=None, cfg=None, report=None, client=None, cancel=None):
         got.update(first=first, seconds=seconds, depth=depth)
         done.set()
         return {"look": {}, "recuts": 1}

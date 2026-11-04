@@ -415,7 +415,8 @@ def test_the_rerender_route_runs_the_edit_and_refuses_plainly(tmp_path, monkeypa
     calls = []
     done = threading.Event()
 
-    def fake_rerender(job_dir, shot, *, seed=None, render_s=None, variant="auto", style=None, cfg=None, report=None, client=None):
+    def fake_rerender(job_dir, shot, *, seed=None, render_s=None, variant="auto", style=None, cfg=None, report=None, client=None,
+                      cancel=None):
         calls.append(("rerender", Path(job_dir).name, shot, seed, render_s, variant) + ((style,) if style else ()))
         if report:
             report("restyle", 0.3, "Re-rendering shot 2")
@@ -479,7 +480,7 @@ def test_the_desk_draws_the_timeline_panel_and_posts_the_edits():
     knobs = APP.split("async function recutWithKnobs")[1].split("async function easyMake")[0]
     assert "body.shot_overrides = state.easy.tl.shots" in knobs  # the edits waiting for Apply ride along with the knobs
     load = APP.split("async function loadLane")[1].split("\n}\n")[0]
-    assert "state.easy.tl = null" in load and "loadedmetadata" in load
+    assert "? kept.tl : null;" in load and "loadedmetadata" in load  # afresh from the record (a reloaded cut's kept edits aside)
     # the swap's strings the earlier test pins are still there, inside the same panel
     assert 'data-act="easy-swap-mode"' in fn and 'class="lane-open"' in fn
     desk_css = (Path(__file__).resolve().parents[1] / "src" / "xenoform" / "ui_static" / "desk.css").read_text(encoding="utf-8")

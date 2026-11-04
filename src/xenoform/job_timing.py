@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import time
 from datetime import datetime
 from pathlib import Path
@@ -19,16 +20,22 @@ from typing import Any
 
 log = logging.getLogger("xenoform")
 
-PHASES = ("analyze", "draft", "morphs", "performer", "cut", "card", "save", "qa", "done")
+# "grow" is the stills a Make grows for its idea before the morphs (dense.grow_for_idea, grow_family_for_cut): no plan
+# knows it ahead, so its line's own "(about N s)" becomes its estimate when it starts (UI review F2: five minutes of a
+# grow sat at 2 % under a countdown that never counted it).
+PHASES = ("analyze", "draft", "grow", "morphs", "performer", "cut", "card", "save", "qa", "done")
 _ORDER = {p: i for i, p in enumerate(PHASES)}
+_MORPH_N = re.compile(r"\bmorph (\d+) of (\d+)", re.IGNORECASE)  # every engine's "Morph n of m" (Final's, Cloud's too)
+_ABOUT_S = re.compile(r"\(about (\d+(?:\.\d+)?) s\)")
 
 # The raw progress range each phase's reports span (cloud_morph._local_clips and final_tier.final_clips for the
 # morphs, upscale_pass after the Draft morphs for Fast Final, cloud_final.cloud_clips for Cloud Final, dense.run_simple's
 # performer slots, beatfx.compose for the cut); ``stage_frac`` normalises into it, picking the morphs range by the Make's tier.
 RANGES: dict[str, Any] = {"morphs": {"draft": (0.1, 0.55), "fast": (0.1, 0.58), "final": (0.12, 0.87), "cloud": (0.12, 0.82)},
                           "performer": (0.5, 0.6), "cut": (0.6, 0.95)}
-# The end card burn and the save report once, as they start: each is 0 % done until the next phase begins.
-_SINGLE_SHOT = {"card", "save"}
+# The grow, the end card burn and the save report once, as they start: each is 0 % done until the next phase begins
+# (``live`` moves them on by the time spent in them, against their seconds).
+_SINGLE_SHOT = {"grow", "card", "save"}
 # The bar still moves on these shares when plan_summary could not run (no features yet, an odd body).
 FALLBACK_WEIGHTS = {"analyze": 0.03, "draft": 0.02, "morphs": 0.45, "performer": 0.25, "cut": 0.20,
                     "card": 0.01, "save": 0.01, "qa": 0.03}
@@ -55,7 +62,7 @@ def phase_for(stage: str, detail: str = "", current: str | None = None) -> str:
     elif s == "animatic":
         phase = "draft"
     elif s == "restyle":
-        phase = "performer" if "performer" in d else "cut" if "your clip" in d else "morphs"
+        phase = "grow" if d.startswith("growing ") else "performer" if "performer" in d else "cut" if "your clip" in d else "morphs"
     elif s == "assemble":
         if "burning the end card" in d:
             phase = "card"
@@ -86,7 +93,19 @@ def stage_frac(phase: str, frac: float, tier: str = "draft", detail: str = "") -
     if rng:
         lo, hi = rng
         value = (value - lo) / (hi - lo)
+    if phase == "morphs" and "upscal" not in str(detail).lower():  # "morph n of m" bounds it: never past n of m done
+        n_m = morph_count(detail)
+        if n_m:
+            value = min(value, n_m[0] / n_m[1])
     return max(0.0, min(1.0, value))
+
+
+def morph_count(detail: str) -> tuple[int, int] | None:
+    """``(n, m)`` from a "Morph n of m" line, or None."""
+    hit = _MORPH_N.search(str(detail or ""))
+    if not hit or int(hit.group(2)) <= 0:
+        return None
+    return min(int(hit.group(1)), int(hit.group(2))), int(hit.group(2))
 
 
 # ------------------------------------------------------------------ plan
@@ -127,6 +146,7 @@ def plan_for(features: dict | None, body: dict | None, audio_path=None) -> dict[
                                      sections=sections or None, state=body if sections else None)
         est = summary.get("estimate") or {}
         plan = {"analyze": FIXED_S["analyze"], "draft": FIXED_S["draft"],
+                "grow": 0.0,  # known only when a grow starts and says how long it takes (tick)
                 "morphs": float(est.get("gpu_seconds") or 0.0),
                 "performer": float(est.get("performer_seconds") or 0.0),
                 "cut": float(est.get("look_seconds") or 0.0),
@@ -204,6 +224,8 @@ def tick(job: dict, stage: str, frac: float, detail: str, now: float) -> dict:
     job["elapsed_s"] = round(now, 1)
     prev = t.get("phase")
     phase = phase_for(stage, detail, prev)
+    if phase == "grow":
+        _count_grow(t, detail)
     frac_now = stage_frac(phase, frac, str(t.get("tier") or "draft"), detail)
     if phase != prev:
         t["phase"], t["phase_at"], t["stage_frac"] = phase, now, frac_now
@@ -211,12 +233,57 @@ def tick(job: dict, stage: str, frac: float, detail: str, now: float) -> dict:
     else:
         frac_now = max(float(t.get("stage_frac") or 0.0), frac_now)
         t["stage_frac"] = frac_now
+    # where this report left the phase, and how far it may move before the next one (``live``): one morph of "n of m"
+    n_m = morph_count(detail) if phase == "morphs" else None
+    t["tick_at"], t["step"] = round(now, 3), (round(1.0 / n_m[1], 6) if n_m else None)
     weights = t.get("weights") or weights_for(None)
     before = sum(float(weights.get(p, 0.0)) for p in PHASES[: _ORDER[phase]])
     overall = 1.0 if phase == "done" else before + float(weights.get(phase, 0.0)) * frac_now
     job["overall"] = round(max(float(job.get("overall") or 0.0), min(1.0, overall)), 4)
     job["eta_s"] = eta(t.get("plan"), phase, frac_now, now - float(t.get("phase_at") or 0.0))
     return job
+
+
+def _count_grow(t: dict, detail: str) -> None:
+    """A grow's line says how long it takes ("Growing 13 flowers objects for this idea (about 98 s)"): those seconds
+    join the plan and the shares are weighed again, so the clock counts the grow and the bar gives it its room."""
+    hit = _ABOUT_S.search(str(detail or ""))
+    plan = t.get("plan")
+    if not hit or not isinstance(plan, dict):
+        return
+    plan["grow"] = round(float(plan.get("grow") or 0.0) + float(hit.group(1)), 1)
+    t["weights"] = weights_for(plan)
+
+
+def live(job: dict, now: float) -> dict[str, Any]:
+    """``overall`` and ``eta_s`` as of ``now``, for the desk's poll: the phase under way moves on by the time spent since
+    its last report, at its planned seconds (the measured pace once it is a tenth in, as ``eta`` reads it), never past
+    the next step it will report (the next morph of "morph n of m"; 95 % of a phase that reports once, such as the
+    grow) and never back. A grow or a Final morph says nothing for minutes, and the bar sat still under them (UI review
+    F2). Empty when there is nothing to add: no plan, a phase it gave no seconds, a job that is not running (an edit
+    of a cut keeps no timing of its own)."""
+    t = job.get("timing")
+    if not isinstance(t, dict) or job.get("status") != "running":
+        return {}
+    phase, plan = t.get("phase"), t.get("plan")
+    if not phase or phase == "done" or phase not in _ORDER or not isinstance(plan, dict):
+        return {}
+    secs = float(plan.get(phase) or 0.0)
+    if secs <= 0:
+        return {}
+    now = max(0.0, float(now))
+    since = max(0.0, now - float(t["tick_at"])) if t.get("tick_at") is not None else 0.0
+    frac = float(t.get("stage_frac") or 0.0)
+    in_phase = max(0.0, now - float(t.get("phase_at") or 0.0))
+    pace = secs
+    if frac >= RATE_AFTER and in_phase > 0:
+        pace = max(RATE_CLAMP[0] * secs, min(RATE_CLAMP[1] * secs, in_phase / frac))
+    room = float(t.get("step") or 0.0) or (1.0 - frac)
+    frac_live = min(1.0, frac + min(since / pace, 0.95 * room))
+    weights = t.get("weights") or {}
+    before = sum(float(weights.get(p, 0.0)) for p in PHASES[: _ORDER[phase]])
+    overall = max(float(job.get("overall") or 0.0), min(1.0, before + float(weights.get(phase, 0.0)) * frac_live))
+    return {"overall": round(overall, 4), "eta_s": eta(plan, phase, frac_live, in_phase)}
 
 
 def breakdown(stages: list[dict], took_s: float) -> dict[str, float]:

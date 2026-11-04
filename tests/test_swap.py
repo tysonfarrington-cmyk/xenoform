@@ -279,7 +279,7 @@ def test_the_swap_route_runs_the_swap_and_bumps_the_video(tmp_path, monkeypatch)
     (folder / "xenoform.mp4").write_bytes(b"old")
     done = threading.Event()
 
-    def fake_swap(job_dir, slot, file, *, cfg=None, report=None, client=None):
+    def fake_swap(job_dir, slot, file, *, cfg=None, report=None, client=None, cancel=None):
         assert Path(job_dir).name == "swap-test" and slot == 1 and file == "cosmic/05_mobius_iridescent.jpg"
         if report:
             report("restyle", 0.3, "Re-rendering morph 1 of 2")

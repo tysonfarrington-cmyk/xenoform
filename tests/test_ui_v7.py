@@ -151,7 +151,8 @@ def test_download_on_a_reopened_video_shares_that_job(client, tmp_path, monkeypa
     share = APP.split("async function shareCut(button)")[1].split("\n}\n")[0]
     assert "state.easy.reopenId" in share and "?job=${encodeURIComponent(jobId)}" in share
     reopen = APP.split('act === "video-open"')[1].split("} else if")[0]
-    assert "state.job = { id: row.id" in reopen
+    assert "reopenRow(row);" in reopen  # the row and a cut's URL reopen the one way (UI review N4)
+    assert "state.job = { id: row.id" in APP.split("function reopenRow(row) {")[1].split("\n}\n")[0]
     # the server resolves a saved job folder even when the job record is gone (desk restarted)
     from xenoform import ui as ui_mod
 
