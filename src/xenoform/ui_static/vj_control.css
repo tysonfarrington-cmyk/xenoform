@@ -1,0 +1,207 @@
+/* Perform (docs/UI_REVIEW.md 6.5): the control view and the output window of /vj, on the desk's tokens (theme.css) and
+   components (desk.css: button.ghost, button.generate, button.text, .toggle, .chip, .xf-knob, .xf-lane, .panel). The
+   output window (html.out) is the canvas and nothing else: no bar, no HUD, no toast, no cursor. */
+:root {
+  --pf-role-intro: #3b4866;
+  --pf-role-calm: #2c5a52;
+  --pf-role-sustain: #46465a;
+  --pf-role-build: #8a6230;
+  --pf-role-release: #2b6a7e;
+  --pf-role-drop: #6b5cf0;
+  --pf-role-drop-late: #8f84ff;
+  --pf-role-outro: #3b4866;
+  --pf-rec: var(--x-bad);
+}
+
+/* ---------------------------------------------------------------- the output window */
+html.out, html.out body { margin: 0; height: 100%; overflow: hidden; background: #000; cursor: none; }
+html.out #pf { display: none; }
+html.out #stage { position: fixed; inset: 0; display: grid; place-items: center; background: #000; }
+#stage canvas { display: block; }
+
+/* ---------------------------------------------------------------- the control view */
+html:not(.out) body { margin: 0; min-height: 100vh; }
+.pf [hidden] { display: none; }  /* desk.css gives buttons and labels a display of their own */
+.pf { display: flex; flex-direction: column; min-height: 100vh; }
+.pf-bar {
+  position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap;
+  min-height: var(--x-bar); padding: 8px 16px; background: var(--x-surface); border-bottom: 1px solid var(--x-line);
+}
+.pf-title { display: flex; align-items: baseline; gap: 10px; flex: 1 1 200px; min-width: 0; }
+.pf-title h1 { margin: 0; font-size: 18px; font-weight: 600; }
+.pf-title .note { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-group, .pf-rec { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pf-output .note { font-size: 12px; color: var(--x-text-3); white-space: nowrap; }
+.pf-rec { padding-left: 12px; border-left: 1px solid var(--x-line); }
+.pf-last { font-size: 12px; white-space: nowrap; }
+.pf-last a { color: var(--x-text-2); }
+.rec-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--x-surface-4); flex: none; }
+.rec-dot.on { background: var(--pf-rec); box-shadow: 0 0 12px var(--pf-rec); animation: pf-blink 1s steps(2, start) infinite; }
+@keyframes pf-blink { 50% { opacity: 0.35; } }
+.rec-time { font: 500 13px/1 var(--x-font-mono); color: var(--pf-rec); white-space: nowrap; font-variant-numeric: tabular-nums; }
+button.ghost.rec { min-width: 64px; }
+button.ghost.rec.is-rec { background: var(--pf-rec); border-color: transparent; color: #fff; }
+@media (hover: hover) { button.ghost.rec.is-rec:hover:not(:disabled) { background: #ff7b7b; border-color: transparent; } }
+
+.pf-grid {
+  flex: 1; display: grid; gap: 12px; padding: 12px 16px 16px; align-items: start;
+  grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr);
+  grid-template-areas: "mon now" "mon src" "strip strip" "trans trans" "pads look";
+}
+.pf-monitor { grid-area: mon; }
+.pf-now { grid-area: now; }
+.pf-source { grid-area: src; }
+.pf-strip { grid-area: strip; }
+.pf-transport { grid-area: trans; }
+.pf-pads { grid-area: pads; }
+.pf-look { grid-area: look; }
+.pf-grid > .panel { padding: 12px 14px; min-width: 0; }
+.pf-grid h3 { margin: 0 0 8px; font-size: 14px; }
+.pf-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.pf-head h3 { margin: 0; }
+.pf-head .note { font-size: 12px; color: var(--x-text-3); text-align: right; }
+.pf-label { font-size: 12px; font-weight: 500; color: var(--x-text-3); min-width: 64px; }
+.pf-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 6px 0; }
+.pf-line select { min-height: var(--x-h-sm); }
+#src-note { margin: 8px 0 0; min-height: 1em; }
+
+/* the monitor: this window's canvas, or the output window's live picture */
+.pf-screen {
+  position: relative; aspect-ratio: 16 / 9; overflow: hidden; background: #000;
+  border: 1px solid var(--x-line); border-radius: var(--x-r-lg);
+}
+.pf-screen #stage { position: absolute; inset: 0; display: grid; place-items: center; background: #000; }
+.pf-screen #stage:fullscreen { position: fixed; }
+.pf-screen video#mon { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
+.pf-screen.linked #stage { visibility: hidden; }
+.pf-screen.linked::after {
+  content: "OUTPUT"; position: absolute; right: 10px; bottom: 8px; padding: 2px 6px; border-radius: var(--x-r-xs);
+  font: 500 10.5px/1.4 var(--x-font-mono); letter-spacing: 0.08em; color: var(--x-text-2); background: rgba(0, 0, 0, 0.55);
+}
+.pf-empty {
+  position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 12px; padding: 16px; text-align: center;
+  background: radial-gradient(ellipse at center, rgba(124, 108, 255, 0.10), transparent 70%);
+}
+.pf-empty[hidden] { display: none; }
+.pf-empty p { margin: 0; max-width: 34em; color: var(--x-text-2); }
+.pf-empty-acts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.pf-outnote { position: absolute; left: 12px; bottom: 10px; font-size: 12px; color: var(--x-text-2); }
+.pf-hud {
+  position: absolute; top: 10px; left: 10px; min-width: 210px; padding: 10px 12px; border-radius: var(--x-r-md);
+  font: 12px/1.5 var(--x-font-mono); color: #cfd2ff; background: rgba(11, 11, 15, 0.72); border: 1px solid var(--x-line-2);
+  transition: opacity var(--x-t) var(--x-ease);
+}
+.pf-hud.hide { opacity: 0; pointer-events: none; }
+.pf-hud .row { display: flex; justify-content: space-between; gap: 16px; }
+.pf-hud b { color: #fff; font-weight: 400; }
+#bars, .pf-bars { display: flex; gap: 5px; margin: 8px 0 4px; }
+#bars i, .pf-bars i { flex: 1; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.12); transition: background var(--x-t-fast); }
+#bars i.on, .pf-bars i.on { background: #fff; box-shadow: 0 0 10px #fff; }
+#meters { display: flex; gap: 4px; align-items: flex-end; height: 30px; margin-top: 6px; }
+#meters i { flex: 1; border-radius: 2px; background: var(--x-accent); opacity: 0.9; }
+
+/* now / next */
+.pf-nn { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 8px; align-items: baseline; padding: 4px 0; font-size: 14px; }
+.pf-nn + .pf-nn { border-top: 1px solid var(--x-line); }
+.pf-k { font: 500 11px/1.4 var(--x-font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--x-text-3); }
+#now-l { font-weight: 600; color: #fff; }
+.pf-nn.is-held #held-l { color: var(--x-warn); }
+.pf-beat { grid-template-columns: 52px 120px minmax(0, 1fr); align-items: center; }
+.pf-beat .pf-bars { margin: 0; }
+
+/* the strip */
+.pf-strip canvas { display: block; width: 100%; height: 132px; border-radius: var(--x-r-sm); cursor: pointer; background: var(--x-well); }
+.pf-strip canvas:focus-visible { outline: 2px solid var(--x-accent); outline-offset: 2px; }
+
+/* the transport */
+.pf-transport { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pf-icon { min-width: var(--x-h-md); padding: 0 10px; font-size: 15px; }
+.pf-play { min-width: 92px; }
+.pf-clock { font: 500 14px/1 var(--x-font-mono); color: var(--x-text); font-variant-numeric: tabular-nums; min-width: 96px; }
+.pf-switch { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+.pf-switch .pf-label { min-width: 0; }
+
+/* the pads: hold = show it */
+.pf-padgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.pf-pad {
+  position: relative; display: grid; align-content: space-between; gap: 4px; min-height: 72px; padding: 8px 10px; text-align: left;
+  border-radius: var(--x-r-md); background: var(--x-surface-2); border: 1px solid var(--x-line-2); color: var(--x-text);
+  box-shadow: var(--x-hi), var(--x-shadow-1); cursor: pointer; user-select: none; touch-action: none; font: inherit;
+}
+.pf-pad b { font: 600 11px/1 var(--x-font-mono); color: var(--x-text-3); }
+.pf-pad span { font-size: 13px; font-weight: 500; line-height: 1.25; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.pf-pad small { font-size: 11px; color: var(--x-text-3); }
+.pf-pad.is-look { background: var(--x-surface); }
+@media (hover: hover) { .pf-pad:hover { border-color: var(--x-line-3); background: var(--x-surface-3); } }
+.pf-pad.is-held { background: var(--x-accent); border-color: transparent; color: #fff; box-shadow: 0 0 0 2px var(--x-accent-ring), 0 8px 24px -10px var(--x-accent); }
+.pf-pad.is-held b, .pf-pad.is-held small { color: rgba(255, 255, 255, 0.8); }
+.pf-pad.is-under { border-color: var(--x-accent); }
+.pf-pad.is-drop { outline: 2px dashed var(--x-accent); outline-offset: 2px; }
+.pf-pad:active { transform: translateY(1px); }
+.pf-black {
+  width: 100%; min-height: var(--x-h-md); margin-top: 8px; border-radius: var(--x-r-md); font: 600 13px/1 var(--x-font-ui); letter-spacing: 0.04em;
+  color: var(--x-text-2); background: #050507; border: 1px solid var(--x-line-2); box-shadow: var(--x-hi); cursor: pointer;
+}
+@media (hover: hover) { .pf-black:hover { color: #fff; border-color: var(--x-line-3); } }
+.pf-black.on { color: #fff; background: var(--pf-rec); border-color: transparent; }
+.pf.is-black .pf-screen { box-shadow: 0 0 0 2px var(--pf-rec); }
+.pf-bank { margin-top: 10px; }
+.pf-bank summary { cursor: pointer; font-size: 12.5px; color: var(--x-text-2); min-height: 28px; display: flex; align-items: center; }
+.pf-bank-row { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 8px; align-items: start; margin: 8px 0; }
+.pf-bank-row .chips { display: flex; flex-wrap: wrap; gap: 6px; max-height: 132px; overflow: auto; }
+.pf-drag { cursor: grab; }
+.pf-drag.is-cut { border-color: var(--x-accent); }
+.pf-drag.is-still { border-style: dashed; }
+
+/* the look: transition, toggles, knobs, master fade */
+.pf-look .toggle.chips { margin-left: auto; }
+.pf-knobs { margin: 10px 0 6px; }
+.pf-fader { display: grid; grid-template-columns: 92px minmax(0, 1fr) 34px; align-items: center; gap: 8px; font-size: 12px; color: var(--x-text-2); margin: 6px 0; }
+.pf-fader input[type="range"] { width: 100%; accent-color: var(--x-accent); }
+.pf-fader output { text-align: right; color: var(--x-text-3); font-variant-numeric: tabular-nums; }
+
+/* the help: a docked sheet, never a modal; it closes on Load track and on Rec (V4) */
+.pf-help {
+  position: fixed; top: var(--x-bar); right: 0; bottom: 0; z-index: 20; width: min(460px, 100vw); overflow: auto; padding: 14px 16px 24px;
+  background: var(--x-surface); border-left: 1px solid var(--x-line-2); box-shadow: var(--x-shadow-pop);
+}
+.pf-help[hidden] { display: none; }
+.pf-help-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.pf-help table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.pf-help td { padding: 5px 6px; border-bottom: 1px solid var(--x-line); vertical-align: top; color: var(--x-text-2); }
+.pf-help td:first-child { font-family: var(--x-font-mono); color: #fff; white-space: nowrap; }
+.pf-help #midi-panel { margin-top: 12px; }
+
+/* the toast: up top, under the bar */
+.pf-toast {
+  position: fixed; top: calc(var(--x-bar) + 10px); left: 50%; z-index: 30; max-width: min(640px, calc(100vw - 32px)); padding: 8px 14px;
+  transform: translateX(-50%); border-radius: var(--x-r-md); font-size: 13px; color: #fff; background: var(--x-surface-4);
+  border: 1px solid var(--x-line-3); box-shadow: var(--x-shadow-pop); opacity: 0; pointer-events: none; transition: opacity var(--x-t) var(--x-ease);
+}
+.pf-toast.show { opacity: 1; }
+
+/* the monitor alone (H) and ?clean=1 */
+.pf.is-solo .pf-grid > :not(.pf-monitor), html.clean .pf-grid > :not(.pf-monitor), html.clean .pf-bar, html.clean .pf-toast { display: none; }
+.pf.is-solo .pf-grid, html.clean .pf-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "mon"; }
+.pf.is-solo .pf-screen, html.clean .pf-screen { aspect-ratio: auto; height: calc(100vh - var(--x-bar) - 32px); }
+html.clean .pf-screen { height: calc(100vh - 32px); }
+
+/* a laptop and narrower: one column, the transport near the picture */
+@media (max-width: 1100px) {
+  .pf-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "mon mon" "now src" "strip strip" "trans trans" "pads look"; }
+}
+@media (max-width: 760px) {
+  .pf-bar { padding: 8px 12px; gap: 8px; }
+  .pf-title { flex-basis: 100%; }
+  .pf-output .note { display: none; }
+  .pf-rec { padding-left: 0; border-left: 0; }
+  .pf-grid { padding: 10px 12px 16px; gap: 10px; grid-template-columns: minmax(0, 1fr); grid-template-areas: "mon" "now" "trans" "strip" "pads" "look" "src"; }
+  .pf-switch { margin-left: 0; }
+  .pf-switch .toggle button { min-width: 0; padding: 0 9px; }
+  .pf-padgrid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .pf-pad { min-height: 60px; padding: 6px 7px; }
+  .pf-pad span { font-size: 12px; }
+  .pf-help { top: 0; width: 100vw; }
+  .pf-label { min-width: 0; }
+  .pf-bank-row { grid-template-columns: minmax(0, 1fr); }
+}
