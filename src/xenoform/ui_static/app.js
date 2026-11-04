@@ -2788,8 +2788,8 @@ function shotsLane(easy) {
       </div>`
     : "";
   // a shot open: its drawer; none: the cut's own rows Under the hood (#hood-project, mounted by mountHood)
-  const drawer = swapping || songCut ? "" : picked ? timelineDrawer(easy, lane, tl, picked)
-    : `<details class="tl-hood-project" id="hood-project-drawer"${readDrawer("xeno-hood-project") ? " open" : ""}><summary>Under the hood <small>the cut's own settings, where each lives and what it costs</small></summary><div class="tl-hood" id="hood-project"></div></details>`;
+  const drawer = swapping || songCut ? "" : timelineDrawer(easy, lane, tl, picked)
+    || `<details class="tl-hood-project" id="hood-project-drawer"${readDrawer("xeno-hood-project") ? " open" : ""}><summary>Under the hood <small>the cut's own settings, where each lives and what it costs</small></summary><div class="tl-hood" id="hood-project"></div></details>`;
   return `<div class="shots-lane tl-panel${swapping ? " swapping" : ""}${songCut ? " song-lane" : ""}" aria-label="Timeline">
       ${layersBlock}
       <div class="lane-head"><span>Timeline${lane.mode === "stems" ? ` · ${esc(stemLabel(lane.layer))} layer` : songCut ? " · the whole song" : ""}</span><span class="note">${esc(facts)} · ${hint}</span>${toggle}</div>
@@ -3019,8 +3019,9 @@ document.addEventListener("change", (event) => {
   if (!dream && cost) cost.textContent = gpuCost(state.lane, b - a + 1);
 });
 // a re-cut row Under the hood (Beat FX, Subject sway, End card) waits in the bar at the bottom, as the knobs' rows do
+// (on the window: the click reaches it after the desk's own dispatcher on the document has set the value)
 const HOOD_RECUT_ACTS = { "easy-fx": "Beat FX", "easy-orbit": "Subject sway", "easy-card": "End card" };
-document.addEventListener("click", (event) => {
+window.addEventListener("click", (event) => {
   const el = event.target && event.target.closest ? event.target.closest(".hood-project [data-act]") : null;
   const act = el && el.dataset.act;
   if (act && HOOD_RECUT_ACTS[act] && state && state.easy && state.easy.phase === "result") touchKnob(HOOD_RECUT_ACTS[act]);
