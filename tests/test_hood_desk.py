@@ -49,12 +49,12 @@ def test_the_drawer_mounts_it_as_the_fourth_tab_and_the_cut_rows_with_no_shot_op
     assert 'getElementById("hood-shot")' in mount and 'getElementById("hood-project")' in mount
     assert "{ inPlace: true, shot: index }" in mount and '"rerender"' in mount and "shots/${index}/take" in mount and "onSelect" in mount
     assert "mountHood();" in _fn("function render() {")
-    project = _fn("function hoodProject() {")
-    for key in ("aspect", "tier", "gpu", "endpoint", "forms", "fx", "orbit", "card", "overlay", "images", "library", "recipe", "performer",
-                "paid", "connect"):
-        assert f'key: "{key}"' in project, key
-    assert project.count("where:") >= 15 and project.count("cost:") >= 15  # where each lives, what each costs (M4, C10)
-    assert '"Subject sway"' in project and "touchKnob(HOOD_RECUT_ACTS[act])" in APP
+    # the integration fix: the project scope mounts with no provider, so hood.js leaves t5's editable projectRows
+    assert "window.XenoHood.mount(projectHost, { jobId: id || \"\", shotIndex: null });" in mount and "hoodProject" not in APP
+    rows = _fn("function projectRows(easy) {")
+    for bit in ("remixBox(easy)", "ownRow(easy)", "stillsRow(easy)", "morphControl(", "cloudRows(easy)", '"easy-energy"', '"easy-orbit"'):
+        assert bit in rows, bit
+    assert 'closest("#hood-project [data-act]")' in APP and "touchKnob(HOOD_RECUT_ACTS[act])" in APP
 
 
 def test_a_rerender_under_the_hood_keeps_the_cuts_screen_with_progress_on_its_tile():

@@ -130,7 +130,7 @@ def test_simple_options_are_asked_with_the_real_tier_and_duration():
     fn = APP.split("async function loadSimpleOptions()")[1].split("function easyVideoId")[0]
     assert 'tier: easy.tier || "draft"' in fn and "duration: String(duration)" in fn
     assert "if (!duration) {" in fn
-    for caller in ("async function useDemoSong()", "async function uploadSong(file)"):
+    for caller in ("async function useDemoSong(keepStep)", "async function uploadSong(file)"):
         body = APP.split(caller)[1].split("\n}\n")[0]
         assert "adoptSession(" in body and "loadSimpleOptions()" in body, caller
     boot = APP.split("async function boot()")[1].split("\n}\n")[0]
@@ -149,7 +149,7 @@ def test_download_on_a_reopened_video_shares_that_job(client, tmp_path, monkeypa
     assert "state.easy.reopenId" in share and "?job=${encodeURIComponent(jobId)}" in share
     reopen = APP.split('act === "video-open"')[1].split("} else if")[0]
     assert "reopenCut(row.id);" in reopen  # the row and a cut's URL reopen the one way (UI review N4)
-    assert "state.job = { id: row.id" in APP.split("function reopenRow(row) {")[1].split("\n}\n")[0]
+    assert "state.job = { id: row.id" in APP.split("function reopenRow(row, keepNote) {")[1].split("\n}\n")[0]
     # the server resolves a saved job folder even when the job record is gone (desk restarted)
     from xenoform import ui as ui_mod
 

@@ -124,7 +124,7 @@ def test_the_inspector_docks_under_the_strip_with_a_fourth_tab():
     # re-render's progress on the shot's block); mountStrips no longer does
     mount = APP.split("function mountHood() {")[1].split("\n}\n")[0]
     assert 'getElementById("hood-shot")' in mount and "!shotHost.hidden" in mount and "window.XenoHood.mount(shotHost, {" in mount
-    assert "onRerender:" in mount and "window.XenoHood.mount(projectHost, { jobId: id || \"\", shotIndex: null, project: hoodProject })" in mount
+    assert "onRerender:" in mount and "window.XenoHood.mount(projectHost, { jobId: id || \"\", shotIndex: null })" in mount
     assert "XenoHood.mount" not in APP.split("function mountStrips() {")[1].split("\n}\n")[0]
     # the head speaks song time, bar and beat as well as the clock (L9)
     when = APP.split("function shotWhen(lane, s) {")[1].split("\n}\n")[0]

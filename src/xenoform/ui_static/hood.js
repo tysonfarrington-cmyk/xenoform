@@ -1,7 +1,7 @@
 /* Under the hood (docs/UI_REVIEW.md 6.4, T4): one click from a shot to every value its morph was rendered with, beside
    what the vibe's preset gives it, editable and re-rendered on the GPU; with no shot chosen, the cut's own rows (aspect,
-   model, GPU, where it renders, and the rest of Fine-tune and Work in progress), each saying where it lives and what
-   it costs.
+   model, GPU, where it renders, and the rest of the project's settings) when a host passes a project provider, each
+   saying where it lives and what it costs.
 
    window.XenoHood.mount(host, opts) draws the panel into ``host``; nothing here assumes where that is (the timeline's
    drawer today, the strip's inspector next):

@@ -291,7 +291,7 @@ def test_the_song_step_has_a_chip_for_every_bundled_song():
 
 
 def test_a_chip_loads_the_song_the_way_the_demo_button_does():
-    use = _fn("async function useBundledSong(id, keepStep)", "async function useDemoSong()")
+    use = _fn("async function useBundledSong(id, keepStep)", "async function useDemoSong(keepStep)")
     assert 'chip.textContent = "Loading…"' in use and "render();" not in use.split("if (state.audioId")[0]  # its own text first
     assert "state.easy.song = song.id" in use and "state.easy.songLabel = song.title" in use
     assert 'setEasyPhase("vibe")' in use and 'state.easy.phase = "vibe"' not in use  # through the one phase setter (test_simple_nav)
@@ -305,7 +305,7 @@ def test_a_chip_loads_the_song_the_way_the_demo_button_does():
     after = use.split('api("/api/songs/load"', 1)[1]
     assert "if (!state || !state.easy || state.easy.song !== song.id) return;" in after
     assert after.index("state.easy.song !== song.id) return;") < after.index("if (!data) {") < after.index("adoptSession(data);")
-    demo = _fn("async function useDemoSong()", "async function uploadSong(file)")
+    demo = _fn("async function useDemoSong(keepStep)", "async function uploadSong(file)")
     assert demo.index('api("/api/demo")') < demo.index('state.easy.song !== "demo") return;') < demo.index("adoptSession(")
     assert "Drop a file here, use the bundled demo, or pick one of the bundled songs." in APP_JS  # the note beside the chips
     assert "A song: one of the bundled songs, or your own file." in APP_JS  # the Source step's hint

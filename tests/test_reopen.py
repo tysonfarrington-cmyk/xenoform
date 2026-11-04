@@ -133,14 +133,14 @@ def test_the_desk_reopens_whole_and_clears_a_passages_label():
     # passage label and ends by reopening the cut whole
     opened = APP.split('} else if (act === "video-open") {')[1].split("} else if (act ===")[0]
     assert "reopenCut(row.id);" in opened
-    row = APP.split("function reopenRow(row) {")[1].split("\n}\n")[0]
-    assert 'state.easy.fromSong = "";' in row and row.rstrip().splitlines()[-1].strip().startswith("reopenWhole(row);")
+    row = APP.split("function reopenRow(row, keepNote) {")[1].split("\n}\n")[0]
+    assert 'state.easy.fromSong = "";' in row and row.rstrip().splitlines()[-1].strip().startswith("reopenWhole(row, keepNote);")
     for act in ("easy-showcase", "easy-again"):
         block = APP.split(f'}} else if (act === "{act}") {{')[1].split("} else if (act ===")[0]
         assert 'state.easy.fromSong = "";' in block, act
-    fn = APP.split("async function reopenWhole(row)")[1].split("async function loadVideos")[0]
+    fn = APP.split("async function reopenWhole(row, keepNote)")[1].split("async function loadVideos")[0]
     assert "/reopen`" in fn and "tookBreakdown(data.job && data.job.breakdown)" in fn and "loadCutSong(id, data)" in fn
-    assert "/song`, { method: \"POST\" }" in fn and "useBundledSong(song.bundled)" in fn and "adoptSession(payload)" in fn
+    assert "/song`, { method: \"POST\" }" in fn and "useBundledSong(song.bundled, true)" in fn and "useDemoSong(true)" in fn and "adoptSession(payload)" in fn
     rerender = APP.split('} else if (act === "video-rerender") {')[1].split("} else if (act ===")[0]
     assert "loadCutSong(id)" in rerender and "cardNote" in rerender and "easyMake()" in rerender
     assert "card-note" in APP.split("function galleryPanel()")[1].split("async function loadVideos")[0]
