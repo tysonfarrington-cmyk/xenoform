@@ -1210,7 +1210,7 @@ function renderEasy() {
       ${wholeSong(easy) ? `<button type="button" class="generate easy-make" data-act="easy-make"><span>Make the whole song</span><kbd>${esc(shortcutLabel())}</kbd></button>`
         : `<button type="button" class="generate easy-make" data-act="easy-make"><span>${proto ? `Make a ${esc(String(easyLength(easy)))} s prototype` : "Make my video"}</span><kbd>${esc(shortcutLabel())}</kbd></button>`}
       <p class="note house-line">${wholeSong(easy) ? esc(songMakeLine(easy)) : proto
-        ? `A ${esc(TIER_LABEL[easy.tier] || "Draft")} of ${esc(String(easyLength(easy)))} s around the drop, in minutes. Then refine it, and render the whole song or Final from its screen. Fine-tune → Length makes the whole song now.`
+        ? `A ${esc(TIER_LABEL[easy.tier] || "Draft")} of ${esc(String(easyLength(easy)))} s around the drop, in minutes. Then refine it, and render the whole song or Final from its screen. Fine-tune → Length → Whole song makes it all now, as one cut or by passages.`
         : `${esc(easy.aspect || "9:16")}, ${(easy.energyPreset || "dense") === "dense" ? "Dense" : "Flow"}, ${esc(TIER_LABEL[easy.tier] || "Draft")}, Beat FX and the house look. Fine-tune below the vibes if you want to; Final is one press on the cut's screen.`}</p>
       ${songsLine()}
       ${variationsRow(easy)}
@@ -1315,7 +1315,7 @@ async function easyBatch(button) {
 }
 
 // ---------------------------------------------------------------- Whole song (docs/SONG.md)
-// Length: Whole song makes the song as its passages (song_plan): a window Make each, of at most 16 morphs on the beat,
+// Length: Whole song, by passages makes the song as its passages (song_plan): a window Make each, of at most 16 morphs on the beat,
 // queued one after another on a free GPU through the Variations queue, then laid together on the song's beats with no
 // GPU (song_assemble). The estimate is the server's (GET /api/simple/options with whole_song=1): the morphs, the minutes
 // on each tier and what Cloud would spend. Cloud stays behind the usual credits tick.
@@ -1371,10 +1371,10 @@ function songLengthNote(easy, secs) {
   const s = state.simpleOptions && state.simpleOptions.song;
   if (s && s.error) return s.error;
   const clips = morphSource(easy) === "clips";  // a clips song (song_plan.clips_song): one clips cut over every passage
-  if (!s) return clips ? `Whole song (${clockText(secs)}): your clips as one cut over the song's passages, laid with the title on the last hit. Planning it...`
-    : `Whole song (${clockText(secs)}): the song's passages, each its own Make on the beat, laid together. Planning it...`;
-  if (clips) return `Whole song (${clockText(secs)}): your clips as one cut over the song's ${s.passages} passages, a morph between every two clips, cut on the beat and laid with the title on the last hit and the song at -16 LUFS. ${s.morphs} morphs in all; Draft ${songTierText(s, "draft")}.`;
-  return `Whole song (${clockText(secs)}): ${s.passages} passages, each its own Make of at most ${s.window_cap} morphs on the beat, queued one after another on a free GPU and laid together on the song's beats. ${s.morphs} morphs in all; Draft ${songTierText(s, "draft")}.`;
+  if (!s) return clips ? `Whole song, by passages (${clockText(secs)}): your clips as one cut over the song's passages, laid with the title on the last hit. Planning it...`
+    : `Whole song, by passages (${clockText(secs)}): the song's passages, each its own Make on the beat, laid together. Planning it...`;
+  if (clips) return `Whole song, by passages (${clockText(secs)}): your clips as one cut over the song's ${s.passages} passages, a morph between every two clips, cut on the beat and laid with the title on the last hit and the song at -16 LUFS. ${s.morphs} morphs in all; Draft ${songTierText(s, "draft")}.`;
+  return `Whole song, by passages (${clockText(secs)}): ${s.passages} passages, each its own Make of at most ${s.window_cap} morphs on the beat, queued one after another on a free GPU and laid together on the song's beats. ${s.morphs} morphs in all; Draft ${songTierText(s, "draft")}.`;
 }
 // How the passages' looks are drawn under the Vibes choice (song_vibes), so the Make line and the facts say what the
 // Vibes control says: a look a passage at Auto and All, else the vibes they share
@@ -2414,7 +2414,7 @@ function simpleOptions(easy) {
   return `<div class="simple-opts" data-tour="easy-options">
       ${simpleSeg("easy-energy", energy, [["flow", "Flow"], ["dense", "Dense"]], "Energy")}
       ${simpleSeg("easy-aspect", aspect, [["16:9", "16:9"], ["9:16", "9:16"], ["1:1", "1:1"]], "Aspect")}
-      ${simpleSeg("easy-length", wholeSong(easy) ? "song" : String(easyLength(easy)), [["0", "Full song"], ["60", "60 s"], ["30", "30 s"], ["song", "Whole song"], ["15", "15 s"]], "Length")}
+      ${simpleSeg("easy-length", wholeSong(easy) ? "song" : String(easyLength(easy)), [["15", "15 s"], ["30", "30 s"], ["60", "60 s"], ["0", "Whole song, one cut"], ["song", "Whole song, by passages"]], "Length")}
       <p class="note">${esc(lengthNote(easy))}</p>
       ${simpleSeg("easy-tier", tier, tiers, "Model")}
       ${clips ? `<p class="note">Cloud Final morphs object cuts only; a clips cut renders here.</p>` : ""}
@@ -3481,8 +3481,8 @@ function lengthNote(easy) {
   const secs = easySongSeconds();
   const len = easyLength(easy);
   if (wholeSong(easy)) return songLengthNote(easy, secs);
-  if (easyLengthIsProto(easy)) return `The prototype: ${len} s around the drop, quick to make. The whole song (${clockText(secs)}) is one press on the cut's screen, or pick Full song here.`;
-  if (!len) return `The whole song (${clockText(secs)}). Shorter cuts are centred on the drop.`;
+  if (easyLengthIsProto(easy)) return `The prototype: ${len} s around the drop, quick to make. The whole song (${clockText(secs)}) is one press on the cut's screen, or pick Whole song, one cut here.`;
+  if (!len) return `The whole song as one cut (${clockText(secs)}). Shorter cuts are centred on the drop; Whole song, by passages makes it a Make a passage.`;
   return secs > len ? `${len} s around the drop, starting on a beat with short fades.` : `The song is already under ${len} s, so the whole song.`;
 }
 function easyPlanFacts(easy) {
@@ -3961,7 +3961,7 @@ function restorePlace(place) {
       if (parts[6] && item.dataset.step !== parts[6]) return false;
       return true;
     });
-    // the chip clicked keeps the focus (15 s, not the row's first chip, Full song), else the row's first as before
+    // the chip clicked keeps the focus (60 s, not the row's first chip, 15 s), else the row's first as before
     node = same.find((item) => value && item.dataset.value === value) || same[0] || null;
   }
   if (!node || !node.focus) return;
@@ -5166,7 +5166,7 @@ document.addEventListener("click", async (event) => {
     if (box && !box.disabled) box.checked = state.paidCloud;
     render();
   } else if (act === "easy-length") {
-    // Whole song (song_plan): the song as its passages, a Make each, laid together; the Length itself is the whole song
+    // Whole song, by passages (song_plan): the song as its passages, a Make each, laid together; the Length itself is the whole song
     state.easy.wholeSong = el.dataset.value === "song";
     state.easy.lengthS = state.easy.wholeSong ? 0 : [0, 60, 30, 15].includes(Number(el.dataset.value)) ? Number(el.dataset.value) : 0;
     render();
@@ -5442,7 +5442,7 @@ document.addEventListener("click", async (event) => {
     link.click();
     link.remove();
   } else if (act === "easy-render-full" || act === "easy-render-final") {
-    // Render, after the prototype: the cut's own vibe, then the whole song (Length: Full song, kept) or this span at Final
+    // Render, after the prototype: the cut's own vibe, then the whole song (Length: Whole song, one cut, kept) or this span at Final
     if (!state.easy.song) {
       state.easy.note = "Choose the song again, then render.";
       setEasyPhase("choose");

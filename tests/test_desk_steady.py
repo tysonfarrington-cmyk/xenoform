@@ -40,7 +40,7 @@ def test_a_chip_under_the_knobs_stays_put_when_the_desk_redraws():
     assert "if (catalog) bindAll();" in mount  # at once when the catalog is in, not after a promise tick
     # a vibe card picked from More vibes moves into the grid: the anchor is that card, not the nth card of the list
     assert "data-vibe" in _fn("function anchorKey(node)", "function scrollerKey(")
-    # the chip clicked keeps the focus (15 s), not the first chip of its row (Full song)
+    # the chip clicked keeps the focus (60 s), not the first chip of its row (15 s)
     assert "node.dataset.value" in _fn("function placeKey(node)", "// Nothing moves under you")
     assert "item.dataset.value === value" in _fn("function restorePlace(place)", "function render()")
     # Back to the desk from Setup came back at the desk's foot (the kept place named the Setup link): a page switch opens

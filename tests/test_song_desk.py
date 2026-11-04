@@ -17,7 +17,7 @@ def _fn(name: str) -> str:
 
 def test_whole_song_sits_beside_the_30_s_window_in_the_length_row():
     row = APP.split('simpleSeg("easy-length"')[1].split('"Length")')[0]
-    assert '["30", "30 s"], ["song", "Whole song"]' in row and 'wholeSong(easy) ? "song"' in row
+    assert '["60", "60 s"], ["0", "Whole song, one cut"], ["song", "Whole song, by passages"]' in row and 'wholeSong(easy) ? "song"' in row
     click = APP.split('act === "easy-length"')[1].split("} else if")[0]
     assert 'state.easy.wholeSong = el.dataset.value === "song";' in click and "loadSimpleOptions()" in click
     saved = APP.split("const EASY_SAVED_KEYS = [")[1].split("];")[0]

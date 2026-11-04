@@ -725,3 +725,18 @@ console.log(JSON.stringify(out));
     got = _run(tmp_path, code)
     assert got["same"] == {"taken": True, "back": True}  # the playing node goes back in the new markup's place
     assert got["other"] is None and got["none"] is None  # another file gets the new node; no player, nothing kept
+
+
+# ---------------------------------------------------------------- W1: the two whole songs say which they are
+def test_the_length_chips_say_which_whole_song_and_run_by_length():
+    """W1: "Full song" and "Whole song" were two different things (one Make of the track; the passage queue with its own
+    screen and hours of GPU) in a shuffled order (Full song · 60 s · 30 s · Whole song · 15 s)."""
+    row = APP.split('simpleSeg("easy-length"', 1)[1].split('"Length")', 1)[0]
+    assert '[["15", "15 s"], ["30", "30 s"], ["60", "60 s"], ["0", "Whole song, one cut"], ["song", "Whole song, by passages"]]' in row
+    assert '"Full song"' not in APP and "pick Full song" not in APP
+    assert "or pick Whole song, one cut here." in _fn("lengthNote") and "The whole song as one cut" in _fn("lengthNote")
+    assert all(line.startswith("Whole song, by passages (") for line in
+               [part.split("`", 1)[1] for part in _fn("songLengthNote").split("return ")[1:] if "`" in part][:1])
+    assert "Fine-tune → Length → Whole song makes it all now, as one cut or by passages." in APP
+    song_md = (ROOT / "docs" / "SONG.md").read_text(encoding="utf-8")
+    assert "Length → Whole song, by passages" in song_md and "Length Full song" not in song_md
