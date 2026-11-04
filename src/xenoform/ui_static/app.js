@@ -800,38 +800,6 @@ function shotStrip(vibeId) {
     .join("");
 }
 
-// The drop card names the main drop run as the planner picks it (GET /api/opener's ``main``: pacing.main_run, the
-// heaviest drop run by heat times length, the run a whole song gives the vibe you chose), its time and length, and the
-// prototype window cut around it (``window``: pacing.prototype_window, the rule the Make's trim uses): one source.
-function dropCardTitle(opener) {
-  const main = opener && opener.main;
-  if (main) return `The main drop: ${clockText(Number(main.start || 0))}, ${Math.round(Number(main.seconds || 0))} s`;
-  return `The big moment is at ${clockText(Number((opener && opener.at) || 0))}`;
-}
-function dropCard() {
-  const opener = state.opener;
-  const ready = opener && opener.ready;
-  // Simple mode: plain words, not the library ids of the morph pair.
-  const noDrop = opener && !ready && opener.line;
-  const pair = ready ? dropCardTitle(opener) : (noDrop ? "No big drop in this song" : "Listening for the drop.");
-  const line = ready
-    ? (opener.main ? opener.line : "That is where the biggest change happens: one object turns into the next, right on the downbeat.")
-    : (noDrop ? "The video still morphs on the beat. It just has no single big moment." : "The song decides the moment. This lands before any GPU wait.");
-  return `<section class="drop-open" id="drop-open">
-    <p class="eyebrow">The drop</p>
-    <h3>${esc(pair)}</h3>
-    <p class="drop-line">${esc(line)}</p>
-    <button type="button" class="ghost" data-act="open-drop"${ready ? "" : " disabled"}>Play the drop</button>
-  </section>`;
-}
-// What the card is asked for: the song, the Length (the prototype's), the Shape (the window follows the main run when
-// the cut is paced) and the Drops (Max heats every run)
-function openerKey() {
-  const easy = state.easy || {};
-  const len = wholeSong(easy) ? 30 : (easyLength(easy) || 30);
-  return [state.audioId || "demo", len, breatheValue(easy) ? 1 : 0, easy.dropMode || "auto"].join("|");
-}
-
 // An example cut: about 15 s of a finished Cloud Final cut in a vibe (GET /api/vibes carries the url as `example`, from
 // examples/cuts). It opens in its own layer over the desk, so a redraw of the vibe grid under it leaves it playing.
 const EXAMPLE_LINE = "about 15 s of a finished Cloud Final cut in this vibe, picture only (the song is not in the file).";
@@ -987,6 +955,7 @@ function renderEasy() {
     else body = renderCut(easy, chosen);
   } else if (step === "perform") body = renderPerform(easy);
   else if (step === "source") body = renderSource(easy);
+  else if (step === "plan") body = renderPlan(easy, chosen);
   else body = renderDesk(easy, chosen, step);
   return `${body}${easy.phase === "showcase" ? "" : stepBar(easy, step)}`;
 }
@@ -1143,7 +1112,135 @@ function renderSource(easy) {
   </div>`;
 }
 
-// Plan and Tweak: the vibe and the feel over the song strip.
+// Plan (docs/UI_REVIEW.md 6.2): the monitor plays the sketch (the vibe's stills on the planned shots, no GPU), the vibe
+// rail beside it (the twelve cards, More vibes, the idea line, the chains), the song strip under them with the shots
+// laid on its beats, and under the strip what was clicked on it (the object a shot lands on, to pick another). The
+// drop card, the song's stats line, the Chain row, the Length row and Queue Drafts are gone from the first screens: the
+// strip shows the drops, its objects lane is the chain, its Draft window is the length.
+function renderPlan(easy, chosen) {
+  const vibe = vibeById(easy.vibe);
+  return `<div class="easy sl sl-plan" data-song-drop="1">
+    <div class="sl-top">
+      <section class="sl-monitor" aria-label="The sketch">${sketchMonitor(easy, chosen)}</section>
+      <aside class="panel sl-rail" data-tour="easy-vibe">
+        <div class="step-head"><h3>Vibe</h3><span>${esc(vibe ? vibe.line || vibe.name : "What everything is made of, and how it is lit")}</span></div>
+        <div class="vibe-grid vibe-rail" role="radiogroup" aria-label="Vibe">${vibeCards(easy, false, "featured")}</div>
+        ${moreVibes(easy)}
+        ${morphSource(easy) !== "clips" ? ideaBlock(easy) : ""}
+      </aside>
+    </div>
+    <section class="sl-strip" data-tour="easy-strip"><div class="song-strip" data-song-strip="desk" aria-label="The song strip"></div></section>
+    ${planDock(easy)}
+    <section class="panel sl-made">${sourceRow(easy)}</section>
+    ${stemsMode(easy) ? stemsStep(easy) : ""}
+    ${easy.note ? `<p class="note" id="easy-note">${esc(easy.note)}</p>` : ""}
+  </div>`;
+}
+
+// The sketch (decision 10): the vibe's stills on the planned shots and the song's own beats, played in the browser with
+// the song, each shot turning from the still it leaves into the one it lands on. No GPU, and labelled so.
+function sketchShots() {
+  const chain = state.chain && state.chain.data && !state.chain.data.error && !state.chain.data.provisional ? state.chain.data : null;
+  if (!chain || !Array.isArray(chain.times) || !chain.times.length) return null;
+  const off = Number(chain.window_start) || 0;
+  const stills = chain.stills || [];
+  const assign = chain.assign || chain.times.map((t, i) => i);
+  const url = (s) => (s && s.thumb ? media(s.thumb) : "");
+  return chain.times.map(([a, b], i) => {
+    const m = Number(assign[i] != null ? assign[i] : i);
+    const from = stills[m] || {};
+    const to = stills[m + 1] || from;
+    return { index: i, start: off + Number(a), end: off + Number(b), from: url(from), to: url(to), fromNoun: from.noun || "", toNoun: to.noun || "" };
+  });
+}
+function sketchMonitor(easy, chosen) {
+  const shots = easy.vibe ? sketchShots() : null;
+  if (!shots) {
+    return `<div class="sketch is-empty"${easy.vibe ? ` style="background-image:url(${esc(media(chosen.still))})"` : ""}>
+        <span class="sketch-badge">Sketch</span>
+        <p class="sketch-note">${easy.vibe ? "Laying the vibe's stills on the beats…" : "Pick a vibe: the sketch plays its stills on the song's beats, no GPU."}</p>
+      </div>`;
+  }
+  const first = shots[0];
+  return `<div class="sketch" id="sketch" data-act="sketch-play" role="button" tabindex="0" aria-label="Play the sketch: the vibe's stills on the beat, no GPU">
+      <img class="sketch-a" id="sketch-a" src="${esc(first.from)}" alt="">
+      <img class="sketch-b" id="sketch-b" src="${esc(first.to)}" alt="" style="opacity:0">
+      <span class="sketch-badge">Sketch · no GPU</span>
+      <span class="sketch-cap" id="sketch-cap">${esc(`${first.fromNoun} → ${first.toNoun}`)}</span>
+      <span class="sketch-play" aria-hidden="true">▶</span>
+    </div>
+    <p class="note sketch-line">The vibe's stills on the planned shots, each turning into the next on the beat: a sketch of the Draft, not the render.</p>`;
+}
+// The sketch at a time of the song: the shot under it, and how far its still has turned into the next one
+function paintSketch(t, playing) {
+  const box = document.getElementById("sketch");
+  if (!box) return;
+  box.classList.toggle("is-playing", !!playing);
+  const shots = sketchShots();
+  if (!shots || !shots.length) return;
+  let i = 0;
+  for (let k = 0; k < shots.length; k += 1) if (shots[k].start <= t + 1e-3) i = k;
+  const s = shots[i];
+  const p = t <= s.start ? 0 : t >= s.end ? 1 : (t - s.start) / Math.max(1e-3, s.end - s.start);
+  const a = document.getElementById("sketch-a");
+  const b = document.getElementById("sketch-b");
+  if (!a || !b) return;
+  if (box.dataset.shot !== String(i)) {
+    box.dataset.shot = String(i);
+    if (a.getAttribute("src") !== s.from) a.src = s.from;
+    if (b.getAttribute("src") !== s.to) b.src = s.to;
+    const cap = document.getElementById("sketch-cap");
+    if (cap) cap.textContent = `${s.fromNoun} → ${s.toNoun}`;
+  }
+  b.style.opacity = String(p * p * (3 - 2 * p));  // smoothstep: the change lands on the shot's end, the next beat
+}
+function preloadSketch() {
+  const shots = sketchShots();
+  if (!shots) return;
+  state.sketchLoaded = state.sketchLoaded || {};
+  shots.forEach((s) => [s.from, s.to].forEach((url) => {
+    if (url && !state.sketchLoaded[url]) {
+      state.sketchLoaded[url] = true;
+      const img = new Image();
+      img.src = url;
+    }
+  }));
+}
+// "bar 54 beat 1": where a time sits on the song's bar lines (the strip's), for the inspector and the dock (L9)
+function barBeat(t) {
+  const s = state.strip && state.strip.data;
+  const bars = (s && s.bars) || [];
+  if (!bars.length) return "";
+  let bi = -1;
+  for (let k = 0; k < bars.length; k += 1) if (bars[k] <= t + 0.03) bi = k;
+  if (bi < 0) return "before the first bar";
+  const beat = (s.beats || []).filter((b) => b >= bars[bi] - 0.03 && b <= t + 0.03).length;
+  return `bar ${bi + 1} beat ${Math.max(1, beat)}`;
+}
+// Under the strip on Plan: the object a clicked shot or pin lands on, and the vibe's library to pick another
+function planDock(easy) {
+  const chain = state.chain && state.chain.data;
+  if (!easy.vibe || !chain || chain.error || chain.provisional || easy.chainPick == null) return "";
+  const stills = chain.stills || [];
+  const slot = stills.find((s) => s.index === easy.chainPick);
+  if (!slot) return "";
+  const used = new Set(stills.filter((s) => s.index !== slot.index).map((s) => s.file));
+  const shot = (chain.assign || []).findIndex((m) => Number(m) + 1 === slot.index);
+  const at = shot >= 0 && chain.times && chain.times[shot] ? (Number(chain.window_start) || 0) + Number(chain.times[shot][1]) : null;
+  const where = at != null ? `shot ${shot + 1} lands on it at ${clockText(at)} in the song, ${barBeat(at)}` : slot.index === 0 ? "the Draft opens on it" : "";
+  return `<section class="panel sl-dock" id="sl-dock" aria-label="The object">
+      <div class="dock-head">
+        <b>${esc(slot.noun)}</b>
+        <span class="note">object ${slot.index + 1} of ${stills.length}${where ? ` · ${esc(where)}` : ""}${slot.pinned ? " · pinned" : ""}</span>
+        ${slot.pinned ? `<button type="button" class="text" data-act="easy-unpin" data-slot="${slot.index}">Let the pick choose</button>` : ""}
+        <button type="button" class="text" data-act="easy-chain-cancel">Close</button>
+      </div>
+      <p class="note">Pick what lands here instead: it holds through every render of this plan; the other objects are picked fresh.</p>
+      ${libraryPicker(easy.vibe, "easy-pin", slot.index, used)}
+    </section>`;
+}
+
+// Tweak (for now the desk as it was): the feel over the song strip.
 function renderDesk(easy, chosen, step) {
   const preview = easy.vibe ? chosen : VIBES[3];
   const songSet = !!easy.song;
@@ -1169,7 +1266,6 @@ function renderDesk(easy, chosen, step) {
         ${songBlock}
         ${songSet ? "" : `<p class="note">${esc(easy.songLabel || "Drop a file here, use the bundled demo, or pick one of the bundled songs.")}</p>`}
         <div class="song-strip" data-song-strip="desk" aria-label="The song strip"></div>
-        ${dropCard()}
       </section>
       <section class="easy-step" data-tour="easy-vibe">
         <div class="step-head"><h3>Vibe</h3><span>Pick one. You can try another after.</span></div>
@@ -1956,7 +2052,7 @@ function morphStyleRow(current, act, index, auto = true) {
   const chips = ids
     .map((id) => `<button type="button" class="chip${id === current ? " on" : ""}" data-act="${act}" data-value="${esc(id)}"${index == null ? "" : ` data-index="${index}"`} aria-pressed="${id === current ? "true" : "false"}" title="${esc(MORPH_STYLE_NOTES[id] || "")}">${esc(morphStyleLabel(id))}</button>`)
     .join("");
-  return `<div class="simple-seg morph-style-row"><span>Morph</span><div class="toggle chips" role="group" aria-label="How each morph changes">${chips}</div></div>`;
+  return `<div class="simple-seg morph-style-row"><span>Morph style</span><div class="toggle chips" role="group" aria-label="How each morph changes">${chips}</div></div>`;
 }
 
 // When the change happens inside each morph (xenoform.morph_timing, docs/MORPH_ENGINE_PLAN.md E2): the cached clip
@@ -2223,7 +2319,7 @@ function morphSource(easy) {
 }
 function sourceRow(easy) {
   const src = morphSource(easy);
-  const seg = simpleSeg("easy-source", src, [["objects", "Objects"], ["clips", "Your clips"], ["stems", "Stems"]], "Morph");
+  const seg = simpleSeg("easy-source", src, [["objects", "Objects"], ["clips", "Your clips"], ["stems", "Stems"]], "Made from");  // C8: one row a word ("Morph" named this and the style row)
   if (src === "stems") return `${seg}<p class="note">A layer for each stem you turn on, objects or clips, each cut on its own stem and laid over the others by how prominent you make it. The Stems step is below.</p>`;
   if (src !== "clips") return `${seg}<p class="note">The vibe's objects, or the things your line names, each turning into the next.</p>`;
   const has = !!(easy.ownFolder || easy.ownId);
@@ -2375,7 +2471,7 @@ function presetChips(easy) {
   const note = applied
     ? `${applied.name}: ${applied.line || "a chain of objects"}${pinned ? ` ${pinned} ${pinned === 1 ? "still" : "stills"} pinned in their slots.` : ""} ${easy.song ? "Make it when you are ready" : "Pick a song and Make"}; nothing is rendered yet.`
     : "One click sets the vibe, the line, the stills in their slots and the knobs a chain was loved with. It starts no render and spends no credits.";
-  return `<div class="preset-row" data-tour="easy-presets"><span class="shelf-label">Loved chains</span><div class="toggle chips preset-chips" role="group" aria-label="Loved chains">${chips}</div></div>
+  return `<div class="preset-row" data-tour="easy-presets"><span class="shelf-label">Chains</span><div class="toggle chips preset-chips" role="group" aria-label="Chains: the loved ones, one click each">${chips}</div></div>
         <p class="note preset-note" id="preset-note">${esc(note)}</p>`;
 }
 function applyPreset(id) {
@@ -3496,7 +3592,8 @@ function stripModel(where) {
     model.badge = lane.mode === "song" ? "The whole song" : "";
     return model;
   }
-  if (easy.song && (!state.chain || state.chain.key !== chainKey()) && !chainTimer && !(state.chain && state.chain.loading)) scheduleChain(chainKey());
+  // the plan's shots follow every choice: a stale preview is asked again (an answer to an older ask is dropped)
+  if (easy.song && (!state.chain || state.chain.key !== chainKey()) && !chainTimer) scheduleChain(chainKey());
   const win = draftWindow(song, easy);
   if (win) {
     model.window = { start: win.start, end: win.end, drag: true, label: `Draft ${Math.round(win.end - win.start)} s · ${clockText(win.start)} to ${clockText(win.end)}` };
@@ -3547,6 +3644,12 @@ function mountStrips() {
     window.XenoStrip.mount(host, model, stripHandlers(where, model));
   });
   paintPlayhead();
+  if (document.getElementById("sketch")) {  // the sketch shows where the song is, playing or not
+    preloadSketch();
+    const audio = document.getElementById("song-audio");
+    paintSketch(audio ? audio.currentTime || 0 : 0, !!(audio && !audio.paused && !audio.ended));
+    if (audio && !audio.paused) songHead();
+  }
 }
 // the strip is the section overview at phone width and the full lanes above it: a resize across the line redraws it
 let stripWide = null;
@@ -3593,7 +3696,8 @@ function songAudio() {
     audio.id = "song-audio";
     audio.preload = "auto";
     document.body.appendChild(audio);
-    ["play", "pause", "seeked", "ended"].forEach((type) => audio.addEventListener(type, () => songHead()));
+    // timeupdate too: a page in the background gets no animation frames, and the sketch and the playhead still move
+    ["play", "pause", "seeked", "ended", "timeupdate"].forEach((type) => audio.addEventListener(type, () => songHead()));
   }
   const src = media(state.audioUrl || "/media/audio/demo");
   if (audio.getAttribute("src") !== src) audio.src = src;
@@ -3613,16 +3717,34 @@ function songHead() {
   if (!audio || !window.XenoStrip) return;
   const playing = !audio.paused && !audio.ended;
   window.XenoStrip.setPlayhead("desk", audio.currentTime || 0, playing);
+  paintSketch(audio.currentTime || 0, playing);
   if (playing && !songHeadFrame) {
     const loop = () => {
       songHeadFrame = 0;
       const a = document.getElementById("song-audio");
-      if (!a || a.paused || a.ended || !window.XenoStrip) return;
+      if (!a || a.paused || a.ended || !window.XenoStrip) {
+        paintSketch((a && a.currentTime) || 0, false);
+        return;
+      }
       window.XenoStrip.setPlayhead("desk", a.currentTime || 0, true);
+      paintSketch(a.currentTime || 0, true);
       songHeadFrame = requestAnimationFrame(loop);
     };
     songHeadFrame = requestAnimationFrame(loop);
   }
+}
+// Play or pause the sketch: the song from where it is when that is inside the plan, else from the first shot
+function toggleSketch(from) {
+  const audio = songAudio();
+  if (from == null && !audio.paused) {
+    audio.pause();
+    return;
+  }
+  const shots = sketchShots() || [];
+  const first = shots.length ? shots[0].start : 0;
+  const last = shots.length ? shots[shots.length - 1].end : Number(state.duration) || 0;
+  const now = audio.currentTime || 0;
+  playSongAt(from != null ? Number(from) : now >= first && now < last - 0.2 ? now : first);
 }
 
 function applySimpleRecipe(recipe) {
@@ -4368,7 +4490,6 @@ function render() {
   if (window.XENO_KNOBS_MOUNT) window.XENO_KNOBS_MOUNT();  // the knob strip (ui_v6.js) in now, not a frame after the place is put back
   mountStrips();  // the song strip (strip.js) into its hosts, keeping its zoom and scroll
   if (window.XENO_TUTORIAL) window.XENO_TUTORIAL.sync();
-  scheduleOpener();
   if (pageSwitch) { if (document.body.dataset.tour !== "1") window.scrollTo(0, pageScroll[state.view] || 0); }  // the tour places itself
   else restorePlace(place);
   paintPlayhead();
@@ -4656,6 +4777,10 @@ function playheadLoop() {
 ["play", "playing", "seeked", "timeupdate", "pause", "loadedmetadata"].forEach((type) => {
   document.addEventListener(type, (event) => {
     if (!event.target || event.target.id !== "player") return;
+    if (type === "play") {  // the cut plays with its own sound: the song under the sketch or the strip stops
+      const song = document.getElementById("song-audio");
+      if (song && !song.paused) song.pause();
+    }
     if (!playheadFrame) playheadLoop();
   }, true);
 });
@@ -5012,7 +5137,6 @@ function adoptSession(data, options = {}) {
     paidCloud: paidCloudFor(data, previous),
     endpoint: data.endpoint || (previous && previous.endpoint) || "",
     recipe: data.recipe,
-    opener: previous && previous.audioId === data.audio_id ? previous.opener || null : null,
     video: data.video || (previous && previous.video) || "",
     videoLabel: data.video ? data.video_label || "Reference base form" : "No picture yet",
     reference: data.reference || "",
@@ -5839,6 +5963,18 @@ document.addEventListener("click", async (event) => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   } else if (act === "easy-go-step") {
     goStep(el.dataset.step || "source");
+  } else if (act === "sketch-play") {
+    toggleSketch();
+  } else if (act === "easy-plan-shot") {
+    // a planned shot on the strip: the object it lands on opens under the strip, and the sketch plays from it
+    const chain = state.chain && state.chain.data;
+    const i = Number(el.dataset.index);
+    if (chain && !chain.provisional && !chain.error) {
+      const m = Array.isArray(chain.assign) && chain.assign[i] != null ? Number(chain.assign[i]) : i;
+      state.easy.chainPick = m + 1;
+      render();
+    }
+    toggleSketch(Number(el.dataset.at) || 0);
   } else if (act === "easy-quality") {
     state.easy.renderQuality = RENDER_QUALITIES.some(([id]) => id === el.dataset.value) ? el.dataset.value : "draft";
     state.easy.cloudFinalOk = false;  // spending credits is confirmed afresh each time Cloud is picked
@@ -5864,8 +6000,6 @@ document.addEventListener("click", async (event) => {
     downloadModel(el.dataset.id);
   } else if (act === "copy-job") {
     copyText(state.job && state.job.diagnostics ? state.job.diagnostics : state.job && state.job.error);
-  } else if (act === "open-drop") {
-    openDrop();
   } else if (act === "copy-snippet") {
     const node = document.getElementById(`snippet-${el.dataset.snippet}`);
     copyText(node ? node.textContent : "");
@@ -6172,6 +6306,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === " ") {
     const control = keyTarget(event) && keyTarget(event).closest("button, a, summary");
     if (control) return;
+    if (document.getElementById("sketch")) {  // on Plan, Space plays and pauses the sketch
+      event.preventDefault();
+      toggleSketch();
+      return;
+    }
     const play = document.querySelector("[data-act=easy-play]");
     if (play) {
       event.preventDefault();
@@ -7113,88 +7252,6 @@ async function copyDiagnostics() {
   const data = response.ok ? await response.json() : {};
   const job = state && state.job && state.job.diagnostics;
   await copyText([data.diagnostics, job].filter(Boolean).join("\n\n"));
-}
-
-function scheduleOpener() {
-  const card = document.getElementById("drop-open");
-  if (!card || !state) return;
-  const key = state.audioId || "demo";
-  const ask = openerKey();
-  if (state.opener && state.opener.audioId === key && state.opener.key === ask) return;  // answered for this song and Shape
-  if (scheduleOpener.asking === ask) return;  // already asked: a render while it answers does not ask again
-  scheduleOpener.asking = ask;
-  const token = (scheduleOpener.token = (scheduleOpener.token || 0) + 1);
-  const easy = state.easy || {};
-  api("/api/opener", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      audio_id: key,
-      // the prototype window the Make would cut, around the main drop run (pacing.prototype_window)
-      length_s: wholeSong(easy) ? 30 : (easyLength(easy) || 30),
-      breathe: breatheValue(easy) ? "on" : "off",
-      drop_mode: easy.dropMode || "auto",
-      vibe: (state.easy && state.easy.vibe) || "",
-      library_folder: state.libraryFolder || "",
-      exclude_faces: state.excludeFaces !== false,
-      allow_pd_us: !!state.allowPdUs,
-      library_pins: state.libraryPins || [],
-      library_bans: state.libraryBans || [],
-    }),
-  })
-    .then(async (response) => {
-      if (token !== scheduleOpener.token || !state) return;
-      const body = response.ok ? await response.json() : { ready: false, line: "The drop did not read." };
-      body.audioId = key;
-      body.key = ask;
-      state.opener = body;
-      paintOpener();
-    })
-    .catch(() => {})
-    .finally(() => { if (scheduleOpener.asking === ask) scheduleOpener.asking = ""; });
-}
-
-function paintOpener() {
-  const card = document.getElementById("drop-open");
-  const opener = state && state.opener;
-  if (!card || !opener) return;
-  const title = card.querySelector("h3");
-  const line = card.querySelector(".drop-line");
-  const button = card.querySelector("[data-act='open-drop']");
-  const pair = opener.main ? dropCardTitle(opener)  // the planner's main drop run, its time and length
-    : opener.source && opener.target ? `${opener.source} → ${opener.target}` : (opener.becomes || "Impact");
-  if (title) title.textContent = opener.ready ? pair : "Finding the downbeat…";
-  if (line) line.textContent = opener.line || "";
-  if (button) button.disabled = !opener.ready;
-}
-
-function openDrop() {
-  const opener = state && state.opener;
-  if (!opener || !opener.ready) return;
-  let audio = document.getElementById("drop-audio");
-  if (!audio) {
-    audio = document.createElement("audio");
-    audio.id = "drop-audio";
-    audio.preload = "auto";
-    document.body.appendChild(audio);
-  }
-  const src = media(state.audioUrl || "/media/audio/demo");
-  if (audio.getAttribute("src") !== src) audio.src = src;
-  const at = Number(opener.at) || 0;
-  const start = () => {
-    try {
-      audio.currentTime = at;
-    } catch (err) {
-      /* the element may not be seekable yet */
-    }
-    audio.play().catch(() => {});
-  };
-  if (audio.readyState >= 1) start();
-  else audio.addEventListener("loadedmetadata", start, { once: true });
-  const card = document.getElementById("drop-open");
-  if (!card) return;
-  card.classList.add("is-hit");
-  window.setTimeout(() => card.classList.remove("is-hit"), 80);
 }
 
 function readMorphHit() {
