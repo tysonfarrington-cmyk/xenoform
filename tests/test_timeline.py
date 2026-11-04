@@ -479,7 +479,7 @@ def test_the_desk_draws_the_timeline_panel_and_posts_the_edits():
     knobs = APP.split("async function recutWithKnobs")[1].split("async function easyMake")[0]
     assert "body.shot_overrides = state.easy.tl.shots" in knobs  # the edits waiting for Apply ride along with the knobs
     load = APP.split("async function loadLane")[1].split("\n}\n")[0]
-    assert "state.easy.tl = null" in load and "loadedmetadata" in load
+    assert "? kept.tl : null;" in load and "loadedmetadata" in load  # afresh from the record (a reloaded cut's kept edits aside)
     # the swap's strings the earlier test pins are still there, inside the same panel
     assert 'data-act="easy-swap-mode"' in fn and 'class="lane-open"' in fn
     desk_css = (Path(__file__).resolve().parents[1] / "src" / "xenoform" / "ui_static" / "desk.css").read_text(encoding="utf-8")

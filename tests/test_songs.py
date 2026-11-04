@@ -276,7 +276,7 @@ def test_load_answers_the_desks_comfy_endpoint_not_the_example_configs(quiet_spl
 
 # ---------------------------------------------------------------- the desk
 def test_the_song_step_has_a_chip_for_every_bundled_song():
-    block = _fn("const songBlock = songSet", "const proto = easyLengthIsProto(easy);")
+    block = _fn("const picker = `", "const proto = easyLengthIsProto(easy);")  # the picker (Change opens it under the song too)
     assert 'data-act="easy-demo">Bundled demo</button>' in block  # the demo button stays where it was
     assert '<div id="bundled-songs">${songsRow(easy)}</div>' in block  # the row lands under the actions, in its own slot
     row = _fn("function songsRow(easy)", "async function useBundledSong(id)")
@@ -297,7 +297,8 @@ def test_a_chip_loads_the_song_the_way_the_demo_button_does():
     assert 'api("/api/songs/load", { method: "POST"' in use and "JSON.stringify({ id: song.id })" in use
     assert "adoptSession(data);" in use and "await settleCut({ full: true });" in use
     assert "loadSimpleOptions().then(() => render());" in use
-    assert 'state.easy.song = "";' in use and 'setEasyPhase("choose");' in use  # a failed load falls back to the song step
+    # a failed load falls back to the song step (or to the song Change kept, UI review N12)
+    assert 'state.easy.song = was ? was.song : "";' in use and 'setEasyPhase("choose");' in use
     # two chips in quick succession: the answer of a chip that is no longer the chosen song is dropped, before both the
     # adopt and the fallback, so the desk never names one song and holds another; the demo button drops its answer too
     after = use.split('api("/api/songs/load"', 1)[1]

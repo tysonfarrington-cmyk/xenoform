@@ -32,8 +32,10 @@ function viewFromHash() {
   return "simple";
 }
 
-// One place sets the Simple phase and keeps the URL with it (#simple, #simple/making, #simple/result,
-// #simple/showcase), so the browser's Back button, the breadcrumb and the logo agree on where you are.
+// One place sets the Simple phase and keeps the URL with it (#simple, #simple/making/<job>, #simple/result/<cut>,
+// #simple/showcase), so the browser's Back button, the breadcrumb and the logo agree on where you are, and a reload or
+// a shared link of a cut's screen opens that cut again (UI review N4); a running job is kept in localStorage too, so a
+// reload of its making screen takes it up again (N3).
 // "result" and "showcase" push a history entry; "making" and "choose" replace the current one, so Back
 // from a finished video lands on the song screen, never on a dead making screen.
 function setEasyPhase(phase) {
@@ -41,7 +43,11 @@ function setEasyPhase(phase) {
   state.easy.phase = phase;
   if (phase === "showcase") state.easy.showcase = true;
   else if (phase !== "result") state.easy.showcase = false;
-  const want =phase === "making" || phase === "result" || phase === "showcase" ? `#simple/${phase}` : "#simple";
+  const job = state.job || {};
+  const id = phase === "result" ? easyVideoId() : phase === "making" && job.status === "running" ? String(job.id || "") : "";
+  if (phase === "making") keepMaking(id);
+  else dropMaking();
+  const want =phase === "making" || phase === "result" || phase === "showcase" ? `#simple/${phase}${id ? `/${encodeURIComponent(id)}` : ""}` : "#simple";
   if (location.hash === want) return;
   try {
     if (phase === "result" || phase === "showcase") history.pushState(null, "", want);
@@ -52,10 +58,12 @@ function setEasyPhase(phase) {
 }
 
 // The phase from the URL after Back, Forward or a reload. A running job keeps the making screen whatever
-// the URL says, and "making" is never re-entered from the URL alone (the job that was running is gone).
+// the URL says, and "making" is never re-entered from the URL alone (boot asks the desk first: resumeMaking).
+// A cut's URL (#simple/result/<id>) opens that cut, as its row in My videos does.
 function easyPhaseFromHash() {
   if (!state || !state.easy) return;
-  const sub = (location.hash || "#simple").replace("#", "").split("/")[1] || "";
+  const parts = (location.hash || "#simple").replace("#", "").split("/");
+  const sub = parts[1] || "";
   const running = !!(state.job && state.job.status === "running");
   if (running) {
     state.easy.phase = "making";
@@ -67,6 +75,11 @@ function easyPhaseFromHash() {
     return;
   }
   state.easy.showcase = false;
+  const cut = sub === "result" ? hashId(parts[2]) : "";
+  if (cut && cut !== easyVideoId()) {  // a reload, a shared link, or Back and Forward onto another cut's screen
+    reopenCut(cut, { fromUrl: true });
+    return;
+  }
   const haveVideo = !!((state.job && state.job.video) || state.easy.playedHere || state.easy.reopenUrl);
   if (sub === "result" && haveVideo) {
     state.easy.phase = "result";
@@ -76,6 +89,96 @@ function easyPhaseFromHash() {
   if (location.hash && location.hash !== "#simple") {
     try { history.replaceState(null, "", "#simple"); } catch (err) {}
   }
+}
+function hashId(part) {
+  try { return decodeURIComponent(String(part || "")); } catch (err) { return ""; }
+}
+// What the URL names on the desk: {phase: "making" | "result", id} for #simple/making/<job> and #simple/result/<cut>.
+// #render/<job> (the strip's step URL, docs/notes/t5-strip.md) names a job either way: boot asks the desk which it is.
+function urlTarget() {
+  const parts = (location.hash || "").replace("#", "").split("/");
+  if (parts[0] === "render" && parts[1]) return { phase: "making", id: hashId(parts[1]) };
+  return parts[0] === "simple" && (parts[1] === "making" || parts[1] === "result") ? { phase: parts[1], id: hashId(parts[2]) } : null;
+}
+
+// The job on the making screen, kept in localStorage while it runs (UI review N3): the page says "You can leave this
+// page", and a reload, or the desk opened again, comes back to its making screen with its own clock and title.
+const MAKING_KEY = "xeno-making";
+function keepMaking(id) {
+  const easy = state && state.easy;
+  if (!easy || !id) return;
+  try {
+    localStorage.setItem(MAKING_KEY, JSON.stringify({ id, at: easy.startedAt || Date.now(), making: easy.making || null, recut: !!easy.recutting,
+      reopenId: easy.reopenId || "", reopenUrl: easy.reopenUrl || "", madeLength: easy.madeLength == null ? null : easy.madeLength,
+      madeTier: easy.madeTier || "", resultVibe: easy.resultVibe || "", fromSong: easy.fromSong || "" }));
+  } catch (err) {}
+}
+function keptMaking() {
+  try {
+    const kept = JSON.parse(localStorage.getItem(MAKING_KEY) || "null");
+    return kept && typeof kept === "object" && kept.id ? kept : null;
+  } catch (err) {
+    return null;
+  }
+}
+function dropMaking() {
+  try { localStorage.removeItem(MAKING_KEY); } catch (err) {}
+}
+// Boot with a job kept (or named by #simple/making/<job>): ask the desk. Still running: its making screen again, the
+// clock from when it started, poll() takes it up. Finished meanwhile: its cut. Gone (the desk restarted): the cut if it
+// was saved, else the plain word. ``quiet`` (the desk opened at #simple): only a running job comes back.
+async function resumeMaking(id, kept, quiet) {
+  if (!id || !state || !state.easy) return;
+  let job = null;
+  let status = 0;
+  try {
+    const res = await api(`/api/jobs/${encodeURIComponent(id)}`);
+    status = res.status;
+    if (res.ok) job = await res.json();
+  } catch (err) {
+    job = null;
+  }
+  if (!state || !state.easy) return;
+  const k = kept && kept.id === id ? kept : {};
+  if (job && job.status === "running") {
+    Object.assign(state.easy, { recutting: !!k.recut, making: k.making || null, reopenId: k.reopenId || "", reopenUrl: k.reopenUrl || "",
+      fromSong: k.fromSong || "", playedHere: false, showcase: false, failed: false, firstMorph: null, lost: null });
+    if (k.resultVibe) state.easy.resultVibe = k.resultVibe;
+    if (k.madeTier) state.easy.madeTier = k.madeTier;
+    if (k.madeLength !== undefined) state.easy.madeLength = k.madeLength;
+    state.job = job;
+    state.easy.startedAt = Number(k.at) || (Number(job.started) > 0 ? Number(job.started) * 1000 : Date.now());
+    state.easy.note = easyProgressText(job);
+    if (easyTimer) clearInterval(easyTimer);
+    easyTimer = setInterval(tickEasy, 1000);
+    setEasyPhase("making");
+    poll(id);
+    return;
+  }
+  dropMaking();
+  if (quiet) {
+    easyPhaseFromHash();
+    return;
+  }
+  if (job && job.status === "done") {  // it finished while the page was away: its cut waits
+    reopenCut(id, { fromUrl: true });
+    return;
+  }
+  if (job && (job.status === "error" || job.status === "cancelled")) {
+    const reason = String(job.error || job.detail || "").trim() || "no reason given";
+    const why = job.status === "cancelled" ? "was stopped." : `stopped: ${reason}${/[.!?]$/.test(reason) ? "" : "."}`;
+    if (k.recut) {  // an edit of a cut: the cut is as it was
+      reopenCut(id, { fromUrl: true, note: `The edit ${why}` });
+      return;
+    }
+    state.easy.note = `The render ${why}`;
+  } else if (status === 404) {  // the desk restarted: the cut, if it was saved before
+    reopenCut(id, { fromUrl: true, missing: "The render that was running is gone: the desk restarted before it finished." });
+    return;
+  } else {
+    state.easy.note = "The desk did not say what became of the render that was running. Reload once it answers.";
+  }
+  setEasyPhase("choose");
 }
 
 // Song › Vibe › Prototype › Refine › Share: the desk's stages, on every screen. Song and Vibe are the first screen,
@@ -124,6 +227,7 @@ function saveEasy() {
     EASY_SAVED_KEYS.forEach((key) => { if (state.easy[key] !== undefined) out[key] = state.easy[key]; });
     localStorage.setItem("xeno-easy", JSON.stringify(out));
   } catch (err) {}
+  keepEdits();  // and the open cut's edits waiting for Apply, with its id (a reload of #simple/result/<id> finds them)
 }
 function loadEasy() {
   try {
@@ -1035,17 +1139,23 @@ function renderEasy() {
   }
   const preview = easy.vibe ? chosen : VIBES[3];
   const songSet = !!easy.song;
+  // Change keeps the song until another one is picked (UI review N12): its row stays, the picker opens under it, and
+  // Cancel keeps it; an uploaded track used to be gone at the first click, to be uploaded and analysed again
+  const changing = songSet && !!easy.changingSong;
+  const picker = `<div class="easy-actions">
+        <label class="upload solid">Choose a song<input id="easy-file" type="file" accept="audio/*,.wav,.mp3,.flac,.ogg" aria-label="Choose a song" /></label>
+        <button type="button" class="ghost${easy.song === "demo" ? " on" : ""}" data-act="easy-demo">Bundled demo</button>
+      </div>
+      <div id="bundled-songs">${songsRow(easy)}</div>`;
   const songBlock = songSet
     ? `<div class="songrow">
         <span class="play-dot" aria-hidden="true">▶</span>
         <div><strong>${esc(easy.songLabel || "Chosen")}</strong><span>${esc(songFacts() || "Ready")}</span>${stemsLine()}</div>
         ${waveBars()}
-      </div>`
-    : `<div class="easy-actions">
-        <label class="upload solid">Choose a song<input id="easy-file" type="file" accept="audio/*,.wav,.mp3,.flac,.ogg" aria-label="Choose a song" /></label>
-        <button type="button" class="ghost${easy.song === "demo" ? " on" : ""}" data-act="easy-demo">Bundled demo</button>
-      </div>
-      <div id="bundled-songs">${songsRow(easy)}</div>`;
+      </div>${changing ? picker : ""}`
+    : picker;
+  const songNote = changing ? `Pick another song, or Cancel to keep ${easy.songLabel || "this one"}.`
+    : easy.songLabel || "Drop a file here, use the bundled demo, or pick one of the bundled songs.";
   const proto = easyLengthIsProto(easy);
   return `<div class="easy easy-desk">
     <header class="easy-intro">
@@ -1054,9 +1164,9 @@ function renderEasy() {
     </header>
     <section class="easy-main">
       <section class="easy-step" data-tour="easy-song" data-song-drop="1">
-        <div class="step-head"><h3>Song</h3>${songSet ? '<button type="button" class="text" data-act="easy-step" data-step="song">Change</button>' : ""}</div>
+        <div class="step-head"><h3>Song</h3>${changing ? '<button type="button" class="text" data-act="easy-song-keep">Cancel</button>' : songSet ? '<button type="button" class="text" data-act="easy-step" data-step="song">Change</button>' : ""}</div>
         ${songBlock}
-        ${songSet ? "" : `<p class="note">${esc(easy.songLabel || "Drop a file here, use the bundled demo, or pick one of the bundled songs.")}</p>`}
+        ${songSet && !changing ? "" : `<p class="note">${esc(songNote)}</p>`}
         ${dropCard()}
       </section>
       <section class="easy-step" data-tour="easy-vibe">
@@ -2886,8 +2996,8 @@ async function postCutEdit(id, route, body, detail, at, stage) {
     }
     state.job = Object.assign({}, state.job || {}, { id, status: "running", stage: stage || "restyle", progress: 0.05, detail });
     state.easy.tlSeek = at != null ? Number(at) : null;
-    setEasyPhase("making");
     state.easy.recutting = true;
+    setEasyPhase("making");
     render();
     poll(id);
     return true;
@@ -2958,8 +3068,8 @@ async function swapStill(id, slot, file) {
     state.job = Object.assign({}, state.job || {}, { id, status: "running", stage: "restyle", progress: 0.05, detail: "Re-rendering the two morphs that touch the swapped still" });
     state.easy.swapSlot = null;
     state.easy.swapMode = false;
-    setEasyPhase("making");
     state.easy.recutting = true;
+    setEasyPhase("making");
     render();
     poll(id);
   } catch (err) {
@@ -2982,7 +3092,11 @@ async function loadLane(id) {
   }
   if (state.laneLoading === id) state.laneLoading = "";
   if (state.easy) {
-    state.easy.tl = null;  // the edits start again from what the record now holds
+    // the edits start again from what the record now holds; a cut reopened from its URL gets back the edits it had
+    // waiting for Apply when the page went (keptEdits)
+    const kept = state.easy.restoreEdits === id ? keptEdits(id) : null;
+    state.easy.restoreEdits = "";
+    state.easy.tl = kept && kept.tl && state.lane && kept.tl.id === (state.lane.tl_key || state.lane.id) ? kept.tl : null;
     if (state.easy.tlFor !== id) { state.easy.tlPick = null; state.easy.tlFor = id; }
   }
   render();
@@ -3002,6 +3116,88 @@ function easyVideoId() {
   if (state.easy && state.easy.reopenId) return state.easy.reopenId;
   const job = state.job || {};
   return job.status === "done" && job.id ? job.id : "";
+}
+
+// Reopen a cut on its own screen from its My videos row: its file, vibe, tier, recipe and how long it took.
+function reopenRow(row) {
+  state.easy.reopenId = row.id;
+  state.easy.knobsTouched = {};
+  state.easy.failed = false;
+  state.easy.reopenUrl = row.url;
+  // Download / Share cut read the job id from here; a job record is not needed for a saved file.
+  state.job = { id: row.id, status: "done", stage: "done", progress: 1, video: row.url, reopened: true };
+  state.easy.fromSong = "";
+  state.easy.editUrl = "";
+  state.easy.showcase = false;
+  state.easy.playedHere = false;
+  rowFacts(row);
+  setEasyPhase("result");
+}
+function rowFacts(row) {
+  if (row.vibe && vibeById(row.vibe)) state.easy.vibe = row.vibe;
+  state.easy.resultVibe = state.easy.vibe;
+  state.easy.madeTier = row.tier || "draft";  // the Render row offers Final for a Draft; a saved cut's length is not known
+  state.easy.madeLength = null;
+  state.easy.recipe = row.recipe || "";
+  state.easy.took = Number(row.seconds || 0);  // the desk knows how long a saved cut took (took.json): say so on reopen too
+  state.easy.note = row.seconds ? `Took ${clockText(Number(row.seconds))}.` : "";
+  state.easy.hookUrl = row.hook ? `/api/videos/${row.id}/hook.mp4` : "";
+  state.easy.hookInfo = "";
+}
+// A cut by its id (#simple/result/<id>: a reload, a shared link, Back or Forward; a job that finished while the page
+// was away): its screen at once with the file, then the gallery's facts when they come. A cut My videos does not list
+// (a whole song, one of its passages, an older cut) opens from its folder; one that is not on this desk says so.
+// ``fromUrl`` gives back the edits it had waiting for Apply (keptEdits); ``note`` replaces the facts' line.
+async function reopenCut(id, opts = {}) {
+  if (!id || !state || !state.easy) return;
+  const known = (state.videos || []).find((item) => item.id === id);
+  reopenRow(known || { id, url: `/api/videos/${encodeURIComponent(id)}/video` });
+  if (opts.fromUrl) {
+    const kept = keptEdits(id);
+    state.easy.restoreEdits = kept ? id : "";
+    if (kept && kept.knobs && typeof kept.knobs === "object") state.easy.knobsTouched = kept.knobs;
+  }
+  if (opts.note) state.easy.note = opts.note;
+  if (known) return;  // the caller draws the screen (hashchange, boot, resumeMaking)
+  const [res] = await Promise.all([api(`/api/videos/${encodeURIComponent(id)}/shots`).catch(() => null), state.videos ? null : loadVideos()]);
+  const found = !!(res && res.ok);
+  if (!state || !state.easy || state.easy.reopenId !== id) return;  // another cut was opened meanwhile
+  const row = (state.videos || []).find((item) => item.id === id);
+  if (row) {
+    const note = state.easy.note;
+    rowFacts(row);
+    if (opts.note) state.easy.note = note;
+  } else if (!found) {
+    state.easy.reopenId = "";
+    state.easy.reopenUrl = "";
+    state.easy.restoreEdits = "";
+    state.job = null;
+    setEasyPhase("choose");
+    state.easy.note = opts.missing || "That cut is not on this desk (it may have been made on another one).";
+  }
+  render();
+}
+// The cut's edits waiting for Apply (the timeline's and the knob rows turned), kept with its id by saveEasy.
+const EDITS_KEY = "xeno-cut-edits";
+function keepEdits() {
+  const easy = state && state.easy;
+  if (!easy || easy.phase !== "result" || easy.showcase || easy.playedHere || easy.restoreEdits) return;
+  const id = easyVideoId();
+  const lane = state.lane;
+  if (!id || !lane || lane.id !== id || !Array.isArray(lane.shots) || !lane.shots.length) return;  // read once the timeline is
+  try {
+    const knobs = easy.knobsTouched && Object.keys(easy.knobsTouched).length ? easy.knobsTouched : null;
+    if (timelineDirty(easy, lane) || knobs) localStorage.setItem(EDITS_KEY, JSON.stringify({ id, tl: easy.tl, knobs }));
+    else if (keptEdits(id)) localStorage.removeItem(EDITS_KEY);
+  } catch (err) {}
+}
+function keptEdits(id) {
+  try {
+    const kept = JSON.parse(localStorage.getItem(EDITS_KEY) || "null");
+    return kept && kept.id === id ? kept : null;
+  } catch (err) {
+    return null;
+  }
 }
 
 function applySimpleRecipe(recipe) {
@@ -3453,8 +3649,8 @@ async function recutWithKnobs() {
       return;
     }
     state.job = Object.assign({}, state.job || {}, {id, status: "running", stage: "assemble", progress: 0.05, detail: "Re-cutting from the cached morphs"});
-    setEasyPhase("making");
     state.easy.recutting = true;
+    setEasyPhase("making");
     render();
     poll(id);
   } catch (err) {
@@ -4170,6 +4366,8 @@ async function useBundledSong(id) {
     chip.textContent = "Loading…";
     chip.disabled = true;
   }
+  const was = state.easy.changingSong;  // a song picked after Change: the old one comes back if this one fails to load
+  state.easy.changingSong = null;
   state.easy.song = song.id;
   state.easy.songLabel = song.title;
   state.easy.note = "";
@@ -4188,9 +4386,9 @@ async function useBundledSong(id) {
   // Another chip, the demo or a file chosen while this one loaded: that choice owns the desk now, and this answer is
   // dropped, so the desk never names one song and holds another.
   if (!state || !state.easy || state.easy.song !== song.id) return;
-  if (!data) {  // back to the song step, cleanly: no half-loaded song
-    state.easy.song = "";
-    state.easy.songLabel = "";
+  if (!data) {  // back to the song step, cleanly: no half-loaded song (the one kept by Change, when there was one)
+    state.easy.song = was ? was.song : "";
+    state.easy.songLabel = was ? was.label : "";
     state.easy.note = "That song did not load. Try again, or choose a file.";
     setEasyPhase("choose");
     render();
@@ -4205,6 +4403,7 @@ async function useDemoSong() {
   const note = document.getElementById("song-note");
   if (note) note.textContent = "Using the bundled demo, examples/demo.wav.";
   if (state && state.easy) {
+    state.easy.changingSong = null;
     state.easy.song = "demo";
     state.easy.songLabel = "Bundled demo";
     state.easy.note = "";
@@ -4224,6 +4423,7 @@ async function useDemoSong() {
 
 async function uploadSong(file) {
   if (state && state.easy) {
+    state.easy.changingSong = null;
     state.easy.song = "file";
     state.easy.songLabel = file.name;
     state.easy.note = "";
@@ -4521,6 +4721,7 @@ async function generate() {
     return;
   }
   state.job.id = data.id;
+  if (state.easy && state.easy.phase === "making") setEasyPhase("making");  // the job's id into the URL and the kept job (N3)
   poll(data.id);
 }
 
@@ -4998,25 +5199,7 @@ document.addEventListener("click", async (event) => {
   } else if (act === "video-open") {
     const row = (state.videos || []).find((item) => item.id === el.dataset.id);
     if (!row) return;
-    state.easy.reopenId = row.id;
-    state.easy.knobsTouched = {};
-    if (row.vibe && vibeById(row.vibe)) state.easy.vibe = row.vibe;
-    state.easy.resultVibe = state.easy.vibe;
-    state.easy.madeTier = row.tier || "draft";  // the Render row offers Final for a Draft; a saved cut's length is not known
-    state.easy.madeLength = null;
-    state.easy.failed = false;
-    state.easy.reopenUrl = row.url;
-    // Download / Share cut read the job id from here; a job record is not needed for a saved file.
-    state.job = { id: row.id, status: "done", stage: "done", progress: 1, video: row.url, reopened: true };
-    state.easy.recipe = row.recipe || "";
-    state.easy.took = Number(row.seconds || 0);  // the desk knows how long a saved cut took (took.json): say so on reopen too
-    state.easy.note = row.seconds ? `Took ${clockText(Number(row.seconds))}.` : "";
-    state.easy.hookUrl = row.hook ? `/api/videos/${row.id}/hook.mp4` : "";
-    state.easy.hookInfo = "";
-    state.easy.editUrl = "";
-    state.easy.showcase = false;
-    state.easy.playedHere = false;
-    setEasyPhase("result");
+    reopenRow(row);
     render();
   } else if (act === "video-copy") {
     const code = await easyRecipeFor(el.dataset.id);
@@ -5126,11 +5309,12 @@ document.addEventListener("click", async (event) => {
     }
     shareCut(el);
   } else if (act === "easy-step") {
-    if (el.dataset.step === "song") {
-      state.easy.song = "";
-      state.easy.songLabel = "";
-    }
+    // Change: the picker opens under the song, which is kept until another one is picked (or Cancel)
+    if (el.dataset.step === "song") state.easy.changingSong = { song: state.easy.song, label: state.easy.songLabel };
     setEasyPhase("choose");
+    render();
+  } else if (act === "easy-song-keep") {
+    state.easy.changingSong = null;
     render();
   } else if (act === "song-watch") {
     const row = (state.wholeSongs || []).find((s) => s.id === el.dataset.id);
@@ -5519,10 +5703,18 @@ document.addEventListener("keydown", (event) => {
   }
   if (event.key === "Escape") {
     if (touring) return;
-    if (state && state.job && state.job.status === "running" && state.job.id) {
+    // the "…" menu takes its own Escape (it closes; a render under it goes on), and on the making screen Escape is its
+    // Stop button: it used to cancel the job silently and leave the screen at making, with no way off it (UI review N1)
+    const menu = document.querySelector("details.more-menu[open]");
+    if (menu) {
       event.preventDefault();
-      ignoreJob = state.job.id;
-      api(`/api/jobs/${state.job.id}/cancel`, { method: "POST" }).catch(() => {});
+      menu.open = false;
+      return;
+    }
+    const stop = document.querySelector('#app [data-act="easy-stop"]');
+    if (stop) {
+      event.preventDefault();
+      stop.click();
     }
     return;
   }
@@ -6651,7 +6843,15 @@ async function boot() {
     const response = await api("/api/demo");
     if (!response.ok) throw new Error("demo unavailable");
     adoptSession(await response.json());
-    if (state && state.easy && viewFromHash() === "simple") easyPhaseFromHash();
+    if (state && state.easy && viewFromHash() === "simple") {
+      // a reload of the making screen asks the desk about its job (N3); the desk opened again while one runs comes back
+      // to it; a cut's URL opens the cut (N4, in easyPhaseFromHash)
+      const target = urlTarget();
+      const kept = keptMaking();
+      if (target && target.phase === "making" && (target.id || kept)) await resumeMaking(target.id || kept.id, kept, false);
+      else if (!target && kept) await resumeMaking(kept.id, kept, true);
+      else easyPhaseFromHash();
+    }
     setInterval(pollAgent, 3000);
     await loadSetup();
     await settleCut({ full: true });
