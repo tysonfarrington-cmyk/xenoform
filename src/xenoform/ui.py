@@ -276,10 +276,16 @@ def create_app(cfg: dict | None = None):
 
     app.include_router(stems_mode_router)  # first: /api/stems/status is not a stems id
     app.include_router(stems_router)
+    from xenoform.osc_relay import router as osc_router  # /api/osc/*, /ws/osc: the live OSC relay (python-osc is optional)
+
+    app.include_router(osc_router)
     from xenoform.film_pack import router as film_pack_router  # /api/film_pack (the free film pack's status)
 
     app.include_router(film_pack_router)
     app.include_router(songs_api.router)  # /api/songs, /api/songs/load: the bundled songs
+    from xenoform.perform_api import router as perform_router  # /api/perform/*: /vj?job=, the song strip, live takes
+
+    app.include_router(perform_router)
     app.state.cfg = cfg  # the desk's config for the routers (songs_api answers its comfy.base_url, as /api/analyze does)
 
     def _desk_html(base: str) -> str:
@@ -2975,7 +2981,9 @@ def create_app(cfg: dict | None = None):
                 "url": f"/api/videos/{folder.name}/video",
                 "hook": (folder / "hook.mp4").is_file(),
             })
-        return {"videos": rows}
+        from xenoform.perform_api import with_takes  # Perform's live takes (work/ui/takes) among the cuts, newest first
+
+        return {"videos": with_takes(rows, limit)}
 
     @app.get("/api/videos/{video_id}/reopen")
     def video_reopen(video_id: str) -> dict:
