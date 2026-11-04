@@ -47,6 +47,17 @@ the bundled songs (the tests measure it).
 | **Xenoform Morph Pair** | `storyboard`, an index (0 is the first morph) | the two guide images, the prompt, the negative, frame rate, width, height, length, steps, seed, cfg, the two guide compressions, guide B's strength, the slot's frames, the request as JSON | One morph's request, value for value what the desk sends LTX 0.9.5 through `workflows/xenoform_morph.json`: the guides go to `LTXVPreprocess` and `LTXVAddGuide` (frame 0 and frame -1), the prompts to `CLIPTextEncode`, the size and the 8k + 1 length to `EmptyLTXVLatentVideo`, the steps to `LTXVScheduler`, the seed to `RandomNoise`, the cfg to `CFGGuider`. |
 | **Xenoform Assemble** | `storyboard`, the decoded frames of each morph (`morph_1` is morph 0), fill, punch | the mp4's path, and a preview on the node | Each morph laid in its slot on the beat (first frame on still A, last on still B, so every handoff is continuous), re-timed by the plan (speed, ease, stutter, hold, skip, reverse, and the timing On the beat or Snap), the plan's punches scaled by each shot's intensity, muxed with the song by ffmpeg into `output/xenoform/`. A shot with no morph connected ends the cut there, or with fill `stills` plays a crossfade of its two stills, so the whole song can be heard with what is rendered. |
 
+## The demo workflow
+
+`workflows/xenoform_demo.json` (and `xenoform_demo_api.json`, the same graph in the API format): the bundled demo song
+through Song Analysis and a Storyboard of two forms (Liquid chrome, Dense: a Bloom up to the drop at 5.5 s and a
+Shatter from it), the Morph Timeline, two Morph Pairs, each into the stock LTX 0.9.5 morph graph, and the Assemble.
+Queue renders two 121-frame morphs at 512x288 (about a minute on a 12 GB card by the desk's own Draft estimate, plus the
+model load; not timed with these nodes yet) and writes a 12 s mp4 with the song.
+
+More morphs: raise **forms** on the Storyboard, copy a Morph Pair group and set its index, connect its decode to the
+next `morph_` input of the Assemble (a new one appears as the last is connected).
+
 ## The Morph Timeline
 
 The button **Open the Morph Timeline** on the node opens the editor over the whole window. If the node has not run, the
