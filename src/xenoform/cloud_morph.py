@@ -712,7 +712,7 @@ def draft_settings(shot: dict, kinds: tuple[str, str], *, seed: int, vibe: str, 
 def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, client=None, cancel=None,
                  state: dict | None = None, report=None, size: tuple[int, int] | None = None,
                  styles: list[str] | None = None, prompt: str | None = None, negative: str | None = None,
-                 requests: list | None = None) -> list[Path]:
+                 requests: list | None = None, overrides: list | None = None) -> list[Path]:
     """Free: one LTX 0.9.5 A->B morph per shot through the existing morph graph.
 
     ``size`` overrides the render size (Draft 9:16 renders portrait 320x576 from re-laid stills); ``styles`` is how
@@ -721,7 +721,9 @@ def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, cli
     The morph cache (``morph_cache``) is asked first: a shot whose request (both stills' bytes, the prompt, the seed,
     the whole graph) was rendered before is copied from it and never queued; a shot rendered here is kept in it.
     ``requests``, when given, is filled with each shot's request as it was queued (``shot_recipe.request``) and the
-    time its clip took, the record Under the hood reads."""
+    time its clip took, the record Under the hood reads. ``overrides`` (one dict a shot, ``shot_recipe.clean_overrides``)
+    sets a shot's own prompt, negative, steps, cfg, frames, guides, compression or seed, and a LoRA: a
+    LoraLoaderModelOnly on the model, only when one is given. Any of them makes another request, so another cache key."""
     from xenoform import morph_cache as mc
     from xenoform import morph_pass as mp
     from xenoform import shot_recipe as sr
@@ -747,17 +749,22 @@ def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, cli
         wf = client.workflows.from_file(str(graph))
         kinds = mp.pair_kinds(stills[i], stills[i + 1])  # a pair that touches a scene gets the scene prompt
         style = styles[i] if styles and i < len(styles) else "melt"
+        ov = dict((overrides[i] if overrides and i < len(overrides) else None) or {})
         for node, field, value in draft_settings(shot, kinds, seed=int(seed) + i, vibe=vibe, style=style,
                                                  size=(render_w, render_h), state=state, prompt=prompt, negative=negative,
-                                                 tune=tune):
+                                                 tune=tune, overrides=ov):
             wf.set_input(node, field, value)
+        if ov.get("lora"):  # the Draft graph loads no LoRA of its own: the node goes in only when one is asked for
+            if not isinstance(getattr(wf, "json", None), dict):
+                raise RuntimeError("This ComfyUI client cannot add a LoRA node to the morph graph.")
+            sr.add_lora(wf.json, ov["lora"], float(ov.get("lora_strength", 1.0)))
         # the request, keyed before anything is uploaded: the same one rendered before is copied and never queued
         keys[i] = mc.key_for(getattr(wf, "json", None) or {}, {"6": stills[i]["path"], "7": stills[i + 1]["path"]}, "ltx095") \
             if isinstance(getattr(wf, "json", None), dict) else None
         if requests is not None and isinstance(getattr(wf, "json", None), dict):  # the record, before the stills go up
             reqs[i] = sr.request(wf.json, engine="ltx095", stills=(stills[i], stills[i + 1]), nodes=("6", "7"),
                                  key=keys[i][0] if keys[i] else None, style=style, kinds=kinds,
-                                 render_s=float(shot.get("render_s") or shot["seconds"]))
+                                 render_s=float(shot.get("render_s") or shot["seconds"]), overrides=ov or None)
         dest = work / f"local{i:02d}.mp4"
         if mc.get("ltx095", keys[i], dest):
             cached[i] = dest

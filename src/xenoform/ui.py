@@ -961,11 +961,28 @@ def create_app(cfg: dict | None = None):
         """Re-render the morph one shot plays (``dense.rerender_morph``, docs/TIMELINE.md 1.5): another seed, length (2 to
         5 s of source) or prompt variant, one Draft morph on the GPU, then the re-compose with the timeline as it stands.
         Body: ``shot``; optional ``seed``, ``render_s``, ``variant``, ``style`` (``morph_style``: melt, shatter, bloom, spin,
-        fold; the shot's own when not given)."""
+        fold; the shot's own when not given), and Under the hood's own values (``shot_recipe.clean_overrides``):
+        ``prompt``, ``negative``, ``steps``, ``cfg``, ``frames``, ``guide_start``, ``guide_end``, ``compression``, ``lora``
+        with ``lora_strength``, and ``timing`` (the shot's morph timing for the re-cut). Each try is logged with its full
+        request under ``rerenders``; any changed value is a new request, so a new morph cache key."""
+        from xenoform import shot_recipe as _sr
         from xenoform.dense import RERENDER_VARIANTS, RENDER_S_RANGE, rerender_morph
 
         body = body or {}
         job, folder = _cut_job_for_edit(job_id, "re-render")
+        try:  # the hand-set values answer at once when one is out of range, before anything runs
+            overrides = _sr.clean_overrides({k: body.get(k) for k in _sr.OVERRIDES if k in body})
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        timing = body.get("timing")
+        if timing not in (None, ""):
+            from xenoform import morph_timing as _mt
+
+            timing = str(timing).strip().lower()
+            if timing not in ("auto", *_mt.MODES):
+                raise HTTPException(400, f"No morph timing called {timing}; one of auto, {', '.join(_mt.MODES)}.")
+        else:
+            timing = None
         try:
             shot = int(body.get("shot"))
         except (TypeError, ValueError):
@@ -1022,19 +1039,22 @@ def create_app(cfg: dict | None = None):
             job.update({"status": "running", "stage": "restyle", "progress": 0.05, "error": None,
                         "detail": f"Re-rendering shot {shot + 1}'s morph" + (f" on the {layer} layer" if layer else "")})
 
+        # only what was given goes on: a plain re-render (seed, length, variant, style) calls rerender_morph as it always did
+        more = {**({"overrides": overrides} if overrides else {}), **({"timing": timing} if timing is not None else {})}
+
         def rerender(report):
             go = lambda d, rep: rerender_morph(d, shot, seed=seed, render_s=render_s, variant=variant,  # noqa: E731
-                                               style=style, cfg=cfg, report=rep)
+                                               style=style, cfg=cfg, report=rep, **more)
             if layer is None:
                 return go(folder, report)
             from xenoform import stems_mode as _sm  # one layer's morph and re-cut, then the layers laid again (no GPU)
 
             return _sm.layer_edit(folder, layer, go, kind="rerender", report=report,
-                                  detail={"shot": shot, "seed": seed, "render_s": render_s, "variant": variant, "style": style})
+                                  detail={"shot": shot, "seed": seed, "render_s": render_s, "variant": variant, "style": style, **more})
 
         _run_edit(job, job_id, "rerender", "Re-render ready", "The re-render did not run.", rerender)
         return {"id": job_id, "status": "running", "shot": shot, "seed": seed, "render_s": render_s, "variant": variant, "style": style,
-                **({"layer": layer} if layer else {})}
+                **({"layer": layer} if layer else {}), **more}
 
     # ---------------------------------------------------------- Under the hood (docs/UI_REVIEW.md 6.4, shot_recipe)
 

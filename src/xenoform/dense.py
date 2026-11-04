@@ -1533,11 +1533,12 @@ def stamp_still_kinds(shots: list[dict], stills: list[dict]) -> list[dict]:
 
 
 def _draft_clips(shots, stills, work, cfg, seed, vibe, client, cancel, state=None, report=None, size=None, styles=None,
-                 prompt=None, negative=None, requests=None):
+                 prompt=None, negative=None, requests=None, overrides=None):
     from xenoform.cloud_morph import _local_clips
 
+    kw = {"overrides": overrides} if overrides else {}  # a shot's own values (Under the hood's re-render)
     return _local_clips(shots, stills, work, cfg, seed, vibe, client=client, cancel=cancel, state=state, report=report,
-                        size=size, styles=styles, prompt=prompt, negative=negative, requests=requests)
+                        size=size, styles=styles, prompt=prompt, negative=negative, requests=requests, **kw)
 
 
 def _tier_of(opt: dict, engine: str) -> str:
@@ -2616,16 +2617,16 @@ def _prepare_rows(rows: list[dict], prep: dict, work: Path) -> list[dict]:
 
 def _render_pairs(render_shots: list[dict], rows: list[dict], dest_dir: Path, prep: dict, *, seed: int, vibe: str, cfg: dict | None,
                   state: dict, client=None, report=None, styles: list[str] | None = None,
-                  requests: list | None = None) -> list[Path]:
+                  requests: list | None = None, overrides: list | None = None) -> list[Path]:
     """``len(render_shots)`` morphs over ``rows`` (one more still than shots) through the Draft path, the cut's engine,
     each in its ``styles`` entry (``morph_style``; Melt when not given); ``requests`` is filled as ``_local_clips`` fills
-    it (the mock engine sends none)."""
+    it (the mock engine sends none), ``overrides`` are each shot's own values (``shot_recipe.clean_overrides``)."""
     if prep.get("mock"):
         from xenoform.cloud_morph import _mock_clips
 
         return _mock_clips(render_shots, rows, dest_dir, *(prep.get("draft_size") or (768, 432)))
     return _draft_clips(render_shots, rows, dest_dir, cfg or {}, seed, vibe, client, None, state, report=report,
-                        size=prep.get("draft_size"), styles=styles, requests=requests)
+                        size=prep.get("draft_size"), styles=styles, requests=requests, overrides=overrides)
 
 
 def _renders_of(rec: dict) -> list:
@@ -2690,7 +2691,7 @@ def _under_insert(shot: dict) -> str:
 
 def rerender_morph(job_dir: Path, shot: int, *, seed: int | None = None, render_s: int | None = None, variant: str = "auto",
                    style: str | None = None, cfg: dict | None = None, report: Callable[[str, float, str], None] | None = None,
-                   client=None) -> dict:
+                   client=None, overrides: dict | None = None, timing: str | None = None) -> dict:
     """Re-render the morph one shot of a finished Simple cut plays, with another seed, length, prompt variant or style
     (docs/TIMELINE.md 1.5; ``style`` is how the object changes, ``morph_style``, the shot's own when not given), and
     re-compose.
@@ -2699,9 +2700,21 @@ def rerender_morph(job_dir: Path, shot: int, *, seed: int | None = None, render_
     one given, else the next in the shot's own sequence (the cut's seed for that morph, then 1009 further each time);
     ``render_s`` (2 to 5) changes how many seconds of source the morph has (the shot's frames stay on the beat, its
     ``speed`` follows); ``variant`` forces the pair's prompt (``RERENDER_VARIANTS``: by the stills' kinds, object to
-    object, scene to object, object to scene, scene to scene). The new clip replaces ``clips[shot]``, the record logs it
-    under ``rerenders`` and the cut re-composes through ``recut_from_cache`` with the timeline as it stands. A Final cut
-    and a shot under Polly, your clip or a generated run are refused."""
+    object, scene to object, object to scene, scene to scene). Under the hood's own values (``overrides``, checked by
+    ``shot_recipe.clean_overrides``) set the prompt, the negative, the steps, the cfg, the frames, the two guides'
+    strengths, the compression and a LoRA; ``timing`` the shot's morph timing (``morph_timing``) for the re-cut. The new
+    clip replaces ``clips[shot]``, its request ``renders[shot]``, the record logs both under ``rerenders`` (with the take
+    it replaced, so it can come back) and the cut re-composes through ``recut_from_cache`` with the timeline as it
+    stands. A Final cut and a shot under Polly, your clip or a generated run are refused."""
+    from xenoform import shot_recipe as _sr
+
+    overrides = _sr.clean_overrides(overrides)
+    if timing is not None:
+        from xenoform import morph_timing as _mt
+
+        if str(timing).strip().lower() not in ("auto", *_mt.MODES):
+            raise ValueError(f"No morph timing called {timing!r}; one of auto, {', '.join(_mt.MODES)}.")
+        timing = str(timing).strip().lower()
     job_dir, work, rec = _load_cut(job_dir, "re-render")
     shots = list(rec.get("plan_shots") or rec.get("shots") or [])
     clips = [str(c) for c in rec.get("clips") or []]
@@ -2750,9 +2763,18 @@ def rerender_morph(job_dir: Path, shot: int, *, seed: int | None = None, render_
             raise ValueError(f"The morph's length is {RENDER_S_RANGE[0]} to {RENDER_S_RANGE[1]} s of source; {render_s} is outside that.")
     else:
         render_s = old_render_s
+    edited = dict(overrides)  # what was set by hand on this take: Under the hood marks those rows
+    if overrides.get("frames"):  # the morph's length in frames: its seconds of source follow (the shot keeps its beats)
+        render_s = round((int(overrides["frames"]) - 1) / FPS, 3)  # 8k + 1 frames: 97 is 4 s of source, as 4 s renders 97
+        if float(render_s).is_integer():
+            render_s = int(render_s)
     rerenders = list(rec.get("rerenders") or [])
     tries = sum(1 for r in rerenders if isinstance(r, dict) and r.get("shot") == j)
     base_seed = int(rec.get("seed") or 2727)
+    if seed is not None:
+        edited["seed"] = int(seed)
+    if style is not None and style != styles[j]:
+        edited["style"] = style
     seed = int(seed) if seed is not None else base_seed + m + 1009 * (tries + 1)
     prep = _prep_of(rec)
     vibe = str(rec.get("vibe") or "")
@@ -2767,26 +2789,42 @@ def rerender_morph(job_dir: Path, shot: int, *, seed: int | None = None, render_
     started = time.perf_counter()
     one: list = []
     got = _render_pairs([render_shot], ready, dest_dir, prep, seed=seed, vibe=vibe, cfg=cfg, state=state, client=client,
-                        styles=[style], requests=one)[0]
+                        styles=[style], requests=one, overrides=[overrides] if overrides else None)[0]
     dest = dest_dir / f"morph{m:02d}.mp4"
     shutil.move(str(got), dest)
     renders = _renders_of(rec)
     before = {"clip": clips[j], "render": renders[j], "style": styles[j], "render_s": old_render_s}  # the take this one replaces
     made = _edit_render(work, one[0] if one else None, rec)
+    if made is not None:
+        made["overrides"] = edited  # the graph's own overrides and the seed and style set by hand
     clips[j] = str(dest)
     renders[j] = made
     styles[j] = style
     if render_s != old_render_s:  # the shot keeps its frames on the beat; the source length and the play speed move
         for lst in (rec.get("plan_shots") or [], rec.get("shots") or []):
             if j < len(lst) and isinstance(lst[j], dict):
+                lst[j].setdefault("plan_render_s", old_render_s)  # the Make's own length: Under the hood's preset
                 lst[j]["render_s"] = render_s
                 lst[j]["speed"] = round(render_s / max(seconds, 0.1), 3)
+    if timing is not None:  # the shot's morph timing, a re-cut setting: kept with the timeline's overrides
+        so = {str(k): dict(v) for k, v in (rec.get("shot_overrides") or {}).items() if isinstance(v, dict)}
+        own = so.get(str(j), {})
+        if timing == "auto":
+            own.pop("timing", None)
+        else:
+            own["timing"] = timing
+        if own:
+            so[str(j)] = own
+        else:
+            so.pop(str(j), None)
+        rec["shot_overrides"] = so
     from datetime import datetime
 
     rec.update({"clips": clips, "morph_styles": styles, "renders": renders,
                 "rerenders": rerenders + [{"shot": j, "morph": m, "seed": seed, "render_s": render_s, "variant": variant, "style": style,
                                            "clip": str(dest), "seconds": round(time.perf_counter() - started, 2),
                                            "at": datetime.now().astimezone().isoformat(timespec="seconds"),
+                                           "overrides": edited, **({"timing": timing} if timing is not None else {}),
                                            "request": made, "before": before}]})
     (work / "simple.json").write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
     if report:

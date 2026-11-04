@@ -323,12 +323,11 @@ def preset_of(rec: dict, i: int, style: str | None = None) -> dict | None:
     style = (style or (styles[i] if i < len(styles) else "") or "melt").strip().lower()
     vibe = str(rec.get("vibe") or "")
     prep = rec.get("prep") if isinstance(rec.get("prep"), dict) else {}
-    state = dict(rec.get("recut_state") or {})
-    if prep.get("background") == "black":  # the cut's own ground, as the render's prompt hint had it
-        state["still_background"] = "black"
-    size = tuple(prep.get("draft_size") or (mp.WIDTH, mp.HEIGHT)) if prep.get("native_draft") else (mp.WIDTH, mp.HEIGHT)
+    state = dict(rec.get("recut_state") or {})  # the Make's own (its still_background is the prompt hint's), as a re-render reads it
+    size =tuple(prep.get("draft_size") or (mp.WIDTH, mp.HEIGHT)) if prep.get("native_draft") else (mp.WIDTH, mp.HEIGHT)
     s = _shots(rec)[i]
-    render_s = s.get("render_s") or (rec.get("chain") or {}).get("clip_s") or max(2, int(round(float(s.get("seconds") or 2.0))))
+    render_s = s.get("plan_render_s") or s.get("render_s") or (rec.get("chain") or {}).get("clip_s") \
+        or max(2, int(round(float(s.get("seconds") or 2.0))))  # the Make's own length, before any re-render moved it
     graph = json.loads(mp.GRAPH.read_text(encoding="utf-8"))
     for node, field, value in draft_settings({"render_s": render_s, "seconds": float(s.get("seconds") or 2.0)}, kinds,
                                              seed=int(rec.get("seed") or 2727) + m, vibe=vibe, style=style, size=size,
@@ -540,6 +539,71 @@ def workflow_of(job_dir: Path, rec: dict, i: int) -> dict | None:
             title = ("Start still" if end == "start" else "End still" if end == "end" else "Still")
             node.setdefault("_meta", {})["title"] = f"{title}: {nouns[end]}" if end and nouns[end] else title
     return graph
+
+
+OVERRIDES = ("prompt", "negative", "steps", "cfg", "frames", "guide_start", "guide_end", "compression", "lora", "lora_strength")
+
+
+def _number(raw: Any, name: str, lo: float, hi: float, *, whole: bool = False) -> float | int:
+    try:
+        v = float(raw)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"The {name} is a number, {lo:g} to {hi:g}.") from exc
+    if v != v or not lo <= v <= hi:
+        raise ValueError(f"The {name} is {lo:g} to {hi:g}; {raw} is outside that.")
+    if whole:
+        if not float(v).is_integer():
+            raise ValueError(f"The {name} is a whole number, {lo:g} to {hi:g}.")
+        return int(v)
+    return round(v, 4)
+
+
+def clean_overrides(raw: dict | None, *, loras: list[str] | None = None) -> dict:
+    """A re-render's own values, checked and in the form the Draft graph takes (``cloud_morph.draft_settings``):
+    ``prompt`` and ``negative`` (text; an empty prompt is no override, an empty negative is no negative), ``steps`` (1 to
+    100), ``cfg`` (1 to 20), ``frames`` (8k + 1, 25 to 121), ``guide_start`` and ``guide_end`` (0 to 1), ``compression``
+    (one number or a start and end pair, 0 to 100), ``lora`` (a file of this machine's LoRA folder, ``lora_files``) with
+    ``lora_strength`` (-2 to 2, 1 when not given). Keys not given or None are left to the preset. ValueError in plain
+    words for anything else."""
+    raw = dict(raw or {})
+    out: dict[str, Any] = {}
+    for key in ("prompt", "negative"):
+        if raw.get(key) is None:
+            continue
+        text = str(raw[key]).strip()
+        if len(text) > TEXT_MAX:
+            raise ValueError(f"The {key} is {len(text)} characters; keep it under {TEXT_MAX}.")
+        if key == "prompt" and not text:
+            continue  # an empty prompt asks for nothing: the preset's stands
+        out[key] = text
+    if raw.get("steps") not in (None, ""):
+        out["steps"] = _number(raw["steps"], "steps", *STEPS_RANGE, whole=True)
+    if raw.get("cfg") not in (None, ""):
+        out["cfg"] = _number(raw["cfg"], "CFG", *CFG_RANGE)
+    if raw.get("frames") not in (None, ""):
+        frames = _number(raw["frames"], "length in frames", *FRAMES_RANGE, whole=True)
+        if (frames - 1) % 8:
+            raise ValueError(f"A morph is 8k + 1 frames long (25, 33, 41 ... 121); {frames} is not one of them.")
+        out["frames"] = frames
+    for key, name in (("guide_start", "first guide's strength"), ("guide_end", "last guide's strength")):
+        if raw.get(key) not in (None, ""):
+            out[key] = _number(raw[key], name, 0.0, 1.0)
+    if raw.get("compression") not in (None, ""):
+        comp = raw["compression"]
+        pair = list(comp) if isinstance(comp, (list, tuple)) else [comp, comp]
+        if len(pair) != 2:
+            raise ValueError("The compression is one number, or two: the start still's and the end still's.")
+        out["compression"] = [_number(v, "compression", *COMPRESSION_RANGE, whole=True) for v in pair]
+    name = str(raw.get("lora") or "").strip()
+    if name and name.lower() not in ("none", "off"):
+        have = lora_files() if loras is None else list(loras)
+        if name not in have:
+            raise ValueError(f"No LoRA called {name} in this machine's loras folder."
+                             + (f" It has {', '.join(have[:6])}{' ...' if len(have) > 6 else ''}." if have else " It has none."))
+        out["lora"] = name
+        out["lora_strength"] = _number(raw.get("lora_strength", 1.0), "LoRA strength", *LORA_STRENGTH_RANGE) \
+            if raw.get("lora_strength") not in (None, "") else 1.0
+    return out
 
 
 def lora_files() -> list[str]:

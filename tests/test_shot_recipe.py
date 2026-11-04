@@ -2,6 +2,7 @@
 (``simple.json`` ``renders``, the graphs under ``simple/requests/``), for the Draft, the Final and Cloud Final alike, and
 kept in step through a re-render, a swap and a generated run (``shot_recipe``)."""
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -375,3 +376,93 @@ def test_a_final_cut_shows_its_values_and_says_why_it_does_not_re_render(tmp_pat
         got = _desk(tmp_path, monkeypatch).get("/api/jobs/cut/shots/0/recipe").json()
         assert got["rerender"]["ok"] is False and word in got["rerender"]["why"] and got["used"]["seed"] == 4000
         assert got["tier_label"] == word
+
+
+# ---------------------------------------------------------------------------------------------- the widened re-render
+
+
+def test_clean_overrides_takes_the_hand_set_values_and_refuses_plainly():
+    got = sr.clean_overrides({"prompt": "  a moth  ", "negative": "", "steps": "24", "cfg": 3.5, "frames": 73, "guide_start": 0.9,
+                              "guide_end": "0.6", "compression": 12, "lora": "style.safetensors", "lora_strength": 0.8,
+                              "unknown": 1}, loras=["style.safetensors"])
+    assert got == {"prompt": "a moth", "negative": "", "steps": 24, "cfg": 3.5, "frames": 73, "guide_start": 0.9, "guide_end": 0.6,
+                   "compression": [12, 12], "lora": "style.safetensors", "lora_strength": 0.8}
+    assert sr.clean_overrides({"prompt": "", "lora": "none", "compression": [0, 30]}, loras=[]) == {"compression": [0, 30]}
+    assert sr.clean_overrides({"lora": "style.safetensors"}, loras=["style.safetensors"])["lora_strength"] == 1.0
+    for bad, words in (({"steps": 0}, "steps"), ({"steps": 2.5}, "whole number"), ({"cfg": 50}, "CFG"), ({"frames": 50}, "8k + 1"),
+                       ({"frames": 200}, "frames"), ({"guide_end": 1.5}, "last guide"), ({"compression": [1, 2, 3]}, "two"),
+                       ({"compression": 101}, "compression"), ({"lora": "x.safetensors"}, "No LoRA called x.safetensors"),
+                       ({"prompt": "w" * 3000}, "under 2000"), ({"cfg": "lots"}, "a number")):
+        with pytest.raises(ValueError, match=re.escape(words)):
+            sr.clean_overrides(bad, loras=["style.safetensors"])
+
+
+def test_a_rerender_takes_every_value_and_a_lora_and_logs_the_full_request(tmp_path, monkeypatch):
+    client = Client()
+    job = _draft_cut(tmp_path, monkeypatch, client)
+    before = _rec(job)
+    monkeypatch.setattr(sr, "lora_files", lambda: ["my_style.safetensors"])
+    ov = {"prompt": "a chrome moth folds into a key", "negative": "text, blur", "steps": 12, "cfg": 2.5, "frames": 49,
+          "guide_start": 0.9, "guide_end": 0.7, "compression": [5, 25], "lora": "my_style.safetensors", "lora_strength": 0.6}
+    rec = dense.rerender_morph(job, 2, seed=123, overrides=ov, timing="beat", cfg={}, client=client)
+    sent = client.sent[-1]
+    assert sent["3"]["inputs"]["text"] == ov["prompt"] and sent["4"]["inputs"]["text"] == "text, blur"
+    assert sent["11"]["inputs"]["steps"] == 12 and sent["14"]["inputs"]["cfg"] == 2.5 and sent["9"]["inputs"]["length"] == 49
+    assert sent["10"]["inputs"]["strength"] == 0.9 and sent["22"]["inputs"]["strength"] == 0.7
+    assert (sent["8"]["inputs"]["img_compression"], sent["21"]["inputs"]["img_compression"]) == (5, 25)
+    assert sent["13"]["inputs"]["noise_seed"] == 123
+    assert sent[sr.LORA_NODE]["class_type"] == "LoraLoaderModelOnly" and sent[sr.LORA_NODE]["inputs"]["lora_name"] == "my_style.safetensors"
+    assert sent["20"]["inputs"]["model"] == [sr.LORA_NODE, 0]
+    r = rec["renders"][2]
+    assert r["prompt"] == ov["prompt"] and r["steps"] == 12 and r["frames"] == 49 and r["lora"] == {"name": "my_style.safetensors", "strength": 0.6}
+    assert r["key"] != before["renders"][2]["key"]  # another request, another cache key
+    assert set(r["overrides"]) == set(ov) | {"seed"} and r["overrides"]["seed"] == 123
+    log = rec["rerenders"][-1]
+    assert log["overrides"] == r["overrides"] and log["request"] == r and log["timing"] == "beat"
+    assert rec["shot_overrides"]["2"]["timing"] == "beat" and rec["plan_shots"][2]["render_s"] == 2
+    # the recipe now marks the hand-set rows and what differs from the preset
+    desk = _desk(tmp_path, monkeypatch)
+    got = desk.get("/api/jobs/cut/shots/2/recipe").json()
+    assert set(got["edited"]) == set(ov) | {"seed"}
+    assert {k for k, v in got["differs"].items() if v} >= {"prompt", "negative", "steps", "cfg", "frames", "seed", "lora", "compression"}
+    # the timing back to the cut's, with the same values: the cache answers, nothing new is queued
+    queued = len(client.sent)
+    rec = dense.rerender_morph(job, 2, seed=123, overrides=ov, timing="auto", cfg={}, client=client)
+    assert len(client.sent) == queued and rec["renders"][2]["cached"] is True and "2" not in (rec.get("shot_overrides") or {})
+    with pytest.raises(ValueError, match="morph timing"):
+        dense.rerender_morph(job, 2, timing="wobble", cfg={}, client=client)
+
+
+def test_the_rerender_route_passes_the_new_fields_and_refuses_bad_ones(tmp_path, monkeypatch):
+    import threading
+
+    from xenoform import ui as ui_mod
+
+    desk = _desk(tmp_path, monkeypatch)
+    folder = tmp_path / "jobs" / "hood"
+    (folder / "simple").mkdir(parents=True)
+    shots = [{"start": i * 2.0, "end": (i + 1) * 2.0, "seconds": 2.0, "morph": i} for i in range(3)]
+    (folder / "simple" / "simple.json").write_text(json.dumps({"plan_shots": shots, "shots": shots, "clips": ["c"] * 3,
+                                                                "stills": ["v/0.jpg"] * 4, "tier": "draft"}), encoding="utf-8")
+    (folder / "xenoform.mp4").write_bytes(b"old")
+    seen = {}
+    done = threading.Event()
+
+    def fake(job_dir, shot, **kw):
+        seen.update(kw, shot=shot)
+        done.set()
+        return {"look": {}, "recuts": 1, "rerenders": [{"shot": shot}]}
+
+    monkeypatch.setattr(dense, "rerender_morph", fake)
+    try:
+        for bad, words in (({"steps": 500}, "steps"), ({"frames": 30}, "8k + 1"), ({"lora": "nope.safetensors"}, "No LoRA"),
+                           ({"timing": "wobble"}, "morph timing")):
+            r = desk.post("/api/jobs/hood/rerender", json={"shot": 1, **bad})
+            assert r.status_code == 400 and words in r.json()["detail"], (bad, r.json())
+        r = desk.post("/api/jobs/hood/rerender", json={"shot": 1, "seed": 5, "prompt": "a key", "cfg": 4, "frames": 57,
+                                                       "compression": [0, 10], "timing": "snap"})
+        assert r.status_code == 200 and r.json()["overrides"] == {"prompt": "a key", "cfg": 4.0, "frames": 57, "compression": [0, 10]}
+        assert done.wait(10) and seen["overrides"] == r.json()["overrides"] and seen["timing"] == "snap" and seen["seed"] == 5
+    finally:
+        with ui_mod._LOCK:
+            ui_mod._JOBS.pop("hood", None)
