@@ -43,9 +43,11 @@ from fastapi.responses import FileResponse, StreamingResponse
 
 from xenoform import stem_react
 from xenoform.midi_bridge import normalise
+from xenoform.midi_maps import router as midi_maps_router
 
 log = logging.getLogger("xenoform")
 router = APIRouter()
+router.include_router(midi_maps_router)  # /api/midi/maps, /api/midi/presets: the maps by device name (midi_maps.py)
 
 _ID_RE = re.compile(r"[0-9a-f]{16}")
 _SONG_ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}")  # a desk audio id: "demo" or what /api/analyze hands out
@@ -856,7 +858,7 @@ async def midi_event(request: Request) -> dict:
         hub.devices[src] = dev
     evs = _events_from(body)
     for ev in evs:
-        hub.publish(ev, source=src)
+        hub.publish({**ev, "dev": dev} if dev else ev, source=src)  # each event says which controller it came from
     return {"ok": True, "sent": len(evs), "seq": hub.seq, "listeners": len(hub.listeners)}
 
 

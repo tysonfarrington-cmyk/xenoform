@@ -39,9 +39,24 @@ Dance presets (`S.dance` in `vj.html`): the VJ page has no separate post-look, s
 
 Targets you can map to: `intensity`, `every`, `pad:1`..`pad:8`, `fx:next`, `fx:prev`, `fx:step`, `fx:auto`, `fx:1`..`fx:8`, `dance:1`..`dance:6`, `mirror`, `strobe`, `kaleido` (expert), `record`, `tap`, `hud`, the role gains `drums` `bass` `other` `vocals`, `stem:<name>` or `stem:<N>`; on the desk `macro:intensity|speed|chaos|glow`, the role lanes and `stem:<N>`. Modes: `abs` (0..127 to min..max), `toggle`, `trigger` (note-on only), `rel` (encoder steps), `hold` (on while the pad is down). A "generic" profile is there for anything else: knobs on CC 1–8 in CC order to intensity, speed, chaos, glow and the stem gains, sliders on CC 9–12 to the drums, bass, other and vocals levels, pads on notes 36–51 in note order to the scenes and then the dance presets.
 
+## Maps by device name
+
+Every controller has its own map, picked by its port name the moment it connects (Web MIDI's `MIDIInput.name`, or the port the bridge reads, which each bridged event now carries). In order:
+
+1. **Your map** for that device, if you have changed anything: kept on the desk's machine in `~/.xenoform/midi_map.json` (`XENO_HOME` moves the folder), one entry per device name with a list of rows per page, and mirrored in the page's `localStorage["xeno-midi"]`. The newer copy of a device wins, so a map survives a desk restart, a cleared browser, a song change and a video change. The desk and `/vj` save only their own page, so neither overwrites the other's rows. `GET/PUT/DELETE /api/midi/maps/{device}` and `GET /api/midi/maps` are the routes.
+2. **A shipped preset** whose `match` (a regex, case ignored) finds the name, or whose `device` is the name: `configs/midi_presets/*.json` (see the README there; `XENO_MIDI_PRESETS` moves the folder).
+3. **A built-in profile** whose name pattern fits: the MiniLab 3 (`mini\s*lab\s*3`, so Windows' `Minilab3`, macOS's `Minilab3 MIDI` and the bridge's `Minilab3 0` all find it).
+4. **The generic map** for anything else.
+
+A name with a port number on the end is the same device as the name without it (`Minilab3 0` is `Minilab3`). Several controllers at once each play their own map; the panel shows and edits one of them (a picker appears with two or more), preferring a known controller and never a side port such as `MIDIIN2 (Minilab3)` while the main port is there. Plugging a controller in or out (Web MIDI's `onstatechange`, or a new port on the bridge) re-picks the map and says so; a controller unplugged mid-hold lets go of its pads.
+
+**Reset to default** drops your rows for the device on this page, and its preset, profile or generic map is back. **Export** downloads the device's map (`{"kind": "xenoform-midi-map", "version": 2, "device", "profile", "mappings": [this page], "pages": {every page}}`); **Import** takes that file (or a version 1 export, or a bare list of rows) for the device shown, and keeps a shared layout's other pages too. **Save as the shipped preset** writes the device's map for every page into `configs/midi_presets/<device>.json` through `POST /api/midi/presets`, for the repository.
+
+A table saved by the first `midi.js` (one map a page, no device names) is taken over by the first controller of its profile that connects, if it was your own work; an untouched copy of the factory map of the time is left behind, so the new hold pads come in.
+
 ## Learn mode
 
-Press **L** on the VJ page (or the **Learn mode** button in the MIDI panel of the help overlay, `?`), click the control you want (a transition, mirror, strobe, record, HUD, a stem knob on the desk), then move a knob or hit a pad. Done; the row appears in the panel. Each row has its own **learn** and **×**. The panel also lists the inputs, the active profile, **Factory map**, **Export JSON** (downloads `xenoform-midi-vj.json`) and **Import JSON** (paste and press Import). Mappings persist per page in `localStorage["xeno-midi"]`. On the desk the panel sits under Macros → **MIDI controller**.
+Press **L** on the VJ page (or the **Learn mode** button in the MIDI panel of the help overlay, `?`), click the control you want (a transition, mirror, strobe, record, HUD, a stem knob on the desk), then move a knob or hit a pad. Done; the row appears in the panel. Each row has its own **learn** and **×**. The panel also names the controller and its map, **Start from** (a built-in profile, when a controller's name was not recognised), **Reset to default**, **Export JSON** (downloads `xenoform-midi-vj.json`), **Import JSON** (paste and press Import) and **Save as the shipped preset**. On the desk the panel sits under Knobs → **MIDI controller**.
 
 ## The Python bridge
 

@@ -132,42 +132,129 @@ const MODE_NAMES={abs:"Follows the control",rel:"Steps (endless encoder)",toggle
 function controlOf(profile,s){const p=PROFILES[profile]||PROFILES.generic;if(!s)return null;
  return p.controls.find(c=>c.type===s.type&&+c.num===+s.num&&(!+c.ch||!+s.ch||+c.ch===+s.ch))||null}
 function shortName(profile,s){const c=controlOf(profile,s);return c?c.short:s?(s.type==="note"?"N":s.type==="cc"?"CC":s.type.charAt(0).toUpperCase())+s.num:""}
+// ---- maps by device name: the port's name picks the map. bare() drops the port number some backends append (rtmidi
+// on Windows lists the MiniLab 3 as "Minilab3 0" where Web MIDI says "Minilab3"); midi_maps.py has the same rule.
+const bare=n=>String(n||"").trim().replace(/\s+\d+$/,"");
+const sameDevice=(a,b)=>{a=String(a||"").trim();b=String(b||"").trim();return!!(a&&b)&&(a===b||bare(a)===b||a===bare(b))};
+const reTest=(src,name)=>{try{return!!src&&new RegExp(src,"i").test(name)}catch(e){return false}};
+// The default map for a port name: the first shipped preset (configs/midi_presets) whose match or device fits, else the
+// built-in profile whose name pattern fits (the MiniLab 3), else the generic map. No name at all (an old bridge, a
+// script) keeps the MiniLab 3's map, the default before maps had names.
+function pickDefault(name,presets){name=String(name||"");
+ if(name)for(const p of presets||[])if(reTest(p.match,name)||(p.device&&sameDevice(p.device,name)))
+  return{kind:"preset",id:p.id,label:p.label||p.device||p.id,profile:PROFILES[p.profile]?p.profile:"generic",pages:p.pages||{}};
+ if(!name)return{kind:"profile",id:"minilab3",label:PROFILES.minilab3.label,profile:"minilab3"};
+ for(const id of Object.keys(PROFILES))if(reTest(PROFILES[id].match,name))return{kind:"profile",id,label:PROFILES[id].label,profile:id};
+ return{kind:"profile",id:"generic",label:PROFILES.generic.label,profile:"generic"}}
+const cloneRows=rows=>(rows||[]).map(r=>Object.assign({},r,{source:Object.assign({},r.source)}));
+function defaultRows(choice,page){if(choice&&choice.kind==="preset"&&Array.isArray(choice.pages[page]))return cloneRows(choice.pages[page]);
+ return profileMapping(choice?choice.profile:"minilab3",page)}
+// which of several inputs the map shows: a known controller first, and never a side port ("MIDIIN2 (Minilab3)") while
+// the main one is there
+function primaryDevice(names,presets){const main=names.filter(n=>!/^MIDIIN\d/i.test(n)),pool=main.length?main:names;
+ return pool.find(n=>pickDefault(n,presets).id!=="generic")||pool[0]||""}
+// A table the first midi.js stored (one map a page, no device names) is the user's own work only when it differs from
+// the factory map it was made from (before 4 Nov 2026 pads A were the transitions) and from today's.
+const sig=rows=>(rows||[]).map(r=>srcKey(r.source)+">"+r.target).sort().join("|");
+function legacyFactory(profile,page){const rows=profileMapping(profile,page);
+ if(profile!=="generic"){if(page==="vj")rows.forEach(r=>{const m=/^pad:(\d+)$/.exec(r.target);if(m)r.target="fx:"+m[1]});return rows}
+ const T=page==="vj"?["intensity","every","drums","bass","other","vocals"]:["macro:intensity","macro:speed","macro:chaos","macro:glow","drums","bass","other","vocals"];
+ const out=T.map((t,i)=>({source:{type:"cc",ch:0,num:i+1},target:t}));
+ if(page==="vj")for(let i=0;i<16;i++)out.push({source:{type:"note",ch:0,num:36+i},target:i<8?"fx:"+(i+1):i<14?"dance:"+(i-7):i===14?"strobe":"record"});
+ return out}
+const isOwnLegacy=(rows,profile,page)=>Array.isArray(rows)&&rows.length>0&&sig(rows)!==sig(legacyFactory(profile,page))&&sig(rows)!==sig(profileMapping(profile,page));
 
 const core={PROFILES,VJ_TARGETS,DESK_TARGETS,MODE_NAMES,range,modeFor,profileMapping,normalise,matches,relDelta,srcName,srcKey,
- isRelease,resolve,HoldStack,Takeover,targetName,controlOf,shortName};
+ isRelease,resolve,HoldStack,Takeover,targetName,controlOf,shortName,bare,sameDevice,pickDefault,defaultRows,cloneRows,primaryDevice,
+ legacyFactory,isOwnLegacy};
 if(typeof module==="object"&&module.exports){module.exports=core;return}
 
 // ---------------------------------------------------------------- the browser runtime
+// The maps live per device name: localStorage["xeno-midi"] = {version:2, devices:{name:{device, profile, pages:{vj:[rows],
+// desk:[rows]}, updated}}, active} mirrors the desk's ~/.xenoform/midi_map.json (GET/PUT /api/midi/maps/{device}); the
+// newer copy of a device wins. The first midi.js kept {profile, mappings:{vj, desk}}; a table of the user's own in it is
+// taken over by the first controller of that profile that connects.
 const KEY="xeno-midi";
-function load(){try{const j=JSON.parse(localStorage.getItem(KEY)||"{}");return{profile:j.profile||"minilab3",mappings:j.mappings||{}}}catch(e){return{profile:"minilab3",mappings:{}}}}
+function loadStore(){try{const j=JSON.parse(localStorage.getItem(KEY)||"{}");return j&&typeof j==="object"?j:{}}catch(e){return{}}}
+function saveStore(j){try{localStorage.setItem(KEY,JSON.stringify(j))}catch(e){}}
+const api=p=>(window.XENO_BASE||"")+p;
 const holds=new HoldStack(),takeover=new Takeover();
 const rowKey=e=>srcKey(e.source)+">"+e.target;
 
 const X={
  page:"vj",profile:"minilab3",mappings:[],handlers:{},state:{},inputs:[],ws:null,es:null,wsState:"off",learnTarget:null,learnMode:false,
  share:false,last:null,count:0,log:[],bridgeDevices:{},holds,takeover,_held:{},_opts:{},_el:null,_timer:null,
- init(opts){opts=opts||{};this._opts=opts;this.page=opts.page||"vj";const st=load();this.profile=st.profile;
+ devices:[],device:"",maps:{},presets:[],choice:null,personal:false,saved:"",mapsFile:"",_rows:{},_push_t:{},_subs:{},
+ init(opts){opts=opts||{};this._opts=opts;this.page=opts.page||"vj";
   // ?webmidi=0: the bridge only. Web MIDI opens every input it binds, and on Windows an open input is exclusive, so a
   // second window (or a test page) that must not take the controller from another app asks for the bridge alone.
   if(/[?&]webmidi=0(&|$)/.test(location.search||""))opts.webmidi=false;
-  const stored=st.mappings[this.page];this.mappings=Array.isArray(stored)&&stored.length?stored:profileMapping(this.profile,this.page);
+  const st=loadStore();this.maps=st.devices&&typeof st.devices==="object"?st.devices:{};this.device=String(st.active||"");
+  this._legacy=st.version>=2||!st.mappings?null:{profile:PROFILES[st.profile]?st.profile:"minilab3",mappings:st.mappings};
   Object.assign(this.handlers,opts.targets||{});
   // onHold(target, on, {top, stack}): the page applies a pad (shows its scene or look) and lets go of it (back to what
   // the song holds now); several holds stack, last in wins
   if(opts.onHold)holds.on((id,on,top,stack)=>opts.onHold(id,on,{top,stack}));
+  this._apply();this._sync();
   if(navigator.requestMIDIAccess&&opts.webmidi!==false)navigator.requestMIDIAccess().then(acc=>{const bind=()=>{this.inputs=[];const names=[];
      acc.inputs.forEach(inp=>{const name=inp.name||"MIDI input";this.inputs.push(name);names.push(name);
       inp.onmidimessage=ev=>{const e=normalise(ev.data);if(e){e.dev=name;this.handle(e,"webmidi")}}});
-     this._gone(names);this._status()};bind();acc.onstatechange=bind}).catch(()=>{this._status()});
+     this._gone(names);this._setDevices(names.map(n=>({name:n,via:"Web MIDI"})),"webmidi")};bind();acc.onstatechange=bind}).catch(()=>{this._status()});
   if(opts.bridge!==false)this.connect();this._status();return this},
+ // ---- a tiny event hub for the map's face (midi_map.js): "event", "fire", "map", "devices", "status"
+ on(type,fn){(this._subs[type]||(this._subs[type]=[])).push(fn);return()=>{this._subs[type]=(this._subs[type]||[]).filter(f=>f!==fn)}},
+ emit(type,a,b,c){for(const fn of (this._subs[type]||[]).slice()){try{fn(a,b,c)}catch(e){console.error("midi "+type,e)}}},
+ // ---- devices: Web MIDI's inputs and the bridge's ports, the active one's map shown and edited
+ _setDevices(list,via){const before=this.devices.map(d=>d.name);
+  this.devices=this.devices.filter(d=>d.via!==(via==="webmidi"?"Web MIDI":"bridge")).concat(list).filter((d,i,a)=>a.findIndex(o=>sameDevice(o.name,d.name))===i);
+  const names=this.devices.map(d=>d.name);
+  for(const n of names)if(!before.some(b=>sameDevice(b,n)))this.toast(n+" connected · "+pickDefault(n,this.presets).label+(this._own(n)?" (your map)":""));
+  for(const b of before)if(!names.some(n=>sameDevice(n,b)))this.toast(b+" unplugged");
+  if(!names.some(n=>sameDevice(n,this.device))&&names.length)this.setDevice(primaryDevice(names,this.presets),true);
+  this.emit("devices",this.devices);this._status()},
+ _bridgeSeen(dev){if(dev&&!this.devices.some(d=>sameDevice(d.name,dev)))this._setDevices(this.devices.filter(d=>d.via==="bridge").concat([{name:dev,via:"bridge"}]),"bridge")},
+ setDevice(name,quiet){name=String(name||"");if(name===this.device&&this.choice)return;this.releaseAll();this.device=name;
+  const st=loadStore();st.version=2;st.devices=this.maps;st.active=name;saveStore(st);this._adoptLegacy();this._apply();
+  if(!quiet)this.toast("MIDI map: "+(name||"no controller")+" · "+this.choice.label)},
+ _ownKey(name){if(!name)return this.maps["*"]?"*":null;if(this.maps[name])return name;return Object.keys(this.maps).find(k=>sameDevice(k,name))||null},
+ _own(name){const k=this._ownKey(name);return k?this.maps[k]:null},
+ // the rows the active device plays on this page: its own map if it has one, else its default (preset, profile, generic)
+ _apply(){const name=this.device;this.choice=pickDefault(name,this.presets);const own=this._own(name);
+  this.personal=!!(own&&own.pages&&Array.isArray(own.pages[this.page]));
+  this.profile=this.personal&&PROFILES[own.profile]?own.profile:this.choice.profile;
+  this.mappings=this.personal?cloneRows(own.pages[this.page]):defaultRows(this.choice,this.page);this._rows={};
+  this.emit("map",this.mappings);this.render()},
+ // rows for an event from another connected controller (each controller plays its own map)
+ rowsFor(name){if(!name||sameDevice(name,this.device))return this.mappings;if(this._rows[name])return this._rows[name];
+  const own=this._own(name);return this._rows[name]=own&&own.pages&&Array.isArray(own.pages[this.page])?own.pages[this.page]:defaultRows(pickDefault(name,this.presets),this.page)},
+ _adoptLegacy(){const L=this._legacy,name=this.device;if(!L||!name)return;const rows=L.mappings[this.page];
+  if(this._own(name)||pickDefault(name,this.presets).profile!==L.profile||!isOwnLegacy(rows,L.profile,this.page))return;
+  this.maps[name]={device:name,profile:L.profile,pages:{[this.page]:cloneRows(rows)},updated:Date.now()/1000};
+  delete L.mappings[this.page];const st=loadStore();st.mappings=L.mappings;st.version=2;st.devices=this.maps;saveStore(st);
+  this._push(name,{[this.page]:rows})},
+ // the desk's copy: fetch every saved map and the shipped presets; the newer copy of a device wins, a local one that
+ // is newer (saved while the desk was away) goes up
+ _sync(){if(!window.fetch)return;fetch(api("/api/midi/maps")).then(r=>r.ok?r.json():null).then(j=>{if(!j)return;
+   this.presets=Array.isArray(j.presets)?j.presets:[];this.mapsFile=j.file||"";const server=j.devices||{};
+   for(const [k,e] of Object.entries(server)){const lk=this._ownKey(k),local=lk?this.maps[lk]:null;
+    if(!local||(+e.updated||0)>=(+local.updated||0)){if(lk&&lk!==k)delete this.maps[lk];this.maps[k]=e}}
+   for(const [k,e] of Object.entries(this.maps)){if(k==="*")continue;const sk=Object.keys(server).find(s=>sameDevice(s,k));
+    if(!sk||(+server[sk].updated||0)<(+e.updated||0))this._push(k,e.pages,e.updated)}
+   const st=loadStore();st.version=2;st.devices=this.maps;saveStore(st);this.saved="server";this._adoptLegacy();this._apply();this._status()})
+  .catch(()=>{this.saved="this browser only";this._status()})},
+ _push(name,pages,updated){if(!name||name==="*"||!window.fetch)return;clearTimeout(this._push_t[name]);
+  const body={pages,profile:this.profile,updated:updated||Date.now()/1000};
+  this._push_t[name]=setTimeout(()=>fetch(api("/api/midi/maps/"+encodeURIComponent(name)),{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})
+   .then(r=>{this.saved=r.ok?"server":"this browser only";this._status()}).catch(()=>{this.saved="this browser only";this._status()}),250)},
  // ---- events
  handle(ev,origin){this.last=ev;this.count++;this.log.push(ev);this.log.length>12&&this.log.shift();
+  if(origin==="bridge"&&ev.dev)this._bridgeSeen(ev.dev);
   if(this.learnTarget&&(ev.type==="cc"||ev.type==="note")&&ev.value>0){this.bind(this.learnTarget,ev);return}
   if(this.share&&origin==="webmidi"&&this.ws&&this.ws.readyState===1)this.ws.send(JSON.stringify(ev));
-  let hit=false;const sk=srcKey(ev),off=isRelease(ev);
+  let hit=false;const sk=(ev.dev?bare(ev.dev)+"/":"")+srcKey(ev),off=isRelease(ev),rows=this.rowsFor(ev.dev);
   // a release lets go of whatever this control pressed, even if the map changed while it was held
   if(off&&this._held[sk]){const was=this._held[sk];delete this._held[sk];for(const h of was)if(holds.release(h.t)){hit=true;this.fire(h.t,h.lo,ev,h.row)}}
-  for(const e of this.mappings){if(!matches(e,ev))continue;if(e.mode==="hold"&&off)continue;
+  for(const e of rows){if(!matches(e,ev))continue;if(e.mode==="hold"&&off)continue;
    const mode=e.mode||"abs",screen=(mode==="abs"&&ev.type!=="note")||mode==="rel"?this.read(e.target):null;
    if(mode==="rel"&&screen!=null)this.state[e.target]=screen;  // an encoder steps from the value on screen
    const r=resolve(e,ev,this.state);if(!r)continue;hit=true;
@@ -176,7 +263,7 @@ const X={
    if(r.kind==="press"){const was=this._held[sk]||(this._held[sk]=[]);if(was.some(h=>h.t===r.target))continue;
     was.push({t:r.target,lo:+e.min||0,dev:ev.dev||"",row:e});holds.press(r.target)}
    this.fire(r.target,r.value,ev,e)}
-  if(this._opts.onEvent)this._opts.onEvent(ev,hit,origin);this._status(true)},
+  if(this._opts.onEvent)this._opts.onEvent(ev,hit,origin);this.emit("event",ev,hit,origin);this._status(true)},
  // the value a target shows now, from the page (init({read})), for soft takeover; null when the page does not say
  read(target){const f=this._opts.read;if(!f)return null;try{const v=f(target);return typeof v==="number"&&isFinite(v)?v:null}catch(e){return null}},
  // {hw, screen, dir} when this row's hardware is away from the value it drives (the row's catch-up indicator)
@@ -200,34 +287,63 @@ const X={
  learn(target){this.learnTarget=target||null;if(target)this.toast("Move a knob or hit a pad for "+target+"…");this.render()},
  setLearnMode(on){this.learnMode=!!on;document.body.classList.toggle("midi-learn",this.learnMode);if(!on)this.learnTarget=null;
   this.toast(this.learnMode?"Learn: click a control, then move a knob":"Learn off");this.render()},
- unmap(i){this.mappings.splice(i,1);this.save();this.render()},
+ unmap(i){const gone=this.mappings.splice(i,1)[0];this.save();this.render();return gone},
+ // put back a row Remove took out (the map's Undo)
+ restore(row,i){if(!row)return;this.mappings=this.mappings.filter(e=>rowKey(e)!==rowKey(row));this.mappings.splice(i==null?this.mappings.length:Math.min(i,this.mappings.length),0,row);this.save();this.render()},
  add(target,source,mode,min,max){const[lo,hi]=range(target);this.mappings.push({source,target,mode:mode||modeFor(target,source.type),min:min==null?lo:min,max:max==null?hi:max});this.save();this.render()},
+ // "Start from": the active controller takes a built-in profile's map as its own (when its name was not recognised)
  setProfile(name){if(!PROFILES[name])return;this.profile=name;this.releaseAll();this.mappings=profileMapping(name,this.page);this.save();this.render()},
- reset(){this.releaseAll();this.mappings=profileMapping(this.profile,this.page);this.save();this.render()},
- save(){const st=load();st.profile=this.profile;st.mappings[this.page]=this.mappings;try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}},
- exportJSON(){return JSON.stringify({kind:"xenoform-midi-map",version:1,profile:this.profile,page:this.page,mappings:this.mappings},null,1)},
+ // Reset to default: the active controller's own rows for this page go; its preset, profile or generic map is back
+ reset(){this.releaseAll();const name=this.device,k=this._ownKey(name),e=k?this.maps[k]:null;
+  if(e&&e.pages){delete e.pages[this.page];e.updated=Date.now()/1000;if(!Object.keys(e.pages).length)delete this.maps[k]}
+  const st=loadStore();st.version=2;st.devices=this.maps;saveStore(st);
+  if(name&&window.fetch)fetch(api("/api/midi/maps/"+encodeURIComponent(name)+"?page="+encodeURIComponent(this.page)),{method:"DELETE"}).catch(()=>{});
+  this._apply();this.toast("MIDI: "+(name||"this controller")+" is back on "+this.choice.label)},
+ // the active controller's rows for this page become its own map: localStorage now, the desk's file a moment later
+ save(more){const name=this.device||"*",k=this._ownKey(name)||name,e=this.maps[k]||(this.maps[k]={device:name,pages:{}});
+  e.pages=e.pages||{};e.pages[this.page]=cloneRows(this.mappings);Object.assign(e.pages,more||{});e.profile=this.profile;e.updated=Date.now()/1000;
+  this.personal=true;this._rows={};const st=loadStore();st.version=2;st.devices=this.maps;st.active=this.device;saveStore(st);
+  this._push(k,Object.assign({[this.page]:e.pages[this.page]},more||{}),e.updated);this.emit("map",this.mappings)},
+ exportJSON(){const e=this._own(this.device),pages=Object.assign({},(e&&e.pages)||{},{[this.page]:this.mappings});
+  return JSON.stringify({kind:"xenoform-midi-map",version:2,device:this.device,profile:this.profile,page:this.page,mappings:this.mappings,pages},null,1)},
+ // a file from Export (this page's rows in "mappings", every page in "pages"), or a bare list of rows; a shared layout's
+ // other pages are kept for this controller too
  importJSON(text){const j=typeof text==="string"?JSON.parse(text):text;const rows=Array.isArray(j)?j:j.mappings||(j.pages&&j.pages[this.page]);
-  if(!Array.isArray(rows))throw new Error("not a mapping file");this.mappings=rows.filter(r=>r&&r.source&&r.target).map(r=>({source:{type:r.source.type,ch:+r.source.ch||0,num:+r.source.num},target:String(r.target),mode:r.mode||"abs",min:+r.min||0,max:r.max==null?1:+r.max,label:r.label}));
-  if(j.profile&&PROFILES[j.profile])this.profile=j.profile;this.releaseAll();this.save();this.render();return this.mappings.length},
+  if(!Array.isArray(rows))throw new Error("not a mapping file");
+  const clean=rs=>rs.filter(r=>r&&r.source&&r.target).map(r=>({source:{type:r.source.type,ch:+r.source.ch||0,num:+r.source.num},target:String(r.target),mode:r.mode||"abs",min:+r.min||0,max:r.max==null?1:+r.max,label:r.label}));
+  this.mappings=clean(rows);if(j.profile&&PROFILES[j.profile])this.profile=j.profile;const more={};
+  if(j.pages&&typeof j.pages==="object")for(const [p,rs] of Object.entries(j.pages))if(p!==this.page&&Array.isArray(rs))more[p]=clean(rs);
+  this.releaseAll();this.save(more);this.render();return this.mappings.length},
+ // "Save as the shipped preset": the active controller's map for every page, written by the desk into
+ // configs/midi_presets/<device>.json for the repository (the next clean install with it plugged in starts from it)
+ shipPreset(label){const name=this.device;if(!name)return Promise.reject(new Error("Plug the controller in first: the preset is named after its port"));
+  const e=this._own(name),pages={};for(const p of ["vj","desk"])pages[p]=p===this.page?this.mappings:(e&&e.pages&&e.pages[p])||defaultRows(this.choice,p);
+  const prof=PROFILES[this.profile],match=prof&&reTest(prof.match,name)?prof.match:"";
+  return fetch(api("/api/midi/presets"),{method:"POST",headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({device:name,port:name,label:label||bare(name),profile:this.profile,match,pages})})
+   .then(r=>r.json().then(j=>{if(!r.ok)throw new Error(j.detail||"the preset was not saved");this._sync();return j}))},
  // ---- the desk websocket (Python bridge fan-out), SSE when there is no websocket. The desk says first whether it can
  // upgrade one (/api/midi/status "websocket": the [midi] extra brings the websockets package); if not, straight to SSE,
  // so a desk without the extra no longer logs a failed /ws/midi on every page load.
  connect(){const base=(window.XENO_BASE||"");if(this.ws||this.es||this._asking)return;
   if(this._canWs==null&&window.fetch){this._asking=true;fetch(base+"/api/midi/status").then(r=>r.ok?r.json():{}).catch(()=>({})).then(j=>{
-    this._asking=false;this._canWs=j.websocket!==false;this.bridgeDevices=j.devices||{};this.connect()});return}
+    this._asking=false;this._canWs=j.websocket!==false;this._bridgeNames(j.devices);this.connect()});return}
   if(this._canWs===false)return this.sse(base);let url;
   try{url=(location.protocol==="https:"?"wss://":"ws://")+location.host+base+"/ws/midi?name="+encodeURIComponent(this.page)}catch(e){return}
   let opened=false;const ws=new WebSocket(url);this.ws=ws;this.wsState="connecting";
   ws.onopen=()=>{opened=true;this.wsState="bridge";this._retry=0;this._status()};
-  ws.onmessage=m=>{try{const ev=JSON.parse(m.data);if(ev&&ev.type==="hello")this.bridgeDevices=ev.devices||{};else if(ev&&ev.type)this.handle(ev,"bridge")}catch(e){}};
+  ws.onmessage=m=>{try{const ev=JSON.parse(m.data);if(ev&&ev.type==="hello")this._bridgeNames(ev.devices);else if(ev&&ev.type)this.handle(ev,"bridge")}catch(e){}};
   ws.onclose=ws.onerror=()=>{if(this.ws!==ws)return;this.ws=null;this.wsState="off";this._status();
    if(!opened&&(this._retry=(this._retry||0)+1)>=2)return this.sse(base);clearTimeout(this._timer);this._timer=setTimeout(()=>this.connect(),2500*Math.min(6,this._retry||1))}},
+ // the ports the desk's bridge reads ({source: port}), from the status and the websocket's hello
+ _bridgeNames(devs){this.bridgeDevices=devs&&typeof devs==="object"?devs:{};for(const n of Object.values(this.bridgeDevices))this._bridgeSeen(String(n||""))},
  sse(base){if(this.es||!window.EventSource)return;const es=new EventSource(base+"/api/midi/stream");this.es=es;this.wsState="sse";
   es.onmessage=m=>{try{const ev=JSON.parse(m.data);if(ev&&ev.type)this.handle(ev,"bridge")}catch(e){}};
   es.onerror=()=>{this.wsState="sse (reconnecting)";this._status()};this._status()},
  status(){return{inputs:this.inputs.slice(),bridge:this.wsState,profile:this.profile,mappings:this.mappings.length,events:this.count,last:this.last,
-  learn:this.learnMode||!!this.learnTarget,held:holds.list()}},
- _status(light){const s=this.status();if(this._opts.onStatus)this._opts.onStatus(s);if(!light||this.count%8===0)this._paintStatus()},
+  learn:this.learnMode||!!this.learnTarget,held:holds.list(),devices:this.devices.slice(),device:this.device,
+  map:this.personal?"your map":this.choice?this.choice.label:"",saved:this.saved}},
+ _status(light){const s=this.status();if(this._opts.onStatus)this._opts.onStatus(s);this.emit("status",s,light);if(!light||this.count%8===0)this._paintStatus()},
  toast(t){if(this._opts.toast)this._opts.toast(t)},
  // ---- learn mode: a click on any control picks the target, the next knob/pad binds it
  _clickTarget(el){const m=el.closest&&el.closest("[data-midi]");if(m)return m.dataset.midi;
@@ -248,19 +364,23 @@ const X={
    (s.last?` · last ${srcName(s.last)} = ${s.last.value}`:"")},
  render(){const el=this._el;if(!el)return;const T=(this.page==="desk"?DESK_TARGETS:VJ_TARGETS).concat((this._opts.extraTargets||[]));
   const opts=T.map(t=>`<option value="${t}">${t}</option>`).join("");
+  const devs=this.devices.length>1?`<select id="xm-dev" aria-label="Controller">${this.devices.map(d=>`<option${sameDevice(d.name,this.device)?" selected":""}>${d.name}</option>`).join("")}</select>`:"";
   el.innerHTML=`<div id="xeno-midi-panel" data-tour="midi">
    <div class="mrow"><b>MIDI</b><span id="xm-status"></span></div>
-   <div class="mrow"><label>Profile <select id="xm-prof">${Object.keys(PROFILES).map(k=>`<option value="${k}"${k===this.profile?" selected":""}>${PROFILES[k].label}</option>`).join("")}</select></label>
+   <div class="mrow">${devs}<span>${this.device||"No controller yet"} · ${this.personal?"your map":this.choice?this.choice.label:""}</span>
+    <label>Start from <select id="xm-prof">${Object.keys(PROFILES).map(k=>`<option value="${k}"${k===this.profile?" selected":""}>${PROFILES[k].label}</option>`).join("")}</select></label>
     <button id="xm-learn" class="${this.learnMode?"on":""}">${this.learnMode?"Learn: click a control…":"Learn mode (L)"}</button>
-    <button id="xm-reset">Factory map</button><button id="xm-export">Export JSON</button><label><input type="checkbox" id="xm-share"${this.share?" checked":""}> share with other pages</label></div>
+    <button id="xm-reset">Reset to default</button><button id="xm-export">Export JSON</button><button id="xm-ship">Save as the shipped preset</button>
+    <label><input type="checkbox" id="xm-share"${this.share?" checked":""}> share with other pages</label></div>
    ${this.learnTarget?`<div class="mrow">Waiting for a knob or pad for <b>${this.learnTarget}</b> · <button id="xm-cancel">cancel</button></div>`:""}
    <div class="wrap"><table><tbody>${this.mappings.map((m,i)=>`<tr><td>${m.label||srcName(m.source)}</td><td><small>${srcName(m.source)}</small></td><td><b>${m.target}</b></td><td>${m.mode} <span class="xm-away" data-away="${i}"></span></td>
     <td><button data-learn="${m.target}">learn</button> <button data-del="${i}" title="remove">×</button></td></tr>`).join("")}</tbody></table></div>
    <div class="mrow"><select id="xm-new">${opts}</select><button id="xm-add">+ map (then move a knob)</button></div>
    <div class="mrow"><textarea id="xm-json" placeholder="Paste a mapping JSON here and press Import"></textarea></div>
-   <div class="mrow"><button id="xm-import">Import JSON</button><small>Saved in this browser (localStorage "xeno-midi"). The Python bridge: <code>xenoform midi serve</code>.</small></div></div>`;
+   <div class="mrow"><button id="xm-import">Import JSON</button><small>Saved per controller on this desk (${this.mapsFile||"~/.xenoform/midi_map.json"}) and in this browser. The Python bridge: <code>xenoform midi serve</code>.</small></div></div>`;
   const $=s=>el.querySelector(s);$("#xm-prof").onchange=e=>this.setProfile(e.target.value);$("#xm-learn").onclick=()=>this.setLearnMode(!this.learnMode);
-  $("#xm-reset").onclick=()=>this.reset();$("#xm-share").onchange=e=>{this.share=e.target.checked};
+  $("#xm-reset").onclick=()=>this.reset();$("#xm-share").onchange=e=>{this.share=e.target.checked};const dv=$("#xm-dev");if(dv)dv.onchange=e=>this.setDevice(e.target.value);
+  $("#xm-ship").onclick=()=>this.shipPreset().then(j=>this.toast("Shipped preset saved: "+j.path)).catch(e=>this.toast("Not saved: "+e.message));
   $("#xm-export").onclick=()=>{const t=this.exportJSON();$("#xm-json").value=t;const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([t],{type:"application/json"}));a.download=`xenoform-midi-${this.page}.json`;a.click();this.toast("Mapping exported")};
   $("#xm-import").onclick=()=>{try{const n=this.importJSON($("#xm-json").value);this.toast(n+" mappings imported")}catch(e){this.toast("Import failed: "+e.message)}};
   $("#xm-add").onclick=()=>this.learn($("#xm-new").value);const c=$("#xm-cancel");if(c)c.onclick=()=>this.learn(null);
