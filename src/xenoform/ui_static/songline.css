@@ -36,6 +36,8 @@ button.ghost .cost-tag { background: var(--x-well); color: var(--x-text-2); box-
 .step-quality { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; flex-basis: 100%; }
 .step-quality .toggle button { min-height: 28px; min-width: 0; padding: 0 10px; font-size: 12.5px; }
 .step-facts .cloud-final-ok { flex-basis: 100%; }
+/* the Make gate's line (setup-shell M1), its own line under the facts */
+.step-facts .make-gate { flex-basis: 100%; }
 
 /* ---------------------------------------------------------------- the step screens */
 .easy.sl { grid-template-columns: minmax(0, 1fr); align-items: start; }

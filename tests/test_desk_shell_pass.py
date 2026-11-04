@@ -15,6 +15,7 @@ APPCSS = (STATIC / "app.css").read_text(encoding="utf-8")
 THEME = (STATIC / "theme.css").read_text(encoding="utf-8")
 INDEX = (STATIC / "index.html").read_text(encoding="utf-8")
 TOUR = (STATIC / "tutorial.js").read_text(encoding="utf-8")
+SONGLINE = (STATIC / "songline.css").read_text(encoding="utf-8")
 
 
 def _fn(start: str, end: str) -> str:
@@ -141,6 +142,13 @@ def test_make_leads_to_setup_while_a_required_model_is_missing():
     assert "button.dataset.makeLabel" in paint and 'delete button.dataset.gate;' in paint  # a gate that lifts gives the label back
     assert "paintMakeGate();" in _fn("function render() {", "function renderTool(")
     assert "`?comfy=${encodeURIComponent(state.endpoint)}`" in _fn("async function loadSetup() {", "function setupGate()")
+    # the step bar draws the gate's line itself, so its in-place repaint (a knob or Quality touched, an estimate landing) keeps
+    # it; paintMakeGate leaves the bar alone and puts its line under a Make button elsewhere on the page (integrate-4nov)
+    bar = _fn("function stepBar(easy, step) {", "function paintStepBar() {")
+    assert 'facts += `<span class="note make-gate" role="status">${esc(missing.line)}. ' in bar and "Open Setup" in bar
+    assert "line: gate.line" in _fn("function missingModels() {", "function costTag(")
+    assert '.filter((button) => !button.closest("#step-bar"))' in paint and 'if (!node.closest("#step-bar")) node.remove();' in paint
+    assert ".step-facts .make-gate { flex-basis: 100%; }" in SONGLINE
 
 
 # ---------------------------------------------------------------- M2, M3, M5 on the page

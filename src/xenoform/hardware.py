@@ -29,7 +29,7 @@ _FINAL = {
 
 TIERS: dict[str, dict[str, Any]] = {
     "cpu": {"id": "cpu", "label": "CPU", "gb": None, "clamp": False, "heading": "GPU not recognised",
-            "detail": "GPU not recognised: only NVIDIA (CUDA) cards are detected here, so the Draft renders on the CPU. If this machine has a card, pick its size under Fine-tune."},
+            "detail": "GPU not recognised: only NVIDIA (CUDA) cards are detected here, so the Draft renders on the CPU. If this machine has a card, pick its size under Tweak → Project · under the hood → GPU."},
     "8gb": {"id": "8gb", "label": "8 GB", "gb": 8, "clamp": True, "heading": "8 GB GPU preset",
             "detail": "Draft is LTX-Video 0.9.5 at 512×288, weights offloaded. Fast Final upscales the Draft 4x to 1080×1920. Final needs a 12 GB card, so it falls back to the Draft."},
     "12gb": {"id": "12gb", "label": "12 GB", "gb": 12, "clamp": True, "heading": "12 GB GPU preset",

@@ -1529,7 +1529,7 @@ function missingModels() {
   const setup = state && state.setup;
   // /api/setup's gate (setup-shell M1) decides: a guess about the models folder never blocks, and its button names the size
   const gate = setup && setup.gate;
-  if (gate) return gate.blocked ? { names: gate.names || [], label: gate.button, gate: true } : null;
+  if (gate) return gate.blocked ? { names: gate.names || [], label: gate.button, line: gate.line, gate: true } : null;
   const missing = (setup && setup.missing_required) || [];
   if (!missing.length) return null;
   const rows = ((setup && setup.models) || []).filter((m) => m && m.required && !m.present);
@@ -1633,7 +1633,7 @@ function stepBar(easy, step) {
   const plan = state.simpleOptions && state.simpleOptions.plan;
   const cloud = (easy.tier || "draft") === "cloud";
   const draftLabel = (easy.tier || "draft") === "draft" ? "Render Draft" : `Render at ${TIER_LABEL[easy.tier] || "Final"}`;
-  // under the gate the button is Make itself (data-act easy-make): paintMakeGate gives it the line under it, and a press opens Setup
+  // under the gate the button is Make itself (data-act easy-make), the gate's line is drawn under the facts, and a press opens Setup
   const getModel = missing ? `<button type="button" class="generate" ${missing.gate ? 'data-act="easy-make"' : 'data-act="go" data-hash="setup"'} title="${esc(`Not on this machine yet: ${missing.names.join(", ")}`)}">${esc(missing.label)}</button>` : "";
   const draftCost = (() => {
     const t = ownClips(easy).length ? null : planTime(plan);  // the plan's minutes are the vibe's objects', not your clips'
@@ -1723,6 +1723,9 @@ function stepBar(easy, step) {
   }
   // Ctrl+Enter (Cmd+Enter on a Mac) presses the step's button: it says so, as desktop software does
   if (/^<button type="button" class="generate"/.test(primary)) primary = primary.replace(/<\/button>$/, `<kbd>${esc(shortcutLabel())}</kbd></button>`);
+  // the gate's line (setup-shell M1) with its button: drawn here, so the bar's in-place repaint (a knob or Quality touched, an
+  // estimate landing) keeps it; paintMakeGate leaves the step bar alone
+  if (missing && missing.gate && (primary + secondary).includes('data-act="easy-make"')) facts += `<span class="note make-gate" role="status">${esc(missing.line)}. <button type="button" class="text" data-act="go" data-hash="setup">Open Setup</button></span>`;
   return `<div class="step-bar${making && !ownClock ? " easy-making" : ""}" id="step-bar" data-step="${esc(step)}" data-gate="${missing && missing.gate ? "1" : ""}" data-tour="easy-make">
       <div class="step-facts">${facts}</div>
       <div class="step-actions">${secondary}${primary}</div>
@@ -7493,7 +7496,8 @@ async function loadSetup() {
 // The Make gate (docs/UI_REVIEW.md M1). /api/setup says what Make is missing (setup.gate: blocked, the sentence, the button
 // label); while a model Make needs is not installed the desk says so beside Make and the Make button leads to Setup. A
 // guess about where the models are never blocks (the server leaves ``blocked`` off then). Every Make goes through
-// easyMake, so the guard sits there; paintMakeGate renames the buttons and adds the line after each redraw.
+// easyMake, so the guard sits there; the step bar draws the gate's button and line itself, and paintMakeGate renames the other
+// Make buttons and adds the line after each redraw.
 function setupGate() {
   const gate = state && state.setup && state.setup.gate;
   return gate && gate.blocked ? gate : null;
@@ -7507,11 +7511,12 @@ function goToSetup() {
   });
 }
 function paintMakeGate() {
-  document.querySelectorAll(".make-gate").forEach((node) => node.remove());
+  // the step bar draws the gate itself (missingModels): its button, its line, its cost pill and kbd, kept by its in-place
+  // repaint; this is for the Make buttons elsewhere on the page (Make it with <vibe> on the cut's screen)
+  document.querySelectorAll(".make-gate").forEach((node) => { if (!node.closest("#step-bar")) node.remove(); });
   const gate = setupGate();
-  const buttons = document.querySelectorAll('[data-act="easy-make"]');
+  const buttons = Array.from(document.querySelectorAll('[data-act="easy-make"]')).filter((button) => !button.closest("#step-bar"));
   buttons.forEach((button) => {  // both ways: a gate that lifts (Setup finished, a model put there by hand) gives the label back
-    if (button.closest("#step-bar")) return;  // the step bar draws the gate itself (missingModels), with its cost pill and kbd
     const label = button.querySelector("span") || button;
     if (gate) {
       if (button.dataset.gate !== "setup") {

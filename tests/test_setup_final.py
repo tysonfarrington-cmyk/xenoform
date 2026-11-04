@@ -79,6 +79,7 @@ def test_a_gpu_that_is_not_cuda_reads_gpu_not_recognised_and_a_card_names_its_pr
     cpu = hardware.tier_for_gb(None)
     assert cpu["heading"] == "GPU not recognised" and cpu["detail"].startswith("GPU not recognised")
     assert "No GPU" not in cpu["detail"] and "CUDA" in cpu["detail"]
+    assert "Fine-tune" not in cpu["detail"] and "Tweak → Project · under the hood → GPU" in cpu["detail"]  # the drawer t5 removed
     twelve = hardware.tier_for_gb(12.0)
     assert twelve["heading"] == "12 GB GPU preset" and twelve["vram_label"] == "12.0 GB of video memory"
     assert hardware.tier_for_gb(24)["heading"] == "24 GB+ GPU preset" and hardware.tier_for_gb(8)["heading"] == "8 GB GPU preset"
