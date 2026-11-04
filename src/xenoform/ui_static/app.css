@@ -813,7 +813,7 @@ button.text:active:not(:disabled),
   letter-spacing: 0.01em;
 }
 .tour-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.tour-actions .generate { margin-left: auto; }
+.tour-actions .generate, .tour-actions #tutorial-start { margin-left: auto; }
 .tour-card:focus-visible,
 .tour-offer:focus-visible,
 .tour-actions button:focus-visible,

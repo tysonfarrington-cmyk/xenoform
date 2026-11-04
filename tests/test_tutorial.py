@@ -46,6 +46,10 @@ def test_tutorial_catalog_and_page():
         assert f'data-tour="{target}"' in script.text, target
     tour_js = (ROOT / "src/xenoform/ui_static/tutorial.js").read_text(encoding="utf-8")
     assert "first-video" not in tour_js and "dataset.advanced" not in tour_js
+    # the offer names the five steps, and its Start is a ghost: the step bar's button is the first screen's one violet
+    # button (C2: the tour's Start, Choose a song and Make were all lit)
+    assert 'class="ghost" id="tutorial-start"' in tour_js and 'class="generate" id="tutorial-start"' not in tour_js
+    assert tour_js.count("A song, a vibe, a Draft, a shot on the strip, then Perform.") == 2  # the markup and showOffer()
 
 
 def test_each_step_moves_the_desk_to_the_step_holding_its_target():
