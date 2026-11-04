@@ -2400,7 +2400,7 @@ function galleryPanel() {
     return `<section class="panel span gallery" id="my-videos"><h3>My videos</h3><p class="note">Every video you make shows up here, with its recipe code.</p></section>`;
   }
   const cards = rows
-    .map((row) => `<figure class="gallery-card" data-aspect="${esc(row.aspect)}">
+    .map((row) => row.kind === "take" ? takeCard(row) : `<figure class="gallery-card" data-aspect="${esc(row.aspect)}">
         <video muted playsinline preload="metadata" loop src="${esc(media(row.url))}#t=1.5"></video>
         <figcaption><strong>${esc(row.song || row.vibe || row.id)}</strong>
           <span>${esc([row.vibe, row.energy, row.aspect, row.tier].filter(Boolean).join(" · "))}</span>
@@ -2414,6 +2414,19 @@ function galleryPanel() {
       </figure>`)
     .join("");
   return `<section class="panel span gallery" id="my-videos"><h3>My videos</h3><div class="gallery-grid">${cards}</div></section>`;
+}
+
+// A live take from Perform (/vj's REC, perform_api): it plays and downloads; it has no recipe to reopen or re-render.
+function takeCard(row) {
+  const url = esc(media(row.url));
+  return `<figure class="gallery-card is-take" data-aspect="${esc(row.aspect)}">
+        <video muted playsinline preload="metadata" loop src="${url}#t=1.5"></video>
+        <figcaption><strong>${esc(row.song || "Live take")}</strong>
+          <span>${esc(["Live take", row.size, row.seconds ? clockText(Number(row.seconds)) : "", row.status === "error" ? "webm only" : ""].filter(Boolean).join(" Â· "))}</span>
+          <span class="mono">${esc(String(row.created || "").replace("T", " ").slice(0, 16))}</span>
+          <span class="gallery-actions"><a class="ghost" href="${url}" target="_blank" rel="noopener">Play</a><a class="ghost" href="${url}" download>Download</a></span>
+        </figcaption>
+      </figure>`;
 }
 
 async function loadVideos() {
