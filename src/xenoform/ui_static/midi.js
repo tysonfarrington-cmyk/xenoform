@@ -1,47 +1,65 @@
 // Xenoform MIDI: one mapping layer shared by the VJ page (vj.html) and the desk (ui_v6.js).
 // Events arrive from Web MIDI (Chrome/Edge/Opera) and from the desk's /ws/midi websocket, fed by
 // `xenoform midi serve` (so Firefox, Safari and headless renders see the controller too). Every event
-// is the same shape everywhere: {type:"cc"|"note"|"pitch"|"prog"|"touch", ch:1..16, num, value:0..127, t}.
-// A mapping row is {source:{type,ch,num}, target, mode:"abs"|"toggle"|"trigger"|"rel", min, max}; the
-// table lives in localStorage "xeno-midi" as {profile, mappings:{vj:[...], desk:[...]}}.
-(function(){
-const KEY="xeno-midi";
+// is the same shape everywhere: {type:"cc"|"note"|"pitch"|"prog"|"touch", ch:1..16, num, value:0..127, t}
+// (+ dev, the input's name, when Web MIDI read it). A mapping row is {source:{type,ch,num}, target,
+// mode:"abs"|"toggle"|"trigger"|"rel"|"hold", min, max}; the table lives in localStorage "xeno-midi" as
+// {profile, mappings:{vj:[...], desk:[...]}}.
+// Two halves in one file: the pure core (profiles, normalise, resolve, the hold stack, plain names) loads under node
+// too (module.exports, for tests/js/midi_test.js), and the browser runtime (window.XenoMidi) runs only in a page, so a
+// page that loads /static/midi.js alone gets both.
+(function(root){
+"use strict";
 // Arturia MiniLab 3 factory map (Arturia-mode template, checked against Arturia's MIDI Control Center manual):
 // knobs 1-8 CC 74 71 76 77 93 18 19 16 · faders 1-4 CC 82 83 85 17 · mod strip CC 1 · pads bank A notes 36-43,
 // bank B 44-51 on channel 10 · keys and knobs on channel 1.
 // UNCERTAIN: the clickable main encoder. We assume relative CC 28 (Arturia mode; DAW mode sends MCU instead).
 // If yours is different, Learn mode rebinds it in one twist.
 const knobs=[74,71,76,77,93,18,19,16],faders=[82,83,85,17];
+const n8=[...Array(8)].map((_,i)=>i+1);
 const PROFILES={
- minilab3:{label:"Arturia MiniLab 3 (factory map)",controls:[
-   ...knobs.map((n,i)=>({id:"knob"+(i+1),label:"Knob "+(i+1),type:"cc",ch:1,num:n,mode:"abs"})),
-   ...faders.map((n,i)=>({id:"fader"+(i+1),label:"Fader "+(i+1),type:"cc",ch:1,num:n,mode:"abs"})),
-   {id:"mod",label:"Mod strip",type:"cc",ch:1,num:1,mode:"abs"},
-   {id:"encoder",label:"Main encoder (relative, uncertain)",type:"cc",ch:1,num:28,mode:"rel"},
-   ...[...Array(8)].map((_,i)=>({id:"padA"+(i+1),label:"Pad A"+(i+1),type:"note",ch:10,num:36+i,mode:"trigger"})),
-   ...[...Array(8)].map((_,i)=>({id:"padB"+(i+1),label:"Pad B"+(i+1),type:"note",ch:10,num:44+i,mode:"trigger"}))],
+ minilab3:{label:"Arturia MiniLab 3",match:"mini\\s*lab\\s*3",controls:[
+   ...knobs.map((n,i)=>({id:"knob"+(i+1),short:"K"+(i+1),label:"Knob "+(i+1),type:"cc",ch:1,num:n,mode:"abs"})),
+   ...faders.map((n,i)=>({id:"fader"+(i+1),short:"F"+(i+1),label:"Fader "+(i+1),type:"cc",ch:1,num:n,mode:"abs"})),
+   {id:"mod",short:"Mod",label:"Mod strip",type:"cc",ch:1,num:1,mode:"abs"},
+   {id:"encoder",short:"Enc",label:"Main encoder (relative, uncertain)",type:"cc",ch:1,num:28,mode:"rel"},
+   ...[...Array(8)].map((_,i)=>({id:"padA"+(i+1),short:"A"+(i+1),label:"Pad A"+(i+1),type:"note",ch:10,num:36+i,mode:"trigger"})),
+   ...[...Array(8)].map((_,i)=>({id:"padB"+(i+1),short:"B"+(i+1),label:"Pad B"+(i+1),type:"note",ch:10,num:44+i,mode:"trigger"}))],
+  // how the controller is drawn (UI_REVIEW 6.5): two rows of four knobs, four faders, the pads in their two banks
+  layout:{knobs:[["knob1","knob2","knob3","knob4"],["knob5","knob6","knob7","knob8"]],faders:["fader1","fader2","fader3","fader4"],
+   pads:[n8.map(i=>"padA"+i),n8.map(i=>"padB"+i)],extra:["mod","encoder"],note:"Pads A and B are the two banks of the eight pads."},
+  // pads A1-A8 hold a scene (pad:N, T2's perform pads): shown while held, the song's own picture again on release
   vj:{knob1:"intensity",knob2:"every",knob3:"drums",knob4:"bass",knob5:"other",knob6:"vocals",knob7:"stem:1",knob8:"stem:2",
       fader1:"stem:3",fader2:"stem:4",fader3:"stem:5",fader4:"stem:6",mod:"intensity",encoder:"fx:step",
-      padA1:"fx:1",padA2:"fx:2",padA3:"fx:3",padA4:"fx:4",padA5:"fx:5",padA6:"fx:6",padA7:"fx:7",padA8:"fx:8",
+      ...Object.fromEntries(n8.map(i=>["padA"+i,"pad:"+i])),
       padB1:"dance:1",padB2:"dance:2",padB3:"dance:3",padB4:"dance:4",padB5:"dance:5",padB6:"dance:6",padB7:"strobe",padB8:"record"},
   desk:{knob1:"macro:intensity",knob2:"macro:speed",knob3:"macro:chaos",knob4:"macro:glow",knob5:"stem:1",knob6:"stem:2",knob7:"stem:3",knob8:"stem:4",
       fader1:"drums",fader2:"bass",fader3:"other",fader4:"vocals"}},
- generic:{label:"Generic controller (CC 1-8, notes 36-51)",controls:[
-   ...[...Array(8)].map((_,i)=>({id:"knob"+(i+1),label:"CC "+(i+1),type:"cc",ch:0,num:i+1,mode:"abs"})),
-   ...[...Array(16)].map((_,i)=>({id:"pad"+(i+1),label:"Note "+(36+i),type:"note",ch:0,num:36+i,mode:"trigger"}))],
-  vj:{knob1:"intensity",knob2:"every",knob3:"drums",knob4:"bass",knob5:"other",knob6:"vocals",
-      pad1:"fx:1",pad2:"fx:2",pad3:"fx:3",pad4:"fx:4",pad5:"fx:5",pad6:"fx:6",pad7:"fx:7",pad8:"fx:8",
+ // an unknown controller: knobs in CC order (1-8) to the main parameters and the stem gains, sliders (CC 9-12) to the
+ // master levels, pads in note order (36-51) to the scenes, then the dance presets as on the MiniLab's bank B
+ generic:{label:"Any controller (CC 1-12, notes 36-51)",controls:[
+   ...[...Array(8)].map((_,i)=>({id:"knob"+(i+1),short:"K"+(i+1),label:"Knob "+(i+1)+" (CC "+(i+1)+")",type:"cc",ch:0,num:i+1,mode:"abs"})),
+   ...[...Array(4)].map((_,i)=>({id:"slider"+(i+1),short:"S"+(i+1),label:"Slider "+(i+1)+" (CC "+(i+9)+")",type:"cc",ch:0,num:i+9,mode:"abs"})),
+   ...[...Array(16)].map((_,i)=>({id:"pad"+(i+1),short:"P"+(i+1),label:"Pad "+(i+1)+" (note "+(36+i)+")",type:"note",ch:0,num:36+i,mode:"trigger"}))],
+  layout:{knobs:[n8.map(i=>"knob"+i)],faders:["slider1","slider2","slider3","slider4"],pads:[n8.map(i=>"pad"+i),n8.map(i=>"pad"+(i+8))],extra:[],
+   note:"An unknown controller: knobs on CC 1-8, sliders on CC 9-12, pads on notes 36-51. Learn moves any of them."},
+  vj:{knob1:"intensity",knob2:"every",knob3:"stem:1",knob4:"stem:2",knob5:"stem:3",knob6:"stem:4",knob7:"stem:5",knob8:"stem:6",
+      slider1:"drums",slider2:"bass",slider3:"other",slider4:"vocals",...Object.fromEntries(n8.map(i=>["pad"+i,"pad:"+i])),
       pad9:"dance:1",pad10:"dance:2",pad11:"dance:3",pad12:"dance:4",pad13:"dance:5",pad14:"dance:6",pad15:"strobe",pad16:"record"},
-  desk:{knob1:"macro:intensity",knob2:"macro:speed",knob3:"macro:chaos",knob4:"macro:glow",knob5:"drums",knob6:"bass",knob7:"other",knob8:"vocals"}}};
+  desk:{knob1:"macro:intensity",knob2:"macro:speed",knob3:"macro:chaos",knob4:"macro:glow",knob5:"stem:1",knob6:"stem:2",knob7:"stem:3",knob8:"stem:4",
+      slider1:"drums",slider2:"bass",slider3:"other",slider4:"vocals"}}};
 const TOGGLES=["strobe","mirror","hud","kaleido","record"];
-const VJ_TARGETS=["intensity","every","fx:next","fx:prev","fx:step","fx:auto","fx:1","fx:2","fx:3","fx:4","fx:5","fx:6","fx:7","fx:8",
+const HOLDS=/^(pad|scene):|^blackout$/,TRIGGERS=/^(fx:|dance:|cue:|tap$|play$)/;
+const VJ_TARGETS=["intensity","every",...n8.map(i=>"pad:"+i),"fx:next","fx:prev","fx:step","fx:auto","fx:1","fx:2","fx:3","fx:4","fx:5","fx:6","fx:7","fx:8",
  "dance:1","dance:2","dance:3","dance:4","dance:5","dance:6","mirror","strobe","kaleido","record","tap","hud","drums","bass","other","vocals",
  "stem:1","stem:2","stem:3","stem:4","stem:5","stem:6","stem:7","stem:8"];
 const DESK_TARGETS=["macro:intensity","macro:speed","macro:chaos","macro:glow","drums","bass","other","vocals",
  "stem:1","stem:2","stem:3","stem:4","stem:5","stem:6","stem:7","stem:8"];
 const range=t=>t==="intensity"?[0,2]:[0,1];
-function modeFor(target,type,profileMode){if(profileMode==="rel")return"rel";if(type!=="note")return"abs";
- if(TOGGLES.includes(target))return"toggle";if(/^(fx:|dance:|tap$|record$)/.test(target))return"trigger";return"abs"}
+// the mode a new binding gets: a pad target holds (note or CC button alike), an encoder steps, a knob follows, a note on
+// a switch toggles, on an action fires once
+function modeFor(target,type,profileMode){if(profileMode==="rel")return"rel";if(HOLDS.test(target))return"hold";if(type!=="note")return"abs";
+ if(TOGGLES.includes(target))return"toggle";if(TRIGGERS.test(target))return"trigger";return"abs"}
 function profileMapping(profile,page){const p=PROFILES[profile]||PROFILES.generic,T=p[page]||{};const out=[];
  for(const c of p.controls){const t=T[c.id];if(!t)continue;const[lo,hi]=range(t);
   out.push({source:{type:c.type,ch:c.ch,num:c.num},target:t,mode:modeFor(t,c.type,c.mode),min:lo,max:hi,label:c.label})}return out}
@@ -53,32 +71,93 @@ function normalise(data,t){const b=data;if(!b||b.length<1||b[0]<0x80)return null
 const matches=(e,ev)=>e.source&&e.source.type===ev.type&&+e.source.num===+ev.num&&(!+e.source.ch||+e.source.ch===+ev.ch);
 const relDelta=v=>v>=64?v-64:v>0?-(64-v):0;
 const srcName=s=>(s.type==="note"?"note ":s.type==="cc"?"CC ":s.type+" ")+s.num+(s.ch?" ch"+s.ch:"");
+const srcKey=s=>s.type+":"+(+s.ch||0)+":"+s.num;
+// a press lets go when the control comes back up: note-off (or a note-on at velocity 0), a CC button below 64
+const isRelease=ev=>ev.type==="note"?(ev.value|0)===0:(ev.value|0)<64;
+// One event through one row: {target, value, kind} where kind is "set", or "press"/"release" for a hold row; null for
+// an event the row ignores (a toggle's or a trigger's release). `state` keeps toggles and encoders between events.
+function resolve(e,ev,state){const t=e.target,mode=e.mode||"abs",lo=+e.min||0,hi=e.max==null?1:+e.max,v=ev.value|0;let val,kind="set";
+ if(mode==="abs")val=lo+(hi-lo)*v/127;
+ else if(mode==="rel"){const d=relDelta(v);if(t==="fx:step"){if(!d)return null;val=d}else val=Math.max(lo,Math.min(hi,(state[t]==null?lo:state[t])+(hi-lo)*d/100))}
+ else if(mode==="toggle"){if(v===0)return null;val=(state[t]==null?lo:state[t])<=lo?hi:lo}
+ else if(mode==="hold"){const on=!isRelease(ev);kind=on?"press":"release";val=on?hi:lo}
+ else{if(v===0)return null;val=hi}
+ state[t]=val;return{target:t,value:val,kind}}
+// The hold stack: pads are temporary overriders. press(id) puts a pad on top (last in wins), release(id) takes it off
+// wherever it is, top() is what shows now (optionally the top one of a family: top("pad:")), clear() lets go of all,
+// on(fn) hears every change as fn(id, on, top, stack) and returns its unsubscribe.
+function HoldStack(){this.stack=[];this.subs=[]}
+HoldStack.prototype={
+ press(id){if(!id)return;const i=this.stack.indexOf(id);if(i>=0)this.stack.splice(i,1);this.stack.push(id);this._tell(id,true)},
+ release(id){const i=this.stack.indexOf(id);if(i<0)return false;this.stack.splice(i,1);this._tell(id,false);return true},
+ top(prefix){for(let i=this.stack.length-1;i>=0;i--){const id=this.stack[i];if(!prefix||id.indexOf(prefix)===0)return id}return null},
+ held(id){return this.stack.includes(id)},list(){return this.stack.slice()},
+ clear(){while(this.stack.length)this.release(this.stack[this.stack.length-1])},
+ on(fn){this.subs.push(fn);return()=>{this.subs=this.subs.filter(f=>f!==fn)}},
+ _tell(id,on){const top=this.top(),stack=this.stack.slice();for(const fn of this.subs.slice()){try{fn(id,on,top,stack)}catch(e){if(typeof console!=="undefined")console.error("midi hold",e)}}}};
+// plain words for targets (C7: "Intensity", "Drums level", not macro:intensity)
+const FX_NAMES=["Clean cut","Match-cut","Flow carry","Liquid flow","Depth parallax","Lens breath","Chrome refraction","Echo trail"];
+const DANCE_NAMES=["Clean","Mirror","Strobe","Mirror + strobe","Echo trail","Chrome mirror"];
+const NAMES={intensity:"Intensity",every:"Switch rate",speed:"Speed",chaos:"Chaos",glow:"Glow",master:"Master fade",blackout:"Blackout",
+ play:"Play / pause","cue:drop":"Cue the drop","fx:next":"Next scene","fx:prev":"Previous scene","fx:step":"Step the transition","fx:auto":"Auto transitions",
+ mirror:"Mirror",strobe:"Strobe",kaleido:"Kaleido",record:"Record",tap:"Tap tempo",hud:"HUD",drums:"Drums level",bass:"Bass level",
+ other:"Other level",vocals:"Vocals level",feel:"Feel",look:"Look"};
+function targetName(t){t=String(t||"");if(NAMES[t])return NAMES[t];let m;
+ if((m=/^macro:(.+)$/.exec(t)))return NAMES[m[1]]||m[1].charAt(0).toUpperCase()+m[1].slice(1);
+ if((m=/^fx:(\d+)$/.exec(t)))return"Transition "+m[1]+(FX_NAMES[+m[1]-1]?" · "+FX_NAMES[+m[1]-1]:"");
+ if((m=/^dance:(\d+)$/.exec(t)))return"Dance "+m[1]+(DANCE_NAMES[+m[1]-1]?" · "+DANCE_NAMES[+m[1]-1]:"");
+ if((m=/^(pad|scene):(\d+)$/.exec(t)))return(m[1]==="pad"?"Pad ":"Scene ")+m[2];
+ if((m=/^stem:(\d+)$/.exec(t)))return"Stem "+m[1];if((m=/^stem:(.+)$/.exec(t)))return m[1]+" stem";
+ return t.replace(/[:_-]+/g," ")}
+const MODE_NAMES={abs:"Follows the control",rel:"Steps (endless encoder)",toggle:"Press on, press off",hold:"On while held",trigger:"Fires on press"};
+// the profile control behind a source, and its short name for a badge (K1, F2, A3, Mod); a learned control the profile
+// does not know is named by its message (CC74, N36)
+function controlOf(profile,s){const p=PROFILES[profile]||PROFILES.generic;if(!s)return null;
+ return p.controls.find(c=>c.type===s.type&&+c.num===+s.num&&(!+c.ch||!+s.ch||+c.ch===+s.ch))||null}
+function shortName(profile,s){const c=controlOf(profile,s);return c?c.short:s?(s.type==="note"?"N":s.type==="cc"?"CC":s.type.charAt(0).toUpperCase())+s.num:""}
+
+const core={PROFILES,VJ_TARGETS,DESK_TARGETS,MODE_NAMES,range,modeFor,profileMapping,normalise,matches,relDelta,srcName,srcKey,
+ isRelease,resolve,HoldStack,targetName,controlOf,shortName};
+if(typeof module==="object"&&module.exports){module.exports=core;return}
+
+// ---------------------------------------------------------------- the browser runtime
+const KEY="xeno-midi";
 function load(){try{const j=JSON.parse(localStorage.getItem(KEY)||"{}");return{profile:j.profile||"minilab3",mappings:j.mappings||{}}}catch(e){return{profile:"minilab3",mappings:{}}}}
+const holds=new HoldStack();
 
 const X={
  page:"vj",profile:"minilab3",mappings:[],handlers:{},state:{},inputs:[],ws:null,es:null,wsState:"off",learnTarget:null,learnMode:false,
- share:false,last:null,count:0,log:[],_opts:{},_el:null,_timer:null,
+ share:false,last:null,count:0,log:[],bridgeDevices:{},holds,_held:{},_opts:{},_el:null,_timer:null,
  init(opts){opts=opts||{};this._opts=opts;this.page=opts.page||"vj";const st=load();this.profile=st.profile;
   // ?webmidi=0: the bridge only. Web MIDI opens every input it binds, and on Windows an open input is exclusive, so a
   // second window (or a test page) that must not take the controller from another app asks for the bridge alone.
   if(/[?&]webmidi=0(&|$)/.test(location.search||""))opts.webmidi=false;
   const stored=st.mappings[this.page];this.mappings=Array.isArray(stored)&&stored.length?stored:profileMapping(this.profile,this.page);
   Object.assign(this.handlers,opts.targets||{});
-  if(navigator.requestMIDIAccess&&opts.webmidi!==false)navigator.requestMIDIAccess().then(acc=>{const bind=()=>{this.inputs=[];acc.inputs.forEach(inp=>{this.inputs.push(inp.name||"MIDI input");
-     inp.onmidimessage=ev=>{const e=normalise(ev.data);if(e)this.handle(e,"webmidi")}});this._status()};bind();acc.onstatechange=bind}).catch(()=>{this._status()});
+  // onHold(target, on, {top, stack}): the page applies a pad (shows its scene or look) and lets go of it (back to what
+  // the song holds now); several holds stack, last in wins
+  if(opts.onHold)holds.on((id,on,top,stack)=>opts.onHold(id,on,{top,stack}));
+  if(navigator.requestMIDIAccess&&opts.webmidi!==false)navigator.requestMIDIAccess().then(acc=>{const bind=()=>{this.inputs=[];const names=[];
+     acc.inputs.forEach(inp=>{const name=inp.name||"MIDI input";this.inputs.push(name);names.push(name);
+      inp.onmidimessage=ev=>{const e=normalise(ev.data);if(e){e.dev=name;this.handle(e,"webmidi")}}});
+     this._gone(names);this._status()};bind();acc.onstatechange=bind}).catch(()=>{this._status()});
   if(opts.bridge!==false)this.connect();this._status();return this},
  // ---- events
  handle(ev,origin){this.last=ev;this.count++;this.log.push(ev);this.log.length>12&&this.log.shift();
   if(this.learnTarget&&(ev.type==="cc"||ev.type==="note")&&ev.value>0){this.bind(this.learnTarget,ev);return}
   if(this.share&&origin==="webmidi"&&this.ws&&this.ws.readyState===1)this.ws.send(JSON.stringify(ev));
-  let hit=false;for(const e of this.mappings){if(!matches(e,ev))continue;const r=this.apply(e,ev);if(r){hit=true;this.fire(r[0],r[1],ev,e)}}
+  let hit=false;const sk=srcKey(ev),off=isRelease(ev);
+  // a release lets go of whatever this control pressed, even if the map changed while it was held
+  if(off&&this._held[sk]){const was=this._held[sk];delete this._held[sk];for(const h of was)if(holds.release(h.t)){hit=true;this.fire(h.t,h.lo,ev,h.row)}}
+  for(const e of this.mappings){if(!matches(e,ev))continue;if(e.mode==="hold"&&off)continue;const r=resolve(e,ev,this.state);if(!r)continue;hit=true;
+   if(r.kind==="press"){const was=this._held[sk]||(this._held[sk]=[]);if(was.some(h=>h.t===r.target))continue;
+    was.push({t:r.target,lo:+e.min||0,dev:ev.dev||"",row:e});holds.press(r.target)}
+   this.fire(r.target,r.value,ev,e)}
   if(this._opts.onEvent)this._opts.onEvent(ev,hit,origin);this._status(true)},
- apply(e,ev){const t=e.target,mode=e.mode||"abs",lo=+e.min||0,hi=e.max==null?1:+e.max,v=ev.value|0;let val;
-  if(mode==="abs")val=lo+(hi-lo)*v/127;
-  else if(mode==="rel"){val=Math.max(lo,Math.min(hi,(this.state[t]==null?lo:this.state[t])+(hi-lo)*relDelta(v)/100));if(t==="fx:step"){if(!relDelta(v))return null;val=relDelta(v)}}
-  else if(mode==="toggle"){if(ev.type==="note"&&v===0)return null;val=(this.state[t]==null?lo:this.state[t])<=lo?hi:lo}
-  else{if(v===0)return null;val=hi}
-  this.state[t]=val;return[t,val]},
+ // an input went away (unplugged mid-hold): let go of what its pads held, the page snaps back
+ _gone(names){for(const k of Object.keys(this._held)){const keep=this._held[k].filter(h=>!h.dev||names.includes(h.dev));
+   for(const h of this._held[k])if(!keep.includes(h))holds.release(h.t);if(keep.length)this._held[k]=keep;else delete this._held[k]}},
+ releaseAll(){this._held={};holds.clear()},
  fire(target,val,ev,entry){const h=this.handlers;const m=/^([a-z]+):(.+)$/.exec(target);
   if(h[target])return h[target](val,ev,entry);
   if(m&&h[m[1]+":*"])return h[m[1]+":*"](m[2],val,ev,entry);
@@ -94,13 +173,13 @@ const X={
   this.toast(this.learnMode?"Learn: click a control, then move a knob":"Learn off");this.render()},
  unmap(i){this.mappings.splice(i,1);this.save();this.render()},
  add(target,source,mode,min,max){const[lo,hi]=range(target);this.mappings.push({source,target,mode:mode||modeFor(target,source.type),min:min==null?lo:min,max:max==null?hi:max});this.save();this.render()},
- setProfile(name){if(!PROFILES[name])return;this.profile=name;this.mappings=profileMapping(name,this.page);this.save();this.render()},
- reset(){this.mappings=profileMapping(this.profile,this.page);this.save();this.render()},
+ setProfile(name){if(!PROFILES[name])return;this.profile=name;this.releaseAll();this.mappings=profileMapping(name,this.page);this.save();this.render()},
+ reset(){this.releaseAll();this.mappings=profileMapping(this.profile,this.page);this.save();this.render()},
  save(){const st=load();st.profile=this.profile;st.mappings[this.page]=this.mappings;try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}},
  exportJSON(){return JSON.stringify({kind:"xenoform-midi-map",version:1,profile:this.profile,page:this.page,mappings:this.mappings},null,1)},
  importJSON(text){const j=typeof text==="string"?JSON.parse(text):text;const rows=Array.isArray(j)?j:j.mappings||(j.pages&&j.pages[this.page]);
   if(!Array.isArray(rows))throw new Error("not a mapping file");this.mappings=rows.filter(r=>r&&r.source&&r.target).map(r=>({source:{type:r.source.type,ch:+r.source.ch||0,num:+r.source.num},target:String(r.target),mode:r.mode||"abs",min:+r.min||0,max:r.max==null?1:+r.max,label:r.label}));
-  if(j.profile&&PROFILES[j.profile])this.profile=j.profile;this.save();this.render();return this.mappings.length},
+  if(j.profile&&PROFILES[j.profile])this.profile=j.profile;this.releaseAll();this.save();this.render();return this.mappings.length},
  // ---- the desk websocket (Python bridge fan-out), SSE when there is no websocket. The desk says first whether it can
  // upgrade one (/api/midi/status "websocket": the [midi] extra brings the websockets package); if not, straight to SSE,
  // so a desk without the extra no longer logs a failed /ws/midi on every page load.
@@ -117,7 +196,8 @@ const X={
  sse(base){if(this.es||!window.EventSource)return;const es=new EventSource(base+"/api/midi/stream");this.es=es;this.wsState="sse";
   es.onmessage=m=>{try{const ev=JSON.parse(m.data);if(ev&&ev.type)this.handle(ev,"bridge")}catch(e){}};
   es.onerror=()=>{this.wsState="sse (reconnecting)";this._status()};this._status()},
- status(){return{inputs:this.inputs.slice(),bridge:this.wsState,profile:this.profile,mappings:this.mappings.length,events:this.count,last:this.last,learn:this.learnMode||!!this.learnTarget}},
+ status(){return{inputs:this.inputs.slice(),bridge:this.wsState,profile:this.profile,mappings:this.mappings.length,events:this.count,last:this.last,
+  learn:this.learnMode||!!this.learnTarget,held:holds.list()}},
  _status(light){const s=this.status();if(this._opts.onStatus)this._opts.onStatus(s);if(!light||this.count%8===0)this._paintStatus()},
  toast(t){if(this._opts.toast)this._opts.toast(t)},
  // ---- learn mode: a click on any control picks the target, the next knob/pad binds it
@@ -157,11 +237,11 @@ const X={
   $("#xm-add").onclick=()=>this.learn($("#xm-new").value);const c=$("#xm-cancel");if(c)c.onclick=()=>this.learn(null);
   el.querySelectorAll("[data-learn]").forEach(b=>b.onclick=()=>this.learn(b.dataset.learn));el.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>this.unmap(+b.dataset.del));
   el.addEventListener("click",e=>e.stopPropagation());this._paintStatus()},
- PROFILES,profileMapping,normalise,srcName,VJ_TARGETS,DESK_TARGETS};
+ ...core};
 // learn-mode click capture (before the page's own handlers)
 document.addEventListener("click",e=>{if(!X.learnMode||!e.target||(e.target.closest&&e.target.closest("#xeno-midi-panel")))return;
  const t=X._clickTarget(e.target);if(!t)return;e.preventDefault();e.stopPropagation();X.learn(t)},true);
 document.addEventListener("pointerdown",e=>{if(!X.learnMode||!e.target||(e.target.closest&&e.target.closest("#xeno-midi-panel")))return;
  if(X._clickTarget(e.target)){e.preventDefault();e.stopPropagation()}},true);
-window.XenoMidi=X;
-})();
+root.XenoMidiCore=core;root.XenoMidi=X;
+})(typeof window!=="undefined"?window:this);

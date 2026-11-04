@@ -67,13 +67,22 @@ def test_profiles_and_modes():
     vj = mb.profile_mapping("minilab3", "vj")
     by = {(m["source"]["type"], m["source"]["num"]): m for m in vj}
     assert by[("cc", 74)]["target"] == "intensity" and by[("cc", 74)]["max"] == 2.0
-    assert by[("note", 36)]["target"] == "fx:1" and by[("note", 36)]["mode"] == "trigger" and by[("note", 36)]["source"]["ch"] == 10
+    # pads A1-A8 hold a scene (pad:N, shown while held); bank B keeps the dance presets, strobe and record
+    assert by[("note", 36)]["target"] == "pad:1" and by[("note", 36)]["mode"] == "hold" and by[("note", 36)]["source"]["ch"] == 10
+    assert by[("note", 44)]["target"] == "dance:1" and by[("note", 44)]["mode"] == "trigger"
     assert by[("note", 50)]["target"] == "strobe" and by[("note", 50)]["mode"] == "toggle"
     assert by[("cc", 28)]["mode"] == "rel"
     desk = {m["target"] for m in mb.profile_mapping("minilab3", "desk")}
     assert {"macro:intensity", "macro:glow", "drums", "vocals", "stem:1"} <= desk
     assert len(mb.PROFILES["minilab3"]["controls"]) == 8 + 4 + 2 + 16
     assert mb.profile_mapping("generic", "vj") and mb.profile_mapping("nope", "vj") == mb.profile_mapping("generic", "vj")
+    # the generic map (an unknown controller): knobs in CC order, sliders to the master levels, pads in note order
+    gen = {(m["source"]["type"], m["source"]["num"]): m["target"] for m in mb.profile_mapping("generic", "desk")}
+    assert [gen[("cc", n)] for n in range(1, 5)] == ["macro:intensity", "macro:speed", "macro:chaos", "macro:glow"]
+    assert [gen[("cc", n)] for n in range(5, 13)] == ["stem:1", "stem:2", "stem:3", "stem:4", "drums", "bass", "other", "vocals"]
+    gvj = {(m["source"]["type"], m["source"]["num"]): m for m in mb.profile_mapping("generic", "vj")}
+    assert gvj[("note", 36)]["target"] == "pad:1" and gvj[("note", 36)]["mode"] == "hold" and gvj[("note", 44)]["target"] == "dance:1"
+    assert mb.mode_for("pad:3", "cc") == "hold" and mb.mode_for("intensity", "cc") == "abs" and mb.mode_for("fx:2", "note") == "trigger"
     st = {}
     cc = by[("cc", 74)]
     assert mb.apply(cc, {"type": "cc", "num": 74, "value": 127}, st) == ("intensity", 2.0)
@@ -81,12 +90,33 @@ def test_profiles_and_modes():
     assert mb.apply(tog, {"type": "note", "num": 50, "value": 100}, st) == ("strobe", 1.0)
     assert mb.apply(tog, {"type": "note", "num": 50, "value": 0}, st) is None
     assert mb.apply(tog, {"type": "note", "num": 50, "value": 100}, st) == ("strobe", 0.0)
-    trig = by[("note", 36)]
-    assert mb.apply(trig, {"type": "note", "num": 36, "value": 0}, st) is None
-    assert mb.apply(trig, {"type": "note", "num": 36, "value": 1}, st) == ("fx:1", 1.0)
+    trig = by[("note", 44)]
+    assert mb.apply(trig, {"type": "note", "num": 44, "value": 0}, st) is None
+    assert mb.apply(trig, {"type": "note", "num": 44, "value": 1}, st) == ("dance:1", 1.0)
+    hold = by[("note", 36)]
+    assert mb.apply(hold, {"type": "note", "num": 36, "value": 90}, st) == ("pad:1", 1.0)
+    assert mb.apply(hold, {"type": "note", "num": 36, "value": 0}, st) == ("pad:1", 0.0)  # the release lets go
+    assert mb.is_release({"type": "cc", "value": 63}) and not mb.is_release({"type": "cc", "value": 64})
     assert mb.rel_delta(65) == 1 and mb.rel_delta(63) == -1 and mb.rel_delta(0) == 0
     assert mb.matches({"source": {"type": "cc", "ch": 0, "num": 1}}, {"type": "cc", "ch": 7, "num": 1})
     assert not mb.matches({"source": {"type": "cc", "ch": 2, "num": 1}}, {"type": "cc", "ch": 7, "num": 1})
+
+
+def test_vj_pads_hold_over_the_song_and_leave_its_timeline_alone():
+    """/vj: pad:N rows (mode hold) press and release through XenoMidi.holds; a held pad is drawn over the song in
+    frame() and nothing in the hold code moves the song (S.cur, the switcher, the track)."""
+    static = stems_api.Path(stems_api.__file__).parent / "ui_static"
+    js = (static / "midi.js").read_text(encoding="utf-8")
+    assert "function HoldStack()" in js and "holds.press(r.target)" in js and "holds.release(h.t)" in js
+    assert 'padA"+i,"pad:"+i' in js and "module.exports=core" in js  # pads A hold pad:N; the core loads under node
+    vj = (static / "vj.html").read_text(encoding="utf-8")
+    assert "XenoMidi.holds.on(" in vj and "XenoMidi.holds.top('pad:')" in vj and "const H=heldScene();" in vj
+    assert "A=H?H.v:" in vj and "if(H)mixv=0;" in vj  # the held scene replaces the drawn picture only
+    hooks = vj.split("// Hold pads (pad:1..8", 1)[1].split("XenoMidi.panel(", 1)[0]
+    for moves_the_song in ("next(", "prev(", "S.cur=", "S.nxt=", "S.beats++", "S.beats=", "S.trans=", "onBeat(", "trackEl.pause(",
+                           "trackEl.play(", "trackEl.currentTime=", "S.used", "lastBeatIdx="):
+        assert moves_the_song not in hooks, moves_the_song
+    assert "'/api/videos/'+encodeURIComponent(JOB)+'/shots'" in vj  # ?job=<id>: the cut's shots are the pads
 
 
 # ---------------------------------------------------------------- lazy mido
@@ -136,7 +166,15 @@ def test_record_and_automation_to_envelopes(tmp_path, monkeypatch):
     env = mb.automation_to_envelopes(take, fps=4)
     assert env["fps"] == 4 and env["frames"] == 9 and env["source"] == "midi" and env["events"] == 6
     assert env["targets"]["intensity"] == [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0]  # 0..2 scaled to 0..1, held
-    assert env["targets"]["fx:3"] == [0, 0, 1.0, 0, 0, 0, 0, 0, 0] and env["hits"]["fx:3"] == [0.5]
+    # pad A3 held from 0.5 to 0.6 s: a gate on the frame it went down on (shorter than a frame, still seen), its press
+    # in hits, its span in holds
+    assert env["targets"]["pad:3"] == [0, 0, 1.0, 0, 0, 0, 0, 0, 0] and env["hits"]["pad:3"] == [0.5]
+    assert env["holds"]["pad:3"] == [[0.5, 0.6]]
+    long = mb.automation_to_envelopes({"profile": "minilab3", "seconds": 2.0, "events": [
+        {"type": "note", "ch": 10, "num": 37, "value": 100, "t": 0.25}, {"type": "note", "ch": 10, "num": 37, "value": 0, "t": 1.0},
+        {"type": "note", "ch": 10, "num": 39, "value": 100, "t": 1.5}]}, fps=4)  # A4 still down when the take ends
+    assert long["targets"]["pad:2"] == [0, 1.0, 1.0, 1.0, 0, 0, 0, 0, 0] and long["holds"]["pad:4"] == [[1.5, 2.0]]
+    assert long["targets"]["pad:4"][6:] == [1.0, 1.0, 1.0]
     assert env["targets"]["strobe"][6:] == [1.0, 1.0, 1.0] and env["targets"]["strobe"][5] == 0.0
     assert env["targets"]["stem:1"][1] == pytest.approx(64 / 127, abs=1e-3)  # knob 7 (CC 19) = stem lane 1
     assert mb.take_value(env, "intensity", 1.2) == 1.0 and mb.take_value(env, "nothing", 0.0, 0.3) == 0.3

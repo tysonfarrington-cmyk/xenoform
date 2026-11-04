@@ -80,7 +80,7 @@
  <tr><td>P · H · F</td><td>HUD · Hide controls · Fullscreen</td></tr>
  <tr><td>R</td><td>Record a clean clip (webm, with audio)</td></tr>
  <tr><td>Stems</td><td><b>Use this song's stems</b> splits the loaded track on the desk (Demucs when installed, else the band split) and reloads with <code>?stems=</code> so drums/bass/other/vocals drive the picture. Per-stem gains come from the desk's Stem reactions lanes.</td></tr>
- <tr><td>MIDI</td><td>MiniLab 3 out of the box: pads A1–A8 = premium transitions 1–8, pads B1–B6 = dance presets, B7 strobe, B8 record · knob 1 / mod strip intensity · knob 2 switch rate · knobs 3–6 drums/bass/other/vocals gain · knobs 7–8 + faders = stem gains · encoder steps the transition. <b>L</b> = learn mode (click a control, move a knob). No Web MIDI (Firefox/Safari)? Run <code>xenoform midi serve</code>.</td></tr>
+ <tr><td>MIDI</td><td>MiniLab 3 out of the box: hold pads A1–A8 to show a scene (the cut's shots with <code>?job=</code>) over the song; let go and the picture is back where the song is · pads B1–B6 = dance presets, B7 strobe, B8 record · knob 1 / mod strip intensity · knob 2 switch rate · knobs 3–6 drums/bass/other/vocals gain · knobs 7–8 + faders = stem gains · encoder steps the transition. <b>L</b> = learn mode (click a control, move a knob). No Web MIDI (Firefox/Safari)? Run <code>xenoform midi serve</code>.</td></tr>
 </table><div id="midi-panel"></div></div></div>
 <div id="toast" class="glass"></div>
 <script src="/static/midi.js"></script>
@@ -268,7 +268,9 @@ function frame(now){requestAnimationFrame(frame);size();
  else if(an&&a.flux>avgFlux*2.6&&a.flux>.04&&now-lastFluxBeat>350&&a.b>.4){lastFluxBeat=now;onBeat(S.beats)}
  beatPulse*=.9;
  let mixv=0;if(S.trans){mixv=Math.min(1,(now-S.t0)/S.dur);if(mixv>=1){S.scenes[S.cur]&&S.scenes[S.cur].v.pause();S.cur=S.nxt;S.trans=false;mixv=0}}
- const A=S.scenes[S.cur]&&S.scenes[S.cur].v,B=S.trans?S.scenes[S.nxt].v:A;
+ // a held pad (PADS, below) is drawn over the song; everything above this line runs exactly as without it
+ const H=heldScene();
+ const A=H?H.v:S.scenes[S.cur]&&S.scenes[S.cur].v,B=H?H.v:S.trans?S.scenes[S.nxt].v:A;if(H)mixv=0;
  [[A,0],[B,1]].forEach(([v,u])=>{if(v&&v.readyState>=2){gl.activeTexture(gl.TEXTURE0+u);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,v)}});
  const f1=(n,v)=>gl.uniform1f(U(n),v);f1('t',now/1000);f1('m',mixv);f1('bass',bassS);f1('high',highS);f1('fx',S.curFx);f1('beat',beatPulse);
  f1('kal',S.kal);f1('mir',S.mir);f1('stb',S.stb);f1('inten',S.inten);
@@ -276,7 +278,7 @@ function frame(now){requestAnimationFrame(frame);size();
  f1('aspA',A&&A.videoWidth?A.videoWidth/A.videoHeight:1);f1('aspB',B&&B.videoWidth?B.videoWidth/B.videoHeight:1);f1('aspS',cv.width/cv.height);
  gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
  fpsN++;if(now-fpsT>500){if(S.hud){$('h-fps').textContent=Math.round(fpsN*1000/(now-fpsT));$('h-bpm').textContent=S.bpm||'-';$('h-beat').textContent=S.beats;
-  $('h-scene').textContent=(S.scenes[S.cur]||{}).name||'-';$('h-fx').textContent=(S.fx==='auto'?'auto · ':'')+FXN[S.curFx];$('h-every').textContent=S.every?S.every+' beat(s)':'follow song';$('h-int').textContent=S.inten.toFixed(2)}fpsN=0;fpsT=now}
+  $('h-scene').textContent=H?'held · '+H.name:(S.scenes[S.cur]||{}).name||'-';$('h-fx').textContent=(S.fx==='auto'?'auto · ':'')+FXN[S.curFx];$('h-every').textContent=S.every?S.every+' beat(s)':'follow song';$('h-int').textContent=S.inten.toFixed(2)}fpsN=0;fpsT=now}
  if(S.hud){$('mb').style.height=(3+27*bassS)+'px';$('mm').style.height=(3+27*a.m)+'px';$('mh').style.height=(3+27*highS)+'px'}}
 
 // recording: canvas + track audio -> webm download
@@ -321,11 +323,44 @@ XenoMidi.init({page:'vj',toast,elements:{fx:'fx:next',every:'every',stemsb:'stem
   'fx:*':(n,v)=>{if(n==='next')next();else if(n==='prev')prev();else if(n==='auto')setFx('auto');
    else if(n==='step'){const i=KEYFX.indexOf(+S.fx),j=((i<0?0:i)+(v>0?1:-1)+KEYFX.length)%KEYFX.length;setFx(String(KEYFX[j]))}
    else{const f=KEYFX[+n-1];if(f!=null){setFx(String(f));next(f)}}},
-  'dance:*':n=>dance(+n),
-  mirror:v=>setTog('mir','mir',v>0),strobe:v=>setTog('stb','stb',v>0),kaleido:v=>{if(EXPERT)setTog('kal','kal',v>0);else toast('Kaleido is expert only (?expert=1)')},
+  // a row in mode "hold" is played by the hold stack below (applyLooks), so these see only the latching modes
+  'dance:*':(n,v,ev,e)=>{if(!isHold(e))dance(+n)},
+  mirror:(v,ev,e)=>{if(!isHold(e))setTog('mir','mir',v>0)},strobe:(v,ev,e)=>{if(!isHold(e))setTog('stb','stb',v>0)},
+  kaleido:(v,ev,e)=>{if(isHold(e))return;if(EXPERT)setTog('kal','kal',v>0);else toast('Kaleido is expert only (?expert=1)')},
   record:v=>{if((v>0)!==!!rec)record()},tap:()=>tap(),hud:v=>{if((v>0)!==S.hud)hud()},
   drums:v=>{S.gain.drums=v},bass:v=>{S.gain.bass=v},other:v=>{S.gain.other=v},vocals:v=>{S.gain.vocals=v},
   'stem:*':(n,v)=>{const name=stemName(n);if(name)setStemGain(name,v);else toast('No stem '+n+' (use this song\'s stems first)')}}});
+// Hold pads (pad:1..8, MiniLab pads A1-A8): a held pad shows its scene over the song. S.cur, the beat clock, the
+// switches and the track never stop, so on release the picture is whatever the song position holds now, as if the pad
+// was never pressed; several held pads stack, the last one pressed shows. With ?job=<id> the pads are that cut's shots
+// (each its stretch of the cut's video, looped), else the loaded scenes in their order.
+const PADS={shots:[],held:null};const JOB=Q.get('job')||'';
+const isHold=e=>!!(e&&e.mode==='hold');
+const padScene=n=>(PADS.shots.length?PADS.shots:S.scenes)[n-1]||null;
+function heldScene(){const H=PADS.held;if(!H||H.v.readyState<2)return null;
+ if(H.end!=null&&(H.v.currentTime>=H.end-.03||H.v.currentTime<H.start-.5))H.v.currentTime=H.start;if(H.v.paused)H.v.play().catch(()=>{});return H}
+function applyPads(){const top=XenoMidi.holds.top('pad:'),sc=top?padScene(+top.slice(4)):null,was=PADS.held;
+ if(was&&was!==sc&&was!==S.scenes[S.cur]&&!(S.trans&&was===S.scenes[S.nxt]))was.v.pause();
+ PADS.held=sc;if(top&&!sc)toast('Nothing on '+top.replace(':',' ')+' yet');
+ if(sc&&sc!==was){if(sc.start!=null)sc.v.currentTime=sc.start;sc.v.play().catch(()=>{})}}
+// Held looks (a pad switched to "On while held" on a dance preset, strobe, mirror or kaleido): applied while held, and
+// on release the look goes back to what it was; several stack, the last one pressed wins where they disagree.
+const LOOKS={snap:null};const isLook=id=>/^(dance:\d+|strobe|mirror|kaleido)$/.test(id);
+function applyLooks(){const held=XenoMidi.holds.list().filter(isLook);
+ if(!held.length){if(LOOKS.snap){Object.assign(S,LOOKS.snap);LOOKS.snap=null}}
+ else{if(!LOOKS.snap)LOOKS.snap={fx:S.fx,mir:S.mir,stb:S.stb,kal:S.kal,inten:S.inten};Object.assign(S,LOOKS.snap);
+  for(const id of held){if(id.startsWith('dance:')){const d=DANCE[+id.slice(6)];if(!d)continue;if(d.fx!=null)S.fx=String(d.fx);['mir','stb','inten'].forEach(k=>{if(d[k]!=null)S[k]=d[k]})}
+   else if(id!=='kaleido'||EXPERT)S[{strobe:'stb',mirror:'mir',kaleido:'kal'}[id]]=1}}
+ $('fx').value=S.fx;$('mir').classList.toggle('on',!!S.mir);$('stb').classList.toggle('on',!!S.stb);$('kal').classList.toggle('on',!!S.kal)}
+XenoMidi.holds.on(id=>{if(/^pad:\d+$/.test(id))applyPads();else if(isLook(id))applyLooks()});
+if(JOB)fetch('/api/videos/'+encodeURIComponent(JOB)+'/shots').then(r=>r.ok?r.json():null).then(j=>{
+ const rows=((j&&j.shots)||[]).filter(s=>!s.dropped&&s.end>s.start).slice(0,8),src='/api/videos/'+encodeURIComponent(JOB)+'/video';
+ PADS.shots=rows.map(s=>{const v=document.createElement('video');v.src=src;v.muted=true;v.playsInline=true;v.preload='auto';v.crossOrigin='anonymous';
+  return{v,name:'shot '+(s.index+1)+(s.to||s.from?' · '+(s.to||s.from):''),start:s.start,end:s.end}});
+ if(PADS.shots.length)toast('Pads 1-'+PADS.shots.length+' hold the shots of this cut')}).catch(()=>{});
+// what is on screen and where the song is, for a script checking that a hold leaves the timeline alone
+Object.assign(window.VJ,{pads:PADS,shown:()=>{const H=heldScene();return H?H.name:(S.scenes[S.cur]||{}).name||''},
+ timeline:()=>({cur:S.cur,nxt:S.nxt,trans:S.trans,beats:S.beats,t:trackEl?trackEl.currentTime:0,playing:!!(trackEl&&!trackEl.paused)})});
 XenoMidi.panel($('midi-panel'));
 if(Q.get('clean')==='1')document.body.classList.add('clean');if(Q.get('hud')==='1')hud();
 let idle;addEventListener('mousemove',()=>{$('ui').classList.remove('hide');clearTimeout(idle);idle=setTimeout(()=>{if(!$('help').classList.contains('show'))$('ui').classList.add('hide')},3500)});

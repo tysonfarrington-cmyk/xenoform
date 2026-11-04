@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import time
 import urllib.request
 from pathlib import Path
@@ -41,7 +42,8 @@ class MidiUnavailable(RuntimeError):
 # (DAW mode uses MCU/HUI messages instead). If yours differs, Learn mode re-binds it in one twist.
 PROFILES: dict[str, dict] = {
     "minilab3": {
-        "label": "Arturia MiniLab 3 (factory map)",
+        "label": "Arturia MiniLab 3",
+        "match": r"mini\s*lab\s*3",  # the port's name picks this map (Windows calls it "Minilab3", macOS "Minilab3 MIDI")
         "controls": [
             *[{"id": f"knob{i + 1}", "label": f"Knob {i + 1}", "type": "cc", "ch": 1, "num": n, "mode": "abs"}
               for i, n in enumerate((74, 71, 76, 77, 93, 18, 19, 16))],
@@ -54,33 +56,58 @@ PROFILES: dict[str, dict] = {
             *[{"id": f"padB{i + 1}", "label": f"Pad B{i + 1}", "type": "note", "ch": 10, "num": 44 + i, "mode": "trigger"}
               for i in range(8)],
         ],
-        # default targets per page; the browser (midi.js) holds the same table
+        # default targets per page; the browser (midi.js) holds the same table. Pads A1-A8 hold a scene (pad:N): shown
+        # while held, the song's own picture again on release.
         "vj": {"knob1": "intensity", "knob2": "every", "knob3": "drums", "knob4": "bass", "knob5": "other", "knob6": "vocals",
                "knob7": "stem:1", "knob8": "stem:2", "fader1": "stem:3", "fader2": "stem:4", "fader3": "stem:5", "fader4": "stem:6",
                "mod": "intensity", "encoder": "fx:step",
-               **{f"padA{i + 1}": f"fx:{i + 1}" for i in range(8)},
+               **{f"padA{i + 1}": f"pad:{i + 1}" for i in range(8)},
                "padB1": "dance:1", "padB2": "dance:2", "padB3": "dance:3", "padB4": "dance:4", "padB5": "dance:5", "padB6": "dance:6",
                "padB7": "strobe", "padB8": "record"},
         "desk": {"knob1": "macro:intensity", "knob2": "macro:speed", "knob3": "macro:chaos", "knob4": "macro:glow",
                  "knob5": "stem:1", "knob6": "stem:2", "knob7": "stem:3", "knob8": "stem:4",
                  "fader1": "drums", "fader2": "bass", "fader3": "other", "fader4": "vocals"},
     },
+    # an unknown controller: knobs in CC order (1-8) to the main parameters and the stem gains, sliders (CC 9-12) to the
+    # master levels, pads in note order (36-51) to the scenes, then the dance presets as on the MiniLab's bank B
     "generic": {
-        "label": "Generic controller (CC 1-8 knobs, notes 36-51 pads)",
+        "label": "Any controller (CC 1-12, notes 36-51)",
         "controls": [
-            *[{"id": f"knob{i + 1}", "label": f"CC {i + 1}", "type": "cc", "ch": 0, "num": i + 1, "mode": "abs"} for i in range(8)],
-            *[{"id": f"pad{i + 1}", "label": f"Note {36 + i}", "type": "note", "ch": 0, "num": 36 + i, "mode": "trigger"} for i in range(16)],
+            *[{"id": f"knob{i + 1}", "label": f"Knob {i + 1} (CC {i + 1})", "type": "cc", "ch": 0, "num": i + 1, "mode": "abs"}
+              for i in range(8)],
+            *[{"id": f"slider{i + 1}", "label": f"Slider {i + 1} (CC {i + 9})", "type": "cc", "ch": 0, "num": i + 9, "mode": "abs"}
+              for i in range(4)],
+            *[{"id": f"pad{i + 1}", "label": f"Pad {i + 1} (note {36 + i})", "type": "note", "ch": 0, "num": 36 + i, "mode": "trigger"}
+              for i in range(16)],
         ],
-        "vj": {"knob1": "intensity", "knob2": "every", "knob3": "drums", "knob4": "bass", "knob5": "other", "knob6": "vocals",
-               **{f"pad{i + 1}": f"fx:{i + 1}" for i in range(8)}, **{f"pad{i + 9}": f"dance:{i + 1}" for i in range(6)},
+        "vj": {"knob1": "intensity", "knob2": "every", **{f"knob{i + 3}": f"stem:{i + 1}" for i in range(6)},
+               "slider1": "drums", "slider2": "bass", "slider3": "other", "slider4": "vocals",
+               **{f"pad{i + 1}": f"pad:{i + 1}" for i in range(8)}, **{f"pad{i + 9}": f"dance:{i + 1}" for i in range(6)},
                "pad15": "strobe", "pad16": "record"},
         "desk": {"knob1": "macro:intensity", "knob2": "macro:speed", "knob3": "macro:chaos", "knob4": "macro:glow",
-                 "knob5": "drums", "knob6": "bass", "knob7": "other", "knob8": "vocals"},
+                 **{f"knob{i + 5}": f"stem:{i + 1}" for i in range(4)},
+                 "slider1": "drums", "slider2": "bass", "slider3": "other", "slider4": "vocals"},
     },
 }
 
-MODES = ("abs", "toggle", "trigger", "rel")
-_TRIGGER_TARGETS = ("fx:", "dance:", "tap", "record", "fx:next", "fx:prev")
+MODES = ("abs", "toggle", "trigger", "rel", "hold")
+_TOGGLE_TARGETS = ("strobe", "mirror", "hud", "kaleido", "record")
+
+
+def mode_for(target: str, kind: str, profile_mode: str = "") -> str:
+    """The mode a binding gets (midi.js modeFor): a pad target holds, an encoder steps, a knob follows, a note on a
+    switch toggles, on an action fires once."""
+    if profile_mode == "rel":
+        return "rel"
+    if re.match(r"^(pad|scene):|^blackout$", target):
+        return "hold"
+    if kind != "note":
+        return "abs"
+    if target in _TOGGLE_TARGETS:
+        return "toggle"
+    if re.match(r"^(fx:|dance:|cue:|tap$|play$)", target):
+        return "trigger"
+    return "abs"
 
 
 def profile_mapping(profile: str = "minilab3", page: str = "vj") -> list[dict]:
@@ -93,9 +120,7 @@ def profile_mapping(profile: str = "minilab3", page: str = "vj") -> list[dict]:
         tgt = targets.get(c["id"])
         if not tgt:
             continue
-        mode = c["mode"]
-        if mode == "trigger" and tgt in ("strobe", "mirror", "hud", "kaleido", "record"):
-            mode = "toggle"
+        mode = mode_for(tgt, c["type"], c["mode"])
         lo, hi = (0.0, 2.0) if tgt == "intensity" else (0.0, 1.0)
         out.append({"source": {"type": c["type"], "ch": c["ch"], "num": c["num"]}, "target": tgt, "mode": mode,
                     "min": lo, "max": hi, "label": c["label"]})
@@ -180,9 +205,16 @@ def rel_delta(value: int) -> int:
     return v - 64 if v >= 64 else -(64 - v) if v > 0 else 0
 
 
+def is_release(ev: dict) -> bool:
+    """A press lets go when the control comes back up: note-off (a note-on at velocity 0), a CC button below 64."""
+    v = int(ev.get("value", 0))
+    return v == 0 if ev.get("type") == "note" else v < 64
+
+
 def apply(entry: dict, ev: dict, state: dict) -> tuple[str, float] | None:
     """Resolve one event through one mapping entry -> (target, value) or None (ignored note-off etc.).
-    ``state`` keeps toggle/relative values between calls (target -> last value)."""
+    ``state`` keeps toggle/relative values between calls (target -> last value). A ``hold`` row gives max on the press
+    and min on the release (the page shows the pad's scene in between)."""
     tgt = str(entry.get("target") or "")
     mode = entry.get("mode") or "abs"
     lo, hi = float(entry.get("min", 0.0)), float(entry.get("max", 1.0))
@@ -191,8 +223,10 @@ def apply(entry: dict, ev: dict, state: dict) -> tuple[str, float] | None:
         val = lo + (hi - lo) * v / 127.0
     elif mode == "rel":
         val = max(lo, min(hi, float(state.get(tgt, lo)) + (hi - lo) * rel_delta(v) / 100.0))
+    elif mode == "hold":
+        val = lo if is_release(ev) else hi
     elif mode == "toggle":
-        if ev.get("type") == "note" and v == 0:
+        if v == 0:  # a note-off, or a CC button coming back up
             return None
         val = hi if float(state.get(tgt, lo)) <= lo else lo
     else:  # trigger
@@ -364,7 +398,11 @@ def automation_to_envelopes(take, fps: int = 24, *, mapping: list[dict] | None =
     intensity 0..2 scaled back to 0..1) plus hit times for trigger targets. This is ``state["midi_take"]``:
 
         {"fps": 24, "frames": n, "seconds": s, "targets": {"intensity": [...], "stem:Kick": [...]},
-         "hits": {"fx:3": [1.25, 4.0], "dance:2": [...]}, "profile": "minilab3", "source": "midi"}
+         "hits": {"fx:3": [1.25, 4.0], "dance:2": [...]}, "holds": {"pad:2": [[3.0, 3.5]]},
+         "profile": "minilab3", "source": "midi"}
+
+    A held pad (mode ``hold``) is a gate: 1 on every frame it was down (at least the frame it went down on, however
+    short the press), its press times in ``hits`` and its spans in ``holds``.
     """
     take = load_take(take)
     events = sorted((normalise(e) for e in take["events"]), key=lambda e: e["t"] if e else 0.0)
@@ -375,6 +413,8 @@ def automation_to_envelopes(take, fps: int = 24, *, mapping: list[dict] | None =
     state: dict = {}
     tracks: dict[str, list[tuple[int, float]]] = {}
     hits: dict[str, list[float]] = {}
+    spans: dict[str, list[list[float]]] = {}
+    down: dict[str, float] = {}
     for ev in events:
         k = min(n - 1, max(0, int(round(ev["t"] * fps))))
         for entry in mapping:
@@ -384,11 +424,29 @@ def automation_to_envelopes(take, fps: int = 24, *, mapping: list[dict] | None =
             if res is None:
                 continue
             tgt, val = res
+            t_ev = round(float(ev["t"]), 4)
+            if entry.get("mode") == "hold":
+                if not is_release(ev) and tgt not in down:
+                    down[tgt] = t_ev
+                    hits.setdefault(tgt, []).append(t_ev)
+                elif is_release(ev) and tgt in down:
+                    spans.setdefault(tgt, []).append([down.pop(tgt), t_ev])
+                continue
             if entry.get("mode") == "trigger":
-                hits.setdefault(tgt, []).append(round(float(ev["t"]), 4))
+                hits.setdefault(tgt, []).append(t_ev)
             hi = float(entry.get("max", 1.0)) or 1.0
             tracks.setdefault(tgt, []).append((k, val / hi if hi > 1.0 else val))
+    for tgt, t0 in down.items():  # still held when the take ended
+        spans.setdefault(tgt, []).append([t0, round(secs, 4)])
     targets: dict[str, list[float]] = {}
+    for tgt, rows in spans.items():
+        curve = [0.0] * n
+        for t0, t1 in rows:
+            k0 = min(n - 1, max(0, int(round(t0 * fps))))
+            k1 = n if t1 >= secs else min(n, max(k0 + 1, int(round(t1 * fps))))  # down at the end: to the last frame
+            for k in range(k0, k1):
+                curve[k] = 1.0
+        targets[tgt] = curve
     for tgt, pts in tracks.items():
         curve = [0.0] * n
         trig = any(e.get("mode") == "trigger" and e.get("target") == tgt for e in mapping)
@@ -404,7 +462,7 @@ def automation_to_envelopes(take, fps: int = 24, *, mapping: list[dict] | None =
                     i += 1
                 curve[k] = round(cur, 4)
         targets[tgt] = curve
-    return {"fps": int(fps), "frames": n, "seconds": round(secs, 3), "targets": targets, "hits": hits,
+    return {"fps": int(fps), "frames": n, "seconds": round(secs, 3), "targets": targets, "hits": hits, "holds": spans,
             "profile": take.get("profile") or "minilab3", "source": "midi", "events": len(events)}
 
 

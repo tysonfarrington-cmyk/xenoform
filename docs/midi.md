@@ -1,6 +1,6 @@
 # MIDI controllers (`/vj`, the desk, and `xenoform midi`)
 
-Plug a controller in and the picture is in your hands: pads fire transitions and dance presets, knobs ride intensity, switch rate and the per-stem gains, and the desk's four macro knobs follow the hardware. The same mapping layer (`ui_static/midi.js`) serves the VJ page and the desk; a Python bridge (`midi_bridge.py`) carries the controller into browsers without Web MIDI and into renders.
+Plug a controller in and the picture is in your hands: hold a pad and its scene shows over the song (let go and the picture is back where the song is), other pads fire dance presets, knobs ride intensity, switch rate and the per-stem gains, and the desk's four macro knobs follow the hardware. The same mapping layer (`ui_static/midi.js`) serves the VJ page and the desk; a Python bridge (`midi_bridge.py`) carries the controller into browsers without Web MIDI and into renders.
 
 ## Plug in an Arturia MiniLab 3
 
@@ -23,17 +23,19 @@ Plug a controller in and the picture is in your hands: pads fire transitions and
 | Faders 1–4 | CC 82, 83, 85, 17 | stems 3–6 gain | drums / bass / other / vocals lanes |
 | Mod strip | CC 1 | intensity | — |
 | Main encoder | CC 28, relative | step through the premium transitions | — |
-| Pads A1–A8 | notes 36–43 ch 10 | premium transitions 1–8 (clean cut, match-cut, flow carry, liquid flow, depth parallax, lens breath, chrome refraction, echo trail) | — |
+| Pads A1–A8 | notes 36–43 ch 10 | hold a scene: `pad:1`..`pad:8` (the loaded scenes in order, or the cut's shots with `/vj?job=<id>`) | — |
 | Pads B1–B6 | notes 44–49 ch 10 | dance presets 1–6 | — |
 | Pad B7 / B8 | notes 50 / 51 ch 10 | strobe / record (toggles) | — |
 
 "stem N" means the Nth stem of the loaded song once **Use this song's stems** (VJ) or the **Stem reactions** drawer (desk) has split it; before that the knob says so and does nothing.
 
+**Hold pads.** Pads are temporary overriders (mode `hold`): note-on shows the pad's scene, note-off snaps back to whatever the song position holds, as if the pad was never pressed. The transport never stops: the beat clock, the scene switches and the track run on underneath, so letting go lands on the scene the song has reached. Several held pads stack, the last one pressed shows; let go of it and the one under it is back. A CC button works the same way (on at 64 and up). Any pad on a dance preset, strobe, mirror or kaleido can be set to **On while held** too: the look applies while the pad is down and goes back to what it was on release. A page drives the stack through `XenoMidi.holds` (`press(id)`, `release(id)`, `top(prefix)`, `clear()`, `on(fn)`), or `XenoMidi.init({onHold(target, on, {top, stack})})`. If a controller is unplugged mid-hold its pads let go. The previous map put the premium transitions on pads A; the encoder still steps through them and Learn puts any of them on a pad.
+
 Dance presets (`S.dance` in `vj.html`): the VJ page has no separate post-look, so a preset is a combination that lands on the next switch: 1 clean (auto transitions, no mirror, no strobe, intensity 1), 2 mirror, 3 strobe, 4 mirror + strobe at 1.3, 5 echo trail at 1.4, 6 chrome refraction + mirror at 1.6.
 
 **Uncertainty.** Knobs, faders, mod strip and pads are confirmed against Arturia's MiniLab 3 and MIDI Control Center manuals. The clickable main encoder is assumed to send relative CC 28 in Arturia mode; if yours differs, Learn mode fixes it in one twist. Pads can be switched to CC in MIDI Control Center; this map expects notes.
 
-Targets you can map to: `intensity`, `every`, `fx:next`, `fx:prev`, `fx:step`, `fx:auto`, `fx:1`..`fx:8`, `dance:1`..`dance:6`, `mirror`, `strobe`, `kaleido` (expert), `record`, `tap`, `hud`, the role gains `drums` `bass` `other` `vocals`, `stem:<name>` or `stem:<N>`; on the desk `macro:intensity|speed|chaos|glow`, the role lanes and `stem:<N>`. Modes: `abs` (0..127 to min..max), `toggle`, `trigger` (note-on only), `rel` (encoder steps). A "generic" profile (CC 1–8, notes 36–51) is there for anything else.
+Targets you can map to: `intensity`, `every`, `pad:1`..`pad:8`, `fx:next`, `fx:prev`, `fx:step`, `fx:auto`, `fx:1`..`fx:8`, `dance:1`..`dance:6`, `mirror`, `strobe`, `kaleido` (expert), `record`, `tap`, `hud`, the role gains `drums` `bass` `other` `vocals`, `stem:<name>` or `stem:<N>`; on the desk `macro:intensity|speed|chaos|glow`, the role lanes and `stem:<N>`. Modes: `abs` (0..127 to min..max), `toggle`, `trigger` (note-on only), `rel` (encoder steps), `hold` (on while the pad is down). A "generic" profile is there for anything else: knobs on CC 1–8 in CC order to intensity, speed, chaos, glow and the stem gains, sliders on CC 9–12 to the drums, bass, other and vocals levels, pads on notes 36–51 in note order to the scenes and then the dance presets.
 
 ## Learn mode
 
@@ -66,8 +68,8 @@ Knob rides and pad hits go to `take.json`: `{"kind": "xenoform-midi-take", "vers
 
 ```json
 {"fps": 24, "frames": 2117, "seconds": 88.2, "source": "midi", "profile": "minilab3",
- "targets": {"intensity": [0.0, 0.0, 0.47, ...], "drums": [...], "stem:Kick": [...], "strobe": [0, 0, 1.0, ...], "fx:3": [0, 0, 1.0, 0, ...]},
- "hits": {"fx:3": [12.5, 20.0], "dance:2": [32.0]}}
+ "targets": {"intensity": [0.0, 0.0, 0.47, ...], "drums": [...], "stem:Kick": [...], "strobe": [0, 0, 1.0, ...], "pad:3": [0, 0, 1.0, 1.0, 0, ...]},
+ "hits": {"pad:3": [12.5, 20.0], "dance:2": [32.0]}, "holds": {"pad:3": [[12.5, 13.1], [20.0, 20.4]]}}
 ```
 
-Continuous targets are sample-and-hold between moves, 0..1 (intensity's 0..2 is scaled to 0..1); toggles are 0/1 curves; triggers are a 1 on the frame of the hit plus the times in `hits`. The desk carries this as `state["midi_take"]` on the job (the converted dict, or a path to the take JSON); `midi_bridge.take_value(env, "intensity", t)` samples it. Reading it on the render side is the next step: the beat-FX intensity follows `intensity`, cut choices honour `hits["fx:N"]`, and stem gains follow `stem:<name>` the same way the macro lanes do.
+Continuous targets are sample-and-hold between moves, 0..1 (intensity's 0..2 is scaled to 0..1); toggles are 0/1 curves; triggers are a 1 on the frame of the hit plus the times in `hits`; a held pad is a gate (1 on every frame it was down, at least one frame however short the press) with its presses in `hits` and its spans in `holds`. The desk carries this as `state["midi_take"]` on the job (the converted dict, or a path to the take JSON); `midi_bridge.take_value(env, "intensity", t)` samples it. Reading it on the render side is the next step: the beat-FX intensity follows `intensity`, cut choices honour `hits["fx:N"]`, and stem gains follow `stem:<name>` the same way the macro lanes do.
