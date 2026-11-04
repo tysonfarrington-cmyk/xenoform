@@ -467,7 +467,9 @@ def test_the_drawer_offers_the_order_edits_and_the_lane_shows_a_deleted_shot():
         assert f'act === "{act}"' in APP, act
     lane = (ROOT / "src" / "xenoform" / "lane.py").read_text(encoding="utf-8")
     assert 'row["dropped"] = True' in lane and 'row["plays"]' in lane
-    assert "dropped" in _fn("function shotsLane(easy)", "async function loadLane")
+    # the song strip draws a deleted shot (struck through, the drawer restores it)
+    assert "dropped: gone" in _fn("function cutShotsForStrip(", "function stripModel(")
+    assert "is-dropped" in (STATIC / "strip.js").read_text(encoding="utf-8") and ".xs-shot.is-dropped" in (STATIC / "strip.css").read_text(encoding="utf-8")
 
 
 def test_the_final_upscales_from_a_quarter_and_the_estimate_says_where_the_time_goes():

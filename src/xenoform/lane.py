@@ -121,6 +121,11 @@ def build(info: dict, video_id: str = "") -> dict:
             row.update({"from": str(s["clip_morph"].get("from") or ""), "to": str(s["clip_morph"].get("to") or ""), "clip_morph": True})
         if s.get("dropped"):  # deleted on the timeline: zero length, the shot before plays on (dense.arrange_shots)
             row["dropped"] = True
+        if s.get("fx_intensity") is not None:  # the Intensity the shape gave the shot (the strip's INTENSITY lane)
+            try:
+                row["intensity"] = round(float(s["fx_intensity"]), 3)
+            except (TypeError, ValueError):
+                pass
         if s.get("plays") is not None:  # the slot plays another shot's morph (Move, Duplicate)
             row["plays"] = int(s["plays"])
         if stills and not (s.get("performer") or s.get("own") or gen or s.get("dream")):
@@ -251,4 +256,19 @@ def build(info: dict, video_id: str = "") -> dict:
             # the cut's shape (xenoform.pacing): what it was made or last re-cut in, and the line the Make reported
             "breathe": _amount(pacing.get("breathe", shape.get("breathe", False))),
             "drop_mode": str(pacing.get("drop_mode") or shape.get("drop_mode") or "off"),
-            "plan_line": str(pacing.get("line") or ""), "rests": sum(1 for r in rows if r.get("rest"))}
+            "plan_line": str(pacing.get("line") or ""), "rests": sum(1 for r in rows if r.get("rest")),
+            # where a Length cut sits in its song (the record's ``window``): the song strip lays the shots there
+            "window": _window(info.get("window"))}
+
+
+def _window(raw) -> dict | None:
+    """A record's ``window`` (``{"song_start", "length_s"}``, the stretch of the song a Length Make cut) as the strip
+    reads it, or None for a cut of the whole song."""
+    if not isinstance(raw, dict):
+        return None
+    try:
+        start = float(raw.get("song_start") or 0.0)
+        length = float(raw.get("length_s") or 0.0)
+    except (TypeError, ValueError):
+        return None
+    return {"song_start": round(start, 3), "length_s": round(length, 3)} if length > 0 else None

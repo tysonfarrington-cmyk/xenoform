@@ -61,7 +61,12 @@ def test_the_lane_shows_the_passages_the_heat_and_the_rests():
     assert [s["section"] for s in old["sections"]] == ["calm"] and old["breathe"] == 0 and old["drop_mode"] == "off"
     assert old["plan_line"] == ""
     timeline = APP.split("function shotsLane(easy)")[1].split("\nfunction ")[0]
-    assert 'class="tl-rest"' in timeline and "lane.plan_line" in timeline and "sec.heat" in timeline
+    assert "lane.plan_line" in timeline
+    # the song strip: a rest's badge on its shot, each drop run's heat on its passage
+    strip_js = (ROOT / "src" / "xenoform" / "ui_static" / "strip.js").read_text(encoding="utf-8")
+    assert "rest: !!s.rest" in APP.split("function cutShotsForStrip(")[1].split("\nfunction ")[0]
+    assert "sec.heat" in APP.split("function laneSongless(lane)")[1].split("\nfunction ")[0]
+    assert 'class="xs-rest"' in strip_js and "heat ${Number(p.heat).toFixed(2)}" in strip_js
 
 
 def test_the_make_reports_what_the_plan_did():

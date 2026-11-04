@@ -455,9 +455,16 @@ def test_the_rerender_route_runs_the_edit_and_refuses_plainly(tmp_path, monkeypa
 
 def test_the_desk_draws_the_timeline_panel_and_posts_the_edits():
     fn = APP.split("function shotsLane(easy)")[1].split("async function loadLane")[0]
-    assert 'aria-label="Timeline"' in fn and 'data-act="easy-tl-shot"' in fn and 'data-act="easy-tl-bound"' in fn and 'class="lane-joins"' in fn
-    assert 'class="lane-song"' in fn and 'data-act="easy-seek"' in fn and "drop-mark" in fn
-    assert 'data-act="easy-tl-reset"' in fn and "timelineDirty" in fn and 'id="lane-playhead"' in fn
+    # the cut's shots, seams and the song under them are the song strip's (strip.js): a block opens the drawer, a seam
+    # its Join tab, a passage or the wave seeks; the strip's playhead follows the player
+    strip = APP.split("function cutShotsForStrip(")[1].split("function mountStrips(")[0]
+    strip_js = (Path(__file__).resolve().parents[1] / "src" / "xenoform" / "ui_static" / "strip.js").read_text(encoding="utf-8")
+    assert 'aria-label="Timeline"' in fn and 'data-song-strip="cut"' in fn
+    assert '"data-act": "easy-tl-shot", "data-index": s.index' in strip and '"data-act": "easy-tl-bound", "data-index": s.index' in strip
+    assert 'class="${cls}"${attrs(s.seam.act)}' in strip_js and "xs-seam" in strip_js and 'kind: "drop"' in strip
+    assert 'data-xs="passage"' in strip_js and 'data-xs="seek"' in strip_js
+    assert 'data-act="easy-tl-reset"' in fn and "timelineDirty" in fn
+    assert 'window.XenoStrip.setPlayhead("cut", off + (player.currentTime || 0)' in APP
     # one Apply for the timeline and the knobs: the bar at the bottom of the window (28 Oct)
     bar = APP.split("function pendingBar(easy)")[1].split("function paintPending")[0]
     assert 'data-act="easy-apply"' in bar and "timeline edit" in bar
@@ -467,7 +474,7 @@ def test_the_desk_draws_the_timeline_panel_and_posts_the_edits():
     assert 'id="tl-seed"' in fn and 'id="tl-render-s"' in fn and 'id="tl-variant"' in fn
     # one drawer for a shot in four tabs, a seam opens its Join tab, and a step between shots (28 Oct timeline pass)
     assert 'const TL_TABS = [["shot", "Shot"], ["look", "Look"], ["join", "Join"], ["gpu", "Regenerate"]];' in fn
-    assert 'data-act="easy-tl-tab"' in fn and 'data-act="easy-tl-step"' in fn and "/frame.jpg?t=" in fn
+    assert 'data-act="easy-tl-tab"' in fn and 'data-act="easy-tl-step"' in fn and "/frame.jpg?t=" in strip
     assert 'if (act === "easy-tl-bound") state.easy.tlTab = "join";' in APP
     assert "async function postCutEdit" in fn and "/${route}`" in fn and "tlSeek" in fn
     assert "async function applyTimeline" in fn and "shot_overrides: tl.shots, boundary_overrides: tl.bounds" in fn
@@ -481,7 +488,7 @@ def test_the_desk_draws_the_timeline_panel_and_posts_the_edits():
     load = APP.split("async function loadLane")[1].split("\n}\n")[0]
     assert "state.easy.tl = null" in load and "loadedmetadata" in load
     # the swap's strings the earlier test pins are still there, inside the same panel
-    assert 'data-act="easy-swap-mode"' in fn and 'class="lane-open"' in fn
+    assert 'data-act="easy-swap-mode"' in fn and "lane.opens_on" in strip
     desk_css = (Path(__file__).resolve().parents[1] / "src" / "xenoform" / "ui_static" / "desk.css").read_text(encoding="utf-8")
     assert ".shots-lane .lane-joins .join" in desk_css and ".tl-tabs" in desk_css and "var(--thumb, none)" in desk_css
     for rule in (".shots-lane .shot.held", ".shots-lane .lane-song", ".shots-lane .tl-drawer", ".shots-lane .overlay.generated",

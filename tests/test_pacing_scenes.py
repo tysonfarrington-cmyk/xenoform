@@ -202,7 +202,8 @@ def test_the_lane_shows_each_passage_and_its_hold():
     calm = next(s for s in got["sections"] if s["section"] == "calm")
     assert calm["hold_bars"] >= 2.5 and calm["shots"] >= 2 and calm["rests"] == calm["shots"]
     app = (ROOT / "src" / "xenoform" / "ui_static" / "app.js").read_text(encoding="utf-8")
-    assert "sec.hold_bars" in app.split("function shotsLane(easy)")[1].split("\nfunction ")[0]
+    # the song strip names a Breathe passage's hold ("calm · 3 bars") when it draws a cut on its own record
+    assert "sec.hold_bars" in app.split("function laneSongless(lane)")[1].split("\nfunction ")[0]
 
 
 def test_presets_still_carry_breathe_off(tmp_path, monkeypatch):

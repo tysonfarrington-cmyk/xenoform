@@ -219,6 +219,8 @@ function payload() {
     stem_orbit: !(state.easy && state.easy.stemOrbit === false),
     macros: (window.XENO_MACROS ? window.XENO_MACROS() : null),
     length_s: easyLength(state.easy),
+    // the Draft window dragged along the song strip: where the cut starts in the song (the server puts it on a beat)
+    length_start: state.easy && easyLength(state.easy) > 0 && !wholeSong(state.easy) ? draggedStart(state.easy) : null,
     hardware_tier: (state.easy && state.easy.gpuTier) || "auto",
     performer: Number((state.easy && state.easy.performer) || 0),
     performer_style: (state.easy && state.easy.performerStyle) || "auto",
@@ -1057,6 +1059,7 @@ function renderEasy() {
         <div class="step-head"><h3>Song</h3>${songSet ? '<button type="button" class="text" data-act="easy-step" data-step="song">Change</button>' : ""}</div>
         ${songBlock}
         ${songSet ? "" : `<p class="note">${esc(easy.songLabel || "Drop a file here, use the bundled demo, or pick one of the bundled songs.")}</p>`}
+        <div class="song-strip" data-song-strip="desk" aria-label="The song strip"></div>
         ${dropCard()}
       </section>
       <section class="easy-step" data-tour="easy-vibe">
@@ -1374,6 +1377,7 @@ async function pollSong(id) {
 }
 function openSongResult(view) {
   state.easy.reopenId = view.id;
+  state.easy.cutSongLabel = state.easy.songLabel || view.label || "";
   state.easy.reopenUrl = `${view.video}?v=${Date.now()}`;
   state.job = { id: view.id, status: "done", stage: "done", progress: 1, video: view.video, reopened: true };
   state.easy.fromSong = "";
@@ -1526,6 +1530,7 @@ function openSongPassage(el) {
   if (!job) return;
   state.easy.fromSong = v.id || "";
   state.easy.reopenId = job;
+  state.easy.cutSongLabel = state.easy.songLabel || "";  // a passage's window sits in the song (lane.window)
   state.easy.reopenUrl = `/api/videos/${encodeURIComponent(job)}/video`;
   state.job = { id: job, status: "done", stage: "done", progress: 1, video: state.easy.reopenUrl, reopened: true };
   if (p.vibe && vibeById(p.vibe)) state.easy.resultVibe = p.vibe;
@@ -2088,13 +2093,18 @@ function scheduleChain(key) {
   chainTimer = setTimeout(() => { chainTimer = null; loadChain(key); }, 350);
 }
 async function loadChain(key) {
-  if (!state.easy || !state.easy.song || !state.easy.vibe) { state.chain = { key, data: null }; return; }
+  if (!state.easy || !state.easy.song) { state.chain = { key, data: null }; return; }
   state.chain = Object.assign({}, state.chain || {}, { key, loading: true });
+  // before a vibe is picked the strip still lays the plan's shots on the beats (docs/UI_REVIEW.md 6.7): the times are
+  // asked with the first featured vibe and shown without its objects (provisional)
+  const provisional = !state.easy.vibe;
+  const body0 = payload();
+  if (provisional) body0.vibe = (VIBES.find((v) => !v.legacy) || VIBES[0] || {}).id || "";
   let data;
   try {
-    const res = await api("/api/simple/chain", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload()) });
+    const res = await api("/api/simple/chain", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body0) });
     const body = await res.json().catch(() => ({}));
-    data = res.ok ? body : { error: body.detail || "The chain could not be read." };
+    data = res.ok ? Object.assign(body, { provisional }) : { error: body.detail || "The chain could not be read." };
   } catch (err) {
     data = { error: "The chain could not be read." };
   }
@@ -2456,6 +2466,7 @@ async function loadSimpleOptions() {
       vertical: easy.vertical || "native",
       morphs: String(easy.morphs || "auto"),
       length: String(easyLength(easy)),
+      length_start: draggedStart(easy) != null && !wholeSong(easy) ? String(draggedStart(easy)) : "",
       performer: String(easy.performer || 0),
       // the loaded song itself: the server plans the window the Make will trim with the Make's own planner (its
       // sections, its drop, the guardrail's budget), so the count and the clock shown are the cut's
@@ -2614,65 +2625,6 @@ function shotsLane(easy) {
   const swapping = canSwap && !!easy.swapMode;
   const tl = timelineState(easy, lane);
   const picked = easy.tlPick && easy.tlFor === id ? easy.tlPick : null;
-  const blocks = lane.shots.map((s) => {
-    const w = (100 * (Number(s.seconds) || 0)) / total;
-    const hue = SECTION_HUES[s.section] != null ? SECTION_HUES[s.section] : 260;
-    const o = tl.shots[String(s.index)] || {};
-    const held = o.play === "hold";
-    const edited = held || !!o.look || o.fx_intensity != null || !!o.timing || !!o.grade || Array.isArray(o.effects) || o.source != null || !!o.drop;
-    const label = s.to ? `${s.from} → ${s.to}` : s.from;
-    const marks = `${s.style && s.style !== "melt" ? ` · ${morphStyleLabel(s.style)}` : ""}${o.timing ? ` · ${MORPH_TIMING_LABELS[o.timing] || o.timing}` : ""}${s.pinned ? " · pinned" : ""}${s.swapped ? " · swapped" : ""}${held ? " · held" : ""}${o.look ? ` · look ${o.look}` : ""}${o.fx_intensity != null ? ` · FX ${o.fx_intensity}` : ""}${o.grade ? " · colour" : ""}${Array.isArray(o.effects) ? ` · effects ${o.effects.length ? o.effects.join("+") : "none"}` : ""}${s.rerendered ? " · re-rendered" : ""}${s.generated != null ? " · generated" : ""}${s.dream != null ? " · dream" : ""}${s.performer ? " · Polly" : ""}${s.own ? " · your clip" : ""}${s.event === "drop" ? ` · opens drop ${Number(s.drop_run) + 1} (heat ${Number(s.heat).toFixed(1)})` : ""}${s.rest ? (s.own ? ` · the film plays on ${s.rest} beats` : ` · rests ${s.rest} beats on what it arrives at`) : ""}`;
-    const title = `Shot ${s.index + 1} · ${clockText(s.start)} · ${s.seconds} s${s.section ? ` · ${s.section}` : ""}${s.transition ? ` · ${s.transition}` : ""}${label ? ` · ${label}` : ""}${marks}`;
-    const pick = swapping && s.still != null;
-    const act = pick ? `data-act="easy-swap-pick" data-slot="${s.still}" data-at="${s.start}"` : songCut ? `data-act="easy-seek" data-at="${s.start}"` : `data-act="easy-tl-shot" data-index="${s.index}" data-at="${s.start}"`;
-    const cls = `shot${s.boundary ? " boundary" : ""}${s.transition ? " has-transition" : ""}${s.pinned ? " pinned" : ""}${s.swapped ? " swapped" : ""}${pick ? " swap" : ""}${pick && easy.swapSlot === s.still ? " picked" : ""}${held ? " held" : ""}${edited ? " edited" : ""}${s.rerendered ? " rerendered" : ""}${s.generated != null ? " generated" : ""}${!swapping && picked && picked.kind === "shot" && picked.index === s.index ? " picked" : ""}`;
-    const badge = (s.style && s.style !== "melt" ? `<b class="tl-style">${esc(morphStyleLabel(s.style))}</b>` : "")  // how this morph changes
-      + (s.rest ? `<b class="tl-rest" title="${esc(`rests ${s.rest} beats`)}">rest</b>` : "");  // Breathe: the object dwells here
-    // each tile shows the cut itself at the shot's middle (GET /api/videos/<id>/frame.jpg), so a shot is a picture, not a word
-    const mid = Number(s.start) + Number(s.seconds) / 2;
-    const thumb = `--thumb:url('${media(`/api/videos/${encodeURIComponent(id)}/frame.jpg?t=${mid.toFixed(2)}&w=160&v=${lane.version || 0}`)}')`;
-    if (s.dropped || o.drop) {  // deleted: a sliver at its place, the drawer restores it
-      return `<button type="button" class="${cls} dropped" style="flex:0 0 7px;--hue:${hue}" data-act="easy-tl-shot" data-index="${s.index}" data-at="${s.start}" title="${esc(`Shot ${s.index + 1} deleted · click to restore`)}" aria-label="${esc(`Shot ${s.index + 1} deleted`)}"></button>`;
-    }
-    return `<button type="button" class="${cls}" style="width:${w.toFixed(3)}%;--hue:${hue};${thumb}" ${act} title="${esc(title)}" aria-label="${esc(title)}"><b class="tl-n">${s.index + 1}</b>${badge}<i>${esc(s.to || s.from || "")}</i></button>`;
-  }).join("");
-  // the boundaries: one handle at each join (into shot i, i from 1): Morph or Cut, and what dresses it (the pickers'
-  // choice on Auto, else the transition or boundary kind set by hand)
-  const bounds = lane.shots.filter((s) => s.index > 0).map((s) => {
-    const left = (100 * Number(s.start)) / total;
-    const o = tl.bounds[String(s.index)] || {};
-    const prevHeld = (tl.shots[String(s.index - 1)] || {}).play === "hold";
-    const cut = prevHeld || s.handoff === "cut";
-    const dress = o.fx && o.fx !== "auto" ? o.fx : "";
-    const kindNow = dress === "none" ? "" : dress ? kindLabel(lane, dress) : (s.transition || "");
-    const what = `${cut ? "Cut" : "Morph"}${kindNow ? ` · ${kindNow}` : ""}`;
-    const glyph = kindNow ? "◆" : cut ? "┃" : "·";
-    const shifted = Number(o.shift || 0) ? " moved" : "";
-    const cls = `join${cut ? " cut" : ""}${kindNow ? " dressed" : ""}${dress || prevHeld || shifted ? " edited" : ""}${picked && picked.index === s.index && easy.tlTab === "join" ? " picked" : ""}`;
-    const title = `The join into shot ${s.index + 1} · ${clockText(s.start)} · ${what}${s.boundary ? ` · ${s.boundary}` : ""}${songCut ? (s.cut_in ? " · a new passage's window, cut on the song's beat" : "") : " · click to change it"}`;
-    const act = songCut ? `data-act="easy-seek"` : `data-act="easy-tl-bound" data-index="${s.index}"`;
-    return `<button type="button" class="${cls}" style="left:${left.toFixed(3)}%" ${act} data-at="${s.start}" title="${esc(title)}" aria-label="${esc(title)}"><span>${glyph === "·" ? "" : glyph}</span></button>`;
-  }).join("");
-  const overlays = (lane.overlays || []).map((o) => {
-    const left = (100 * Number(o.start)) / total;
-    const w = (100 * (Number(o.end) - Number(o.start))) / total;
-    const title = o.kind === "performer" ? `Polly: ${o.label}` : o.kind === "generated" ? `Generated run: ${o.label}` : `Your clip: ${o.label}`;
-    return `<span class="overlay ${esc(o.kind)}" style="left:${left.toFixed(3)}%;width:${w.toFixed(3)}%" title="${esc(title)}">${esc(o.kind === "performer" ? `Polly · ${o.label}` : o.label)}</span>`;
-  }).join("");
-  // the song under the shots: its passages (a click seeks there) and the drop
-  const passages = (lane.sections || []).map((sec) => {
-    const left = (100 * Number(sec.start)) / total;
-    const w = (100 * (Number(sec.end) - Number(sec.start))) / total;
-    const hue = SECTION_HUES[sec.section] != null ? SECTION_HUES[sec.section] : 260;
-    // a passage by role (xenoform.pacing): a drop run names its heat, a Breathe passage how many rests it holds
-    // and how long it holds a shot: a Breathe scene reads "calm · 3 bars"
-    const hold = sec.hold_bars != null && Number(sec.hold_bars) >= 2 ? ` · ${Number(sec.hold_bars)} bars` : "";
-    const name = `${sec.section.replace("_", " ")}${sec.heat != null ? ` ${Number(sec.heat).toFixed(1)}` : ""}${hold}`;
-    const more = `${sec.heat != null ? ` · drop ${Number(sec.drop_run) + 1}, heat ${Number(sec.heat).toFixed(2)}` : ""}${sec.rests ? ` · ${sec.rests} rest${sec.rests === 1 ? "" : "s"}` : ""}${sec.hold_bars != null ? ` · holds ${Number(sec.hold_bars)} bars a shot (${sec.shots} shots)` : ""}`;
-    return `<button type="button" class="passage" style="left:${left.toFixed(3)}%;width:${w.toFixed(3)}%;--hue:${hue}" data-act="easy-seek" data-at="${sec.start}" title="${esc(`${sec.section} · ${clockText(sec.start)} to ${clockText(sec.end)}${more}`)}"><i>${esc(name)}</i></button>`;
-  }).join("");
-  const dropMark = lane.drop != null && Number(lane.drop) > 0 ? `<span class="drop-mark" style="left:${((100 * Number(lane.drop)) / total).toFixed(3)}%" title="${esc(`the drop · ${clockText(lane.drop)}`)}"></span>` : "";
-  const song = passages || dropMark ? `<div class="lane-song" aria-label="Song">${passages}${dropMark}</div>` : "";
   const facts = [lane.plan_line || "", `${lane.shots.length} shots`, lane.morphs ? `${lane.morphs} morphs over ${lane.objects} objects` : "", lane.pace ? `${lane.pace} pace` : "",
     (lane.sections || []).length > 1 && !songCut ? `${lane.sections.length} passages` : "", lane.swaps ? `${lane.swaps} swap${lane.swaps === 1 ? "" : "s"}` : "",
     lane.rerenders ? `${lane.rerenders} re-render${lane.rerenders === 1 ? "" : "s"}` : "", lane.inserts ? `${lane.inserts} generated run${lane.inserts === 1 ? "" : "s"}` : "", lane.dreams ? `${lane.dreams} dream${lane.dreams === 1 ? "" : "s"}` : ""].filter(Boolean).join(" · ");
@@ -2695,17 +2647,6 @@ function shotsLane(easy) {
         </div>`;
     }
   }
-  // the opening tile: the chain's first still, which no shot lands on (every shot names the still it lands on), so
-  // the cut's opening picture can be swapped too; outside swap mode it seeks to the top
-  let opening = "";
-  const first = lane.opens_on || (Array.isArray(lane.stills) ? lane.stills[0] : null);
-  if (first) {
-    const pick = swapping;
-    const act = pick ? `data-act="easy-swap-pick" data-slot="0" data-at="0"` : `data-act="easy-seek" data-at="0"`;
-    const title = `Opens on ${first.noun}${first.kind === "scene" ? " (scene)" : ""}${first.pinned ? " · pinned" : ""}${first.swapped ? " · swapped" : ""}${pick ? " · click to swap it" : ""}`;
-    const cls = `shot open${first.pinned ? " pinned" : ""}${first.swapped ? " swapped" : ""}${pick ? " swap" : ""}${pick && easy.swapSlot === 0 ? " picked" : ""}`;
-    opening = `<div class="lane-open"><button type="button" class="${cls}" ${act} title="${esc(title)}" aria-label="${esc(title)}"><i>opens on ${esc(first.noun)}</i></button></div>`;
-  }
   const pending = timelineDirty(easy, lane);
   const anyEdits = Object.keys(tl.shots).length + Object.keys(tl.bounds).length + Object.keys(lane.shot_overrides || {}).length + Object.keys(lane.boundary_overrides || {}).length;
   const applyRow = lane.editable !== false && !swapping
@@ -2715,17 +2656,14 @@ function shotsLane(easy) {
       </div>`
     : "";
   const drawer = swapping || songCut ? "" : timelineDrawer(easy, lane, tl, picked);
+  // the cut's shots sit on the song strip (strip.js): its blocks, seams and pins carry the timeline's own acts, so a
+  // click opens the drawer below as the lane's tiles did; a whole song keeps its passages track above it
+  const strip = `<div class="song-strip" data-song-strip="cut" aria-label="The song strip"></div>`;
   return `<div class="shots-lane tl-panel${swapping ? " swapping" : ""}${songCut ? " song-lane" : ""}" aria-label="Timeline">
       ${layersBlock}
       <div class="lane-head"><span>Timeline${lane.mode === "stems" ? ` · ${esc(stemLabel(lane.layer))} layer` : songCut ? " · the whole song" : ""}</span><span class="note">${esc(facts)} · ${hint}</span>${toggle}</div>
-      <div class="lane-track" id="lane-track" data-total="${total}">
-        ${songTrack}
-        <div class="lane-overlays">${overlays}</div>
-        ${opening}
-        <div class="lane-shots-wrap"><div class="lane-shots">${blocks}</div><div class="lane-joins">${bounds}</div></div>
-        ${song}
-        <span class="lane-playhead" id="lane-playhead" aria-hidden="true"></span>
-      </div>
+      ${songCut ? `<div class="lane-track" data-total="${total}">${songTrack}</div>` : ""}
+      ${strip}
       ${picker}
       ${drawer}
       ${applyRow}
@@ -3002,6 +2940,303 @@ function easyVideoId() {
   if (state.easy && state.easy.reopenId) return state.easy.reopenId;
   const job = state.job || {};
   return job.status === "done" && job.id ? job.id : "";
+}
+
+// ---------------------------------------------------------------- the song strip (strip.js, docs/UI_REVIEW.md 6.1)
+// The song's own reading for the strip (GET /api/simple/strip): its passages by role with the drop runs and their heat,
+// the beats and the bar lines, a waveform and the window a Length Make cuts. Asked once a song and Shape; the strip's
+// hosts repaint in place when it lands. A cut on screen lays its shots on it (lane.window: where the cut sits in the
+// song); before a Make the planned shots come from the chain preview (POST /api/simple/chain: times, assign).
+function stripKey() {
+  const easy = (state && state.easy) || {};
+  return [state.audioId || "demo", easy.dropMode || "auto", breatheValue(easy) ? "on" : "off", easyLength(easy) || 30].join("|");
+}
+function songStrip() {
+  if (!state) return null;
+  const key = stripKey();
+  if (state.strip && state.strip.key === key) return state.strip.data;
+  if (state.stripAsking !== key) loadStrip(key);
+  // while a new Shape is asked, the song's last answer still draws it
+  return state.strip && state.strip.audioId === (state.audioId || "demo") ? state.strip.data : null;
+}
+async function loadStrip(key) {
+  state.stripAsking = key;
+  const [audio, drops, breathe, length] = key.split("|");
+  let data = null;
+  try {
+    const res = await api(`/api/simple/strip?${new URLSearchParams({ audio_id: audio, drop_mode: drops, breathe, length }).toString()}`);
+    data = res.ok ? await res.json() : null;
+  } catch (err) {
+    data = null;
+  }
+  if (!state || state.stripAsking !== key) return;
+  state.stripAsking = "";
+  state.strip = { key, audioId: audio, data };
+  mountStrips();
+}
+// The cut on screen is of the loaded song when it was made from it (cutSongLabel: the song's label at Make, the gallery
+// row's on Reopen, "Glitch Out (30 s cut)"): then its shots sit in the song, else the strip is the cut alone.
+function cutOnSong(easy) {
+  if (!easy || !easy.song) return false;
+  const label = String(easy.cutSongLabel || "");
+  const song = String(easy.songLabel || "");
+  return !!label && !!song && (label === song || label.startsWith(`${song} (`));
+}
+function stripTitle(song, easy) {
+  const runs = (song.passages || []).filter((p) => p.drop_run != null);
+  const main = runs.find((p) => p.main);
+  const drops = runs.length ? `${runs.length} drop${runs.length === 1 ? "" : "s"}${main ? `, the main at ${clockText(main.start)}` : ""}` : "no drop run";
+  return `<b>${esc((easy && easy.songLabel) || "The song")}</b> · ${esc(songClock(song.duration))}${song.tempo ? ` · ${esc(String(Math.round(song.tempo)))} BPM` : ""} · ${esc(drops)}`;
+}
+// where the Draft window was dragged to on this song (lengthStart, kept with the song it was dragged on), else null
+function draggedStart(easy) {
+  const e = easy || {};
+  if (e.lengthStart == null || e.lengthStartFor !== ((state && state.audioId) || "demo")) return null;
+  const t = Number(e.lengthStart);
+  return Number.isFinite(t) ? t : null;
+}
+// the Draft window as the desk will cut it: the server's (around the main drop run) or where it was dragged to
+function draftWindow(song, easy) {
+  const len = easyLength(easy);
+  if (!song || !song.window || !(len > 0) || wholeSong(easy)) return null;
+  const length = Number(song.window.length_s) || len;
+  const dragged = draggedStart(easy);
+  const start = dragged != null ? Math.max(0, Math.min(song.duration - length, dragged)) : Number(song.window.start);
+  return { start, end: start + length, moved: dragged != null };
+}
+function laneSongless(lane) {
+  // a cut whose song is not on the desk: the strip is the cut alone, its passages and beats from its own record. A
+  // passage by role (xenoform.pacing): a drop run names its heat, a Breathe passage how many rests it holds and how
+  // long it holds a shot (a Breathe scene reads "calm · 3 bars")
+  const beats = (lane.beats || []).map(Number);
+  return {
+    duration: Number(lane.duration) || 0, tempo: 0, wave: [], beats, bars: beats.filter((b, i) => i % 4 === 0),
+    passages: (lane.sections || []).map((sec) => {
+      const hold = sec.hold_bars != null && Number(sec.hold_bars) >= 2 ? ` · ${Number(sec.hold_bars)} bars` : "";
+      return { role: sec.section, start: Number(sec.start), end: Number(sec.end), name: `${String(sec.section || "").replace("_", " ")}${hold}`,
+        more: `${sec.rests ? ` · ${sec.rests} rest${sec.rests === 1 ? "" : "s"}` : ""}${sec.hold_bars != null ? ` · holds ${Number(sec.hold_bars)} bars a shot (${sec.shots} shots)` : ""}`,
+        ...(sec.drop_run != null ? { drop_run: Number(sec.drop_run), heat: Number(sec.heat || 0), main: Number(sec.heat || 0) >= 1 } : {}) };
+    }),
+    window: null, drop: lane.drop != null ? Number(lane.drop) : null,
+  };
+}
+// what a shot carries beyond its picture, for its title on the strip
+function shotMarks(s, o, held) {
+  return `${s.style && s.style !== "melt" ? ` · ${morphStyleLabel(s.style)}` : ""}${o.timing ? ` · ${MORPH_TIMING_LABELS[o.timing] || o.timing}` : ""}${s.pinned ? " · pinned" : ""}${s.swapped ? " · swapped" : ""}${held ? " · held" : ""}${o.look ? ` · look ${o.look}` : ""}${o.fx_intensity != null ? ` · FX ${o.fx_intensity}` : ""}${o.grade ? " · colour" : ""}${Array.isArray(o.effects) ? ` · effects ${o.effects.length ? o.effects.join("+") : "none"}` : ""}${s.rerendered ? " · re-rendered" : ""}${s.generated != null ? " · generated" : ""}${s.dream != null ? " · dream" : ""}${s.performer ? " · Polly" : ""}${s.own ? " · your clip" : ""}${s.event === "drop" ? ` · opens drop ${Number(s.drop_run) + 1} (heat ${Number(s.heat).toFixed(1)})` : ""}${s.rest ? (s.own ? ` · the film plays on ${s.rest} beats` : ` · rests ${s.rest} beats on what it arrives at`) : ""}`;
+}
+function cutShotsForStrip(easy, lane, off) {
+  const tl = timelineState(easy, lane);
+  const picked = easy.tlPick && easy.tlFor === lane.id ? easy.tlPick : null;
+  const knobs = Object.keys(easy.knobsTouched || {}).length > 0;  // a knob turned since the last re-cut: every shot waits for it
+  // Swap an object: in swap mode a click on a shot picks the still it lands on, and the library picker under the strip
+  // replaces it (POST /api/jobs/<id>/swap: only the two morphs that touch that still are rendered again, the rest kept)
+  const swapping = lane.swappable !== false && Array.isArray(lane.stills) && lane.stills.length > 0 && !!easy.swapMode;
+  return lane.shots.map((s) => {
+    const o = tl.shots[String(s.index)] || {};
+    const persisted = (lane.shot_overrides || {})[String(s.index)] || {};
+    const pending = JSON.stringify(canonOverride(o)) !== JSON.stringify(canonOverride(persisted));
+    const bo = tl.bounds[String(s.index)] || {};
+    const boSaved = (lane.boundary_overrides || {})[String(s.index)] || {};
+    const seamPending = JSON.stringify(canonOverride(bo)) !== JSON.stringify(canonOverride(boSaved));
+    const held = o.play === "hold";
+    const prevHeld = (tl.shots[String(s.index - 1)] || {}).play === "hold";
+    const edited = held || !!o.look || o.fx_intensity != null || !!o.timing || !!o.grade || Array.isArray(o.effects) || o.source != null || !!o.drop;
+    // each block shows the cut itself at the shot's middle (GET /api/videos/<id>/frame.jpg): a shot is a picture
+    const mid = Number(s.start) + Number(s.seconds) / 2;
+    const label = s.to ? `${s.from} → ${s.to}` : s.from;
+    const gone = !!(s.dropped || o.drop);
+    const title = gone ? `Shot ${s.index + 1} deleted · click to restore`
+      : `Shot ${s.index + 1} · ${clockText(off + Number(s.start))} in the song · ${s.seconds} s${s.section ? ` · ${s.section}` : ""}${s.transition ? ` · ${s.transition}` : ""}${label ? ` · ${label}` : ""}${shotMarks(s, o, held)}${pending || knobs ? " · changed, waiting for the re-cut" : ""}`;
+    const dress = bo.fx && bo.fx !== "auto" ? bo.fx : "";
+    const kindNow = dress === "none" ? "" : dress ? kindLabel(lane, dress) : (s.transition || "");
+    const cut = prevHeld || s.handoff === "cut";
+    const pick = swapping && s.still != null;
+    const act = pick ? { "data-act": "easy-swap-pick", "data-slot": s.still, "data-at": s.start }
+      : lane.mode === "song" ? { "data-act": "easy-seek", "data-at": s.start } : { "data-act": "easy-tl-shot", "data-index": s.index, "data-at": s.start };
+    return {
+      index: s.index, n: s.index + 1, start: off + Number(s.start), end: off + Number(s.end), section: s.section,
+      state: pending || knobs ? "stale" : "done", label: s.to || s.from || "", title,
+      picked: pick ? easy.swapSlot === s.still : !!(picked && picked.index === s.index), held, edited, dropped: gone, rest: !!s.rest,
+      style: s.style && s.style !== "melt" ? morphStyleLabel(s.style) : "",
+      thumb: media(`/api/videos/${encodeURIComponent(lane.id)}/frame.jpg?t=${mid.toFixed(2)}&w=160&v=${lane.version || 0}`),
+      act,
+      intensity: o.fx_intensity != null ? Number(o.fx_intensity) : s.intensity,
+      seam: s.index > 0 && lane.mode !== "song" ? {
+        act: { "data-act": "easy-tl-bound", "data-index": s.index, "data-at": s.start }, cut, dressed: !!kindNow,
+        edited: !!dress || !!bo.shift || prevHeld || seamPending, picked: !!(picked && picked.index === s.index && easy.tlTab === "join"),
+        title: `The join into shot ${s.index + 1} · ${cut ? "Cut" : "Morph"}${kindNow ? ` · ${kindNow}` : ""} · click to change it`,
+      } : null,
+    };
+  });
+}
+function stripModel(where) {
+  const easy = state.easy || {};
+  const id = easyVideoId();
+  const lane = where === "cut" && id && state.lane && state.lane.id === id && (state.lane.shots || []).length ? state.lane : null;
+  const song = easy.song ? songStrip() : null;
+  const onSong = !!(lane && song && cutOnSong(easy));
+  const base = lane && !onSong ? laneSongless(lane) : song;
+  const model = { id: where, hues: SECTION_HUES, lanes: ["sections", "wave", "beats", "shots", "intensity", "objects"] };
+  if (!base || !(base.duration > 0)) {
+    return Object.assign(model, { ghost: true, duration: 0, title: easy.song ? `<b>${esc(easy.songLabel || "The song")}</b> · reading it…` : "The song strip",
+      ghostNote: easy.song ? "Reading the song: its passages, beats and drops land here." : "Drop a song here, or pick one below: its passages, beats and drops land on this strip." });
+  }
+  Object.assign(model, { duration: Number(base.duration), passages: base.passages || [], beats: base.beats || [], bars: base.bars || [],
+    wave: base.wave || [], title: song && (onSong || !lane) ? stripTitle(base, easy) : `<b>This cut</b> · ${esc(clockText(base.duration))} · its song is not on the desk` });
+  if (base.drop != null) model.marks = [{ t: Number(base.drop), kind: "drop", title: `the drop the analysis found · ${clockText(base.drop)}` }];
+  if (lane) {
+    const off = onSong && lane.window ? Number(lane.window.song_start) || 0 : 0;
+    const shots = cutShotsForStrip(easy, lane, off);
+    model.shots = shots;
+    model.intensity = shots.filter((s) => s.intensity != null).map((s) => ({ start: s.start, end: s.end, v: s.intensity }));
+    // the objects lane: where the chain lands on each still (the first, which no shot lands on, is the one the cut opens
+    // on); a click swaps it (swap mode picks it straight away)
+    const stills = Array.isArray(lane.stills) ? lane.stills : [];
+    const swappable = lane.swappable !== false && stills.length > 0;
+    const pin = (still, t, opens) => still && ({ t, noun: still.noun, pinned: !!still.pinned, index: still.index, picked: !!easy.swapMode && easy.swapSlot === still.index,
+      thumb: media(`/api/stills/thumb?file=${encodeURIComponent(still.file)}`),
+      title: `${opens ? "Opens on " : ""}${still.noun}${still.kind === "scene" ? " (a scene)" : ""}${still.pinned ? " · pinned" : ""}${still.swapped ? " · swapped" : ""}${swappable ? " · click to swap it" : ""}`,
+      act: !swappable ? null : easy.swapMode ? { "data-act": "easy-swap-pick", "data-slot": still.index, "data-at": Math.max(0, t - off) } : { "data-act": "easy-tl-swap", "data-slot": still.index } });
+    const objects = [];
+    const first = lane.opens_on || stills[0];
+    if (lane.shots.length && first) objects.push(pin(first, off + Number(lane.shots[0].start), true));
+    lane.shots.forEach((s) => { if (s.still != null) objects.push(pin(stills[s.still], off + Number(s.end))); });
+    model.objects = objects.filter(Boolean);
+    // Polly's, your own clips', the generated runs' and the dreams' spans over the shots
+    model.spans = (lane.overlays || []).map((o) => ({ start: off + Number(o.start), end: off + Number(o.end), kind: o.kind,
+      title: o.kind === "performer" ? `Polly: ${o.label}` : o.kind === "generated" ? `Generated run: ${o.label}` : o.kind === "dream" ? o.label : `Your clip: ${o.label}` }));
+    model.window = onSong && lane.window ? { start: off, end: off + Number(lane.duration), label: `This Draft · ${clockText(off)} to ${clockText(off + Number(lane.duration))}`, drag: false } : null;
+    model.focus = [off, off + Number(lane.duration)];
+    model.badge = lane.mode === "song" ? "The whole song" : "";
+    return model;
+  }
+  if (easy.song && (!state.chain || state.chain.key !== chainKey()) && !chainTimer && !(state.chain && state.chain.loading)) scheduleChain(chainKey());
+  const win = draftWindow(song, easy);
+  if (win) {
+    model.window = { start: win.start, end: win.end, drag: true, label: `Draft ${Math.round(win.end - win.start)} s · ${clockText(win.start)} to ${clockText(win.end)}` };
+    model.focus = [win.start, win.end];
+  }
+  const chain = state.chain && state.chain.data && !state.chain.data.error ? state.chain.data : null;
+  const fresh = chain && state.chain.key === chainKey() && !state.chain.loading;
+  if (chain && Array.isArray(chain.times) && chain.times.length) {
+    const off = Number(chain.window_start) || 0;
+    const stills = chain.stills || [];
+    const assign = chain.assign || chain.times.map((t, i) => i);
+    const ints = chain.intensity || [];
+    model.shots = chain.times.map(([a, b], i) => {
+      const m = Number(assign[i] != null ? assign[i] : i);
+      const to = stills[m + 1] || stills[m] || {};
+      return { index: i, n: i + 1, start: off + a, end: off + b, section: (chain.sections || [])[i] || "", state: "sketch",
+        label: chain.provisional ? "" : to.noun || "", title: `Shot ${i + 1} · ${clockText(off + a)} · ${(b - a).toFixed(1)} s${chain.provisional ? "" : ` · lands on ${to.noun || "the next object"}`} · sketched from the stills, not rendered`,
+        act: { "data-act": "easy-plan-shot", "data-index": i, "data-at": off + a } };
+    });
+    model.intensity = model.shots.map((s, i) => (ints[i] != null ? { start: s.start, end: s.end, v: Number(ints[i]) } : null)).filter(Boolean);
+    if (!chain.provisional) {
+      const objects = [];
+      const pin = (k, t) => {
+        const s = stills[k];
+        if (!s) return;
+        objects.push({ t, noun: s.noun, pinned: !!s.pinned, index: k, picked: easy.chainPick === k, thumb: s.thumb ? media(s.thumb) : "",
+          title: `${k + 1}. ${s.noun}${s.kind === "scene" ? " (a scene)" : ""}${s.pinned ? " · pinned" : ""} · click to choose another`,
+          act: { "data-act": "easy-chain-slot", "data-slot": k } });
+      };
+      if (model.shots.length) pin(Number(assign[0] || 0), model.shots[0].start);
+      model.shots.forEach((s, i) => pin(Number(assign[i] != null ? assign[i] : i) + 1, s.end));
+      model.objects = objects;
+    }
+    if (!fresh) model.busy = true;
+  } else {
+    model.shotsNote = easy.vibe ? "Laying the shots on the beats…" : "Pick a vibe: the shots land here, on the beats.";
+    model.busy = !!(easy.vibe && state.chain && state.chain.loading);
+  }
+  return model;
+}
+// Every strip on the screen: a host is <div data-song-strip="desk|cut">; render() mounts them after the knobs.
+function mountStrips() {
+  if (!window.XenoStrip || !state) return;
+  document.querySelectorAll("#app [data-song-strip]").forEach((host) => {
+    const where = host.dataset.songStrip || "desk";
+    const model = stripModel(where);
+    model.overview = window.matchMedia("(max-width: 560px)").matches;
+    window.XenoStrip.mount(host, model, stripHandlers(where, model));
+  });
+  paintPlayhead();
+}
+// the strip is the section overview at phone width and the full lanes above it: a resize across the line redraws it
+let stripWide = null;
+window.addEventListener("resize", () => {
+  const wide = !window.matchMedia("(max-width: 560px)").matches;
+  if (wide === stripWide) return;
+  stripWide = wide;
+  mountStrips();
+});
+function stripHandlers(where, model) {
+  return {
+    onSeek: (t) => seekSong(where, t),
+    onPassage: (i, p) => seekSong(where, p ? Number(p.start) : 0),
+    onWindow: (start) => {
+      if (!state || !state.easy) return;
+      state.easy.lengthStart = Math.round(Number(start) * 1000) / 1000;
+      state.easy.lengthStartFor = state.audioId || "demo";
+      render();
+      loadSimpleOptions().then(render);
+    },
+  };
+}
+// Hear the song from a time: on a cut, its player there (the cut's own time); else the song itself, the playhead with it
+function seekSong(where, t) {
+  const at = Math.max(0, Number(t) || 0);
+  const player = document.getElementById("player");
+  const lane = state.lane;
+  if (where === "cut" && player && lane) {
+    const off = cutOnSong(state.easy) && lane.window ? Number(lane.window.song_start) || 0 : 0;
+    const inCut = at - off;
+    if (inCut >= 0 && inCut <= (Number(lane.duration) || player.duration || 0)) {
+      try { player.currentTime = inCut; } catch (err) { /* not seekable yet */ }
+      if (player.paused) player.play().catch(() => {});
+      return;
+    }
+  }
+  playSongAt(at);
+}
+let songHeadFrame = 0;
+function songAudio() {
+  let audio = document.getElementById("song-audio");
+  if (!audio) {
+    audio = document.createElement("audio");
+    audio.id = "song-audio";
+    audio.preload = "auto";
+    document.body.appendChild(audio);
+    ["play", "pause", "seeked", "ended"].forEach((type) => audio.addEventListener(type, () => songHead()));
+  }
+  const src = media(state.audioUrl || "/media/audio/demo");
+  if (audio.getAttribute("src") !== src) audio.src = src;
+  return audio;
+}
+function playSongAt(t) {
+  const audio = songAudio();
+  const go = () => {
+    try { audio.currentTime = t; } catch (err) { /* not seekable yet */ }
+    audio.play().catch(() => {});
+  };
+  if (audio.readyState >= 1) go();
+  else audio.addEventListener("loadedmetadata", go, { once: true });
+}
+function songHead() {
+  const audio = document.getElementById("song-audio");
+  if (!audio || !window.XenoStrip) return;
+  const playing = !audio.paused && !audio.ended;
+  window.XenoStrip.setPlayhead("desk", audio.currentTime || 0, playing);
+  if (playing && !songHeadFrame) {
+    const loop = () => {
+      songHeadFrame = 0;
+      const a = document.getElementById("song-audio");
+      if (!a || a.paused || a.ended || !window.XenoStrip) return;
+      window.XenoStrip.setPlayhead("desk", a.currentTime || 0, true);
+      songHeadFrame = requestAnimationFrame(loop);
+    };
+    songHeadFrame = requestAnimationFrame(loop);
+  }
 }
 
 function applySimpleRecipe(recipe) {
@@ -3529,6 +3764,7 @@ async function easyMake() {
   state.easy.editUrl = "";
   state.easy.recipe = "";
   state.easy.resultVibe = state.easy.vibe;  // the vibe this cut is made with: the result's title, and "Try another vibe" compares to it
+  state.easy.cutSongLabel = state.easy.songLabel || "";  // the cut is of the song on the desk: the strip lays its shots on it
   // what this Make is, for the Render row on the cut's screen: a part of the song (a prototype) offers the whole song,
   // a Draft offers Final
   state.easy.madeLength = easyLength(state.easy);
@@ -3740,6 +3976,7 @@ function render() {
   document.body.dataset.ready = "1";
   if (window.XENO_IDEAS) window.XENO_IDEAS.mount();
   if (window.XENO_KNOBS_MOUNT) window.XENO_KNOBS_MOUNT();  // the knob strip (ui_v6.js) in now, not a frame after the place is put back
+  mountStrips();  // the song strip (strip.js) into its hosts, keeping its zoom and scroll
   if (window.XENO_TUTORIAL) window.XENO_TUTORIAL.sync();
   scheduleOpener();
   if (pageSwitch) { if (document.body.dataset.tour !== "1") window.scrollTo(0, pageScroll[state.view] || 0); }  // the tour places itself
@@ -4008,6 +4245,11 @@ function paintPlayhead() {
   const head = document.getElementById("lane-playhead");
   const track = document.getElementById("lane-track");
   const player = document.getElementById("player");
+  if (player && window.XenoStrip && document.querySelector('[data-song-strip="cut"]') && state && state.lane) {
+    // the song strip under a cut: the player's time is the cut's, the strip's the song's (lane.window)
+    const off = cutOnSong(state.easy) && state.lane.window ? Number(state.lane.window.song_start) || 0 : 0;
+    window.XenoStrip.setPlayhead("cut", off + (player.currentTime || 0), !player.paused && !player.ended);
+  }
   if (!head || !track || !player) return;
   const total = Number(track.dataset.total) || player.duration || 1;
   const at = Math.max(0, Math.min(1, (player.currentTime || 0) / total));
@@ -4277,6 +4519,10 @@ function adoptSession(data, options = {}) {
     // for good after an upload, because the fresh state had dropped them and nothing asked again
     setup: previous ? previous.setup || null : null,
     songs: previous ? previous.songs || null : null,  // the bundled songs (GET /api/songs), fetched once a session
+    // My videos and the whole songs outlive a new song too: the gallery read "Every video you make shows up here" after
+    // a bundled song was picked, though the cuts were on the desk
+    videos: previous ? previous.videos : undefined,
+    wholeSongs: previous ? previous.wholeSongs : undefined,
     downloads: previous ? previous.downloads || {} : {},
     interpolate: previous ? !!previous.interpolate : false,
     guideId: previous ? previous.guideId || "" : "",
@@ -4999,6 +5245,7 @@ document.addEventListener("click", async (event) => {
     const row = (state.videos || []).find((item) => item.id === el.dataset.id);
     if (!row) return;
     state.easy.reopenId = row.id;
+    state.easy.cutSongLabel = row.song || "";  // "Glitch Out (30 s cut)": its shots sit on the strip when that song is loaded
     state.easy.knobsTouched = {};
     if (row.vibe && vibeById(row.vibe)) state.easy.vibe = row.vibe;
     state.easy.resultVibe = state.easy.vibe;

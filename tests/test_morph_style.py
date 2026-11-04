@@ -204,5 +204,9 @@ def test_the_desk_has_the_morph_row_and_the_timeline_chips():
     assert "if (style && MORPH_STYLES.includes(style)) body.style = style;" in APP
     final = APP.split('act === "easy-render-full" || act === "easy-render-final") {', 1)[1].split("} else if", 1)[0]
     assert "state.easy.carryStyles = lane.shots.map" in final and "state.easy.carryStyles = null" in final
-    assert 'class="tl-style"' in APP and ".shots-lane .shot .tl-style" in CSS
+    # a shot whose morph is not a Melt names its style on its block on the song strip
+    strip_js = (ROOT / "src/xenoform/ui_static/strip.js").read_text(encoding="utf-8")
+    strip_css = (ROOT / "src/xenoform/ui_static/strip.css").read_text(encoding="utf-8")
+    assert 'style: s.style && s.style !== "melt" ? morphStyleLabel(s.style) : ""' in APP
+    assert 'class="xs-style"' in strip_js and ".xs-shot .xs-style" in strip_css
     assert "easy.morphStyle = recipe.morph_style" in APP

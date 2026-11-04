@@ -2020,6 +2020,73 @@ def create_app(cfg: dict | None = None):
                       "beat_fx": True, "end_card": False},
         }
 
+    @app.get("/api/simple/strip")
+    def simple_strip(audio_id: str = "demo", drop_mode: str = "", breathe: str = "", length: float = 30.0,
+                     buckets: int = 1200) -> dict:
+        """The song strip (docs/UI_REVIEW.md 6.1), what the desk draws for a song before any Make, from its analysis
+        alone: the passages with their roles, drop runs and heat as the planner reads them (``pacing.song_plan``, so the
+        strip's sections are the ones a whole song is made of), the heaviest run as ``main`` (``pacing.heaviest``, the
+        drop card's and the prototype's), the beats on the planner's grid with its bar lines, a waveform, the drop, and
+        the window a Length Make cuts (``pacing.prototype_window``, one rule with the Make's trim). Read-only: nothing
+        is planned for a render and nothing is cached."""
+        from xenoform import dense as _dense
+        from xenoform import pacing as _pacing
+        from xenoform.director import waveform_peaks
+
+        features = _features_for(audio_id)
+        if audio_id in ("", "demo"):
+            audio = repo_root() / "examples" / "demo.wav"
+        else:
+            with _LOCK:
+                audio = _AUDIO.get(audio_id)
+        duration = float(features.get("duration") or 0.0)
+        beats = sorted(float(b) for b in features.get("beats") or [])
+        try:
+            drop = _dense.find_drop(Path(audio), beats, duration) if audio is not None and Path(audio).is_file() else None
+        except Exception:
+            drop = None
+        mode = _pacing.drop_mode_of({"drop_mode": drop_mode or None})
+        plan_mode = mode if mode in ("auto", "max") else "auto"  # Drops off still shows where the runs are
+        sections = _dense._analysis_sections(features)
+        tempo = features.get("tempo")
+        grid = _pacing.grid_for(beats, duration, tempo) if duration > 0 else []
+        passages: list[dict] = []
+        phase = 0
+        if duration > 0 and len(sections) >= 2:
+            try:
+                plan = _pacing.song_plan(duration, beats, sections, drop, breathe=0.0, drop_mode=plan_mode, tempo=tempo)
+                phase = int(plan.get("bar_phase") or 0)
+                for p in plan.get("passages") or []:
+                    row = {"role": str(p["role"]), "start": round(float(p["start"]), 3), "end": round(float(p["end"]), 3)}
+                    if "drop_run" in p:
+                        row.update({"drop_run": int(p["drop_run"]), "heat": round(float(p.get("heat") or 0.0), 3),
+                                    "opens": bool(p.get("main"))})
+                    passages.append(row)
+            except Exception:
+                log.exception("song strip")
+                passages = []
+        if not passages and duration > 0:  # a song too short to plan: one passage, the analyser's own reading
+            passages = [{"role": "sustain", "start": 0.0, "end": round(duration, 3)}]
+        runs = [p for p in passages if "drop_run" in p]
+        k = _pacing.heaviest([{"heat": p.get("heat"), "start": p["start"], "end": p["end"], "opens": p.get("opens")} for p in runs])
+        if k is not None:
+            runs[k]["main"] = True
+        window = None
+        try:
+            shape = {"breathe": breathe if breathe != "" else None, "drop_mode": drop_mode or None}
+            proto = _pacing.prototype_window(features, drop, float(length or 0.0), paced=not _pacing.legacy(shape), drop_mode=mode)
+            if proto is not None:
+                window = {"start": round(float(proto["start"]), 3), "end": round(float(proto["end"]), 3),
+                          "length_s": proto["length_s"], "anchor": round(float(proto["anchor"]), 3)}
+        except Exception:
+            log.exception("song strip window")
+        bars = [round(t, 3) for t in grid[phase::4]] if len(grid) >= 4 else []
+        return {"audio_id": audio_id, "duration": round(duration, 3), "tempo": round(float(tempo or 0.0), 1),
+                "beats": [round(t, 3) for t in grid], "bars": bars, "bar_phase": phase,
+                "wave": waveform_peaks(features, max(60, min(4000, int(buckets or 1200)))) if features.get("frames") else [],
+                "drop": round(float(drop), 3) if drop is not None else None, "drop_mode": mode,
+                "passages": passages, "window": window}
+
     def _chain_for(body: dict) -> dict:
         """The stills a Make of ``body`` will morph through, in order, as the stills animatic previews them
         (``dense.chain_preview``): nothing rendered, nothing marked used. A Length cut is previewed on the window the
@@ -2054,8 +2121,8 @@ def create_app(cfg: dict | None = None):
         dur = float(features.get("duration") or 0.0)
         from xenoform import pacing as _pacing
 
-        features, _start, _drop = _window_features(features, Path(audio), length_s, state.get("length_start"),
-                                                   paced=not _pacing.legacy(state), drop_mode=_pacing.drop_mode_of(state))
+        features, window_start, _drop = _window_features(features, Path(audio), length_s, state.get("length_start"),
+                                                         paced=not _pacing.legacy(state), drop_mode=_pacing.drop_mode_of(state))
         try:  # the guardrail the Make runs, on the cut's own length: a count set by hand gets its clamp (40 in 20 s:
             # 15) and "auto" the budget the planner spends by role, so the preview counts what renders
             from xenoform import guardrails as _guard
@@ -2098,11 +2165,35 @@ def create_app(cfg: dict | None = None):
                  "thumb": "/api/stills/thumb?file=" + quote(str(s.get("file") or ""), safe="/") if not s.get("user") else ""}
                 for k, s in enumerate(pre["stills"])]
         dropped_pins = sorted(k for k in pins if k < len(rows) and not rows[k]["pinned"])
+        # the song strip lays the planned shots on the song (docs/UI_REVIEW.md 6.2): each shot's start and end in the
+        # cut's own time, the morph it plays (a long song's chain assigns them), and where the cut starts in the song
+        shots = list(pre["shots"] or [])
+        assign = list((pre.get("chain") or {}).get("assign") or []) if isinstance(pre.get("chain"), dict) else []
+        try:  # each planned shot's Intensity as the shape will set it (pacing.shot_intensity), for the strip's lane
+            macros = state.get("macros") if isinstance(state.get("macros"), dict) else {}
+            knob = _pacing._knob(macros, "intensity", 0.5)
+            amount = _pacing.breathe_amount(state)
+            drops = _pacing.drop_mode_of(state) in ("auto", "max")
+            owner = _pacing.passage_of(shots)
+            spans: dict[int, list[float]] = {}
+            for s, p in zip(shots, owner):
+                a, b = float(s.get("start") or 0.0), float(s.get("end") or 0.0)
+                span = spans.setdefault(p, [a, b])
+                span[0], span[1] = min(span[0], a), max(span[1], b)
+            intensity = [_pacing.shot_intensity(s, knob, amount, drops,
+                                                (float(s.get("start") or 0.0) - spans[p][0]) / max(1e-6, spans[p][1] - spans[p][0]))
+                         for s, p in zip(shots, owner)]
+        except Exception:
+            intensity = []
         return {"vibe": pre["vibe"], "pool_vibe": _mp.vibe_for(state), "count": len(rows), "morphs": max(0, len(rows) - 1),
-                "shots": len(pre["shots"]), "long_song": bool(pre["long_song"]), "scene_mode": _mp.scene_mode(state),
+                "shots": len(shots), "long_song": bool(pre["long_song"]), "scene_mode": _mp.scene_mode(state),
                 "backdrop": _mp.backdrop_choice(state),  # what the morphs stand on: plain, places, scenes
                 "stills": rows, "pinned": [r["index"] for r in rows if r["pinned"]], "dropped_pins": dropped_pins,
-                "length_s": length_s if length_s > 0 and dur > length_s + 1.0 else 0}
+                "length_s": length_s if length_s > 0 and dur > length_s + 1.0 else 0,
+                "times": [[round(float(s.get("start") or 0.0), 3), round(float(s.get("end") or 0.0), 3)] for s in shots],
+                "sections": [str(s.get("section") or "") for s in shots], "intensity": intensity,
+                "assign": [int(a) for a in assign] if len(assign) == len(shots) else list(range(len(shots))),
+                "window_start": round(float(window_start), 3) if window_start is not None else 0.0}
 
     @app.get("/api/simple/chain")
     def simple_chain_get(audio_id: str = "demo", vibe: str = "", idea: str = "", scene_stills: str = "off", energy_preset: str = "dense",
