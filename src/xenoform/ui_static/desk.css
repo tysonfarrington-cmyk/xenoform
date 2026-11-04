@@ -777,7 +777,7 @@ dialog .settings-detail .note, dialog .about-detail .note { margin: 6px 0 0; }
     position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
   }
   /* the strip is the passages overview here: no shot to click, so the timeline's hint says so */
-  .lane-head .hint-wide { display: none; }
+  .lane-head .hint-wide, .lane-apply-row .hint-wide { display: none; }
   .lane-head .hint-phone { display: inline; }
 }
 @media (prefers-reduced-motion: reduce) {

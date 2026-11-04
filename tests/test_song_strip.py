@@ -173,7 +173,9 @@ def test_the_phone_desk_says_what_the_strip_gives_and_the_steps_fit():
     desk = (STATIC / "desk.css").read_text(encoding="utf-8")
     assert desk.index(".lane-head .hint-phone { display: none; }") < desk.index("@media (max-width: 560px) {")
     phone = desk.split("@media (max-width: 560px) {")[1].split("\n}\n")[0]
-    assert ".lane-head .hint-wide { display: none; }" in phone and ".lane-head .hint-phone { display: inline; }" in phone
+    assert ".lane-head .hint-wide, .lane-apply-row .hint-wide { display: none; }" in phone and ".lane-head .hint-phone { display: inline; }" in phone
+    # the desk walk: nothing is edited on a phone, so the apply row's "Edits wait for Apply" goes with the wide hint
+    assert '<span class="note${pending ? "" : " hint-wide"}">' in panel
     assert ".stagebar .easy-crumbs .crumb:not(.now) .crumb-label {" in phone and "clip-path: inset(50%)" in phone
     node = shutil.which("node")
     if not node:
@@ -182,14 +184,20 @@ def test_the_phone_desk_says_what_the_strip_gives_and_the_steps_fit():
     clock = "function clockText(" + APP.split("function clockText(")[1].split("\n}\n")[0] + "\n}\n"
     script = clock + fn + """
 let held = 0;
+let onSong = false;
 const cutSongStart = () => held;
+const cutOnSong = () => onSong;
 const lane = { plan_line: "1 drop, the main at 2:22; 2 passages", window: { song_start: 127.667 } };
 const out = [planLineFor({}, lane)];
 held = 127.667; out.push(planLineFor({}, lane));
 out.push(planLineFor({}, { plan_line: "passage 5 of 14 of the song, a drop at 1:32", window: null }));
+held = 0; onSong = true; out.push(planLineFor({}, lane));
+out.push(planLineFor({}, { plan_line: "3 drops, the main at 2:22; 6 passages; 4 rests", window: { song_start: 127.667 } }));
 console.log(JSON.stringify(out));
 """
     r = subprocess.run([node, "-e", script], capture_output=True, text=True, timeout=60, encoding="utf-8")
     assert r.returncode == 0, r.stderr
-    assert r.stdout.strip() == '["1 drop, the main at 0:14; 2 passages","1 drop, the main at 2:22; 2 passages",' \
-                               '"passage 5 of 14 of the song, a drop at 1:32"]'
+    # the desk walk: the passage count is said once (the Timeline's own fact), and on the song held the drops are the
+    # strip title's alone (the 30 s stretch's own analysis read "2 drops, the main at 0:13" under "1 drop ... 0:14")
+    assert r.stdout.strip() == '["1 drop, the main at 0:14","1 drop, the main at 2:22",' \
+                               '"passage 5 of 14 of the song, a drop at 1:32","","4 rests"]'

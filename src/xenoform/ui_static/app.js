@@ -3270,7 +3270,7 @@ function shotsLane(easy) {
   const applyRow = lane.editable !== false && !swapping
     ? `<div class="lane-apply-row">
         ${undoReset ? `<button type="button" class="text" data-act="easy-tl-reset-undo">Undo the reset</button>` : anyEdits ? `<button type="button" class="text" data-act="easy-tl-reset">Reset the timeline</button>` : ""}
-        <span class="note">${pending ? `${pending} edit${pending === 1 ? "" : "s"} waiting for Apply (the bar at the bottom)${undoReset ? ": Apply takes every edit off the cut" : ""}.` : "Edits wait for Apply in the bar at the bottom, and stay with the cut."}</span>
+        <span class="note${pending ? "" : " hint-wide"}">${pending ? `${pending} edit${pending === 1 ? "" : "s"} waiting for Apply (the bar at the bottom)${undoReset ? ": Apply takes every edit off the cut" : ""}.` : "Edits wait for Apply in the bar at the bottom, and stay with the cut."}</span>
       </div>`
     : "";
   const drawer = swapping || songCut ? "" : timelineDrawer(easy, lane, tl, picked);
@@ -3906,9 +3906,14 @@ function cutSongStart(easy, lane) {
   return held > 0 && start + (Number(lane.duration) || 0) > held + 0.5 ? 0 : start;
 }
 // The plan's line speaks song time ("1 drop, the main at 2:22"): when the strip under it is laid in cut time (the desk
-// holds the cut's own stretch, or not its song), its clocks move back by the window's start, so the two read alike
+// holds the cut's own stretch, or not its song), its clocks move back by the window's start, so the two read alike.
+// One source a fact (the desk walk, integrate-4nov): the passage count is the Timeline's own (shotsLane), and the drops
+// are the strip title's when the strip reads the song held (stripTitle, the song's analysis); a cut whose song is not on
+// the desk keeps the plan's drops, since its strip title says none
 function planLineFor(easy, lane) {
-  const line = String((lane && lane.plan_line) || "");
+  const onSong = cutOnSong(easy);
+  const line = String((lane && lane.plan_line) || "").split("; ")
+    .filter((part) => !/^\d+ passages$/.test(part) && !(onSong && /^(?:\d+ drops?\b|no drop$)/.test(part))).join("; ");
   const shift = (Number(lane && lane.window && lane.window.song_start) || 0) - cutSongStart(easy, lane);
   if (!line || shift < 0.5) return line;
   return line.replace(/\b(\d+):([0-5]\d)\b/g, (m, a, b) => { const t = Number(a) * 60 + Number(b) - shift; return t > -0.5 ? clockText(t) : m; });
