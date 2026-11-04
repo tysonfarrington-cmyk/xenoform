@@ -791,3 +791,32 @@ console.log(JSON.stringify(out));
     lane = _fn("shotsLane")
     assert 'data-act="easy-tl-reset-undo">Undo the reset</button>' in lane and "Apply takes every edit off the cut" in lane
     assert "state.easy.tlBeforeReset = null;" in _fn("loadLane")
+
+
+# ---------------------------------------------------------------- V9: /vj's shortcuts after a dropdown
+@NODE
+def test_a_dropdown_picked_with_the_mouse_gives_the_keys_back_on_vj(tmp_path):
+    """V9: the key handler skips a focused select and the selects kept the focus, so after one pick every shortcut on
+    /vj went dead. A pointer pick now blurs the select; a keyboard step keeps it focused (Chrome fires change on each
+    arrow of a closed select, so a plain blur-on-change would break stepping it)."""
+    vj = (STATIC / "vj.html").read_text(encoding="utf-8")
+    script = vj.split("let pickedSelect=null;", 1)[1].split("\n", 2)
+    lines = "let pickedSelect=null;" + script[0] + "\n" + script[1]
+    assert "addEventListener('keydown',e=>{if(e.target.tagName==='SELECT')return;" in vj  # the handler is as it was
+    code = r"""
+const handlers = {};
+const addEventListener = (type, fn) => { handlers[type] = fn; };
+const select = (id) => ({ id, tagName: "SELECT", blurred: 0, blur() { this.blurred += 1; } });
+""" + lines + r"""
+const fx = select("fx"), every = select("every");
+handlers.pointerdown({ target: fx });
+handlers.change({ target: fx });
+handlers.change({ target: every });  // stepped with the arrow keys, no pointer
+handlers.pointerdown({ target: { tagName: "CANVAS" } });
+handlers.change({ target: fx });  // a change after the pointer went elsewhere
+console.log(JSON.stringify({ fx: fx.blurred, every: every.blurred }));
+"""
+    got = _run(tmp_path, code)
+    assert got == {"fx": 1, "every": 0}
+    record = vj.split("function record(", 1)[1].split("\nfunction ", 1)[0] if "function record(" in vj else ""
+    assert "pickedSelect" not in record  # V6 and the recording are the perform-window session's

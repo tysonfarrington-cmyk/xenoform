@@ -301,6 +301,10 @@ $('fx').onchange=e=>setFx(e.target.value);$('every').onchange=e=>{S.every=+e.tar
 if(!EXPERT){$('kal').style.display='none'}$('kal').onclick=()=>{if(EXPERT)tog('kal','kal')};$('mir').onclick=()=>tog('mir','mir');$('stb').onclick=()=>tog('stb','stb');$('stb').classList.toggle('on',!!S.stb);$('kal').classList.toggle('on',!!S.kal);$('mir').classList.toggle('on',!!S.mir);
 $('hudb').onclick=hud;$('recb').onclick=()=>record();$('helpb').onclick=()=>$('help').classList.toggle('show');$('help').onclick=()=>$('help').classList.remove('show');
 $('fs').onclick=()=>document.documentElement.requestFullscreen();
+// a dropdown picked with the mouse (Transition, Switch, the audio input) gives the keys back: the key handler skips a
+// focused select, so after one pick every shortcut went dead (UI review V9); stepping one with the arrow keys keeps it
+let pickedSelect=null;addEventListener('pointerdown',e=>{pickedSelect=e.target.tagName==='SELECT'?e.target:null},true);
+addEventListener('change',e=>{if(e.target.tagName==='SELECT'&&e.target===pickedSelect){pickedSelect=null;e.target.blur()}},true);
 addEventListener('keydown',e=>{if(e.target.tagName==='SELECT')return;const k=e.key;
  if(k===' '||k==='ArrowRight'){e.preventDefault();if(trackEl&&trackEl.paused&&!S.played){S.played=1;AC.resume();trackEl.play()}else next()}
  else if(k==='ArrowLeft')prev();else if(k>='1'&&k<='8')setFx(String(KEYFX[+k-1]));else if(k==='0'||k==='a'||k==='A')setFx('auto');
