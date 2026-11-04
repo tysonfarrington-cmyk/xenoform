@@ -158,7 +158,8 @@ function stepNav(easy) {
     const done = !now && stepDone(easy, key);
     const cls = `crumb${now ? " now" : ""}${done ? " done" : ""}`;
     const title = `${STEP_HINTS[key]}${reach[key] ? "" : key === "render" ? " Render a Draft first." : key === "perform" ? " A rendered cut first." : " A song first."}`;
-    return `<button type="button" class="${cls}" data-act="easy-go-step" data-step="${key}"${now ? ' aria-current="step"' : ""}${reach[key] ? "" : " disabled"} title="${esc(title)}">${STEP_LABELS[key]}</button>`;
+    const tour = key === "perform" ? ' data-tour="easy-perform"' : "";  // the tutorial's last step points here, cut or none
+    return `<button type="button" class="${cls}" data-act="easy-go-step" data-step="${key}"${tour}${now ? ' aria-current="step"' : ""}${reach[key] ? "" : " disabled"} title="${esc(title)}">${STEP_LABELS[key]}</button>`;
   });
   return `<nav class="easy-crumbs step-nav" aria-label="Steps">${items.join('<span class="crumb-sep" aria-hidden="true">›</span>')}</nav>`;
 }
@@ -1364,7 +1365,7 @@ function tierNote(tier) {
 function renderTweak(easy, chosen) {
   const cut = !!easyVideoId() && cutOnSong(easy) && !easy.playedHere;
   return `<div class="easy sl sl-tweak">
-    <section class="sl-strip"><div class="song-strip" data-song-strip="${cut ? "cut" : "desk"}" data-lanes="sections,shots,intensity" aria-label="The song strip"></div></section>
+    <section class="sl-strip" data-tour="easy-strip"><div class="song-strip" data-song-strip="${cut ? "cut" : "desk"}" data-lanes="sections,shots,intensity" aria-label="The song strip"></div></section>
     ${cut ? inspectorDock(easy) : planDock(easy)}
     <div class="sl-tweak-grid">
       <div class="sl-tweak-main" data-knob-rows="1">
@@ -1606,7 +1607,7 @@ function renderPerform(easy) {
   const id = easyVideoId();
   const vibe = vibeById(easy.resultVibe || easy.vibe);
   return `<div class="easy easy-perform">
-      <section class="panel perform-card" data-tour="easy-perform">
+      <section class="panel perform-card">
         <p class="eyebrow">Perform · ${esc([easy.songLabel, vibe && vibe.name].filter(Boolean).join(" · ") || "this cut")}</p>
         <h2>Play it live.</h2>
         <p class="note">The perform page plays the cut to its song and lets a controller take over: pads hold a picture while you hold them, the knobs ride the look, Rec records a take with the sound. It opens in its own window, so it can go on a second screen.</p>
@@ -3023,7 +3024,7 @@ function shotsLane(easy) {
   const drawer = swapping || songCut ? "" : timelineDrawer(easy, lane, tl, picked);
   // the cut's shots sit on the song strip (strip.js): its blocks, seams and pins carry the timeline's own acts, so a
   // click opens the drawer below as the lane's tiles did; a whole song keeps its passages track above it
-  const strip = `<div class="song-strip" data-song-strip="cut" aria-label="The song strip"></div>`;
+  const strip = `<div class="song-strip" data-song-strip="cut" data-tour="easy-strip" aria-label="The song strip"></div>`;
   return `<div class="shots-lane tl-panel${swapping ? " swapping" : ""}${songCut ? " song-lane" : ""}" aria-label="Timeline">
       ${layersBlock}
       <div class="lane-head"><span>Timeline${lane.mode === "stems" ? ` · ${esc(stemLabel(lane.layer))} layer` : songCut ? " · the whole song" : ""}</span><span class="note">${esc(facts)} · ${hint}</span>${toggle}</div>
@@ -6149,8 +6150,23 @@ document.getElementById("copy-diagnostics").addEventListener("click", () => {
   copyDiagnostics();
 });
 
-document.addEventListener("xeno-tour-step", () => {
-  if (state) render();
+// A tour step names the desk step that holds its target (tutorial.json "desk", N11): a cut or a Make on screen used to
+// hide the song's controls, and the card showed with nothing lit. The steps after the song's need one: with none
+// chosen, the bundled demo stands in, by name (the card says so).
+document.addEventListener("xeno-tour-step", (event) => {
+  if (!state) return;
+  const want = (event.detail && event.detail.desk) || "";
+  if (state.easy && STEPS.includes(want) && stepOf(state.easy) !== want && state.easy.phase !== "tool") {
+    if (stepReach(state.easy)[want]) {
+      goStep(want);
+      return;
+    }
+    if (!state.easy.song) {
+      useDemoSong();
+      return;
+    }
+  }
+  render();
 });
 
 document.addEventListener("xeno-tour-end", () => {

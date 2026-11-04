@@ -457,7 +457,8 @@
     const node = step.target ? document.querySelector(step.target) : null;
     if (step.target && !node) {
       if (placeTries === 0) {
-        document.dispatchEvent(new CustomEvent("xeno-tour-step", { detail: { target: step.target } }));
+        // the desk step that holds the target (tutorial.json "desk"): the desk goes there (N11)
+        document.dispatchEvent(new CustomEvent("xeno-tour-step", { detail: { target: step.target, desk: step.desk || "" } }));
       }
       if (placeTries < 20) {
         placeTries += 1;
