@@ -119,6 +119,19 @@ def test_vj_pads_hold_over_the_song_and_leave_its_timeline_alone():
     assert "'/api/videos/'+encodeURIComponent(JOB)+'/shots'" in vj  # ?job=<id>: the cut's shots are the pads
 
 
+def test_soft_takeover_is_wired_on_both_pages():
+    """Absolute knobs catch the value on screen before they move it: midi.js decides per (control, target) pair, and
+    each page answers read(target) with what its control shows (the desk's macro strip, /vj's intensity and gains)."""
+    static = stems_api.Path(stems_api.__file__).parent / "ui_static"
+    js = (static / "midi.js").read_text(encoding="utf-8")
+    assert "function Takeover(" in js and "takeover.decide(" in js and "if(!d.apply){this._awayChanged(k);continue}" in js
+    assert "this.state[e.target]=screen" in js  # an encoder steps from the value on screen
+    v6 = (static / "ui_v6.js").read_text(encoding="utf-8")
+    assert "window.XENO_MACRO_GET=" in v6 and "read:t=>" in v6
+    vj = (static / "vj.html").read_text(encoding="utf-8")
+    assert "read:t=>{if(t==='intensity')return S.inten;" in vj
+
+
 # ---------------------------------------------------------------- lazy mido
 def test_missing_mido_explains(monkeypatch):
     import builtins

@@ -316,6 +316,9 @@ addEventListener('keydown',e=>{if(e.target.tagName==='SELECT')return;const k=e.k
 const setTog=(k,btn,on)=>{S[k]=on?1:0;$(btn).classList.toggle('on',!!S[k])};
 let intenToast=0;const stemName=n=>/^\d+$/.test(n)?((STEMS&&STEMS.stems)||[])[+n-1]||null:n;
 XenoMidi.init({page:'vj',toast,elements:{fx:'fx:next',every:'every',stemsb:'stem:1'},
+ // soft takeover: what a knob's target shows now (the switch rate is a stepped choice, so it follows at once)
+ read:t=>{if(t==='intensity')return S.inten;if(S.gain[t]!=null)return S.gain[t];const m=/^stem:(.+)$/.exec(t);
+  if(m){const name=stemName(m[1]);if(!name)return null;const g=gains()['stem:'+name];return g==null?1:g}return null},
  onStatus:s=>{$('h-midi').textContent=s.inputs.length?s.inputs.length+' input(s)'+(s.bridge==='bridge'?' + bridge':''):s.bridge==='bridge'?'bridge':s.bridge==='sse'?'bridge (sse)':'none'},
  targets:{
   intensity:v=>{S.inten=Math.max(0,Math.min(2,v));const now=performance.now();if(now-intenToast>250){intenToast=now;toast('Intensity '+S.inten.toFixed(2))}},

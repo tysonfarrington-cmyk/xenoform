@@ -95,6 +95,23 @@ HoldStack.prototype={
  clear(){while(this.stack.length)this.release(this.stack[this.stack.length-1])},
  on(fn){this.subs.push(fn);return()=>{this.subs=this.subs.filter(f=>f!==fn)}},
  _tell(id,on){const top=this.top(),stack=this.stack.slice();for(const fn of this.subs.slice()){try{fn(id,on,top,stack)}catch(e){if(typeof console!=="undefined")console.error("midi hold",e)}}}};
+// Soft takeover for absolute knobs and faders: the value moves only once the hardware passes the on-screen value (or
+// comes within a small window of it), so a knob left somewhere else by a song change, a page change, a reset or a
+// mouse drag never makes the picture jump. One state per (control, target) pair. decide(key, c, s, lo, hi): c is the
+// value the hardware asks for, s the value on screen now (null: no takeover for this target, apply at once).
+// Returns {apply, picked, dir}; dir is the way to move the hardware to catch the value (+1 up, -1 down).
+function Takeover(windowFrac){this.w=windowFrac==null?0.03:windowFrac;this.rows={}}
+Takeover.prototype={
+ decide(key,c,s,lo,hi){const st=this.rows[key]||(this.rows[key]={picked:false,hw:null,applied:null,screen:null});
+  if(s==null||!isFinite(s)){st.picked=true;st.hw=st.applied=c;st.screen=null;return{apply:true,picked:true,dir:0}}
+  const tol=this.w*(Math.abs((+hi||0)-(+lo||0))||1);
+  if(st.picked&&st.applied!=null&&Math.abs(s-st.applied)>tol)st.picked=false;  // the value was moved by something else
+  if(!st.picked&&(Math.abs(c-s)<=tol||(st.hw!=null&&(st.hw-s)*(c-s)<=0)))st.picked=true;  // within reach, or passed it
+  st.hw=c;st.screen=s;if(st.picked){st.applied=c;return{apply:true,picked:true,dir:0}}
+  return{apply:false,picked:false,dir:c<s?1:-1}},
+ // {hw, screen, dir} when the hardware is known to be away from the value, else null
+ away(key){const st=this.rows[key];return st&&!st.picked&&st.hw!=null&&st.screen!=null?{hw:st.hw,screen:st.screen,dir:st.hw<st.screen?1:-1}:null},
+ reset(key){if(key)delete this.rows[key];else this.rows={}}};
 // plain words for targets (C7: "Intensity", "Drums level", not macro:intensity)
 const FX_NAMES=["Clean cut","Match-cut","Flow carry","Liquid flow","Depth parallax","Lens breath","Chrome refraction","Echo trail"];
 const DANCE_NAMES=["Clean","Mirror","Strobe","Mirror + strobe","Echo trail","Chrome mirror"];
@@ -117,17 +134,18 @@ function controlOf(profile,s){const p=PROFILES[profile]||PROFILES.generic;if(!s)
 function shortName(profile,s){const c=controlOf(profile,s);return c?c.short:s?(s.type==="note"?"N":s.type==="cc"?"CC":s.type.charAt(0).toUpperCase())+s.num:""}
 
 const core={PROFILES,VJ_TARGETS,DESK_TARGETS,MODE_NAMES,range,modeFor,profileMapping,normalise,matches,relDelta,srcName,srcKey,
- isRelease,resolve,HoldStack,targetName,controlOf,shortName};
+ isRelease,resolve,HoldStack,Takeover,targetName,controlOf,shortName};
 if(typeof module==="object"&&module.exports){module.exports=core;return}
 
 // ---------------------------------------------------------------- the browser runtime
 const KEY="xeno-midi";
 function load(){try{const j=JSON.parse(localStorage.getItem(KEY)||"{}");return{profile:j.profile||"minilab3",mappings:j.mappings||{}}}catch(e){return{profile:"minilab3",mappings:{}}}}
-const holds=new HoldStack();
+const holds=new HoldStack(),takeover=new Takeover();
+const rowKey=e=>srcKey(e.source)+">"+e.target;
 
 const X={
  page:"vj",profile:"minilab3",mappings:[],handlers:{},state:{},inputs:[],ws:null,es:null,wsState:"off",learnTarget:null,learnMode:false,
- share:false,last:null,count:0,log:[],bridgeDevices:{},holds,_held:{},_opts:{},_el:null,_timer:null,
+ share:false,last:null,count:0,log:[],bridgeDevices:{},holds,takeover,_held:{},_opts:{},_el:null,_timer:null,
  init(opts){opts=opts||{};this._opts=opts;this.page=opts.page||"vj";const st=load();this.profile=st.profile;
   // ?webmidi=0: the bridge only. Web MIDI opens every input it binds, and on Windows an open input is exclusive, so a
   // second window (or a test page) that must not take the controller from another app asks for the bridge alone.
@@ -149,11 +167,22 @@ const X={
   let hit=false;const sk=srcKey(ev),off=isRelease(ev);
   // a release lets go of whatever this control pressed, even if the map changed while it was held
   if(off&&this._held[sk]){const was=this._held[sk];delete this._held[sk];for(const h of was)if(holds.release(h.t)){hit=true;this.fire(h.t,h.lo,ev,h.row)}}
-  for(const e of this.mappings){if(!matches(e,ev))continue;if(e.mode==="hold"&&off)continue;const r=resolve(e,ev,this.state);if(!r)continue;hit=true;
+  for(const e of this.mappings){if(!matches(e,ev))continue;if(e.mode==="hold"&&off)continue;
+   const mode=e.mode||"abs",screen=(mode==="abs"&&ev.type!=="note")||mode==="rel"?this.read(e.target):null;
+   if(mode==="rel"&&screen!=null)this.state[e.target]=screen;  // an encoder steps from the value on screen
+   const r=resolve(e,ev,this.state);if(!r)continue;hit=true;
+   if(mode==="abs"&&ev.type!=="note"){const k=rowKey(e),d=takeover.decide(k,r.value,screen,e.min==null?0:e.min,e.max==null?1:e.max);
+    if(!d.apply){this._awayChanged(k);continue}this._awayChanged(k)}
    if(r.kind==="press"){const was=this._held[sk]||(this._held[sk]=[]);if(was.some(h=>h.t===r.target))continue;
     was.push({t:r.target,lo:+e.min||0,dev:ev.dev||"",row:e});holds.press(r.target)}
    this.fire(r.target,r.value,ev,e)}
   if(this._opts.onEvent)this._opts.onEvent(ev,hit,origin);this._status(true)},
+ // the value a target shows now, from the page (init({read})), for soft takeover; null when the page does not say
+ read(target){const f=this._opts.read;if(!f)return null;try{const v=f(target);return typeof v==="number"&&isFinite(v)?v:null}catch(e){return null}},
+ // {hw, screen, dir} when this row's hardware is away from the value it drives (the row's catch-up indicator)
+ away(row){return takeover.away(rowKey(row))},
+ _awayChanged(k){const a=takeover.away(k),sig=a?Math.round(a.hw*1000)+":"+Math.round(a.screen*1000):"";this._aways=this._aways||{};
+  if(this._aways[k]===sig)return;this._aways[k]=sig;this._paintAway()},
  // an input went away (unplugged mid-hold): let go of what its pads held, the page snaps back
  _gone(names){for(const k of Object.keys(this._held)){const keep=this._held[k].filter(h=>!h.dev||names.includes(h.dev));
    for(const h of this._held[k])if(!keep.includes(h))holds.release(h.t);if(keep.length)this._held[k]=keep;else delete this._held[k]}},
@@ -225,7 +254,7 @@ const X={
     <button id="xm-learn" class="${this.learnMode?"on":""}">${this.learnMode?"Learn: click a control…":"Learn mode (L)"}</button>
     <button id="xm-reset">Factory map</button><button id="xm-export">Export JSON</button><label><input type="checkbox" id="xm-share"${this.share?" checked":""}> share with other pages</label></div>
    ${this.learnTarget?`<div class="mrow">Waiting for a knob or pad for <b>${this.learnTarget}</b> · <button id="xm-cancel">cancel</button></div>`:""}
-   <div class="wrap"><table><tbody>${this.mappings.map((m,i)=>`<tr><td>${m.label||srcName(m.source)}</td><td><small>${srcName(m.source)}</small></td><td><b>${m.target}</b></td><td>${m.mode}</td>
+   <div class="wrap"><table><tbody>${this.mappings.map((m,i)=>`<tr><td>${m.label||srcName(m.source)}</td><td><small>${srcName(m.source)}</small></td><td><b>${m.target}</b></td><td>${m.mode} <span class="xm-away" data-away="${i}"></span></td>
     <td><button data-learn="${m.target}">learn</button> <button data-del="${i}" title="remove">×</button></td></tr>`).join("")}</tbody></table></div>
    <div class="mrow"><select id="xm-new">${opts}</select><button id="xm-add">+ map (then move a knob)</button></div>
    <div class="mrow"><textarea id="xm-json" placeholder="Paste a mapping JSON here and press Import"></textarea></div>
@@ -236,7 +265,12 @@ const X={
   $("#xm-import").onclick=()=>{try{const n=this.importJSON($("#xm-json").value);this.toast(n+" mappings imported")}catch(e){this.toast("Import failed: "+e.message)}};
   $("#xm-add").onclick=()=>this.learn($("#xm-new").value);const c=$("#xm-cancel");if(c)c.onclick=()=>this.learn(null);
   el.querySelectorAll("[data-learn]").forEach(b=>b.onclick=()=>this.learn(b.dataset.learn));el.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>this.unmap(+b.dataset.del));
-  el.addEventListener("click",e=>e.stopPropagation());this._paintStatus()},
+  el.addEventListener("click",e=>e.stopPropagation());this._paintStatus();this._paintAway()},
+ // the catch-up arrow a row: the knob is away from the value it drives, turn it this way past the value to take over
+ _paintAway(){if(this._opts.onAway)this._opts.onAway();const el=this._el;if(!el)return;
+  el.querySelectorAll("[data-away]").forEach(s=>{const m=this.mappings[+s.dataset.away],a=m&&this.away(m);
+   const pct=v=>Math.round(100*(v-(+m.min||0))/((m.max==null?1:+m.max)-(+m.min||0)||1));
+   s.textContent=a?(a.dir>0?"▲":"▼"):"";s.title=a?`The control is at ${pct(a.hw)}, the screen at ${pct(a.screen)}: turn it ${a.dir>0?"up":"down"} past ${pct(a.screen)} to take over`:""})},
  ...core};
 // learn-mode click capture (before the page's own handlers)
 document.addEventListener("click",e=>{if(!X.learnMode||!e.target||(e.target.closest&&e.target.closest("#xeno-midi-panel")))return;
