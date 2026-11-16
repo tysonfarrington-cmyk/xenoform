@@ -175,6 +175,7 @@ def test_the_final_download_fetches_what_is_missing_in_order_and_checks_each_fil
 
 def test_a_download_that_does_not_fit_the_drive_says_why_and_never_starts(tmp_path, monkeypatch):
     _tier(monkeypatch, 12)
+    monkeypatch.delenv("XENO_OFFLINE", raising=False)  # the drive's reason is under test; offline mode's comes first and CI sets it
     started = []
 
     class NoThreads:  # the module's own name for threading: the check's thread pool is concurrent.futures' business
@@ -202,6 +203,7 @@ def test_a_download_that_does_not_fit_the_drive_says_why_and_never_starts(tmp_pa
 
 def test_a_card_too_small_for_the_final_is_told_so_instead_of_offered_forty_gigabytes(tmp_path, monkeypatch):
     _tier(monkeypatch, 8)
+    monkeypatch.delenv("XENO_OFFLINE", raising=False)  # a card that fits must get no reason; offline mode's would stand in
     monkeypatch.setattr(ms, "disk_free", lambda path: 500 * GB)
     row = _row(ms.inspect_setup(tmp_path), "ltx-23")
     assert row["why_not"] == "Final needs a 12 GB card; this one reads as 8 GB, so Final falls back to the Draft."

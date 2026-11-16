@@ -6,13 +6,14 @@ on:
 
 jobs:
   install-and-smoke:
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest moved to 26.04 (a newer ffmpeg) in Nov 2026 and reddened the suite without a change here.
+    runs-on: ubuntu-24.04
     env:
       # No seed-clip download from NASA while the tests run.
       XENO_OFFLINE: "1"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: ffmpeg

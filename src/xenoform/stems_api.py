@@ -203,7 +203,9 @@ def _reason(exc: BaseException) -> str:
     if "out of memory" in text.lower():
         return "it ran out of memory"
     if isinstance(exc, OSError) and getattr(exc, "filename", None):
-        return f"{Path(str(exc.filename)).name} could not be read"
+        # the file's own name whichever separator the path uses (Path().name on Linux keeps a Windows path whole)
+        name = str(exc.filename).replace("\\", "/").rstrip("/").rsplit("/", 1)[-1]
+        return f"{name} could not be read"
     first = text.splitlines()[0] if text else ""
     if type(exc) in (RuntimeError, ValueError) and first and len(first) <= 160 and not re.search(r"[\\/]|Error\b|Errno", first):
         return first  # a sentence of our own ("Demucs is not installed")
@@ -326,8 +328,9 @@ def start_background_split(song: str | Path, *, engine: str = "auto", fps: int =
         _JOBS[sid] = job = {"id": sid, "status": "queued", "engine": engine, "seconds": 0.0, "path": None, "error": None,
                             "song": p.name, "song_path": str(p), "fps": fps, "stems": [], "started": time.time()}
         _THREADS[sid] = t = threading.Thread(target=_run_job, args=(sid, p, engine, fps), daemon=True, name=f"stems-{sid}")
+        snap = _snapshot(job)  # the request's own answer is "queued": a split that fails at once must not answer "error" here
     t.start()
-    return _snapshot(job)
+    return snap
 
 
 def resolve_song(body: dict) -> Path:

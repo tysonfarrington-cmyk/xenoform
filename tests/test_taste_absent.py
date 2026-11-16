@@ -23,6 +23,7 @@ import pytest
 
 from xenoform import beatfx, dense, guardrails
 from xenoform import cloud_morph as _cm
+from video_sig import ffmpeg_build, luma_signature, same_picture
 
 # the real mock engine and compositor, taken before any test patches them (a case patches both, and a later case in the
 # same patch context would otherwise wrap the earlier case's spy)
@@ -134,6 +135,8 @@ def run_case(name: str, tmp: Path, monkeypatch, *, real: bool = False) -> dict:
         if real:
             made = _REAL_COMPOSE(clips, shots, audio, out, **{**kw, "size": REAL_SIZE})
             seen[-1]["sha256"] = hashlib.sha256(Path(out).read_bytes()).hexdigest()
+            seen[-1]["ffmpeg"] = ffmpeg_build()
+            seen[-1]["signature"] = luma_signature(out)
             return made
         Path(out).write_bytes(b"mp4")
         return {"frames": sum(int(s["frames"]) for s in shots), "seconds": 1.0, "size": "540x960", "aspect": kw["aspect"],
@@ -174,6 +177,38 @@ def no_taste(tmp_path, monkeypatch):
     monkeypatch.setenv("XENO_TASTE", str(tmp_path / "no_such_taste.json"))
 
 
+# The dither's tones are measured from the decoded pixels of the mock engine's cross-fades (effects.palette_from_clips),
+# which this machine's ffmpeg encodes; x264 of another version writes other bytes for the same frames, so the measured
+# tones move by a few levels from build to build. Every other argument is exact.
+TONE_LEVELS = 12.0
+
+
+def same_kw(got: dict, want: dict, label: str) -> None:
+    for key in want:
+        if key == "tones":
+            continue
+        assert got.get(key) == want.get(key), f"{label}: the compositor's {key}"
+    assert sorted(got) == sorted(want), f"{label}: the compositor's argument names"
+    a, b = got.get("tones"), want.get("tones")
+    if a is None or b is None:
+        assert a == b, f"{label}: the compositor's tones"
+        return
+    assert len(a) == len(b), f"{label}: {len(a)} tones against the mainline's {len(b)}"
+    for tone, ref in zip(a, b):
+        assert all(abs(float(x) - float(y)) <= TONE_LEVELS for x, y in zip(tone, ref)), \
+            f"{label}: tone {tone} is further than {TONE_LEVELS:g} levels from the mainline's {ref}"
+
+
+def same_composed_file(got: dict, want: dict) -> None:
+    """Byte for byte on the ffmpeg build that wrote the fixture; on any other build, the same decoded picture
+    (tests/video_sig.py): the bytes of an x264 encode are the encoder version's, the frames are not."""
+    if got.get("ffmpeg") == want.get("ffmpeg"):
+        assert got["sha256"] == want["sha256"], "the composed mp4 differs from the mainline's"
+        return
+    gap = same_picture(got["signature"], want["signature"])
+    assert not gap, f"the composed mp4 differs from the mainline's picture ({gap}; ffmpeg here is {got.get('ffmpeg')})"
+
+
 @pytest.mark.parametrize("name", sorted(CASES))
 def test_a_make_with_no_taste_file_is_the_mainlines_cut(name, golden, tmp_path, monkeypatch, no_taste):
     got = json.loads(json.dumps(run_case(name, tmp_path, monkeypatch)))
@@ -183,13 +218,13 @@ def test_a_make_with_no_taste_file_is_the_mainlines_cut(name, golden, tmp_path, 
     for which in ("compose", "recut"):
         assert got[which]["clips"] == want[which]["clips"], f"{name}: {which} clips"
         assert got[which]["shots"] == want[which]["shots"], f"{name}: {which} shots"
-        assert got[which]["kw"] == want[which]["kw"], f"{name}: {which} compose arguments"
+        same_kw(got[which]["kw"], want[which]["kw"], f"{name}: {which}")
         assert got[which]["extra"] == want[which]["extra"], f"{name}: {which} compositor switches"
 
 
 def test_the_composed_file_with_no_taste_file_is_the_mainlines_byte_for_byte(golden, tmp_path, monkeypatch, no_taste):
     got = json.loads(json.dumps(run_case(REAL_CASE, tmp_path, monkeypatch, real=True)))
     want = golden["real:" + REAL_CASE]
-    assert got["compose"]["kw"] == want["compose"]["kw"]
+    same_kw(got["compose"]["kw"], want["compose"]["kw"], REAL_CASE)
     assert got["compose"]["shots"] == want["compose"]["shots"]
-    assert got["compose"]["sha256"] == want["compose"]["sha256"], "the composed mp4 differs from the mainline's"
+    same_composed_file(got["compose"], want["compose"])
