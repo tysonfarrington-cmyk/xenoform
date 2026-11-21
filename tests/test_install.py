@@ -302,6 +302,39 @@ def test_the_windows_installer_says_ffmpeg_is_missing_at_the_end_too():
     assert ps1.count("winget install Gyan.FFmpeg") == 2 and "winget install Python.Python.3.12" in ps1
 
 
+def test_setup_says_when_ffmpeg_is_not_on_the_path(monkeypatch, tmp_path):
+    """The installers do not install ffmpeg, and without it the desk opens but reads no song and writes no video.
+    The Setup page says so, first, until it is there."""
+    import shutil
+
+    from xenoform import models_setup
+
+    monkeypatch.setenv("XENO_MODELS", str(tmp_path))
+    real = shutil.which
+    there = models_setup.ffmpeg_status()
+    assert there["found"] is (real("ffmpeg") is not None and real("ffprobe") is not None)
+
+    def without(*names):
+        return lambda name, *a, **k: None if name in names else (real(name, *a, **k) or name)
+
+    monkeypatch.setattr(shutil, "which", without("ffprobe"))
+    assert models_setup.ffmpeg_status()["line"] == "ffprobe is not on this machine's PATH"
+    monkeypatch.setattr(shutil, "which", without("ffmpeg", "ffprobe"))
+    gone = models_setup.ffmpeg_status()
+    assert gone["found"] is False and gone["missing"] == ["ffmpeg", "ffprobe"]
+    assert gone["line"] == "ffmpeg and ffprobe are not on this machine's PATH"
+    assert "read songs and write videos" in gone["how"] and "start it again" in gone["how"]
+
+    from xenoform.ui import create_app
+
+    assert TestClient(create_app()).get("/api/setup").json()["ffmpeg"] == gone
+    app = (Path(__file__).resolve().parents[1] / "src/xenoform/ui_static/app.js").read_text(encoding="utf-8")
+    page = app.split("const noFfmpeg = ", 1)[1].split("setup-head", 1)[0]
+    assert "setup.ffmpeg.found === false" in page and 'id="setup-ffmpeg"' in page
+    assert page.index('id="setup-ffmpeg"') < page.index("gate ?")  # above the model gate: it comes first
+    assert "esc(noFfmpeg.line" in page and "esc(noFfmpeg.how" in page
+
+
 def test_the_build_backend_is_capped_while_the_licence_is_a_table():
     """setuptools 84 warns that `license = { file = ... }` stops being supported after 18 Feb 2027; an uncapped
     `setuptools>=68` would then fail `pip install -e .`, which every installer runs."""

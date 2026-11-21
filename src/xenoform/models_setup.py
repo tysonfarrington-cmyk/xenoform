@@ -713,6 +713,7 @@ def inspect_setup(root: Path | None = None, comfy_url: str = "") -> dict:
         "film_pack": film_pack_status(),
         "ableton": False,
         "missing_required": missing,
+        "ffmpeg": ffmpeg_status(),
         "gate": make_gate(models, reliable=answered or not guessed),
         "final": final_summary(),
         "try_it": "The bundled demo needs no model download.",
@@ -734,6 +735,22 @@ def why_not_download(spec: dict, tier: dict, need: int, free: int) -> str:
     if need and free < need + _SPARE:
         return f"Needs {size_label(need)} plus a little spare room; the models drive has {size_label(free)} free."
     return ""
+
+
+def ffmpeg_status() -> dict:
+    """Whether ffmpeg and ffprobe are on PATH, for the Setup page. The installers do not install ffmpeg (they say so
+    as they run, where it scrolls away), and without it the desk opens but no song is read and no video written."""
+    import platform
+    import shutil
+
+    missing = [name for name in ("ffmpeg", "ffprobe") if not shutil.which(name)]
+    if not missing:
+        return {"found": True, "missing": [], "line": "", "how": ""}
+    how = {"Windows": "In a terminal: winget install Gyan.FFmpeg",
+           "Darwin": "In Terminal: brew install ffmpeg"}.get(platform.system(), "Install it with your package manager, for example: sudo apt install ffmpeg")
+    return {"found": False, "missing": missing,
+            "line": f"{' and '.join(missing)} {'is' if len(missing) == 1 else 'are'} not on this machine's PATH",
+            "how": f"Xenoform needs ffmpeg to read songs and write videos. {how}. Then close Xenoform's windows and start it again."}
 
 
 def make_gate(models: list[dict], *, reliable: bool) -> dict:

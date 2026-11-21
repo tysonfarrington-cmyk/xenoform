@@ -7483,8 +7483,14 @@ function renderSetup() {
       ? `Read from ComfyUI at ${setup.comfy_url || "its address"}.`
       : "ComfyUI is not answering, so the models folder was read.";
   const gate = setup.gate && setup.gate.blocked ? setup.gate : null;
+  // ffmpeg is the one thing the installer does not install and the desk cannot run without: said here, first
+  const noFfmpeg = setup.ffmpeg && setup.ffmpeg.found === false ? setup.ffmpeg : null;
   const facts = [tier.vram_label ? `Detected ${tier.vram_label}` : "", setup.disk ? `${setup.disk.free_label} on the models drive` : ""].filter(Boolean).join(" · ");
   return `<div class="setup">
+    ${noFfmpeg ? `<section class="panel setup-need" role="status" id="setup-ffmpeg">
+      <h2>${esc(noFfmpeg.line || "ffmpeg is not on this machine's PATH")}</h2>
+      <p>${esc(noFfmpeg.how || "Xenoform needs ffmpeg to read songs and write videos. Install it, then start Xenoform again.")}</p>
+    </section>` : ""}
     ${gate ? `<section class="panel setup-need" role="status">
       <h2>${esc(gate.line)}</h2>
       <p>Press Download on the card below. Make comes back once it is installed.</p>
