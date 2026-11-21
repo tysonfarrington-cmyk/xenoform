@@ -853,16 +853,21 @@ def create_app(cfg: dict | None = None):
         cancel = threading.Event()
         with _LOCK:
             job.update({"status": "running", "stage": stage, "progress": 0.05, "detail": detail, "error": None,
-                        "edit": name, "edit_from": int(job.get("video_version") or 0), "eta_s": None, "overall": None})
+                        "edit": name, "edit_from": int(job.get("video_version") or 0), "eta_s": None, "overall": None,
+                        "cut_as_it_was": None})
             _CANCEL[job_id] = cancel
         return cancel
 
     def _edit_failed(job: dict, failed: str, exc: Exception) -> None:
-        from xenoform.errors import plain_error
+        """A failed edit's job: the reason, and ``cut_as_it_was``. An edit either lands whole or is put back, so the
+        cut is as it was, and the desk adds that line; when putting it back failed too (``cut_swap.SwapFailed`` with
+        ``restored`` false) the flag is false, the sentence names what is left, and the desk adds nothing."""
+        from xenoform import cut_swap
 
-        sentence = f"{failed} {plain_error(exc)}"
+        sentence, whole = cut_swap.failed_edit(failed, exc)
         with _LOCK:
-            job.update({"status": "error", "stage": "done", "progress": 1.0, "detail": sentence, "error": sentence})
+            job.update({"status": "error", "stage": "done", "progress": 1.0, "detail": sentence, "error": sentence,
+                        "cut_as_it_was": whole})
 
     def _edit_stopped(job: dict, what: str) -> None:
         with _LOCK:

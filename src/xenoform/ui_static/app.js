@@ -6072,8 +6072,10 @@ function editEnded(job) {
     easy.note = `${said(detail || "Ready")} It took ${took}.`;
   } else {
     tabTitle();
+    // the desk says whether a failed edit left the cut whole (cut_as_it_was): an edit lands all of it or is put back,
+    // and when putting it back failed too its own sentence says what is left, so "as it was" is not added over it
     easy.note = job.status === "cancelled" ? said(detail || "Stopped: the cut is as it was")
-      : `${said(String(job.error || detail || "The edit did not run").trim())} The cut is as it was.`;
+      : `${said(String(job.error || detail || "The edit did not run").trim())}${job.cut_as_it_was === false ? "" : " The cut is as it was."}`;
   }
   setEasyPhase("result");
   easy.playedHere = false;

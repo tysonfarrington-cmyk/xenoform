@@ -195,6 +195,14 @@ in seconds, no GPU and no re-cut. The order follows the new prominence.
   cut is as it was." (Lay them again: "the layers were not laid again".) A Stop during the step lands: the job ends `done` with its new version and "Stop came too late
   to undo it, so the edit landed." A swap or re-render on a layer stops in its GPU wait, as on any cut; once its
   morphs are made it lands and says the same.
+- **A step that fails while it puts the cut in place** (a full disk, a file that will not be replaced) puts back
+  everything it had replaced (`xenoform.cut_swap`): a copy of every file about to be replaced is kept beside it
+  (`<name>.was`) until all of them have landed. The job ends `error` with `cut_as_it_was` true and "The re-cut was
+  made but could not be put in the cut's place (No space left on device). Every file and record was put back.", and
+  the desk adds "The cut is as it was." A swap or re-render on a layer lands in the layer first, so the layer's cut
+  and record are kept too (`<name>.before`) and put back when the composite or the last step fails. Only when
+  putting a file back fails as well is `cut_as_it_was` false: the error says the cut is part old and part new, names
+  the file, its copy stays beside it, and the desk does not say "as it was".
 
 ## Routes
 
