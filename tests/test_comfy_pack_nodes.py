@@ -90,6 +90,9 @@ def test_a_long_song_is_one_morph_a_shot_and_no_object_twice():
 
 
 def test_morph_pair_is_the_desks_request_value_for_value(demo_song, monkeypatch, tmp_path):
+    # Morph Pair hands its two stills on as ComfyUI's IMAGE, a torch tensor (stills.to_image_tensor). ComfyUI brings
+    # torch; the desk's install does not, and the smoke CI has none, so there this test is skipped, not failed.
+    pytest.importorskip("torch", reason="Morph Pair's IMAGE outputs are torch tensors; torch comes with ComfyUI")
     from xenoform import cloud_morph
     from xenoform import morph_pass as mp
 

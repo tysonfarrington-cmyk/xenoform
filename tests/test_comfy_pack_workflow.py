@@ -244,6 +244,9 @@ def run_api(prompt: dict, stock: Stock) -> dict:
 
 
 def test_the_api_graph_runs_end_to_end_with_stand_in_ltx_nodes(tmp_path, monkeypatch):
+    # The graph's IMAGE values are torch tensors, the pack's and the stand-in LTX nodes' alike. ComfyUI brings torch;
+    # the desk's install does not, and the smoke CI has none, so there this test is skipped, not failed.
+    pytest.importorskip("torch", reason="the graph's IMAGE values are torch tensors; torch comes with ComfyUI")
     monkeypatch.setenv("XENO_PACK_OUT", str(tmp_path))
     stock = Stock()
     got = run_api(API, stock)
