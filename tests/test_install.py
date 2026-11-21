@@ -41,6 +41,32 @@ def test_node_pack_registers_from_the_repo_root():
     assert "Xenoform Setup Check" in NODE_DISPLAY_NAME_MAPPINGS.values()
 
 
+def test_the_desk_block_stays_out_of_a_comfyui_that_has_no_desk_install(monkeypatch, capsys):
+    """The 21 Nov review: with the root requirements.txt empty, ComfyUI's own Python has no fastapi. The desk's two
+    nodes and /xenoform used to register all the same (their imports are lazy), then fail at every queue and answer
+    every ComfyUI page load's GET /xenoform with a 500. Without the desk's install only the pack's nodes register."""
+    import importlib.util as iu
+    import sys
+
+    from xenoform import comfy_server
+
+    real = iu.find_spec
+    monkeypatch.setattr(iu, "find_spec", lambda name, *a, **k: None if name == "fastapi" else real(name, *a, **k))
+    mounted = []
+    monkeypatch.setattr(comfy_server, "mount_prompt_server", lambda: mounted.append(1))
+    path = Path(__file__).resolve().parents[1] / "__init__.py"
+    spec = iu.spec_from_file_location("xenoform_comfy_entry_bare", path)
+    module = iu.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.modules.pop(spec.name, None)
+    assert not mounted and "XenoformTryIt" not in module.NODE_CLASS_MAPPINGS and "XenoformSetup" not in module.NODE_CLASS_MAPPINGS
+    assert "XenoformStoryboard" in module.NODE_CLASS_MAPPINGS and "XenoformAssemble" in module.NODE_CLASS_MAPPINGS
+    assert "Run the desk's installer" in capsys.readouterr().out
+
+
 def test_xenoform_route_serves_the_desk():
     aiohttp = pytest.importorskip("aiohttp")
     from aiohttp import web

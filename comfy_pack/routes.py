@@ -29,13 +29,33 @@ def song_roots() -> list[Path]:
 
 
 def allowed_song(raw: str) -> Path | None:
+    """The song at ``raw`` when it is an audio file under one of the song roots, else None. The path is checked as
+    text first (no network share, an audio suffix, under a root once made absolute), so a path that is not ours is
+    never opened, resolved or asked of another machine."""
+    import os
+
+    text = str(raw or "")
+    if not text or text.replace("/", "\\").startswith("\\\\") or Path(text).suffix.lower() not in S.AUDIO_EXTS:
+        return None
+    roots = song_roots()
     try:
-        path = Path(str(raw)).resolve()
+        lexical = Path(os.path.abspath(text))
+        if not any(lexical.is_relative_to(root) for root in roots):
+            return None
+        path = lexical.resolve()
     except (OSError, ValueError):
         return None
-    if not path.is_file() or path.suffix.lower() not in S.AUDIO_EXTS:
+    if not path.is_file():
         return None
-    return path if any(path.is_relative_to(root) for root in song_roots()) else None
+    return path if any(path.is_relative_to(root) for root in roots) else None
+
+
+def thumb_width(raw) -> int:
+    """The ``w`` of a thumbnail request as a number; anything else is the default, not a 500."""
+    try:
+        return int(raw or 176)
+    except (TypeError, ValueError):
+        return 176
 
 
 def thumbnail(file: str, width: int = 176) -> bytes | None:
@@ -72,7 +92,7 @@ def register() -> bool:
 
     @routes.get(f"{ROUTE}/still")
     async def _still(request):
-        data = thumbnail(request.query.get("file", ""), int(request.query.get("w", "176") or 176))
+        data = thumbnail(request.query.get("file", ""), thumb_width(request.query.get("w", "")))
         if data is None:
             return web.Response(status=404, text="No such still in the Xenoform catalogue.")
         return web.Response(body=data, content_type="image/jpeg", headers={"Cache-Control": "max-age=3600"})

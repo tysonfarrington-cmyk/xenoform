@@ -292,3 +292,58 @@ def test_a_dry_run_with_comfyuis_own_python(tmp_path):
     assert report["python"].startswith("3.") and report["librosa"] is False and report["engine"] == "numpy"
     assert report["nodes"] == sorted(NODES) and report["beats"] == 18 and abs(report["drop"] - 5.5015) < 1e-3
     assert report["image_a"] == [1, 576, 1024, 3] and report["frames"] == 288 and report["routes"] is True
+
+
+def test_review_21nov_the_pack_refuses_what_is_not_its_own(demo_song, tmp_path, monkeypatch):
+    """The 21 Nov review: a song path is checked as text before it is touched (no network share is asked, nothing
+    outside the roots is resolved), a thumbnail width that is not a number is the default, a filename_prefix stays
+    inside the output folder, and ffmpeg's failure is told in ffmpeg's words."""
+    from comfy_pack import routes
+
+    roots = routes.song_roots()
+    monkeypatch.setattr(routes, "song_roots", lambda: roots)
+    touched = []
+    real = Path.resolve
+
+    def spy(self, *a, **k):
+        touched.append(str(self))
+        return real(self, *a, **k)
+
+    monkeypatch.setattr(Path, "resolve", spy)
+    for raw in ("\\\\host\\share\\a.wav", "//host/share/a.wav", str(tmp_path / "elsewhere.wav"), "", str(ROOT / "pyproject.toml")):
+        assert routes.allowed_song(raw) is None, raw
+    assert touched == []  # none of them was resolved, so none was asked of the disk or of another machine
+    assert routes.allowed_song(str(DEMO)) == real(DEMO)
+    monkeypatch.undo()
+    assert routes.thumb_width("abc") == 176 and routes.thumb_width("") == 176 and routes.thumb_width("96") == 96
+
+    board = _board(demo_song)["result"][0]
+    monkeypatch.setenv("XENO_PACK_OUT", str(tmp_path / "output"))
+    clip = np.zeros((board["shots"][0]["length"], 72, 128, 3), dtype=np.float32)
+    for prefix in ("../outside/cut", "xenoform/../../outside/cut", "xenoform/.."):
+        with pytest.raises(ValueError, match="inside the output folder"):
+            NODES["XenoformAssemble"]().cut(board, "stop", False, prefix, morph_1=clip)
+    assert not (tmp_path / "outside").exists()
+
+    monkeypatch.setattr(A, "ffmpeg_exe", lambda: sys.executable)  # a stand-in that leaves at once with its own message
+    with pytest.raises(RuntimeError, match="ffmpeg could not write the cut"):
+        A.assemble(board, {0: clip}, tmp_path / "x.mp4", fill="stop", punch=False)
+
+
+def test_review_21nov_the_editor_starts_afresh_on_another_song_and_the_bundle_check_reads_crlf(tmp_path):
+    js = (ROOT / "comfy_pack" / "web" / "morph_timeline.js").read_text(encoding="utf-8")
+    read = js.split("function readEdits(node, board) {")[1].split("\n}\n")[0]
+    assert "got.song_key !== board.song.key" in read and "if (got && got.format === EDITS && !other) return got;" in read
+    # the bundle's JSON checked out with CRLF (a Windows clone with core.autocrlf) is the same bundle
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("xeno_sync_bundle", ROOT / "comfy_pack" / "tools" / "sync_bundle.py")
+    sync = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(sync)
+    data = b'{\n "a": 1\n}\n'
+    crlf, other, picture = tmp_path / "a.json", tmp_path / "b.json", tmp_path / "c.wav"
+    crlf.write_bytes(data.replace(b"\n", b"\r\n"))
+    other.write_bytes(b'{\r\n "a": 2\r\n}\r\n')
+    picture.write_bytes(data.replace(b"\n", b"\r\n"))
+    assert sync.same_copy(crlf, data) and not sync.same_copy(other, data)
+    assert not sync.same_copy(picture, data)  # only the text copies are read that way

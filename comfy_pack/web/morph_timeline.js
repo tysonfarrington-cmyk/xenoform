@@ -105,7 +105,10 @@ function readEdits(node, board) {
   const w = widgetOf(node, "timeline");
   try {
     const got = w && w.value ? JSON.parse(w.value) : null;
-    if (got && got.format === EDITS) return got;
+    // edits made on another song are not this song's: the node ignores them (song_key), so the editor starts afresh
+    // too, instead of drawing the old cuts over the new song and stamping them with its key at the first change
+    const other = got && got.song_key && board?.song?.key && got.song_key !== board.song.key;
+    if (got && got.format === EDITS && !other) return got;
   } catch (e) { /* an empty or foreign value: start afresh */ }
   return { format: EDITS, song_key: board?.song?.key || "", cuts: null, shots: {}, intensity: [], pins: [] };
 }

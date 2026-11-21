@@ -330,6 +330,8 @@ class XenoformAssemble:
         prefix = str(filename_prefix or "xenoform/cut").replace("\\", "/").strip("/") or "xenoform/cut"
         sub, stem = (prefix.rsplit("/", 1) if "/" in prefix else ("", prefix))
         folder = out_dir / sub if sub else out_dir
+        if stem in ("", ".", "..") or not folder.resolve().is_relative_to(out_dir.resolve()):  # as ComfyUI's own save nodes refuse
+            raise ValueError(f"filename_prefix must stay inside the output folder: {filename_prefix!r} does not.")
         folder.mkdir(parents=True, exist_ok=True)
         n = 1 + max([int(p.stem.rsplit("_", 1)[-1]) for p in folder.glob(f"{stem}_*.mp4") if p.stem.rsplit("_", 1)[-1].isdigit()] or [0])
         path = folder / f"{stem}_{n:05d}.mp4"

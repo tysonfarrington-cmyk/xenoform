@@ -30,6 +30,12 @@ if __package__:  # ComfyUI loads this file as a package; pytest imports it as a 
         print(f"Xenoform nodes did not load: {exc}")
 
 try:
+    import importlib.util
+
+    # the desk's nodes and /xenoform need the desk's own install: without it they would register, then fail at every
+    # queue and answer every ComfyUI page load's GET /xenoform with a 500
+    if importlib.util.find_spec("fastapi") is None:
+        raise ImportError("fastapi is not installed in ComfyUI's Python")
     from xenoform.comfy_nodes import NODE_CLASS_MAPPINGS as _DESK_NODES, NODE_DISPLAY_NAME_MAPPINGS as _DESK_NAMES
     from xenoform.comfy_server import mount_prompt_server
 

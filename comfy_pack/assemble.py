@@ -221,6 +221,7 @@ def assemble(board: dict, clips: dict[int, object], out_path: str | Path, *, fil
             str(out_path)]
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
     k = 0
+    broken = False
     try:
         for i in played:
             for frame in _shot_frames(board, i, shots[i], clips.get(i), size):
@@ -229,11 +230,16 @@ def assemble(board: dict, clips: dict[int, object], out_path: str | Path, *, fil
                     frame = apply_punch(frame, float(curve[k]))
                 proc.stdin.write(np.ascontiguousarray(frame, dtype=np.uint8).tobytes())
                 k += 1
+    except OSError:  # ffmpeg left early (a broken pipe): its own words below say why
+        broken = True
     finally:
-        proc.stdin.close()
+        try:
+            proc.stdin.close()
+        except OSError:
+            pass
         err = proc.stderr.read().decode("utf-8", "replace") if proc.stderr else ""
         code = proc.wait()
-    if code:
+    if code or broken:
         raise RuntimeError(f"ffmpeg could not write the cut (exit {code}): {err.strip()[-400:]}")
     return {"path": str(out_path), "frames": k, "seconds": round(seconds, 3), "shots": len(played_shots), "of": len(shots),
             "morphs": kinds.count("morph"), "sketched": kinds.count("stills"), "size": [w, h], "audio": has_audio,

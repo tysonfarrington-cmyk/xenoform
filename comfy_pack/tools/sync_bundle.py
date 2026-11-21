@@ -64,12 +64,21 @@ def plan() -> dict[Path, bytes]:
     return out
 
 
+def same_copy(path: Path, data: bytes) -> bool:
+    """True when the copy on disk is ``data``. A JSON copy is compared with its newlines normalised: a Windows clone
+    with core.autocrlf checks it out with CRLF, which is the same bundle."""
+    got = path.read_bytes()
+    if got == data:
+        return True
+    return path.suffix == ".json" and got.replace(b"\r\n", b"\n") == data.replace(b"\r\n", b"\n")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--check", action="store_true", help="say what differs and exit 1, write nothing")
     args = ap.parse_args()
     files = plan()
-    stale = [p for p, data in files.items() if not p.is_file() or (p.suffix != ".jpg" and p.read_bytes() != data)]
+    stale = [p for p, data in files.items() if not p.is_file() or (p.suffix != ".jpg" and not same_copy(p, data))]
     if args.check:
         for p in stale:
             print(f"stale: {p.relative_to(REPO)}")
