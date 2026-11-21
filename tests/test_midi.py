@@ -119,7 +119,7 @@ def test_vj_pads_hold_over_the_song_and_leave_its_timeline_alone():
     # vj.html); a held pad is S.hold over the song's program (S.prog), which keeps moving on its own clock
     vj = (static / "vj.html").read_text(encoding="utf-8")
     ctl = (static / "vj_control.js").read_text(encoding="utf-8")
-    assert 'H.top("pad:")' in ctl and "H.on(() =>" in ctl and 'H.press("pad:" + n)' in ctl and 'H.release("pad:" + n)' in ctl
+    assert 'H.top("pad:")' in ctl and "H.on((id) =>" in ctl and 'H.press("pad:" + n)' in ctl and 'H.release("pad:" + n)' in ctl
     assert "case 'hold':applyHold(a.h||null)" in vj and "const sceneHeld=()=>" in vj
     assert "if(sceneHeld()){const sc=S.scenes[S.prog]" in vj  # the program moves on under a held scene
     hooks = vj.split("function applyHold(h){", 1)[1].split("\n// the sound:", 1)[0]

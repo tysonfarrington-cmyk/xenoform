@@ -402,7 +402,10 @@
   }
   function press(n) { if (C.pads[n - 1]) H.press("pad:" + n); }
   function release(n) { H.release("pad:" + n); }
-  H.on(() => {  // fn(id, on, top, stack): what shows is the newest pad held, whoever pressed it (the screen, a key, MIDI)
+  H.on((id) => {  // fn(id, on, top, stack): what shows is the newest pad held, whoever pressed it (the screen, a key, MIDI)
+    // a held look or a held Blackout is a hold too, but not a pad's: with no pad down it used to land the transition
+    // in flight and seek the programme clip again, on its press and on its release
+    if (id != null && padNum(id) == null) return;
     const top = topPad();
     const tr = track(), pos = tr ? tr.currentTime : 0;
     const open = C.holds.find((h) => h.end == null);
@@ -686,8 +689,9 @@
     b.textContent = on ? "Stop" : "Rec";
     b.classList.toggle("is-rec", on);
     let line = "";
-    if (on) line = "REC " + clock(r.secs) + (r.w ? ` · ${r.w}×${r.h}` : "");
-    else if (r.status === "saving" || r.status === "remuxing") line = "Saving the take…";
+    // the recorder stays "on" until the desk has the mp4, so the saving line is asked first (it was never reached)
+    if (r.status === "saving" || r.status === "remuxing") line = "Saving the take…";
+    else if (on) line = "REC " + clock(r.secs) + (r.w ? ` · ${r.w}×${r.h}` : "");
     $("rec-time").textContent = line;
     if (r.err && r.err !== C.recErr) { C.recErr = r.err; toast(r.err); }
     const key = r.take && r.take.id ? r.take.id + ":" + r.take.status : "";
@@ -785,7 +789,8 @@
       if (t === "speed") return (S.speed - 0.25) / 1.75;
       if (t === "glow" || t === "chaos" || t === "master") return S[t];
       if (t === "drums" || t === "bass" || t === "other" || t === "vocals") return S.gain[t];
-      if (t === "every") return Math.max(0, EV.indexOf(S.every)) / 4;
+      // Switch rate ("every") answers null on purpose: the screen holds one of five steps while the knob sends a
+      // continuous value, so soft takeover saw "moved by something else" after 3% of travel and dropped the knob for good
       return null;
     },
     targetName(t) {  // a pad in the MIDI map says what it shows

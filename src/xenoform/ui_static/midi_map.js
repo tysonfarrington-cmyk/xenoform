@@ -43,7 +43,7 @@ function stateLine(){const dev=X.device,d=X.devices.find(o=>C.sameDevice(o.name,
  const map=X.personal?"your map":X.choice?X.choice.label+(X.choice.kind==="preset"?" (shipped preset)":"")+" map":"";
  return{on,name:on?dev:"No controller",sub:on?[d.via==="bridge"?"via the bridge":"Web MIDI",map].filter(Boolean).join(" · "):"plug one in and allow MIDI"}}
 function cellHTML(c,kind){const row=rowForControl(c),t=row?X.name(row.target):"nothing";
- return`<button type="button" class="xm-ctl xm-${kind}${row?"":" is-free"}" data-ctl="${esc(c.id)}" data-type="${c.type}" data-num="${c.num}" data-ch="${+c.ch||0}"${row?` data-key="${esc(rowKey(row))}"`:""}
+ return`<button type="button" class="xm-ctl xm-${kind}${row?"":" is-free"}" data-ctl="${esc(c.id)}" data-type="${esc(c.type)}" data-num="${esc(c.num)}" data-ch="${+c.ch||0}"${row?` data-key="${esc(rowKey(row))}"`:""}
   aria-label="${esc(c.short+", "+c.label+": "+t+". Change it")}"><i class="xm-light" aria-hidden="true"></i><b>${esc(c.short)}</b><span>${esc(row?t:"—")}</span>${catchHTML(row)}</button>`}
 // the controller drawn from its profile's layout (UI_REVIEW 6.5's "Map"): each control with its badge name, what it does
 // here in plain words, a light and the catch-up arrow; a zone with nothing on this page folds into one line
@@ -61,7 +61,7 @@ function boardHTML(){const p=C.PROFILES[X.profile]||C.PROFILES.generic,L=p.layou
   ${L.note&&mini&&pads?`<p class="xm-note">${esc(L.note)}</p>`:""}</div>`}
 function rowsHTML(){if(!X.mappings.length)return`<p class="xm-note">Nothing is mapped. Press Learn, click a control, then move a knob or hit a pad.</p>`;
  return`<ul class="xm-rows">${X.mappings.map(e=>{const n=X.name(e.target),s=shortOf(e.source);
-  return`<li class="xm-row" data-key="${esc(rowKey(e))}" data-type="${e.source.type}" data-num="${e.source.num}" data-ch="${+e.source.ch||0}">
+  return`<li class="xm-row" data-key="${esc(rowKey(e))}" data-type="${esc(e.source.type)}" data-num="${esc(e.source.num)}" data-ch="${+e.source.ch||0}">
    <i class="xm-light" aria-hidden="true"></i><b class="xm-short">${esc(s)}</b><span class="xm-what"><span>${esc(n)}</span><small>${esc((e.label||C.srcName(e.source))+" · "+(C.MODE_NAMES[e.mode]||e.mode))}</small></span>${catchHTML(e)}
    <button type="button" class="text xm-relearn" aria-label="${esc("Learn "+n+" again")}">Learn</button>
    <button type="button" class="text xm-remove" aria-label="${esc("Remove "+s+" from "+n)}">Remove</button></li>`}).join("")}</ul>`}

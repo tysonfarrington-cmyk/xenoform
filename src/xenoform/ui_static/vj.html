@@ -20,7 +20,7 @@
    <span class="rec-dot" id="rec-dot" aria-hidden="true"></span><span class="rec-time" id="rec-time" aria-live="polite"></span>
    <button type="button" class="ghost rec" id="recb" title="R: record the output, with the song's sound" data-midi="record">Rec</button>
   </div>
-  <button type="button" class="text" id="midib" title="L: the MIDI map and Learn">MIDI</button>
+  <button type="button" class="text" id="midib" title="L: the MIDI map and Learn" data-xm-toggle data-xm-state="dot" aria-expanded="false">MIDI</button>
   <button type="button" class="text" id="helpb" title="?" aria-controls="help" aria-expanded="false">Help</button>
  </header>
  <div class="pf-grid">
@@ -580,6 +580,9 @@ if(!OUT&&window.XenoOsc){XenoOsc.init({toast,frame:()=>{const au=A(),r=S.asleep&
  XenoOsc.mount($('midi-panel'),'before')}
 // the MIDI map: docked by midi.js where it can (t1-midi: XenoMidi.dock), else the panel in the help sheet
 if(!OUT){if(XenoMidi.dock){const mp=$('midi-panel');if(mp)mp.remove()}else XenoMidi.panel($('midi-panel'))}
+// the dock is made at load, as t1's page made it (the merge dropped the call): a dock left open comes back open, the
+// badges and the button's dot show a connected controller, and the first press of MIDI or L toggles what is on screen
+if(!OUT&&XenoMidi.dock)XenoMidi.dock();
 if(Q.get('clean')==='1')document.documentElement.classList.add('clean');
 if(OUT||Q.get('clean')==='1')document.body.classList.add('clean');  // midi.js hides its badges under body.clean
 window.XC={loadTrack,trackFromDesk,useStems,micOn,micOff,listInputs,analyse,dance,setFx,rate,hud,ensureAC,loadStems,get track(){return trackEl},get file(){return trackFile},get mic(){return MIC},get ac(){return AC},stemsUrl:()=>STEMS_URL};

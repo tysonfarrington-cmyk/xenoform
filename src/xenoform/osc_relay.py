@@ -165,11 +165,16 @@ def live_address_map() -> dict[str, str]:
 
 
 # ---------------------------------------------------------------- cleaning what the page posts
+FLOAT32_MAX = 3.4028234e38
+
+
 def _num(v: Any) -> float | None:
     if isinstance(v, bool):
         return 1.0 if v else 0.0
     if isinstance(v, (int, float)) and math.isfinite(v):
-        return float(v)
+        # OSC floats are 32 bit: a finite number past that range made python-osc raise at every later update, with the
+        # value kept to be sent again, so one post silenced the output until the desk restarted
+        return max(-FLOAT32_MAX, min(FLOAT32_MAX, float(v)))
     return None
 
 
@@ -432,7 +437,7 @@ class OscRelay:
             self.errors += 1
             self.last_error = str(exc)
             return False
-        except ValueError as exc:  # the host stopped resolving
+        except (ValueError, OverflowError) as exc:  # the host stopped resolving, or a value OSC cannot carry
             self.errors += 1
             self.last_error = str(exc)
             return False
