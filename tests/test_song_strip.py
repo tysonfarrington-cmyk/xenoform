@@ -201,3 +201,45 @@ console.log(JSON.stringify(out));
     # strip title's alone (the 30 s stretch's own analysis read "2 drops, the main at 0:13" under "1 drop ... 0:14")
     assert r.stdout.strip() == '["1 drop, the main at 0:14","1 drop, the main at 2:22",' \
                                '"passage 5 of 14 of the song, a drop at 1:32","","4 rests"]'
+
+
+def test_a_rerendering_shot_keeps_its_fill_and_its_place_in_the_done_bar_on_every_redraw():
+    # review, 21 Nov (integrate-4nov's leftovers): the re-render's fill was a style poll() set on the block, so any
+    # render() between two polls drew the block at the CSS default (5%) until the next tick; and the overview's done bar
+    # lost a shot while one rendered again, though the shot is still in the cut. Both are the model's now.
+    import json
+    import shutil
+    import subprocess
+
+    shots = APP.split("function cutShotsForStrip(easy, lane, off) {")[1].split("\n}\n")[0]
+    assert "fill: rendering ? shotEditFill(state.job && state.job.id === lane.id ? state.job : null) : null, made: rendering," in shots
+    paint = APP.split("function paintShotEdit(edit, job) {")[1].split("\n}\n")[0]
+    assert 'tile.style.setProperty("--p", String(shotEditFill(job)));' in paint  # the poll and the model agree on the number
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    script = """
+global.window = global; global.CSS = { escape: (s) => s };
+global.document = { addEventListener() {}, querySelector: () => null, createElement: () => ({ dataset: {}, setAttribute() {}, innerHTML: "" }) };
+require(%s);
+let made = null;
+const host = { replaceChildren: (el) => { made = el; }, querySelector: () => null, querySelectorAll: () => [] };
+const shot = (i, over) => Object.assign({ index: i, n: i + 1, start: i * 2, end: i * 2 + 2, section: "build", state: "done", title: "Shot " + (i + 1), act: { "data-index": i } }, over || {});
+const draw = (shots) => { window.XenoStrip.mount(host, { id: "cut", duration: 8, passages: [], beats: [], bars: [], wave: [], shots, overview: true }); return made.innerHTML; };
+const block = (h, i) => (h.match(new RegExp('<button[^>]*data-index="' + i + '"[^>]*>')) || [""])[0];
+const bar = (h) => (h.match(/<span class="xs-map-done" style="([^"]*)"/) || [])[1] || "";
+const plain = draw([shot(0), shot(1), shot(2), shot(3)]);
+const during = draw([shot(0), shot(1), shot(2), shot(3, { state: "rendering", fill: 0.42, made: true })]);
+const making = draw([shot(0), shot(1, { state: "rendering" }), shot(2, { state: "queued" }), shot(3, { state: "queued" })]);
+const odd = draw([shot(0, { state: "rendering", fill: "7; background: red", made: true })]);
+console.log(JSON.stringify({ plain: [block(plain, 3), bar(plain)], during: [block(during, 3), bar(during)], making: [block(making, 1), bar(making)], odd: block(odd, 0) }));
+""" % json.dumps(str(STATIC / "strip.js"))
+    r = subprocess.run([node, "-e", script], capture_output=True, text=True, timeout=60, encoding="utf-8")
+    assert r.returncode == 0, r.stderr
+    got = json.loads(r.stdout)
+    assert "--p" not in got["plain"][0] and got["plain"][1] == "left:0.0000%;width:100.0000%"
+    assert 'class="xs-shot is-rendering"' in got["during"][0] and ";--p:0.42\"" in got["during"][0]
+    assert got["during"][1] == got["plain"][1]  # the bar keeps the shot that renders again
+    # a Make's own rendering shot is not made yet: no fill from the model, and the bar stops before it
+    assert "--p" not in got["making"][0] and got["making"][1] == "left:0.0000%;width:25.0000%"
+    assert "--p" not in got["odd"] and "red" not in got["odd"]  # only a number reaches the style

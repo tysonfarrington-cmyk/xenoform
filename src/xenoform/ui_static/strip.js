@@ -149,11 +149,12 @@
       const hue = hueOf(model, s.section);
       const cls = `xs-shot is-${s.state || "sketch"}${s.picked ? " is-picked" : ""}${s.held ? " is-held" : ""}${s.edited ? " is-edited" : ""}${s.dropped ? " is-dropped" : ""}`;
       const thumb = s.thumb ? `;--thumb:url('${String(s.thumb).replace(/'/g, "%27")}')` : "";
+      const fill = s.fill != null && isFinite(Number(s.fill)) ? `;--p:${Math.max(0, Math.min(1, Number(s.fill)))}` : "";  // how far a re-render of this shot is
       const label = s.label ? `<i>${esc(s.label)}</i>` : "";
       const badge = s.state === "stale" ? `<b class="xs-stale" title="Changed since it was rendered: re-cut or re-render to see it">!</b>` : "";
       const style = s.style ? `<b class="xs-style">${esc(s.style)}</b>` : "";
       const rest = s.rest ? `<b class="xs-rest">rest</b>` : "";  // Breathe: the object dwells here after its morph
-      return `<button type="button" class="${cls}"${attrs(s.act)} style="left:${pos(s.start, dur)};width:${span(s.start, s.end, dur)};--hue:${hue}${thumb}" title="${esc(s.title || "")}" aria-label="${esc(s.title || `Shot ${s.n || ""}`)}"${s.picked ? ' aria-pressed="true"' : ""}><b class="xs-n">${esc(s.n != null ? s.n : "")}</b>${style}${rest}${badge}${label}</button>`;
+      return `<button type="button" class="${cls}"${attrs(s.act)} style="left:${pos(s.start, dur)};width:${span(s.start, s.end, dur)};--hue:${hue}${thumb}${fill}" title="${esc(s.title || "")}" aria-label="${esc(s.title || `Shot ${s.n || ""}`)}"${s.picked ? ' aria-pressed="true"' : ""}><b class="xs-n">${esc(s.n != null ? s.n : "")}</b>${style}${rest}${badge}${label}</button>`;
     }).join("");
     const spans = (model.spans || []).map((o) => `<span class="xs-span is-${esc(o.kind || "run")}" style="left:${pos(o.start, dur)};width:${span(o.start, o.end, dur)}" title="${esc(o.title || "")}"></span>`).join("");
     const seams = shots.filter((s, i) => i > 0 && s.seam).map((s) => {
@@ -185,7 +186,8 @@
     const shots = (model.shots || []).length
       ? `<span class="xs-map-shots" style="left:${pos(model.shots[0].start, dur)};width:${span(model.shots[0].start, model.shots[model.shots.length - 1].end, dur)}"></span>`
       : "";
-    const done = (model.shots || []).filter((s) => s.state === "done" || s.state === "stale").length;
+    // a shot being rendered again on a cut is still in the cut (made): the bar does not lose a shot while it runs
+    const done = (model.shots || []).filter((s) => s.state === "done" || s.state === "stale" || s.made).length;
     const fill = model.shots && model.shots.length && done
       ? `<span class="xs-map-done" style="left:${pos(model.shots[0].start, dur)};width:${span(model.shots[0].start, model.shots[Math.min(model.shots.length, done) - 1].end, dur)}"></span>` : "";
     return `<div class="xs-map" data-xs="map" aria-label="The whole song: click to look there">

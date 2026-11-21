@@ -3616,10 +3616,13 @@ async function postCutEdit(id, route, body, detail, at, stage, title, opts) {
 }
 // An edit kept on the cut's screen (postCutEdit's inPlace): while it runs, its shot's tile fills with the progress and
 // the panel says the stage; when it lands the lane and the player read the cut again and the panel reads the shot again.
+function shotEditFill(job) {
+  return Math.max(0.03, Math.min(1, Number(job && job.progress) || 0));
+}
 function paintShotEdit(edit, job) {
   document.querySelectorAll(`[data-song-strip="cut"] .xs-shot[data-index="${edit.shot}"]`).forEach((tile) => {  // its block on the strip
     tile.classList.add("is-rendering");
-    tile.style.setProperty("--p", String(Math.max(0.03, Math.min(1, Number(job.progress) || 0))));
+    tile.style.setProperty("--p", String(shotEditFill(job)));
   });
   if (window.XenoHood) window.XenoHood.progress(edit.id, { shot: edit.shot, progress: job.progress, detail: job.detail, status: "running" });
 }
@@ -3971,10 +3974,15 @@ function cutShotsForStrip(easy, lane, off) {
     const pick = swapping && s.still != null;
     const act = pick ? { "data-act": "easy-swap-pick", "data-slot": s.still, "data-at": s.start }
       : lane.mode === "song" ? { "data-act": "easy-seek", "data-at": s.start } : { "data-act": "easy-tl-shot", "data-index": s.index, "data-at": s.start };
+    // an edit Under the hood running on it (UI_REVIEW L7, postCutEdit's inPlace): its block renders while the cut stays
+    const shotState = easy.shotEdit && easy.shotEdit.id === lane.id && easy.shotEdit.shot === s.index ? "rendering" : pending || knobs ? "stale" : "done";
+    const rendering = shotState === "rendering";
     return {
       index: s.index, n: s.index + 1, start: off + Number(s.start), end: off + Number(s.end), section: s.section,
-      // an edit Under the hood running on it (UI_REVIEW L7, postCutEdit's inPlace): its block renders while the cut stays
-      state: easy.shotEdit && easy.shotEdit.id === lane.id && easy.shotEdit.shot === s.index ? "rendering" : pending || knobs ? "stale" : "done",
+      state: shotState,
+      // the block's fill is the model's, so a render() between two polls draws it where the edit is, not at the
+      // default; and the shot is still in the cut while it renders, so the overview's done bar keeps it (made)
+      fill: rendering ? shotEditFill(state.job && state.job.id === lane.id ? state.job : null) : null, made: rendering,
       label: s.to || s.from || "", title,
       picked: pick ? easy.swapSlot === s.still : !!(picked && picked.index === s.index), held, edited, dropped: gone, rest: !!s.rest,
       style: s.style && s.style !== "melt" ? morphStyleLabel(s.style) : "",
