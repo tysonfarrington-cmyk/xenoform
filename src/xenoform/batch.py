@@ -442,7 +442,10 @@ class Runner:
         if b.get("vary") != SONG or item.get("status") != "error" or int(item.get("attempts") or 0) >= RETRIES:
             return
         item.setdefault("failed", []).append({"job_id": item.get("job_id") or "", "detail": item.get("detail") or ""})
-        item.update({"status": "queued", "attempts": int(item.get("attempts") or 0) + 1, "job_id": "", "queued_at": time.time(),
+        # at the back whatever the clock says: a window that fails within one tick of the clock (15 ms on Windows) of
+        # being queued had the others' own time, and the tie went to it, ahead of the windows still waiting
+        last = max([float(i.get("queued_at") or 0) for i in b.get("items") or []] or [0.0])
+        item.update({"status": "queued", "attempts": int(item.get("attempts") or 0) + 1, "job_id": "", "queued_at": max(time.time(), last + 1e-3),
                      "detail": f"Failed ({str(item.get('detail') or 'no reason given')[:120]}): queued again"})
 
     def _closed(self, b: dict) -> dict | None:
