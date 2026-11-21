@@ -126,7 +126,8 @@ again first. `_again` puts it after the batch's latest `queued_at`. A test with 
 
 ## Bigger, left for Tys
 
-Found, confirmed by trace, and not fixed because each is a behaviour or scope decision:
+Found, confirmed by trace, and not fixed because each is a behaviour or scope decision (1 and 2 are fixed since: see
+"The two Stems Stop bugs, fixed" below):
 
 1. **Stop during a Stems re-cut says "the cut is as it was" after the cut changed** (`ui.py` 813 to 817,
    `stems_composite.py` 234 to 238, `stems_mode.py` 795 to 797). The re-cut's progress callback raises on any report
@@ -158,6 +159,57 @@ Found, confirmed by trace, and not fixed because each is a behaviour or scope de
 8. **The decisions `integrate-4nov.md` already lists** still hold up the last dead code: Tweak's Project panel keeping
    t5's editable rows (then hood.js's project-scope renderer and `.hood-project` can go), and whether `/api/opener`
    and `applyTimeline()` get a caller or are removed.
+
+## The two Stems Stop bugs, fixed
+
+Tys asked for items 1 and 2 above to be fixed (21 Nov, after the review). Both are, in two commits on top of b81cd4e.
+Nothing is pushed, merged or rebased, and no PR is open. The rule both follow: Stop either ends the edit with every
+file and record of the cut as it was, or it is told it came too late. There is no state between the two.
+
+**5531c66, Stop during a Stems re-cut.** Nothing of the cut is replaced until all of it is made.
+
+- `stems_mode.recut` composes each layer's re-cut beside its cut (`layers/<stem>/xenoform.recut.mp4`), lays the
+  composite from those files beside the cut (`composite/composite.mp4`), and only then puts the layers' cuts and
+  records, the composite and the cut's record in place, in one step that reports nothing and looks at nothing.
+- A Stop before that step ends the work at once, in a layer's re-cut or while ffmpeg lays the layers (ffmpeg is
+  ended; it used to run to its end), and removes what was made beside the cut. The job ends `cancelled`, no new video
+  version: "Stopped: the re-cut did not land, and the cut is as it was." That is now true of the cut's file, its
+  record, and every layer's file and record.
+- A Stop during the step lands: `done`, the new version, "Re-cut ready. Stop came too late to undo it, so the edit
+  landed."
+- Under it: `stems_composite.build` is `compose` (made beside the cut, Stop looked at) and then the file replaced,
+  with its last report said before the replace and none after; `dense.recut_from_cache` replaces a cut's file and
+  record together, last (`land_recut`). A plain cut's re-cut built its record after the file was already replaced;
+  it does not any more.
+
+**3c3970a, Stop on "Lay them again".** The route makes its own cancel event, as every other edit does, and hands it
+to the composite. Stop while ffmpeg lays the layers ends ffmpeg: `cancelled`, no new version, "Stopped: the layers
+were not laid again, and the cut is as it was." A Stop once the file is replaced lands with "Laid together again.
+Stop came too late to undo it, so the edit landed." `docs/STEMS_MODE.md` says both.
+
+**Tests**, `tests/test_stems_stop.py`, 12 of them. Stop is tried at every report of a knob re-cut and of a
+re-composite in turn, and each must leave every file and record byte for byte; Stop arrives while a stand-in ffmpeg
+that would run a minute lays the layers, and the stand-in must be ended; both desk routes end `cancelled` with the
+cut whole; a Stop after the cut landed is told it was too late; a stale event from an earlier edit is left alone.
+On the code before the fixes 11 of the 12 fail. Five of those fail on an argument that did not exist yet, and two
+because the old code cannot run the stand-in ffmpeg, so those seven show only that the tests need the new code. The
+four that show the bugs themselves: "Stop at report 2 (Other layer (2 of 2) ...) changed the cut", "Stop at report 2
+(The layers are laid together) changed the cut", a report that found the cut's file already replaced, and Lay them
+again holding no cancel event of its own. The one that passes is the late Stop on a re-cut, which was already told so.
+
+**The suite**, run as the Tests section below says (a `git archive` snapshot, here of 3c3970a, `XENO_OFFLINE=1`,
+`pytest -o addopts= -q -rfE`, Windows, Python 3.12.13): **1988 passed, 2 skipped, 0 failed** in 12:27, exit 0. That
+is the 1976 of the review and these 12. `test_install.py` and `test_eligibility.py` after it: 17 passed, exit 0. One
+run; no earlier run failed. No script changed, so `node --check` was not run again.
+
+Not covered, and worth knowing:
+
+- The step that puts a re-cut in place is several renames and small writes. A failure inside it (a full disk, a file
+  that will not be replaced) can still leave a Stems cut part old and part new, and the desk adds "The cut is as it
+  was" to every failed edit. The same holds for a swap or re-render on a layer whose composite then fails. That is the
+  error path, not Stop, and it was so before.
+- Nothing was run on a desk with a real re-cut in a browser: the routes were driven by the test client, the layers'
+  cuts were the suite's fakes, and the composite was the real ffmpeg.
 
 Not fixed and not a decision, only untested here: the in-place edit fixes were proved by reading and by node on the
 functions that run alone, not on a desk with a GPU re-render running. A walk worth doing: start Re-render this shot,
