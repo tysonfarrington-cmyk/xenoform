@@ -219,7 +219,12 @@ def assemble(board: dict, clips: dict[int, object], out_path: str | Path, *, fil
         cmd += ["-i", str(song), "-map", "0:v", "-map", "1:a", "-c:a", "aac", "-b:a", "160k", "-t", f"{seconds:.4f}"]
     cmd += ["-c:v", "libx264", "-preset", "medium", "-crf", str(int(crf)), "-pix_fmt", "yuv420p", "-movflags", "+faststart",
             str(out_path)]
-    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+    # ffmpeg's words go to a file, not a pipe: nothing reads a pipe while the frames are being written, so an ffmpeg
+    # with much to say filled it and stopped, the frames then filled its stdin, and both sides waited for good
+    import tempfile
+
+    said = tempfile.TemporaryFile()
+    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=said)
     k = 0
     broken = False
     try:
@@ -237,8 +242,10 @@ def assemble(board: dict, clips: dict[int, object], out_path: str | Path, *, fil
             proc.stdin.close()
         except OSError:
             pass
-        err = proc.stderr.read().decode("utf-8", "replace") if proc.stderr else ""
         code = proc.wait()
+        said.seek(0)
+        err = said.read().decode("utf-8", "replace")
+        said.close()
     if code or broken:
         raise RuntimeError(f"ffmpeg could not write the cut (exit {code}): {err.strip()[-400:]}")
     return {"path": str(out_path), "frames": k, "seconds": round(seconds, 3), "shots": len(played_shots), "of": len(shots),

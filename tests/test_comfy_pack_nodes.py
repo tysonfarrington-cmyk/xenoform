@@ -325,9 +325,12 @@ def test_review_21nov_the_pack_refuses_what_is_not_its_own(demo_song, tmp_path, 
             NODES["XenoformAssemble"]().cut(board, "stop", False, prefix, morph_1=clip)
     assert not (tmp_path / "outside").exists()
 
-    monkeypatch.setattr(A, "ffmpeg_exe", lambda: sys.executable)  # a stand-in that leaves at once with its own message
-    with pytest.raises(RuntimeError, match="ffmpeg could not write the cut"):
+    # a stand-in that leaves at once without reading a frame, after saying more than a pipe holds (Python's -v, which
+    # is what "-v error" means to it): with ffmpeg's words on a pipe nobody read, this waited for good
+    monkeypatch.setattr(A, "ffmpeg_exe", lambda: sys.executable)
+    with pytest.raises(RuntimeError, match="ffmpeg could not write the cut") as told:
         A.assemble(board, {0: clip}, tmp_path / "x.mp4", fill="stop", punch=False)
+    assert "Broken pipe" not in str(told.value) and "exit " in str(told.value)
 
 
 def test_review_21nov_the_editor_starts_afresh_on_another_song_and_the_bundle_check_reads_crlf(tmp_path):
