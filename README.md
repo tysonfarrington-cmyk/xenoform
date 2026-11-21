@@ -45,6 +45,17 @@ The cut's shots are blocks on the song strip ([docs/TIMELINE.md](docs/TIMELINE.m
 
 **Morph: Objects or Your clips.** A cut morphs through objects (the vibe's stills, the things your line names, your images) or through your clips, never both (Tys, 28 Oct). With **Your clips**, choose a folder of clips or drop them on the row: the song's shots alternate a clip and a morph, each clip playing its busiest stretch at 1:1 and each morph generated from the last frame the clip before shows into the first frame of the next, on the cut's tier (`xenoform.clip_cut`, `morph_source: "clips"`). The look, the knobs, the effects and the timeline work as on an object cut; there is no object to swap. The draft before the render is your clips cut to the beat, never the vibe's stills. There is a **free film pack** for it: 40 short clips from 29 public-domain films, colour and action first (Saturn V and Artemis launches, Las Vegas neon, the Motorama dancers, drag racers, lava, the Thunderbirds, aurora from orbit) with four black-and-white classics for the drops (Metropolis, A Trip to the Moon, Steamboat Willie), listed with their archive.org and NASA URLs and licence lines in `configs/film_pack.json`. Nothing from the films is in the repo: Setup & models pulls each window straight from archive.org with ffmpeg when you press Download (about 100 MB in all, with a CREDITS.md beside the clips; Download again remakes a clip whose times changed in the list and removes one that left it), and the **Free film pack** button on the Your clips row points the cut at the folder.
 
+### What is new, 21 Nov 2026
+
+A review of the 4 Nov round and what it led to ([docs/notes/review-21nov.md](docs/notes/review-21nov.md)). No new screens; the desk keeps its word in more places.
+
+- **Stop on a Stems cut.** Stop during a Stems re-cut, or during **Lay them again**, ends the work at once (ffmpeg is ended) with every layer, the composite and the records as they were. A Stop that arrives after the cut has been replaced is told so: "Stop came too late to undo it, so the edit landed." There is no state between the two ([docs/STEMS_MODE.md](docs/STEMS_MODE.md)).
+- **An edit lands whole or not at all.** A re-cut, a swap, a re-render, a take, a generated run or a dream is made beside the cut and put in its place in one step. If that step fails part-way (a full disk, a file that will not be replaced), everything already replaced is put back and the error says so: "The re-cut was made but could not be put in the cut's place (No space left on device). Every file and record was put back. The cut is as it was." Only if putting a file back fails too does the desk say the cut is part old and part new; it then names the file and keeps what it was beside it (`<name>.was`).
+- **Edits kept on the cut's screen.** A step click or Back during a re-render from Under the hood no longer leaves the shot reading "rendering"; a Make pressed meanwhile is refused with a line naming the shot; another cut opened meanwhile keeps its own job; a reload after a stopped or failed edit reopens the cut, with the edits that were waiting for Apply; a prompt typed in another shot's panel keeps its caret.
+- **Perform.** The Switch rate knob works under soft takeover again, a held look or Blackout no longer re-seeks the programme clip, "Saving the take…" shows while the take saves, and one bad OSC value can no longer silence the output.
+- **The node pack.** The desk's two nodes and `/xenoform` stay out of a ComfyUI that has no desk install, Assemble no longer waits for good on an ffmpeg with much to say, and a song path or a filename prefix cannot reach outside its folder.
+- **Install.** `Xenoform.bat` was run on two fresh clones on Windows and works in one click (Quick start, below). The Setup page says when ffmpeg is missing; `install.sh` is executable, keeps Unix line endings on a Windows clone and recovers from a half-made `.venv`. Linux and macOS are still two commands, and the install was not run on a Mac.
+
 ### What is new, 4 Nov 2026
 
 - **Five steps over the song strip.** Source, Plan, Tweak, Render and Perform sit in the step bar, one button each. The strip shows the song's sections, wave, beats, shots and objects; the Draft window is dragged along it by whole beats, and a Make fills its shots as the morphs land.
@@ -59,7 +70,7 @@ The cut's shots are blocks on the song strip ([docs/TIMELINE.md](docs/TIMELINE.m
 
 - **Whole song.** Render → Quality → By passages makes the song as its passages, each its own Make with its own look, laid together on the beat with the title on the last hit. The **Vibes** control beside it keeps a song to one vibe, a few, or as many as taste draws ([docs/SONG.md](docs/SONG.md)).
 - **Shape.** **Breathe** (off by default) turns the calm passages into scenes, held three to four bars with room to rest, against drops that stay dense. **Drops** opens every drop run on an event.
-- **Stems mode.** Morph → Stems gives each stem its own layer of objects or clips, cut to that stem and laid over the others by how prominent you want it; moving a slider needs no render ([docs/STEMS_MODE.md](docs/STEMS_MODE.md)).
+- **Stems mode.** Morph → Stems gives each stem its own layer of objects or clips, cut to that stem and laid over the others by how prominent you want it; moving a slider needs no render, and Stop on a re-cut or on Lay them again leaves the cut as it was or says it came too late ([docs/STEMS_MODE.md](docs/STEMS_MODE.md)).
 - **Backdrops.** Plain ground, places (one object standing somewhere that suits the vibe) or whole scenes.
 - **Your taste, as data.** `configs/taste.json` holds banned subjects and clips, demoted looks and limits, and the desk says what each rule changed ([docs/TASTE.md](docs/TASTE.md)). **Loved chains** sit as chips under the idea line.
 - **A bigger free film pack.** 40 public-domain clips from 29 sources, 36 in colour, cut to the song's passages with the rest of the pacing.
@@ -119,17 +130,24 @@ None of these run unless you turn them on, and the demo, the judges page and Set
 
 ## Quick start
 
-Three steps. The first cut needs no GPU, no model and no account. You need **Python 3.12** and `ffmpeg` on `PATH`.
+Three steps. The first cut needs no GPU, no model and no account.
+
+**You need** (the installer installs neither of the first two):
+
+- **Python 3.12** or newer. Windows: python.org's installer, or `winget install Python.Python.3.12`. macOS: `brew install python@3.12`. Debian or Ubuntu: `sudo apt install python3 python3-venv`.
+- **ffmpeg** (with `ffprobe`) on `PATH`. Windows: `winget install Gyan.FFmpeg`. macOS: `brew install ffmpeg`. Debian or Ubuntu: `sudo apt install ffmpeg`. The desk opens without it, and its Setup page says it is missing until it is there, but no song is read and no video written.
+- About 1.5 GB of disk for Xenoform's own `.venv` (Demucs and a CPU torch wheel are most of it), and a network connection for the first run.
+- For GPU renders only: ComfyUI on port 8188, a graphics card with about 8 GB or more (see Hardware), and the Draft model (11.5 GB, one Download button on the desk's Setup page).
 
 1. **Get it.** `git clone https://github.com/tysonfarrington-cmyk/xenoform` or unzip it.
 2. **Start it.**
-   - Windows: double-click `Xenoform.bat`. On the first run it offers to create Xenoform's own `.venv` (about 5 minutes; it never installs into ComfyUI's Python), then opens the desk at http://127.0.0.1:47317.
-   - Linux or macOS: `bash install.sh`, then `.venv/bin/python -m xenoform ui`.
+   - **Windows, one click:** double-click `Xenoform.bat`. On the first run it says what it is about to do, waits 30 seconds for a No, then creates Xenoform's own `.venv`, installs the packages (it never installs into ComfyUI's Python), starts `comfy-api-proxy` and the desk, and opens http://127.0.0.1:47317. A first run is about 5 minutes of downloads (about a minute when pip already has the packages cached); every later double-click opens the desk in a few seconds.
+   - **Linux or macOS, two commands:** `./install.sh`, then `.venv/bin/python -m xenoform ui` and open http://127.0.0.1:47317. There is no launcher for these yet.
 3. **Press Watch a finished one**, then **Bundled demo**, a vibe and **Render Draft**. Start ComfyUI on port 8188 first if you want GPU renders.
 
 <details><summary>Install and launcher details</summary>
 
-**Install.** `install.bat` (Windows) or `bash install.sh` creates `.venv` with Python 3.12, installs the pinned `requirements-desk.txt` (`comfy-sdk` 0.5.0, `comfy-api-proxy` 0.1.6, `opencv-python-headless`, librosa, FastAPI), the `xenoform` package itself and Demucs for stem separation (the `stems` extra, with a CPU torch wheel of about 200 MB; `install.bat -NoStems` or `bash install.sh --no-stems` skips it and the desk uses the band split). The installer finds Python 3.12 on `PATH`, through the `py` launcher, or through `uv`. Linking the pack into `ComfyUI/custom_nodes` is optional: `install.ps1 -LinkNodes` or `bash install.sh --link-nodes`; the desk is then also at `http://127.0.0.1:8188/xenoform`.
+**Install.** `install.bat` (Windows) or `bash install.sh` creates `.venv` with Python 3.12, installs the pinned `requirements-desk.txt` (`comfy-sdk` 0.5.0, `comfy-api-proxy` 0.1.6, `opencv-python-headless`, librosa, FastAPI), the `xenoform` package itself and Demucs for stem separation (the `stems` extra, with a CPU torch wheel of about 200 MB; `install.bat -NoStems` or `bash install.sh --no-stems` skips it and the desk uses the band split). The installer finds Python 3.12 on `PATH`, through the `py` launcher, or through `uv`; when there is none it stops and says how to get it. It does not install ffmpeg: it says so when ffmpeg is missing, again at the end of the install, and the desk's Setup page keeps saying so. `install.sh` makes a `.venv` again when an earlier try left one without pip (Ubuntu before `python3-venv` is installed). The `.bat` and `.ps1` files are checked out with Windows line endings and `install.sh` with Unix ones on every machine (`.gitattributes`): checked out with Windows endings, `install.sh` stopped at `set: pipefail: invalid option name`. Linking the pack into `ComfyUI/custom_nodes` is optional: `install.ps1 -LinkNodes` or `bash install.sh --link-nodes`; the desk is then also at `http://127.0.0.1:8188/xenoform`.
 
 Extras: `pip install -e .[midi]` (mido, python-rtmidi, websockets), `.[osc]` (python-osc, for the OSC relay), `.[stems]` (Demucs; the installers add it by default), `.[agent]` (the MCP SDK; `Xenoform-MCP.bat` installs it on first run), `.[dev]` (pytest), `.[gpu]` (moderngl).
 
@@ -198,8 +216,11 @@ Moves (Wan Animate 2) runs at 480×832, 81 frames, about 11.6 GB peak. The VJ pa
 
 | What you see | What to do |
 | --- | --- |
-| The installer says Python 3.12 was not found | Install Python 3.12 from python.org and tick "Add python.exe to PATH", then open a new window. |
-| Make sits on "Reading the track" | `ffmpeg` needs to be on `PATH`. |
+| The installer says Python 3.12 was not found | Install Python 3.12 from python.org and tick "Add python.exe to PATH" (or `winget install Python.Python.3.12`), then open a new window. |
+| `install.sh` says the virtual environment was not created | Debian and Ubuntu ship `python3` without the venv package: `sudo apt install python3-venv`, then `./install.sh` again. |
+| Setup says ffmpeg is not on this machine's PATH, or Make sits on "Reading the track" | Install ffmpeg (`winget install Gyan.FFmpeg`, `brew install ffmpeg`, `sudo apt install ffmpeg`), close Xenoform's windows and start it again. |
+| An edit failed and says "Every file and record was put back" | The edit was made but could not be put in the cut's place (the reason is in the brackets, usually a full disk or a file another program holds). The cut is as it was: free some space or close what holds the file and make the edit again. |
+| An edit failed and says the cut is "part old and part new" | Putting the cut back failed too. The message names each file that could not be put back; what it was is kept beside it with `.was` (a Stems layer: `.before`) after its name. Free some space or close what holds the file, copy that file back over the named one, and make the edit again. |
 | The desk says ComfyUI is not connected | Start ComfyUI on port 8188. Dry runs and the animatic work without it. |
 | Live renders cannot reach the proxy | Check `xenoform_proxy.log`. The launcher only starts `comfy-api-proxy` when nothing listens on 8189; `set XENO_PROXY_PORT=8190` moves it. |
 | Port 47317 is in use | `set XENO_PORT=47322`, then `Xenoform.bat`. The MCP server follows `XENO_DESK`. |
@@ -259,6 +280,7 @@ Everything deeper than the four knobs sits on the same desk: Tweak's rows under 
 ```
 Xenoform.bat, Xenoform-MCP.bat         Windows launchers (desk, MCP server)
 install.bat, install.ps1, install.sh   create .venv with Python 3.12 and install the package
+.gitattributes                         line endings for the scripts above (CRLF for .bat and .ps1, LF for .sh)
 pyproject.toml, requirements-desk.txt  pinned dependencies (comfy-sdk 0.5.0, comfy-api-proxy 0.1.6)
 requirements.txt                       what ComfyUI-Manager installs into ComfyUI's Python: nothing
 __init__.py, comfy_pack/               the ComfyUI node pack (Song Analysis, Storyboard, Morph Timeline, Morph Pair,
@@ -271,6 +293,7 @@ src/xenoform/
   mcp_server.py, mcp_tools.py          MCP server (45 tools)
   media_qa.py, post_qa.py, shot_qa.py, guardrails.py, demo_house.py   QA and the house profile
   restyle.py, cloud_backend.py, cloud_morph.py, eligibility.py   SDK runner, optional cloud, open-weights audit
+  cut_swap.py, stems_mode.py, stems_composite.py   an edit put in a cut's place whole or not at all; Stems mode and its compositor
 configs/                               vibes.json, autotune.json, guardrails.json, defaults_demo.json,
                                        transitions.json, clip_pack.json, chain_presets.json, anchors.json, moves.json, example.json
 workflows/                             xenoform_morph.json (LTX 0.9.5), xenoform_draft/final, moves_wan_animate2.json,
