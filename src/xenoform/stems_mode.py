@@ -768,12 +768,18 @@ def read_record(job_dir: Path) -> dict:
 
 
 def recut(job_dir: Path, overrides: dict | None = None, report: Callable[[str, float, str], None] | None = None,
-          cfg: dict | None = None) -> dict:
+          cfg: dict | None = None, *, cancel: Callable[[], bool] | None = None) -> dict:
     """Re-cut a Stems cut from its cached morphs (no GPU). The knobs (``macros``, ``breathe``, the look ...) are one
     setting for every layer; the timeline's maps (``shot_overrides``, ``boundary_overrides``) are the layer's that
     ``layer`` names (without a layer they are left out). Only the layers something changed for are re-cut: the named
     layer, and every layer when knobs came. ``prominence`` and ``blend`` ({stem: value}) change the composite. Then the
-    layers are laid together again and the record written back."""
+    layers are laid together again and the record written back.
+
+    Nothing of the cut is replaced until all of it is made. Each layer's re-cut is composed beside its cut
+    (``dense.recut_from_cache`` with ``stage``), the composite is laid from those files (``stems_composite.compose``),
+    and only then are the layers, the composite and the records put in place, in one step that looks at nothing. Stop
+    (``cancel``, or a ``report`` that raises ``JobCancelled``) is honoured up to that step: it raises with every file
+    and record of the cut as it was. A Stop that comes during the step is too late, and the caller says so."""
     from xenoform import dense
 
     job_dir = Path(job_dir)
@@ -792,19 +798,37 @@ def recut(job_dir: Path, overrides: dict | None = None, report: Callable[[str, f
             work.append((l, {**raw, **maps}))
         elif raw:
             work.append((l, dict(raw)))
-    for k, (l, over) in enumerate(work):
-        sub = layer_report(report, k, len(work), l["stem"], recut=True) if report else None
-        dense.recut_from_cache(Path(str(l["folder"])), over, report=sub, cfg=cfg)
-    comp = dict(rec.get("composite") or {})
-    if isinstance(prominence, dict):
-        comp["prominence"] = {**(comp.get("prominence") or {}), **{str(s): SC.prominence_of(v) for s, v in prominence.items() if str(s) in by_stem}}
-    if isinstance(blend, dict):
-        comp["blends"] = {**(comp.get("blends") or {}), **{str(s): SC.blend_of(v) for s, v in blend.items() if str(s) in by_stem}}
-    rec["layers"] = [{**l, "prominence": (comp.get("prominence") or {}).get(str(l["stem"]), l.get("prominence")),
-                      "blend": (comp.get("blends") or {}).get(str(l["stem"]), l.get("blend"))} for l in rec.get("layers") or []]
-    comp["order"] = SC.order_of(rec["layers"])
-    rec["composite"] = comp
-    rec["composite"] = SC.build(job_dir, rec, report=report)
+    staged: list[tuple[str, Path, dict | None]] = []  # a layer's stem, its folder, its new record once composed
+    try:
+        for k, (l, over) in enumerate(work):
+            SC.stop_if(cancel)
+            sub = layer_report(report, k, len(work), l["stem"], recut=True) if report else None
+            folder = Path(str(l["folder"]))
+            staged.append((str(l["stem"]), folder, None))  # named before it is made: a stopped one is cleared away too
+            staged[-1] = (str(l["stem"]), folder, dense.recut_from_cache(folder, over, report=sub, cfg=cfg, stage=True))
+        comp = dict(rec.get("composite") or {})
+        if isinstance(prominence, dict):
+            comp["prominence"] = {**(comp.get("prominence") or {}), **{str(s): SC.prominence_of(v) for s, v in prominence.items() if str(s) in by_stem}}
+        if isinstance(blend, dict):
+            comp["blends"] = {**(comp.get("blends") or {}), **{str(s): SC.blend_of(v) for s, v in blend.items() if str(s) in by_stem}}
+        rec["layers"] = [{**l, "prominence": (comp.get("prominence") or {}).get(str(l["stem"]), l.get("prominence")),
+                          "blend": (comp.get("blends") or {}).get(str(l["stem"]), l.get("blend"))} for l in rec.get("layers") or []]
+        comp["order"] = SC.order_of(rec["layers"])
+        rec["composite"] = comp
+        rec["composite"] = SC.compose(job_dir, rec, report=report, cancel=cancel,
+                                      videos={stem: folder / dense.RECUT_FILE for stem, folder, _ in staged})
+    except BaseException:  # stopped, or it failed: what was made beside the cut goes, and the cut is as it was
+        for _, folder, _ in staged:
+            SC.discard(folder / dense.RECUT_FILE)
+        SC.discard(SC.staged_path(job_dir))
+        raise
+    # the one step that replaces the cut: no report, no look at Stop (a report that raised here left the new composite
+    # on disk under the old record, with a job that said "the cut is as it was")
+    from xenoform.turbo import publish_file
+
+    for _, folder, lrec in staged:
+        dense.land_recut(folder, lrec)
+    publish_file(SC.staged_path(job_dir), job_dir / "xenoform.mp4")
     for l in rec["layers"]:  # what each layer's record now says
         try:
             lrec = json.loads(Path(str(l["record"])).read_text(encoding="utf-8"))

@@ -808,10 +808,13 @@ def create_app(cfg: dict | None = None):
         for key in ("shot_overrides", "boundary_overrides"):
             if key in body and isinstance(body.get(key), (dict, list)):
                 overrides[key] = body[key]
+        stems = _is_stems(folder)
         cancel = _edit_start(job, job_id, "recut", "assemble", "Re-cutting from the cached morphs")
 
         def on_progress(stage: str, frac: float, detail: str) -> None:
-            if cancel.is_set():  # no GPU here, and the cut is published only once composed: Stop ends it at once
+            # no GPU here, and the cut is replaced only once all of it is composed, with no report after that (a Stems
+            # cut's layers and composite too: stems_mode.recut): Stop ends it at its next report with the cut as it was
+            if cancel.is_set():
                 from xenoform.turbo import JobCancelled
 
                 raise JobCancelled("Stopped")
@@ -822,7 +825,12 @@ def create_app(cfg: dict | None = None):
             from xenoform.turbo import JobCancelled
 
             try:
-                rec = recut_from_cache(folder, overrides, report=on_progress, cfg=cfg)
+                if stems:  # Stop reaches the composite's ffmpeg as well, which reports nothing while it runs
+                    from xenoform import stems_mode as _sm
+
+                    rec = _sm.recut(folder, overrides, report=on_progress, cfg=cfg, cancel=cancel.is_set)
+                else:
+                    rec = recut_from_cache(folder, overrides, report=on_progress, cfg=cfg)
                 with _LOCK:
                     version = int(job.get("video_version") or 0) + 1
                     job.update({"status": "done", "stage": "done", "progress": 1.0, "video_version": version,
@@ -4060,6 +4068,15 @@ def _is_song(folder: Path) -> bool:
     from xenoform import song_run
 
     return (Path(folder) / song_run.FILE).is_file()
+
+
+def _is_stems(folder: Path) -> bool:
+    """True for a Stems cut's folder: its record says so (its cut is its layers' cuts laid together)."""
+    try:
+        rec = json.loads((Path(folder) / "simple" / "simple.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return isinstance(rec, dict) and str(rec.get("mode") or "") == "stems"
 
 
 def _read_meta(folder: Path) -> dict:

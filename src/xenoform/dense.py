@@ -2188,9 +2188,22 @@ def stills_animatic(directed: dict, state: dict, audio_path: Path, out_path: Pat
             "size": f"{w}x{h}", "fps": fps}
 
 
+RECUT_FILE = "xenoform.recut.mp4"  # a re-cut is composed here, beside the cut, and put in the cut's place when it is whole
+
+
+def land_recut(job_dir: Path, rec: dict) -> None:
+    """Put a re-cut that was composed beside its cut (``recut_from_cache``; ``rec`` its record) in the cut's place:
+    the file over ``xenoform.mp4`` (``publish_file``), then the record."""
+    from xenoform.turbo import publish_file
+
+    job_dir = Path(job_dir)
+    publish_file(job_dir / RECUT_FILE, job_dir / "xenoform.mp4")
+    (job_dir / "simple" / "simple.json").write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
+
+
 @_gathers_taste
 def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Callable[[str, float, str], None] | None = None,
-                     cfg: dict | None = None) -> dict:
+                     cfg: dict | None = None, *, stage: bool = False) -> dict:
     """Re-compose a finished Simple job from its cached morphs with new knobs, look, orbit or beat FX, and with the
     timeline's per-shot and per-boundary overrides (docs/TIMELINE.md).
 
@@ -2200,7 +2213,12 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
     knobs keeps every timeline edit). The job's ``xenoform.mp4`` is replaced (``publish_file``) and the updated record
     returned. The taste file's rules apply as they do in a Make, through the same helpers (the kinds, the looks, the
     effects, the foreshadow, the knobs); the timeline's own picks stay the user's. What they did is the record's
-    ``taste_recut`` block."""
+    ``taste_recut`` block.
+
+    The cut's file and its record are replaced last, together (``land_recut``), once the re-cut is composed beside the
+    cut (``RECUT_FILE``): a ``report`` that raises on the desk's Stop leaves both as they were. With ``stage`` they
+    are not replaced at all: the new record is returned and the caller lands it (a Stems cut lands its layers' re-cuts
+    and its composite in one step, ``stems_mode.recut``)."""
     from xenoform import taste as _taste
 
     job_dir = Path(job_dir)
@@ -2294,7 +2312,7 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
     stem_env = stem_env_for(state)
     size = tuple(rec["size"]) if rec.get("size") else None
     engine = str(rec.get("tier") or "draft")
-    tmp = job_dir / "xenoform.recut.mp4"
+    tmp = job_dir / RECUT_FILE
     if report:
         report("assemble", 0.1, "Re-cutting from the cached morphs (no GPU)" + (f" with {len(so) + len(bo)} timeline edits" if (so or bo) else ""))
     fs_mode = foreshadow_mode(opt, vibe, state)
@@ -2308,9 +2326,6 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
                           tame=tame_rules(state, shots, fps, beats))
     if opt["end_card"]:
         beatfx.end_card(tmp, str(opt.get("recipe") or "(none)"))
-    from xenoform.turbo import publish_file
-
-    publish_file(tmp, job_dir / "xenoform.mp4")
     record_shots = list(laid["record"])  # one a plan shot: the composed ones as they were cut, a dropped one at zero length
     for k, i in enumerate(kept):
         record_shots[i] = shots[k]
@@ -2332,7 +2347,8 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
         rec["pacing"] = pace
     if _taste.active():  # what the taste file did in this re-cut (the Make's own block stays as it was)
         rec["taste_recut"] = _taste.record(_taste.current())
-    rec_path.write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
+    if not stage:  # nothing is reported from here on: the cut is replaced, and a Stop that comes now is too late
+        land_recut(job_dir, rec)
     return rec
 
 
