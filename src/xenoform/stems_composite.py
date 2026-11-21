@@ -21,6 +21,8 @@ here). This module lays them together with ffmpeg, deterministically from the re
 - Stop (``cancel``, the desk's Stop on an edit): ``compose`` makes the composite beside the cut and looks at Stop
   while ffmpeg runs (ffmpeg is ended, ``JobCancelled`` raised, nothing of the cut touched); ``build`` then replaces
   the cut's file. Nothing looks at Stop, and nothing is reported, once the file is replaced.
+- A re-composite of a finished cut (``rebuild``) replaces the file and the record in one step that lands both or puts
+  both back (``cut_swap``); the Make's own ``build`` writes a cut that did not exist before, so it has nothing to keep.
 """
 
 from __future__ import annotations
@@ -323,7 +325,9 @@ def rebuild(job_dir: Path, *, prominence: dict | None = None, blend: dict | None
     """Re-composite a finished Stems cut with new prominence or blends (no GPU, no re-cut): the record's composite block
     changes, the order follows the new prominence, ``<job>/xenoform.mp4`` is replaced and the record written back.
     Stop (``cancel``) ends it with ``JobCancelled`` while the composite is being made, the file and the record as they
-    were; once the file is replaced the record is written whatever Stop says, and the caller tells Stop it was late."""
+    were; once the file is replaced the record is written whatever Stop says, and the caller tells Stop it was late.
+    The file and the record are replaced in one step (``cut_swap.Swap``): if either will not be replaced, both are put
+    back and ``cut_swap.SwapFailed`` says whether the cut is as it was."""
     job_dir = Path(job_dir)
     path = job_dir / "simple" / "simple.json"
     rec = json.loads(path.read_text(encoding="utf-8"))
@@ -344,7 +348,14 @@ def rebuild(job_dir: Path, *, prominence: dict | None = None, blend: dict | None
     comp.update({"prominence": pro, "blends": bl, "order": order_of(layers)})
     rec["composite"] = comp
     rec["layers"] = layers
-    rec["composite"] = build(job_dir, rec, report=report, cancel=cancel)
+    rec["composite"] = compose(job_dir, rec, report=report, cancel=cancel)
     rec["composites"] = int(rec.get("composites") or 0) + 1
-    path.write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
+    from xenoform import cut_swap
+
+    # the file and the record land together or neither does (a record that would not be written used to leave the new
+    # composite under the old record)
+    swap = cut_swap.Swap("The new composite", root=job_dir)
+    swap.file(staged_path(job_dir), job_dir / "xenoform.mp4")
+    swap.text(path, json.dumps(rec, indent=1, default=str))
+    swap.commit()
     return rec

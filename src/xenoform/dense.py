@@ -2191,14 +2191,48 @@ def stills_animatic(directed: dict, state: dict, audio_path: Path, out_path: Pat
 RECUT_FILE = "xenoform.recut.mp4"  # a re-cut is composed here, beside the cut, and put in the cut's place when it is whole
 
 
+def recut_steps(swap, job_dir: Path, rec: dict) -> None:
+    """What puts a re-cut composed beside its cut in the cut's place, noted on ``swap`` (``cut_swap.Swap``): the file
+    over ``xenoform.mp4``, and the record."""
+    job_dir = Path(job_dir)
+    swap.file(job_dir / RECUT_FILE, job_dir / "xenoform.mp4")
+    swap.text(job_dir / "simple" / "simple.json", json.dumps(rec, indent=1, default=str))
+
+
 def land_recut(job_dir: Path, rec: dict) -> None:
     """Put a re-cut that was composed beside its cut (``recut_from_cache``; ``rec`` its record) in the cut's place:
-    the file over ``xenoform.mp4`` (``publish_file``), then the record."""
-    from xenoform.turbo import publish_file
+    the file over ``xenoform.mp4`` and the record, both or neither. When one of them will not be replaced (a full
+    disk, a file that is held) the other is put back and ``cut_swap.SwapFailed`` says whether the cut is as it was."""
+    from xenoform import cut_swap
 
-    job_dir = Path(job_dir)
-    publish_file(job_dir / RECUT_FILE, job_dir / "xenoform.mp4")
-    (job_dir / "simple" / "simple.json").write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
+    swap = cut_swap.Swap("The re-cut", root=Path(job_dir))
+    recut_steps(swap, job_dir, rec)
+    swap.commit()
+
+
+def recut_after_edit(job_dir: Path, was: bytes, *, report: Callable[[str, float, str], None] | None = None,
+                     cfg: dict | None = None) -> dict:
+    """The re-cut that ends an edit which has written its record already (the new clips of a swap, a re-render, a
+    take put back, a generated run, a dream). ``was`` is the record as it stood before the edit. When the re-cut
+    does not land the record goes back to it, so the record never names a clip the cut does not play and "the cut is
+    as it was" is true of both. The clips the edit rendered stay on disk, and the morph cache answers them when the
+    edit is made again."""
+    from xenoform import cut_swap
+
+    try:
+        return recut_from_cache(job_dir, {}, report=report, cfg=cfg)
+    except BaseException as exc:
+        path = Path(job_dir) / "simple" / "simple.json"
+        try:
+            cut_swap.write(path, was)
+        except Exception as again:
+            log.exception("could not put the record of %s back", job_dir)
+            raise cut_swap.SwapFailed(
+                f"The edit did not land ({cut_swap.why(exc)}), and its record could not be put back "
+                f"({cut_swap.why(again)}). The video is as it was, but the record names the edit's new clips: "
+                "make the edit again, or re-cut, to bring the two together.", restored=False, left=[path],
+                reason=cut_swap.why(exc)) from exc
+        raise
 
 
 @_gathers_taste
@@ -2216,9 +2250,11 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
     ``taste_recut`` block.
 
     The cut's file and its record are replaced last, together (``land_recut``), once the re-cut is composed beside the
-    cut (``RECUT_FILE``): a ``report`` that raises on the desk's Stop leaves both as they were. With ``stage`` they
-    are not replaced at all: the new record is returned and the caller lands it (a Stems cut lands its layers' re-cuts
-    and its composite in one step, ``stems_mode.recut``)."""
+    cut (``RECUT_FILE``): a ``report`` that raises on the desk's Stop leaves both as they were, and so does anything
+    that fails while the re-cut is composed (what was made beside the cut is removed). A failure in the replacing
+    itself puts back what was replaced (``cut_swap``). With ``stage`` they are not replaced at all: the new record is
+    returned and the caller lands it (a Stems cut lands its layers' re-cuts and its composite in one step,
+    ``stems_mode.recut``)."""
     from xenoform import taste as _taste
 
     job_dir = Path(job_dir)
@@ -2316,16 +2352,22 @@ def recut_from_cache(job_dir: Path, overrides: dict | None = None, report: Calla
     if report:
         report("assemble", 0.1, "Re-cutting from the cached morphs (no GPU)" + (f" with {len(so) + len(bo)} timeline edits" if (so or bo) else ""))
     fs_mode = foreshadow_mode(opt, vibe, state)
-    made = beatfx.compose(clips, shots, audio, tmp, aspect=opt["aspect"], quality="final" if engine == "final" else "draft",
-                          fx=opt["fx"], overlay=opt["overlay"], beats=beats, report=report, size=size, fps=fps,
-                          dance_fx=look_preset, stem_orbit=opt["stem_orbit"], stem_env=stem_env, macros=m, house=hp,
-                          end_card=opt["end_card"], seed=int(rec.get("seed") or 0), palette_image=rec.get("palette_image"),
-                          adaptive=str(opt.get("dance_fx") or "auto").strip().lower() == "auto", transitions=transitions,
-                          foreshadow=fs_mode, boundary_fx=boundary_fx, effects=effect_names,
-                          tones=_E.palette_from_clips(clips).tolist() if _E.wants_tones(look_preset, effect_names, shots) else None,
-                          tame=tame_rules(state, shots, fps, beats))
-    if opt["end_card"]:
-        beatfx.end_card(tmp, str(opt.get("recipe") or "(none)"))
+    try:
+        made = beatfx.compose(clips, shots, audio, tmp, aspect=opt["aspect"], quality="final" if engine == "final" else "draft",
+                              fx=opt["fx"], overlay=opt["overlay"], beats=beats, report=report, size=size, fps=fps,
+                              dance_fx=look_preset, stem_orbit=opt["stem_orbit"], stem_env=stem_env, macros=m, house=hp,
+                              end_card=opt["end_card"], seed=int(rec.get("seed") or 0), palette_image=rec.get("palette_image"),
+                              adaptive=str(opt.get("dance_fx") or "auto").strip().lower() == "auto", transitions=transitions,
+                              foreshadow=fs_mode, boundary_fx=boundary_fx, effects=effect_names,
+                              tones=_E.palette_from_clips(clips).tolist() if _E.wants_tones(look_preset, effect_names, shots) else None,
+                              tame=tame_rules(state, shots, fps, beats))
+        if opt["end_card"]:
+            beatfx.end_card(tmp, str(opt.get("recipe") or "(none)"))
+    except BaseException:  # stopped, or it failed: what was made beside the cut goes, and nothing of the cut was touched
+        from xenoform import cut_swap
+
+        cut_swap.discard(tmp)
+        raise
     record_shots = list(laid["record"])  # one a plan shot: the composed ones as they were cut, a dropped one at zero length
     for k, i in enumerate(kept):
         record_shots[i] = shots[k]
@@ -2870,10 +2912,11 @@ def rerender_morph(job_dir: Path, shot: int, *, seed: int | None = None, render_
                                            "at": datetime.now().astimezone().isoformat(timespec="seconds"),
                                            "overrides": edited, **({"timing": timing} if timing is not None else {}),
                                            "request": made, "before": before}]})
+    was = (work / "simple.json").read_bytes()  # the record before this edit: it comes back if the re-cut does not land
     (work / "simple.json").write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
     if report:
         report("assemble", 0.55, "Re-cutting with the new morph (no GPU)")
-    return recut_from_cache(job_dir, {}, report=report, cfg=cfg)
+    return recut_after_edit(job_dir, was, report=report, cfg=cfg)
 
 
 def use_take(job_dir: Path, shot: int, n: int, *, cfg: dict | None = None,
@@ -2921,10 +2964,11 @@ def use_take(job_dir: Path, shot: int, n: int, *, cfg: dict | None = None,
     rec.update({"clips": clips, "renders": renders, "morph_styles": styles,
                 "taken": list(rec.get("taken") or []) + [{"shot": j, "n": k, "clip": str(take["clip"]), "seed": take.get("seed"),
                                                           "at": datetime.now().astimezone().isoformat(timespec="seconds")}]})
+    was = rec_path.read_bytes()  # the record before this edit: it comes back if the re-cut does not land
     rec_path.write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
     if report:
         report("assemble", 0.2, f"Shot {j + 1} plays take {k} again: re-cutting (no GPU)")
-    return recut_from_cache(job_dir, {}, report=report, cfg=cfg)
+    return recut_after_edit(job_dir, was, report=report, cfg=cfg)
 
 
 def insert_span(shots: list[dict], first: int, seconds: float) -> tuple[int, int]:
@@ -3052,6 +3096,7 @@ def insert_generated(job_dir: Path, first: int, *, seconds: float = 10.0, pins: 
              "seed": seed, "render_s": [r["render_s"] for r in render_shots], "styles": run_styles,
              "took_s": round(time.perf_counter() - started, 2), "at": datetime.now().astimezone().isoformat(timespec="seconds")}
     rec.update({"clips": clips, "inserts": inserts + [entry], "morph_styles": styles, "renders": renders})
+    was = (work / "simple.json").read_bytes()  # the record before this edit: it comes back if the re-cut does not land
     (work / "simple.json").write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
     try:
         _stills.mark_used(vibe, [str(r.get("file")) for r in rows if not r.get("user")])
@@ -3059,7 +3104,7 @@ def insert_generated(job_dir: Path, first: int, *, seconds: float = 10.0, pins: 
         log.debug("usage for the generated run", exc_info=True)
     if report:
         report("assemble", 0.55, "Re-cutting with the generated run (no GPU)")
-    return recut_from_cache(job_dir, {}, report=report, cfg=cfg)
+    return recut_after_edit(job_dir, was, report=report, cfg=cfg)
 
 
 # ---------------------------------------------------------------- swapping a still after the cut
@@ -3241,6 +3286,7 @@ def swap_still(job_dir: Path, slot: int, file: str, *, cfg: dict | None = None,
                                    "at": datetime.now().astimezone().isoformat(timespec="seconds")}]})
     if slot == 0:
         rec["palette_image"] = str(ready[0]["path"])  # the look's palette still is the chain's first
+    was = rec_path.read_bytes()  # the record before this edit: it comes back if the re-cut does not land
     rec_path.write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
     try:
         _stills.mark_used(str(new.get("vibe") or vibe), [file])
@@ -3248,4 +3294,4 @@ def swap_still(job_dir: Path, slot: int, file: str, *, cfg: dict | None = None,
         log.debug("usage for the swapped still", exc_info=True)
     if report:
         report("assemble", 0.55, "Re-cutting with the new morphs (no GPU)")
-    return recut_from_cache(job_dir, {}, report=report, cfg=cfg)
+    return recut_after_edit(job_dir, was, report=report, cfg=cfg)

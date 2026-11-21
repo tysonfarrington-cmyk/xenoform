@@ -779,7 +779,9 @@ def recut(job_dir: Path, overrides: dict | None = None, report: Callable[[str, f
     (``dense.recut_from_cache`` with ``stage``), the composite is laid from those files (``stems_composite.compose``),
     and only then are the layers, the composite and the records put in place, in one step that looks at nothing. Stop
     (``cancel``, or a ``report`` that raises ``JobCancelled``) is honoured up to that step: it raises with every file
-    and record of the cut as it was. A Stop that comes during the step is too late, and the caller says so."""
+    and record of the cut as it was. A Stop that comes during the step is too late, and the caller says so. The step
+    itself lands all of it or puts all of it back (``cut_swap.Swap``): when it fails, ``cut_swap.SwapFailed`` says
+    whether every file and record is as it was."""
     from xenoform import dense
 
     job_dir = Path(job_dir)
@@ -822,16 +824,10 @@ def recut(job_dir: Path, overrides: dict | None = None, report: Callable[[str, f
             SC.discard(folder / dense.RECUT_FILE)
         SC.discard(SC.staged_path(job_dir))
         raise
-    # the one step that replaces the cut: no report, no look at Stop (a report that raised here left the new composite
-    # on disk under the old record, with a job that said "the cut is as it was")
-    from xenoform.turbo import publish_file
-
-    for _, folder, lrec in staged:
-        dense.land_recut(folder, lrec)
-    publish_file(SC.staged_path(job_dir), job_dir / "xenoform.mp4")
-    for l in rec["layers"]:  # what each layer's record now says
+    new = {stem: lrec for stem, _, lrec in staged}
+    for l in rec["layers"]:  # what each layer's record will say: the re-cut's own, else the one on disk
         try:
-            lrec = json.loads(Path(str(l["record"])).read_text(encoding="utf-8"))
+            lrec = new.get(str(l["stem"])) or json.loads(Path(str(l["record"])).read_text(encoding="utf-8"))
             l["shots"] = len(lrec.get("shots") or [])
             l["recuts"] = int(lrec.get("recuts") or 0)
         except (OSError, ValueError):
@@ -839,7 +835,18 @@ def recut(job_dir: Path, overrides: dict | None = None, report: Callable[[str, f
     rec["recuts"] = int(rec.get("recuts") or 0) + 1
     if raw:
         rec["recut_state"] = {**(rec.get("recut_state") or {}), **{k: v for k, v in raw.items() if k not in ("shot_overrides", "boundary_overrides")}}
-    (job_dir / "simple" / "simple.json").write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
+    # the one step that replaces the cut: no report, no look at Stop (a report that raised here left the new composite
+    # on disk under the old record, with a job that said "the cut is as it was"). Every layer's cut and record, the
+    # composite and the cut's record land, or all of them are put back (cut_swap: a full disk or a file that will not
+    # be replaced used to leave the cut part old and part new)
+    from xenoform import cut_swap
+
+    swap = cut_swap.Swap("The re-cut", root=job_dir)
+    for _, folder, lrec in staged:
+        dense.recut_steps(swap, folder, lrec)
+    swap.file(SC.staged_path(job_dir), job_dir / "xenoform.mp4")
+    swap.text(job_dir / "simple" / "simple.json", json.dumps(rec, indent=1, default=str))
+    swap.commit()
     return rec
 
 
@@ -884,29 +891,48 @@ def layer_edit(job_dir: Path, layer, edit: Callable[[Path, Callable | None], dic
     """A timeline edit on one layer of a Stems cut (the lane's swap, a re-render variant): ``edit(layer_dir, report)``
     is the plain cut's edit (``dense.swap_still``, ``dense.rerender_morph``) on the layer's own folder, which renders
     what it must (a morph pair, one morph; the morph cache answers what was rendered before) and re-cuts that layer;
-    then the layers are laid together again from their files and the curves with no GPU (``stems_composite.build``) and
-    the record keeps what each layer now holds and the edit (``edits``). Returns the Stems record."""
+    then the layers are laid together again from their files and the curves with no GPU (``stems_composite.compose``)
+    and the record keeps what each layer now holds and the edit (``edits``). Returns the Stems record.
+
+    The edit lands in the layer first (its cut and its record), and the composite and the cut's record after it. So
+    the layer's cut and record are kept as they were (``cut_swap.Kept``) until all of it has landed: when the edit,
+    the composite or the last step fails, or Stop ends it, they are put back, and the cut is as it was."""
+    from xenoform import cut_swap
+
     job_dir = Path(job_dir)
     rec = read_record(job_dir)
     row = layer_of(rec, layer)
     sub = layer_report(report, 0, 1, str(row["stem"]), "draft") if report else None  # its morphs, then its re-cut
-    edit(Path(str(row["folder"])), sub)
-    for l in rec.get("layers") or []:  # what each layer now holds
-        try:
-            lrec = json.loads(Path(str(l["record"])).read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            continue
-        l.update({"shots": len(lrec.get("shots") or []), "stills": list(lrec.get("stills") or []),
-                  "recuts": int(lrec.get("recuts") or 0)})
-    if report:
-        report("assemble", 0.62, f"Laying the layers together again (no GPU): the {row['stem']} layer's {kind} is in")
-    rec["composite"] = SC.build(job_dir, rec, report=report)
-    from datetime import datetime
+    folder = Path(str(row["folder"]))
+    # kept under a name of its own: the layer's own re-cut keeps and removes its ``.was`` copies in the same folder
+    kept = cut_swap.Kept([folder / "xenoform.mp4", folder / "simple" / "simple.json"], root=job_dir,
+                         suffix=cut_swap.BEFORE)
+    try:
+        edit(folder, sub)
+        for l in rec.get("layers") or []:  # what each layer now holds
+            try:
+                lrec = json.loads(Path(str(l["record"])).read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            l.update({"shots": len(lrec.get("shots") or []), "stills": list(lrec.get("stills") or []),
+                      "recuts": int(lrec.get("recuts") or 0)})
+        if report:
+            report("assemble", 0.62, f"Laying the layers together again (no GPU): the {row['stem']} layer's {kind} is in")
+        rec["composite"] = SC.compose(job_dir, rec, report=report)
+        from datetime import datetime
 
-    rec["edits"] = list(rec.get("edits") or []) + [{"layer": str(row["stem"]), "kind": kind, **(detail or {}),
-                                                    "at": datetime.now().astimezone().isoformat(timespec="seconds")}]
-    rec["recuts"] = int(rec.get("recuts") or 0) + 1
-    (job_dir / "simple" / "simple.json").write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
+        rec["edits"] = list(rec.get("edits") or []) + [{"layer": str(row["stem"]), "kind": kind, **(detail or {}),
+                                                        "at": datetime.now().astimezone().isoformat(timespec="seconds")}]
+        rec["recuts"] = int(rec.get("recuts") or 0) + 1
+        swap = cut_swap.Swap(f"The {row['stem']} layer's {kind}", root=job_dir)
+        swap.file(SC.staged_path(job_dir), job_dir / "xenoform.mp4")
+        swap.text(job_dir / "simple" / "simple.json", json.dumps(rec, indent=1, default=str))
+        swap.commit()
+    except BaseException as exc:  # it failed, or was stopped: the layer goes back to what it was before the edit
+        SC.discard(SC.staged_path(job_dir))
+        cut_swap.put_back(f"The {row['stem']} layer's {kind}", exc, kept)
+        raise
+    kept.drop()
     return rec
 
 
@@ -1052,7 +1078,8 @@ def composite_route(job_id: str, body: dict | None = None) -> dict:
         job.update({"status": "running", "stage": "assemble", "progress": 0.05, "error": None,
                     "detail": "Laying the layers together again (no GPU)",
                     # an edit of the cut, as the timeline's are (ui._edit_start): none of the Make's clock, its version
-                    "edit": "composite", "edit_from": int(job.get("video_version") or 0), "eta_s": None, "overall": None})
+                    "edit": "composite", "edit_from": int(job.get("video_version") or 0), "eta_s": None, "overall": None,
+                    "cut_as_it_was": None})
         # its own Stop, as every edit has (ui._edit_start): with none, Stop set the event of the Make or of an edit
         # long over, the desk said "Stopping the edit" and the composite landed without a word about it
         cancel = threading.Event()
@@ -1079,11 +1106,13 @@ def composite_route(job_id: str, body: dict | None = None) -> dict:
                             "detail": "Stopped: the layers were not laid again, and the cut is as it was."})
         except Exception as exc:
             log.exception("composite %s", job_id)
-            from xenoform.errors import plain_error
+            from xenoform import cut_swap
 
-            sentence = f"The layers were not laid again. {plain_error(exc)}"
+            # the reason, and whether the cut is as it was (a swap that could not be put back says it is not)
+            sentence, whole = cut_swap.failed_edit("The layers were not laid again.", exc)
             with ui._LOCK:  # an error with its reason, never "done" (UI review F1)
-                job.update({"status": "error", "stage": "done", "progress": 1.0, "error": sentence, "detail": sentence})
+                job.update({"status": "error", "stage": "done", "progress": 1.0, "error": sentence, "detail": sentence,
+                            "cut_as_it_was": whole})
 
     threading.Thread(target=go, name=f"composite-{job_id}", daemon=True).start()
     return {"id": job_id, "status": "running"}

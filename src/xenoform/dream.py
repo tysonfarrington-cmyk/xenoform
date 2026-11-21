@@ -229,8 +229,9 @@ def dream_span(job_dir: Path, first: int, *, seconds: float = 2.0, depth: str = 
              "clips": {str(j): p for j, p in new_clips.items()}, "took_s": round(time.perf_counter() - started, 2),
              "at": datetime.now().astimezone().isoformat(timespec="seconds")}
     rec.update({"clips": clips, "dreams": dreams_log + [entry]})
+    was = rec_path.read_bytes()  # the record before the dream: it comes back if the re-cut does not land
     rec_path.write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
     shutil.rmtree(run_dir / "frames", ignore_errors=True)  # the dreams live in the clips; the pngs were the way there
     if report:
         report("assemble", 0.55, "Re-cutting with the dream (no GPU)")
-    return dense.recut_from_cache(job_dir, {}, report=report, cfg=cfg)
+    return dense.recut_after_edit(job_dir, was, report=report, cfg=cfg)
