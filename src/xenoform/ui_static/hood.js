@@ -123,6 +123,8 @@
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.detail || "Under the hood could not read this shot.");
       if (style) {
+        // two styles picked quickly: the first one's preset landing last would mark the rows against the wrong preset
+        if (entry.edits && entry.edits.style != null && entry.edits.style !== style) return;
         entry.preset = data.preset || null;  // the preset for the style chosen, its prompt among it
       } else {
         entry.recipe = data;
@@ -154,7 +156,7 @@
   function stillName(s) {
     if (!s) return "";
     const f = String(s.file || "").split("/").pop();
-    return s.noun ? `${s.noun}${f ? ` <small>${esc(f)}</small>` : ""}` : esc(f);
+    return s.noun ? `${esc(s.noun)}${f ? ` <small>${esc(f)}</small>` : ""}` : esc(f);
   }
   function row(entry, k, label, value, extra) {
     const hints = (entry.recipe && entry.recipe.hints) || {};
@@ -533,6 +535,10 @@
       info = Object.assign({}, was && was.stopping ? { stopping: true } : {}, info);  // a Stop pressed stays pressed until the job ends
       running.set(id, info);
     } else running.delete(id);
+    // the panels of the cut's other shots are drawn again only when the edit starts, ends, moves shot or is stopped:
+    // drawn at every tick, a prompt being typed there lost its caret and an open select closed (the timeline stays usable)
+    const shape = (x) => (x ? `${Number(x.shot)}|${!!x.stopping}` : "");
+    const turned = shape(was) !== shape(running.get(id));
     cache.forEach((entry, key) => {
       if (key.split("|")[0] !== id) return;
       (entry.hosts || []).forEach((host) => {
@@ -546,7 +552,7 @@
           if (note) note.textContent = `${info.detail || "Re-rendering this shot on the GPU"} · the timeline stays usable`;
           const stop = bar.querySelector('[data-hood="stop"]');
           if (stop) stop.disabled = !!info.stopping;
-        } else {
+        } else if (mine || turned) {
           draw(host, host.__hood.opts);
         }
       });

@@ -132,7 +132,11 @@ function easyPhaseFromHash() {
   if (!state || !state.easy) return;
   const parts = (location.hash || "#simple").replace("#", "").split("/");
   const [name, sub] = parts;
-  const running = !!(state.job && state.job.status === "running");
+  // an edit kept on the cut's screen (Under the hood's re-render or take, postCutEdit's inPlace) is not a making
+  // screen: Back, Forward or a step click while it runs used to turn it into one, and its block and panel then stayed
+  // "rendering" for good (poll's making branch never ended the in-place edit)
+  const inPlace = !!(state.job && state.easy.shotEdit && state.easy.shotEdit.id === state.job.id);
+  const running = !!(state.job && state.job.status === "running") && !inPlace;
   const haveVideo = !!((state.job && state.job.video) || state.easy.playedHere || state.easy.reopenUrl);
   if (name === "showcase" || (name === "simple" && sub === "showcase")) {
     state.easy.showcase = true;
@@ -241,7 +245,10 @@ async function resumeMaking(id, kept, quiet) {
   if (job && (job.status === "error" || job.status === "cancelled")) {
     const reason = String(job.error || job.detail || "").trim() || "no reason given";
     const why = job.status === "cancelled" ? "was stopped." : `stopped: ${reason}${/[.!?]$/.test(reason) ? "" : "."}`;
-    if (k.recut) {  // an edit of a cut: the cut is as it was
+    // an edit of a cut: the cut is as it was. The job says so itself (``edit``), since the kept record is dropped when
+    // the edit ends: a reload on #render/<cut> after a stopped or failed edit used to land on Plan with "The render
+    // was stopped." though the cut was whole
+    if (k.recut || job.edit) {
       reopenCut(id, { fromUrl: true, note: `The edit ${why}` });
       return;
     }
@@ -2999,7 +3006,7 @@ async function loadCutSong(id, info) {
   }
   state.easy.songNote = "";
   if (!payload || !state || !state.easy) return false;
-  const keep = { lane: state.lane, stemsLane: state.stemsLane, videos: state.videos, wholeSongs: state.wholeSongs };
+  const keep = Object.assign(keepLane(), { videos: state.videos, wholeSongs: state.wholeSongs });
   adoptSession(payload);  // keeps the job and the desk's own choices; the cut's lane and the gallery stay as they were
   Object.assign(state, keep);
   state.easy.song = "file";
@@ -3596,6 +3603,7 @@ async function postCutEdit(id, route, body, detail, at, stage, title, opts) {
       render();
       return false;
     }
+    if (ignoreJob === id) ignoreJob = null;  // an edit of a cut whose Make was once stopped from this page is followed again
     state.job = Object.assign({}, state.job || {}, { id, status: "running", stage: stage || "restyle", progress: 0.05, detail });
     state.easy.tlSeek = at != null ? Number(at) : null;
     state.easy.recutting = true;
@@ -3624,6 +3632,13 @@ function paintShotEdit(edit, job) {
     tile.style.setProperty("--p", String(shotEditFill(job)));
   });
   if (window.XenoHood) window.XenoHood.progress(edit.id, { shot: edit.shot, progress: job.progress, detail: job.detail, status: "running" });
+}
+function dropShotEdit(edit) {
+  if (state.easy && state.easy.shotEdit === edit) state.easy.shotEdit = null;
+  if (window.XenoHood) {
+    window.XenoHood.progress(edit.id, null);
+    window.XenoHood.invalidate(edit.id);
+  }
 }
 function shotEditTick(job) {
   const edit = state.easy.shotEdit;
@@ -3754,6 +3769,7 @@ function easyVideoId() {
 // Perform); then reopenWhole gives back its guardrail notes and breakdown and loads the cut's own song, so its shots sit on
 // the strip and Render works without choosing the song first.
 function reopenRow(row, keepNote) {
+  if (ignoreJob === row.id) ignoreJob = null;  // the cut is open again: its edits are polled
   state.easy.reopenId = row.id;
   state.easy.knobsTouched = {};
   state.easy.failed = false;
@@ -4756,6 +4772,13 @@ async function easyMake() {
   }
   const vibe = vibeById(state.easy.vibe);
   if (!vibe) return;
+  if (state.easy.shotEdit) {
+    // a shot is rendering again on the open cut (Under the hood, in place): a Make now would cancel it and leave the
+    // cut's id ignored by poll(), so every later edit of that cut hung
+    state.easy.note = `Shot ${Number(state.easy.shotEdit.shot) + 1} is rendering again on this cut: wait for it, or press Stop in its Under the hood panel, then render.`;
+    render();
+    return;
+  }
   if (morphSource(state.easy) === "clips" && state.easy.tier === "cloud") state.easy.tier = "draft";  // Cloud Final has no clips path
   const cf = state.simpleOptions && state.simpleOptions.cloud_final;
   if ((state.easy.tier || "draft") === "cloud" && cf && !cf.ready) {
@@ -4765,9 +4788,7 @@ async function easyMake() {
     return;
   }
   if ((state.easy.tier || "draft") === "cloud" && !state.easy.cloudFinalOk) {
-    state.easy.note = state.easy.phase === "result"
-      ? "Cloud Final spends your Comfy Cloud credits: tick the box under Model tier in Tweak's Project panel, then render."
-      : "Cloud Final spends your Comfy Cloud credits: tick the box under Model to run it.";
+    state.easy.note = "Cloud Final spends your Comfy Cloud credits: tick the box under Model tier in Tweak's Project panel, then render.";
     render();
     return;
   }
@@ -5580,7 +5601,9 @@ async function useBundledSong(id, keepStep) {
     render();
     return;
   }
+  const lane = keepStep ? keepLane() : null;
   adoptSession(data);
+  if (lane) Object.assign(state, lane);
   // the song is in: on to the plan by itself (a reopened cut's own song keeps Render)
   if (!keepStep && state && state.easy) state.easy.step = "plan";
   await settleCut({ full: true });
@@ -5605,7 +5628,9 @@ async function useDemoSong(keepStep) {
   const response = await api("/api/demo");
   if (!response.ok) return;
   if (!state || !state.easy || state.easy.song !== "demo") return;  // a bundled song or a file was chosen meanwhile: it owns the desk
+  const lane = keepStep ? keepLane() : null;
   adoptSession(await response.json());
+  if (lane) Object.assign(state, lane);
   if (state && state.easy && !keepStep) state.easy.step = "plan";  // the song is in: on to the plan by itself (a reopened cut keeps Render)
   await settleCut({ full: true });
   loadSimpleOptions().then(() => render());
@@ -5637,6 +5662,12 @@ async function uploadSong(file) {
   loadSimpleOptions().then(() => render());
 }
 
+// A reopened cut's own song loading (loadCutSong) adopts a new session, which starts with no lane: the cut's lane, and
+// a read of it still on its way, are carried over, or the lane is read a second time and that second read drops the
+// edits the first one had just given back from before the reload (keptEdits, restoreEdits)
+function keepLane() {
+  return { lane: state.lane, stemsLane: state.stemsLane, laneLoading: state.laneLoading };
+}
 function adoptSession(data, options = {}) {
   const previous = state;
   state = {
@@ -5957,6 +5988,14 @@ async function poll(id) {
     return;
   }
   delete pollMisses[id];
+  const away = state.easy && state.easy.shotEdit;
+  if (away && away.id === id && state.easy.phase !== "making" && easyVideoId() !== id) {
+    // another cut was opened while this one's in-place edit ran: the edit goes on at the desk, but its job must not
+    // become the open cut's (its notes, its Share cut and its "ready" line were the other cut's)
+    dropShotEdit(away);
+    state.easy.recutting = false;
+    return;
+  }
   state.job = job;
   watchJob(job);
   if (state.easy && job.eta_s !== state.easy.lastEta) { state.easy.lastEta = job.eta_s; state.easy.jobAt = Date.now(); }
@@ -6022,6 +6061,7 @@ function editEnded(job) {
   const landed = job.status === "done" && (job.edit_from == null || Number(job.video_version || 0) !== Number(job.edit_from));
   const detail = String(job.detail || "").trim();
   const said = (text) => `${text}${/[.!?]$/.test(text) ? "" : "."}`;
+  if (easy.shotEdit) dropShotEdit(easy.shotEdit);  // an in-place edit that ended on the making screen all the same
   easy.recutting = false;
   easy.stopping = false;
   easy.making = null;
@@ -6533,7 +6573,7 @@ document.addEventListener("click", async (event) => {
       applySimpleRecipe(await decodeSimpleRecipe(code));
       const ready = await loadCutSong(id);
       if (!ready) {
-        state.easy.cardNote = { id, text: "Recipe loaded, but this cut's song is not on this machine: choose it again on the first screen, then Make." };
+        state.easy.cardNote = { id, text: "Recipe loaded, but this cut's song is not on this machine: choose it again on Source, then Make." };
         render();
         const song = document.querySelector("[data-tour=easy-song]");
         if (song && song.scrollIntoView) song.scrollIntoView({ behavior: "smooth", block: "start" });
