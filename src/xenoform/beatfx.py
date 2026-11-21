@@ -565,6 +565,66 @@ def _ffmpeg() -> str:
     return find()
 
 
+class _Encoder:
+    """An ffmpeg that takes raw frames on stdin and ends the file at the song's end (``-shortest``).
+
+    Whether the encode worked is ffmpeg's exit code, told with ffmpeg's own words; a closed stdin is not the measure.
+    When the picture outlasts the song ffmpeg has its file whole, stops reading and leaves with exit 0, and how soon
+    it closes stdin is the build's: an ffmpeg before 7 closes it about ten frames on (Ubuntu 24.04's 6.1), ffmpeg 8
+    reads on for a while first. The writer met the closed pipe on the one and not on the other and raised
+    ``BrokenPipeError`` with a good file on disk. So a frame ffmpeg no longer takes is counted and dropped, and
+    ``finish`` gives the exit code: 0 with frames left over is the song's end, anything else is a failed encode
+    whatever the pipe did. An error other than the closed pipe is still raised where it happens.
+
+    ffmpeg's words go to a file, not the console and not a pipe (nothing reads a pipe while frames are written: see
+    ``comfy_pack.assemble``); ``finish`` reads them once ffmpeg has ended."""
+
+    def __init__(self, cmd: list[str]) -> None:
+        import tempfile
+
+        self._said = tempfile.TemporaryFile()
+        self.proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=self._said)
+        self.taken = 0  # frames written before ffmpeg stopped reading
+        self.left = 0  # frames offered after it
+
+    def write(self, frame: np.ndarray) -> None:
+        import errno
+
+        if self.left:
+            self.left += 1
+            return
+        try:
+            self.proc.stdin.write(np.ascontiguousarray(frame).tobytes())
+        except OSError as exc:  # EPIPE, or EINVAL as Windows sometimes names the same closed pipe
+            if not isinstance(exc, BrokenPipeError) and exc.errno != errno.EINVAL:
+                raise
+            self.left = 1
+            return
+        self.taken += 1
+
+    def finish(self) -> tuple[int, str]:
+        """Close stdin, wait for ffmpeg, and give its exit code and what it said. Never raises for the pipe."""
+        try:
+            self.proc.stdin.close()
+        except OSError:  # the close flushes what a refused write left behind, into the same closed pipe
+            pass
+        code = self.proc.wait()
+        self._said.seek(0)
+        said = self._said.read().decode("utf-8", "replace").strip()
+        self._said.close()
+        return code, said
+
+    def judge(self, code: int, said: str, could_not: str) -> None:
+        """Raise for a failed encode, in ffmpeg's words; log what a good one had to say and where the song ended."""
+        if code:
+            raise RuntimeError(f"ffmpeg could not {could_not} (exit {code})" + (f": {said[-400:]}" if said else "."))
+        if said:
+            log.warning("ffmpeg did %s, and said: %s", could_not, said[-400:])
+        if self.left:
+            log.info("ffmpeg ended the file at the song's end: it took %d frames and left the last %d",
+                     self.taken, self.left)
+
+
 def _conformed(clip: Path, out_path: Path) -> Path:
     """A clip at the project fps (guardrail lag_qa): mismatched clips are re-timed first."""
     try:
@@ -881,7 +941,7 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
     if label:
         cmd += ["-metadata", f"comment={label}"]
     cmd.append(str(tmp))
-    enc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+    enc = _Encoder(cmd)
     n = 0
     zoom_scale = 0.5 if aspect == "9:16" else 1.0
     centres = []
@@ -907,9 +967,9 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
             k = written[0]
             written[0] += 1
             for done in tamer.push(np.ascontiguousarray(frame), rules[k] if k < len(rules) else None):
-                enc.stdin.write(np.ascontiguousarray(done).tobytes())
+                enc.write(done)
             return
-        enc.stdin.write(np.ascontiguousarray(frame).tobytes())
+        enc.write(frame)
 
     # The per-shot work runs in _shot_frames, here or in worker processes (look_workers): a full song's look pass
     # used to take 0.2 s a frame on one core, about nineteen minutes for four minutes of picture.
@@ -1015,12 +1075,10 @@ def compose(clips: list[Path], shots: list[dict], audio_path: Path, out_path: Pa
         held = []
         if tamer is not None:
             for done in tamer.flush():
-                enc.stdin.write(np.ascontiguousarray(done).tobytes())
+                enc.write(done)
     finally:
-        enc.stdin.close()
-        code = enc.wait()
-    if code:
-        raise RuntimeError(f"ffmpeg could not write the cut (exit {code}).")
+        code, said = enc.finish()
+    enc.judge(code, said, "write the cut")
     tmp.replace(out_path)
     if look.active:
         log.info("house look: dance_fx=%s stem_orbit=%s stems=%s %d frames in %.1fs", look.mode, look._orbit_ok,
@@ -1044,10 +1102,10 @@ def reframe_file(src: Path, dest: Path, aspect: str, *, quality: str = "draft", 
         edges = list(range(0, n, FPS * 2)) + [n]
     edges = sorted({max(0, min(n, e)) for e in edges})
     tmp = Path(dest).with_name(Path(dest).stem + ".reframe.mp4")
-    enc = subprocess.Popen([_ffmpeg(), "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{w}x{h}",
-                            "-r", str(FPS), "-i", "-", "-i", str(src), "-map", "0:v", "-map", "1:a?", "-c:v", "libx264",
-                            "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p", "-c:a", "copy", "-shortest",
-                            "-movflags", "+faststart", str(tmp)], stdin=subprocess.PIPE)
+    enc = _Encoder([_ffmpeg(), "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{w}x{h}",
+                    "-r", str(FPS), "-i", "-", "-i", str(src), "-map", "0:v", "-map", "1:a?", "-c:v", "libx264",
+                    "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p", "-c:a", "copy", "-shortest",
+                    "-movflags", "+faststart", str(tmp)])
     try:
         for a, b in zip(edges[:-1], edges[1:]):
             seg = frames[a:b]
@@ -1055,12 +1113,10 @@ def reframe_file(src: Path, dest: Path, aspect: str, *, quality: str = "draft", 
             for k, frame in enumerate(seg):
                 u = k / max(len(seg) - 1, 1)
                 c = (c0[0] + (c1[0] - c0[0]) * u, c0[1] + (c1[1] - c0[1]) * u)
-                enc.stdin.write(np.ascontiguousarray(reframe(frame, aspect, c, w, h)).tobytes())
+                enc.write(reframe(frame, aspect, c, w, h))
     finally:
-        enc.stdin.close()
-        code = enc.wait()
-    if code:
-        raise RuntimeError(f"ffmpeg could not reframe the cut (exit {code}).")
+        code, said = enc.finish()
+    enc.judge(code, said, "reframe the cut")
     tmp.replace(dest)
     return {"aspect": aspect, "size": f"{w}x{h}", "frames": n}
 
