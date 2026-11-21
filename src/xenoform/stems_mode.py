@@ -1016,7 +1016,9 @@ def status_route(audio_id: str = "", path: str = "") -> dict:
 @router.post("/api/jobs/{job_id}/composite")
 def composite_route(job_id: str, body: dict | None = None) -> dict:
     """Re-composite a finished Stems cut with new ``prominence`` and ``blend`` ({stem: value}): the layers are laid
-    together again from their files and the curves (seconds, no GPU, no re-cut); the job runs like a re-cut."""
+    together again from their files and the curves (seconds, no GPU, no re-cut); the job runs like a re-cut. It is an
+    edit with a Stop of its own (``POST /api/jobs/<id>/cancel``): Stop ends ffmpeg while the composite is being made
+    and the job ends cancelled with the cut as it was; a Stop after the cut's file is replaced is told it came too late."""
     from xenoform import ui
 
     body = body or {}
@@ -1051,19 +1053,30 @@ def composite_route(job_id: str, body: dict | None = None) -> dict:
                     "detail": "Laying the layers together again (no GPU)",
                     # an edit of the cut, as the timeline's are (ui._edit_start): none of the Make's clock, its version
                     "edit": "composite", "edit_from": int(job.get("video_version") or 0), "eta_s": None, "overall": None})
+        # its own Stop, as every edit has (ui._edit_start): with none, Stop set the event of the Make or of an edit
+        # long over, the desk said "Stopping the edit" and the composite landed without a word about it
+        cancel = threading.Event()
+        ui._CANCEL[job_id] = cancel
 
     def on_progress(stage: str, frac: float, detail: str) -> None:
         with ui._LOCK:
             job.update({"stage": stage, "progress": float(frac), "detail": detail})
 
     def go() -> None:
+        from xenoform.turbo import JobCancelled
+
         try:
-            out = SC.rebuild(folder, prominence=prominence, blend=blend, report=on_progress)
+            out = SC.rebuild(folder, prominence=prominence, blend=blend, report=on_progress, cancel=cancel.is_set)
             with ui._LOCK:
                 version = int(job.get("video_version") or 0) + 1
+                late = ". Stop came too late to undo it, so the edit landed." if cancel.is_set() else ""
                 job.update({"status": "done", "stage": "done", "progress": 1.0, "video_version": version,
-                            "video": f"/api/jobs/{job_id}/video?v={version}", "detail": "Laid together again",
+                            "video": f"/api/jobs/{job_id}/video?v={version}", "detail": f"Laid together again{late}",
                             "composites": out.get("composites")})
+        except JobCancelled:  # ffmpeg was ended before the cut's file was replaced: no new version, the record not written
+            with ui._LOCK:
+                job.update({"status": "cancelled", "stage": "done", "progress": 1.0, "error": None,
+                            "detail": "Stopped: the layers were not laid again, and the cut is as it was."})
         except Exception as exc:
             log.exception("composite %s", job_id)
             from xenoform.errors import plain_error

@@ -185,6 +185,16 @@ in seconds, no GPU and no re-cut. The order follows the new prominence.
   twice across layers). Generate here and Dream act on one cut and stay off on a layer: the drawer says so, and the
   routes refuse a Stems cut with that note.
 - Render at Final from a Stems prototype keeps every layer's stills, as a plain Final keeps its chain.
+- **Stop** on a re-cut or on Lay them again (`POST /api/jobs/<id>/cancel`) ends it with the cut as it was, or is told
+  it came too late; there is no state between the two. Nothing of the cut is replaced until all of it is made: each
+  layer's re-cut is composed beside its cut (`xenoform.recut.mp4`), the composite is laid from those files beside the
+  cut (`composite/composite.mp4`), and only then are the layers' cuts and records, the composite and the cut's record
+  put in place, in one step that looks at nothing and reports nothing (`stems_mode.recut`, `stems_composite.build`).
+  A Stop before that step ends the work at once (ffmpeg is ended while it lays the layers), removes what was made
+  beside the cut, and the job ends `cancelled` with no new video version: "Stopped: the re-cut did not land, and the
+  cut is as it was." (Lay them again: "the layers were not laid again".) A Stop during the step lands: the job ends `done` with its new version and "Stop came too late
+  to undo it, so the edit landed." A swap or re-render on a layer stops in its GPU wait, as on any cut; once its
+  morphs are made it lands and says the same.
 
 ## Routes
 
@@ -193,7 +203,8 @@ in seconds, no GPU and no re-cut. The order follows the new prominence.
 - `GET /api/stems/status?audio_id=` (or `path=`): `status` none / queued / running / done / error, `stage` split then
   envelopes, `progress` and `eta_s` while it runs, `stems` (a row a stem: `name`, `role`, `envelope`, `active`,
   `onsets`) when done. Registered before `GET /api/stems/<id>`.
-- `POST /api/jobs/<id>/composite` `{"prominence": {stem: 0..1}, "blend": {stem: mode}}`: the re-composite.
+- `POST /api/jobs/<id>/composite` `{"prominence": {stem: 0..1}, "blend": {stem: mode}}`: the re-composite, an edit
+  with a Stop of its own like the others (`edit: "composite"`).
 - `POST /api/jobs/<id>/recut` takes `layer` (the timeline's maps are that layer's) and `prominence` / `blend`.
 - `POST /api/jobs/<id>/swap` and `/rerender` take `layer` on a Stems cut (required there): the layer's still or shot,
   rendered and re-cut, then the composite laid again. `/insert` and `/dream` answer 400 on a Stems cut.
@@ -207,3 +218,7 @@ blends and alpha, the byte-for-byte rebuild, the re-composite, the layers' valid
 the lead, a full two-layer Make on the mock engine (objects and objects on one vibe, and objects with clips), the re-cut
 of one layer and of all, the routes and the desk. The split there is `stems.fake_split` (synthetic stems: drums with a
 breakdown, an "other" that carries it), so Demucs never runs in the suite.
+
+`tests/test_stems_stop.py`: Stop tried at every report of a knob re-cut and of a re-composite (each leaves every file
+and record as it was), Stop while ffmpeg lays the layers (a stand-in that would run a minute is ended), the two desk
+routes ending `cancelled` with the cut whole, and a Stop after the cut is replaced told it came too late.

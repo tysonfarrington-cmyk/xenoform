@@ -310,3 +310,51 @@ def test_a_stop_that_comes_after_a_stems_recut_landed_is_told_it_was_too_late(de
     after = _state(job)
     assert all(after[key] != before[key] for key in before)
     assert json.loads(after["record"])["composite"]["sha256"] == SC.sha256_of(job / "xenoform.mp4")
+
+
+def test_the_desk_stops_lay_them_again_and_the_cut_is_as_it_was(desk, slow_ffmpeg):
+    """It had no Stop of its own: the desk said "Stopping the edit" and the composite landed without a word."""
+    client, job = desk
+    before = _state(job)
+    slow_ffmpeg.take_over()
+    r = client.post(f"/api/jobs/{JOB}/composite", json={"prominence": {"other": 1.0}, "blend": {"drums": "add"}})
+    assert r.status_code == 200 and _wait(slow_ffmpeg.writing)
+    answer = client.post(f"/api/jobs/{JOB}/cancel").json()
+    assert answer["status"] == "running" and answer["detail"].startswith("Stopping")
+    j = _settle(client)
+    assert j["status"] == "cancelled" and j["error"] is None
+    assert j["detail"] == "Stopped: the layers were not laid again, and the cut is as it was."
+    assert j["edit"] == "composite" and j["video_version"] == j["edit_from"] == 0
+    assert slow_ffmpeg.ended() and _state(job) == before and _left_beside(job) == []
+    # and the cut takes the next edit: stopped is not "still rendering", and the stand-in is gone
+    slow_ffmpeg._monkeypatch.setattr(SC, "subprocess", subprocess)
+    assert client.post(f"/api/jobs/{JOB}/composite", json={"prominence": {"other": 1.0}}).status_code == 200
+    j = _settle(client)
+    assert j["status"] == "done" and j["detail"] == "Laid together again" and j["video_version"] == 1
+
+
+def test_lay_them_again_has_a_stop_of_its_own_and_a_late_one_is_told_so(desk, monkeypatch):
+    from xenoform import ui
+
+    client, job = desk
+    stale = threading.Event()
+    stale.set()  # the Stop of an edit long over, still under the cut's id
+    with ui._LOCK:
+        ui._CANCEL[JOB] = stale
+    assert client.post(f"/api/jobs/{JOB}/composite", json={"prominence": {"other": 1.0}}).status_code == 200
+    j = _settle(client)
+    assert j["status"] == "done" and j["detail"] == "Laid together again" and j["video_version"] == 1
+    with ui._LOCK:
+        assert ui._CANCEL[JOB] is not stale and not ui._CANCEL[JOB].is_set()
+    landed, release = _lands_then_waits(monkeypatch, SC, "rebuild")
+    try:
+        assert client.post(f"/api/jobs/{JOB}/composite", json={"blend": {"drums": "add"}}).status_code == 200 and landed.wait(30)
+        client.post(f"/api/jobs/{JOB}/cancel")
+    finally:
+        release.set()
+    j = _settle(client)
+    assert j["status"] == "done" and j["video_version"] == 2
+    assert j["detail"] == "Laid together again. Stop came too late to undo it, so the edit landed."
+    saved = json.loads((job / "simple" / "simple.json").read_text(encoding="utf-8"))
+    assert saved["composites"] == 2 and saved["composite"]["blends"]["drums"] == "add"
+    assert saved["composite"]["sha256"] == SC.sha256_of(job / "xenoform.mp4")
