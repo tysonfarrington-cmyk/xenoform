@@ -654,7 +654,7 @@ def create_app(cfg: dict | None = None):
 
     def _estimate_clips(own_folder: str, own_id: str) -> list[dict]:
         """Your clips for the desk's whole-song estimate (``_apply_own`` on the folder, or the files dropped), read once
-        a folder as it is (its time), since the estimate is asked at every Fine-tune change."""
+        a folder as it is (its time), since the estimate is asked at every change of a choice on the desk."""
         folder = own_folder
         if own_id:
             with _LOCK:
@@ -3921,7 +3921,7 @@ def _run_job(job_id: str, audio_path: Path, body: dict, cfg: dict, out: Path, ca
         from xenoform.hardware import TIERS as _tiers
 
         chosen = str(body.get("hardware_tier") or "auto").strip().lower()
-        start = dict(_tiers[chosen]) if chosen in _tiers else detect_tier()  # Fine-tune -> GPU, else the detected card
+        start = dict(_tiers[chosen]) if chosen in _tiers else detect_tier()  # the Project panel's GPU row, else the detected card
         result, tier_id, note = run_resilient(once, start)
         qa_report = None
         if not cancel_event.is_set() and Path(out).is_file() and not body.get("tiny"):
@@ -4013,9 +4013,9 @@ def _effects_looks() -> dict:
 
 def _apply_own(body: dict) -> dict:
     """Your own clips and images (Simple), into the make body in place: a folder path typed in, or the files dropped on
-    the desk (POST /api/own). The images lead the morph chain (``morph_targets``); the clips are cut in on the beat
-    (``own_clips``, dense.run_simple) unless the body says ``cut_in_clips: false`` (the desk's Work in progress > Your
-    clips, off by default; a caller that does not send it keeps the clips, as before)."""
+    the desk (POST /api/own). An object cut takes the images, which lead the morph chain (``morph_targets``), and leaves
+    the clips out; a clips cut (``morph_source: clips``) takes only the clips (``own_clips``). The two never share a
+    cut, whatever ``cut_in_clips`` says (the desk no longer sends it)."""
     own_folder = str(body.get("own_folder") or "").strip()
     own_id = str(body.get("own_id") or "")
     if own_id:

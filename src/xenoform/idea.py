@@ -11,7 +11,8 @@ the line into three things the cut already knows how to make:
   chain, as before) and the things the catalogue lacks (``own``: grown as the user's own shapes, first in the chain):
   "laser";
 - **performer**: a person doing something ("girl dancing" → dancing; "singing" → sing; a person with no performance →
-  the auto mix). Polly is in the desk's Work in progress (28 Oct): the line cues her style, it no longer switches her on.
+  the auto mix). Polly is a work-in-progress row of the desk's Project panel (28 Oct, t5): the line cues her style,
+  it no longer switches her on.
 
 ``read`` is a rule parser, no model: a few lexicons (places, skies and lights, people, performances, music words), a
 spelling map for the typos a line is typed with, comma groups split again at the prepositions that introduce a
@@ -764,7 +765,7 @@ def applies(state: dict | None) -> bool:
 def shape_state(state: dict, reading: dict | None = None) -> dict:
     """A copy of ``state`` with the line's choices in it: Scenes to Mix when the line gave a scene and the user left
     it Off (Only stays Only; an Off picked by hand, ``scenes_chosen``, stays Off); the cued style for Polly when she is
-    on and her style is Auto (the line never switches her on: she is in Work in progress); ``idea_reading`` for the
+    on and her style is Auto (the line never switches her on: she is a work-in-progress row); ``idea_reading`` for the
     record and the pick. A state that is not a Simple cut or has no line comes back as it was."""
     state = dict(state or {})
     if not applies(state) or not str(state.get("idea") or "").strip():
@@ -784,7 +785,7 @@ def shape_state(state: dict, reading: dict | None = None) -> dict:
         if feel.get("look") and str(state.get("dance_fx") or "auto") == "auto":
             state["dance_fx"] = feel["look"]
     perf = reading.get("performer")
-    # Polly is in the desk's Work in progress (docs/MORPH_ENGINE_PLAN.md §3): the line no longer switches her on, but
+    # Polly is a work-in-progress row of the Project panel (docs/MORPH_ENGINE_PLAN.md §3): the line no longer switches her on, but
     # when she is on, the performance it cues ("girl dancing") still sets her style over Auto
     if perf and _dense.performer_choice(state) > 0:
         style = str(perf.get("style") or "auto")

@@ -294,7 +294,7 @@ function shortcutLabel() {
   return mac ? "⌘↵" : "Ctrl ↵";
 }
 
-// The last session's vibe and Fine-tune choices survive a reload or a desk restart (the song cannot: uploads live on the server).
+// The last session's vibe, feel and Project panel choices survive a reload or a desk restart (the song cannot: uploads live on the server).
 const EASY_SAVED_KEYS = ["vibe", "idea", "energyPreset", "aspect", "tier", "fx", "endCard", "danceFx", "stemOrbit", "performer", "performerStyle", "gpuTier", "ownFolder", "vertical", "morphs", "ownShapes", "foreshadow", "scenes", "pins", "feelSig", "batchN", "batchVary", "morphSource", "scenesChosen", "morphStyle", "morphTiming", "effects", "backdrop", "breathe", "dropMode", "stemRows", "stemLeadAuto", "importFolder", "importKind", "songCap", "songVibes"];
 // The Model row's tiers as the desk names them (quality_tier: draft, fast, final, cloud)
 const TIER_LABEL = { draft: "Draft", fast: "Fast Final", final: "Final", cloud: "Cloud Final" };
@@ -416,7 +416,7 @@ function payload() {
     own_folder: (state.easy && state.easy.ownFolder) || "",
     own_shapes: (state.easy && state.easy.ownShapes) || "",  // the shapes typed in Your own shapes: they lead this cut (morph_pass.pick_stills)
     own_id: (state.easy && state.easy.ownId) || "",
-    // the clips in that folder are cut in only with Work in progress > Your clips on; the images always lead the chain
+    // an object cut takes only the folder's images (they lead the chain); its clips belong to a clips cut (ui._apply_own)
     morph_source: morphSource(state.easy) === "clips" ? "clips" : "objects",  // objects or your clips, never both in one cut (xenoform.clip_cut)
     // (the Director desk's scene_transitions rows are gone: the engine never read them, and the transition guard
     // reported one clamp line per boundary from them; per-boundary dressing is the timeline's, on the re-cut)
@@ -998,7 +998,7 @@ function showcaseAside() {
 
 // Share, the last stage: the files of this cut under its timeline. Download (in the head) is the file itself at full
 // quality; Share cut is a 720p H.264 under 16 MB for a post; then the hook, the recipe code, the shot list and the seed
-// file the render wrote beside the cut (VJ mode is in Work in progress).
+// file the render wrote beside the cut (live visuals are the Perform step).
 function shareRow(easy) {
   const id = easyVideoId();
   if (!id || easy.playedHere) return "";
@@ -1025,7 +1025,7 @@ function shareRow(easy) {
     </section>`;
 }
 
-// Render, after the prototype: the same vibe, idea line, chain pins, knobs and Fine-tune, made again for the whole song
+// Render, after the prototype: the same vibe, idea line, chain pins, knobs and Project rows, made again for the whole song
 // or at Final. It is a new render; the timeline's shot edits stay with the cut they were made on.
 function renderRow(easy) {
   if (easy.showcase || (easy.playedHere && !easy.failed)) return "";
@@ -1345,7 +1345,7 @@ function planDock(easy) {
 // first, the four knobs (ui_v6's strip, a MIDI slot each), then the rows, one segmented style for a pick-one row and one
 // chip style for a pick-many row (C9), one short line for the choice under the pointer or the keyboard instead of a
 // paragraph a row (C4, C15), a cost tag on every row (C10); the monitor beside (this song's Draft when there is one, else
-// the sketch); and the project's own rows under the hood, where Fine-tune and Work in progress went (C5, C6).
+// the sketch); and the project's own rows under the hood, which took the old Fine-tune and Work in progress drawers' rows (C5, C6).
 const FEELS = [
   { id: "house", name: "House", knobs: { intensity: 0.5, speed: 0.5, chaos: 0.3, glow: 0.4 }, look: "auto", style: "auto",
     hint: "the desk's own feel: the vibe's look, Melt through the verses and Shatter on the drops, every knob in the middle." },
@@ -2383,11 +2383,10 @@ function performerRow(easy) {
 }
 
 // Your own images: a folder on this machine, or files dropped or picked here. The images lead the vibe's morph chain
-// (morph targets, in name order): morphing between your own pictures is the engine. Clips in the same folder are cut
-// in on the beat only with Work in progress > Your clips on (one run of shots at the start of a passage, 2 to 8 s,
-// trimmed around its middle and played 1:1 like a performer shot).
+// (morph targets, in name order): morphing between your own pictures is the engine. Clips in the same folder are left
+// out of an object cut (ui._apply_own): they are their own cut, Made from > Your clips on Plan.
 function ownRow(easy) {
-  const note = easy.ownNote || "Your images lead the morphs, in name order. Leave empty and the vibe's own objects carry the cut. Clips are never cut into objects: for them, Morph > Your clips at the top.";
+  const note = easy.ownNote || "Your images lead the morphs, in name order. Leave empty and the vibe's own objects carry the cut. Clips are never cut into objects: for them, Made from > Your clips on Plan.";
   return `<div class="simple-seg own-row" data-own-drop><span>Your images</span>
       <label class="ghost cloud-toggle">Folder <input type="text" id="easy-own-folder" value="${esc(easy.ownFolder || "")}" spellcheck="false" aria-label="Folder of your images" placeholder="a folder of images"></label>
       <label class="ghost cloud-toggle">Drop or pick files <input type="file" multiple accept="video/*,image/*" data-act="easy-own-files" hidden></label>
@@ -3063,7 +3062,7 @@ function songsLine() {
   return `<p class="note song-open-line">Whole song · ${esc(open.label || "a song")} · ${esc(what)} <button type="button" class="text" data-act="song-watch" data-id="${esc(open.id)}">Open</button></p>`;
 }
 
-// Called once a song is in (after /api/analyze or /api/demo) and whenever a Fine-tune choice changes the plan.
+// Called once a song is in (after /api/analyze or /api/demo) and whenever a choice on Plan, Tweak or the Project panel changes the plan.
 async function loadSimpleOptions() {
   try {
     const easy = (state && state.easy) || {};
@@ -4620,15 +4619,15 @@ document.addEventListener("visibilitychange", () => {
   if (!document.hidden && state && state.easy && state.easy.phase !== "making") tabTitle();
 });
 
-// The beat overlay (the waveform and the beat marks drawn on the picture): a labelled row like the rest of Fine-tune,
-// not an orphan "Beat overlay · off" button under the drawer.
+// The beat overlay (the waveform and the beat marks drawn on the picture): a labelled row like the rest of the Project panel,
+// not an orphan "Beat overlay · off" button under it.
 function beatOverlayRow(easy) {
   const overlay = !!easy.overlay;
   return `<div class="cloud-opts">${simpleSeg("easy-overlay-set", overlay ? "on" : "off", [["off", "Off"], ["on", "On"]], "Beat overlay")}
       <p class="note">${overlay ? "The waveform and the beat marks are drawn on the picture." : "Off: a clean export, nothing drawn on the picture."}</p></div>`;
 }
 
-// Paid cloud (Work in progress): the opt-in, then Cloud quality and its cut plan once it is on.
+// Paid cloud (a work-in-progress row of the Project panel): the opt-in, then Cloud quality and its cut plan once it is on.
 function cloudRows(easy) {
   const paidBox = document.getElementById("paid-cloud");
   const paidLocked = !!(paidBox && paidBox.disabled);
@@ -6899,7 +6898,7 @@ document.addEventListener("drop", (event) => {
   if (file) uploadSong(file);
 });
 
-// Your footage (Simple, Fine-tune): drop clips and images on the row.
+// Your footage (Your images in the Project panel, Your clips on Plan): drop clips and images on the row.
 document.addEventListener("dragover", (event) => {
   const zone = event.target && event.target.closest ? event.target.closest("[data-own-drop]") : null;
   if (!zone) return;
@@ -7580,7 +7579,7 @@ async function uploadOwn(files) {
   const left = Number(clipsCut ? data.clips_left : data.images_left) || 0;
   state.easy.ownNote = clipsCut
     ? (n ? `${n} clip${n === 1 ? "" : "s"} here. They play in turn, each morphing into the next.` : "No clips came with those files (mp4, mov or webm).")
-    : (n ? `${n} image${n === 1 ? "" : "s"} here. They lead the morphs, in name order.` : "No images came with those files. Clips go under Morph > Your clips.");
+    : (n ? `${n} image${n === 1 ? "" : "s"} here. They lead the morphs, in name order.` : "No images came with those files. Clips go under Made from > Your clips on Plan.");
   if (left) state.easy.ownNote += ` ${left} left out: a cut takes ${clipsCut ? data.max_clips : data.max_images} at most.`;
   render();
   if (clipsCut && wholeSong(state.easy)) loadSimpleOptions().then(render);  // a clips song is planned on these clips
@@ -7597,7 +7596,7 @@ let stemsSeq = 0;      // each ask is numbered: an answer to an older ask (the s
 let stemsPending = 0;  // the ask in flight, so a redraw meanwhile does not start a second poll chain
 const STEMS_NOTE_MS = 10000;  // a refusal stays on the line this long; the split's poll goes on under it
 
-// The Fine-tune Stem reactions lanes (ui_v6.js) follow this line: one lane per stem in use, the split's or your own.
+// Tweak's Stem reactions lanes (ui_v6.js) follow this line: one lane per stem in use, the split's or your own.
 function tellKnobsStems(st) {
   try { if (window.XENO_STEMS_UPDATE) window.XENO_STEMS_UPDATE(st.audioId, st); } catch (err) { /* no knob strip on this page */ }
 }
@@ -7910,7 +7909,7 @@ function stemRowHtml(easy, r) {
   const what = row.kind === "clips"
     ? `<label class="ghost cloud-toggle stem-folder-label">Clips folder <input type="text" class="stem-folder" data-stem="${name}" value="${esc(row.folder || "")}" spellcheck="false" placeholder="a folder of clips" aria-label="${name}: folder of clips"></label>`
     : `<select class="stem-vibe" data-stem="${name}" aria-label="${name}: vibe">${vibeOpts}</select>
-       <button type="button" class="chip${row.chainPins ? " on" : ""}" data-act="easy-stem-chainpins" data-stem="${name}" aria-pressed="${row.chainPins ? "true" : "false"}" title="This layer holds the stills pinned on the Chain row (Fine-tune)">Chain row's pins</button>
+       <button type="button" class="chip${row.chainPins ? " on" : ""}" data-act="easy-stem-chainpins" data-stem="${name}" aria-pressed="${row.chainPins ? "true" : "false"}" title="This layer holds the objects pinned on the strip's Objects lane (Plan)">The plan's pins</button>
        ${pinned ? `<span class="note">keeps ${pinned} still${pinned === 1 ? "" : "s"} of the cut it came from</span> <button type="button" class="text" data-act="easy-stem-pins-clear" data-stem="${name}">Clear</button>` : ""}`;
   return `<div class="stem-row${row.on ? "" : " off"}">
       <div class="stem-name"><button type="button" class="chip${row.on ? " on" : ""}" data-act="easy-stem-on" data-stem="${name}" aria-pressed="${row.on ? "true" : "false"}">${row.on ? "On" : "Off"}</button><b>${esc(stemLabel(r.name))}</b></div>
@@ -8241,7 +8240,7 @@ function paidCloudFor(data, previous) {
   return readPaidCloud() || !!(info && info.config);
 }
 
-// The ComfyUI address from Settings (or the field under Fine-tune) is kept in this browser, so a reload keeps it; the desk's
+// The ComfyUI address from Settings (or the Project panel's Renders on field) is kept in this browser, so a reload keeps it; the desk's
 // own address (its config) is what a browser that never chose one starts from.
 function readEndpoint() {
   try {
@@ -8377,7 +8376,7 @@ document.addEventListener("change", (ev) => {
   }
 });
 
-// Fine-tune, Work in progress and More vibes remember whether they were open.
+// The Project panel and More vibes remember whether they were open.
 document.addEventListener("toggle", (ev) => {
   const el = ev.target;
   if (!el || !el.id) return;

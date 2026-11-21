@@ -37,7 +37,7 @@ def test_the_drawer_holds_everything_that_is_not_the_engine():
 
 def test_your_images_stay_in_the_engine_and_your_clips_are_their_own_cut():
     own = _fn("function ownRow(easy) {", "// The stills library")
-    assert "<span>Your images</span>" in own and "Morph > Your clips" in own
+    assert "<span>Your images</span>" in own and "Made from > Your clips on Plan" in own and "Morph > Your clips" not in APP
     body = _fn("function payload() {", "function vjUrl()")
     assert "morph_source: morphSource(state.easy)" in body and "cut_in_clips" not in body
     assert 'act === "easy-source"' in APP and '"morphSource"' in APP.split("const EASY_SAVED_KEYS = [", 1)[1].split("];", 1)[0]

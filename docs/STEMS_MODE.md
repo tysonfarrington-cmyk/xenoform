@@ -69,7 +69,7 @@ layers that are on (and so do Cloud's credits).
 - **Every body passes the guardrails.** The Make's body is checked once (`guardrails.apply`, which validates the layers
   and writes a `[stems]` line), and every layer's own body passes `guardrails.apply` again before it renders, so the
   taste file, the kind guards and the rest apply per layer; each layer's report lines are kept in the record.
-- **Objects or clips, never both in a layer.** A layer is `objects` (the vibe's stills, the Chain row's pins if you
+- **Objects or clips, never both in a layer.** A layer is `objects` (the vibe's stills, the pins set on the strip's Objects lane if you
   ask) or `clips` (your clips, each morphing into the next, as a clips cut). An objects layer and a clips layer may run
   at once and overlap (decision 10 of the plan, Tys, 31 Oct). Pins sent with a clips layer, or clips with an objects
   layer, are left out with a `[stems]` line.
@@ -170,7 +170,7 @@ in seconds, no GPU and no re-cut. The order follows the new prominence.
 
 - **The Stems step** (Morph: Stems): Split stems with its progress (Demucs prints nothing the desk can read, so the bar is
   the measured rate: about 0.3 s a second of song on 8 cores), then a row a stem: its envelope drawn, On or Off,
-  Objects or Clips, the vibe and "Chain row's pins" or a folder of clips, prominence, blend, Lead (its help: "the lead
+  Objects or Clips, the vibe and "The plan's pins" or a folder of clips, prominence, blend, Lead (its help: "the lead
   instrument, like a lead synth"). Drums and other are on at first, and the melodic stem is the Lead (the vocals when
   the song has them, turned on with it, else the other), its prominence 0.9; moving the Lead moves that prominence with
   it unless the slider was set by hand. Four layers at most.
