@@ -14,6 +14,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import math
 import re
 import time
 from datetime import datetime
@@ -532,6 +533,8 @@ def workflow_of(job_dir: Path, rec: dict, i: int) -> dict | None:
     carries (its LoadImage names are the names the stills were uploaded under), each guide still's node titled."""
     from xenoform import morph_cache as mc
 
+    if i < 0:  # shots/-1 is no shot: it used to answer with the last one's graph (and queue it on ComfyUI)
+        return None
     renders = list(rec.get("renders") or [])
     req = renders[i] if i < len(renders) and isinstance(renders[i], dict) else None
     graph = graph_of(Path(job_dir) / "simple", req) if req else None
@@ -716,7 +719,8 @@ def clean_shot_renders(raw: Any, *, check_lora: bool = False) -> dict[str, dict]
         except ValueError:
             continue
         seed = value.get("seed")
-        if isinstance(seed, (int, float)) and not isinstance(seed, bool) and 0 <= int(seed) < 2 ** 53:
+        # a NaN or an infinite seed in a pasted code is dropped like any other bad value, not a 500 from int()
+        if isinstance(seed, (int, float)) and not isinstance(seed, bool) and math.isfinite(seed) and 0 <= int(seed) < 2 ** 53:
             ov["seed"] = int(seed)
         style = str(value.get("style") or "").strip().lower()
         if style in STYLES:

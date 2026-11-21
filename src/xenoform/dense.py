@@ -2592,6 +2592,16 @@ RERENDER_VARIANTS = {"auto": None, "object": ("object", "object"), "scene-object
                      # a pair in a place (stills kind "setting"): the object changes while the place shifts with it
                      "setting": ("setting", "setting"), "scene-setting": ("scene", "setting"), "setting-scene": ("setting", "scene")}
 RENDER_S_RANGE = (2, 5)
+
+
+def _source_seconds(value) -> int | float:
+    """A shot's seconds of source as the record holds them: whole seconds as an int, and a length set in frames Under
+    the hood (33 frames is 1.333 s) kept as it is. An ``int()`` here cut such a shot back to the whole second below at
+    the next swap or re-render that touched it (33 frames became 25, 65 became 49)."""
+    got = float(value)
+    return int(got) if got.is_integer() else got
+
+
 INSERT_SECONDS = (5.0, 10.0, 15.0)
 INSERT_RANGE = (3.0, 20.0)
 
@@ -2770,7 +2780,7 @@ def rerender_morph(job_dir: Path, shot: int, *, seed: int | None = None, render_
         for row, kind in zip(pair, kinds):
             row["kind"] = kind  # ``_local_clips`` reads the pair's kinds for the prompt and the guide compression
     seconds = float(s.get("seconds") or (float(s.get("end") or 0.0) - float(s.get("start") or 0.0)) or 1.0)
-    old_render_s = int(s.get("render_s") or (rec.get("chain") or {}).get("clip_s") or max(2, int(round(seconds))))
+    old_render_s = _source_seconds(s.get("render_s") or (rec.get("chain") or {}).get("clip_s") or max(2, int(round(seconds))))
     if render_s is not None:
         try:
             render_s = int(round(float(render_s)))
@@ -2977,8 +2987,8 @@ def insert_generated(job_dir: Path, first: int, *, seconds: float = 10.0, pins: 
     render_shots = []
     for q, s in enumerate(span):
         seconds_q = float(s.get("seconds") or (float(s.get("end") or 0.0) - float(s.get("start") or 0.0)) or 1.0)
-        render_s = int(s.get("render_s") or (rec.get("chain") or {}).get("clip_s") or max(2, int(round(seconds_q))))
-        render_shots.append({"index": q, "seconds": float(render_s), "render_s": render_s, "frames": int(render_s * FPS), "effects": []})
+        render_s = _source_seconds(s.get("render_s") or (rec.get("chain") or {}).get("clip_s") or max(2, int(round(seconds_q))))
+        render_shots.append({"index": q, "seconds": float(render_s), "render_s": render_s, "frames": int(round(render_s * FPS)), "effects": []})
     seed = int(seed) if seed is not None else int(rec.get("seed") or 2727) + 5000 * (len(inserts) + 1)
     dest_dir = work / "inserts" / f"{len(inserts):02d}"
     dest_dir.mkdir(parents=True, exist_ok=True)
@@ -3170,8 +3180,8 @@ def swap_still(job_dir: Path, slot: int, file: str, *, cfg: dict | None = None,
     new_renders: dict[int, dict | None] = {}
     for m, j in sorted(targets.items()):
         shot = shots[j]
-        render_s = int(shot.get("render_s") or (rec.get("chain") or {}).get("clip_s") or max(2, int(round(float(shot.get("seconds") or 2.0)))))
-        render_shot = {"index": m, "seconds": float(render_s), "render_s": render_s, "frames": int(render_s * FPS), "effects": []}
+        render_s = _source_seconds(shot.get("render_s") or (rec.get("chain") or {}).get("clip_s") or max(2, int(round(float(shot.get("seconds") or 2.0)))))
+        render_shot = {"index": m, "seconds": float(render_s), "render_s": render_s, "frames": int(round(render_s * FPS)), "effects": []}
         pair = [ready[m], ready[m + 1]]
         if report:
             report("restyle", 0.1 + 0.4 * len(new_clips) / len(targets),
