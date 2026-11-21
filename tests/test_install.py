@@ -255,3 +255,61 @@ def test_installers_ship_demucs_by_default_with_an_opt_out():
     assert "pillow" in (root / "requirements-desk.txt").read_text(encoding="utf-8")
     ci = (root / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     assert "stems" not in ci and "demucs" not in ci
+
+
+# ---------------------------------------------------------------- the one-click install (review-21nov.md, the audit)
+
+
+def test_the_scripts_keep_the_line_endings_their_shells_need():
+    """A Windows clone checks install.sh out with CRLF and bash stops at "set: pipefail: invalid option name" (run
+    under WSL on 21 Nov); a downloaded ZIP has the .bat files with LF. .gitattributes pins both, for clones and ZIPs."""
+    import os
+
+    root = Path(__file__).resolve().parents[1]
+    rules = {}
+    for line in (root / ".gitattributes").read_text(encoding="utf-8").splitlines():
+        if line.strip() and not line.startswith("#"):
+            pattern, *attrs = line.split()
+            rules[pattern] = set(attrs)
+    for pattern in ("*.bat", "*.cmd", "*.ps1"):
+        assert rules[pattern] == {"text", "eol=crlf"}, pattern
+    assert rules["*.sh"] == {"text", "eol=lf"}
+    assert set(rules) == {"*.bat", "*.cmd", "*.ps1", "*.sh"}  # nothing else changes how it is checked out
+    if os.name != "nt":  # the mode git keeps: ./install.sh runs without `bash` in front, and has no carriage return
+        assert os.access(root / "install.sh", os.X_OK)
+        assert bytes([13]) not in (root / "install.sh").read_bytes()
+
+
+def test_the_shell_installer_makes_a_half_made_venv_again_and_says_what_is_missing():
+    """Ubuntu's python3 has no ensurepip until python3-venv is installed: `python3 -m venv` fails but leaves
+    .venv/bin/python behind, and the next run skipped the creation and stopped at "No module named pip"."""
+    sh = (Path(__file__).resolve().parents[1] / "install.sh").read_text(encoding="utf-8")
+    assert "venv_ok()" in sh and "-m pip --version" in sh and "if ! venv_ok; then" in sh
+    made = sh.index('"$PY312" -m venv "$PACK/.venv"')
+    assert sh.index('rm -rf "$PACK/.venv"') < made < sh.index("The virtual environment was not created.")
+    assert sh.count('rm -rf "$PACK/.venv"') == 2  # before it is made again, and after a creation that failed
+    assert "sudo apt install python3-venv" in sh and "brew install python@3.12" in sh
+    assert "brew install ffmpeg" in sh and "sudo apt install ffmpeg" in sh and "command -v ffprobe" in sh
+    assert sh.startswith("#!/usr/bin/env bash") and "set -euo pipefail" in sh
+
+
+def test_the_windows_installer_says_ffmpeg_is_missing_at_the_end_too():
+    """The first warning is a few hundred lines of pip up the window by the time the install is done."""
+    ps1 = (Path(__file__).resolve().parents[1] / "install.ps1").read_text(encoding="utf-8")
+    assert "$NoFfmpeg = " in ps1 and "Get-Command ffprobe" in ps1
+    first, again = ps1.index("if ($NoFfmpeg)"), ps1.rindex("if ($NoFfmpeg)")
+    assert first < ps1.index("requirements-desk.txt") < again < ps1.index('Write-Host "Done.')
+    assert ps1.count("winget install Gyan.FFmpeg") == 2 and "winget install Python.Python.3.12" in ps1
+
+
+def test_the_build_backend_is_capped_while_the_licence_is_a_table():
+    """setuptools 84 warns that `license = { file = ... }` stops being supported after 18 Feb 2027; an uncapped
+    `setuptools>=68` would then fail `pip install -e .`, which every installer runs."""
+    import tomllib
+
+    data = tomllib.loads((Path(__file__).resolve().parents[1] / "pyproject.toml").read_text(encoding="utf-8"))
+    requires = data["build-system"]["requires"]
+    if isinstance(data["project"].get("license"), dict):
+        assert requires == ["setuptools>=68,<85"]
+    else:  # an SPDX string with license-files needs setuptools 77, and no cap
+        assert any(r.startswith("setuptools>=77") for r in requires)

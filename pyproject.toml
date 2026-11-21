@@ -1,5 +1,8 @@
 [build-system]
-requires = ["setuptools>=68"]
+# Capped: setuptools 84 builds this file but warns that `license` as a table (below) stops being supported after
+# 18 Feb 2027. Without the cap a later setuptools would fail `pip install -e .`, which is the one-click install.
+# Moving to `license = "MIT"` with `license-files` lifts the cap (check Comfy Registry's reader first).
+requires = ["setuptools>=68,<85"]
 build-backend = "setuptools.build_meta"
 
 [project]

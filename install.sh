@@ -31,13 +31,27 @@ find_python312() {
 
 if ! PY312="$(find_python312)"; then
   echo "Python 3.12 or newer was not found."
+  echo "macOS: brew install python@3.12, or the installer from https://www.python.org/downloads/"
+  echo "Debian or Ubuntu: sudo apt install python3 python3-venv"
   echo "This installer does not use ComfyUI's Python."
   exit 1
 fi
 
-if [[ ! -x "$PACK/.venv/bin/python" ]]; then
+# A .venv whose pip does not answer is one whose creation failed half-way (Debian and Ubuntu ship python3 without
+# the venv module's pip): it is made again, or the next run would stop at "No module named pip".
+venv_ok() {
+  [[ -x "$PACK/.venv/bin/python" ]] && "$PACK/.venv/bin/python" -m pip --version >/dev/null 2>&1
+}
+if ! venv_ok; then
   echo "Creating $PACK/.venv with $PY312"
-  "$PY312" -m venv "$PACK/.venv"
+  rm -rf "$PACK/.venv"
+  if ! "$PY312" -m venv "$PACK/.venv" || ! venv_ok; then
+    rm -rf "$PACK/.venv"
+    echo "The virtual environment was not created."
+    echo "On Debian or Ubuntu install the venv package the message above names (sudo apt install python3-venv),"
+    echo "then run install.sh again."
+    exit 1
+  fi
 fi
 
 echo "Installing Python packages into $PACK/.venv"
@@ -84,8 +98,10 @@ else
   echo "The node pack stays in this folder. Run install.sh --link-nodes if you want it inside ComfyUI custom_nodes."
 fi
 
-if ! command -v ffmpeg >/dev/null 2>&1; then
-  echo "ffmpeg is not on PATH. The desk needs it to write video."
+if ! command -v ffmpeg >/dev/null 2>&1 || ! command -v ffprobe >/dev/null 2>&1; then
+  echo
+  echo "ffmpeg is not on PATH. The desk opens without it, but it needs ffmpeg to read songs and write videos."
+  echo "macOS: brew install ffmpeg. Debian or Ubuntu: sudo apt install ffmpeg. The desk's Setup page says so too."
 fi
 
 echo
