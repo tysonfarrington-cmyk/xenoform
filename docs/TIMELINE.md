@@ -177,9 +177,11 @@ re-cut, as today.
 | `POST /api/jobs/{id}/shots/{i}/take` | `n` | CPU, a re-cut | an earlier take put back (`dense.use_take`), no render |
 | **`POST /api/jobs/{id}/insert`** | `first`; optional `seconds` (5, 10, 15; default 10), `pins` (`{"<k>": file}`), `seed` | GPU, one morph a shot | `dense.insert_generated` (1.6) |
 
-All three GPU routes run as the swap runs: the job goes `running`, the making screen shows the progress, the desk polls
-`GET /api/jobs/{id}`, `video_version` bumps when the re-compose lands, and a cut reopened after a desk restart is
-registered from its folder. Two cuts rendering on the card at once stay refused (409).
+The GPU routes run as the swap runs: the job goes `running`, the desk polls `GET /api/jobs/{id}`, `video_version`
+bumps when the re-compose lands, and a cut reopened after a desk restart is registered from its folder. The making
+screen shows the progress of a swap or an insert; a re-render or a take asked Under the hood shows on the shot's own
+block and in its panel (section 5). A running edit stops through `POST /api/jobs/{id}/cancel` at its next safe point.
+Two cuts rendering on the card at once stay refused (409).
 
 ---
 
@@ -233,23 +235,42 @@ an object cut.
 
 ## 5. On the desk
 
-The lane under the result player becomes the **Timeline** panel (the first slice):
+As the desk stands after the 4 Nov round (`integrate-4nov`). Section 4a tells how it got here.
 
-- The overlays row (Polly, your clips, generated runs), the shots row, the boundary handles between the shots, and the
-  song row with the passages under them. A click on a shot or a boundary seeks the player there and opens its drawer
-  under the timeline; a shot that differs from the default timeline is marked.
-- The **shot drawer**: Play (Morph / Hold), Look (the chips the Look row uses), FX intensity (a slider), then the GPU
-  buttons: Swap the object (the existing picker), Re-render this shot (seed, length, variant), Generate here.
-- The **boundary drawer**: Handoff (Morph / Cut), Dress it (Auto, None, the premium kinds, the boundary kinds), each
-  with its one-line note.
-- **Apply** re-cuts with the overrides as they stand (one request, the whole maps), **Reset the timeline** clears them.
-  While the re-cut runs the making screen shows it; when it lands the player reloads and seeks to what you last clicked,
-  so the composed cut previews the change. Before Apply, the stills animatic under the Chain row is still the instant
-  preview of the chain; the timeline's edits are previewed by the re-cut itself, which is the cheap step.
-- The second slice adds the GPU buttons' flows: Re-render and Generate here post their routes and the panel reloads
-  when the job lands, as the swap does.
+- **The strip is the timeline.** A cut's shots are the blocks of the song strip (`ui_static/strip.js`, the host
+  `data-song-strip="cut"`), laid on the song's own clock: the passages, the wave and the beats above them, the Intensity
+  and Objects lanes below, the spans of Polly, your clips, generated runs and dreams over the shots, and the strip's own
+  playhead. A cut whose song is not on the desk is drawn on its own length. A cut of a trimmed upload sits where the
+  desk's stretch of the song puts it (`cutSongStart`). The Timeline panel on Render holds the strip, its header (the
+  plan line in cut time) and the Apply row; a whole song by passages keeps its passages track above it. At phone width
+  the strip is the passages overview and nothing is edited.
+- **A click** on a block seeks the player there and opens the shot's drawer; a click on the seam between two blocks
+  opens the drawer on Join; a pin on the Objects lane swaps the object the chain lands on there. A block shows the
+  cut's own frame, its number, `!` when an edit waits for the re-cut, and its fill while it renders again. On Tweak
+  the drawer docks under the strip (`inspectorDock`); on Render it sits in the Timeline panel.
+- **The drawer**, four tabs (`TL_TABS`), with ◀ ▶ to the shot before and after and a dot on a tab that holds an edit:
+  - **Shot**: Play (Morph or Hold), Order (move the shot a slot left or right, duplicate it into the next, delete
+    it), Timing, then the GPU rows, each naming the shots
+    it replaces and lighting them on the strip: Swap the object it lands on, Generate here, Dream here.
+  - **Look**: Look, Colour, Effects, and the shot's Beat FX intensity.
+  - **Join** (not on the first shot): Handoff (Flow or Cut), Move it, and Transition (Auto, None, the premium, core,
+    classic and boundary kinds).
+  - **Under the hood** (`ui_static/hood.js`, for every shot): the values the shot's morph was rendered with beside the
+    vibe's preset, editable, with Re-render this shot, Copy recipe, Reset to preset, the takes and Open in ComfyUI.
+- **Apply** (the bar docked at the bottom, and the step bar's "Apply n changes · re-cut") re-cuts with the overrides
+  as they stand: one request, the whole maps, no GPU. **Reset the timeline** clears them, with **Undo the reset**
+  until the next edit. While the re-cut runs the making screen shows it; when it lands the player reloads and seeks to
+  what was last clicked.
+- **The GPU edits.** Swap, Generate here and Dream here go to the making screen with their own title, clock and Stop,
+  as a re-cut does. Under the hood's Re-render this shot and its takes keep the cut's screen: the shot's block on the
+  strip renders with its progress, the panel shows the stage and a Stop, and the rest of the timeline stays usable.
+  A GPU edit asked while timeline edits wait for Apply is refused with a line saying to apply them first, since its
+  own re-cut would drop them. A reload during an in-place edit does not pick the edit up again: the cut reopens as it
+  stood (docs/notes/integrate-4nov.md, "Declined or only half done").
+- **The project's own settings** are not on the timeline: they are the rows of Tweak's "Project · under the hood".
 
-What is not on the timeline, on purpose: moving or trimming shots (the beat grid is the plan's; "Cut it to the beat"
-with inserts and trims is the DIRECTION list's next step after the contest), the Final tier (a Final cut re-cuts and
+What is not on the timeline, on purpose: trimming shots or dragging them freely (the beat grid is the plan's: Order
+moves a shot by whole slots and Join's Move it shifts a seam by beats; "Cut it to the beat" with inserts and trims is
+the DIRECTION list's next step after the contest), the Final tier (a Final cut re-cuts and
 takes overrides but its morphs are not re-rendered pair by pair), and the Director tools' storyboard (a different
 render path; the timeline is the Simple cut's).
