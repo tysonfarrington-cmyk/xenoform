@@ -88,7 +88,9 @@ def test_one_apply_for_the_knobs_and_the_timeline():
 def test_the_cut_column_never_runs_under_the_knobs_and_the_knobs_fold():
     css = (STATIC / "desk.css").read_text(encoding="utf-8")
     assert ".easy-result { display: grid; grid-template-columns: minmax(0, 1fr);" in css
-    assert ".lane-playhead" in css
+    # the playhead is the song strip's own (strip.js); the old lane's #lane-playhead went with t5 (review, 21 Nov)
+    assert ".lane-playhead" not in css and "lane-playhead" not in APP and 'getElementById("lane-track")' not in APP
+    assert 'window.XenoStrip.setPlayhead("cut"' in _fn("function paintPlayhead() {", "function playheadLoop()")
     # the cut's column no longer holds the knobs (they are Tweak's), so it has nothing to fold: the button went with
     # t5, and the stored flag's reader and the rules that emptied the column went with it (integrate-4nov: a browser
     # that had folded the knobs on an earlier desk opened every cut to an empty 76 px column with no way back)

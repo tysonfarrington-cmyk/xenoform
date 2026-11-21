@@ -779,7 +779,7 @@ def test_the_length_chips_say_which_whole_song_and_run_by_length():
     """W1: "Full song" and "Whole song" were two different things (one Make of the track; the passage queue with its own
     screen and hours of GPU) in a shuffled order (Full song · 60 s · 30 s · Whole song · 15 s)."""
     # the merge (integrate-4nov): t5 removed the Length row; Render's Quality names the two whole songs apart
-    assert 'simpleSeg("easy-length"' not in APP
+    assert 'simpleSeg("easy-length"' not in APP and '"easy-length"' not in APP  # the row and, since 21 Nov, its handler
     assert '[["draft", "Draft, one cut"], ["passages", "By passages"], ["final", "Final"], ["cloud", "Cloud"]]' in APP
     assert '"Full song"' not in APP and "pick Full song" not in APP
     song_md = (ROOT / "docs" / "SONG.md").read_text(encoding="utf-8")

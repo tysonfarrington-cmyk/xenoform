@@ -111,8 +111,10 @@ def test_comfy_pill_shows_in_simple_and_links_to_vj_and_midi():
     assert 'body[data-desk] .comfy-status,\n' not in CSS
     assert 'body[data-desk] .comfy-status {' in CSS
     # live visuals are the Perform step now: its button opens /vj with this cut, in a new window; the MIDI controller
-    # lives in the knob strip on Tweak (ui_v6.js)
-    assert 'window.open(media(`/vj?job=${encodeURIComponent(id)}`), "_blank", "noopener");' in APP and "function openMidiDrawer()" in APP
+    # lives in the knob strip on Tweak (ui_v6.js); the old "open the MIDI drawer" jump into Fine-tune has no button
+    # left, so its handler and function are gone (review, 21 Nov)
+    assert 'window.open(media(`/vj?job=${encodeURIComponent(id)}`), "_blank", "noopener");' in APP
+    assert "openMidiDrawer" not in APP and '"easy-midi"' not in APP and 'getElementById("fine-tune")' not in APP
     assert '<details class="xf-adv xf-midi"><summary>MIDI controller <small class="xf-midi-status"' in (STATIC / "ui_v6.js").read_text(encoding="utf-8")  # t1: the summary names the controller
     share = APP.split("function shareRow(easy)")[1].split("function renderRow(easy)")[0]
     assert "Play it live in VJ mode" not in share and "vjUrl()" not in share

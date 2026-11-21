@@ -496,19 +496,6 @@ function vjUrl() {
   return media(`/vj?${params.toString()}`);
 }
 
-// The MIDI drawer lives in the macro strip (ui_v6.js) inside Fine-tune: open both and focus it.
-function openMidiDrawer() {
-  const tune = document.getElementById("fine-tune");
-  if (tune) tune.open = true;
-  const midi = document.querySelector(".xf-midi");
-  if (midi) {
-    midi.open = true;
-    const summary = midi.querySelector("summary");
-    if (summary) summary.focus();
-    midi.scrollIntoView({ block: "center" });
-  }
-}
-
 function snippetBlock(title, id, text, hint) {
   return `<section class="snippet">
     <header><h3>${esc(title)}</h3><button type="button" class="text" data-act="copy-snippet" data-snippet="${id}">Copy</button></header>
@@ -2272,13 +2259,6 @@ const MORPH_STYLE_NOTES = {
 };
 function morphStyleLabel(id) {
   return id === "auto" || !id ? "Auto" : String(id).charAt(0).toUpperCase() + String(id).slice(1);
-}
-function morphStyleRow(current, act, index, auto = true) {
-  const ids = (auto ? ["auto"] : []).concat(MORPH_STYLES);
-  const chips = ids
-    .map((id) => `<button type="button" class="chip${id === current ? " on" : ""}" data-act="${act}" data-value="${esc(id)}"${index == null ? "" : ` data-index="${index}"`} aria-pressed="${id === current ? "true" : "false"}" title="${esc(MORPH_STYLE_NOTES[id] || "")}">${esc(morphStyleLabel(id))}</button>`)
-    .join("");
-  return `<div class="simple-seg morph-style-row"><span>Morph style</span><div class="toggle chips" role="group" aria-label="How each morph changes">${chips}</div></div>`;
 }
 
 // When the change happens inside each morph (xenoform.morph_timing, docs/MORPH_ENGINE_PLAN.md E2): the cached clip
@@ -5362,23 +5342,15 @@ function paintPending() {
   paintStepBar();  // "Apply n changes · re-cut" is the step bar's button
 }
 
-// The timeline's playhead: where the player is, over the shots, moving while it plays (the lane is a percentage of
-// the cut's length, data-total on #lane-track).
+// The timeline's playhead: where the player is, on the song strip under the cut (strip.js draws it), moving while it plays.
 let playheadFrame = 0;
 function paintPlayhead() {
-  const head = document.getElementById("lane-playhead");
-  const track = document.getElementById("lane-track");
   const player = document.getElementById("player");
   if (player && window.XenoStrip && document.querySelector('[data-song-strip="cut"]') && state && state.lane) {
     // the song strip under a cut: the player's time is the cut's, the strip's the song's (lane.window)
     const off = cutSongStart(state.easy, state.lane);
     window.XenoStrip.setPlayhead("cut", off + (player.currentTime || 0), !player.paused && !player.ended);
   }
-  if (!head || !track || !player) return;
-  const total = Number(track.dataset.total) || player.duration || 1;
-  const at = Math.max(0, Math.min(1, (player.currentTime || 0) / total));
-  head.style.left = `${(100 * at).toFixed(3)}%`;
-  head.classList.toggle("on", at > 0 || !player.paused);
 }
 function playheadLoop() {
   paintPlayhead();
@@ -6327,12 +6299,6 @@ document.addEventListener("click", async (event) => {
     const box = document.getElementById("paid-cloud");
     if (box && !box.disabled) box.checked = state.paidCloud;
     render();
-  } else if (act === "easy-length") {
-    // Whole song, by passages (song_plan): the song as its passages, a Make each, laid together; the Length itself is the whole song
-    state.easy.wholeSong = el.dataset.value === "song";
-    state.easy.lengthS = state.easy.wholeSong ? 0 : [0, 60, 30, 15].includes(Number(el.dataset.value)) ? Number(el.dataset.value) : 0;
-    render();
-    loadSimpleOptions().then(render);
   } else if (act === "easy-look") {
     state.easy.danceFx = el.dataset.value || "auto";
     render();
@@ -6474,8 +6440,6 @@ document.addEventListener("click", async (event) => {
   } else if (act === "easy-orbit") {
     state.easy.stemOrbit = el.dataset.value !== "off";
     render();
-  } else if (act === "easy-midi") {
-    openMidiDrawer();
   } else if (act === "easy-morphs-auto") {
     state.easy.morphs = "auto";
     render();

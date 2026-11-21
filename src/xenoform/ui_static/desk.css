@@ -793,8 +793,6 @@ dialog .settings-detail .note, dialog .about-detail .note { margin: 6px 0 0; }
 
 /* the timeline's playhead, over every row of the lane */
 .shots-lane .lane-track { position: relative; }
-.shots-lane .lane-playhead { position: absolute; top: 0; bottom: 0; left: 0; width: 2px; margin-left: -1px; background: #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5), 0 0 8px rgba(255, 255, 255, 0.6); pointer-events: none; opacity: 0; z-index: 3; }
-.shots-lane .lane-playhead.on { opacity: 1; }
 
 /* changes waiting on a cut: one Apply, at the bottom of the window wherever you are */
 .pending-bar { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 40; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
