@@ -77,12 +77,12 @@ def test_a_reload_after_a_stopped_edit_reopens_the_cut_and_its_waiting_edits_sur
     assert '"edit": name, "edit_from": int(job.get("video_version") or 0)' in src  # the field the desk reads
     # the cut's lane, and a read of it on its way, outlive the cut's own song loading: a second read of the lane
     # dropped the edits waiting for Apply that the first had given back
-    assert "return { lane: state.lane, stemsLane: state.stemsLane, laneLoading: state.laneLoading };" in _fn("function keepLane() {")
     bundled = APP.split("async function useBundledSong(")[1].split("async function useDemoSong(")[0]
     demo = APP.split("async function useDemoSong(")[1].split("\n}\n")[0]
     for body in (bundled, demo):
-        assert "const lane = keepStep ? keepLane() : null;" in body and "if (lane) Object.assign(state, lane);" in body
-    assert "const keep = Object.assign(keepLane(), { videos: state.videos, wholeSongs: state.wholeSongs });" in APP
+        assert "const lane = keepStep && state ? { lane: state.lane, stemsLane: state.stemsLane, laneLoading: state.laneLoading } : null;" in body
+        assert body.index("const lane = keepStep && state ?") < body.index("adoptSession(") < body.index("if (lane) Object.assign(state, lane);")
+    assert "const keep = { lane: state.lane, stemsLane: state.stemsLane, laneLoading: state.laneLoading, videos: state.videos," in APP
 
 
 def test_the_strings_that_pointed_at_removed_places_name_the_steps():

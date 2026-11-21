@@ -216,6 +216,7 @@ def test_a_cuts_url_reopens_it_with_its_facts_and_its_waiting_edits(tmp_path):
     code = STAGE + _steps() + "\n".join([_fn("setEasyPhase"), _fn("easyVideoId"), _const("MAKING_KEY"), _fn("keepMaking"), _fn("keptMaking"),
                               _fn("dropMaking"), _fn("reopenRow"), _fn("rowFacts"), _fn("reopenCut"), _const("EDITS_KEY"),
                               _fn("keptEdits"), _fn("easyPhaseFromHash"), _fn("hashId")]) + r"""
+let ignoreJob = null;  // the page's own (review, 21 Nov: reopenRow lets a reopened cut's edits be polled again)
 let shots = {};
 const api = async (path) => { calls.push(["api", path]); const id = path.split("/")[3]; return { ok: !!shots[id], status: shots[id] ? 200 : 404 }; };
 let gallery = [];

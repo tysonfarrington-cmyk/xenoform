@@ -40,7 +40,7 @@ def test_the_estimate_shows_morphs_minutes_and_credits_by_tier():
 
 def test_the_make_hands_the_body_to_the_song_route_after_the_credits_tick():
     make = APP.split("async function easyMake()")[1].split("\nasync function ")[0]
-    tick = make.index('"Cloud Final spends your Comfy Cloud credits: tick the box under Model to run it."')
+    tick = make.index("Cloud Final spends your Comfy Cloud credits: tick the box under Model tier in Tweak's Project panel, then render.")
     hand = make.index("await easySongMake();")
     assert tick < hand  # Cloud stays behind the usual tick, a whole song too
     song = _fn("easySongMake")

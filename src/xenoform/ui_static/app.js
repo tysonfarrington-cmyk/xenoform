@@ -3006,7 +3006,7 @@ async function loadCutSong(id, info) {
   }
   state.easy.songNote = "";
   if (!payload || !state || !state.easy) return false;
-  const keep = Object.assign(keepLane(), { videos: state.videos, wholeSongs: state.wholeSongs });
+  const keep = { lane: state.lane, stemsLane: state.stemsLane, laneLoading: state.laneLoading, videos: state.videos, wholeSongs: state.wholeSongs };
   adoptSession(payload);  // keeps the job and the desk's own choices; the cut's lane and the gallery stay as they were
   Object.assign(state, keep);
   state.easy.song = "file";
@@ -5601,7 +5601,7 @@ async function useBundledSong(id, keepStep) {
     render();
     return;
   }
-  const lane = keepStep ? keepLane() : null;
+  const lane = keepStep && state ? { lane: state.lane, stemsLane: state.stemsLane, laneLoading: state.laneLoading } : null;
   adoptSession(data);
   if (lane) Object.assign(state, lane);
   // the song is in: on to the plan by itself (a reopened cut's own song keeps Render)
@@ -5628,7 +5628,7 @@ async function useDemoSong(keepStep) {
   const response = await api("/api/demo");
   if (!response.ok) return;
   if (!state || !state.easy || state.easy.song !== "demo") return;  // a bundled song or a file was chosen meanwhile: it owns the desk
-  const lane = keepStep ? keepLane() : null;
+  const lane = keepStep && state ? { lane: state.lane, stemsLane: state.stemsLane, laneLoading: state.laneLoading } : null;
   adoptSession(await response.json());
   if (lane) Object.assign(state, lane);
   if (state && state.easy && !keepStep) state.easy.step = "plan";  // the song is in: on to the plan by itself (a reopened cut keeps Render)
@@ -5662,12 +5662,10 @@ async function uploadSong(file) {
   loadSimpleOptions().then(() => render());
 }
 
-// A reopened cut's own song loading (loadCutSong) adopts a new session, which starts with no lane: the cut's lane, and
-// a read of it still on its way, are carried over, or the lane is read a second time and that second read drops the
-// edits the first one had just given back from before the reload (keptEdits, restoreEdits)
-function keepLane() {
-  return { lane: state.lane, stemsLane: state.stemsLane, laneLoading: state.laneLoading };
-}
+// A reopened cut's own song loading (loadCutSong: an upload, a bundled song, the demo) adopts a new session, which
+// starts with no lane. Its callers carry the cut's lane, and a read of it still on its way (laneLoading), over the
+// adoption: otherwise the lane is read a second time, and that second read drops the edits the first one had just
+// given back from before the reload (keptEdits, restoreEdits)
 function adoptSession(data, options = {}) {
   const previous = state;
   state = {
