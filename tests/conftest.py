@@ -51,3 +51,21 @@ def frozen_songs(monkeypatch):
     yield
     for key in [k for k in list(dict.keys(ui._FEATURES)) if str(k).startswith("song-")]:
         dict.pop(ui._FEATURES, key, None)
+
+
+@pytest.fixture
+def desk_on_one_loop():
+    """The desk as uvicorn runs it: one event loop for every page and every post.
+
+    A bare ``TestClient(app)`` gives each websocket and each request a thread and an event loop of its own. The hubs
+    hand events over on an ``asyncio.Queue``, which wakes a listener only from the listener's own loop: when one page's
+    send has to wake another page's receive, the wake-up is lost whenever that other loop has already gone back to
+    sleep, and ``receive_json`` then waits for good, with no failure and no output (about one run in a few hundred of
+    ``test_midi.py``'s fan-out test on Ubuntu 24.04; the smoke CI stopped in that stretch of the suite for six hours on
+    21 Nov 2026). Entered as a context the client keeps one loop for all of them, which is the desk's own arrangement."""
+    from fastapi.testclient import TestClient
+
+    from xenoform.ui import create_app
+
+    with TestClient(create_app()) as client:
+        yield client

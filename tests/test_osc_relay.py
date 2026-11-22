@@ -339,8 +339,8 @@ def test_post_frame_takes_one_frame_a_list_or_a_batch_and_says_what_is_wrong():
     assert c.post("/api/osc/frame", content=b"nope", headers={"Content-Type": "application/json"}).json()["detail"] == "Send JSON."
 
 
-def test_websocket_ingest_and_fan_out_like_the_midi_hub():
-    c = TestClient(create_app())
+def test_websocket_ingest_and_fan_out_like_the_midi_hub(desk_on_one_loop):
+    c = desk_on_one_loop  # page a's send must wake page b: one event loop, or the wake-up can be lost (see the fixture)
     with c.websocket_connect("/ws/osc?name=vj") as a, c.websocket_connect("/ws/osc") as b:
         hello = a.receive_json()
         assert hello["type"] == "hello" and hello["rate"] == 60 and b.receive_json()["type"] == "hello"

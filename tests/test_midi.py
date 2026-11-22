@@ -248,12 +248,12 @@ def test_record_and_automation_to_envelopes(tmp_path, monkeypatch):
 
 
 # ---------------------------------------------------------------- the desk hub
-def test_websocket_fan_out_and_http_ingest(monkeypatch):
+def test_websocket_fan_out_and_http_ingest(monkeypatch, desk_on_one_loop):
     # the status line reports the backend as it is; pin it, so the answer does not depend on whether this machine has
     # the [midi] extra installed (the shared venv does since 4 Nov) or a controller plugged in
     monkeypatch.setattr(mb, "backend_available", lambda: {"available": False, "detail": mb.INSTALL_HINT})
     stems_api.hub.__init__()
-    c = TestClient(create_app())
+    c = desk_on_one_loop  # page a's send must wake page b: one event loop, or the wake-up can be lost (see the fixture)
     with c.websocket_connect("/ws/midi?name=vj") as a, c.websocket_connect("/ws/midi") as b:
         assert a.receive_json()["type"] == "hello" and b.receive_json()["type"] == "hello"
         a.send_json({"type": "note", "ch": 10, "num": 36, "value": 100, "t": 1.0})
