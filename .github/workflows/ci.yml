@@ -8,6 +8,9 @@ jobs:
   install-and-smoke:
     # Pinned: ubuntu-latest moved to 26.04 (a newer ffmpeg) in Nov 2026 and reddened the suite without a change here.
     runs-on: ubuntu-24.04
+    # The whole job takes about twenty minutes. A test that waited for good held it for GitHub's own six hours on
+    # 21 Nov 2026.
+    timeout-minutes: 45
     env:
       # No seed-clip download from NASA while the tests run.
       XENO_OFFLINE: "1"
@@ -31,4 +34,6 @@ jobs:
       - name: Open-weights default workflows
         run: .venv/bin/pytest tests/test_eligibility.py
       - name: Full suite (the two steps above are not run again)
-        run: .venv/bin/pytest --ignore=tests/test_install.py --ignore=tests/test_eligibility.py
+        # faulthandler_timeout: a test still running after ten minutes has every thread's stack written to the log, so
+        # a test that stops names itself and the line it stopped on (pytest -q alone left only a row of dots).
+        run: .venv/bin/pytest -o faulthandler_timeout=600 --ignore=tests/test_install.py --ignore=tests/test_eligibility.py
