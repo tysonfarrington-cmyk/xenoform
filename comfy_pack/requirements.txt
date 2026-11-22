@@ -1,0 +1,5 @@
+# The Xenoform node pack needs nothing ComfyUI does not already ship: numpy, Pillow, torch and PyAV, and ffmpeg (on PATH,
+# or the imageio-ffmpeg ComfyUI installs usually carry) for the Assemble. ComfyUI-Manager installs whatever is listed
+# here into ComfyUI's own Python, so nothing is: a pin here would move ComfyUI's own versions.
+#
+# Optional: librosa (`pip install librosa`) runs the desk's own analysis; without it the pack runs the same steps in numpy.

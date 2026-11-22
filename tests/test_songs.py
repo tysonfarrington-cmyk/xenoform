@@ -276,10 +276,11 @@ def test_load_answers_the_desks_comfy_endpoint_not_the_example_configs(quiet_spl
 
 # ---------------------------------------------------------------- the desk
 def test_the_song_step_has_a_chip_for_every_bundled_song():
-    block = _fn("const songBlock = songSet", "const proto = easyLengthIsProto(easy);")
-    assert 'data-act="easy-demo">Bundled demo</button>' in block  # the demo button stays where it was
-    assert '<div id="bundled-songs">${songsRow(easy)}</div>' in block  # the row lands under the actions, in its own slot
-    row = _fn("function songsRow(easy)", "async function useBundledSong(id)")
+    block = _fn("function renderSource(easy) {", "${songsLine()}")
+    assert '<div id="bundled-songs">${songsRow(easy)}</div>' in block  # the row sits on the Source step, in its own slot
+    row = _fn("function songsRow(easy)", "async function useBundledSong(id, keepStep)")
+    # the demo is one of the chips, by name (C3): never shown as chosen until it is picked
+    assert 'data-act="easy-demo" title="A 12 s demo synthesised here">Bundled demo<small>0:12</small></button>' in row
     assert 'data-act="easy-song"' in row and 'data-id="${esc(song.id)}"' in row and "Bundled songs" in row
     assert 'title="${esc(song.feel || "")}"' in row and "<small>${songClock(song.seconds)}</small>" in row
     assert 'class="chip${easy.song === song.id ? " on" : ""}"' in row  # the loaded song's chip carries on, like the demo button
@@ -290,23 +291,24 @@ def test_the_song_step_has_a_chip_for_every_bundled_song():
 
 
 def test_a_chip_loads_the_song_the_way_the_demo_button_does():
-    use = _fn("async function useBundledSong(id)", "async function useDemoSong()")
+    use = _fn("async function useBundledSong(id, keepStep)", "async function useDemoSong(keepStep)")
     assert 'chip.textContent = "Loading…"' in use and "render();" not in use.split("if (state.audioId")[0]  # its own text first
     assert "state.easy.song = song.id" in use and "state.easy.songLabel = song.title" in use
     assert 'setEasyPhase("vibe")' in use and 'state.easy.phase = "vibe"' not in use  # through the one phase setter (test_simple_nav)
     assert 'api("/api/songs/load", { method: "POST"' in use and "JSON.stringify({ id: song.id })" in use
     assert "adoptSession(data);" in use and "await settleCut({ full: true });" in use
     assert "loadSimpleOptions().then(() => render());" in use
-    assert 'state.easy.song = "";' in use and 'setEasyPhase("choose");' in use  # a failed load falls back to the song step
+    # a failed load falls back to the song step (or to the song Change kept, UI review N12)
+    assert 'state.easy.song = was ? was.song : "";' in use and 'setEasyPhase("choose");' in use
     # two chips in quick succession: the answer of a chip that is no longer the chosen song is dropped, before both the
     # adopt and the fallback, so the desk never names one song and holds another; the demo button drops its answer too
     after = use.split('api("/api/songs/load"', 1)[1]
     assert "if (!state || !state.easy || state.easy.song !== song.id) return;" in after
     assert after.index("state.easy.song !== song.id) return;") < after.index("if (!data) {") < after.index("adoptSession(data);")
-    demo = _fn("async function useDemoSong()", "async function uploadSong(file)")
+    demo = _fn("async function useDemoSong(keepStep)", "async function uploadSong(file)")
     assert demo.index('api("/api/demo")') < demo.index('state.easy.song !== "demo") return;') < demo.index("adoptSession(")
     assert "Drop a file here, use the bundled demo, or pick one of the bundled songs." in APP_JS  # the note beside the chips
-    assert "Drop a track, use the bundled demo or pick a bundled song." in APP_JS  # the tour's Song hint
+    assert "A song: one of the bundled songs, or your own file." in APP_JS  # the Source step's hint
     dispatch = _fn('document.addEventListener("click"', "async function")
     assert 'act === "easy-song"' in dispatch and 'useBundledSong(el.dataset.id || "")' in dispatch
     adopt = _fn("function adoptSession(data, options = {})", "\n}\n")
@@ -381,6 +383,21 @@ function end() { return { audioId: global.state.audioId, song: global.state.easy
   a = desk.useBundledSong("ambient"); b = desk.useBundledSong("glitch-out"); await tick();
   pending["glitch-out"](false); await b; await tick(); out.afterFailure = end();
   pending["ambient"](true); await a; await tick(); out.failedThenLate = end();
+  // F: a chip held, then one that fails: the held song comes back, named and held (N12)
+  fresh();
+  a = desk.useBundledSong("ambient"); await tick(); pending["ambient"](true); await a; await tick();
+  b = desk.useBundledSong("glitch-out"); await tick(); pending["glitch-out"](false); await b; await tick();
+  out.heldComesBack = end();
+  // G: a file held, then a chip that fails: the file comes back
+  fresh();
+  global.state.easy.song = "file"; global.state.easy.songLabel = "my-track.wav"; global.state.easy.phase = "vibe";
+  a = desk.useBundledSong("ambient"); await tick(); pending["ambient"](false); await a; await tick();
+  out.fileComesBack = end();
+  // H: the demo still loading when a chip is clicked and fails: no song named, and the demo's late answer dropped
+  fresh();
+  a = desk.useDemoSong(); b = desk.useBundledSong("ambient"); await tick();
+  pending["ambient"](false); await b; await tick(); out.demoInFlight = end();
+  pending["demo"](true); await a; await tick(); out.demoInFlightLate = end();
   console.log(JSON.stringify(out));
 })();
 """
@@ -390,7 +407,8 @@ function end() { return { audioId: global.state.audioId, song: global.state.easy
 def test_two_chips_in_quick_succession_leave_one_song_named_and_held(tmp_path):
     """The reviewer's race (29 Oct): Ambient then Glitch Out clicked while the first load is in flight. Whichever
     answer lands first, the desk ends up naming and holding the last song chosen; a chip and the demo in either order
-    behave the same; and a failed second click leaves the desk at the song step, not on the first song's answer."""
+    behave the same; and a failed second click leaves the desk at the song step, not on the first song's answer. A song
+    the desk already holds (a chip's, a file) comes back when the next chip fails; one still loading does not."""
     script = tmp_path / "race.js"
     script.write_text(RACE_HARNESS.replace("__APP__", json.dumps(str(STATIC / "app.js"))), encoding="utf-8")
     got = json.loads(subprocess.run(["node", str(script)], capture_output=True, text=True, encoding="utf-8", check=True).stdout)
@@ -402,6 +420,11 @@ def test_two_chips_in_quick_succession_leave_one_song_named_and_held(tmp_path):
     assert got["demoThenChip"]["audioId"] == "song-ambient" and got["demoThenChip"]["song"] == "ambient", got["demoThenChip"]
     assert got["afterFailure"]["song"] == "" and got["afterFailure"]["phase"] == "choose" and "did not load" in got["afterFailure"]["note"]
     assert got["failedThenLate"]["audioId"] == "abc1234567" and got["failedThenLate"]["song"] == ""  # the late answer is dropped
+    held = got["heldComesBack"]
+    assert held["song"] == "ambient" and held["audioId"] == "song-ambient" and held["phase"] == "choose" and "did not load" in held["note"], held
+    assert got["fileComesBack"]["song"] == "file" and got["fileComesBack"]["label"] == "my-track.wav" and got["fileComesBack"]["audioId"] == "abc1234567", got["fileComesBack"]
+    assert got["demoInFlight"]["song"] == "" and got["demoInFlight"]["audioId"] == "abc1234567", got["demoInFlight"]
+    assert got["demoInFlightLate"]["song"] == "" and got["demoInFlightLate"]["audioId"] == "abc1234567", got["demoInFlightLate"]
 
 
 # ---------------------------------------------------------------- the docs

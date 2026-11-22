@@ -478,7 +478,8 @@ def test_the_job_body_takes_scenes_as_a_string_alias(monkeypatch):
 def test_front_end_has_the_scenes_chip_and_choice():
     js = (Path(mp.OBJECTS).parents[0] / "app.js").read_text(encoding="utf-8")
     assert 'data-act="easy-grow-scenes"' in js and "Grow ${growScenes} scenes" in js and 'kind: scenes ? "scene" : "object"' in js
-    assert "function scenesRow(easy)" in js and js.count("${scenesRow(easy)}") == 2 and 'simpleSeg("easy-scenes"' in js
+    assert "function scenesRow(easy)" not in js  # the old row went with the cut's knob column
+    assert 'tweakSeg("easy-scenes", scenes, [["off", "Off", SCENES_NOTES.off], ["mix", "Mix in", mixHint], ["only", "Only", SCENES_NOTES.only]], "Wide scenes"' in js  # W2
     assert 'act === "easy-scenes"' in js
     payload = js.split("function payload()")[1].split("function renderSetup")[0]
     assert 'scene_stills: (state.easy && state.easy.scenes) || "off"' in payload

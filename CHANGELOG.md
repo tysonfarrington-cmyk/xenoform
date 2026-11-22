@@ -2,6 +2,62 @@
 
 ## 0.3.3 (unreleased, the week to the contest)
 
+- **An edit lands whole or not at all** (21 Nov; [docs/notes/review-21nov.md](docs/notes/review-21nov.md)). A re-cut
+  is made beside its cut and then put in place by several renames and small writes; one of them failing (a full
+  disk, a file that will not be replaced) left the cut part old and part new while the desk said "The cut is as it
+  was". `xenoform/cut_swap.py` keeps a copy of every file about to be replaced (`<name>.was`), puts the new files in
+  place, and on a failure puts back everything already replaced. It covers `dense.recut_from_cache`, a Stems re-cut
+  (every layer's cut and record, the composite and the cut's record in one step), Lay them again, and a swap or
+  re-render on a Stems layer (the layer goes back when the composite fails). A swap, re-render, take, generated run
+  or dream whose re-cut does not land puts its record back too. The job ends `error` with `cut_as_it_was`, and the
+  desk adds "The cut is as it was." only when that is true; if putting a file back fails as well, the error says the
+  cut is part old and part new and names the file.
+- **Stop on a Stems cut** (21 Nov). Nothing of a Stems cut is replaced until all of it is made, so Stop during a
+  re-cut ends with every file and record as it was, or is told "Stop came too late to undo it, so the edit landed."
+  Lay them again (`POST /api/jobs/{id}/composite`) has a Stop of its own, which ends ffmpeg. See
+  [docs/STEMS_MODE.md](docs/STEMS_MODE.md).
+- **The one-click install, audited** (21 Nov). `Xenoform.bat` on a fresh Windows clone creates `.venv`, installs the
+  packages and Demucs, starts `comfy-api-proxy` and the desk and opens it, with Python 3.12 and ffmpeg already on the
+  machine. Fixed on the way: `.gitattributes` keeps `.bat` and `.ps1` files CRLF and `.sh` files LF on every checkout
+  (a Windows clone's `install.sh` stopped at `set: pipefail: invalid option name` under WSL); `install.sh` is
+  executable, makes a `.venv` again when an earlier try left one without pip, and names how to get Python and ffmpeg;
+  `install.ps1` says ffmpeg is missing again at the end; the desk's Setup page says so too (`GET /api/setup` carries
+  `ffmpeg`); and the build backend is capped (`setuptools<85`) while `license` in `pyproject.toml` is a table, which
+  setuptools stops supporting after 18 Feb 2027. Linux and macOS are still two commands with no launcher.
+- **The 21 Nov review** of the 4 Nov round fixed what it found, each with a test: an edit kept on the cut's screen no
+  longer strands its shot as "rendering" after a step click or Back, refuses a Make pressed meanwhile, and leaves
+  another cut's job alone; a reload after a stopped or failed edit reopens the cut with its waiting edits; a morph
+  length set in frames survives the next swap, re-render or insert (33 frames had become 25); a NaN seed in a pasted
+  recipe code is dropped instead of a 500; `shots/-1` has no workflow. On Perform: the Switch rate knob under soft
+  takeover, held looks and Blackout, "Saving the take…", the MIDI dock at load, and an OSC value past float32 that
+  silenced the output. In the node pack: the desk's nodes and `/xenoform` stay out of a ComfyUI with no desk install,
+  Assemble sends ffmpeg's words to a file (a full pipe made both sides wait for good), a song path is checked before
+  it is touched and a filename prefix stays inside the output folder. A whole song's failed window goes to the back
+  of its queue whatever the clock says.
+- **The 4 Nov round** (the eight branches of the 4 Nov UI review, joined on `integrate-4nov`;
+  [docs/notes/integrate-4nov.md](docs/notes/integrate-4nov.md)).
+  - **Five steps over the song strip.** Source, Plan, Tweak, Render and Perform sit in the step bar, one button
+    each. The strip shows the song's sections, wave, beats, shots and objects; the Draft window is dragged along it
+    by whole beats. The Fine-tune drawer and its Length row are gone.
+  - **Under the hood.** A shot's fourth tab shows every value its morph was rendered with beside the vibe's preset,
+    editable, with **Re-render this shot** (`POST /api/jobs/{id}/rerender` takes the values), the takes to go back
+    to, and the graph to open in ComfyUI ([docs/TIMELINE.md](docs/TIMELINE.md)).
+  - **Perform.** The control view (transport, strip, eight held pads, the source) with **Open output window** for a
+    second screen and **REC**, which lands the take in My videos as an mp4 ([docs/vj.md](docs/vj.md)).
+  - **The MIDI map on the same screen.** Badges on every mappable control, Learn from a popover, pads that show a
+    scene while held, soft takeover for knobs, and a map kept per device name ([docs/midi.md](docs/midi.md)).
+  - **Live OSC.** The desk streams its analysis and the MIDI-bound values as OSC, `xenoform osc relay` does it from
+    the command line, and `td/xenoform_bridge.py` builds the TouchDesigner network ([docs/osc.md](docs/osc.md)).
+  - **A ComfyUI node pack.** `comfy_pack/`: Song Analysis, Storyboard, Morph Timeline, Morph Pair and Assemble, with
+    a demo workflow. The root `requirements.txt` lists nothing; the desk's pins moved to `requirements-desk.txt`.
+    Not yet tried in a running ComfyUI ([comfy_pack/README.md](comfy_pack/README.md)).
+  - **Setup & models.** While the Draft model is missing the Make button says so and opens Setup; each card lists
+    its files, and a download that will not fit says why.
+  - **Round 0 of the review.** A failed edit ends as an error with its reason (it used to read "done"), Stop on an
+    edit takes its GPU work off the queue, the making screen keeps one clock, and a reload takes a running Make up
+    again.
+- **The smoke CI** (17 Nov) no longer depends on the runner's ffmpeg build or on the working directory, and the
+  runner is pinned to Ubuntu 24.04 ([docs/notes/ci-fixes-17nov.md](docs/notes/ci-fixes-17nov.md)).
 - **The music-video round** (Tys, 31 Oct to 1 Nov: a cut should breathe and read as a music video, not "a fancy VJ
   output"; plan and decisions in [docs/MUSIC_VIDEO_PLAN.md](docs/MUSIC_VIDEO_PLAN.md)). In one round:
   - **Pacing.** The story plan now runs for every Dense song. Each drop run is its own passage with a heat, opens on

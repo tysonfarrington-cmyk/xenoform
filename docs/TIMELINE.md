@@ -42,7 +42,7 @@ inside a shot and what happens at its edges.
 | **Play** | **Morph** (the clip plays whole: A becomes B) or **Hold** (the shot holds its start object, A, still; the orbit, the look, the beat FX and the foreshadow still run on it) | re-cut | `shot_overrides[i].play` = `"hold"`; the composed shot carries `hold: true` and `shot_indices` plays frame 0 throughout |
 | **Look** | Auto (the vibe's look), Off, or one preset (warm-leak, cool-echo, noir-glow, bloom-rush, negative-rush, cyan-flash, ...) | re-cut | `shot_overrides[i].look`; the composed shot carries `dance_fx` (the resolved preset or `"off"`), which `beatfx.LookPass` uses for that shot instead of the cut's mode |
 | **FX intensity** | 0 to 1 | re-cut | `shot_overrides[i].fx_intensity`; replaces the Intensity knob's value for that shot (`fx_intensity` on the composed shot, read by `guardrails.shot_fx` in `beatfx.beat_fx`) |
-| **Re-render this morph** | another seed, another length (2 to 5 s of source), a prompt variant | GPU, one morph | `rerenders` log, `clips[i]` replaced, the shot's `render_s` / `speed` updated; `POST /api/jobs/{id}/rerender` (1.5) |
+| **Re-render this shot** | another seed, another length (2 to 5 s of source), a prompt variant | GPU, one morph | `rerenders` log, `clips[i]` replaced, the shot's `render_s` / `speed` updated; `POST /api/jobs/{id}/rerender` (1.5) |
 | **Dream here** | 1, 2 or 3 s from this shot, light or deep: Z-Image Turbo img2img on every other frame (`xenoform.dream`, 28 Oct) | GPU, about 2.6 s a dreamed frame | `dreams` in the record, `dream` on the shots, the clips replaced; `POST /api/jobs/{id}/dream` |
 | **Timing** | As the cut, Smooth, On the beat or Snap: when this shot's change happens (`xenoform.morph_timing`, 28 Oct) | none (a re-cut) | `shot_overrides[i].timing`, applied with Apply like the look |
 | **Morph** (style) | Melt, Shatter, Bloom, Spin or Fold: how this shot's object becomes the next (`xenoform.morph_style`, 28 Oct) | GPU, one morph | the same re-render with `style`; `morph_styles[i]` in the record, the shot's `style` on the lane |
@@ -151,7 +151,9 @@ and writes, beside the keys the record already has:
 | `recut_state`, `macros` | every re-cut | the knobs, look, orbit, foreshadow, scenes as they stand |
 | **`shot_overrides`** | the re-cut with overrides | `{"<i>": {"play": "hold" \| "morph", "look": "auto" \| "off" \| preset, "fx_intensity": 0..1}}`, only the keys set; an index past the cut or an empty entry is dropped |
 | **`boundary_overrides`** | the re-cut with overrides | `{"<i>": {"fx": "auto" \| "none" \| premium kind \| boundary kind}}` for i from 1 |
-| **`rerenders`** | the rerender | `[{"shot", "morph", "seed", "render_s", "variant", "clip", "seconds", "at"}]` |
+| **`rerenders`** | the rerender | `[{"shot", "morph", "seed", "render_s", "variant", "clip", "seconds", "at", "overrides", "request", "before"}]`: since 4 Nov each try keeps the values set by hand, its full request (as `renders` keeps one) and the take it replaced (`before`: clip, request, style, length) |
+| **`renders`** | run_simple, swap, rerender, insert, take | one a shot beside `clips` (Under the hood, `shot_recipe`): the morph's request as it was queued (engine, model files, prompt, negative, seed, steps, cfg, frames, size, both guides' strengths, compression, style, LoRA, the stills, the cache key, the tier, how long it took, whether the cache answered); its API graph is kept once under `simple/requests/<key>.json` and named in `graph`. None for Polly, your clip, and a cut from before 4 Nov |
+| **`taken`** | the take route | `[{"shot", "n", "clip", "seed", "at"}]`: an earlier take put back with no render |
 | **`inserts`** | the insert | `[{"first", "last", "start", "end", "seconds", "stills", "clips", "pins", "seed", "at"}]` |
 | `recuts` | every re-cut | a count; the desk's `video_version` moves with it |
 
@@ -167,12 +169,19 @@ re-cut, as today.
 | `GET /api/videos/{id}/shots` | | none | the timeline (`lane.build`): the shots with their object, slot, section, boundary, the transition or kind into them and their overrides (`hold`, `look`, `fx_intensity`), the overlays (Polly, own, generated), the sections, the chain, and the choices the panel offers (`transition_kinds`: id, label, note and group for every premium, core and boundary kind) |
 | `POST /api/jobs/{id}/recut` | the knobs as today, plus `shot_overrides` and `boundary_overrides` (whole maps; each replaces the record's when present) | CPU, about 30 s | `dense.recut_from_cache`: re-composes from the cached clips with the knobs and the overrides, persists both |
 | `POST /api/jobs/{id}/swap` | `slot`, `file` | GPU, two morphs | as today; the re-compose keeps the overrides |
-| **`POST /api/jobs/{id}/rerender`** | `shot`; optional `seed`, `render_s` (2 to 5), `variant` (`auto`, `object`, `scene-object`, `object-scene`, `scene`) | GPU, one morph | `dense.rerender_morph` (1.5) |
+| **`POST /api/jobs/{id}/rerender`** | `shot`; optional `seed`, `render_s` (2 to 5), `variant` (`auto`, `object`, `scene-object`, `object-scene`, `scene`), `style`, and Under the hood's own values: `prompt`, `negative`, `steps` (1 to 100), `cfg` (1 to 20), `frames` (8k + 1, 25 to 121), `guide_start`, `guide_end` (0 to 1), `compression` (one number or a start and end pair, 0 to 100), `lora` with `lora_strength` (a file of the loras folder: a `LoraLoaderModelOnly` goes in only then), `timing` | GPU, one morph | `dense.rerender_morph` (1.5); a value out of range is a plain-words 400 (`shot_recipe.clean_overrides`) |
+| `GET /api/jobs/{id}/shots/{i}/recipe` | `style`, `layer` (query) | none | Under the hood: every value the shot's morph ran with (`used`: the record, else the graph ComfyUI wrote into the clip), the preset's (what the vibe gives it today) with `differs` a field, `verified` (the clip's own graph gives the recorded key), the re-render gate with its reason, the cost, the takes, the shot's recipe code |
+| `GET /api/jobs/{id}/shots/{i}/workflow.json` | | none | the API graph the shot ran, as a file ComfyUI opens (Open in ComfyUI) |
+| `POST /api/jobs/{id}/shots/{i}/comfy` | `confirm: true` | GPU on ComfyUI | Open in ComfyUI's queue option: the stills uploaded and the graph queued on the desk's own ComfyUI |
+| `GET /api/jobs/{id}/shots/{i}/takes` | | none | every take the shot has had, with its seed, its request, whether it can come back and its own clip's address |
+| `POST /api/jobs/{id}/shots/{i}/take` | `n` | CPU, a re-cut | an earlier take put back (`dense.use_take`), no render |
 | **`POST /api/jobs/{id}/insert`** | `first`; optional `seconds` (5, 10, 15; default 10), `pins` (`{"<k>": file}`), `seed` | GPU, one morph a shot | `dense.insert_generated` (1.6) |
 
-All three GPU routes run as the swap runs: the job goes `running`, the making screen shows the progress, the desk polls
-`GET /api/jobs/{id}`, `video_version` bumps when the re-compose lands, and a cut reopened after a desk restart is
-registered from its folder. Two cuts rendering on the card at once stay refused (409).
+The GPU routes run as the swap runs: the job goes `running`, the desk polls `GET /api/jobs/{id}`, `video_version`
+bumps when the re-compose lands, and a cut reopened after a desk restart is registered from its folder. The making
+screen shows the progress of a swap or an insert; a re-render or a take asked Under the hood shows on the shot's own
+block and in its panel (section 5). A running edit stops through `POST /api/jobs/{id}/cancel` at its next safe point.
+Two cuts rendering on the card at once stay refused (409).
 
 ---
 
@@ -210,29 +219,58 @@ shot, in tabs: **Shot** (Play, Order, Timing), **Look** (Look, Colour, Effects, 
 Transition: the seam into this shot; a click on a seam opens it), **Regenerate** (style, swap, re-render, Generate here,
 Dream here; object cuts). ◀ ▶ step to the shot before and after. Every edit waits in the one Apply bar.
 
+**4 Nov, Under the hood** (docs/UI_REVIEW.md 6.4): the fourth tab is **Under the hood** (`ui_static/hood.js`), which
+replaces Regenerate: every value the shot's morph was rendered with, beside the vibe's preset (violet where it differs),
+editable, with Re-render this shot, Copy recipe, Reset to preset, the takes and Open in ComfyUI. The re-render keeps the
+cut's screen, its progress on the shot's block on the song strip. Swap, Generate here and Dream here sit on the Shot
+tab, each naming the shots it replaces and lighting them on the strip. The project's own settings (aspect, model tier,
+GPU, Forms, Beat FX, Subject sway, End card, your images, the library, the recipe code, Polly, paid cloud) are the rows
+of Tweak's "Project · under the hood" panel, each ending with where it lives (this browser, this cut, the desk) and what
+a change costs (the next render, a re-cut with no GPU, credits, nothing). A re-render or a take running on a shot has a
+Stop in its panel: the edit stops at its next safe point and the cut says whether it stopped or had already landed.
+
 A clips cut (`source: "clips"`, `xenoform.clip_cut`) shows its clip shots by their clip's name and its morph shots as
 "from → to"; it is neither swappable nor re-renderable, and its Look, Colour, Effects, Order and Join edits re-cut as on
 an object cut.
 
 ## 5. On the desk
 
-The lane under the result player becomes the **Timeline** panel (the first slice):
+As the desk stands after the 4 Nov round (`integrate-4nov`). Section 4a tells how it got here.
 
-- The overlays row (Polly, your clips, generated runs), the shots row, the boundary handles between the shots, and the
-  song row with the passages under them. A click on a shot or a boundary seeks the player there and opens its drawer
-  under the timeline; a shot that differs from the default timeline is marked.
-- The **shot drawer**: Play (Morph / Hold), Look (the chips the Look row uses), FX intensity (a slider), then the GPU
-  buttons: Swap the object (the existing picker), Re-render this morph (seed, length, variant), Generate here.
-- The **boundary drawer**: Handoff (Morph / Cut), Dress it (Auto, None, the premium kinds, the boundary kinds), each
-  with its one-line note.
-- **Apply** re-cuts with the overrides as they stand (one request, the whole maps), **Reset the timeline** clears them.
-  While the re-cut runs the making screen shows it; when it lands the player reloads and seeks to what you last clicked,
-  so the composed cut previews the change. Before Apply, the stills animatic under the Chain row is still the instant
-  preview of the chain; the timeline's edits are previewed by the re-cut itself, which is the cheap step.
-- The second slice adds the GPU buttons' flows: Re-render and Generate here post their routes and the panel reloads
-  when the job lands, as the swap does.
+- **The strip is the timeline.** A cut's shots are the blocks of the song strip (`ui_static/strip.js`, the host
+  `data-song-strip="cut"`), laid on the song's own clock: the passages, the wave and the beats above them, the Intensity
+  and Objects lanes below, the spans of Polly, your clips, generated runs and dreams over the shots, and the strip's own
+  playhead. A cut whose song is not on the desk is drawn on its own length. A cut of a trimmed upload sits where the
+  desk's stretch of the song puts it (`cutSongStart`). The Timeline panel on Render holds the strip, its header (the
+  plan line in cut time) and the Apply row; a whole song by passages keeps its passages track above it. At phone width
+  the strip is the passages overview and nothing is edited.
+- **A click** on a block seeks the player there and opens the shot's drawer; a click on the seam between two blocks
+  opens the drawer on Join; a pin on the Objects lane swaps the object the chain lands on there. A block shows the
+  cut's own frame, its number, `!` when an edit waits for the re-cut, and its fill while it renders again. On Tweak
+  the drawer docks under the strip (`inspectorDock`); on Render it sits in the Timeline panel.
+- **The drawer**, four tabs (`TL_TABS`), with ◀ ▶ to the shot before and after and a dot on a tab that holds an edit:
+  - **Shot**: Play (Morph or Hold), Order (move the shot a slot left or right, duplicate it into the next, delete
+    it), Timing, then the GPU rows, each naming the shots
+    it replaces and lighting them on the strip: Swap the object it lands on, Generate here, Dream here.
+  - **Look**: Look, Colour, Effects, and the shot's Beat FX intensity.
+  - **Join** (not on the first shot): Handoff (Flow or Cut), Move it, and Transition (Auto, None, the premium, core,
+    classic and boundary kinds).
+  - **Under the hood** (`ui_static/hood.js`, for every shot): the values the shot's morph was rendered with beside the
+    vibe's preset, editable, with Re-render this shot, Copy recipe, Reset to preset, the takes and Open in ComfyUI.
+- **Apply** (the bar docked at the bottom, and the step bar's "Apply n changes · re-cut") re-cuts with the overrides
+  as they stand: one request, the whole maps, no GPU. **Reset the timeline** clears them, with **Undo the reset**
+  until the next edit. While the re-cut runs the making screen shows it; when it lands the player reloads and seeks to
+  what was last clicked.
+- **The GPU edits.** Swap, Generate here and Dream here go to the making screen with their own title, clock and Stop,
+  as a re-cut does. Under the hood's Re-render this shot and its takes keep the cut's screen: the shot's block on the
+  strip renders with its progress, the panel shows the stage and a Stop, and the rest of the timeline stays usable.
+  A GPU edit asked while timeline edits wait for Apply is refused with a line saying to apply them first, since its
+  own re-cut would drop them. A reload during an in-place edit does not pick the edit up again: the cut reopens as it
+  stood (docs/notes/integrate-4nov.md, "Declined or only half done").
+- **The project's own settings** are not on the timeline: they are the rows of Tweak's "Project · under the hood".
 
-What is not on the timeline, on purpose: moving or trimming shots (the beat grid is the plan's; "Cut it to the beat"
-with inserts and trims is the DIRECTION list's next step after the contest), the Final tier (a Final cut re-cuts and
+What is not on the timeline, on purpose: trimming shots or dragging them freely (the beat grid is the plan's: Order
+moves a shot by whole slots and Join's Move it shifts a seam by beats; "Cut it to the beat" with inserts and trims is
+the DIRECTION list's next step after the contest), the Final tier (a Final cut re-cuts and
 takes overrides but its morphs are not re-rendered pair by pair), and the Director tools' storyboard (a different
 render path; the timeline is the Simple cut's).

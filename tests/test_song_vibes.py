@@ -198,7 +198,7 @@ def test_the_desk_has_a_vibes_control_under_whole_song():
     row = APP.split("function songVibesRow(")[1].split("\n}\n")[0]
     assert 'simpleSeg("easy-song-vibes", songVibesValue(easy), SONG_VIBES, "Vibes")' in row
     assert 'const SONG_VIBES = [["auto", "Auto"], ["1", "1"], ["2", "2"], ["3", "3"], ["5", "5"], ["8", "8"], ["all", "All"]];' in APP
-    assert '${wholeSong(easy) && morphSource(easy) !== "clips" ? songVibesRow(easy) : ""}' in APP
+    assert '${morphSource(easy) !== "clips" ? songVibesRow(easy) : ""}' in APP.split("function projectRows(easy) {")[1].split("\n}\n")[0]
     assert 'act === "easy-song-vibes"' in APP and '"songVibes"' in APP.split("const EASY_SAVED_KEYS = [")[1].split("];")[0]
     make = APP.split("async function easySongMake()")[1].split("\n}\n")[0]
     assert "body.song_vibes = songVibesValue(state.easy);" in make

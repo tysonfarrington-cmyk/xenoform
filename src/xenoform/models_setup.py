@@ -29,6 +29,12 @@ from xenoform.hardware import disk_free, detect_tier
 _LTX = "https://huggingface.co/Lightricks/LTX-Video/resolve/main/ltx-video-2b-v0.9.5.safetensors"
 _T5 = "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp8_e4m3fn_scaled.safetensors"
 _LTX23 = "https://huggingface.co/Lightricks/LTX-2.3/resolve/main/ltx-2.3-22b-distilled.safetensors"
+# The four files the Final loads by name (final_tier.FILES), with the sizes and sha256 the Hugging Face file listings and
+# the copies on Tys's machine agree on (checked 4 Nov 2026 with HEAD requests: nothing was downloaded to read them).
+_LTX23_FP8 = "https://huggingface.co/Lightricks/LTX-2.3-fp8/resolve/main/ltx-2.3-22b-distilled-fp8.safetensors"
+_GEMMA3 = "https://huggingface.co/Comfy-Org/ltx-2/resolve/main/split_files/text_encoders/gemma_3_12B_it_fp4_mixed.safetensors"
+_LTX23_UPSCALER = "https://huggingface.co/Lightricks/LTX-2.3/resolve/main/ltx-2.3-spatial-upscaler-x2-1.1.safetensors"
+_ESRGAN = "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth"
 _Z = "https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files"
 _ACE = "https://huggingface.co/Comfy-Org/ace_step_1.5_ComfyUI_files/resolve/main/checkpoints/ace_step_1.5_turbo_aio.safetensors"
 _WAN = "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main"
@@ -37,8 +43,10 @@ CATALOG: tuple[dict[str, Any], ...] = (
     {
         "id": "ltx-095",
         "name": "LTX 0.9.5 fast",
+        "short": "LTX 0.9.5",
         "required": True,
         "badge": "Morphs",
+        "blurb": "Renders every Draft morph.",
         "detail": "Draft renders every morph with LTX 0.9.5, and Fast Final upscales that Draft. With the T5-XXL fp8 text encoder it is the required download. A dry run does not need the file. Cloud Final renders its morphs on Comfy Cloud (COMFY_ORG_API_KEY in the desk's environment) and falls back to this Draft model for a morph that fails there.",
         "files": (
             {
@@ -59,15 +67,75 @@ CATALOG: tuple[dict[str, Any], ...] = (
         "id": "ltx-23",
         "name": "LTX-2.3 distilled",
         "required": False,
-        "badge": "Core",
-        "detail": "Final renders its morphs with LTX-2.5 when its files are installed, otherwise with LTX-2.3: the fp8 file on a 12 GB card, the full weights (about 43 GB) on 24 GB. Final also needs the Gemma 3 12B text encoder and the x2 spatial upscaler. Draft and Fast Final do not load it.",
+        "badge": "Final",
+        "min_gb": 11,
+        "blurb": "Renders the Final.",
+        "detail": "Final renders each morph with the LTX-2.3 22B distilled fp8 file, the Gemma 3 12B text encoder and the x2 spatial upscaler, then upscales the frames 4x with Real-ESRGAN. It uses LTX-2.5 instead once that card's four files are installed. Draft and Fast Final do not load these files. Final loads the fp8 file on every card, so the 46 GB full weights are not part of this download.",
         "files": (
+            # first for the slot logic (the family of the file the desk can pick between); not part of the download
             {
+                "label": "LTX-2.3 22B distilled, full weights",
                 "path": "checkpoints/ltx-2.3-22b-distilled.safetensors",
                 "url": _LTX23,
                 "bytes": 46149345038,
-                "sha256": "",
+                "sha256": "14409a4d1337a8ded02fa87fb895b17a91ab2c6588f7cc3352e624ff18a689bf",
+                "optional": True,
             },
+            {
+                "label": "LTX-2.3 22B distilled fp8",
+                "path": "checkpoints/ltx-2.3-22b-distilled-fp8.safetensors",
+                "url": _LTX23_FP8,
+                "bytes": 29531884062,
+                "sha256": "d9646b6f2d5c42d337b23671634c43bfeece6989644f51b4a3aa088465ccd3b2",
+                "exact": True,
+            },
+            {
+                "label": "Gemma 3 12B text encoder",
+                "path": "text_encoders/gemma_3_12B_it_fp4_mixed.safetensors",
+                "url": _GEMMA3,
+                "bytes": 9447702218,
+                "sha256": "aaca463d11e6d8d2a4bdb0d6299214c15ef78a3f73e0ef8113d5a9d0219b3f6d",
+                "exact": True,
+            },
+            {
+                "label": "x2 spatial upscaler",
+                "path": "latent_upscale_models/ltx-2.3-spatial-upscaler-x2-1.1.safetensors",
+                "url": _LTX23_UPSCALER,
+                "bytes": 995743560,
+                "sha256": "5f416311fa8172b65af67530758964708d29a317b830d689a51143b7f91913ed",
+                "exact": True,
+            },
+            {
+                "label": "Real-ESRGAN x4 upscaler",
+                "path": "upscale_models/RealESRGAN_x4plus.pth",
+                "url": _ESRGAN,
+                "bytes": 67040989,
+                "sha256": "",
+                "exact": True,
+            },
+        ),
+    },
+    {
+        "id": "ltx-25",
+        "name": "LTX-2.5 distilled",
+        "required": False,
+        "badge": "Final",
+        "manual": True,
+        "min_gb": 11,
+        "no_pick": True,
+        "disk": True,  # the desk picks the Final's model by these files on disk (morph_pass.ltx25_present), so Setup looks there too
+        "manual_note": "LTX-2.5 is a gated download, so Setup does not fetch it. Ask for access to Lightricks/LTX-2.5 on Hugging Face, then put the four files in the folders shown.",
+        "blurb": "Renders the Final when all four files are here. Not downloaded by Setup.",
+        "detail": "When these four files are installed the Final renders with LTX-2.5 (22B distilled int8, 576×1024 scaled to 1080×1920) instead of LTX-2.3. The weights are a gated Hugging Face repository (Lightricks/LTX-2.5): ask for access there, accept its licence, and put each file in the folder shown. Setup does not download them. Without them the Final uses LTX-2.3.",
+        "files": (
+            {"label": "LTX-2.5 22B distilled transformer (int8)", "path": "diffusion_models/ltx-2.5-22b-distilled-transformer-comfy-int8-convrot.safetensors",
+             "url": "", "bytes": 0, "approx_bytes": 21504034224, "sha256": "", "exact": True},
+            {"label": "Gemma 4 12B text encoder (int8)", "path": "text_encoders/gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors",
+             "url": "", "bytes": 0, "approx_bytes": 15372969374, "sha256": "", "exact": True},
+            {"label": "Video VAE", "path": "vae/ltx-2.5-video-vae-bf16.safetensors",
+             "url": "", "bytes": 0, "approx_bytes": 1472223346, "sha256": "", "exact": True},
+            {"label": "Audio VAE", "path": "vae/ltx-2.5-audio-vae-bf16.safetensors",
+             "url": "", "bytes": 0, "approx_bytes": 364866540, "sha256": "", "exact": True},
         ),
     },
     {
@@ -75,6 +143,7 @@ CATALOG: tuple[dict[str, Any], ...] = (
         "name": "Z-Image Turbo",
         "required": False,
         "badge": "Stills",
+        "blurb": "Makes new vibe stills.",
         "detail": "Stills model on the open-weights path. Diffusion weights, a text encoder, and the VAE. Local FLUX.2 Klein and FLUX.3 Klein can stand in.",
         "files": (
             {
@@ -103,6 +172,7 @@ CATALOG: tuple[dict[str, Any], ...] = (
         "required": False,
         "badge": "Local",
         "manual": True,
+        "blurb": "Optional local stills. You place the files.",
         "detail": "Optional local stills. Place flux-2-klein-4b-fp8.safetensors, qwen_3_4b.safetensors, and flux2-vae.safetensors. Setup does not download them.",
         "files": (
             {"path": "diffusion_models/flux-2-klein-4b-fp8.safetensors", "url": "", "bytes": 0, "sha256": ""},
@@ -116,6 +186,7 @@ CATALOG: tuple[dict[str, Any], ...] = (
         "required": False,
         "badge": "Local",
         "manual": True,
+        "blurb": "Optional local stills. You place the files.",
         "detail": "Optional local stills. Place flux3-image-klein-int8-convrot.safetensors, qwen3vl_4b_int8_convrot.safetensors, and flux2-vae.safetensors. The FLUX 3 API is an Add-on, off by default.",
         "files": (
             {"path": "diffusion_models/flux3-image-klein-int8-convrot.safetensors", "url": "", "bytes": 0, "sha256": ""},
@@ -127,6 +198,7 @@ CATALOG: tuple[dict[str, Any], ...] = (
         "id": "ace-step",
         "name": "ACE-Step",
         "required": False,
+        "blurb": "Optional music model.",
         "detail": "Optional music model, one all-in-one file. The bundled demo track does not need it.",
         "files": (
             {
@@ -142,6 +214,7 @@ CATALOG: tuple[dict[str, Any], ...] = (
         "name": "Wan 2.2 TI2V 5B",
         "required": False,
         "badge": "Optional",
+        "blurb": "Optional first-frame action shots.",
         "detail": "Optional alternative for first-frame action shots. About 18 GB with the VAE and text encoder. Only a recipe that asks for Wan loads it.",
         "files": (
             {
@@ -169,6 +242,7 @@ CATALOG: tuple[dict[str, Any], ...] = (
         "name": "Wan 2.2 I2V 14B",
         "required": False,
         "badge": "Optional",
+        "blurb": "Optional heavier image-to-video.",
         "detail": "Optional heavier image-to-video alternative. High-noise and low-noise 14B fp8. Only a recipe that asks for Wan loads it.",
         "files": (
             {
@@ -322,8 +396,26 @@ def comfy_listing(folder: str, url: str = "") -> list[str] | None:
     if held and now - held[0] < _LISTED_FOR:
         return held[1]
     names = _fetch_listing(base, folder)
-    _LISTED[key] = (now, names)
+    _LISTED[key] = (time.monotonic(), names)  # stamped when it came back, not when it was asked: a slow answer is not stale at birth
     return names
+
+
+def prefetch_listings(url: str = "") -> None:
+    """Ask ComfyUI for every model folder the catalog reads, all at once.
+
+    A ComfyUI that does not answer costs one timeout for the whole check, not one for each folder in turn (on Windows a
+    closed port takes the full 1.5 s: the nine folders were 25 s of a Setup page that said nothing meanwhile)."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    def ask(folder: str) -> None:
+        try:
+            comfy_listing(folder, url)
+        except Exception:  # noqa: BLE001 - the check below asks again and reads the answer it gets
+            pass
+
+    folders = sorted({Path(file["path"]).parent.as_posix() for spec in CATALOG for file in spec["files"]} | {"checkpoints"})
+    with ThreadPoolExecutor(max_workers=min(8, len(folders))) as pool:
+        list(pool.map(ask, folders))
 
 
 def slot_variants(root: Path, file: dict, *, comfy_url: str = "") -> list[str]:
@@ -354,6 +446,63 @@ def slot_variants(root: Path, file: dict, *, comfy_url: str = "") -> list[str]:
         if rel not in found:
             found.append(rel)
     return found
+
+
+def exact_variants(root: Path, file: dict, *, comfy_url: str = "", disk: bool = False) -> list[str]:
+    """The slot's file when it is there under its own name, else nothing.
+
+    The Final loads its four files by name, so a quantised cousin does not count for them. ComfyUI's list for the
+    folder decides when ComfyUI answers; the models folder on disk is the fallback, and the only judge when ``disk``
+    says the desk itself picks by those files."""
+    if not disk:
+        wanted = Path(file["path"]).name.lower()
+        listed = comfy_listing(Path(file["path"]).parent.as_posix(), comfy_url)
+        if listed is not None:
+            return [file["path"]] if any(name.lower() == wanted for name in listed) else []
+    return [file["path"]] if _file_present(root, file) else []
+
+
+def _partial_bytes(root: Path, file: dict) -> int:
+    """What an interrupted download of this file already holds (``download_file`` resumes from the .part)."""
+    dest = root / file["path"]
+    part = dest.with_suffix(dest.suffix + ".part")
+    try:
+        return int(part.stat().st_size) if part.is_file() else 0
+    except OSError:
+        return 0
+
+
+def model_parts(spec: dict, root: Path, *, comfy_url: str = "") -> list[tuple[dict, dict]]:
+    """Every file the model needs, each with whether it is in place: ``(catalog file, row)``. A file marked
+    ``optional`` is an alternative the card does not ask for."""
+    out: list[tuple[dict, dict]] = []
+    for file in spec["files"]:
+        if file.get("optional"):
+            continue
+        if file.get("exact"):
+            found = exact_variants(root, file, comfy_url=comfy_url, disk=bool(spec.get("disk")))
+        else:
+            found = slot_variants(root, file, comfy_url=comfy_url)
+        size = int(file["bytes"]) or int(file.get("approx_bytes") or 0)
+        out.append((file, {
+            "label": file.get("label") or Path(file["path"]).name,
+            "name": Path(file["path"]).name,
+            "folder": Path(file["path"]).parent.as_posix(),
+            "bytes": size,
+            "size_label": size_label(size) if size else "",
+            "present": bool(found),
+        }))
+    return out
+
+
+def bytes_to_fetch(parts: list[tuple[dict, dict]], root: Path) -> int:
+    """What a Download still has to fetch: the files not in place, less what a stopped download already holds."""
+    total = 0
+    for file, row in parts:
+        if row["present"] or not file.get("url"):
+            continue
+        total += max(0, int(file["bytes"]) - _partial_bytes(root, file))
+    return total
 
 
 def _prefer(variants: list[str], canonical: str) -> str:
@@ -503,34 +652,49 @@ def inspect_setup(root: Path | None = None, comfy_url: str = "") -> dict:
     guessed = root is None and not os.environ.get("XENO_MODELS", "").strip()
     root = root or models_root()
     tier = detect_tier()
+    free = disk_free(root)
+    prefetch_listings(comfy_url)
     models = []
     for spec in CATALOG:
-        total = sum(int(file["bytes"]) for file in spec["files"])
+        parts = model_parts(spec, root, comfy_url=comfy_url)
+        many = len(parts) > 1
+        total = sum(row["bytes"] for _file, row in parts)
         present = model_present(spec["id"], root, comfy_url=comfy_url)
-        variants = slot_variants(root, spec["files"][0], comfy_url=comfy_url) if spec["files"] else []
-        chosen = chosen_file(spec["id"], root, comfy_url=comfy_url)
+        ready = all(row["present"] for _file, row in parts) if many else present
+        if spec.get("disk"):
+            present = ready
+        variants = [] if spec.get("no_pick") else (slot_variants(root, spec["files"][0], comfy_url=comfy_url) if spec["files"] else [])
+        chosen = "" if spec.get("no_pick") else chosen_file(spec["id"], root, comfy_url=comfy_url)
+        need = 0 if ready or spec.get("manual") else bytes_to_fetch(parts, root)
         models.append(
             {
                 "id": spec["id"],
                 "name": spec["name"],
+                "short": spec.get("short") or spec["name"],
                 "required": bool(spec["required"]),
                 "badge": spec.get("badge") or ("Default" if spec["required"] else "Optional"),
                 "manual": bool(spec.get("manual")),
                 "present": present,
+                "ready": ready,
                 "bytes": total,
                 "size_label": size_label(total),
+                "need_bytes": need,
+                "need_label": size_label(need),
+                "why_not": "" if ready or spec.get("manual") else why_not_download(spec, tier, need, free),
+                "blurb": spec.get("blurb") or "",
                 "detail": spec["detail"],
                 "files": [file["path"] for file in spec["files"]],
+                "parts": [row for _file, row in parts] if many else [],
                 "variants": variants,
                 "chosen": chosen,
                 "filename": Path(chosen).name if chosen else "",
             }
         )
-    free = disk_free(root)
     from xenoform.stems import stem_status
 
     missing = [item["name"] for item in models if item["required"] and not item["present"]]
-    if comfy_listing("checkpoints", comfy_url) is not None:
+    answered = comfy_listing("checkpoints", comfy_url) is not None
+    if answered:
         checked = f"Checked against the files ComfyUI at {comfy_base(comfy_url)} can load. Downloads go to {root}."
     else:
         checked = f"ComfyUI is not answering, so the desk checked the files in {root}."
@@ -540,6 +704,8 @@ def inspect_setup(root: Path | None = None, comfy_url: str = "") -> dict:
         "tier": tier,
         "models_dir": str(root),
         "checked": checked,
+        "comfy_answered": answered,
+        "comfy_url": comfy_base(comfy_url),
         "disk": {"free_bytes": free, "free_label": f"{size_label(free)} free"},
         "models": models,
         "llm": llm_status(),
@@ -547,8 +713,72 @@ def inspect_setup(root: Path | None = None, comfy_url: str = "") -> dict:
         "film_pack": film_pack_status(),
         "ableton": False,
         "missing_required": missing,
-        "try_it": "The bundled demo and the Pynchon register need no model download.",
+        "ffmpeg": ffmpeg_status(),
+        "gate": make_gate(models, reliable=answered or not guessed),
+        "final": final_summary(),
+        "try_it": "The bundled demo needs no model download.",
     }
+
+
+_SPARE = 512 * 1024 * 1024  # room a download leaves on the drive (the same margin _run_download asks for)
+
+
+def why_not_download(spec: dict, tier: dict, need: int, free: int) -> str:
+    """Why this model's Download is off, in a sentence, or an empty string when it can run."""
+    min_gb = spec.get("min_gb")
+    if min_gb and tier.get("gb") is not None and float(tier["gb"]) < float(min_gb):
+        return f"Final needs a 12 GB card; this one reads as {tier.get('label') or 'smaller'}, so Final falls back to the Draft."
+    from xenoform.film_pack import offline
+
+    if offline():
+        return "XENO_OFFLINE is set, so nothing is downloaded."
+    if need and free < need + _SPARE:
+        return f"Needs {size_label(need)} plus a little spare room; the models drive has {size_label(free)} free."
+    return ""
+
+
+def ffmpeg_status() -> dict:
+    """Whether ffmpeg and ffprobe are on PATH, for the Setup page. The installers do not install ffmpeg (they say so
+    as they run, where it scrolls away), and without it the desk opens but no song is read and no video written."""
+    import platform
+    import shutil
+
+    missing = [name for name in ("ffmpeg", "ffprobe") if not shutil.which(name)]
+    if not missing:
+        return {"found": True, "missing": [], "line": "", "how": ""}
+    how = {"Windows": "In a terminal: winget install Gyan.FFmpeg",
+           "Darwin": "In Terminal: brew install ffmpeg"}.get(platform.system(), "Install it with your package manager, for example: sudo apt install ffmpeg")
+    return {"found": False, "missing": missing,
+            "line": f"{' and '.join(missing)} {'is' if len(missing) == 1 else 'are'} not on this machine's PATH",
+            "how": f"Xenoform needs ffmpeg to read songs and write videos. {how}. Then close Xenoform's windows and start it again."}
+
+
+def make_gate(models: list[dict], *, reliable: bool) -> dict:
+    """What the desk says beside Make while a required model is missing (the Make button leads to Setup until it is in).
+
+    It stays quiet when the answer is a guess: ComfyUI does not answer and the models folder was not named, so the
+    files may simply be where this desk does not look."""
+    absent = [item for item in models if item["required"] and not item["ready"]]
+    need = sum(int(item["need_bytes"]) for item in absent)
+    label = size_label(need)
+    names = ", ".join(item["short"] for item in absent)
+    return {
+        "blocked": bool(absent) and reliable,
+        "reliable": reliable,
+        "names": [item["short"] for item in absent],
+        "bytes": need,
+        "size_label": label,
+        "line": f"To make videos you need {names}, {label}" if absent else "",
+        "button": f"Get the {label} model" if absent else "",
+    }
+
+
+def final_summary() -> dict:
+    """The model Final resolves to here, for Setup's header and the tier sentence."""
+    from xenoform.hardware import final_model
+
+    model = final_model()
+    return {"model": model, "label": "LTX-2.5" if model == "ltx25" else "LTX-2.3"}
 
 
 _DOWNLOADS: dict[str, dict[str, Any]] = {}
@@ -574,11 +804,17 @@ def start_download(model_id: str, root: Path | None = None) -> dict:
         return film_pack.start()
     spec = by_id(model_id)
     if spec.get("manual"):
-        raise PlainError("Place the local file. Setup does not download FLUX Klein weights.")
+        raise PlainError(spec.get("manual_note") or "Place the local file. Setup does not download FLUX Klein weights.")
     from xenoform.film_pack import offline
 
     if offline():  # the film pack already said no; a model is gigabytes from the web, so it says no too
         raise PlainError("XENO_OFFLINE is set, so nothing is downloaded. Unset it and press Download again.")
+    where = root or models_root()
+    prefetch_listings()
+    parts = model_parts(spec, where)
+    why = why_not_download(spec, detect_tier(), bytes_to_fetch(parts, where), disk_free(where))
+    if why:  # the card's own reason, as a refusal: the drive is too small, or the card is
+        raise PlainError(why)
     with _LOCK:
         current = _DOWNLOADS.get(model_id) or {}
         if current.get("status") == "running":
@@ -639,14 +875,19 @@ def _run_download(model_id: str, root: Path) -> None:
 
     try:
         spec = by_id(model_id)
-        total = sum(int(file["bytes"]) for file in spec["files"])
+        prefetch_listings()
+        parts = model_parts(spec, root)
+        # only what is not in place: a Final with the fp8 file already here fetches the text encoder and the upscalers
+        todo = [file for file, row in parts if not row["present"] and file.get("url")]
+        total = sum(int(file["bytes"]) for file in todo) or 1
+        need = bytes_to_fetch(parts, root)
         free = disk_free(root)
-        if free < total + 512 * 1024 * 1024:
+        if free < need + _SPARE:
             raise PlainError(
-                f"This download needs {size_label(total)} plus a little spare room. The drive has {size_label(free)} free."
+                f"This download needs {size_label(need)} plus a little spare room. The drive has {size_label(free)} free."
             )
         done = 0
-        for file in spec["files"]:
+        for file in todo:
             dest = root / file["path"]
 
             def on_progress(frac: float, detail: str, *, base=done, size=int(file["bytes"])) -> None:

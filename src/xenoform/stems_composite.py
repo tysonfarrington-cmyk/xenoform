@@ -18,6 +18,11 @@ here). This module lays them together with ffmpeg, deterministically from the re
 - Deterministic: the bitexact flags, the encoder's threads pinned, no metadata; the inputs are the layer files and the
   curves in ``composite/curves.json``, so ``rebuild`` makes the same file byte for byte, and a prominence or blend
   change re-composites in seconds with no GPU.
+- Stop (``cancel``, the desk's Stop on an edit): ``compose`` makes the composite beside the cut and looks at Stop
+  while ffmpeg runs (ffmpeg is ended, ``JobCancelled`` raised, nothing of the cut touched); ``build`` then replaces
+  the cut's file. Nothing looks at Stop, and nothing is reported, once the file is replaced.
+- A re-composite of a finished cut (``rebuild``) replaces the file and the record in one step that lands both or puts
+  both back (``cut_swap``); the Make's own ``build`` writes a cut that did not exist before, so it has nothing to keep.
 """
 
 from __future__ import annotations
@@ -42,6 +47,7 @@ GROUND = "black"
 X264_THREADS = 8  # pinned so the same record makes the same bytes on any machine with this ffmpeg
 CURVES_FILE = "curves.json"
 FOLDER = "composite"
+POLL_S = 0.2  # how often a composite that is running looks at Stop
 
 
 def blend_of(value) -> str:
@@ -127,9 +133,53 @@ def sha256_of(path: str | Path) -> str:
     return h.hexdigest()
 
 
+def stop_if(cancel: Callable[[], bool] | None) -> None:
+    """Raise ``JobCancelled`` when ``cancel`` (the desk's Stop) says so."""
+    if cancel and cancel():
+        from xenoform.turbo import JobCancelled
+
+        raise JobCancelled("Stopped before the layers were laid together.")
+
+
+def discard(path: Path, *, tries: int = 8, pause: float = 0.1) -> None:
+    """Remove a file made beside the cut (a stopped composite's, a re-cut's that will not land). Never raises: on
+    Windows a file of an ffmpeg that was just ended can stay held for a moment, so it is tried a few times."""
+    for attempt in range(tries):
+        try:
+            Path(path).unlink(missing_ok=True)
+            return
+        except OSError:
+            if attempt < tries - 1:
+                time.sleep(pause)
+
+
+def _ffmpeg(cmd: list[str], cancel: Callable[[], bool] | None) -> tuple[int, str]:
+    """Run ffmpeg to its end: its exit code and what it said. ``cancel`` is asked every ``POLL_S`` while it runs; when
+    it says so ffmpeg is ended and ``JobCancelled`` raised. Its words go to a file, not a pipe nobody reads meanwhile."""
+    import tempfile
+
+    with tempfile.TemporaryFile() as said:
+        proc = subprocess.Popen(cmd, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=said)
+        try:
+            while True:
+                try:
+                    proc.wait(timeout=POLL_S)
+                    break
+                except subprocess.TimeoutExpired:
+                    stop_if(cancel)
+        finally:
+            if proc.poll() is None:  # Stop, or anything else that takes us away: ffmpeg does not run on alone
+                proc.kill()
+                proc.wait()
+        said.seek(0)
+        return int(proc.returncode), said.read().decode("utf-8", errors="replace")
+
+
 def render(videos: dict[str, Path], layer_alphas: dict[str, np.ndarray], order: list[str], blends: dict[str, str],
-           audio: Path | None, out: Path, *, fps: int, size: tuple[int, int], work: Path) -> dict:
-    """Lay the layer ``videos`` together into ``out`` (the song from ``audio`` mixed in once). Raises on ffmpeg's error."""
+           audio: Path | None, out: Path, *, fps: int, size: tuple[int, int], work: Path,
+           cancel: Callable[[], bool] | None = None) -> dict:
+    """Lay the layer ``videos`` together into ``out`` (the song from ``audio`` mixed in once). Raises on ffmpeg's error,
+    and ``JobCancelled`` when ``cancel`` says Stop while ffmpeg runs (ffmpeg is ended and ``out`` is not written)."""
     from xenoform.video import ffmpeg_bin
 
     work = Path(work)
@@ -155,10 +205,15 @@ def render(videos: dict[str, Path], layer_alphas: dict[str, np.ndarray], order: 
     tmp = Path(out).with_name(Path(out).stem + ".composite.mp4")
     cmd.append(str(tmp))
     t0 = time.perf_counter()
-    done = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
-    if done.returncode:
-        tail = " | ".join((done.stderr or "").strip().splitlines()[-3:])
-        raise RuntimeError(f"ffmpeg could not lay the layers together (exit {done.returncode}): {tail}")
+    try:
+        code, said = _ffmpeg(cmd, cancel)
+    except BaseException:  # stopped: the half-written file goes
+        discard(tmp)
+        raise
+    if code:
+        discard(tmp)
+        tail = " | ".join(said.strip().splitlines()[-3:])
+        raise RuntimeError(f"ffmpeg could not lay the layers together (exit {code}): {tail}")
     tmp.replace(out)
     return {"frames": frames, "seconds": round(time.perf_counter() - t0, 2), "size": [int(size[0]), int(size[1])],
             "fps": int(fps), "sha256": sha256_of(out)}
@@ -198,11 +253,18 @@ def section(layers: list[dict], *, fps: int, size: tuple[int, int], frames: int,
             "size": [int(size[0]), int(size[1])], "frames": int(frames), "audio": audio}
 
 
-def build(job_dir: Path, rec: dict, out: Path | None = None, *, report: Callable[[str, float, str], None] | None = None) -> dict:
-    """The composite of a Stems record (``rec``: its ``layers`` and ``composite``) from the layer files and the curves
-    alone: writes ``out`` (default ``<job>/xenoform.mp4``) and returns the composite block with what it made."""
-    from xenoform.turbo import publish_file
+def staged_path(job_dir: Path) -> Path:
+    """Where ``compose`` leaves the composite until it is put in the cut's place."""
+    return Path(job_dir) / FOLDER / "composite.mp4"
 
+
+def compose(job_dir: Path, rec: dict, *, report: Callable[[str, float, str], None] | None = None,
+            cancel: Callable[[], bool] | None = None, videos: dict[str, Path] | None = None) -> dict:
+    """The composite of a Stems record (``rec``: its ``layers`` and ``composite``) from the layer files and the curves
+    alone, made at ``staged_path`` with the cut's own file left as it is; returns the composite block with what it
+    made. ``videos`` names another file for a layer's cut ({stem: path}: a re-cut made beside it and not yet put in its
+    place). ``cancel`` (Stop) is looked at before, while and after ffmpeg runs, and a ``report`` that raises ends it as
+    well: either way the staged file is removed and nothing else has changed."""
     job_dir = Path(job_dir)
     comp = dict(rec.get("composite") or {})
     layers = [dict(l) for l in rec.get("layers") or [] if l.get("video")]
@@ -212,7 +274,8 @@ def build(job_dir: Path, rec: dict, out: Path | None = None, *, report: Callable
         stem = str(layer["stem"])
         layer["prominence"] = (comp.get("prominence") or {}).get(stem, layer.get("prominence"))
         layer["blend"] = (comp.get("blends") or {}).get(stem, layer.get("blend"))
-    videos = {str(l["stem"]): Path(str(l["video"])) for l in layers}
+    other = {str(s): Path(p) for s, p in (videos or {}).items()}
+    videos = {str(l["stem"]): other.get(str(l["stem"]), Path(str(l["video"]))) for l in layers}
     gone = [s for s, p in videos.items() if not p.is_file()]
     if gone:
         raise FileNotFoundError(f"The {', '.join(gone)} layer's cut is gone; make it again.")
@@ -226,23 +289,45 @@ def build(job_dir: Path, rec: dict, out: Path | None = None, *, report: Callable
     audio = Path(str(comp["audio"])) if comp.get("audio") else None
     if audio is not None and not audio.is_file():
         raise FileNotFoundError("The song file for this video is gone; load it again and render.")
+    stop_if(cancel)
     if report:
         report("assemble", 0.62, f"Laying {len(order)} layers over one another ({', '.join(reversed(order))} on top first)")
-    out = Path(out) if out else job_dir / "xenoform.mp4"
-    made_file = job_dir / FOLDER / "composite.mp4"
-    made = render(videos, lay, order, comp.get("blends") or {}, audio, made_file, fps=fps, size=size, work=job_dir / FOLDER)
-    publish_file(made_file, out)
+    made_file = staged_path(job_dir)
+    made = render(videos, lay, order, comp.get("blends") or {}, audio, made_file, fps=fps, size=size, work=job_dir / FOLDER,
+                  cancel=cancel)
     comp.update({"order": order, "frames": made["frames"], "seconds": made["seconds"], "sha256": made["sha256"],
                  "alpha_mean": {s: round(float(lay[s].mean()), 3) for s in order}})
-    if report:
-        report("assemble", 0.95, "The layers are laid together")
+    try:  # said before the cut's file is replaced: a desk whose report raises on Stop still stops with the cut whole
+        if report:
+            report("assemble", 0.95, "The layers are laid together")
+        stop_if(cancel)
+    except BaseException:
+        discard(made_file)
+        raise
+    return comp
+
+
+def build(job_dir: Path, rec: dict, out: Path | None = None, *, report: Callable[[str, float, str], None] | None = None,
+          cancel: Callable[[], bool] | None = None) -> dict:
+    """``compose``, then the composite put in place: writes ``out`` (default ``<job>/xenoform.mp4``) and returns the
+    composite block with what it made. Stop (``cancel``) is honoured until the composite is made, and ``out`` is
+    replaced last, with no report after it: when this raises ``JobCancelled``, ``out`` is the file it was."""
+    from xenoform.turbo import publish_file
+
+    job_dir = Path(job_dir)
+    comp = compose(job_dir, rec, report=report, cancel=cancel)
+    publish_file(staged_path(job_dir), Path(out) if out else job_dir / "xenoform.mp4")
     return comp
 
 
 def rebuild(job_dir: Path, *, prominence: dict | None = None, blend: dict | None = None,
-            report: Callable[[str, float, str], None] | None = None) -> dict:
+            report: Callable[[str, float, str], None] | None = None, cancel: Callable[[], bool] | None = None) -> dict:
     """Re-composite a finished Stems cut with new prominence or blends (no GPU, no re-cut): the record's composite block
-    changes, the order follows the new prominence, ``<job>/xenoform.mp4`` is replaced and the record written back."""
+    changes, the order follows the new prominence, ``<job>/xenoform.mp4`` is replaced and the record written back.
+    Stop (``cancel``) ends it with ``JobCancelled`` while the composite is being made, the file and the record as they
+    were; once the file is replaced the record is written whatever Stop says, and the caller tells Stop it was late.
+    The file and the record are replaced in one step (``cut_swap.Swap``): if either will not be replaced, both are put
+    back and ``cut_swap.SwapFailed`` says whether the cut is as it was."""
     job_dir = Path(job_dir)
     path = job_dir / "simple" / "simple.json"
     rec = json.loads(path.read_text(encoding="utf-8"))
@@ -263,7 +348,14 @@ def rebuild(job_dir: Path, *, prominence: dict | None = None, blend: dict | None
     comp.update({"prominence": pro, "blends": bl, "order": order_of(layers)})
     rec["composite"] = comp
     rec["layers"] = layers
-    rec["composite"] = build(job_dir, rec, report=report)
+    rec["composite"] = compose(job_dir, rec, report=report, cancel=cancel)
     rec["composites"] = int(rec.get("composites") or 0) + 1
-    path.write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
+    from xenoform import cut_swap
+
+    # the file and the record land together or neither does (a record that would not be written used to leave the new
+    # composite under the old record)
+    swap = cut_swap.Swap("The new composite", root=job_dir)
+    swap.file(staged_path(job_dir), job_dir / "xenoform.mp4")
+    swap.text(path, json.dumps(rec, indent=1, default=str))
+    swap.commit()
     return rec

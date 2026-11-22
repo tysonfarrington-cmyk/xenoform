@@ -544,7 +544,9 @@ def test_the_desk_has_the_setup_row_and_the_clips_button():
     assert 'state.easy.ownId = ""' in pick and "Download the free film pack in Setup & models first" in pick and '"100 MB"' in pick
     setup = _fn("function renderSetup()", "\n}\n")
     assert "filmPackCard(setup.film_pack)" in setup
-    assert 'id="dl-status-${esc(model.id)}"' in setup and 'id="dl-track-${esc(model.id)}"' in setup
+    model_card = _fn("function modelCard(model)", "\n}\n")  # a model's card is its own function since 4 Nov (UI_REVIEW M2, M3)
+    assert 'id="dl-status-${esc(model.id)}"' in model_card and 'id="dl-track-${esc(model.id)}"' in model_card
+    assert "(setup.models || []).map(modelCard)" in setup
     card = _fn("function filmPackCard(pack)", "\n}\n")
     assert 'data-act="download-model" data-id="${esc(pack.id)}"' in card and "Download again" in card and 'class="track"' in card
     assert 'id="dl-status-${esc(pack.id)}"' in card and 'id="dl-track-${esc(pack.id)}"' in card

@@ -35,7 +35,7 @@ def test_the_rave_line_reads_as_a_scene_a_shape_and_polly_dancing():
     assert r["scenes"] == ["a " + CITY]
     assert r["own"] == ["laser"] and r["objects"] == [] and r["family"] == ""  # "rave music" names no music box
     assert r["performer"] == {"style": "dance", "cue": "girl dancing"}
-    assert r["summary"] == f"Scenes: a {CITY}. Objects: laser (new shape). Polly: dancing (in Work in progress)."
+    assert r["summary"] == f"Scenes: a {CITY}. Objects: laser (new shape). Polly: dancing (when switched on in Tweak → Project · under the hood)."
     assert r["source"] == "rules" and r["line"] == RAVE
 
 

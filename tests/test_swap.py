@@ -279,7 +279,7 @@ def test_the_swap_route_runs_the_swap_and_bumps_the_video(tmp_path, monkeypatch)
     (folder / "xenoform.mp4").write_bytes(b"old")
     done = threading.Event()
 
-    def fake_swap(job_dir, slot, file, *, cfg=None, report=None, client=None):
+    def fake_swap(job_dir, slot, file, *, cfg=None, report=None, client=None, cancel=None):
         assert Path(job_dir).name == "swap-test" and slot == 1 and file == "cosmic/05_mobius_iridescent.jpg"
         if report:
             report("restyle", 0.3, "Re-rendering morph 1 of 2")
@@ -340,10 +340,12 @@ def test_the_lane_names_the_slot_each_shot_lands_on_and_the_pinned_and_swapped_o
 
 def test_front_end_offers_the_swap_on_the_lane():
     fn = APP.split("function shotsLane(easy)")[1].split("async function loadLane")[0]
-    assert 'data-act="easy-swap-mode"' in fn and 'data-act="easy-swap-pick"' in fn and "swappable" in fn
-    # the opening tile: the chain's first still can be swapped too (no shot lands on it)
-    assert 'class="lane-open"' in fn and 'data-act="easy-swap-pick" data-slot="0"' in fn and "lane.opens_on" in fn
-    assert ".lane-open" in (ROOT / "src/xenoform/ui_static/app.css").read_text(encoding="utf-8")
+    assert 'data-act="easy-swap-mode"' in fn and "swappable" in fn
+    # on the song strip a shot picks the still it lands on in swap mode, and the objects lane's first pin is the still
+    # the cut opens on (no shot lands on it), so it can be swapped too
+    strip = APP.split("function cutShotsForStrip(")[1].split("function mountStrips(")[0]
+    assert '"data-act": "easy-swap-pick", "data-slot": s.still' in strip and "lane.opens_on || stills[0]" in strip
+    assert '"data-act": "easy-swap-pick", "data-slot": still.index' in strip and '"data-act": "easy-tl-swap", "data-slot": still.index' in strip
     assert "async function swapStill" in APP and "/swap`" in APP and '"easy-swap", slot.index' in fn and 'data-act="easy-swap-cancel"' in fn
     swap = APP.split("async function swapStill")[1].split("\n}\n")[0]
     assert 'method: "POST"' in swap and "JSON.stringify" in swap and "poll(id);" in swap

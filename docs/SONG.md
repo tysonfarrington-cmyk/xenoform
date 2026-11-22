@@ -2,7 +2,7 @@
 
 Stage 5 of `docs/MUSIC_VIDEO_PLAN.md` (section 7). What the hand-made Glitch Out montage of 29 Oct did by hand
 (`docs/demo/tools/montage.py`: 30 s window cuts laid end to end by song time, a look a stretch, the title on the last
-hit) is a Make: **Fine-tune → Length → Whole song**, then **Make the whole song**.
+hit) is a Render: **Render → Quality → By passages**, then **Render the whole song**.
 
 ## What it does
 
@@ -31,7 +31,8 @@ hit) is a Make: **Fine-tune → Length → Whole song**, then **Make the whole s
    taste file no vibe comes twice and the demoted ones stay out. The intro and the outro are one passage each, one
    look each.
 
-   **Vibes** (Fine-tune, under Whole song: Auto, 1, 2, 3, 5, 8, All; the body key `song_vibes`) keeps the song to fewer
+   **Vibes** (Tweak → Project · under the hood → The whole song, by passages: Auto, 1, 2, 3, 5, 8, All; the body key
+   `song_vibes`) keeps the song to fewer
    vibes. Auto, the default, and All are the look a passage above (Tys, 1 Nov: fourteen vibes in a song is fine). A
    count N is at most N vibes (`song_plan.share`): every passage starts with a vibe of its own, then the cheapest move
    first, a calm passage shares another scene's vibe, then the outro, a release and the intro do, a build shares another
@@ -54,7 +55,7 @@ hit) is a Make: **Fine-tune → Length → Whole song**, then **Make the whole s
    against the card by picture), else the vibe's first shipped still the taste file allows. It is pinned into that
    passage's first window at slot 1 (the first shot morphs from slot 0 into it on the drop's hit), no other passage
    shows it, and the record says so (`hero`: the still, its noun, why, the passage, the window, the slot). The desk's
-   Fine-tune facts name it under Whole song. **The hero holds a bar** (1 Nov: on a two-beat opening shot it showed for a
+   whole-song plan facts name it (the Hero row of `songPlanFacts`). **The hero holds a bar** (1 Nov: on a two-beat opening shot it showed for a
    quarter of a second): the whole song's plan opens the main run on one shot of a whole bar (`pacing.song_plan`'s
    `hold_main`, `pacing.HERO_BEATS`; the shot says `hero_bar`), its event, punch and stutter still on its first beat,
    and a hot run's two-beat entry shots start from its second bar; the record's `hero.hold_s` is that shot's length.
@@ -107,21 +108,21 @@ passages over the shots, each with its look and its window's job; a click opens 
 stays behind the usual credits tick: a whole song on Cloud is its windows' credits, the estimate says how many
 (3.6 to 6 credits a morph: 464 for 128 morphs measured on 29 Oct, about 6 for a single 3 s morph).
 
-Not yet: a Stems cut is not made whole (it is one Make: Length Full song); no performer shots in a whole song; a passage
+Not yet: a Stems cut is not made whole (it is one Render: Quality Draft, one cut); no performer shots in a whole song; a passage
 cut in two (Final) carries on from the still its first window landed on, so that still shows at the join twice by
 design (the morph continues through it).
 
 ## Clips
 
 A whole song takes your clips (1 Nov): **Morph → Your clips** (a folder, the files dropped on the desk, or the free film
-pack), then **Length → Whole song** and **Make the whole song**. It is the same maker, with one difference: a clips song
+pack), then **Render → Quality → By passages** and **Render the whole song**. It is the same maker, with one difference: a clips song
 is one Make, not a window a passage.
 
 1. **Planned by its passages** (`song_plan.clips_passages`). The song plan is the one an objects song gets (`whole`: the
    pacing engine over the whole song at the Shape row's Breathe and Drops), and its passages are the same; the clips cut
    is laid out on it as any clips cut is (`clip_cut.fit`, below), so each passage's morphs are the morphs the cut plays
    in it and the estimate is the cut's own.
-2. **One window, the whole song** (`windows[0].whole`). Its body is a clips cut of your clips at Length Full song (the
+2. **One window, the whole song** (`windows[0].whole`). Its body is a clips cut of your clips at Quality Draft, one cut (the
    song as it is, no trim), carrying the whole song plan (`song_passage.plan`) and a context with no passage of its own
    (`whole`, no `passage_start`): the Make plays the song plan as planned and shapes it passage by passage, as any cut
    is shaped (`pacing.song_context` reads only a passage's window). One picture keeps every passage in sync by its own
@@ -168,9 +169,9 @@ What a clips cut does with the pacing engine (`clip_cut`, the same for a clips s
 
 | Key | What it does |
 |---|---|
-| `song_morph_cap` | The whole song's morphs: `"auto"` (default) is the profile table's own count, passage by passage; a number caps the song, the planner spending it by role (the calm passages give theirs up first, a deep cap squeezes the drops' half-bar entries too). The desk's Fine-tune → Morphs row under Whole song. |
+| `song_morph_cap` | The whole song's morphs: `"auto"` (default) is the profile table's own count, passage by passage; a number caps the song, the planner spending it by role (the calm passages give theirs up first, a deep cap squeezes the drops' half-bar entries too). The desk's Morphs row under Tweak → Project · under the hood → The whole song, by passages. |
 | `song_title` | The title on the last hit: `"Xenoform"` (the hand-made video's) by default, `""` for none, any other short line. |
-| `song_vibes` | How many vibes the song uses: `"auto"` (default) and `"all"` a look a passage, no vibe twice; a count from 1, at most that many (1: your vibe over the whole song; 2: yours on the main drop and the rest, one more on the other drops). The desk's Fine-tune → Vibes row under Whole song. A clips song is one look and ignores it. |
+| `song_vibes` | How many vibes the song uses: `"auto"` (default) and `"all"` a look a passage, no vibe twice; a count from 1, at most that many (1: your vibe over the whole song; 2: yours on the main drop and the rest, one more on the other drops). The desk's Vibes row under Tweak → Project · under the hood → The whole song, by passages. A clips song is one look and ignores it. |
 | `breathe`, `drop_mode` | The Shape row, over the whole song (Breathe off by default, decision 2 of the plan). A loved chain's own Shape does not apply: its look does. |
 | `quality_tier` | The tier every window renders on: `draft`, `fast`, `final` (12 morphs a Make: longer passages are two windows) or `cloud` (needs `cloud_final_ok`, the credits tick). |
 | `vibe`, `idea`, `chain_pins` | The vibe you chose (the main drop's look), your line (every passage that is not a loved chain carries it), your pins (with the vibe, to its passage). |

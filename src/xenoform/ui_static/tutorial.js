@@ -2,6 +2,9 @@
 (function () {
   const KEY = "xenoform.tutorial";
   const SIM = "Simulated. No GPU job was started. The bundled demo stands in.";
+  // widgets that turn on the arrow keys themselves: the tour's own Left and Right leave them alone. (A vibe card is a radio
+  // too, but the desk switches its own arrow keys off while the tour runs, so there the tour's steps stay the arrows' job.)
+  const ARROW_WIDGETS = '[role="slider"], [role="tab"], [role="listbox"], [role="menu"], [role="menuitem"], [role="spinbutton"], input[type="range"], input[type="radio"], audio[controls], video[controls]';
   let catalog = null;
   let catalogPromise = null;
   let running = null;
@@ -83,11 +86,12 @@
     root.innerHTML = `
       <div id="tutorial-offer" class="tour-offer" role="dialog" aria-modal="false" aria-labelledby="tutorial-offer-title" hidden>
         <p class="kicker">Tyso Studio</p>
-        <h2 id="tutorial-offer-title">Simple mode in 30 seconds</h2>
-        <p id="tutorial-offer-copy">Song, a vibe, then Make. You can leave and come back, or skip it.</p>
+        <h2 id="tutorial-offer-title">The desk in a minute</h2>
+        <p id="tutorial-offer-copy">A song, a vibe, a Draft, a shot on the strip, then Perform. You can leave and come back, or skip it.</p>
         <div class="tour-actions">
-          <button type="button" class="ghost" id="tutorial-later">Not now</button>
-          <button type="button" class="generate" id="tutorial-start">Start</button>
+          <button type="button" class="text" id="tutorial-later">Not now</button>
+          <!-- a ghost, not violet: the step bar's button is the screen's one primary (C2) -->
+          <button type="button" class="ghost" id="tutorial-start">Start</button>
         </div>
       </div>
       <div id="tutorial-shade" hidden>
@@ -138,7 +142,7 @@
     const title = document.getElementById("tutorial-offer-title");
     const copy = document.getElementById("tutorial-offer-copy");
     if (title) title.textContent = "The desk in a minute";
-    if (copy) copy.textContent = "A song, a vibe, the knobs, then a prototype. You can leave and come back, or skip it.";
+    if (copy) copy.textContent = "A song, a vibe, a Draft, a shot on the strip, then Perform. You can leave and come back, or skip it.";
     const start = document.getElementById("tutorial-start");
     if (start) start.focus();
   }
@@ -457,7 +461,8 @@
     const node = step.target ? document.querySelector(step.target) : null;
     if (step.target && !node) {
       if (placeTries === 0) {
-        document.dispatchEvent(new CustomEvent("xeno-tour-step", { detail: { target: step.target } }));
+        // the desk step that holds the target (tutorial.json "desk"): the desk goes there (N11)
+        document.dispatchEvent(new CustomEvent("xeno-tour-step", { detail: { target: step.target, desk: step.desk || "" } }));
       }
       if (placeTries < 20) {
         placeTries += 1;
@@ -607,6 +612,10 @@
     const tag = document.activeElement && document.activeElement.tagName;
     const typing = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
     if (typing) return;
+    // an arrow key belongs to the widget that has focus (a knob, a slider, a vibe card in its radio group, a tab, a menu,
+    // a player's controls): the knob step in the tour turned the knob and the tour in one press (docs/UI_REVIEW.md A2)
+    const target = event.target && event.target.closest ? event.target : document.activeElement;
+    if (target && target.closest && target.closest(ARROW_WIDGETS)) return;
     if (event.key === "ArrowRight") {
       event.preventDefault();
       next();

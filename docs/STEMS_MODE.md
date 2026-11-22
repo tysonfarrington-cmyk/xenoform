@@ -69,7 +69,7 @@ layers that are on (and so do Cloud's credits).
 - **Every body passes the guardrails.** The Make's body is checked once (`guardrails.apply`, which validates the layers
   and writes a `[stems]` line), and every layer's own body passes `guardrails.apply` again before it renders, so the
   taste file, the kind guards and the rest apply per layer; each layer's report lines are kept in the record.
-- **Objects or clips, never both in a layer.** A layer is `objects` (the vibe's stills, the Chain row's pins if you
+- **Objects or clips, never both in a layer.** A layer is `objects` (the vibe's stills, the pins set on the strip's Objects lane if you
   ask) or `clips` (your clips, each morphing into the next, as a clips cut). An objects layer and a clips layer may run
   at once and overlap (decision 10 of the plan, Tys, 31 Oct). Pins sent with a clips layer, or clips with an objects
   layer, are left out with a `[stems]` line.
@@ -170,7 +170,7 @@ in seconds, no GPU and no re-cut. The order follows the new prominence.
 
 - **The Stems step** (Morph: Stems): Split stems with its progress (Demucs prints nothing the desk can read, so the bar is
   the measured rate: about 0.3 s a second of song on 8 cores), then a row a stem: its envelope drawn, On or Off,
-  Objects or Clips, the vibe and "Chain row's pins" or a folder of clips, prominence, blend, Lead (its help: "the lead
+  Objects or Clips, the vibe and "The plan's pins" or a folder of clips, prominence, blend, Lead (its help: "the lead
   instrument, like a lead synth"). Drums and other are on at first, and the melodic stem is the Lead (the vocals when
   the song has them, turned on with it, else the other), its prominence 0.9; moving the Lead moves that prominence with
   it unless the slider was set by hand. Four layers at most.
@@ -185,6 +185,24 @@ in seconds, no GPU and no re-cut. The order follows the new prominence.
   twice across layers). Generate here and Dream act on one cut and stay off on a layer: the drawer says so, and the
   routes refuse a Stems cut with that note.
 - Render at Final from a Stems prototype keeps every layer's stills, as a plain Final keeps its chain.
+- **Stop** on a re-cut or on Lay them again (`POST /api/jobs/<id>/cancel`) ends it with the cut as it was, or is told
+  it came too late; there is no state between the two. Nothing of the cut is replaced until all of it is made: each
+  layer's re-cut is composed beside its cut (`xenoform.recut.mp4`), the composite is laid from those files beside the
+  cut (`composite/composite.mp4`), and only then are the layers' cuts and records, the composite and the cut's record
+  put in place, in one step that looks at nothing and reports nothing (`stems_mode.recut`, `stems_composite.build`).
+  A Stop before that step ends the work at once (ffmpeg is ended while it lays the layers), removes what was made
+  beside the cut, and the job ends `cancelled` with no new video version: "Stopped: the re-cut did not land, and the
+  cut is as it was." (Lay them again: "the layers were not laid again".) A Stop during the step lands: the job ends `done` with its new version and "Stop came too late
+  to undo it, so the edit landed." A swap or re-render on a layer stops in its GPU wait, as on any cut; once its
+  morphs are made it lands and says the same.
+- **A step that fails while it puts the cut in place** (a full disk, a file that will not be replaced) puts back
+  everything it had replaced (`xenoform.cut_swap`): a copy of every file about to be replaced is kept beside it
+  (`<name>.was`) until all of them have landed. The job ends `error` with `cut_as_it_was` true and "The re-cut was
+  made but could not be put in the cut's place (No space left on device). Every file and record was put back.", and
+  the desk adds "The cut is as it was." A swap or re-render on a layer lands in the layer first, so the layer's cut
+  and record are kept too (`<name>.before`) and put back when the composite or the last step fails. Only when
+  putting a file back fails as well is `cut_as_it_was` false: the error says the cut is part old and part new, names
+  the file, its copy stays beside it, and the desk does not say "as it was".
 
 ## Routes
 
@@ -193,7 +211,8 @@ in seconds, no GPU and no re-cut. The order follows the new prominence.
 - `GET /api/stems/status?audio_id=` (or `path=`): `status` none / queued / running / done / error, `stage` split then
   envelopes, `progress` and `eta_s` while it runs, `stems` (a row a stem: `name`, `role`, `envelope`, `active`,
   `onsets`) when done. Registered before `GET /api/stems/<id>`.
-- `POST /api/jobs/<id>/composite` `{"prominence": {stem: 0..1}, "blend": {stem: mode}}`: the re-composite.
+- `POST /api/jobs/<id>/composite` `{"prominence": {stem: 0..1}, "blend": {stem: mode}}`: the re-composite, an edit
+  with a Stop of its own like the others (`edit: "composite"`).
 - `POST /api/jobs/<id>/recut` takes `layer` (the timeline's maps are that layer's) and `prominence` / `blend`.
 - `POST /api/jobs/<id>/swap` and `/rerender` take `layer` on a Stems cut (required there): the layer's still or shot,
   rendered and re-cut, then the composite laid again. `/insert` and `/dream` answer 400 on a Stems cut.
@@ -207,3 +226,7 @@ blends and alpha, the byte-for-byte rebuild, the re-composite, the layers' valid
 the lead, a full two-layer Make on the mock engine (objects and objects on one vibe, and objects with clips), the re-cut
 of one layer and of all, the routes and the desk. The split there is `stems.fake_split` (synthetic stems: drums with a
 breakdown, an "other" that carries it), so Demucs never runs in the suite.
+
+`tests/test_stems_stop.py`: Stop tried at every report of a knob re-cut and of a re-composite (each leaves every file
+and record as it was), Stop while ffmpeg lays the layers (a stand-in that would run a minute is ended), the two desk
+routes ending `cancelled` with the cut whole, and a Stop after the cut is replaced told it came too late.

@@ -1,0 +1,107 @@
+{
+ "generated": "2026-10-20T06:25:43",
+ "source": "scripts/autotune",
+ "vibes": {
+  "liquid-gold": {
+   "steps": 16,
+   "cfg": 4.0,
+   "img_compression": 0,
+   "guide_end_strength": 1.0
+  },
+  "bloom": {
+   "steps": 20,
+   "cfg": 3.0,
+   "img_compression": 18,
+   "guide_end_strength": 1.0
+  },
+  "neon-night": {
+   "steps": 20,
+   "cfg": 3.0,
+   "img_compression": 0,
+   "guide_end_strength": 1.0
+  },
+  "ocean": {
+   "steps": 16,
+   "cfg": 4.0,
+   "img_compression": 18,
+   "guide_end_strength": 1.0
+  },
+  "cosmic": {
+   "steps": 20,
+   "cfg": 4.0,
+   "img_compression": 18,
+   "guide_end_strength": 1.0
+  },
+  "paper-summer": {
+   "steps": 12,
+   "cfg": 4.0,
+   "img_compression": 18,
+   "guide_end_strength": 0.85
+  },
+  "black": {
+   "steps": 20,
+   "cfg": 3.0,
+   "img_compression": 0,
+   "guide_end_strength": 1.0
+  }
+ },
+ "bad_pairs": [
+  [
+   "ocean/04_scallop_shell_iridescent.jpg",
+   "ocean/05_sand_dollar_gr.jpg"
+  ],
+  [
+   "cosmic/06_dna_helix_iridescent.jpg",
+   "cosmic/07_sea_urchin_oil_slick.jpg"
+  ],
+  [
+   "cosmic/07_sea_urchin_oil_slick.jpg",
+   "cosmic/08_soap_orb_gr.jpg"
+  ],
+  [
+   "paper-summer/09_lantern_bloom.jpg",
+   "paper-summer/10_conch.jpg"
+  ]
+ ],
+ "reviewed": "2026-10-20: sanity-checked by hand; every vibe stays at 512x288, <=20 steps, ~6.8 s a morph (8 s budget)",
+ "runs": 1303,
+ "time_budget_s_per_morph": 8.0,
+ "evidence": {
+  "liquid-gold": {
+   "why": "+3.3 over the default on 3 pairs",
+   "pairs": 3,
+   "min_render_s": 6.82
+  },
+  "bloom": {
+   "why": "no app-usable setting beat the default by the margin; keep the default",
+   "pairs": 12,
+   "min_render_s": 6.83
+  },
+  "neon-night": {
+   "why": "+4.2 over the default on 4 pairs",
+   "pairs": 4,
+   "min_render_s": 6.79
+  },
+  "ocean": {
+   "why": "+2.9 over the default on 5 pairs",
+   "pairs": 5,
+   "min_render_s": 6.82
+  },
+  "cosmic": {
+   "why": "+1.9 over the default on 5 pairs",
+   "pairs": 5,
+   "min_render_s": 6.82
+  },
+  "paper-summer": {
+   "why": "+3.8 over the default on 3 pairs",
+   "pairs": 3,
+   "min_render_s": 6.81
+  },
+  "black": {
+   "why": "+1.5 over the default on 3 pairs",
+   "pairs": 3,
+   "min_render_s": 6.81
+  }
+ },
+ "applies_to": "Draft / Simple LTX 0.9.5 morphs only (not the LTX-2.3 Final tier)"
+}

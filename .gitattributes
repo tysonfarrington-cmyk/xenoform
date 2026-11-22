@@ -1,0 +1,8 @@
+# Scripts keep the line endings their shells need, on every checkout and in a downloaded ZIP. cmd.exe wants CRLF in
+# a .bat (a label can be missed in an LF one), and bash stops at "set: pipefail: invalid option name" on a .sh that
+# was checked out with CRLF (a Windows clone used from WSL or Git Bash). Nothing else is listed: every other file
+# follows each machine's own git settings, as before.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+*.sh text eol=lf

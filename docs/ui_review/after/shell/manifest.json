@@ -1,0 +1,216 @@
+[
+  {
+    "file": "judges-1366.jpg",
+    "url": "http://127.0.0.1:47360/judges",
+    "viewport": "1366x768",
+    "fullPage": true,
+    "note": "the judges page",
+    "mocked": false,
+    "horizontalOverflowPx": 0
+  },
+  {
+    "file": "variations-1366.jpg",
+    "url": "http://127.0.0.1:47360/variations",
+    "viewport": "1366x768",
+    "fullPage": true,
+    "note": "the variations page",
+    "mocked": false,
+    "horizontalOverflowPx": 0
+  },
+  {
+    "file": "moves-1366.jpg",
+    "url": "http://127.0.0.1:47360/moves",
+    "viewport": "1366x768",
+    "fullPage": true,
+    "note": "the moves page",
+    "mocked": false,
+    "horizontalOverflowPx": 0
+  },
+  {
+    "file": "licences-1366.jpg",
+    "url": "http://127.0.0.1:47360/licences",
+    "viewport": "1366x768",
+    "fullPage": false,
+    "note": "the licences page",
+    "mocked": false,
+    "horizontalOverflowPx": 0
+  },
+  {
+    "file": "credits-1366.jpg",
+    "url": "http://127.0.0.1:47360/credits",
+    "viewport": "1366x768",
+    "fullPage": false,
+    "note": "the credits page",
+    "mocked": false,
+    "horizontalOverflowPx": 0
+  },
+  {
+    "file": "judges-empty-screen-1366.jpg",
+    "url": "http://127.0.0.1:47360/judges",
+    "viewport": "1366x768",
+    "fullPage": false,
+    "note": "the judges empty screen: the prompt in --x-text-2",
+    "mocked": false
+  },
+  {
+    "file": "setup-1366.jpg",
+    "url": "http://127.0.0.1:47360/#setup",
+    "viewport": "1366x768",
+    "fullPage": true,
+    "note": "Setup & models, the real /api/setup answer on this machine",
+    "mocked": false,
+    "horizontalOverflowPx": 0
+  },
+  {
+    "file": "desk-make-gate-1366.jpg",
+    "url": "http://127.0.0.1:47360/#simple",
+    "viewport": "1366x768",
+    "fullPage": false,
+    "note": "the first screen while LTX 0.9.5 is missing: Make reads Get the 11.5 GB model (answer mocked)",
+    "mocked": true,
+    "horizontalOverflowPx": 0
+  },
+  {
+    "file": "setup-missing-1366.jpg",
+    "url": "http://127.0.0.1:47360/#setup",
+    "viewport": "1366x768",
+    "fullPage": true,
+    "note": "Setup with the required model missing: what Make needs on top (answer mocked)",
+    "mocked": true,
+    "horizontalOverflowPx": 0
+  },
+  {
+    "file": "desk-comfy-banner-1366.jpg",
+    "url": "http://127.0.0.1:47360/#simple",
+    "viewport": "1366x768",
+    "fullPage": false,
+    "note": "ComfyUI not answering: the banner with the address, the facts say no render (answer mocked)",
+    "mocked": true,
+    "horizontalOverflowPx": 0
+  },
+  {
+    "file": "desk-song-failed-1366.jpg",
+    "url": "http://127.0.0.1:47360/#simple/making",
+    "viewport": "1366x768",
+    "fullPage": false,
+    "note": "a whole song with one passage failed: the reason, Resume and Back to the song (state set in the page)",
+    "mocked": true,
+    "horizontalOverflowPx": 0
+  },
+  {
+    "file": "desk-my-videos-rendering-1366.jpg",
+    "url": "http://127.0.0.1:47360/#simple",
+    "viewport": "1366x768",
+    "fullPage": false,
+    "note": "My videos: the cut still rendering says so and offers Open (state set in the page)",
+    "mocked": true,
+    "horizontalOverflowPx": 0
+  },
+  {
+    "file": "judges-375.jpg",
+    "url": "http://127.0.0.1:47360/judges",
+    "viewport": "375x812",
+    "fullPage": true,
+    "note": "the judges page",
+    "mocked": false,
+    "horizontalOverflowPx": 0
+  },
+  {
+    "file": "variations-375.jpg",
+    "url": "http://127.0.0.1:47360/variations",
+    "viewport": "375x812",
+    "fullPage": true,
+    "note": "the variations page",
+    "mocked": false,
+    "horizontalOverflowPx": 0
+  },
+  {
+    "file": "moves-375.jpg",
+    "url": "http://127.0.0.1:47360/moves",
+    "viewport": "375x812",
+    "fullPage": true,
+    "note": "the moves page",
+    "mocked": false,
+    "horizontalOverflowPx": 0
+  },
+  {
+    "file": "licences-375.jpg",
+    "url": "http://127.0.0.1:47360/licences",
+    "viewport": "375x812",
+    "fullPage": false,
+    "note": "the licences page",
+    "mocked": false,
+    "horizontalOverflowPx": 0
+  },
+  {
+    "file": "credits-375.jpg",
+    "url": "http://127.0.0.1:47360/credits",
+    "viewport": "375x812",
+    "fullPage": false,
+    "note": "the credits page",
+    "mocked": false,
+    "horizontalOverflowPx": 0
+  },
+  {
+    "file": "judges-empty-screen-375.jpg",
+    "url": "http://127.0.0.1:47360/judges",
+    "viewport": "375x812",
+    "fullPage": false,
+    "note": "the judges empty screen: the prompt in --x-text-2",
+    "mocked": false
+  },
+  {
+    "file": "setup-375.jpg",
+    "url": "http://127.0.0.1:47360/#setup",
+    "viewport": "375x812",
+    "fullPage": true,
+    "note": "Setup & models, the real /api/setup answer on this machine",
+    "mocked": false,
+    "horizontalOverflowPx": 0
+  },
+  {
+    "file": "desk-make-gate-375.jpg",
+    "url": "http://127.0.0.1:47360/#simple",
+    "viewport": "375x812",
+    "fullPage": false,
+    "note": "the first screen while LTX 0.9.5 is missing: Make reads Get the 11.5 GB model (answer mocked)",
+    "mocked": true,
+    "horizontalOverflowPx": 0
+  },
+  {
+    "file": "setup-missing-375.jpg",
+    "url": "http://127.0.0.1:47360/#setup",
+    "viewport": "375x812",
+    "fullPage": true,
+    "note": "Setup with the required model missing: what Make needs on top (answer mocked)",
+    "mocked": true,
+    "horizontalOverflowPx": 0
+  },
+  {
+    "file": "desk-comfy-banner-375.jpg",
+    "url": "http://127.0.0.1:47360/#simple",
+    "viewport": "375x812",
+    "fullPage": false,
+    "note": "ComfyUI not answering: the banner with the address, the facts say no render (answer mocked)",
+    "mocked": true,
+    "horizontalOverflowPx": 0
+  },
+  {
+    "file": "desk-song-failed-375.jpg",
+    "url": "http://127.0.0.1:47360/#simple/making",
+    "viewport": "375x812",
+    "fullPage": false,
+    "note": "a whole song with one passage failed: the reason, Resume and Back to the song (state set in the page)",
+    "mocked": true,
+    "horizontalOverflowPx": 0
+  },
+  {
+    "file": "desk-my-videos-rendering-375.jpg",
+    "url": "http://127.0.0.1:47360/#simple",
+    "viewport": "375x812",
+    "fullPage": false,
+    "note": "My videos: the cut still rendering says so and offers Open (state set in the page)",
+    "mocked": true,
+    "horizontalOverflowPx": 0
+  }
+]

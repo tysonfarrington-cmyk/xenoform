@@ -1,0 +1,94 @@
+/* Under the hood (hood.js, docs/UI_REVIEW.md 6.4): the desk's tokens (theme.css --x-*) and components (desk.css
+   button.generate / .ghost / .text, .toggle.chips .chip); nothing here assumes where the panel is mounted. */
+
+.hood { display: grid; gap: 10px; min-width: 0; }
+.hood .note { margin: 0; }
+.hood-source { color: var(--x-text-2); }
+.hood-ok { color: var(--x-ok); }
+.hood-bad { color: var(--x-warn); }
+
+.hood-rows { display: grid; gap: 2px; }
+.hood-row {
+  display: grid; grid-template-columns: 112px minmax(0, 1fr) 44px; align-items: center; gap: 4px 10px;
+  padding: 5px 8px; border-radius: var(--x-r-sm); box-shadow: inset 2px 0 0 transparent;
+  transition: background-color var(--x-t-fast) var(--x-ease), box-shadow var(--x-t-fast) var(--x-ease);
+}
+.hood-row:focus-within, .hood-row:focus { background: var(--x-surface-3); outline: none; }
+.hood-label { font: 500 12.5px/1.2 var(--x-font-ui); color: var(--x-text-2); white-space: nowrap; }
+.hood-value { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; min-width: 0; }
+.hood-text { font-size: 13px; color: var(--x-text); overflow-wrap: anywhere; }
+.hood-text small, .hood-sub, .hood-take small { font-size: 11.5px; color: var(--x-text-3); }
+.hood-text .mono, .hood-code { font-family: var(--x-font-mono); font-size: 11.5px; color: var(--x-text-2); }
+.hood-value textarea { width: 100%; min-height: 0; resize: vertical; font-size: 13px; line-height: 1.4; }
+.hood-value input[type="number"] { width: 92px; }
+.hood-value select { max-width: 100%; }
+.hood-mark { justify-self: end; font: 600 12px/1 var(--x-font-mono); color: var(--x-text-3); }
+.hood-hint { display: none; grid-column: 2 / -1; margin: 0; font-size: 12px; line-height: 1.4; color: var(--x-text-3); }
+.hood-row:focus-within .hood-hint, .hood-row:focus .hood-hint { display: block; }
+
+/* changed against the preset: violet, with the preset ghosted beside it; edited here and not rendered yet: the same
+   violet, the mark says so */
+.hood-row.differs { box-shadow: inset 2px 0 0 var(--x-accent); }
+.hood-row.differs .hood-mark, .hood-row.waiting .hood-mark { color: var(--x-accent-hi); }
+.hood-row.waiting { box-shadow: inset 2px 0 0 var(--x-accent-hi); background: var(--x-accent-soft); }
+.hood-row.waiting .hood-mark { font-family: var(--x-font-ui); font-weight: 500; font-size: 11px; }
+.hood-preset { font-size: 11.5px; color: var(--x-text-3); }
+.hood-preset.quiet { opacity: 0.8; }
+details.hood-preset { flex-basis: 100%; }
+details.hood-preset summary { cursor: pointer; width: fit-content; }
+details.hood-preset p { margin: 4px 0 0; font-size: 12px; line-height: 1.4; color: var(--x-text-2); }
+
+.hood-why { padding: 6px 8px; border-radius: var(--x-r-sm); background: var(--x-surface-3); color: var(--x-text-2); }
+.hood-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.hood-cost, .hood-take-cost { color: var(--x-text-2); }
+.hood-tag {
+  display: inline-block; margin-right: 4px; padding: 1px 6px; border-radius: var(--x-r-xs); vertical-align: 1px;
+  font: 600 10.5px/1.5 var(--x-font-ui); font-style: normal; letter-spacing: 0.02em; color: var(--x-text-2); background: var(--x-surface-4);
+}
+.hood-tag.gpu { color: #fff; background: var(--x-accent-soft); box-shadow: inset 0 0 0 1px var(--x-accent-ring); }
+.hood-where { font-size: 11.5px; font-style: normal; color: var(--x-text-3); }
+.hood-tags { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px 6px; }
+
+.hood-progress { display: grid; gap: 6px; }
+.hood-progress button { justify-self: start; }
+.hood-bar { display: block; height: 6px; border-radius: 3px; background: var(--x-well); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4); overflow: hidden; }
+.hood-bar i { display: block; height: 100%; border-radius: 3px; background: var(--x-accent); transition: width var(--x-t) var(--x-ease); }
+
+.hood-takes { display: grid; grid-template-columns: 112px minmax(0, 1fr); align-items: start; gap: 6px 10px; padding: 0 8px; }
+.hood-take-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.hood-take {
+  display: inline-flex; align-items: center; gap: 4px; min-height: 28px; padding: 0 4px 0 9px; border-radius: var(--x-r-sm);
+  font-size: 12.5px; color: var(--x-text-2); background: var(--x-surface-2); border: 1px solid var(--x-line-2);
+}
+.hood-take.current { color: #fff; border-color: var(--x-accent); background: var(--x-accent-soft); padding-right: 9px; }
+.hood-take button.text { min-height: 24px; padding: 0 6px; }
+.hood-take-cost { grid-column: 2; }
+
+.hood-comfy { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 0 8px; }
+.hood-link { color: var(--x-accent-hi); text-decoration: none; font-size: 13px; }
+@media (hover: hover) { .hood-link:hover { text-decoration: underline; } }
+.hood-confirm { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12.5px; color: var(--x-text); }
+.hood-note { color: var(--x-text); }
+
+.hood-project .hood-row { grid-template-columns: 112px minmax(0, 1fr) auto; }
+
+/* L7: a shot's re-render shows on its block on the song strip while the timeline stays usable (strip.js, app.js cutShotsForStrip) */
+[data-song-strip="cut"] .xs-shot.is-rendering { box-shadow: inset 0 -3px 0 var(--x-accent); }
+[data-song-strip="cut"] .xs-shot.is-rendering::before {
+  content: ""; position: absolute; inset: 0 auto 0 0; width: calc(var(--p, 0.05) * 100%);
+  background: var(--x-accent-soft); pointer-events: none; transition: width var(--x-t) var(--x-ease);
+}
+/* L6: the shots Swap, Generate here or Dream here would replace, lit while the button has the pointer or the focus */
+[data-song-strip="cut"] .xs-shot.span-lit { outline: 2px solid var(--x-accent-hi); outline-offset: -2px; }
+.tl-span { color: var(--x-text-2); font-size: 12px; }
+
+@media (max-width: 560px) {
+  .hood-row, .hood-project .hood-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .hood-row .hood-label { grid-column: 1; }
+  .hood-row .hood-value { grid-column: 1 / -1; grid-row: 2; }
+  .hood-row .hood-mark, .hood-row .hood-tags { grid-column: 2; grid-row: 1; }
+  .hood-hint { grid-column: 1 / -1; }
+  .hood-takes { grid-template-columns: minmax(0, 1fr); padding: 0; }
+  .hood-take-cost { grid-column: 1; }
+  .hood-comfy { padding: 0; }
+}

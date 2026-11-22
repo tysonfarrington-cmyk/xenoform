@@ -8,6 +8,9 @@
   <link rel="stylesheet" href="/static/theme.css" />
   <link rel="stylesheet" href="/static/app.css" />
   <link rel="stylesheet" href="/static/desk.css" />
+  <link rel="stylesheet" href="/static/strip.css" />
+  <link rel="stylesheet" href="/static/songline.css" />
+  <link rel="stylesheet" href="/static/hood.css" />
 </head>
 <body data-desk="1">
   <header class="top">
@@ -47,7 +50,15 @@
       <p class="tagline">Every drop is a transformation.</p>
       <p class="subhead">A music video director, not a visualiser.</p>
       <p class="pitch">Xenoform turns a song into a music video where one object keeps transforming into the next, every change landing on the beat. Free, local, open weights.</p>
-      <p class="note">One desk: a song and a vibe make a quick prototype (a Draft of 30 s around the drop for a long song: a stills draft in seconds, LTX morphs on your own GPU in minutes); refine it on its timeline (each shot's object, look and FX, each handoff, a morph re-rendered, a run generated), re-cut it with the knobs without the GPU, then render the whole song or Final and share it. 9:16, Dense, Draft and the house look by default, with Flow, 16:9 and 1:1, the Look presets, stem reactions, your own images and recipe codes under Fine-tune. The desk is the morph engine; what is not, yet, waits in the Work in progress drawer under Fine-tune: Polly, paid cloud, live visuals at <a href="/vj">/vj</a> with a MIDI controller, and Connect an AI (any AI can drive the same desk over MCP). Morph → Your clips cuts your own clips, each morphing into the next, with no objects. TouchDesigner gets OSC from the <span class="mono">xenoform osc</span> command.</p>
+      <ul class="about-points">
+        <li>Pick a song and a vibe. A 30 s prototype around the drop comes first: stills in seconds, LTX morphs on your GPU in minutes.</li>
+        <li>Refine it on its timeline, then render the whole song or the Final.</li>
+        <li>Performer (Polly), paid cloud and Connect an AI sit in Tweak's Project · under the hood panel; live visuals at <a href="/vj">/vj</a> are the Perform step, and a MIDI controller sits under Tweak's knobs.</li>
+      </ul>
+      <details class="about-detail">
+        <summary>Details</summary>
+        <p class="note">Refine each shot's object, look and effects, each handoff, a morph re-rendered; re-cut with the knobs without the GPU; then render the whole song or the Final and share it. 9:16, Dense, Draft and the house look are the defaults. Flow, 16:9, 1:1, your own images and recipe codes sit in Tweak's Project · under the hood panel; the Look presets and stem reactions sit under Tweak's knobs. Morph → Your clips cuts your own clips, each morphing into the next. Any AI can drive this desk over MCP (Connect an AI), and TouchDesigner gets OSC from the <span class="mono">xenoform osc</span> command.</p>
+      </details>
       <table class="licence-table">
         <thead><tr><th>Model</th><th>Used for</th><th>Licence</th></tr></thead>
         <tbody>
@@ -73,24 +84,31 @@
   </dialog>
   <dialog id="settings">
     <form method="dialog">
-      <p class="kicker">Endpoint</p>
-      <h2>How the cut is made</h2>
-      <label class="field">Comfy base URL
+      <p class="kicker">Settings</p>
+      <h2>ComfyUI and add-ons</h2>
+      <p class="note">Each setting is kept in this browser and sent with every Make. The desk's own switches are environment variables, named where they apply.</p>
+      <label class="field">ComfyUI address <span class="where">this browser</span>
         <input id="endpoint" type="url" spellcheck="false" placeholder="http://127.0.0.1:8188" />
       </label>
       <p class="note" id="comfy-settings-status">The desk pings /system_stats on this address. ComfyUI on this machine is http://127.0.0.1:8188.</p>
-      <p class="note">Make renders through ComfyUI at this address (the Comfy SDK, through the local proxy on port 8189) whenever it answers; when it does not, Make plays the vibe's pictures in the browser and says so.</p>
-      <label class="addon"><input type="checkbox" id="addons" /> Add-ons</label>
-      <p class="note">Off by default. This covers FLUX 3 API, H3 API, partner nodes, and cloud LLMs. The demo, the judges page, and setup never need it.</p>
-      <label class="addon"><input type="checkbox" id="paid-cloud" /> Paid cloud renders (partner node, not open weights)</label>
-      <p class="note">Off by default. On, Work in progress → Paid cloud shows Cloud quality: morphs through a paid Comfy partner node, billed after a price card and a confirm click. This is not Cloud Final under Model, which runs open weights on Comfy Cloud. The default path is 100% open weights and never needs this. <span id="paid-cloud-env"></span></p>
+      <details class="settings-detail">
+        <summary>Details</summary>
+        <p class="note">The desk looks for ComfyUI and its model lists at this address. Renders go through the local proxy on port 8189, which Xenoform.bat starts: this address does not move them. To send renders to another proxy, start the desk with XENO_PROXY_URL set to it. When ComfyUI does not answer, Make plays the vibe's pictures in the browser and says so.</p>
+      </details>
+      <label class="addon"><input type="checkbox" id="addons" /> Add-ons <span class="where">this browser</span></label>
+      <p class="note">Off by default. Covers FLUX 3 API, H3 API, partner nodes and cloud LLMs. The demo, the judges page and Setup never need it.</p>
+      <label class="addon"><input type="checkbox" id="paid-cloud" /> Paid cloud renders (partner node, not open weights) <span class="where" id="paid-cloud-where">this browser</span></label>
+      <p class="note">Off by default. On, Tweak → Project · under the hood → Paid cloud offers Cloud quality, billed after a price card and a confirm click. It is not Cloud Final, which runs open weights on Comfy Cloud. <span id="paid-cloud-env"></span></p>
       <p class="kicker">Source library</p>
-      <label class="field">Library folder
+      <label class="field">Library folder <span class="where">this browser</span>
         <input id="library-folder" type="text" spellcheck="false" placeholder="./library" autocomplete="off" />
       </label>
       <label class="addon"><input type="checkbox" id="exclude-faces" checked /> Exclude items with a face</label>
       <label class="addon"><input type="checkbox" id="allow-pd-us" /> US use (allow PD-US only)</label>
-      <p class="note">The folder holds library.json. Missing pictures stay in the index. Faces stay out unless you clear that box. PD-US only clips stay out unless US use is on. CC BY lines are written to the render’s CREDITS.md.</p>
+      <details class="settings-detail">
+        <summary>Details</summary>
+        <p class="note">The folder holds library.json. Missing pictures stay in the index. Faces stay out unless you clear that box. PD-US only clips stay out unless US use is on. CC BY lines are written to the render’s CREDITS.md.</p>
+      </details>
       <div class="dialog-actions">
         <button type="submit" value="cancel" class="text">Close</button>
         <button type="button" id="save-settings" class="generate">Save</button>
@@ -104,6 +122,8 @@
     </form>
   </dialog>
   <script src="/static/cutplay.js"></script>
+  <script src="/static/strip.js"></script>
+  <script src="/static/hood.js"></script>
   <script src="/static/live.js"></script>
   <script src="/static/app.js"></script>
   <script src="/static/ideas.js"></script>

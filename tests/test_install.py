@@ -18,15 +18,53 @@ from xenoform.workflow_embed import png_with_workflow, read_workflow_png
 
 
 def test_node_pack_registers_from_the_repo_root():
+    """The repository cloned into custom_nodes: the node pack's five nodes and the desk's two, one web folder (the
+    pack's, which holds the Morph Timeline editor and the desk's tab)."""
+    import sys
+
     path = Path(__file__).resolve().parents[1] / "__init__.py"
     spec = importlib.util.spec_from_file_location("xenoform_comfy_entry", path)
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    sys.modules[spec.name] = module  # as ComfyUI registers it, so the entry's relative import of comfy_pack resolves
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.modules.pop(spec.name, None)
     assert "XenoformTryIt" in module.NODE_CLASS_MAPPINGS
     assert module.NODE_DISPLAY_NAME_MAPPINGS["XenoformTryIt"] == "Xenoform Try It"
-    assert module.WEB_DIRECTORY == "./web"
+    for name in ("XenoformSongAnalysis", "XenoformStoryboard", "XenoformMorphTimeline", "XenoformMorphPair", "XenoformAssemble"):
+        assert name in module.NODE_CLASS_MAPPINGS
+    assert module.WEB_DIRECTORY == "./comfy_pack/web"
+    web = (path.parent / module.WEB_DIRECTORY).resolve()
+    assert (web / "morph_timeline.js").is_file() and (web / "xenoform_desk.js").is_file()
     assert set(NODE_CLASS_MAPPINGS) == {"XenoformTryIt", "XenoformSetup"}
     assert "Xenoform Setup Check" in NODE_DISPLAY_NAME_MAPPINGS.values()
+
+
+def test_the_desk_block_stays_out_of_a_comfyui_that_has_no_desk_install(monkeypatch, capsys):
+    """The 21 Nov review: with the root requirements.txt empty, ComfyUI's own Python has no fastapi. The desk's two
+    nodes and /xenoform used to register all the same (their imports are lazy), then fail at every queue and answer
+    every ComfyUI page load's GET /xenoform with a 500. Without the desk's install only the pack's nodes register."""
+    import importlib.util as iu
+    import sys
+
+    from xenoform import comfy_server
+
+    real = iu.find_spec
+    monkeypatch.setattr(iu, "find_spec", lambda name, *a, **k: None if name == "fastapi" else real(name, *a, **k))
+    mounted = []
+    monkeypatch.setattr(comfy_server, "mount_prompt_server", lambda: mounted.append(1))
+    path = Path(__file__).resolve().parents[1] / "__init__.py"
+    spec = iu.spec_from_file_location("xenoform_comfy_entry_bare", path)
+    module = iu.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.modules.pop(spec.name, None)
+    assert not mounted and "XenoformTryIt" not in module.NODE_CLASS_MAPPINGS and "XenoformSetup" not in module.NODE_CLASS_MAPPINGS
+    assert "XenoformStoryboard" in module.NODE_CLASS_MAPPINGS and "XenoformAssemble" in module.NODE_CLASS_MAPPINGS
+    assert "Run the desk's installer" in capsys.readouterr().out
 
 
 def test_xenoform_route_serves_the_desk():
@@ -214,6 +252,97 @@ def test_installers_ship_demucs_by_default_with_an_opt_out():
     assert extras["stems"] == ["demucs>=4.0"]
     # stills.py imports PIL at module level, so Pillow must be a plain dependency in both files.
     assert any(dep.startswith("pillow") for dep in project["dependencies"])
-    assert "pillow" in (root / "requirements.txt").read_text(encoding="utf-8")
+    assert "pillow" in (root / "requirements-desk.txt").read_text(encoding="utf-8")
     ci = (root / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
     assert "stems" not in ci and "demucs" not in ci
+
+
+# ---------------------------------------------------------------- the one-click install (review-21nov.md, the audit)
+
+
+def test_the_scripts_keep_the_line_endings_their_shells_need():
+    """A Windows clone checks install.sh out with CRLF and bash stops at "set: pipefail: invalid option name" (run
+    under WSL on 21 Nov); a downloaded ZIP has the .bat files with LF. .gitattributes pins both, for clones and ZIPs."""
+    import os
+
+    root = Path(__file__).resolve().parents[1]
+    rules = {}
+    for line in (root / ".gitattributes").read_text(encoding="utf-8").splitlines():
+        if line.strip() and not line.startswith("#"):
+            pattern, *attrs = line.split()
+            rules[pattern] = set(attrs)
+    for pattern in ("*.bat", "*.cmd", "*.ps1"):
+        assert rules[pattern] == {"text", "eol=crlf"}, pattern
+    assert rules["*.sh"] == {"text", "eol=lf"}
+    assert set(rules) == {"*.bat", "*.cmd", "*.ps1", "*.sh"}  # nothing else changes how it is checked out
+    if os.name != "nt":  # the mode git keeps: ./install.sh runs without `bash` in front, and has no carriage return
+        assert os.access(root / "install.sh", os.X_OK)
+        assert bytes([13]) not in (root / "install.sh").read_bytes()
+
+
+def test_the_shell_installer_makes_a_half_made_venv_again_and_says_what_is_missing():
+    """Ubuntu's python3 has no ensurepip until python3-venv is installed: `python3 -m venv` fails but leaves
+    .venv/bin/python behind, and the next run skipped the creation and stopped at "No module named pip"."""
+    sh = (Path(__file__).resolve().parents[1] / "install.sh").read_text(encoding="utf-8")
+    assert "venv_ok()" in sh and "-m pip --version" in sh and "if ! venv_ok; then" in sh
+    made = sh.index('"$PY312" -m venv "$PACK/.venv"')
+    assert sh.index('rm -rf "$PACK/.venv"') < made < sh.index("The virtual environment was not created.")
+    assert sh.count('rm -rf "$PACK/.venv"') == 2  # before it is made again, and after a creation that failed
+    assert "sudo apt install python3-venv" in sh and "brew install python@3.12" in sh
+    assert "brew install ffmpeg" in sh and "sudo apt install ffmpeg" in sh and "command -v ffprobe" in sh
+    assert sh.startswith("#!/usr/bin/env bash") and "set -euo pipefail" in sh
+
+
+def test_the_windows_installer_says_ffmpeg_is_missing_at_the_end_too():
+    """The first warning is a few hundred lines of pip up the window by the time the install is done."""
+    ps1 = (Path(__file__).resolve().parents[1] / "install.ps1").read_text(encoding="utf-8")
+    assert "$NoFfmpeg = " in ps1 and "Get-Command ffprobe" in ps1
+    first, again = ps1.index("if ($NoFfmpeg)"), ps1.rindex("if ($NoFfmpeg)")
+    assert first < ps1.index("requirements-desk.txt") < again < ps1.index('Write-Host "Done.')
+    assert ps1.count("winget install Gyan.FFmpeg") == 2 and "winget install Python.Python.3.12" in ps1
+
+
+def test_setup_says_when_ffmpeg_is_not_on_the_path(monkeypatch, tmp_path):
+    """The installers do not install ffmpeg, and without it the desk opens but reads no song and writes no video.
+    The Setup page says so, first, until it is there."""
+    import shutil
+
+    from xenoform import models_setup
+
+    monkeypatch.setenv("XENO_MODELS", str(tmp_path))
+    real = shutil.which
+    there = models_setup.ffmpeg_status()
+    assert there["found"] is (real("ffmpeg") is not None and real("ffprobe") is not None)
+
+    def without(*names):
+        return lambda name, *a, **k: None if name in names else (real(name, *a, **k) or name)
+
+    monkeypatch.setattr(shutil, "which", without("ffprobe"))
+    assert models_setup.ffmpeg_status()["line"] == "ffprobe is not on this machine's PATH"
+    monkeypatch.setattr(shutil, "which", without("ffmpeg", "ffprobe"))
+    gone = models_setup.ffmpeg_status()
+    assert gone["found"] is False and gone["missing"] == ["ffmpeg", "ffprobe"]
+    assert gone["line"] == "ffmpeg and ffprobe are not on this machine's PATH"
+    assert "read songs and write videos" in gone["how"] and "start it again" in gone["how"]
+
+    from xenoform.ui import create_app
+
+    assert TestClient(create_app()).get("/api/setup").json()["ffmpeg"] == gone
+    app = (Path(__file__).resolve().parents[1] / "src/xenoform/ui_static/app.js").read_text(encoding="utf-8")
+    page = app.split("const noFfmpeg = ", 1)[1].split("setup-head", 1)[0]
+    assert "setup.ffmpeg.found === false" in page and 'id="setup-ffmpeg"' in page
+    assert page.index('id="setup-ffmpeg"') < page.index("gate ?")  # above the model gate: it comes first
+    assert "esc(noFfmpeg.line" in page and "esc(noFfmpeg.how" in page
+
+
+def test_the_build_backend_is_capped_while_the_licence_is_a_table():
+    """setuptools 84 warns that `license = { file = ... }` stops being supported after 18 Feb 2027; an uncapped
+    `setuptools>=68` would then fail `pip install -e .`, which every installer runs."""
+    import tomllib
+
+    data = tomllib.loads((Path(__file__).resolve().parents[1] / "pyproject.toml").read_text(encoding="utf-8"))
+    requires = data["build-system"]["requires"]
+    if isinstance(data["project"].get("license"), dict):
+        assert requires == ["setuptools>=68,<85"]
+    else:  # an SPDX string with license-files needs setuptools 77, and no cap
+        assert any(r.startswith("setuptools>=77") for r in requires)

@@ -12,13 +12,13 @@ APP = (ROOT / "src" / "xenoform" / "ui_static" / "app.js").read_text(encoding="u
 
 
 def test_the_shape_row_sits_beside_timing_in_both_knob_blocks():
-    assert APP.count("${shapeRow(easy)}") == 2
-    result = APP.split('<div class="energy-head"><h3>Knobs</h3>')[1].split("easy-recut-knobs")[0]
-    front = APP.split('<section class="panel span simple-knobs-panel"')[1].split("</section>")[0]
-    for block in (result, front):
-        assert block.index("timingRow(") < block.index("${shapeRow(easy)}") < block.index("effectsRow(")
-    row = APP.split("function shapeRow(easy)")[1].split("\n}\n")[0]
-    assert 'chip("easy-breathe", "on", "Breathe"' in row and '"easy-drops"' in row and "DROP_MODES.map" in row
+    assert '<div class="energy-head"><h3>Knobs</h3>' not in APP and "function shapeRow(easy)" not in APP  # the cut's knob column is Tweak's
+    # Tweak splits the Shape in two (C9): Breathe and the Drops, after Timing and before Effects
+    rows = APP.split("function tweakRows(easy) {")[1].split("\n}\n")[0]
+    assert rows.index('tweakSeg("easy-morph-timing"') < rows.index('tweakSeg("easy-breathe"') < rows.index('tweakSeg("easy-drops"') < rows.index("    effects,") or \
+        rows.index('tweakSeg("easy-morph-timing"') < rows.index('tweakSeg("easy-breathe"') < rows.index('tweakSeg("easy-drops"') < rows.index("    effects,")
+    assert 'tweakSeg("easy-breathe", breathe ? "on" : "off", [["off", "Off", notes["breathe-off"]], ["on", "On", notes["breathe-on"]]], "Breathe"' in rows
+    assert 'tweakSeg("easy-drops", drops, [["auto", "Auto", notes.auto], ["max", "Max", notes.max], ["off", "Off", notes.off]], "Drops"' in rows
     assert 'const DROP_MODES = ["auto", "max", "off"];' in APP
 
 
@@ -61,7 +61,12 @@ def test_the_lane_shows_the_passages_the_heat_and_the_rests():
     assert [s["section"] for s in old["sections"]] == ["calm"] and old["breathe"] == 0 and old["drop_mode"] == "off"
     assert old["plan_line"] == ""
     timeline = APP.split("function shotsLane(easy)")[1].split("\nfunction ")[0]
-    assert 'class="tl-rest"' in timeline and "lane.plan_line" in timeline and "sec.heat" in timeline
+    assert "planLineFor(easy, lane)" in timeline and "(lane && lane.plan_line)" in APP  # in the strip's clock (integrate-4nov)
+    # the song strip: a rest's badge on its shot, each drop run's heat on its passage
+    strip_js = (ROOT / "src" / "xenoform" / "ui_static" / "strip.js").read_text(encoding="utf-8")
+    assert "rest: !!s.rest" in APP.split("function cutShotsForStrip(")[1].split("\nfunction ")[0]
+    assert "sec.heat" in APP.split("function laneSongless(lane)")[1].split("\nfunction ")[0]
+    assert 'class="xs-rest"' in strip_js and "heat ${Number(p.heat).toFixed(2)}" in strip_js
 
 
 def test_the_make_reports_what_the_plan_did():

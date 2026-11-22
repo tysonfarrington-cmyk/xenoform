@@ -42,12 +42,14 @@ function Find-Python312 {
 $Python312 = Find-Python312
 if (-not $Python312) {
   Write-Host "Python 3.12 or newer was not found."
-  Write-Host "Install it from https://www.python.org/downloads/windows/ and tick 'Add python.exe to PATH'."
+  Write-Host "Install it from https://www.python.org/downloads/windows/ and tick 'Add python.exe to PATH',"
+  Write-Host "or in a terminal: winget install Python.Python.3.12  Then open a new window and run this again."
   Write-Host "This installer does not use ComfyUI's Python."
   exit 1
 }
 
-if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) {
+$NoFfmpeg = -not ((Get-Command ffmpeg -ErrorAction SilentlyContinue) -and (Get-Command ffprobe -ErrorAction SilentlyContinue))
+if ($NoFfmpeg) {
   Write-Host "ffmpeg was not found on PATH. The install continues, but Xenoform needs ffmpeg to read songs and write videos."
   Write-Host "Install it (for example: winget install Gyan.FFmpeg), open a new window, and run Xenoform.bat."
 }
@@ -65,8 +67,8 @@ if (-not (Test-Path $VenvPy)) {
 
 Write-Host "Installing Python packages into $Venv"
 & $VenvPy -m pip install --upgrade pip
-& $VenvPy -m pip install -r (Join-Path $Pack "requirements.txt")
-if ($LASTEXITCODE -ne 0) { Write-Host "pip could not install requirements.txt."; exit 1 }
+& $VenvPy -m pip install -r (Join-Path $Pack "requirements-desk.txt")
+if ($LASTEXITCODE -ne 0) { Write-Host "pip could not install requirements-desk.txt."; exit 1 }
 # The desk runs as `python -m xenoform`, so the package itself has to be in the venv.
 & $VenvPy -m pip install --no-deps -e $Pack
 if ($LASTEXITCODE -ne 0) { Write-Host "pip could not install the xenoform package."; exit 1 }
@@ -119,6 +121,13 @@ if ($LinkNodes) {
 }
 
 Write-Host ""
+if ($NoFfmpeg) {
+  # said again here: the first time is a few hundred lines of pip up the window by now
+  Write-Host "One thing is still missing: ffmpeg is not on PATH. The desk opens, but it cannot read a song or write a"
+  Write-Host "video without it. In a terminal: winget install Gyan.FFmpeg  Then close Xenoform's windows and start it"
+  Write-Host "again. The desk's Setup page says so until it is there."
+  Write-Host ""
+}
 Write-Host "Done. Start ComfyUI on http://127.0.0.1:8188 if you want GPU renders, then double-click Xenoform.bat."
 Write-Host "It starts comfy-api-proxy on port 8189 if it is not running and opens the desk at http://127.0.0.1:47317"
 Write-Host "Press Watch a finished one, then Bundled demo, a vibe, and Make my video."

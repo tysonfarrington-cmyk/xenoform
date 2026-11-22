@@ -1,8 +1,20 @@
-import { app } from "/scripts/app.js";
+// The Xenoform desk inside ComfyUI: a sidebar tab and a menu button that open /xenoform, the desk the repository's
+// __init__.py mounts on ComfyUI's port. Only when /xenoform answers: with the node pack alone (or without the desk's own
+// install) there is no desk to open, and no tab.
+import { app } from "../../scripts/app.js";
 
 app.registerExtension({
   name: "xenoform.desk",
   async setup() {
+    let up = false;
+    try {
+      const res = await fetch("/xenoform", { method: "GET", cache: "no-store" });
+      up = res.ok;
+    } catch (e) {
+      up = false;
+    }
+    if (!up) return;
+
     const openDesk = () => {
       const frame = document.getElementById("xenoform-frame");
       if (frame) {

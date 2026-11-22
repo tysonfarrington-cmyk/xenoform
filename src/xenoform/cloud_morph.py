@@ -662,19 +662,74 @@ def _job_result(client, job):
             job = client.jobs.get(job.id)
 
 
+def draft_settings(shot: dict, kinds: tuple[str, str], *, seed: int, vibe: str, style: str = "melt",
+                   size: tuple[int, int] | None = None, state: dict | None = None, prompt: str | None = None,
+                   negative: str | None = None, tune: dict | None = None, overrides: dict | None = None) -> list[tuple[str, str, Any]]:
+    """The inputs one Draft morph sets on ``workflows/xenoform_morph.json``, in order: ``(node, field, value)``. The
+    prompt for the pair's kinds and the style (with the guardrails' hint), the negative, the size, the length from the
+    shot's seconds of source, the vibe's tuned steps, cfg, guide compression (a scene's side stays at 0) and end strength
+    (``tune``, ``morph_pass.tuned``), the seed, the fps. ``overrides`` (a re-render's own values, checked by
+    ``shot_recipe.clean_overrides``) replace any of them: prompt, negative, frames, steps, cfg, compression, guide_start,
+    guide_end, seed. ``_local_clips`` sends these; Under the hood reads its preset from the same list."""
+    from xenoform import morph_pass as mp
+    from xenoform.guardrails import guard_prompt
+
+    ov = dict(overrides or {})
+    tune = mp.tuned(vibe) if tune is None else tune
+    w, h = (int(size[0]), int(size[1])) if size else (mp.WIDTH, mp.HEIGHT)
+    text = ov["prompt"] if ov.get("prompt") is not None else guard_prompt(prompt or mp.prompt_for(vibe, kinds=kinds, style=style), state)
+    out: list[tuple[str, str, Any]] = [("3", "text", text), ("4", "text", ov["negative"] if ov.get("negative") is not None
+                                                                         else (negative or mp.NEGATIVE)),
+                                       ("9", "width", w), ("9", "height", h)]
+    length = int(ov["frames"]) if ov.get("frames") else \
+        mp.gen_length(int(round(min(float(shot.get("render_s") or shot["seconds"]), 5.0) * FPS)))
+    out.append(("9", "length", length))
+    out.append(("11", "steps", int(ov["steps"]) if ov.get("steps") is not None else int(tune.get("steps", mp.STEPS))))
+    if ov.get("cfg") is not None:
+        out.append(("14", "cfg", float(ov["cfg"])))
+    elif "cfg" in tune:
+        out.append(("14", "cfg", float(tune["cfg"])))
+    if ov.get("compression") is not None:
+        start, end = (int(v) for v in ov["compression"])
+        out += [("8", "img_compression", start), ("21", "img_compression", end)]
+    elif "img_compression" in tune or "scene" in kinds:  # configs/autotune.json, per vibe (docs/AUTOTUNE.md)
+        # a scene guide stays uncompressed (node 8 preprocesses the start still, 21 the end): the compression is
+        # the freedom the morph takes from the guide, and a wide frame loses its texture to it at once; an object's
+        # side keeps the vibe's value, else the graph's own 18
+        start, end = mp.guide_compression(kinds, int(tune.get("img_compression", 18)))
+        out += [("8", "img_compression", start), ("21", "img_compression", end)]
+    if ov.get("guide_start") is not None:
+        out.append(("10", "strength", float(ov["guide_start"])))
+    if ov.get("guide_end") is not None:
+        out.append(("22", "strength", float(ov["guide_end"])))
+    elif "guide_end_strength" in tune:
+        out.append(("22", "strength", float(tune["guide_end_strength"])))
+    out.append(("13", "noise_seed", int(ov["seed"]) if ov.get("seed") is not None else int(seed)))
+    out.append(("18", "fps", float(FPS)))
+    return out
+
+
 def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, client=None, cancel=None,
                  state: dict | None = None, report=None, size: tuple[int, int] | None = None,
-                 styles: list[str] | None = None, prompt: str | None = None, negative: str | None = None) -> list[Path]:
+                 styles: list[str] | None = None, prompt: str | None = None, negative: str | None = None,
+                 requests: list | None = None, overrides: list | None = None) -> list[Path]:
     """Free: one LTX 0.9.5 A->B morph per shot through the existing morph graph.
 
     ``size`` overrides the render size (Draft 9:16 renders portrait 320x576 from re-laid stills); ``styles`` is how
     each shot's object changes (``morph_style``: melt, shatter, bloom, spin, fold; Melt when not given).
 
     The morph cache (``morph_cache``) is asked first: a shot whose request (both stills' bytes, the prompt, the seed,
-    the whole graph) was rendered before is copied from it and never queued; a shot rendered here is kept in it."""
+    the whole graph) was rendered before is copied from it and never queued; a shot rendered here is kept in it.
+    ``requests``, when given, is filled with each shot's request as it was queued (``shot_recipe.request``) and the
+    time its clip took, the record Under the hood reads. ``overrides`` (one dict a shot, ``shot_recipe.clean_overrides``)
+    sets a shot's own prompt, negative, steps, cfg, frames, guides, compression or seed, and a LoRA: a
+    LoraLoaderModelOnly on the model, only when one is given. Any of them makes another request, so another cache key."""
     from xenoform import morph_cache as mc
     from xenoform import morph_pass as mp
+    from xenoform import shot_recipe as sr
 
+    sr.slots(requests, len(shots))
+    reqs: dict[int, dict | None] = {}
     render_w, render_h = (int(size[0]), int(size[1])) if size else (mp.WIDTH, mp.HEIGHT)
     client = client or _client(cfg)
     graph = mp._graph_path(work, "ltx095")
@@ -692,32 +747,24 @@ def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, cli
     cached: dict[int, Path] = {}
     for i, shot in enumerate(shots):
         wf = client.workflows.from_file(str(graph))
-        from xenoform.guardrails import guard_prompt
-
         kinds = mp.pair_kinds(stills[i], stills[i + 1])  # a pair that touches a scene gets the scene prompt
         style = styles[i] if styles and i < len(styles) else "melt"
-        wf.set_input("3", "text", guard_prompt(prompt or mp.prompt_for(vibe, kinds=kinds, style=style), state))
-        wf.set_input("4", "text", negative or mp.NEGATIVE)
-        wf.set_input("9", "width", render_w)
-        wf.set_input("9", "height", render_h)
-        wf.set_input("9", "length", mp.gen_length(int(round(min(float(shot.get("render_s") or shot["seconds"]), 5.0) * FPS))))
-        wf.set_input("11", "steps", int(tune.get("steps", mp.STEPS)))
-        if "cfg" in tune:
-            wf.set_input("14", "cfg", float(tune["cfg"]))
-        if "img_compression" in tune or "scene" in kinds:  # configs/autotune.json, per vibe (docs/AUTOTUNE.md)
-            # a scene guide stays uncompressed (node 8 preprocesses the start still, 21 the end): the compression is
-            # the freedom the morph takes from the guide, and a wide frame loses its texture to it at once; an object's
-            # side keeps the vibe's value, else the graph's own 18
-            start, end = mp.guide_compression(kinds, int(tune.get("img_compression", 18)))
-            wf.set_input("8", "img_compression", start)
-            wf.set_input("21", "img_compression", end)
-        if "guide_end_strength" in tune:
-            wf.set_input("22", "strength", float(tune["guide_end_strength"]))
-        wf.set_input("13", "noise_seed", int(seed) + i)
-        wf.set_input("18", "fps", float(FPS))
+        ov = dict((overrides[i] if overrides and i < len(overrides) else None) or {})
+        for node, field, value in draft_settings(shot, kinds, seed=int(seed) + i, vibe=vibe, style=style,
+                                                 size=(render_w, render_h), state=state, prompt=prompt, negative=negative,
+                                                 tune=tune, overrides=ov):
+            wf.set_input(node, field, value)
+        if ov.get("lora"):  # the Draft graph loads no LoRA of its own: the node goes in only when one is asked for
+            if not isinstance(getattr(wf, "json", None), dict):
+                raise RuntimeError("This ComfyUI client cannot add a LoRA node to the morph graph.")
+            sr.add_lora(wf.json, ov["lora"], float(ov.get("lora_strength", 1.0)))
         # the request, keyed before anything is uploaded: the same one rendered before is copied and never queued
         keys[i] = mc.key_for(getattr(wf, "json", None) or {}, {"6": stills[i]["path"], "7": stills[i + 1]["path"]}, "ltx095") \
             if isinstance(getattr(wf, "json", None), dict) else None
+        if requests is not None and isinstance(getattr(wf, "json", None), dict):  # the record, before the stills go up
+            reqs[i] = sr.request(wf.json, engine="ltx095", stills=(stills[i], stills[i + 1]), nodes=("6", "7"),
+                                 key=keys[i][0] if keys[i] else None, style=style, kinds=kinds,
+                                 render_s=float(shot.get("render_s") or shot["seconds"]), overrides=ov or None)
         dest = work / f"local{i:02d}.mp4"
         if mc.get("ltx095", keys[i], dest):
             cached[i] = dest
@@ -729,11 +776,14 @@ def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, cli
         jobs.append(queued[i])
     clips = []
     started = time.perf_counter()
+    last = started  # the GPU runs the queue one morph at a time: each takes from the one before's end to its own
     rendered = 0
     for i in range(len(shots)):
         dest = work / f"local{i:02d}.mp4"
         if i in cached:
             clips.append(cached[i])
+            if requests is not None:
+                requests[i] = sr.done(reqs.get(i), seconds=0.0, cached=True, clip=cached[i])
             if report:
                 report("restyle", 0.1 + 0.45 * (i + 1) / len(shots), f"Morph {i + 1} of {len(shots)} (kept from an earlier render)")
             continue
@@ -745,6 +795,10 @@ def _local_clips(shots, stills, work: Path, cfg: dict, seed: int, vibe: str, cli
         clips.append(dest)
         mc.put("ltx095", keys.get(i), dest)
         rendered += 1
+        if requests is not None:
+            now = time.perf_counter()
+            requests[i] = sr.done(reqs.get(i), seconds=now - last, cached=False, clip=dest)
+            last = now
         if report:  # the desk re-estimates from the real pace of "Morph k of N"
             pace = (time.perf_counter() - started) / rendered
             left = int(round(pace * (len(jobs) - rendered)))

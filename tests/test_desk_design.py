@@ -20,9 +20,16 @@ APP = (STATIC / "app.js").read_text(encoding="utf-8")
 def test_one_design_layer_is_linked_where_the_old_two_were():
     assert not (STATIC / "ui_v4.css").exists() and not (STATIC / "ui_v6.css").exists()
     links = re.findall(r'href="(/static/[^"]+\.css)"', INDEX)
-    assert links == ["/static/theme.css", "/static/app.css", "/static/desk.css"]
-    for page in ("judges.html", "moves.html"):
-        assert "desk.css" in (STATIC / page).read_text(encoding="utf-8"), page
+    # the song strip (strip.css) and the steps over it (songline.css) after the desk's own layer, then the components that
+    # bring their own sheet on its tokens (hood.css: Under the hood)
+    assert links == ["/static/theme.css", "/static/app.css", "/static/desk.css", "/static/strip.css", "/static/songline.css", "/static/hood.css"]
+    for sheet in ("strip.css", "songline.css", "hood.css"):
+        assert "!important" not in re.sub(r"/\*.*?\*/", "", (STATIC / sheet).read_text(encoding="utf-8"), flags=re.S), sheet
+    assert "var(--x-accent)" in re.sub(r"/\*.*?\*/", "", (STATIC / "hood.css").read_text(encoding="utf-8"), flags=re.S)
+    for page in ("judges.html", "moves.html", "variations.html"):  # the side pages: desk.css, then side.css (the shell they share)
+        text = (STATIC / page).read_text(encoding="utf-8")
+        assert "desk.css" in text and text.index("desk.css") < text.index("side.css"), page
+    assert (STATIC / "side.css").is_file()
     rules = re.sub(r"/\*.*?\*/", "", DESK, flags=re.S)  # the comments may name the old layers' habit
     rules = rules.replace(".xf-strip-empty { display: none !important; }", "").replace("width: 100% !important", "")
     assert "!important" not in rules
@@ -45,7 +52,9 @@ def test_a_toolbar_with_the_stages_in_it():
     assert ".top {" in DESK and "height: var(--x-bar);" in DESK
     assert ".stagebar .easy-crumbs {" in DESK and "counter-increment: stage;" in DESK
     assert '.easy-crumbs .crumb.done::before { content: "\\2713";' in DESK
-    assert '<span>${proto ? `Make a ${esc(String(easyLength(easy)))} s prototype` : "Make my video"}</span><kbd>${esc(shortcutLabel())}</kbd>' in APP
+    # the step bar's one violet button says its shortcut, as desktop software does
+    bar = APP.split("function stepBar(easy, step) {", 1)[1].split("\n}\n", 1)[0]
+    assert "<kbd>${esc(shortcutLabel())}</kbd></button>" in bar
 
 
 def test_buttons_feel_like_controls():

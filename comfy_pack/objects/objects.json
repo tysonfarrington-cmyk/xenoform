@@ -1,0 +1,76 @@
+{
+ "chrome-mercury": [
+  {
+   "file": "chrome-mercury/00_orb.jpg",
+   "noun": "orb",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "chrome-mercury/01_nautilus.jpg",
+   "noun": "nautilus",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "chrome-mercury/02_lotus.jpg",
+   "noun": "lotus",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "chrome-mercury/03_torus_knot.jpg",
+   "noun": "torus knot",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "chrome-mercury/04_jellyfish.jpg",
+   "noun": "jellyfish",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "chrome-mercury/05_crystal.jpg",
+   "noun": "crystal",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "chrome-mercury/06_feather.jpg",
+   "noun": "feather",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "chrome-mercury/07_ribbon.jpg",
+   "noun": "ribbon",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "chrome-mercury/08_dna_helix.jpg",
+   "noun": "dna helix",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "chrome-mercury/09_seed_pod.jpg",
+   "noun": "seed pod",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "chrome-mercury/10_conch.jpg",
+   "noun": "conch",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  },
+  {
+   "file": "chrome-mercury/11_butterfly.jpg",
+   "noun": "butterfly",
+   "finish": "liquid mirror chrome",
+   "source": "Z-Image Turbo (Apache 2.0), scripts/vibe_objects/extended_prompts.json"
+  }
+ ]
+}

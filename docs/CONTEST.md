@@ -13,7 +13,7 @@ Contest: [Open Source Higgsfield](https://comfy.org/open-source-higgsfield/), ru
 
 - **Comfy Python SDK** (`comfy-sdk` 0.5.0): every render is submitted with `workflows.from_file`, `assets.from_file`, `set_input`, `submit`, `events`, `result`, `get_outputs`, through `comfy-api-proxy` 0.1.6 in front of a local ComfyUI.
 - **MCP**: a native MCP server with 45 tools (`python -m xenoform.mcp`, stdio and streamable HTTP on `127.0.0.1:47319/mcp`) so any AI client can direct the app.
-- Core ComfyUI nodes only in the shipped graphs (LTX, Wan Animate 2, Z-Image, upscalers); an optional node pack entry (`__init__.py`, `web/`) for the Try It and Setup Check nodes.
+- Core ComfyUI nodes only in the shipped graphs (LTX, Wan Animate 2, Z-Image, upscalers); a node pack (`comfy_pack/`, installed from the git URL through ComfyUI-Manager) with Song Analysis, Storyboard, the Morph Timeline editor, Morph Pair and Assemble, whose demo workflow feeds the stock LTX 0.9.5 nodes, and the desk's Try It and Setup Check nodes through the repository's `__init__.py`.
 
 ## Checklist
 

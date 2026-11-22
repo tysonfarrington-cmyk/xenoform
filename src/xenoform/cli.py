@@ -73,7 +73,9 @@ def build_parser() -> argparse.ArgumentParser:
     assemble_p.add_argument("--features", help="Feature JSON, used for beat flashes.")
     _add_config(assemble_p)
 
-    osc = sub.add_parser("osc", help="Export CSV/JSON and optionally stream OSC.")
+    osc = sub.add_parser("osc", help="Export CSV/JSON and optionally stream OSC. Live from the VJ page: xenoform osc relay --help.",
+                         epilog="Live: `xenoform osc relay [--host H] [--port P] [--desk URL]` sends what the live page (/vj) computes as OSC "
+                                "(see `xenoform osc relay --help` and docs/osc.md).")
     osc.add_argument("features")
     osc.add_argument("--out", help="Directory for features.json, frames.csv, osc_addresses.json.")
     osc.add_argument("--stream", action="store_true")
@@ -174,8 +176,13 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    raw = list(sys.argv[1:] if argv is None else argv)
+    if raw[:2] == ["osc", "relay"]:  # the live relay has flags of its own; the offline `osc` export keeps its parser as it was
+        from xenoform.osc_relay import main_relay
+
+        return main_relay(raw[2:])
     parser = build_parser()
-    args = parser.parse_args(argv)
+    args = parser.parse_args(raw)
     _logging(getattr(args, "verbose", False))
     cfg = load_config(getattr(args, "config", None))
     try:

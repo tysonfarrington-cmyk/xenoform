@@ -244,7 +244,7 @@ def _demo_features() -> dict:
 
 def create_app(cfg: dict | None = None):
     from fastapi import FastAPI, HTTPException
-    from fastapi.responses import FileResponse, JSONResponse
+    from fastapi.responses import FileResponse, JSONResponse, Response
     from fastapi.staticfiles import StaticFiles
 
     cfg = cfg or load_desk_config()
@@ -276,10 +276,16 @@ def create_app(cfg: dict | None = None):
 
     app.include_router(stems_mode_router)  # first: /api/stems/status is not a stems id
     app.include_router(stems_router)
+    from xenoform.osc_relay import router as osc_router  # /api/osc/*, /ws/osc: the live OSC relay (python-osc is optional)
+
+    app.include_router(osc_router)
     from xenoform.film_pack import router as film_pack_router  # /api/film_pack (the free film pack's status)
 
     app.include_router(film_pack_router)
     app.include_router(songs_api.router)  # /api/songs, /api/songs/load: the bundled songs
+    from xenoform.perform_api import router as perform_router  # /api/perform/*: /vj?job=, the song strip, live takes
+
+    app.include_router(perform_router)
     app.state.cfg = cfg  # the desk's config for the routers (songs_api answers its comfy.base_url, as /api/analyze does)
 
     def _desk_html(base: str) -> str:
@@ -300,28 +306,56 @@ def create_app(cfg: dict | None = None):
         base = desk_base(request.headers.get("x-xeno-base", ""))
         return HTMLResponse(_desk_html(base))
 
-    @app.get("/judges")
-    def judges(request: Request):
+    def _side_header(base: str, name: str) -> str:
+        """The header every side page wears (Judges, Variations, Moves, Licences, Credits): the desk's brand, the page's
+        name, the Open weights badge and the one way back. The five pages differ in the name only (UI review S1)."""
+        import html as html_lib
+
+        home = html_lib.escape(f"{base}/" if base else "/", quote=True)
+        licences = html_lib.escape(f"{base}/licences", quote=True)
+        here = ' aria-current="page"' if name == "Licences" else ""
+        return (
+            '<header class="top side-top">\n'
+            f'  <a class="brand" href="{home}"><span><span class="studio">Tyso Studio</span><strong>Xenoform</strong>'
+            "<em>Every drop is a transformation.</em></span></a>\n"
+            f'  <p class="side-title">{html_lib.escape(name)}</p>\n'
+            f'  <a class="ow-badge" href="{licences}"{here} title="LTX-2.3 has a revenue threshold. FLUX.2 Klein 9B is '
+            'non-commercial. This desk uses the Apache 2.0 4B.">Open weights</a>\n'
+            f'  <a class="ghost side-back" href="{home}">&larr; Back to the desk</a>\n'
+            "</header>"
+        )
+
+    def _side_page(request: Request, filename: str, name: str):
+        """A page of ui_static inside the side shell: the header goes where the file says <!--side-header-->. The base
+        path the desk is served under (x-xeno-base, the Comfy mount) prefixes the static files and the links, and the page
+        reads it from <body data-base> for its own API calls."""
         from fastapi.responses import HTMLResponse
+        import html as html_lib
 
         base = desk_base(request.headers.get("x-xeno-base", ""))
-        html = (static / "judges.html").read_text(encoding="utf-8")
-        prefix = f"{base}/static/" if base else "/static/"
+        html = (static / filename).read_text(encoding="utf-8")
+        prefix = html_lib.escape(f"{base}/static/" if base else "/static/", quote=True)
         html = html.replace("<head>", f'<head><base href="{prefix}">', 1)
+        html = html.replace('<body data-desk="1">', f'<body data-desk="1" data-base="{html_lib.escape(base, quote=True)}">', 1)
         if base:
             html = html.replace('href="/licences"', f'href="{base}/licences"')
             html = html.replace('href="/credits"', f'href="{base}/credits"')
-        return HTMLResponse(html)
+        return HTMLResponse(html.replace("<!--side-header-->", _side_header(base, name), 1))
 
-    def _markdown_page(request: Request, title: str, path: Path) -> HTMLResponse:
+    @app.get("/judges")
+    def judges(request: Request):
+        return _side_page(request, "judges.html", "Judges")
+
+    def _markdown_page(request: Request, title: str, path: Path, name: str):
         from fastapi.responses import HTMLResponse
         import html as html_lib
 
         base = desk_base(request.headers.get("x-xeno-base", ""))
         text = path.read_text(encoding="utf-8") if path.is_file() else "This note is missing."
-        body = _render_markdown(text)
-        static_href = f"{base}/static/" if base else "/static/"
-        home = f"{base}/" if base else "/"
+        # a table scrolls inside its own box, so a phone scrolls the table and never the page (side.css .doc-scroll)
+        body = _render_markdown(text).replace("<table>", '<div class="doc-scroll"><table>').replace("</table>", "</table></div>")
+        static_href = html_lib.escape(f"{base}/static/" if base else "/static/", quote=True)
+        mount = html_lib.escape(base, quote=True)
         page = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -330,25 +364,26 @@ def create_app(cfg: dict | None = None):
   <title>{html_lib.escape(title)}</title>
   <link rel="stylesheet" href="{static_href}theme.css" />
   <link rel="stylesheet" href="{static_href}app.css" />
+  <link rel="stylesheet" href="{static_href}desk.css" />
+  <link rel="stylesheet" href="{static_href}side.css" />
 </head>
-<body>
-  <header class="top">
-    <a class="brand" href="{home}"><strong>Xenoform</strong></a>
-    <a class="ow-badge" href="{base}/licences">Open weights</a>
-    <a href="{base}/credits">Picture credits</a>
-  </header>
-  <main class="judges"><article class="panel doc">{body}</article></main>
+<body data-desk="1" data-base="{mount}">
+  {_side_header(base, name)}
+  <main class="side-page">
+    <article class="panel doc">{body}</article>
+    <p class="side-foot"><a href="{mount}/licences">Open weights licences</a> &middot; <a href="{mount}/credits">Picture credits</a></p>
+  </main>
 </body>
 </html>"""
         return HTMLResponse(page)
 
     @app.get("/licences")
     def licences_page(request: Request):
-        return _markdown_page(request, "Xenoform licences", repo_root() / "docs" / "LICENCES.md")
+        return _markdown_page(request, "Xenoform licences", repo_root() / "docs" / "LICENCES.md", "Licences")
 
     @app.get("/credits")
     def credits_page(request: Request):
-        return _markdown_page(request, "Xenoform credits", repo_root() / "CREDITS.md")
+        return _markdown_page(request, "Xenoform credits", repo_root() / "CREDITS.md", "Credits")
 
     @app.get("/media/audio/{audio_id}")
     def media_audio(audio_id: str) -> FileResponse:
@@ -619,7 +654,7 @@ def create_app(cfg: dict | None = None):
 
     def _estimate_clips(own_folder: str, own_id: str) -> list[dict]:
         """Your clips for the desk's whole-song estimate (``_apply_own`` on the folder, or the files dropped), read once
-        a folder as it is (its time), since the estimate is asked at every Fine-tune change."""
+        a folder as it is (its time), since the estimate is asked at every change of a choice on the desk."""
         folder = own_folder
         if own_id:
             with _LOCK:
@@ -773,32 +808,71 @@ def create_app(cfg: dict | None = None):
         for key in ("shot_overrides", "boundary_overrides"):
             if key in body and isinstance(body.get(key), (dict, list)):
                 overrides[key] = body[key]
-        with _LOCK:
-            job.update({"status": "running", "stage": "assemble", "progress": 0.05, "detail": "Re-cutting from the cached morphs",
-                        "error": None})
+        stems = _is_stems(folder)
+        cancel = _edit_start(job, job_id, "recut", "assemble", "Re-cutting from the cached morphs")
 
         def on_progress(stage: str, frac: float, detail: str) -> None:
+            # no GPU here, and the cut is replaced only once all of it is composed, with no report after that (a Stems
+            # cut's layers and composite too: stems_mode.recut): Stop ends it at its next report with the cut as it was
+            if cancel.is_set():
+                from xenoform.turbo import JobCancelled
+
+                raise JobCancelled("Stopped")
             with _LOCK:
                 job.update({"stage": stage, "progress": float(frac), "detail": detail})
 
         def run() -> None:
+            from xenoform.turbo import JobCancelled
+
             try:
-                rec = recut_from_cache(folder, overrides, report=on_progress, cfg=cfg)
+                if stems:  # Stop reaches the composite's ffmpeg as well, which reports nothing while it runs
+                    from xenoform import stems_mode as _sm
+
+                    rec = _sm.recut(folder, overrides, report=on_progress, cfg=cfg, cancel=cancel.is_set)
+                else:
+                    rec = recut_from_cache(folder, overrides, report=on_progress, cfg=cfg)
                 with _LOCK:
                     version = int(job.get("video_version") or 0) + 1
                     job.update({"status": "done", "stage": "done", "progress": 1.0, "video_version": version,
-                                "video": f"/api/jobs/{job_id}/video?v={version}", "detail": "Re-cut ready",
+                                "video": f"/api/jobs/{job_id}/video?v={version}", "detail": _edit_landed("Re-cut ready", cancel),
                                 "look": rec.get("look"), "recuts": rec.get("recuts")})
+            except JobCancelled:
+                _edit_stopped(job, "the re-cut")
             except Exception as exc:
                 log.exception("recut %s", job_id)
-                from xenoform.errors import plain_error
-
-                with _LOCK:
-                    job.update({"status": "done", "stage": "done", "progress": 1.0, "detail": f"Re-cut did not run. {plain_error(exc)}",
-                                "error": None})
+                _edit_failed(job, "Re-cut did not run.", exc)
 
         threading.Thread(target=run, name=f"recut-{job_id}", daemon=True).start()
         return {"id": job_id, "status": "running"}
+
+    # A timeline edit on a finished cut (UI review F1, F6, F7): it starts with its own state (no error, none of the
+    # Make's clock or bar, the video version it starts from) and a cancel event of its own; it ends done with a new
+    # video version, error with the reason (a failed edit used to report done, so the desk said "Your cut is ready"
+    # over the old cut), or cancelled when Stop reached it before the cut was replaced.
+    def _edit_start(job: dict, job_id: str, name: str, stage: str, detail: str) -> threading.Event:
+        cancel = threading.Event()
+        with _LOCK:
+            job.update({"status": "running", "stage": stage, "progress": 0.05, "detail": detail, "error": None,
+                        "edit": name, "edit_from": int(job.get("video_version") or 0), "eta_s": None, "overall": None,
+                        "cut_as_it_was": None})
+            _CANCEL[job_id] = cancel
+        return cancel
+
+    def _edit_failed(job: dict, failed: str, exc: Exception) -> None:
+        """A failed edit's job: the reason, and ``cut_as_it_was``. An edit either lands whole or is put back, so the
+        cut is as it was, and the desk adds that line; when putting it back failed too (``cut_swap.SwapFailed`` with
+        ``restored`` false) the flag is false, the sentence names what is left, and the desk adds nothing."""
+        from xenoform import cut_swap
+
+        sentence, whole = cut_swap.failed_edit(failed, exc)
+        with _LOCK:
+            job.update({"status": "error", "stage": "done", "progress": 1.0, "detail": sentence, "error": sentence,
+                        "cut_as_it_was": whole})
+
+    def _edit_stopped(job: dict, what: str) -> None:
+        with _LOCK:
+            job.update({"status": "cancelled", "stage": "done", "progress": 1.0, "error": None,
+                        "detail": f"Stopped: {what} did not land, and the cut is as it was."})
 
     def _stems_layer_for_edit(rec: dict, body: dict) -> str | None:
         """A Stems cut's swap or re-render is one layer's (``stems_mode.layer_edit``): the body's ``layer``, a stem the
@@ -880,35 +954,33 @@ def create_app(cfg: dict | None = None):
             raise HTTPException(400, f"{file} is not in the stills library.")
         if file in files:
             raise HTTPException(400, f"{file.split('/')[-1]} is already in this cut; a still appears once.")
-        with _LOCK:
-            job.update({"status": "running", "stage": "restyle", "progress": 0.05, "detail": f"Swapping still {slot + 1}: re-rendering the morphs that touch it",
-                        "error": None})
+        cancel = _edit_start(job, job_id, "swap", "restyle", f"Swapping still {slot + 1}: re-rendering the morphs that touch it")
 
         def on_progress(stage: str, frac: float, detail: str) -> None:
             with _LOCK:
                 job.update({"stage": stage, "progress": float(frac), "detail": detail})
 
         def run() -> None:
+            from xenoform.turbo import JobCancelled
+
             try:
                 if layer is not None:  # the layer's two morphs, its re-cut, then the layers laid together again (no GPU)
                     from xenoform import stems_mode as _sm
 
-                    rec = _sm.layer_edit(folder, layer, lambda d, rep: swap_still(d, slot, file, cfg=cfg, report=rep),
+                    rec = _sm.layer_edit(folder, layer, lambda d, rep: swap_still(d, slot, file, cfg=cfg, report=rep, cancel=cancel.is_set),
                                          kind="swap", report=on_progress, detail={"slot": slot, "file": file})
                 else:
-                    rec = swap_still(folder, slot, file, cfg=cfg, report=on_progress)
+                    rec = swap_still(folder, slot, file, cfg=cfg, report=on_progress, cancel=cancel.is_set)
                 with _LOCK:
                     version = int(job.get("video_version") or 0) + 1
                     job.update({"status": "done", "stage": "done", "progress": 1.0, "video_version": version,
-                                "video": f"/api/jobs/{job_id}/video?v={version}", "detail": "Swap ready",
+                                "video": f"/api/jobs/{job_id}/video?v={version}", "detail": _edit_landed("Swap ready", cancel),
                                 "look": rec.get("look"), "recuts": rec.get("recuts"), "swaps": len(rec.get("swaps") or [])})
+            except JobCancelled:
+                _edit_stopped(job, "the swap")
             except Exception as exc:
                 log.exception("swap %s", job_id)
-                from xenoform.errors import plain_error
-
-                with _LOCK:
-                    job.update({"status": "done", "stage": "done", "progress": 1.0, "detail": f"The swap did not run. {plain_error(exc)}",
-                                "error": None})
+                _edit_failed(job, "The swap did not run.", exc)
 
         threading.Thread(target=run, name=f"swap-{job_id}", daemon=True).start()
         return {"id": job_id, "status": "running", "slot": slot, "file": file}
@@ -931,28 +1003,34 @@ def create_app(cfg: dict | None = None):
             raise HTTPException(400, f"This video has no cached morphs to {verb}.")
         return job, folder
 
-    def _run_edit(job: dict, job_id: str, name: str, ready: str, failed: str, fn) -> None:
+    def _edit_landed(ready: str, cancel: threading.Event) -> str:
+        """The done line of an edit; one that Stop reached only once its GPU work was over lands all the same, and says so."""
+        return f"{ready}. Stop came too late to undo it, so the edit landed." if cancel.is_set() else ready
+
+    def _run_edit(job: dict, job_id: str, name: str, ready: str, failed: str, fn, cancel: threading.Event) -> None:
         """Run a timeline edit (a GPU pair render and the re-compose) on a thread, the job showing its progress and
-        bumping its video version when the re-cut lands, as the swap does."""
+        bumping its video version when the re-cut lands, as the swap does. ``fn(report, cancel)``: ``cancel`` reaches the
+        GPU wait (the queued morphs are taken off ComfyUI and nothing is written), never the re-compose that follows."""
         def on_progress(stage: str, frac: float, detail: str) -> None:
             with _LOCK:
                 job.update({"stage": stage, "progress": float(frac), "detail": detail})
 
         def run() -> None:
+            from xenoform.turbo import JobCancelled
+
             try:
-                rec = fn(on_progress)
+                rec = fn(on_progress, cancel.is_set)
                 with _LOCK:
                     version = int(job.get("video_version") or 0) + 1
                     job.update({"status": "done", "stage": "done", "progress": 1.0, "video_version": version,
-                                "video": f"/api/jobs/{job_id}/video?v={version}", "detail": ready,
+                                "video": f"/api/jobs/{job_id}/video?v={version}", "detail": _edit_landed(ready, cancel),
                                 "look": rec.get("look"), "recuts": rec.get("recuts"), "swaps": len(rec.get("swaps") or []),
                                 "rerenders": len(rec.get("rerenders") or []), "inserts": len(rec.get("inserts") or [])})
+            except JobCancelled:
+                _edit_stopped(job, f"the {name.replace('insert', 'generated run').replace('rerender', 're-render')}")
             except Exception as exc:
                 log.exception("%s %s", name, job_id)
-                from xenoform.errors import plain_error
-
-                with _LOCK:
-                    job.update({"status": "done", "stage": "done", "progress": 1.0, "detail": f"{failed} {plain_error(exc)}", "error": None})
+                _edit_failed(job, failed, exc)
 
         threading.Thread(target=run, name=f"{name}-{job_id}", daemon=True).start()
 
@@ -961,11 +1039,28 @@ def create_app(cfg: dict | None = None):
         """Re-render the morph one shot plays (``dense.rerender_morph``, docs/TIMELINE.md 1.5): another seed, length (2 to
         5 s of source) or prompt variant, one Draft morph on the GPU, then the re-compose with the timeline as it stands.
         Body: ``shot``; optional ``seed``, ``render_s``, ``variant``, ``style`` (``morph_style``: melt, shatter, bloom, spin,
-        fold; the shot's own when not given)."""
+        fold; the shot's own when not given), and Under the hood's own values (``shot_recipe.clean_overrides``):
+        ``prompt``, ``negative``, ``steps``, ``cfg``, ``frames``, ``guide_start``, ``guide_end``, ``compression``, ``lora``
+        with ``lora_strength``, and ``timing`` (the shot's morph timing for the re-cut). Each try is logged with its full
+        request under ``rerenders``; any changed value is a new request, so a new morph cache key."""
+        from xenoform import shot_recipe as _sr
         from xenoform.dense import RERENDER_VARIANTS, RENDER_S_RANGE, rerender_morph
 
         body = body or {}
         job, folder = _cut_job_for_edit(job_id, "re-render")
+        try:  # the hand-set values answer at once when one is out of range, before anything runs
+            overrides = _sr.clean_overrides({k: body.get(k) for k in _sr.OVERRIDES if k in body})
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        timing = body.get("timing")
+        if timing not in (None, ""):
+            from xenoform import morph_timing as _mt
+
+            timing = str(timing).strip().lower()
+            if timing not in ("auto", *_mt.MODES):
+                raise HTTPException(400, f"No morph timing called {timing}; one of auto, {', '.join(_mt.MODES)}.")
+        else:
+            timing = None
         try:
             shot = int(body.get("shot"))
         except (TypeError, ValueError):
@@ -1018,23 +1113,210 @@ def create_app(cfg: dict | None = None):
         under = _under_insert(shots[shot])
         if under:
             raise HTTPException(400, f"Shot {shot + 1} is {under}: it plays no morph of the chain to re-render.")
-        with _LOCK:
-            job.update({"status": "running", "stage": "restyle", "progress": 0.05, "error": None,
-                        "detail": f"Re-rendering shot {shot + 1}'s morph" + (f" on the {layer} layer" if layer else "")})
+        cancel = _edit_start(job, job_id, "rerender", "restyle",
+                             f"Re-rendering shot {shot + 1}'s morph" + (f" on the {layer} layer" if layer else ""))
 
-        def rerender(report):
+        # only what was given goes on: a plain re-render (seed, length, variant, style) calls rerender_morph as it always did
+        more = {**({"overrides": overrides} if overrides else {}), **({"timing": timing} if timing is not None else {})}
+
+        def rerender(report, stop):
             go = lambda d, rep: rerender_morph(d, shot, seed=seed, render_s=render_s, variant=variant,  # noqa: E731
-                                               style=style, cfg=cfg, report=rep)
+                                               style=style, cfg=cfg, report=rep, cancel=stop, **more)
             if layer is None:
                 return go(folder, report)
             from xenoform import stems_mode as _sm  # one layer's morph and re-cut, then the layers laid again (no GPU)
 
             return _sm.layer_edit(folder, layer, go, kind="rerender", report=report,
-                                  detail={"shot": shot, "seed": seed, "render_s": render_s, "variant": variant, "style": style})
+                                  detail={"shot": shot, "seed": seed, "render_s": render_s, "variant": variant, "style": style, **more})
 
-        _run_edit(job, job_id, "rerender", "Re-render ready", "The re-render did not run.", rerender)
+        _run_edit(job, job_id, "rerender", "Re-render ready", "The re-render did not run.", rerender, cancel)
         return {"id": job_id, "status": "running", "shot": shot, "seed": seed, "render_s": render_s, "variant": variant, "style": style,
-                **({"layer": layer} if layer else {})}
+                **({"layer": layer} if layer else {}), **more}
+
+    # ---------------------------------------------------------- Under the hood (docs/UI_REVIEW.md 6.4, shot_recipe)
+
+    def _shot_record(job_id: str, layer: str | None = None) -> tuple[Path, dict, str | None]:
+        """The folder and record a shot's Under the hood reads: the cut's ``simple/simple.json``, or for a Stems cut the
+        named layer's own (its folder, its record). Answers after a desk restart: it reads the folder, not the job."""
+        folder = work_dir() / "jobs" / storage_id(job_id, fallback="")
+        path = folder / "simple" / "simple.json"
+        if not path.is_file():
+            raise HTTPException(404, "This video has no shot record on this machine.")
+        try:
+            rec = json.loads(path.read_text(encoding="utf-8"))
+        except ValueError:
+            raise HTTPException(400, "This cut's record did not read.")
+        if str(rec.get("mode") or "") == "stems":
+            from xenoform import stems_mode as _sm
+
+            try:
+                row, rec = _sm.layer_record(rec, layer)
+            except (OSError, ValueError) as exc:
+                raise HTTPException(400, str(exc)) from exc
+            return Path(str(row["folder"])), rec, str(row["stem"])
+        return folder, rec, None
+
+    @app.get("/api/jobs/{job_id}/shots/{index}/recipe")
+    def shot_recipe_route(job_id: str, index: int, style: str = "", layer: str = "") -> dict:
+        """Under the hood for one shot (``shot_recipe.recipe``): every value its morph was rendered with beside what the
+        vibe's preset gives it today, a ``differs`` flag a field, whether the clip's own graph confirms the record, the
+        re-render gate and its cost, and the workflow's address. ``style`` asks for the preset in another morph style."""
+        from xenoform import shot_recipe as _sr
+
+        folder, rec, stem = _shot_record(job_id, layer or None)
+        try:
+            out = _sr.recipe(folder, rec, int(index), style=style.strip().lower() or None)
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        base = f"/api/jobs/{job_id}/shots/{int(index)}"
+        tail = f"?layer={stem}" if stem else ""
+        out.update({"id": job_id, "layer": stem, "workflow": f"{base}/workflow.json{tail}",
+                    "workflow_name": f"xenoform-{storage_id(job_id, fallback='cut')}-shot{int(index) + 1:02d}.json",
+                    "comfy": str((cfg.get("comfy") or {}).get("base_url") or "http://127.0.0.1:8188"),
+                    "takes": [{**t, "url": f"{base}/takes/{t['n']}/clip.mp4{tail}"} for t in out.get("takes") or []]})
+        # the style the Make gave the shot: Reset to preset goes back to it (the first take's, else the one it plays)
+        out["make_style"] = next((t.get("style") for t in out["takes"] if t.get("source") == "make" and t.get("style")),
+                                 (out.get("used") or {}).get("style"))
+        out.update(_shot_recipe_code(job_id, rec, int(index), out.get("used") or {}))
+        return out
+
+    def _shot_recipe_code(job_id: str, rec: dict, index: int, used: dict) -> dict:
+        """The shot's Copy recipe: the cut's own recipe code with this shot's hand-set values in its ``shots`` (keyed by
+        the morph it plays), so the same song and the code make this shot as it is now; the cut's code when the shot
+        has none of its own."""
+        from xenoform import shot_recipe as _sr
+        from xenoform.simple_recipe import RecipeError, decode, encode
+
+        meta = _read_meta(work_dir() / "jobs" / storage_id(job_id, fallback=""))
+        code = str(meta.get("recipe") or "")
+        if not code:
+            return {"recipe_code": "", "recipe_shot": False}
+        try:
+            state = decode(code)
+        except RecipeError:
+            return {"recipe_code": "", "recipe_shot": False}
+        own = {k: v for k, v in (used.get("overrides") or {}).items()} if isinstance(used.get("overrides"), dict) else {}
+        m = _sr.morph_of(rec, index)
+        if not (own and m is not None):
+            return {"recipe_code": code, "recipe_shot": False}
+        state["shot_renders"] = {str(m): own}
+        return {"recipe_code": encode(state), "recipe_shot": True}
+
+    @app.get("/api/jobs/{job_id}/shots/{index}/workflow.json")
+    def shot_workflow_route(job_id: str, index: int, layer: str = "") -> Response:
+        """The API graph one shot's morph ran (``shot_recipe.workflow_of``), as a .json ComfyUI loads: drop it on ComfyUI
+        or open it there (Open in ComfyUI). The two guide stills are named as ComfyUI's input folder has them."""
+        from xenoform import shot_recipe as _sr
+
+        folder, rec, _stem = _shot_record(job_id, layer or None)
+        try:
+            graph = _sr.workflow_of(folder, rec, int(index))
+        except (IndexError, ValueError) as exc:
+            raise HTTPException(400, str(exc)) from exc
+        if graph is None:
+            raise HTTPException(404, "This shot's graph was not kept: it was rendered before the desk kept each request, "
+                                     "and its clip carries none.")
+        name = f"xenoform-{storage_id(job_id, fallback='cut')}-shot{int(index) + 1:02d}.json"
+        return Response(json.dumps(graph, indent=1), media_type="application/json",
+                        headers={"Content-Disposition": f'attachment; filename="{name}"', "Cache-Control": "no-store"})
+
+    @app.post("/api/jobs/{job_id}/shots/{index}/comfy")
+    def shot_comfy_route(job_id: str, index: int, body: dict | None = None) -> dict:
+        """Open in ComfyUI, the queue option (decision 7): the shot's graph queued on the desk's own ComfyUI with its two
+        stills uploaded there (``shot_recipe.queue_on_comfy``). It spends that GPU, so the body must say ``confirm``; the
+        default is the download (``workflow.json``). The clip lands in ComfyUI's output folder, not in the cut."""
+        from xenoform import shot_recipe as _sr
+
+        body = body or {}
+        base = str((cfg.get("comfy") or {}).get("base_url") or "http://127.0.0.1:8188")
+        if body.get("confirm") is not True:
+            raise HTTPException(400, f"This queues the shot on ComfyUI at {base} and spends its GPU there: confirm it first, "
+                                     "or download the workflow instead.")
+        folder, rec, _stem = _shot_record(job_id, body.get("layer") or None)
+        graph = _sr.workflow_of(folder, rec, int(index))
+        if graph is None:
+            raise HTTPException(404, "This shot's graph was not kept, so there is nothing to queue.")
+        renders = list(rec.get("renders") or [])
+        req = renders[int(index)] if int(index) < len(renders) and isinstance(renders[int(index)], dict) else {}
+        a, b = ("100", "101") if "100" in graph else ("6", "7")
+        stills = {a: str((req.get("from") or {}).get("path") or ""), b: str((req.get("to") or {}).get("path") or "")}
+        try:
+            got = _sr.queue_on_comfy(graph, stills, base)
+        except RuntimeError as exc:
+            raise HTTPException(502, str(exc)) from exc
+        except Exception as exc:  # noqa: BLE001 - ComfyUI not answering
+            raise HTTPException(502, f"ComfyUI at {base} did not answer: {exc}") from exc
+        return {"id": job_id, "shot": int(index), "comfy": base, "prompt_id": got["prompt_id"], "number": got["number"],
+                "note": f"Queued on ComfyUI at {base}: open it there to watch the shot and tweak its graph."}
+
+    def _takes_view(job_id: str, index: int, folder: Path, rec: dict, stem: str | None) -> list[dict]:
+        from xenoform import shot_recipe as _sr
+
+        try:
+            got = _sr.takes(folder, rec, int(index))
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        tail = f"?layer={stem}" if stem else ""
+        return [{**{k: v for k, v in t.items() if k != "clip"},
+                 "url": f"/api/jobs/{job_id}/shots/{int(index)}/takes/{t['n']}/clip.mp4{tail}"} for t in got]
+
+    @app.get("/api/jobs/{job_id}/shots/{index}/takes")
+    def shot_takes_route(job_id: str, index: int, layer: str = "") -> dict:
+        """Every take one shot has had (``shot_recipe.takes``): the Make's, each re-render's with its seed and full request,
+        the one playing now, and whether each can be put back, with an address to play each take's own clip."""
+        folder, rec, stem = _shot_record(job_id, layer or None)
+        rows = _takes_view(job_id, index, folder, rec, stem)
+        return {"id": job_id, "shot": int(index), "layer": stem, "takes": rows,
+                "current": next((t["n"] for t in rows if t["current"]), None)}
+
+    @app.get("/api/jobs/{job_id}/shots/{index}/takes/{n}/clip.mp4")
+    def shot_take_clip(job_id: str, index: int, n: int, layer: str = "") -> FileResponse:
+        """One take's own morph clip, as it came from ComfyUI (before the cut's look): to see a take before putting it back."""
+        from xenoform import shot_recipe as _sr
+
+        folder, rec, _stem = _shot_record(job_id, layer or None)
+        try:
+            take = next((t for t in _sr.takes(folder, rec, int(index)) if t["n"] == int(n)), None)
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
+        path = Path(str(take["clip"])) if take else None
+        if path is None or not path.is_file():
+            raise HTTPException(404, "That take's clip is not on this machine.")
+        return FileResponse(path, media_type="video/mp4", headers={"Cache-Control": "no-store"})
+
+    @app.post("/api/jobs/{job_id}/shots/{index}/take")
+    def shot_take_use(job_id: str, index: int, body: dict | None = None) -> dict:
+        """Put an earlier take of one shot back (``dense.use_take``): no render, its clip and request return and the cut
+        re-composes from the cached morphs (a re-cut's time, no GPU). Body: ``n`` (the take's number), ``layer`` for a
+        Stems cut."""
+        from xenoform.dense import use_take
+
+        body = body or {}
+        job, folder = _cut_job_for_edit(job_id, "put a take back on")
+        try:
+            n = int(body.get("n"))
+        except (TypeError, ValueError):
+            raise HTTPException(400, "Which take? Name it by its number.")
+        lfolder, rec, stem = _shot_record(job_id, body.get("layer") or None)
+        take = next((t for t in _takes_view(job_id, index, lfolder, rec, stem) if t["n"] == n), None)
+        if take is None:
+            raise HTTPException(400, f"Shot {int(index) + 1} has no take {n}.")
+        if take["current"]:
+            raise HTTPException(400, f"Take {n} is the one shot {int(index) + 1} plays already.")
+        if not take["usable"]:
+            raise HTTPException(400, f"Take {n} cannot come back: {take['why']}.")
+        cancel = _edit_start(job, job_id, "take", "assemble", f"Putting take {n} back on shot {int(index) + 1}: re-cutting (no GPU)")
+
+        def run(report, stop):  # no GPU wait: Stop has nothing to take off ComfyUI here
+            go = lambda d, rep: use_take(d, int(index), n, cfg=cfg, report=rep)  # noqa: E731
+            if stem is None:
+                return go(folder, report)
+            from xenoform import stems_mode as _sm
+
+            return _sm.layer_edit(folder, stem, go, kind="take", report=report, detail={"shot": int(index), "n": n})
+
+        _run_edit(job, job_id, "take", "Take put back", "The take did not come back.", run, cancel)
+        return {"id": job_id, "status": "running", "shot": int(index), "n": n, **({"layer": stem} if stem else {})}
 
     @app.post("/api/jobs/{job_id}/insert")
     def insert_job(job_id: str, body: dict | None = None) -> dict:
@@ -1076,11 +1358,11 @@ def create_app(cfg: dict | None = None):
             first, last = insert_span(shots, first, seconds)
         except ValueError as exc:
             raise HTTPException(400, str(exc))
-        with _LOCK:
-            job.update({"status": "running", "stage": "restyle", "progress": 0.05,
-                        "detail": f"Generating {last - first + 1} morph{'s' if last != first else ''} over shots {first + 1} to {last + 1}", "error": None})
+        cancel = _edit_start(job, job_id, "insert", "restyle",
+                             f"Generating {last - first + 1} morph{'s' if last != first else ''} over shots {first + 1} to {last + 1}")
         _run_edit(job, job_id, "insert", "Generated run ready", "The generated run did not run.",
-                  lambda report: insert_generated(folder, first, seconds=seconds, pins=pins, seed=seed, cfg=cfg, report=report))
+                  lambda report, stop: insert_generated(folder, first, seconds=seconds, pins=pins, seed=seed, cfg=cfg, report=report,
+                                                        cancel=stop), cancel)
         return {"id": job_id, "status": "running", "first": first, "last": last, "seconds": seconds}
 
     @app.post("/api/jobs/{job_id}/dream")
@@ -1123,11 +1405,10 @@ def create_app(cfg: dict | None = None):
             first, last = _dream.span(shots, first, seconds)
         except ValueError as exc:
             raise HTTPException(400, str(exc))
-        with _LOCK:
-            job.update({"status": "running", "stage": "restyle", "progress": 0.05,
-                        "detail": f"Dreaming over shots {first + 1} to {last + 1}", "error": None})
+        cancel = _edit_start(job, job_id, "dream", "restyle", f"Dreaming over shots {first + 1} to {last + 1}")
         _run_edit(job, job_id, "dream", "Dream ready", "The dream did not run.",
-                  lambda report: _dream.dream_span(folder, first, seconds=seconds, depth=depth, seed=seed, cfg=cfg, report=report))
+                  lambda report, stop: _dream.dream_span(folder, first, seconds=seconds, depth=depth, seed=seed, cfg=cfg, report=report,
+                                                         cancel=stop), cancel)
         return {"id": job_id, "status": "running", "first": first, "last": last, "seconds": seconds, "depth": depth}
 
     @app.post("/api/morph/board")
@@ -1383,15 +1664,28 @@ def create_app(cfg: dict | None = None):
         raise HTTPException(status_code=404, detail="not in the library (run scripts/fetch_library.py)")
 
     @app.get("/moves")
-    def moves_page() -> FileResponse:
-        return FileResponse(Path(__file__).parent / "ui_static" / "moves.html")
+    def moves_page(request: Request):
+        return _side_page(request, "moves.html", "Moves")
 
     @app.get("/api/moves")
     def moves_list(all: bool = False) -> dict:
         from xenoform import moves as mv
 
-        return {"moves": mv.moves(include_avoid=all), "style": mv.DEFAULT_STYLE,
-                "size": f"{mv.W}x{mv.H}", "frames": mv.FRAMES}
+        # a picture for each clip that is on this machine (the page draws a placeholder for the others)
+        rows = [{**m, "thumb": f"/api/moves/{m['id']}/thumb.jpg"} if m["local"] else m for m in mv.moves(include_avoid=all)]
+        return {"moves": rows, "style": mv.DEFAULT_STYLE, "size": f"{mv.W}x{mv.H}", "frames": mv.FRAMES, "fps": mv.FPS}
+
+    @app.get("/api/moves/{move_id}/thumb.jpg")
+    def moves_thumb(move_id: str) -> FileResponse:
+        """One frame of a downloaded driving clip, as the model sees it (cover-cropped to 9:16), cached under
+        work/ui/moves/thumbs. 404 for an unknown move and for one that is not downloaded."""
+        from xenoform import moves as mv
+
+        try:
+            path = mv.thumb(move_id, work_dir() / "moves" / "thumbs")
+        except mv.MovesError as exc:
+            raise HTTPException(404, str(exc)) from exc
+        return FileResponse(path, media_type="image/jpeg", headers={"Cache-Control": "no-cache"})
 
     @app.post("/api/moves/render")
     async def moves_render(request: Request) -> dict:
@@ -1469,8 +1763,11 @@ def create_app(cfg: dict | None = None):
         detail = (f"{n_img} image{'s' if n_img != 1 else ''} for an object cut, {n_clip} clip{'s' if n_clip != 1 else ''} for a clips cut."
                   + (f" Left out: {img_left} image{'s' if img_left != 1 else ''} past {own_media.MAX_ITEMS}." if img_left else "")
                   + (f" Left out: {clip_left} clip{'s' if clip_left != 1 else ''} past {own_media.MAX_CLIPS}." if clip_left else ""))
+        # the names the cut will use, in its order, so the desk can show what came in (F12: "1 clip here." was all)
+        names = {"images": [Path(p).name for p in found["images"]],
+                 "clips": [{"name": Path(c["path"]).name, "seconds": round(float(c.get("seconds") or 0), 1)} for c in found["clips"]]}
         return {"id": own_id, "folder": str(dest), "images": n_img, "clips": n_clip, "images_left": img_left, "clips_left": clip_left,
-                "max_images": own_media.MAX_ITEMS, "max_clips": own_media.MAX_CLIPS, "detail": detail}
+                "max_images": own_media.MAX_ITEMS, "max_clips": own_media.MAX_CLIPS, "detail": detail, "names": names}
 
     @app.get("/api/stills")
     def stills_route(vibe: str = "") -> dict:
@@ -2020,6 +2317,73 @@ def create_app(cfg: dict | None = None):
                       "beat_fx": True, "end_card": False},
         }
 
+    @app.get("/api/simple/strip")
+    def simple_strip(audio_id: str = "demo", drop_mode: str = "", breathe: str = "", length: float = 30.0,
+                     buckets: int = 1200) -> dict:
+        """The song strip (docs/UI_REVIEW.md 6.1), what the desk draws for a song before any Make, from its analysis
+        alone: the passages with their roles, drop runs and heat as the planner reads them (``pacing.song_plan``, so the
+        strip's sections are the ones a whole song is made of), the heaviest run as ``main`` (``pacing.heaviest``, the
+        drop card's and the prototype's), the beats on the planner's grid with its bar lines, a waveform, the drop, and
+        the window a Length Make cuts (``pacing.prototype_window``, one rule with the Make's trim). Read-only: nothing
+        is planned for a render and nothing is cached."""
+        from xenoform import dense as _dense
+        from xenoform import pacing as _pacing
+        from xenoform.director import waveform_peaks
+
+        features = _features_for(audio_id)
+        if audio_id in ("", "demo"):
+            audio = repo_root() / "examples" / "demo.wav"
+        else:
+            with _LOCK:
+                audio = _AUDIO.get(audio_id)
+        duration = float(features.get("duration") or 0.0)
+        beats = sorted(float(b) for b in features.get("beats") or [])
+        try:
+            drop = _dense.find_drop(Path(audio), beats, duration) if audio is not None and Path(audio).is_file() else None
+        except Exception:
+            drop = None
+        mode = _pacing.drop_mode_of({"drop_mode": drop_mode or None})
+        plan_mode = mode if mode in ("auto", "max") else "auto"  # Drops off still shows where the runs are
+        sections = _dense._analysis_sections(features)
+        tempo = features.get("tempo")
+        grid = _pacing.grid_for(beats, duration, tempo) if duration > 0 else []
+        passages: list[dict] = []
+        phase = 0
+        if duration > 0 and len(sections) >= 2:
+            try:
+                plan = _pacing.song_plan(duration, beats, sections, drop, breathe=0.0, drop_mode=plan_mode, tempo=tempo)
+                phase = int(plan.get("bar_phase") or 0)
+                for p in plan.get("passages") or []:
+                    row = {"role": str(p["role"]), "start": round(float(p["start"]), 3), "end": round(float(p["end"]), 3)}
+                    if "drop_run" in p:
+                        row.update({"drop_run": int(p["drop_run"]), "heat": round(float(p.get("heat") or 0.0), 3),
+                                    "opens": bool(p.get("main"))})
+                    passages.append(row)
+            except Exception:
+                log.exception("song strip")
+                passages = []
+        if not passages and duration > 0:  # a song too short to plan: one passage, the analyser's own reading
+            passages = [{"role": "sustain", "start": 0.0, "end": round(duration, 3)}]
+        runs = [p for p in passages if "drop_run" in p]
+        k = _pacing.heaviest([{"heat": p.get("heat"), "start": p["start"], "end": p["end"], "opens": p.get("opens")} for p in runs])
+        if k is not None:
+            runs[k]["main"] = True
+        window = None
+        try:
+            shape = {"breathe": breathe if breathe != "" else None, "drop_mode": drop_mode or None}
+            proto = _pacing.prototype_window(features, drop, float(length or 0.0), paced=not _pacing.legacy(shape), drop_mode=mode)
+            if proto is not None:
+                window = {"start": round(float(proto["start"]), 3), "end": round(float(proto["end"]), 3),
+                          "length_s": proto["length_s"], "anchor": round(float(proto["anchor"]), 3)}
+        except Exception:
+            log.exception("song strip window")
+        bars = [round(t, 3) for t in grid[phase::4]] if len(grid) >= 4 else []
+        return {"audio_id": audio_id, "duration": round(duration, 3), "tempo": round(float(tempo or 0.0), 1),
+                "beats": [round(t, 3) for t in grid], "bars": bars, "bar_phase": phase,
+                "wave": waveform_peaks(features, max(60, min(4000, int(buckets or 1200)))) if features.get("frames") else [],
+                "drop": round(float(drop), 3) if drop is not None else None, "drop_mode": mode,
+                "passages": passages, "window": window}
+
     def _chain_for(body: dict) -> dict:
         """The stills a Make of ``body`` will morph through, in order, as the stills animatic previews them
         (``dense.chain_preview``): nothing rendered, nothing marked used. A Length cut is previewed on the window the
@@ -2054,8 +2418,8 @@ def create_app(cfg: dict | None = None):
         dur = float(features.get("duration") or 0.0)
         from xenoform import pacing as _pacing
 
-        features, _start, _drop = _window_features(features, Path(audio), length_s, state.get("length_start"),
-                                                   paced=not _pacing.legacy(state), drop_mode=_pacing.drop_mode_of(state))
+        features, window_start, _drop = _window_features(features, Path(audio), length_s, state.get("length_start"),
+                                                         paced=not _pacing.legacy(state), drop_mode=_pacing.drop_mode_of(state))
         try:  # the guardrail the Make runs, on the cut's own length: a count set by hand gets its clamp (40 in 20 s:
             # 15) and "auto" the budget the planner spends by role, so the preview counts what renders
             from xenoform import guardrails as _guard
@@ -2098,11 +2462,35 @@ def create_app(cfg: dict | None = None):
                  "thumb": "/api/stills/thumb?file=" + quote(str(s.get("file") or ""), safe="/") if not s.get("user") else ""}
                 for k, s in enumerate(pre["stills"])]
         dropped_pins = sorted(k for k in pins if k < len(rows) and not rows[k]["pinned"])
+        # the song strip lays the planned shots on the song (docs/UI_REVIEW.md 6.2): each shot's start and end in the
+        # cut's own time, the morph it plays (a long song's chain assigns them), and where the cut starts in the song
+        shots = list(pre["shots"] or [])
+        assign = list((pre.get("chain") or {}).get("assign") or []) if isinstance(pre.get("chain"), dict) else []
+        try:  # each planned shot's Intensity as the shape will set it (pacing.shot_intensity), for the strip's lane
+            macros = state.get("macros") if isinstance(state.get("macros"), dict) else {}
+            knob = _pacing._knob(macros, "intensity", 0.5)
+            amount = _pacing.breathe_amount(state)
+            drops = _pacing.drop_mode_of(state) in ("auto", "max")
+            owner = _pacing.passage_of(shots)
+            spans: dict[int, list[float]] = {}
+            for s, p in zip(shots, owner):
+                a, b = float(s.get("start") or 0.0), float(s.get("end") or 0.0)
+                span = spans.setdefault(p, [a, b])
+                span[0], span[1] = min(span[0], a), max(span[1], b)
+            intensity = [_pacing.shot_intensity(s, knob, amount, drops,
+                                                (float(s.get("start") or 0.0) - spans[p][0]) / max(1e-6, spans[p][1] - spans[p][0]))
+                         for s, p in zip(shots, owner)]
+        except Exception:
+            intensity = []
         return {"vibe": pre["vibe"], "pool_vibe": _mp.vibe_for(state), "count": len(rows), "morphs": max(0, len(rows) - 1),
-                "shots": len(pre["shots"]), "long_song": bool(pre["long_song"]), "scene_mode": _mp.scene_mode(state),
+                "shots": len(shots), "long_song": bool(pre["long_song"]), "scene_mode": _mp.scene_mode(state),
                 "backdrop": _mp.backdrop_choice(state),  # what the morphs stand on: plain, places, scenes
                 "stills": rows, "pinned": [r["index"] for r in rows if r["pinned"]], "dropped_pins": dropped_pins,
-                "length_s": length_s if length_s > 0 and dur > length_s + 1.0 else 0}
+                "length_s": length_s if length_s > 0 and dur > length_s + 1.0 else 0,
+                "times": [[round(float(s.get("start") or 0.0), 3), round(float(s.get("end") or 0.0), 3)] for s in shots],
+                "sections": [str(s.get("section") or "") for s in shots], "intensity": intensity,
+                "assign": [int(a) for a in assign] if len(assign) == len(shots) else list(range(len(shots))),
+                "window_start": round(float(window_start), 3) if window_start is not None else 0.0}
 
     @app.get("/api/simple/chain")
     def simple_chain_get(audio_id: str = "demo", vibe: str = "", idea: str = "", scene_stills: str = "off", energy_preset: str = "dense",
@@ -2160,6 +2548,9 @@ def create_app(cfg: dict | None = None):
             return {"id": video_id, "duration": 0.0, "shots": [], "sections": [], "overlays": [], "note": "This cut's shot record did not read."}
         out = lane.build(info, video_id)
         out["version"] = (folder / "xenoform.mp4").stat().st_mtime_ns  # the tiles' frame pictures change with the video
+        from xenoform.shot_recipe import cost_of
+
+        out["cost"] = cost_of(folder, info)  # a Draft morph and a re-cut on this machine: the drawer's cost tags (C10)
         return out
 
     @app.post("/api/videos/{video_id}/hook")
@@ -2329,8 +2720,8 @@ def create_app(cfg: dict | None = None):
                 "items": items, "left_s": round(left, 1), "measured": rates}
 
     @app.get("/variations")
-    def variations_page() -> FileResponse:
-        return FileResponse(Path(__file__).parent / "ui_static" / "variations.html")
+    def variations_page(request: Request):
+        return _side_page(request, "variations.html", "Variations")
 
     @app.get("/api/batches")
     def batches_index(seconds: float = 0.0) -> dict:
@@ -2630,6 +3021,9 @@ def create_app(cfg: dict | None = None):
                     simple = {}
             with _LOCK:
                 live = _JOBS.get(folder.name)
+            # a finished cut with an edit running on it (a re-render, a swap, a re-cut: _edit_start sets ``edit``) is not
+            # rendering: the edit runs where it was started (UI_REVIEW L7), and its card keeps Reopen, Re-render and Copy recipe
+            making = live if live and not live.get("edit") else None
             rows.append({
                 "id": folder.name,
                 "created": meta.get("created") or "",
@@ -2644,8 +3038,115 @@ def create_app(cfg: dict | None = None):
                 "engine": simple.get("engine") or "",
                 "url": f"/api/videos/{folder.name}/video",
                 "hook": (folder / "hook.mp4").is_file(),
+                # a cut is listed as soon as its first picture is on disk, the animatic of a Make that is still on the GPU
+                # (UI review F14): the card says "rendering" and offers Open, not Re-render of a file that is not finished
+                "status": str((making or {}).get("status") or "done"),
+                "progress": float((making or {}).get("progress") or 0.0) if making else 1.0,
             })
-        return {"videos": rows}
+        from xenoform.perform_api import with_takes  # Perform's live takes (work/ui/takes) among the cuts, newest first
+
+        return {"videos": with_takes(rows, limit)}
+
+    @app.get("/api/videos/{video_id}/reopen")
+    def video_reopen(video_id: str) -> dict:
+        """A saved cut reopened whole (UI_REVIEW N14): its job as the cut's screen reads it (registered with the desk, so
+        the timeline's edits and the poll find it after a restart), with the guardrail notes, how long it took and the
+        breakdown, its tier, its recipe and whether its song is loaded here (``song``: the id, the name, ``loaded``,
+        ``bundled`` for a shipped song, ``file`` when the upload is still on disk for ``POST .../song`` to load)."""
+        folder = _video_dir(video_id)
+        meta = _read_meta(folder)
+        try:
+            rec = json.loads((folder / "simple" / "simple.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            rec = {}
+        try:
+            took = json.loads((folder / "took.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            took = {}
+        notes = _read_notes(folder, rec)
+        with _LOCK:
+            job = _JOBS.get(video_id)
+            if job is None or job.get("status") in ("error", "cancelled"):
+                job = {"id": video_id, "status": "done", "stage": "done", "progress": 1.0, "video_version": 0,
+                       "video": f"/api/jobs/{video_id}/video?v=0", "path": str(folder / "xenoform.mp4"), "error": None}
+                _JOBS[video_id] = job
+            for key, value in (("guardrails", notes.get("guardrails")), ("tier_note", notes.get("tier_note")),
+                               ("took_s", took.get("took_s") or job_timing.seconds_for(folder, None)),
+                               ("breakdown", took.get("breakdown")), ("tier", meta.get("quality_tier"))):
+                if value and not job.get(key):
+                    job[key] = value
+            job["reopened"] = True
+            view = {k: v for k, v in job.items() if k != "path"}
+        audio_id = str(meta.get("audio_id") or "")
+        with _LOCK:
+            loaded = audio_id == "demo" or (audio_id in _AUDIO and audio_id in _FEATURES)
+        audio = Path(str(rec.get("audio_path") or "")) if rec.get("audio_path") else None
+        seconds = None  # the whole song's length: a cut shorter than it was a prototype of a stretch
+        if audio and audio.is_file():
+            try:
+                import soundfile as _soundfile
+
+                seconds = round(float(_soundfile.info(str(audio)).duration), 2)
+            except Exception:  # noqa: BLE001 - a format soundfile does not read: the length stays unknown
+                seconds = None
+        song = {"audio_id": audio_id, "label": str(meta.get("song") or ""), "loaded": loaded,
+                "bundled": audio_id[len("song-"):] if audio_id.startswith("song-") else None,
+                "file": bool(audio and audio.is_file()), "window": rec.get("window"), "seconds": seconds}
+        return {"id": video_id, "job": view, "song": song, "recipe": str(meta.get("recipe") or ""),
+                "vibe": str(meta.get("vibe") or rec.get("vibe") or ""), "tier": str(meta.get("quality_tier") or "draft"),
+                "aspect": str(meta.get("aspect") or rec.get("aspect") or ""), "detail": str(notes.get("detail") or "")}
+
+    @app.post("/api/videos/{video_id}/song")
+    def video_song(video_id: str) -> dict:
+        """The song a saved cut was made from, loaded on the desk again (UI_REVIEW N14: Render needs it): the upload the
+        record names, analysed as ``/api/analyze`` does (the analysis kept in memory was lost with a restart), under the
+        cut's own song id, answered as the session the desk adopts. A shipped song is the desk's to load
+        (``/api/songs/load``); a file gone from the machine is said plainly."""
+        import librosa
+
+        from xenoform.analyze import analyze_audio
+
+        folder = work_dir() / "jobs" / storage_id(video_id, fallback="")
+        with _LOCK:  # a Make still running has no cut on disk yet: its song loads from its meta.json (resumeMaking)
+            running = (_JOBS.get(video_id) or {}).get("status") == "running"
+        if not (running and (folder / "meta.json").is_file()):
+            folder = _video_dir(video_id)
+        meta = _read_meta(folder)
+        audio_id = storage_id(str(meta.get("audio_id") or ""), fallback="demo")
+        if audio_id == "demo" or audio_id.startswith("song-"):
+            raise HTTPException(409, "This cut's song ships with the desk: load it with its chip.")
+        try:
+            rec = json.loads((folder / "simple" / "simple.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            rec = {}
+        with _LOCK:
+            path, features = _AUDIO.get(audio_id), _FEATURES.get(audio_id)
+        if path is None or features is None:
+            candidates = [Path(str(rec.get("audio_path") or ""))] if rec.get("audio_path") else []
+            candidates += sorted((work_dir() / "uploads").glob(f"{audio_id}.*"))
+            path = next((p for p in candidates if p.is_file() and p.suffix.lower() in
+                         {".wav", ".mp3", ".flac", ".ogg", ".aiff", ".aif", ".m4a"}), None)
+            if path is None:
+                raise HTTPException(404, "The song this cut was made from is no longer on this machine: choose it again "
+                                         "on the first screen to render.")
+            try:
+                audio, sr = librosa.load(path, sr=None, mono=True)
+                features = analyze_audio(audio, int(sr), fps=float(cfg["fps"]), onset_tau=float(cfg["analyze"]["onset_tau"]),
+                                         beat_tau=float(cfg["analyze"]["beat_tau"]),
+                                         section_min_seconds=float(cfg["analyze"]["section_min_seconds"]))
+            except Exception as exc:
+                from xenoform.errors import audio_read_error
+
+                log.exception("reopen analyze failed")
+                raise HTTPException(400, audio_read_error(exc)) from exc
+            with _LOCK:
+                _AUDIO[audio_id] = Path(path)
+                _FEATURES[audio_id] = features
+        payload = session_payload(features, audio_id=audio_id, title=str(meta.get("song") or Path(path).stem), video="",
+                                  endpoint=str(cfg["comfy"].get("base_url") or ""))
+        payload["video_label"] = "No picture yet — generate a cut"
+        payload["reference"] = ""
+        return payload
 
     @app.post("/api/recipe/encode")
     def recipe_encode(body: dict) -> dict:
@@ -2827,6 +3328,11 @@ def create_app(cfg: dict | None = None):
         recipe = _write_meta(out.parent, body, audio_id)
         if recipe and not body.get("simple_recipe"):
             body["simple_recipe"] = recipe
+        # the song the Make is of, as the cut's reopen names it (meta.json): a reload or a link on #render/<job> while
+        # it runs loads it on the desk again (app.js resumeMaking), without the cut's file the reopen route needs
+        song_view = {"audio_id": audio_id, "label": str(body.get("song") or body.get("song_label") or "")[:80],
+                     "bundled": audio_id[len("song-"):] if audio_id.startswith("song-") else None,
+                     "file": audio_id != "demo" and not audio_id.startswith("song-")}
         cancel_event = threading.Event()
         only = [str(item) for item in (body.get("only_scenes") or []) if str(item)]
         try:
@@ -2868,6 +3374,8 @@ def create_app(cfg: dict | None = None):
             "scene_transitions": [t.get("kind") if isinstance(t, dict) else t for t in (body.get("scene_transitions") or [])],
             "shot_looks": [str(s.get("dance_fx") or "") for s in (body.get("scenes") or []) if isinstance(s, dict)],
             "stems_path": str(body.get("stems_path") or ""),
+            "song": song_view,
+            "vibe": str(body.get("vibe") or ""),  # a resumed Make in a fresh browser ticks Plan (app.js resumeMaking)
             # Honest timing (job_timing): t0 / started, the planned seconds per phase for this song and Make, and the
             # overall fraction, ETA and phase boundaries _run_job's on_progress keeps up to date.
             **job_timing.start_fields(job_timing.plan_for(features, body, audio_path), body),
@@ -2979,6 +3487,9 @@ def create_app(cfg: dict | None = None):
             job = _JOBS.get(job_id)
             if job is None:
                 raise HTTPException(404, "No such cut. It may be from before the desk restarted.")
+            # the bar and the clock move on through a step that reports nothing for minutes (a grow, a Final morph),
+            # kept in the job so the bar never goes back at the next report (job_timing.live, UI review F2)
+            job.update(job_timing.live(job, job_timing.elapsed(job)))
             return {key: value for key, value in job.items() if key != "path"}
 
     @app.post("/api/jobs/{job_id}/cancel")
@@ -2990,7 +3501,11 @@ def create_app(cfg: dict | None = None):
             event = _CANCEL.get(job_id)
             if event is not None:
                 event.set()
-            if job.get("status") == "running":
+            if job.get("status") == "running" and job.get("edit"):
+                # an edit of a cut stops at its next safe point (the GPU wait, or anywhere in a re-cut) and says then
+                # whether it stopped or had already landed; it never reads "cancelled" while it still runs (F7)
+                job["detail"] = "Stopping the edit at its next safe point."
+            elif job.get("status") == "running":
                 job["status"] = "cancelled"
                 job["detail"] = "Cancelled. The card changed."
             return {key: value for key, value in job.items() if key != "path"}
@@ -3266,11 +3781,14 @@ def create_app(cfg: dict | None = None):
             raise HTTPException(400, plain_error(exc)) from exc
 
     @app.get("/api/setup")
-    def setup_index() -> dict:
+    def setup_index(comfy: str = "") -> dict:
+        """The machine check. ``comfy`` is the address the browser's header pings (Settings moves it); a Setup that asked
+        another ComfyUI than the pill said "connected" to read as a lie (UI review M3). Only http(s) addresses count."""
         from xenoform.live_mode import interpolator_name, live_ai_status, tensorrt_status
         from xenoform.models_setup import inspect_setup
 
-        payload = inspect_setup(comfy_url=str(cfg["comfy"].get("base_url") or ""))
+        asked = comfy.strip() if comfy.strip().lower().startswith(("http://", "https://")) else ""
+        payload = inspect_setup(comfy_url=asked or str(cfg["comfy"].get("base_url") or ""))
         payload["extras"] = [live_ai_status(), tensorrt_status()]
         payload["interpolate"] = interpolator_name()
         return payload
@@ -3416,7 +3934,7 @@ def _run_job(job_id: str, audio_path: Path, body: dict, cfg: dict, out: Path, ca
         from xenoform.hardware import TIERS as _tiers
 
         chosen = str(body.get("hardware_tier") or "auto").strip().lower()
-        start = dict(_tiers[chosen]) if chosen in _tiers else detect_tier()  # Fine-tune -> GPU, else the detected card
+        start = dict(_tiers[chosen]) if chosen in _tiers else detect_tier()  # the Project panel's GPU row, else the detected card
         result, tier_id, note = run_resilient(once, start)
         qa_report = None
         if not cancel_event.is_set() and Path(out).is_file() and not body.get("tiny"):
@@ -3478,7 +3996,9 @@ def _run_job(job_id: str, audio_path: Path, body: dict, cfg: dict, out: Path, ca
                 job["detail"] = f"{note} {job.get('detail') or ''}".strip()
                 job["tier_note"] = note
             took = job_timing.finish(job, job_timing.elapsed(job))  # took_s (QA included), breakdown, the done stage
+            notes = {k: job.get(k) for k in ("guardrails", "detail", "tier_note") if job.get(k)}
         job_timing.write_took(work, took)  # beside the cut, so My videos keeps the numbers after a desk restart
+        _write_notes(work, notes)  # and its guardrail notes, so a Reopen shows them (N14)
     except JobCancelled as exc:
         with _LOCK:
             job = _JOBS[job_id]
@@ -3506,9 +4026,9 @@ def _effects_looks() -> dict:
 
 def _apply_own(body: dict) -> dict:
     """Your own clips and images (Simple), into the make body in place: a folder path typed in, or the files dropped on
-    the desk (POST /api/own). The images lead the morph chain (``morph_targets``); the clips are cut in on the beat
-    (``own_clips``, dense.run_simple) unless the body says ``cut_in_clips: false`` (the desk's Work in progress > Your
-    clips, off by default; a caller that does not send it keeps the clips, as before)."""
+    the desk (POST /api/own). An object cut takes the images, which lead the morph chain (``morph_targets``), and leaves
+    the clips out; a clips cut (``morph_source: clips``) takes only the clips (``own_clips``). The two never share a
+    cut, whatever ``cut_in_clips`` says (the desk no longer sends it)."""
     own_folder = str(body.get("own_folder") or "").strip()
     own_id = str(body.get("own_id") or "")
     if own_id:
@@ -3555,12 +4075,50 @@ def _is_song(folder: Path) -> bool:
     return (Path(folder) / song_run.FILE).is_file()
 
 
+def _is_stems(folder: Path) -> bool:
+    """True for a Stems cut's folder: its record says so (its cut is its layers' cuts laid together)."""
+    try:
+        rec = json.loads((Path(folder) / "simple" / "simple.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return isinstance(rec, dict) and str(rec.get("mode") or "") == "stems"
+
+
 def _read_meta(folder: Path) -> dict:
     path = Path(folder) / "meta.json"
     try:
         return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
     except ValueError:
         return {}
+
+
+NOTES_FILE = "notes.json"  # a finished Make's guardrail notes and closing line, beside the cut
+
+
+def _write_notes(folder: Path, notes: dict) -> None:
+    """The cut's guardrail notes (the clamps, the taste file's lines, the checks' flags) and the Make's closing line,
+    kept beside it so a Reopen after a restart shows the cut's screen as it was (UI_REVIEW N14). Never raises."""
+    try:
+        (Path(folder) / NOTES_FILE).write_text(json.dumps(notes, indent=1, default=str), encoding="utf-8")
+    except OSError as exc:
+        log.warning("%s not written: %s", NOTES_FILE, exc)
+
+
+def _read_notes(folder: Path, rec: dict | None = None) -> dict:
+    """What a Reopen shows of a cut's notes: ``notes.json``, else (a cut from before it was kept) the taste file's lines
+    the record holds."""
+    try:
+        got = json.loads((Path(folder) / NOTES_FILE).read_text(encoding="utf-8"))
+        if isinstance(got, dict):
+            return got
+    except (OSError, ValueError):
+        pass
+    lines: list[str] = []
+    for block in ("taste", "taste_recut"):
+        for line in ((rec or {}).get(block) or {}).get("lines") or []:
+            if str(line) not in lines:
+                lines.append(str(line))
+    return {"guardrails": {"applied": [], "warnings": [], "messages": lines}} if lines else {}
 
 
 def _pool_count(body: dict) -> int | None:

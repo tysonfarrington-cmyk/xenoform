@@ -51,8 +51,9 @@ def test_drop_card_is_on_the_simple_desk_without_morph_controls():
     script = (root / "src" / "xenoform" / "ui_static" / "app.js").read_text(encoding="utf-8")
     css = (root / "src" / "xenoform" / "ui_static" / "app.css").read_text(encoding="utf-8")
     easy = script.split("function renderEasy()", 1)[1].split("function placeKey", 1)[0]
-    assert "dropCard()" in easy
-    assert 'data-act="open-drop"' in script
+    # the drop card is retired: the song strip on every step shows the drops, and a click on one plays from it
+    assert "dropCard()" not in easy and 'data-act="open-drop"' not in script
+    assert 'data-song-strip="desk"' in easy and "onPassage: (i, p) => seekSong(where, p ? Number(p.start) : 0)," in script
     assert "morph-method" not in easy
     assert "morph-source" not in easy
     assert "morph-hit" not in easy

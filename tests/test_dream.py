@@ -171,7 +171,7 @@ def test_the_route_refuses_plainly_and_runs_the_dream(tmp_path, monkeypatch):
     (folder / "xenoform.mp4").write_bytes(b"mp4")
     got, done = {}, threading.Event()
 
-    def fake(job_dir, first, *, seconds=2.0, depth="light", seed=None, cfg=None, report=None, client=None):
+    def fake(job_dir, first, *, seconds=2.0, depth="light", seed=None, cfg=None, report=None, client=None, cancel=None):
         got.update(first=first, seconds=seconds, depth=depth)
         done.set()
         return {"look": {}, "recuts": 1}
@@ -193,7 +193,9 @@ def test_the_route_refuses_plainly_and_runs_the_dream(tmp_path, monkeypatch):
 
 def test_the_desk_offers_dream_here_on_the_timeline():
     drawer = APP.split("function timelineDrawer(easy, lane, tl, picked) {", 1)[1].split("// Dream this span", 1)[0]
-    assert "const dream = dreamRow(lane, s, choices);" in drawer and "${dream}" in drawer
+    # Dream here sits on the Shot tab with Swap and Generate here, each naming the shots it replaces (shotGpuRows, 4 Nov)
+    assert "const dream = dreamRow(lane, s, choices);" in drawer and "shotGpuRows(lane, s, choices, canGpu, dream)" in drawer
+    assert "${dream}" in APP.split("function shotGpuRows(lane, s, choices, canGpu, dream) {", 1)[1].split("\n}\n", 1)[0]
     row = APP.split("function dreamRow(lane, s, choices) {", 1)[1].split("async function dreamRun", 1)[0]
     assert 'data-act="easy-tl-dream"' in row and 'id="tl-dream-s"' in row and 'id="tl-dream-depth"' in row and "s.performer || s.own" in row
     assert 'postCutEdit(id, "dream", { first: Number(index), seconds, depth }' in APP and 'act === "easy-tl-dream"' in APP

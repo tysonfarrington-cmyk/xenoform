@@ -84,7 +84,7 @@ def test_a_long_song_never_repeats_and_the_record_says_so(tmp_path, monkeypatch)
                 "centres": [], "fps": 24, "look": {}, "transitions": []}
 
     monkeypatch.setattr(beatfx, "compose", fake_compose)
-    from tests.test_music_video import DEMO, _beats
+    from test_music_video import DEMO, _beats  # the tests folder is on sys.path (no package); "tests." needs the repo root there
 
     # 150 bpm: two bars are 3.2 s, so the story plan wants about 75 shots and Draft affords 60: the cut re-plans to 60
     directed = {"duration": 238.8, "beats": _beats(238.8, 150.0), "sections": [{"index": 0, "label": "calm", "start": 0.0, "end": 100.0, "level": 0.3},

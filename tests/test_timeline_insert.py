@@ -105,7 +105,7 @@ def test_the_insert_route_runs_the_run_and_refuses_plainly(tmp_path, monkeypatch
     calls = []
     done = threading.Event()
 
-    def fake_insert(job_dir, first, *, seconds=10.0, pins=None, seed=None, cfg=None, report=None, client=None):
+    def fake_insert(job_dir, first, *, seconds=10.0, pins=None, seed=None, cfg=None, report=None, client=None, cancel=None):
         calls.append(("insert", Path(job_dir).name, first, seconds, pins, seed))
         done.set()
         return {"look": {}, "recuts": 2, "inserts": [{"first": first}]}
@@ -140,7 +140,7 @@ def test_the_insert_route_runs_the_run_and_refuses_plainly(tmp_path, monkeypatch
 def test_the_desk_offers_generate_here_and_the_docs_name_it():
     fn = APP.split("function shotsLane(easy)")[1].split("async function loadLane")[0]
     assert 'data-act="easy-tl-insert"' in fn and 'id="tl-insert-s"' in fn and "async function insertRun" in fn and '"insert"' in fn
-    assert "Generate here" in fn and 'act === "easy-tl-insert"' in APP  # in the drawer's Regenerate tab (29 Oct)
+    assert "Generate here" in fn and 'act === "easy-tl-insert"' in APP  # on the drawer's Shot tab (Regenerate went with Under the hood, 4 Nov)
     assert ".shots-lane .overlay.generated" in CSS and ".shots-lane .shot.generated" in CSS
     doc = (ROOT / "docs" / "TIMELINE.md").read_text(encoding="utf-8")
     assert "inserts" in doc and "/api/jobs/{id}/insert" in doc and "Generate 10 s here" in doc

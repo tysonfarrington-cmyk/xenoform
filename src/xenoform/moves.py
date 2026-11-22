@@ -15,7 +15,9 @@ from __future__ import annotations
 
 import copy
 import json
+import os
 import subprocess
+import uuid
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -23,7 +25,14 @@ MANIFEST = ROOT / "configs" / "moves.json"
 TEMPLATE = ROOT / "workflows" / "moves_wan_animate2.json"
 LIBRARY = ROOT / "library" / "moves"
 W, H, FRAMES, FPS = 480, 832, 81, 24
+THUMB_W, THUMB_H = 240, 416  # a move's picture on the Moves page: the 9:16 crop the model gets, at half size
 FIT_ORDER = {"best": 0, "good": 1, "ok": 2, "avoid": 3}
+# the category words of configs/moves.json, as the Moves page says them
+CATEGORY_WORDS = {
+    "dance-hiphop": "Hip-hop dance", "dance-freestyle": "Freestyle dance", "dance-contemporary": "Contemporary dance",
+    "dance-playful": "Playful dance", "dance-ballet": "Ballet", "dance-street": "Street dance", "dance-breaking": "Breaking",
+    "pose-model": "Model poses", "walk-to-camera": "Walk to camera",
+}
 # Tys's notes on Polly v1: keep the mouth closed (open-mouth laughing reads badly) and the hands clean.
 DEFAULT_STYLE = "closed-mouth smile, calm expression, detailed hands, natural relaxed fingers"
 DEFAULT_BACKGROUND = ("Background description: Plain light grey seamless photo studio background, soft even lighting, "
@@ -50,13 +59,28 @@ def manifest() -> dict:
     return json.loads(MANIFEST.read_text(encoding="utf-8"))
 
 
+def category_name(category: str) -> str:
+    """A category of the manifest in plain words (``dance-hiphop`` is Hip-hop dance)."""
+    return CATEGORY_WORDS.get(category) or str(category or "Dance").replace("-", " ").capitalize()
+
+
+def licence_name(c: dict) -> str:
+    """The short name of a clip's licence for the Moves page (the full text stays in the manifest)."""
+    text = str(c.get("licence") or "")
+    for key, name in (("pexels", "Pexels licence"), ("mixkit", "Mixkit licence")):
+        if key in text.lower():
+            return name
+    return text.split(" (", 1)[0].strip() or "Licence not recorded"
+
+
 def moves(include_avoid: bool = False) -> list[dict]:
     """Clips best-first. ``avoid`` clips (jerky jumps, inverted poses) are hidden unless asked for."""
     out = []
     for c in manifest()["clips"]:
         if c["fit"] == "avoid" and not include_avoid:
             continue
-        out.append({**c, "local": (LIBRARY / f"{c['id']}.mp4").is_file()})
+        out.append({**c, "local": (LIBRARY / f"{c['id']}.mp4").is_file(),
+                    "category_name": category_name(c.get("category", "")), "licence_short": licence_name(c)})
     return sorted(out, key=lambda c: (FIT_ORDER.get(c["fit"], 9), c["id"]))
 
 
@@ -107,6 +131,37 @@ def prepare_drive(move_id: str, dest: Path, *, start: float = 0.0, frames: int =
                     "-frames:v", str(frames), "-an", "-c:v", "libx264", "-crf", "16", "-pix_fmt", "yuv420p", str(dest)],
                    check=True)
     return Path(dest)
+
+
+def thumb(move_id: str, cache: Path) -> Path:
+    """One frame of a downloaded driving clip for the Moves page: seeked to 1.5 s (a quarter of a shorter clip),
+    cover-scaled and centre-cropped to the 9:16 the model gets, 240 px wide, a jpeg in ``cache``. Made once; made again
+    when the clip is newer than its picture. ``MovesError`` for an unknown move, one not downloaded, an unreadable clip."""
+    found = clip(move_id)
+    src = LIBRARY / f"{move_id}.mp4"
+    if not src.is_file():
+        raise MovesError(f"{move_id} is not downloaded yet. Run: python scripts/fetch_moves.py {move_id}")
+    cache = Path(cache)
+    dest = cache / f"{move_id}.jpg"
+    if dest.is_file() and dest.stat().st_mtime >= src.stat().st_mtime:
+        return dest
+    cache.mkdir(parents=True, exist_ok=True)
+    seconds = float(found.get("duration_s") or 0.0)
+    vf = f"scale={THUMB_W}:{THUMB_H}:force_original_aspect_ratio=increase,crop={THUMB_W}:{THUMB_H},setsar=1"
+    part = cache / f"{move_id}.{uuid.uuid4().hex[:8]}.part.jpg"
+    for at in (min(1.5, seconds / 4) if seconds > 0 else 0.0, 0.0):  # a clip shorter than the seek gives no frame: its first
+        try:
+            subprocess.run([_ffmpeg(), "-v", "error", "-y", "-ss", f"{at:.3f}", "-i", str(src), "-frames:v", "1",
+                            "-vf", vf, "-q:v", "4", str(part)], check=True, capture_output=True, timeout=60)
+            if part.is_file() and part.stat().st_size > 0:
+                os.replace(part, dest)
+                return dest
+        except (subprocess.SubprocessError, OSError):
+            pass
+    part.unlink(missing_ok=True)
+    if dest.is_file():  # the new picture would not come (the old one is still being sent, or the clip is damaged): keep the old
+        return dest
+    raise MovesError(f"Could not read a picture from {move_id}.")
 
 
 def prepare_character(image: Path, dest: Path) -> Path:

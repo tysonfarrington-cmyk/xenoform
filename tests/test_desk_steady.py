@@ -40,7 +40,7 @@ def test_a_chip_under_the_knobs_stays_put_when_the_desk_redraws():
     assert "if (catalog) bindAll();" in mount  # at once when the catalog is in, not after a promise tick
     # a vibe card picked from More vibes moves into the grid: the anchor is that card, not the nth card of the list
     assert "data-vibe" in _fn("function anchorKey(node)", "function scrollerKey(")
-    # the chip clicked keeps the focus (15 s), not the first chip of its row (Full song)
+    # the chip clicked keeps the focus (60 s), not the first chip of its row (15 s)
     assert "node.dataset.value" in _fn("function placeKey(node)", "// Nothing moves under you")
     assert "item.dataset.value === value" in _fn("function restorePlace(place)", "function render()")
     # Back to the desk from Setup came back at the desk's foot (the kept place named the Setup link): a page switch opens
@@ -88,8 +88,15 @@ def test_one_apply_for_the_knobs_and_the_timeline():
 def test_the_cut_column_never_runs_under_the_knobs_and_the_knobs_fold():
     css = (STATIC / "desk.css").read_text(encoding="utf-8")
     assert ".easy-result { display: grid; grid-template-columns: minmax(0, 1fr);" in css
-    assert 'body[data-knobs="folded"] .easy-done' in css and ".lane-playhead" in css
-    assert 'data-act="easy-knobs-fold"' in APP and "paintPlayhead();" in _fn("function render()", "function renderTool(")
+    # the playhead is the song strip's own (strip.js); the old lane's #lane-playhead went with t5 (review, 21 Nov)
+    assert ".lane-playhead" not in css and "lane-playhead" not in APP and 'getElementById("lane-track")' not in APP
+    assert 'window.XenoStrip.setPlayhead("cut"' in _fn("function paintPlayhead() {", "function playheadLoop()")
+    # the cut's column no longer holds the knobs (they are Tweak's), so it has nothing to fold: the button went with
+    # t5, and the stored flag's reader and the rules that emptied the column went with it (integrate-4nov: a browser
+    # that had folded the knobs on an earlier desk opened every cut to an empty 76 px column with no way back)
+    assert 'data-act="easy-knobs-fold"' not in APP and "knobsFolded" not in APP and "xeno-knobs-folded" not in APP
+    assert 'body[data-knobs="folded"]' not in css and ".knobs-fold" not in css
+    assert "paintPlayhead();" in _fn("function render()", "function renderTool(")
 
 
 def test_edit_in_resolve_opens_the_pack_where_it_is(tmp_path, monkeypatch):
@@ -467,7 +474,9 @@ def test_the_drawer_offers_the_order_edits_and_the_lane_shows_a_deleted_shot():
         assert f'act === "{act}"' in APP, act
     lane = (ROOT / "src" / "xenoform" / "lane.py").read_text(encoding="utf-8")
     assert 'row["dropped"] = True' in lane and 'row["plays"]' in lane
-    assert "dropped" in _fn("function shotsLane(easy)", "async function loadLane")
+    # the song strip draws a deleted shot (struck through, the drawer restores it)
+    assert "dropped: gone" in _fn("function cutShotsForStrip(", "function stripModel(")
+    assert "is-dropped" in (STATIC / "strip.js").read_text(encoding="utf-8") and ".xs-shot.is-dropped" in (STATIC / "strip.css").read_text(encoding="utf-8")
 
 
 def test_the_final_upscales_from_a_quarter_and_the_estimate_says_where_the_time_goes():

@@ -13,6 +13,7 @@ venv/
 work/
 *.wav
 !examples/*.wav
+!comfy_pack/examples/*.wav
 .DS_Store
 xenoform_*.log
 # Moves driving clips: fetched by scripts/fetch_moves.py, never committed (Pexels/Mixkit licences)

@@ -120,6 +120,15 @@ def test_dropped_files_are_counted_for_the_row_in_use(tmp_path, monkeypatch):
     assert "cut in on the beat" not in got["detail"]  # clips are never cut into an object cut (Tys, 28 Oct)
     up = APP.split("async function uploadOwn(files)", 1)[1].split("\n}\n", 1)[0]
     assert 'morphSource(state.easy) === "clips"' in up and "left out: a cut takes" in up
+    # F12: the answer names what came in, in the order the cut uses it; the Your clips row lists the clips and the step
+    # bar counts them (the vibe's "17 morphs on the beat" stayed after an upload)
+    assert got["names"] == {"images": [f"im{i:02d}.png" for i in range(own_media.MAX_ITEMS)], "clips": []}
+    assert "state.easy.ownNames = clipsCut ? (names.clips || []) : (names.images || []).map((name) => ({ name }));" in up
+    row = APP.split("function sourceRow(easy) {", 1)[1].split("\n}\n", 1)[0]
+    assert "<b>In turn:</b> ${ownClips(easy).map(" in row
+    bar = APP.split("function stepBar(", 1)[1].split("\n}\n", 1)[0]
+    assert "clips in turn" not in bar or "${clips - 1} morph${clips - 1 === 1" in bar
+    assert 'const time = clips ? "" :' in bar and "ownClips(easy).length ? null : planTime(plan)" in bar  # the plan's clock is the objects': a clips cut shows no wrong number
 
 
 def test_the_docs_counts_match_the_code():

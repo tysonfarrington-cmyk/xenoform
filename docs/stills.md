@@ -20,7 +20,7 @@ pool; the listing skips files that are gone.
 
 ## Growing
 
-Fine-tune → **Library** shows the vibe's counts (shipped, grown here, your own) and two ways to add:
+The **Library** row of Tweak's Project · under the hood panel shows the vibe's counts (shipped, grown here, your own) and two ways to add:
 
 - **Grow 36 more** renders 36 subjects the vibe has not rendered yet, picked from `configs/subjects.json`: 30 families of
   nouns (celestial bodies, sea creatures, solids and knots, musical instruments, lamps, architectural fragments, bones,
@@ -103,7 +103,7 @@ The Library row's **Grow 8 scenes** chip and `POST /api/stills/grow` with `kind:
 frame, so the object-shaped checks step aside for it (no centred-subject size, no backdrop drift, no cropped edge, and no
 zoom in `normalise_scale`); **soft** and **duplicate** still apply, the duplicate check against the vibe's other scenes.
 
-Fine-tune → **Scenes** (the make body's `scene_stills`: `"off"` by default, `"mix"`, `"only"`) says how the chain uses
+Tweak → **Wide scenes** (the make body's `scene_stills`: `"off"` by default, `"mix"`, `"only"`) says how the chain uses
 them. **Mix** lands a scene on every passage change (the story plan's section boundaries; on a short clip with no
 passages, the first still and every fourth) with objects between, so the shore morphs into the orb and the orb into the
 corridor of mirrors; **Only** morphs scenes alone; **Off** never draws a scene, even when the vibe has them. No still
@@ -127,7 +127,7 @@ the morphs render previews the same picks without counting as a use, so the skel
 objects. A vibe with no shipped stills borrows a pool until it has three of its own; while it borrows, the stills it
 does have (your own shapes included) lead the chain.
 
-**Choosing it.** Fine-tune → Chain draws that chain before Make (`POST /api/simple/chain` with the make body, or `GET`
+**Choosing it.** Plan's strip (its Objects lane) draws that chain before Make (`POST /api/simple/chain` with the make body, or `GET`
 with the main choices; `dense.chain_preview` is the one function the stills animatic cuts from). A click on a slot opens
 the vibe's library (`GET /api/stills?vibe=<vibe>` lists the rows, `/api/stills/thumb?file=<vibe>/<name>` serves a still)
 and the pick is pinned: the make body's `chain_pins` (`{"3": "cosmic/042_wolf_skull.jpg"}`, or a list with one entry a
@@ -140,7 +140,7 @@ as presets: a vibe, the idea line they were made with, the stills pinned slot by
 stills, under the file names a recipe or a pin uses) and the settings they were loved with: morph style, timing, effects,
 look, foreshadow, the four knobs and the Backdrop (Plain: every loved chain was made on the vibe's own studio ground, so a
 vibe that has grown twelve places does not turn one into a chain of places by itself). The chips under the idea line
-(Vibe step) apply one in a click: the vibe, the line, the pins and the Fine-tune rows. It never sets the tier and never starts a Make, so a preset made on Cloud Final spends
+(Vibe step) apply one in a click: the vibe, the line, the pins and Tweak's rows. It never sets the tier and never starts a Make, so a preset made on Cloud Final spends
 nothing until you tick the credits and Make yourself. A missing or bad file means no chips; a pin whose still is
 nowhere is dropped and the others hold. A recipe code carries none of this (it has no pins); the preset does.
 
@@ -168,7 +168,7 @@ library can grow and the chain can use:
 
 `POST /api/simple/idea` with `idea` and `vibe` returns the reading (`scenes`, `objects`, `own`, `family`, `performer`,
 one `summary` line) and what a Make will grow for it (`grow`); the desk shows the summary under the field as it is
-typed. The record carries the reading under `idea`. Fine-tune's Scenes and Performer still have the last word: a
+typed. The record carries the reading under `idea`. Tweak's Wide scenes and the Project · under the hood panel's Performer still have the last word: a
 choice made there is kept.
 
 ## Limits

@@ -141,7 +141,7 @@ def refuse(state: dict) -> str:
     if clips_song(state) and not [c for c in state.get("own_clips") or [] if isinstance(c, dict) and c.get("path")]:
         return "A clips song needs your clips: choose a folder of clips (or the free film pack), then make the whole song."
     if stems_mode.wants(state):
-        return "Whole song makes one picture: Stems mode layers its own cuts (Length: Full song)."
+        return "Stems mode layers its own cuts, so it makes the whole song as one picture: on Render, set Quality to Draft, one cut."
     if state.get("cut_plan"):
         return "A cut plan is one Make: clear it to make the whole song."
     return ""

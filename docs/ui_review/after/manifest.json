@@ -1,0 +1,158 @@
+[
+ {
+  "file": "01_source_1440.jpg",
+  "url": "http://127.0.0.1:47354/#source",
+  "viewport": "1440x900 fullPage",
+  "note": "Source with no song: the strip ghosted until a song is in, the bundled songs with the demo among them by name, My videos, one action in the step bar (Choose a song) (full page: the step bar drawn where the page ends; on screen it sticks to the bottom)",
+  "pageErrors": [],
+  "consoleErrors": [
+   "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ]
+ },
+ {
+  "file": "01_source_375_screen.jpg",
+  "url": "http://127.0.0.1:47354/#source",
+  "viewport": "375x812 viewport",
+  "note": "Source with no song: the strip ghosted until a song is in, the bundled songs with the demo among them by name, My videos, one action in the step bar (Choose a song) (the phone screen as it opens, the step bar stuck to the bottom)",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "01_source_375.jpg",
+  "url": "http://127.0.0.1:47354/#source",
+  "viewport": "375x812 fullPage",
+  "note": "Source with no song: the strip ghosted until a song is in, the bundled songs with the demo among them by name, My videos, one action in the step bar (Choose a song) (full page: the step bar drawn where the page ends; on screen it sticks to the bottom)",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "02_plan_1440.jpg",
+  "url": "http://127.0.0.1:47354/#plan",
+  "viewport": "1440x900 fullPage",
+  "note": "Plan on Glitch Out with the first vibe: the sketch monitor, the vibe rail, the strip (sections, wave, beats, shots, Intensity, objects) and one estimate in the step bar (full page: the step bar drawn where the page ends; on screen it sticks to the bottom)",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "02_plan_375_screen.jpg",
+  "url": "http://127.0.0.1:47354/#plan",
+  "viewport": "375x812 viewport",
+  "note": "Plan on Glitch Out with the first vibe: one column, the sketch monitor, then the strip as the section overview with the Draft window and its line, then the vibes (the phone screen as it opens, the step bar stuck to the bottom)",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "02_plan_375.jpg",
+  "url": "http://127.0.0.1:47354/#plan",
+  "viewport": "375x812 fullPage",
+  "note": "Plan on Glitch Out with the first vibe: one column, the sketch monitor, then the strip as the section overview with the Draft window and its line, then the vibes (full page: the step bar drawn where the page ends; on screen it sticks to the bottom)",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "02_plan_first_screen_1440.jpg",
+  "url": "http://127.0.0.1:47354/#plan",
+  "viewport": "1440x900 viewport",
+  "note": "Plan on Glitch Out, the first screen: the sketch monitor (labelled Sketch, no GPU) beside the vibe rail, the strip with the planned shots inside the Draft window, the step bar",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "02b_plan_dock_1440.jpg",
+  "url": "http://127.0.0.1:47354/#plan",
+  "viewport": "1440x900 fullPage",
+  "note": "Plan: a planned shot clicked on the strip docks the object it lands on under the strip, in song time, bar and beat (full page: the step bar drawn where the page ends; on screen it sticks to the bottom)",
+  "pageErrors": [],
+  "consoleErrors": [
+   "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ]
+ },
+ {
+  "file": "03_tweak_1440.jpg",
+  "url": "http://127.0.0.1:47354/#tweak",
+  "viewport": "1440x900 fullPage",
+  "note": "Tweak: the strip short, the Feel row (House, Dreamy, Hard glitch, Warm haze, Clean), the four knobs, the rows with their cost tags, the hint line (the Chaos knob under the pointer at 1440), the Project panel (full page: the step bar drawn where the page ends; on screen it sticks to the bottom)",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "03_tweak_375_screen.jpg",
+  "url": "http://127.0.0.1:47354/#tweak",
+  "viewport": "375x812 viewport",
+  "note": "Tweak: the strip short, the Feel row (House, Dreamy, Hard glitch, Warm haze, Clean), the four knobs, the rows with their cost tags, the hint line (the Chaos knob under the pointer at 1440), the Project panel (the phone screen as it opens, the step bar stuck to the bottom)",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "03_tweak_375.jpg",
+  "url": "http://127.0.0.1:47354/#tweak",
+  "viewport": "375x812 fullPage",
+  "note": "Tweak: the strip short, the Feel row (House, Dreamy, Hard glitch, Warm haze, Clean), the four knobs, the rows with their cost tags, the hint line (the Chaos knob under the pointer at 1440), the Project panel (full page: the step bar drawn where the page ends; on screen it sticks to the bottom)",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "04_render_1440.jpg",
+  "url": "http://127.0.0.1:47354/#render/31680167",
+  "viewport": "1440x900 fullPage",
+  "note": "Render with cut 31680167 reopened from its link: the player, the strip with the rendered shots on the song at 2:08, Quality and Render the whole song in the step bar, the share row (full page: the step bar drawn where the page ends; on screen it sticks to the bottom)",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "04_render_375_screen.jpg",
+  "url": "http://127.0.0.1:47354/#render/31680167",
+  "viewport": "375x812 viewport",
+  "note": "Render with cut 31680167 reopened from its link: the player, the strip with the rendered shots on the song at 2:08, Quality and Render the whole song in the step bar, the share row (the phone screen as it opens, the step bar stuck to the bottom)",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "04_render_375.jpg",
+  "url": "http://127.0.0.1:47354/#render/31680167",
+  "viewport": "375x812 fullPage",
+  "note": "Render with cut 31680167 reopened from its link: the player, the strip with the rendered shots on the song at 2:08, Quality and Render the whole song in the step bar, the share row (full page: the step bar drawn where the page ends; on screen it sticks to the bottom)",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "04b_render_inspector_1440.jpg",
+  "url": "http://127.0.0.1:47354/#render/31680167",
+  "viewport": "1440x900 viewport",
+  "note": "Render: shot 5 clicked on the strip, the inspector docked under it with its tabs, its head in song time, bar and beat as well as the clock",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "04c_render_progress_simulated_1440.jpg",
+  "url": "http://127.0.0.1:47354/#render/simulated",
+  "viewport": "1440x900 viewport",
+  "note": "SIMULATED in client state, no job ran: a Make on Render, the monitor pill saying Morph 6 of 13 on the GPU, shots 1 to 5 solid, 6 pulsing and 7 to 13 hatched on the strip, the clock and Stop in the step bar",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "05_perform_1440.jpg",
+  "url": "http://127.0.0.1:47354/#perform/31680167",
+  "viewport": "1440x900 fullPage",
+  "note": "Perform: the card that opens /vj with this cut (the perform session builds the page itself) (full page: the step bar drawn where the page ends; on screen it sticks to the bottom)",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "05_perform_375_screen.jpg",
+  "url": "http://127.0.0.1:47354/#perform/31680167",
+  "viewport": "375x812 viewport",
+  "note": "Perform: the card that opens /vj with this cut (the perform session builds the page itself) (the phone screen as it opens, the step bar stuck to the bottom)",
+  "pageErrors": [],
+  "consoleErrors": []
+ },
+ {
+  "file": "05_perform_375.jpg",
+  "url": "http://127.0.0.1:47354/#perform/31680167",
+  "viewport": "375x812 fullPage",
+  "note": "Perform: the card that opens /vj with this cut (the perform session builds the page itself) (full page: the step bar drawn where the page ends; on screen it sticks to the bottom)",
+  "pageErrors": [],
+  "consoleErrors": []
+ }
+]

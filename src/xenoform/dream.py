@@ -95,8 +95,10 @@ def _client(cfg: dict | None):
 
 def dream_frames(pictures: list[np.ndarray], work: Path, *, vibe: str, size: tuple[int, int], denoise: float,
                  seed: int = SEED, cfg: dict | None = None, client=None,
-                 report: Callable[[int, int], None] | None = None) -> list[np.ndarray]:
-    """Each picture dreamed through Z-Image Turbo img2img at ``size``, in order, one job at a time."""
+                 report: Callable[[int, int], None] | None = None,
+                 cancel: Callable[[], bool] | None = None) -> list[np.ndarray]:
+    """Each picture dreamed through Z-Image Turbo img2img at ``size``, in order, one job at a time. ``cancel`` (the
+    desk's Stop) is asked before each frame: nothing is queued ahead, so the frame on the GPU is the last one."""
     from PIL import Image
 
     from xenoform.cloud_morph import _job_result
@@ -109,6 +111,10 @@ def dream_frames(pictures: list[np.ndarray], work: Path, *, vibe: str, size: tup
     work.mkdir(parents=True, exist_ok=True)
     out: list[np.ndarray] = []
     for k, pic in enumerate(pictures):
+        if cancel and cancel():
+            from xenoform.turbo import JobCancelled
+
+            raise JobCancelled(f"Cancelled after {k} of {len(pictures)} dreamed frames.")
         src = work / f"in{k:03d}.png"
         Image.fromarray(np.asarray(pic, np.uint8)).resize(size, Image.LANCZOS).save(src)
         wf = client.workflows.from_json(json.loads(json.dumps(graph)))
@@ -154,7 +160,8 @@ def write_clip(frames: list[np.ndarray], dest: Path, fps: int = 24) -> Path:
 
 
 def dream_span(job_dir: Path, first: int, *, seconds: float = 2.0, depth: str = "light", seed: int | None = None,
-               cfg: dict | None = None, report: Callable[[str, float, str], None] | None = None, client=None) -> dict:
+               cfg: dict | None = None, report: Callable[[str, float, str], None] | None = None, client=None,
+               cancel: Callable[[], bool] | None = None) -> dict:
     """Dream ``seconds`` (1 to 3) of a finished cut from shot ``first`` and re-compose it; returns the record."""
     from xenoform import dense
     from xenoform.beatfx import read_frames
@@ -203,7 +210,7 @@ def dream_span(job_dir: Path, first: int, *, seconds: float = 2.0, depth: str = 
             report("restyle", 0.1 + 0.45 * k / max(n, 1), f"Dreaming frame {k} of {n}")
 
     dreamed = dream_frames(pictures, run_dir / "frames", vibe=vibe, size=size, denoise=DEPTHS[depth], seed=seed,
-                           cfg=cfg, client=client, report=step)
+                           cfg=cfg, client=client, report=step, cancel=cancel)
     new_clips, at = {}, 0
     for q, (j, count, pics) in enumerate(plan):
         mine = dreamed[at:at + len(pics)]
@@ -222,8 +229,9 @@ def dream_span(job_dir: Path, first: int, *, seconds: float = 2.0, depth: str = 
              "clips": {str(j): p for j, p in new_clips.items()}, "took_s": round(time.perf_counter() - started, 2),
              "at": datetime.now().astimezone().isoformat(timespec="seconds")}
     rec.update({"clips": clips, "dreams": dreams_log + [entry]})
+    was = rec_path.read_bytes()  # the record before the dream: it comes back if the re-cut does not land
     rec_path.write_text(json.dumps(rec, indent=1, default=str), encoding="utf-8")
     shutil.rmtree(run_dir / "frames", ignore_errors=True)  # the dreams live in the clips; the pngs were the way there
     if report:
         report("assemble", 0.55, "Re-cutting with the dream (no GPU)")
-    return dense.recut_from_cache(job_dir, {}, report=report, cfg=cfg)
+    return dense.recut_after_edit(job_dir, was, report=report, cfg=cfg)

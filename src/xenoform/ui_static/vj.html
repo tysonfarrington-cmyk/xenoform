@@ -1,94 +1,151 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Xenoform · Live VJ</title>
+<title>Xenoform · Perform</title>
+<link rel="icon" href="data:,">
 <link rel="stylesheet" href="/static/theme.css">
-<style>
- :root{--glass:rgba(14,14,22,.62);--line:rgba(255,255,255,.10);--txt:#ecebf5;--mut:#9a9ab0;--grad:linear-gradient(135deg,#ff5a36,#e2368f 48%,#7b84ff)}
- html,body{margin:0;height:100%;background:#000;color:var(--txt);font:13px/1.4 "Space Grotesk",Inter,system-ui,sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased}
- #stage{position:fixed;inset:0;display:grid;place-items:center;background:#000}
- canvas{display:block;max-width:100vw;max-height:100vh;object-fit:contain}
- .glass{background:var(--glass);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);border:1px solid var(--line);border-radius:16px;box-shadow:0 30px 80px -30px #000}
- #ui{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;padding:10px 12px;max-width:calc(100vw - 32px);transition:opacity .45s cubic-bezier(.2,.7,.2,1),transform .45s cubic-bezier(.2,.7,.2,1)}
- #ui.hide{opacity:0;transform:translate(-50%,16px);pointer-events:none}
- #ui .brand{font-weight:700;letter-spacing:-.02em;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;padding:0 6px 0 4px}
- button,select,label.btn{background:rgba(255,255,255,.05);border:1px solid var(--line);color:var(--txt);border-radius:999px;padding:7px 13px;cursor:pointer;font:inherit;transition:background .18s,border-color .18s,transform .12s}
- button:hover,label.btn:hover,select:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2)}
- button:active{transform:scale(.97)} button.on{background:#f4f3fb;color:#0a0a10;border-color:transparent}
- button.rec.on{background:#ff3b3b;color:#fff;box-shadow:0 0 24px #ff3b3b88}
- select option{background:#111}
- .sep{width:1px;height:22px;background:var(--line)}
- #hud{position:fixed;top:16px;left:16px;padding:12px 14px;min-width:230px;font:12px/1.5 "Share Tech Mono",ui-monospace,monospace;color:#cfd2ff;transition:opacity .3s}
- #hud.hide{opacity:0;pointer-events:none}
- #hud .row{display:flex;justify-content:space-between;gap:16px} #hud b{color:#fff;font-weight:400}
- #bars{display:flex;gap:5px;margin:8px 0 4px} #bars i{flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,.12);transition:background .08s}
- #bars i.on{background:#fff;box-shadow:0 0 10px #fff}
- #meters{display:flex;gap:4px;align-items:flex-end;height:30px;margin-top:6px} #meters i{flex:1;border-radius:2px;background:var(--grad);opacity:.9}
- #help{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.55)} #help.show{display:grid}
- #help .glass{padding:22px 26px;max-width:560px} #help h2{margin:0 0 10px;font-size:20px;letter-spacing:-.02em}
- #help table{border-collapse:collapse;width:100%} #help td{padding:4px 8px;border-bottom:1px solid var(--line)} #help td:first-child{font-family:"Share Tech Mono",monospace;color:#fff;white-space:nowrap}
- #toast{position:fixed;top:18px;left:50%;transform:translateX(-50%);padding:8px 16px;opacity:0;transition:opacity .3s;pointer-events:none;font-weight:500}
- #toast.show{opacity:1}
- body.clean #ui,body.clean #hud,body.clean #toast{display:none!important}
-</style></head><body>
+<link rel="stylesheet" href="/static/desk.css">
+<link rel="stylesheet" href="/static/vj_control.css">
+</head><body>
 <div id="stage"><canvas id="c"></canvas></div>
-<div id="hud" class="glass hide">
- <div class="row"><span>FPS</span><b id="h-fps">0</b></div>
- <div class="row"><span>BPM</span><b id="h-bpm">-</b></div>
- <div class="row"><span>BEAT</span><b id="h-beat">0</b></div>
- <div id="bars"><i></i><i></i><i></i><i></i></div>
- <div class="row"><span>SCENE</span><b id="h-scene">-</b></div>
- <div class="row"><span>TRANSITION</span><b id="h-fx">-</b></div>
- <div class="row"><span>SWITCH</span><b id="h-every">-</b></div>
- <div class="row"><span>INTENSITY</span><b id="h-int">-</b></div>
- <div class="row"><span>MIDI</span><b id="h-midi">off</b></div>
- <div id="meters"><i id="mb"></i><i id="mm"></i><i id="mh"></i></div>
+<div id="pf" class="pf">
+ <header class="pf-bar">
+  <a class="ghost pf-desk" id="desk-link" href="/#simple" title="Back to the desk">&larr; Desk</a>
+  <div class="pf-title"><h1>Perform</h1><span id="pf-song" class="note">No track loaded</span></div>
+  <div class="pf-group pf-output" role="group" aria-label="Output">
+   <button type="button" class="ghost" id="outb" title="O: the canvas alone, on your second screen" data-midi="output">Open output window</button>
+   <span id="out-line" class="note">Output: this window</span>
+   <button type="button" class="ghost" id="fs" title="F">Fullscreen</button>
+  </div>
+  <div class="pf-rec" id="pf-rec">
+   <span class="rec-dot" id="rec-dot" aria-hidden="true"></span><span class="rec-time" id="rec-time" aria-live="polite"></span>
+   <button type="button" class="ghost rec" id="recb" title="R: record the output, with the song's sound" data-midi="record">Rec</button>
+  </div>
+  <button type="button" class="text" id="midib" title="L: the MIDI map and Learn" data-xm-toggle data-xm-state="dot" aria-expanded="false">MIDI</button>
+  <button type="button" class="text" id="helpb" title="?" aria-controls="help" aria-expanded="false">Help</button>
+ </header>
+ <div class="pf-grid">
+  <section class="pf-monitor" aria-label="Monitor">
+   <div class="pf-screen" id="screen">
+    <video id="mon" muted playsinline hidden></video>
+    <div class="pf-empty" id="empty">
+     <p>Load a track to start, or play to the room with a microphone or a line-in.</p>
+     <div class="pf-empty-acts"><label class="upload solid" for="track">Load track</label><button type="button" class="ghost" id="mic2">Mic / line-in</button></div>
+    </div>
+    <div class="pf-outnote" id="outnote" hidden></div>
+    <div id="hud" class="pf-hud hide" aria-hidden="true">
+     <div class="row"><span>FPS</span><b id="h-fps">0</b></div>
+     <div class="row"><span>BPM</span><b id="h-bpm">-</b></div>
+     <div class="row"><span>BEAT</span><b id="h-beat">0</b></div>
+     <div id="bars"><i></i><i></i><i></i><i></i></div>
+     <div class="row"><span>SCENE</span><b id="h-scene">-</b></div>
+     <div class="row"><span>TRANSITION</span><b id="h-fx">-</b></div>
+     <div class="row"><span>SWITCH</span><b id="h-every">-</b></div>
+     <div class="row"><span>INTENSITY</span><b id="h-int">-</b></div>
+     <div class="row"><span>MIDI</span><b id="h-midi">off</b></div>
+     <div id="meters"><i id="mb"></i><i id="mm"></i><i id="mh"></i></div>
+    </div>
+   </div>
+  </section>
+  <section class="pf-now panel" aria-label="Now and next">
+   <div class="pf-nn"><span class="pf-k">now</span><span id="now-l">Nothing playing</span></div>
+   <div class="pf-nn"><span class="pf-k">next</span><span id="next-l">-</span></div>
+   <div class="pf-nn"><span class="pf-k">held</span><span id="held-l">Hold a pad to show it; let go and the song carries on.</span></div>
+   <div class="pf-nn pf-beat"><span class="pf-k">beat</span><span class="pf-bars" id="nn-bars"><i></i><i></i><i></i><i></i></span><span id="nn-bpm" class="note"></span></div>
+  </section>
+  <section class="pf-strip panel" aria-label="The song">
+   <div class="pf-head"><h3>Song</h3><span class="note" id="strip-note">Load a track and its sections, beats and drops show here.</span></div>
+   <canvas id="strip" height="132" tabindex="0" aria-label="The song strip: click a section to cue it, click the beat row to jump there"></canvas>
+  </section>
+  <section class="pf-transport panel" aria-label="Transport">
+   <button type="button" class="ghost pf-icon" id="startb" title="Home: back to the start" aria-label="Back to the start">&#x23EE;</button>
+   <button type="button" class="generate pf-play" id="playb" title="Space" data-midi="play" disabled>Play</button>
+   <span class="pf-clock" id="clock">0:00 / 0:00</span>
+   <button type="button" class="ghost" id="cueb" title="D: jump to the next drop on the next bar" data-midi="cue:drop" disabled>Cue next drop</button>
+   <button type="button" class="ghost" id="tapb" title="T: tap the tempo (mic or line-in)" data-midi="tap">Tap</button>
+   <div class="pf-switch"><span class="pf-label">Switch</span>
+    <div class="toggle" id="every" role="group" aria-label="Switch scenes"><button type="button" data-every="0" title="The cut's own shots, or on the song's energy">Follow the song</button><button type="button" data-every="1">Beat</button><button type="button" data-every="2">2 beats</button><button type="button" data-every="4">Bar</button><button type="button" data-every="8">2 bars</button></div>
+   </div>
+  </section>
+  <section class="pf-source panel" aria-label="Source">
+   <h3>Source</h3>
+   <div class="pf-line"><span class="pf-label">Pictures</span>
+    <div class="toggle" id="pics" role="group" aria-label="Pictures"><button type="button" data-pics="cut" title="Open Perform from a cut (Perform it) to play its clips">This cut</button><button type="button" data-pics="lib">Library loops</button></div>
+    <label class="upload" title="Your own video loops">Add loops<input id="files" type="file" accept="video/*" multiple hidden></label>
+   </div>
+   <div class="pf-line"><span class="pf-label">Sound</span>
+    <div class="toggle" id="snd" role="group" aria-label="Sound"><button type="button" data-snd="song">The song</button><button type="button" data-snd="mic" id="mic">Mic / line-in</button></div>
+    <select id="input" title="Audio input" aria-label="Audio input" hidden></select>
+   </div>
+   <div class="pf-line"><label class="upload" for="track" id="trackl">Load track</label><input id="track" type="file" accept="audio/*" hidden>
+    <button type="button" class="ghost" id="stemsb" title="Split the loaded track into stems on the desk, then drive the picture from them" data-midi="stem:1">Use this song's stems</button>
+   </div>
+   <p class="note" id="src-note"></p>
+  </section>
+  <section class="pf-pads panel" aria-label="Pads">
+   <div class="pf-head"><h3>Pads</h3><span class="note">hold = show it, release = back to the song</span></div>
+   <div class="pf-padgrid" id="pads"></div>
+   <button type="button" class="pf-black" id="blackb" title="B: everything to black until you press it again" data-midi="blackout" aria-pressed="false">Blackout</button>
+   <details class="pf-bank" id="bank"><summary>Change a pad: drag a scene, a still or a look onto it</summary>
+    <div class="pf-bank-row"><span class="pf-label">Scenes</span><div class="chips" id="bank-scenes"></div></div>
+    <div class="pf-bank-row"><span class="pf-label">Looks</span><div class="chips" id="bank-looks"></div></div>
+    <button type="button" class="text" id="pads-reset">Reset the pads</button>
+   </details>
+  </section>
+  <section class="pf-look panel" aria-label="Look">
+   <div class="pf-head"><h3>Look</h3><button type="button" class="text" id="hudb" title="P" data-midi="hud">HUD</button></div>
+   <div class="pf-line">
+    <select id="fx" title="Transition" aria-label="Transition">
+     <option value="auto">Auto (mostly clean cuts)</option>
+     <optgroup label="Premium">
+     <option value="8">1 · Clean cut</option><option value="9">2 · Match-cut</option><option value="10">3 · Flow carry</option>
+     <option value="0">4 · Liquid flow</option><option value="11">5 · Depth parallax</option><option value="12">6 · Lens breath</option>
+     <option value="13">7 · Chrome refraction</option><option value="14">8 · Echo trail</option></optgroup>
+     <optgroup label="Classic (expert)">
+     <option value="1">Luma wipe</option><option value="2">Chroma split</option><option value="3">Zoom-through</option><option value="4">Hard cut + stutter</option>
+     <option value="5">Iris</option><option value="6">Slice</option><option value="7">Pixel dissolve</option></optgroup>
+    </select>
+    <div class="toggle chips"><button type="button" class="chip" id="kal" title="K" data-midi="kaleido">Kaleido</button><button type="button" class="chip" id="mir" title="M" data-midi="mirror">Mirror</button><button type="button" class="chip" id="stb" title="S" data-midi="strobe">Strobe</button></div>
+   </div>
+   <div class="xf-knobs pf-knobs" id="knobs"></div>
+   <label class="pf-fader"><span>Master fade</span><input type="range" id="master" min="0" max="100" value="100" data-midi="master" aria-label="Master fade"><output id="master-o">100</output></label>
+   <details class="xf-adv"><summary>Stem reactions <small id="stems-state">from the sound</small></summary><div class="xf-lanes" id="lanes"></div></details>
+  </section>
+ </div>
+ <aside id="help" class="pf-help" hidden aria-label="Help">
+  <div class="pf-help-head"><h2>Controls</h2><button type="button" class="ghost" id="helpx" aria-label="Close the help">Close</button></div>
+  <table>
+   <tr><td>Space</td><td>Play or pause the song (with Mic / line-in: the next scene)</td></tr>
+   <tr><td>&rarr; &larr;</td><td>Next scene with the current transition · previous scene (hard cut)</td></tr>
+   <tr><td>Shift + 1–8</td><td>Hold a pad: it shows while you hold; let go and the picture snaps back to the song</td></tr>
+   <tr><td>1–8 · 0</td><td>Premium: clean cut, match-cut, flow carry, liquid flow, depth parallax, lens breath, chrome refraction, echo trail · 0 = auto (mostly clean cuts, a premium spell every 2 bars, max 2 of a kind in any 8 switches)</td></tr>
+   <tr><td>Classic</td><td>Wipe, iris, slice, stutter, zoom: in the menu only, or in Auto with ?classic=1</td></tr>
+   <tr><td>[ ]</td><td>Switch slower / faster (follow, 1, 2, 4, 8 beats)</td></tr>
+   <tr><td>&uarr; &darr;</td><td>Effect intensity</td></tr>
+   <tr><td>M · S (K)</td><td>Mirror · Strobe (Kaleido: expert only, ?expert=1)</td></tr>
+   <tr><td>D · Home</td><td>Cue the next drop (it lands on the next bar) · back to the start; click a section on the strip to cue it</td></tr>
+   <tr><td>B</td><td>Blackout, until you press it again</td></tr>
+   <tr><td>T</td><td>Tap tempo (mic mode)</td></tr>
+   <tr><td>O · F</td><td>Open the output window (the canvas alone, on your second screen) · fullscreen</td></tr>
+   <tr><td>P · H</td><td>HUD · the monitor alone (hide the panels)</td></tr>
+   <tr><td>R</td><td>Record: the output canvas with the song's sound (or the mic's), streamed to the desk as it goes, then an mp4 in My videos</td></tr>
+   <tr><td>Stems</td><td><b>Use this song's stems</b> splits the loaded track on the desk (Demucs when installed, else the band split) so drums/bass/other/vocals drive the picture. Per-stem gains come from the desk's Stem reactions lanes.</td></tr>
+   <tr><td>MIDI</td><td><b>MIDI</b> (the button) or <b>L</b> opens the map beside the picture: your controller drawn with what every control does, and Learn (click a control, then move a knob or hit a pad); the pads, Blackout and Master fade learn too. MiniLab 3 out of the box: hold pads A1–A8 to show what the pads 1–8 hold over the song, let go and the picture is back where the song is · B1–B6 dance presets, B7 strobe, B8 record · knobs: intensity, switch rate, the stem gains. No Web MIDI (Firefox/Safari)? Run <code>xenoform midi serve</code>.</td></tr>
+  </table><div id="midi-panel"></div>
+ </aside>
+ <div id="toast" class="pf-toast" role="status" aria-live="polite"></div>
 </div>
-<div id="ui" class="glass">
- <span class="brand">Xenoform VJ</span>
- <a class="btn" id="desk-link" href="/#simple" title="Back to the desk">Desk</a>
- <label class="btn">Load track<input id="track" type="file" accept="audio/*" hidden></label>
- <button id="mic">Mic / line-in</button>
- <select id="input" title="Audio input"></select>
- <label class="btn">Add loops<input id="files" type="file" accept="video/*" multiple hidden></label>
- <span class="sep"></span>
- <select id="fx" title="Transition">
-  <option value="auto">Auto (mostly clean cuts)</option>
-  <optgroup label="Premium">
-  <option value="8">1 · Clean cut</option><option value="9">2 · Match-cut</option><option value="10">3 · Flow carry</option>
-  <option value="0">4 · Liquid flow</option><option value="11">5 · Depth parallax</option><option value="12">6 · Lens breath</option>
-  <option value="13">7 · Chrome refraction</option><option value="14">8 · Echo trail</option></optgroup>
-  <optgroup label="Classic (expert)">
-  <option value="1">Luma wipe</option><option value="2">Chroma split</option><option value="3">Zoom-through</option><option value="4">Hard cut + stutter</option>
-  <option value="5">Iris</option><option value="6">Slice</option><option value="7">Pixel dissolve</option></optgroup>
- </select>
- <select id="every" title="Switch scene every"><option value="0">Follow the song</option><option value="1">Every beat</option><option value="2">Every 2 beats</option><option value="4">Every bar</option><option value="8">Every 2 bars</option></select>
- <button id="kal" title="K" data-midi="kaleido">Kaleido</button><button id="mir" title="M" data-midi="mirror">Mirror</button><button id="stb" title="S" data-midi="strobe">Strobe</button>
- <span class="sep"></span>
- <button id="stemsb" title="Split the loaded track into stems on the desk, then drive the picture from them">Use this song's stems</button>
- <span class="sep"></span>
- <button id="hudb" title="P" data-midi="hud">HUD</button><button id="recb" class="rec" title="R" data-midi="record">● Rec</button><button id="fs" title="F">Fullscreen</button><button id="helpb" title="?">?</button>
-</div>
-<div id="help"><div class="glass"><h2>Controls</h2><table>
- <tr><td>Space / →</td><td>Next scene with the current transition</td></tr>
- <tr><td>←</td><td>Previous scene (hard cut)</td></tr>
- <tr><td>1–8 · 0</td><td>Premium: clean cut, match-cut, flow carry, liquid flow, depth parallax, lens breath, chrome refraction, echo trail · 0 = auto (mostly clean cuts, a premium spell every 2 bars, max 2 of a kind in any 8 switches)</td></tr>
- <tr><td>Classic</td><td>Wipe, iris, slice, stutter, zoom: in the menu only, or in Auto with ?classic=1</td></tr>
- <tr><td>[ ]</td><td>Switch slower / faster (follow, 1, 2, 4, 8 beats)</td></tr>
- <tr><td>↑ ↓</td><td>Effect intensity</td></tr>
- <tr><td>M · S (K)</td><td>Mirror · Strobe (Kaleido: expert only, ?expert=1)</td></tr>
- <tr><td>T</td><td>Tap tempo (mic mode)</td></tr>
- <tr><td>P · H · F</td><td>HUD · Hide controls · Fullscreen</td></tr>
- <tr><td>R</td><td>Record a clean clip (webm, with audio)</td></tr>
- <tr><td>Stems</td><td><b>Use this song's stems</b> splits the loaded track on the desk (Demucs when installed, else the band split) and reloads with <code>?stems=</code> so drums/bass/other/vocals drive the picture. Per-stem gains come from the desk's Stem reactions lanes.</td></tr>
- <tr><td>MIDI</td><td>MiniLab 3 out of the box: pads A1–A8 = premium transitions 1–8, pads B1–B6 = dance presets, B7 strobe, B8 record · knob 1 / mod strip intensity · knob 2 switch rate · knobs 3–6 drums/bass/other/vocals gain · knobs 7–8 + faders = stem gains · encoder steps the transition. <b>L</b> = learn mode (click a control, move a knob). No Web MIDI (Firefox/Safari)? Run <code>xenoform midi serve</code>.</td></tr>
-</table><div id="midi-panel"></div></div></div>
-<div id="toast" class="glass"></div>
 <script src="/static/midi.js"></script>
+<script src="/static/osc_out.js"></script>
 <script>
-// Xenoform live VJ v4: pre-rendered loops + beat-locked WebGL transitions. No server work, no GPU render.
-// Track mode: the song is analysed once in the browser (onset envelope + tempo + phase) so every switch lands on the grid.
-// Mic mode: AnalyserNode (createAnalyser) energy flux beats, or tap tempo.
+// Xenoform Perform (docs/UI_REVIEW.md 6.5): one page, two windows. Without flags this is the control view (transport,
+// the song strip, pads, knobs, REC; vj_control.js draws it). With ?out=1 it is the output window: the canvas and nothing
+// else, opened on the second screen; it renders and records. The song plays in the control view (the window you click
+// in) on the AudioContext clock, and the output reads that clock, the analyser and the sound for the take straight from
+// the control view that opened it, so a take's picture and sound share one clock.
+// Pre-rendered loops + beat-locked WebGL transitions. No server work, no GPU render.
 const $=id=>document.getElementById(id), Q=new URLSearchParams(location.search);
+const OUT=Q.get('out')==='1', SYNC=Q.get('sync')==='1', RID=Math.random().toString(36).slice(2,10);
+if(OUT){document.documentElement.classList.add('out');document.title='Xenoform · Output'}
 const cv=$('c'), gl=cv.getContext('webgl',{premultipliedAlpha:false,preserveDrawingBuffer:false,antialias:false});
 let seed=+(Q.get('seed')||7); const rnd=()=>{seed=(seed*16807)%2147483647;return (seed-1)/2147483646};
 const FXN=['Liquid flow','Luma wipe (classic)','Chroma split (classic)','Zoom-through (classic)','Hard cut + stutter (classic)','Iris (classic)','Slice (classic)','Pixel dissolve (classic)','Clean cut','Match-cut','Flow carry','Depth parallax','Lens breath','Chrome refraction','Echo trail'];
@@ -96,7 +153,7 @@ const KEYFX=[8,9,10,0,11,12,13,14],CLASSIC=[1,2,3,4,5,6,7],CLASSIC_OK=Q.get('cla
 const W8={9:3,10:3,0:2,11:1.5,12:1.2,13:1,14:.8};
 const VS=`attribute vec2 p;varying vec2 uv;void main(){uv=p*.5+.5;uv.y=1.-uv.y;gl_Position=vec4(p,0,1);}`;
 const FS=`precision highp float;varying vec2 uv;uniform sampler2D A,B;
-uniform float t,m,bass,high,fx,aspA,aspB,aspS,beat,kal,mir,stb,inten,sDrum,sBass,sOther,sVoc;uniform vec3 ca,cb;uniform vec2 dir;
+uniform float t,m,bass,high,fx,aspA,aspB,aspS,beat,kal,mir,stb,inten,sDrum,sBass,sOther,sVoc,glow,inv,flash,master;uniform vec3 ca,cb;uniform vec2 dir;
 float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 vec2 cover(vec2 u,float a){vec2 c=u-.5;if(a>aspS)c.x*=aspS/a;else c.y*=a/aspS;u=c+.5;return 1.-abs(1.-mod(u,2.));}
 vec3 tx(sampler2D s,vec2 u,float a){return texture2D(s,cover(u,a)).rgb;}
@@ -132,6 +189,7 @@ void main(){vec2 p=uv;
  col+=col*col*.55*sVoc*inten;
  col+=stb*beat*beat*.22;
  vec2 vc=uv-.5;col*=1.-.55*dot(vc,vc);col+=(hash(uv*vec2(1999.,1777.)+fract(t))-.5)*.022;
+ col+=col*col*.9*glow;col=mix(col,1.-col,inv);col=mix(col,vec3(1.),flash);col*=master;
  gl_FragColor=vec4(col,1.);}`;
 function sh(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))console.error(gl.getShaderInfoLog(s));return s}
 const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,VS));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,FS));gl.linkProgram(pr);gl.useProgram(pr);
@@ -142,192 +200,393 @@ function mkTex(unit){const t=gl.createTexture();gl.activeTexture(gl.TEXTURE0+uni
  [gl.TEXTURE_WRAP_S,gl.TEXTURE_WRAP_T].forEach(k=>gl.texParameteri(gl.TEXTURE_2D,k,gl.CLAMP_TO_EDGE));gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);return t}
 mkTex(0);mkTex(1);gl.uniform1i(U('A'),0);gl.uniform1i(U('B'),1);
 
-// output size: fixed buffer (?w=&h=) for clean recordings, else the window
+// output size: a fixed buffer (?w=&h=) for clean recordings, else the window; held while a take runs (V10), so going
+// fullscreen mid-take changes the view, never the take; even, for the mp4
 const FIXW=+Q.get('w')||0,FIXH=+Q.get('h')||0;
-function size(){const W=FIXW||Math.round(innerWidth*devicePixelRatio),H=FIXH||Math.round(innerHeight*devicePixelRatio);
- if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;gl.viewport(0,0,W,H)}
- const s=Math.min(innerWidth/W,innerHeight/H);cv.style.width=W*s+'px';cv.style.height=H*s+'px'}
+function size(){let W=FIXW||Math.round(innerWidth*devicePixelRatio),H=FIXH||Math.round(innerHeight*devicePixelRatio);W-=W%2;H-=H%2;
+ if(!REC.on&&W>1&&H>1&&(cv.width!==W||cv.height!==H)){cv.width=W;cv.height=H;gl.viewport(0,0,W,H)}
+ const box=OUT?null:$('stage'),bw=box?box.clientWidth:innerWidth,bh=box?box.clientHeight:innerHeight;
+ const s=Math.min(bw/cv.width,bh/cv.height)||1;cv.style.width=cv.width*s+'px';cv.style.height=cv.height*s+'px'}
 
-// scenes: library vibe loops, the desk footage library, or your own files
-const S={scenes:[],cur:0,nxt:1,trans:false,t0:0,dur:900,fx:Q.get('fx')||'auto',curFx:0,every:+(Q.get('every')||0),kal:EXPERT?+(Q.get('kal')||0):0,used:new Set(),mir:+(Q.get('mir')||0),stb:+(Q.get('strobe')||0),inten:+(Q.get('intensity')||1),hud:false,beats:0,bpm:0,
- dance:0,gain:{drums:1,bass:1,other:1,vocals:1},stemsId:Q.get('stemsId')||'',trackId:Q.get('track')||''};
-// Dance presets (MIDI pads B1-B6, S.dance): there is no separate post-look in the VJ page, so a preset is a
-// combination of the transition pick, mirror, strobe and intensity. 1 always brings the picture back to clean.
-const DANCE=[null,{name:'Clean',fx:'auto',mir:0,stb:0,inten:1},{name:'Mirror',mir:1,stb:0},{name:'Strobe',stb:1},{name:'Mirror + strobe',mir:1,stb:1,inten:1.3},
- {name:'Echo trail',fx:'14',stb:0,inten:1.4},{name:'Chrome mirror',fx:'13',mir:1,inten:1.6}];
-function dance(i){const d=DANCE[i];if(!d)return;S.dance=i;if(d.fx!=null)setFx(String(d.fx));if(d.mir!=null){S.mir=d.mir;$('mir').classList.toggle('on',!!S.mir)}
- if(d.stb!=null){S.stb=d.stb;$('stb').classList.toggle('on',!!S.stb)}if(d.inten!=null)S.inten=d.inten;toast('Dance '+i+' · '+d.name);if(S.scenes.length>1)next()}
-function vid(src,name){const v=document.createElement('video');v.src=src;v.loop=true;v.muted=true;v.playsInline=true;v.preload='auto';v.crossOrigin='anonymous';
- const sc={v,name};v.addEventListener('error',()=>{S.scenes=S.scenes.filter(x=>x!==sc)});return sc}
+// scenes: the cut's clips (/vj?job=), the library vibe loops, the desk footage library, your own files, stills for pads
+const S={scenes:[],cur:0,nxt:1,prog:0,progAt:0,progShot:-1,trans:false,t0:0,dur:900,fx:Q.get('fx')||'auto',curFx:0,every:+(Q.get('every')||0),kal:EXPERT?+(Q.get('kal')||0):0,used:new Set(),mir:+(Q.get('mir')||0),stb:+(Q.get('strobe')||0),inten:+(Q.get('intensity')||1),hud:false,beats:0,bpm:0,
+ dance:0,gain:{drums:1,bass:1,other:1,vocals:1},stemsId:Q.get('stemsId')||'',trackId:Q.get('track')||'',job:Q.get('job')||'',
+ pics:Q.get('job')?'cut':'lib',master:1,black:0,glow:0,speed:1,chaos:.5,song:null,hold:null,look:{},asleep:false,beatIdx:-1};
+function vid(src,name,o={}){const v=document.createElement('video');v.src=src;v.loop=true;v.muted=true;v.playsInline=true;v.preload=o.preload||'auto';v.crossOrigin='anonymous';
+ const sc={v,el:v,name,key:o.key||src,set:o.set||'lib',kind:'video',src};v.addEventListener('error',()=>{sc.bad=true});return sc}
+function pic(src,name,o={}){const im=new Image();im.crossOrigin='anonymous';im.decoding='async';im.src=src;const sc={v:null,el:im,name,key:o.key||src,set:o.set||'still',kind:'image',src};im.onerror=()=>{sc.bad=true};return sc}
+const ready=el=>!!el&&(el.tagName==='IMG'?el.complete&&el.naturalWidth>0:el.readyState>=2);
+const asp=el=>!el?1:el.tagName==='IMG'?(el.naturalWidth/el.naturalHeight||1):(el.videoWidth?el.videoWidth/el.videoHeight:1);
+const playSc=sc=>{if(S.asleep||!sc||!sc.v)return;if(sc.v.preload!=='auto')sc.v.preload='auto';sc.v.play().catch(()=>{})};  // asleep: the output window draws
+const pauseSc=sc=>{if(sc&&sc.v)sc.v.pause()};
+const seekSc=(sc,t)=>{if(sc&&sc.v){try{sc.v.currentTime=t}catch(e){}}};
 const DEF_VIBES=['neon-night','ferrofluid','chrome-mercury','lava-obsidian','cosmic','black','origami-noir','ice-crystal','porcelain-marble','y2k-chrome'];
-async function loadLibrary(){
- const vibes=(Q.get('vibes')||DEF_VIBES.join(',')).split(',').filter(Boolean),shots=(Q.get('shots')||'wide,reveal,close,medium').split(',');
- vibes.forEach(vb=>shots.forEach(sh=>S.scenes.push(vid(`/static/library/${vb}/${sh}.mp4`,`${vb} · ${sh}`))));
- if(Q.get('footage')!=='0'){try{const r=await fetch('/api/footage?kind=video');const j=await r.json();(j.items||[]).filter(i=>i.url&&i.available!==false).slice(0,+(Q.get('footageMax')||8)).forEach(it=>S.scenes.push(vid(it.url,it.title||it.id||'footage')))}catch(e){}}
- // shuffle with the seed so a run is repeatable
- for(let i=S.scenes.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[S.scenes[i],S.scenes[j]]=[S.scenes[j],S.scenes[i]]}
- if(S.scenes[0])S.scenes[0].v.play().catch(()=>{});}
-$('files').onchange=e=>{[...e.target.files].forEach(f=>S.scenes.push(vid(URL.createObjectURL(f),f.name)));toast(`${e.target.files.length} loop(s) added`)};
+// the scene list from a spec the control view sends both engines: {cut:[{url,name,key}], lib:{vibes,shots,footage,max}, files:[File], stills:[{url,name,key}]}
+async function setScenes(spec){spec=spec||{};const keep=new Map(S.scenes.map(s=>[s.key,s]));const out=[];const add=(key,make)=>{const sc=keep.get(key)||make();keep.delete(key);out.push(sc)};
+ (spec.cut||[]).forEach(c=>c.url&&add(c.key,()=>vid(c.url,c.name,{key:c.key,set:'cut'})));
+ if(spec.lib){const lib=spec.lib,vibes=lib.vibes||[],shots=lib.shots||['wide','reveal','close','medium'];const names=[];
+  vibes.forEach(vb=>shots.forEach(sh=>names.push([`/static/library/${vb}/${sh}.mp4`,`${vb} · ${sh}`])));
+  if(lib.footage){try{const r=await fetch('/api/footage?kind=video');const j=await r.json();(j.items||[]).filter(i=>i.url&&i.available!==false).slice(0,lib.max||8).forEach(it=>names.push([it.url,it.title||it.id||'footage']))}catch(e){}}
+  // shuffle with the seed so a run is repeatable
+  let sd=lib.seed||7;const r2=()=>{sd=(sd*16807)%2147483647;return (sd-1)/2147483646};
+  for(let i=names.length-1;i>0;i--){const j=Math.floor(r2()*(i+1));[names[i],names[j]]=[names[j],names[i]]}
+  names.forEach(([u,n],i)=>add(u,()=>vid(u,n,{set:'lib',preload:i<4?'auto':'metadata'})))}   // the first loops load now, the rest when they come up (P3)
+ (spec.files||[]).forEach(f=>{const key='file:'+f.name+':'+f.size;add(key,()=>vid(URL.createObjectURL(f),f.name,{key,set:'file'}))});
+ (spec.stills||[]).forEach(p=>p.url&&add(p.key,()=>pic(p.url,p.name,{key:p.key})));
+ const curKey=(S.scenes[S.cur]||{}).key,progKey=(S.scenes[S.prog]||{}).key;keep.forEach(sc=>{pauseSc(sc)});
+ S.scenes=out;S.trans=false;const ci=out.findIndex(s=>s.key===curKey),pi=out.findIndex(s=>s.key===progKey);
+ S.prog=pi>=0?pi:Math.max(0,pool()[0]||0);S.cur=ci>=0?ci:S.prog;S.nxt=S.cur;S.progShot=-1;S.used=new Set();if(!S.asleep)playSc(S.scenes[S.cur]);report(true)}
 const sc2=document.createElement('canvas');sc2.width=sc2.height=48;const c2=sc2.getContext('2d',{willReadFrequently:true});
 function box(v){try{c2.drawImage(v,0,0,48,48);const d=c2.getImageData(0,0,48,48).data;let L=[],mx=0;for(let i=0;i<d.length;i+=4){const l=(d[i]*.299+d[i+1]*.587+d[i+2]*.114)/255;L.push(l)}
  const srt=[...L].sort((x,y)=>x-y),thr=Math.max(.1,srt[Math.floor(L.length*.7)]);let sx=0,sy=0,n=0;L.forEach((l,i)=>{if(l>thr){sx+=i%48;sy+=Math.floor(i/48);n++}});
  if(n<4)return[.5,.5,1];return[(sx/n+.5)/48,(sy/n+.5)/48,Math.sqrt(n/L.length)]}catch(e){return[.5,.5,1]}}
 const recent=[];
+function premiumEvery(){return S.chaos>.66?4:S.chaos>.33?8:16}  // beats between premium spells in Auto: Chaos brings them closer
 function pickFx(premiumMoment){if(S.fx!=='auto')return +S.fx;if(!premiumMoment)return 8;
  const pool=Object.entries(W8).filter(([k])=>recent.filter(x=>x==k).length<2&&+k!==S.curFx);if(CLASSIC_OK)CLASSIC.forEach(c=>pool.push([c,.3]));
  let tot=pool.reduce((a,[,w])=>a+w,0),r=rnd()*tot;for(const [k,w] of pool){if((r-=w)<=0){recent.push(+k);recent.length>8&&recent.shift();return +k}}return 8}
+// the director's pool: the cut's clips, or the library loops with your own files
+function pool(){const p=[];S.scenes.forEach((sc,i)=>{if(!sc.bad&&(sc.set===S.pics||(S.pics==='lib'&&sc.set==='file')))p.push(i)});
+ if(!p.length)S.scenes.forEach((sc,i)=>{if(!sc.bad&&sc.set!=='still')p.push(i)});return p}
 // guardrail no_repeat: each loop plays once per set; when the pool runs dry, warn and start a fresh pass
-function nextUnused(){const n=S.scenes.length;S.used.add(S.scenes[S.cur].v.src);
- for(let k=1;k<n;k++){const j=(S.cur+k)%n;if(!S.used.has(S.scenes[j].v.src))return j}
- toast('Every loop has played: add loops (or footage) to avoid repeats');S.used=new Set([S.scenes[S.cur].v.src]);return (S.cur+1)%n}
-function next(fxOverride,premiumMoment=true){const n=S.scenes.length;if(n<2||S.trans)return;
- S.nxt=nextUnused();const nv=S.scenes[S.nxt].v;nv.currentTime=0;nv.play().catch(()=>{});
- S.curFx=fxOverride!=null?fxOverride:pickFx(premiumMoment);const beatMs=S.bpm?60000/S.bpm:500;
- if(S.curFx===9){const a=box(S.scenes[S.cur].v),b=box(nv);gl.uniform3f(U('ca'),a[0],a[1],a[2]);gl.uniform3f(U('cb'),b[0],b[1],b[2])}
+function nextUnused(){const P=pool(),n=P.length;if(!n)return S.prog;const cur=S.scenes[S.prog];if(cur)S.used.add(cur.key);const at=Math.max(0,P.indexOf(S.prog));
+ for(let k=1;k<=n;k++){const j=P[(at+k)%n];if(!S.used.has(S.scenes[j].key))return j}
+ if(S.pics!=='cut')toast('Every loop has played: add loops (or footage) to avoid repeats');S.used=new Set(cur?[cur.key]:[]);return P[(at+1)%n]}
+const sceneHeld=()=>!!(S.hold&&S.hold.kind==='scene');
+// the program (what the song shows) moves on; the screen follows it unless a pad holds a scene
+function next(fxOverride,premiumMoment=true){if(pool().length<2&&S.prog===S.cur)return;if(S.trans&&!sceneHeld())return;
+ S.prog=nextUnused();S.progAt=performance.now();if(sceneHeld()){const sc=S.scenes[S.prog];if(sc&&sc.v&&sc.v.preload!=='auto')sc.v.preload='auto';return}
+ show(S.prog,fxOverride!=null?fxOverride:pickFx(premiumMoment))}
+function prev(){const P=pool(),n=P.length;if(n<2)return;const at=Math.max(0,P.indexOf(S.prog));S.prog=P[(at-1+n)%n];S.progAt=performance.now();if(!sceneHeld())show(S.prog,8)}
+// put a scene on screen with a transition (a running one lands at once)
+function show(k,fx,o={}){const sc=S.scenes[k];if(!sc)return;
+ if(S.trans){const old=S.scenes[S.cur];if(old&&S.cur!==S.nxt&&S.cur!==k)pauseSc(old);S.cur=S.nxt;S.trans=false}
+ if(k===S.cur){if(o.place)place(k);playSc(sc);return}
+ S.nxt=k;if(o.place)place(k);else seekSc(sc,0);playSc(sc);
+ S.curFx=fx;const beatMs=S.bpm?60000/S.bpm:500;
+ if(S.curFx===9){const a=box((S.scenes[S.cur]||{}).el),b=box(sc.el);gl.uniform3f(U('ca'),a[0],a[1],a[2]);gl.uniform3f(U('cb'),b[0],b[1],b[2])}
  {const an=rnd()*6.283;gl.uniform2f(U('dir'),Math.cos(an),Math.sin(an)*.4)}
  S.dur=S.curFx===8?16:S.curFx===4?Math.min(260,beatMs*.5):S.curFx===14?beatMs:Math.max(420,Math.min(1400,beatMs*1.5));
  S.trans=true;S.t0=performance.now()}
-function prev(){const n=S.scenes.length;if(n<2)return;S.scenes[S.cur].v.pause();S.cur=(S.cur-1+n)%n;S.scenes[S.cur].v.play().catch(()=>{});S.trans=false}
+// where the program's scene is now, as if no pad had been pressed: the cut's clip at the song's position, a loop as far
+// in as it would have played
+function place(k){const sc=S.scenes[k];if(!sc||!sc.v)return;const v=sc.v;
+ if(k===S.prog&&followCut()){const sh=S.song.shots[S.progShot];if(sh){const d=v.duration||1e9;seekSc(sc,Math.max(0,Math.min(d-.05,(A().pos()-sh.start)*sh.speed)))}return}
+ if(k===S.prog&&v.duration){seekSc(sc,((performance.now()-S.progAt)/1000*S.speed)%v.duration);return}seekSc(sc,0)}
+// the cut plays itself when the switch follows the song: its shots on the song's clock, each clip at the speed it was cut at
+const followCut=()=>S.every===0&&S.pics==='cut'&&!!(S.song&&S.song.shots&&S.song.shots.length)&&S.scenes.some(s=>s.set==='cut');
+function shotAt(t){const sh=S.song.shots;let lo=0,hi=sh.length-1,r=0;while(lo<=hi){const m=(lo+hi)>>1;if(sh[m].start<=t+1e-4){r=m;lo=m+1}else hi=m-1}return r}
+const cutScene=sh=>sh&&sh.clip!=null?S.scenes.findIndex(s=>s.key==='clip:'+sh.clip):-1;
+function shotFx(i){if(S.fx!=='auto')return +S.fx;const sh=S.song.shots[i],pr=S.song.shots[i-1];  // the clips run into each other: a clean cut, a premium spell where a drop run opens
+ return sh&&pr&&sh.drop_run!=null&&pr.drop_run!==sh.drop_run?pickFx(true):8}
+function syncProgram(t,playing){const sh=S.song.shots[S.progShot],sc=S.scenes[S.prog];if(!sh||!sc||!sc.v||sceneHeld()||(S.cur!==S.prog&&S.nxt!==S.prog))return;
+ const v=sc.v,d=v.duration||1e9,want=Math.max(0,(t-sh.start)*sh.speed);v.playbackRate=Math.max(.0625,Math.min(16,sh.speed));
+ if(!playing||want>=d-.06||(S.look&&S.look.freeze)){if(!v.paused)v.pause();const w=Math.min(want,d-.05);if(Math.abs(v.currentTime-w)>.05)seekSc(sc,w);return}
+ if(v.paused)v.play().catch(()=>{});if(Math.abs(v.currentTime-want)>.15)seekSc(sc,want)}
+// a held pad: a scene shows while it is held, a look rides on the song's picture; let go and the song's picture is back
+function applyHold(h){S.hold=h&&h.kind?h:null;const wasFrozen=S.look&&S.look.freeze;S.look={};if(S.hold&&S.hold.kind==='look')S.look[S.hold.look]=1;
+ if(sceneHeld()){const k=S.scenes.findIndex(s=>s.key===S.hold.key);if(k>=0){show(k,8);if(S.look.freeze)pauseSc(S.scenes[k])}}
+ else if(!S.asleep){if(!S.hold||S.hold.kind!=='look'||S.cur!==S.prog)show(S.prog,8,{place:true});if(wasFrozen&&!S.look.freeze)playSc(S.scenes[S.cur])}
+ if(S.look.freeze){pauseSc(S.scenes[S.cur]);pauseSc(S.scenes[S.nxt])}report(true)}
 
-// audio graph
-let AC=null,an=null,buf=null,recDest=null,trackEl=null,grid=null;
-function ensureAC(){if(!AC){AC=new AudioContext();an=AC.createAnalyser();an.fftSize=2048;an.smoothingTimeConstant=.5;buf=new Uint8Array(an.frequencyBinCount);recDest=AC.createMediaStreamDestination()}return AC}
-async function listInputs(){const d=await navigator.mediaDevices.enumerateDevices();$('input').innerHTML=d.filter(x=>x.kind==='audioinput').map(x=>`<option value="${x.deviceId}">${x.label||'Audio input'}</option>`).join('')}
-$('mic').onclick=async()=>{ensureAC();const id=$('input').value;const st=await navigator.mediaDevices.getUserMedia({audio:{deviceId:id?{exact:id}:undefined,echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
- AC.createMediaStreamSource(st).connect(an);grid=null;$('mic').classList.add('on');$('mic').textContent='Listening';toast('Mic live, beats from energy flux. T = tap tempo');listInputs()};
-async function analyse(arrayBuf){ // onset envelope (low band) -> tempo (autocorrelation 80-170 BPM) -> phase
- const ab=await ensureAC().decodeAudioData(arrayBuf.slice(0));const sr=ab.sampleRate,ch=ab.getChannelData(0),hop=512,n=Math.floor(ch.length/hop);
- const off=new OfflineAudioContext(1,ab.length,sr),src=off.createBufferSource();src.buffer=ab;const lp=off.createBiquadFilter();lp.type='lowpass';lp.frequency.value=160;src.connect(lp);lp.connect(off.destination);src.start();
- const low=(await off.startRendering()).getChannelData(0);const env=new Float32Array(n);let prevE=0;
- for(let i=0;i<n;i++){let e=0,el=0;for(let k=i*hop;k<(i+1)*hop;k++){e+=ch[k]*ch[k];el+=low[k]*low[k]}e=Math.sqrt(e/hop)+2*Math.sqrt(el/hop);env[i]=Math.max(0,e-prevE);prevE=e}
- const fps=sr/hop;let best=0,bestL=0;for(let L=Math.round(fps*60/170);L<=Math.round(fps*60/80);L++){let s=0;for(let i=L;i<n;i++)s+=env[i]*env[i-L];if(s>best){best=s;bestL=L}}
- // refine to fractional period
- let period=bestL/fps,bpm=60/period;bpm=Math.round(bpm*10)/10;period=60/bpm;
- let bestP=0,bestS=-1;for(let ph=0;ph<period;ph+=1/fps){let s=0;for(let tt=ph;tt<ab.duration;tt+=period)s+=env[Math.round(tt*fps)]||0;if(s>bestS){bestS=s;bestP=ph}}
- // energy per beat (for "follow the song" switching) and downbeat phase (bar = 4 beats with the most low-end hits)
- const nb=Math.floor((ab.duration-bestP)/period),en=new Float32Array(nb);for(let b=0;b<nb;b++){let s=0;const a=Math.round((bestP+b*period)*fps),z=Math.round((bestP+(b+1)*period)*fps);for(let i=a;i<z&&i<n;i++){let e=0;for(let k=i*hop;k<(i+1)*hop;k+=4)e+=Math.abs(low[k]);s+=e}en[b]=s/Math.max(1,z-a)}
- let dsum=[0,0,0,0];for(let b=0;b<nb;b++)dsum[b%4]+=en[b];const down=dsum.indexOf(Math.max(...dsum));
- const sorted=[...en].sort((x,y)=>x-y),med=sorted[Math.floor(nb/2)]||1,hi=sorted[Math.floor(nb*.8)]||1;
- return {bpm,period,phase:bestP,down,en,med,hi,duration:ab.duration}}
-async function loadTrack(file){trackEl&&trackEl.pause();const url=URL.createObjectURL(file);ensureAC();
- toast('Analysing the track…');grid=await analyse(await file.arrayBuffer());S.bpm=grid.bpm;
- trackEl=new Audio(url);trackEl.crossOrigin='anonymous';const src=AC.createMediaElementSource(trackEl);src.connect(an);an.connect(AC.destination);src.connect(recDest);
- trackEl.onplay=()=>AC.resume();toast(`Locked to ${grid.bpm} BPM. Space to play`);return grid}
-$('track').onchange=async e=>{const f=e.target.files[0];if(f){trackFile=f;S.trackId='';await loadTrack(f);trackEl.play()}};
+// the sound: the control view's (this window's in the control view; the output window reads its opener's)
+const CHAN={pos:0,playing:false,at:0,dur:0,mic:false};   // the clock as the control view broadcasts it, when its window is out of reach
+const CHAN_A={ready:true,pos(){return CHAN.playing?CHAN.pos+((performance.timeOrigin+performance.now())-CHAN.at)/1000:CHAN.pos},playing(){return CHAN.playing&&performance.timeOrigin+performance.now()-CHAN.at<2000},
+ dur(){return CHAN.dur},hasTrack(){return CHAN.dur>0},isMic(){return CHAN.mic},spectrum(){return null},recTracks(){return []}};
+function A(){if(!OUT)return window.XPA||CHAN_A;try{const o=window.opener;if(o&&!o.closed&&o.XPA&&o.XPA.ready)return o.XPA}catch(e){}return CHAN_A}
 // Per-stem energies: precomputed stem_react envelopes (?stems=url of the JSON, synced to the track) when given,
 // else an in-browser band split (drums = transient flux + kick, bass 30-150 Hz, other 150-300 + 3.4-8k, vocals 300-3400).
-let STEMS=null;if(Q.get('stems'))fetch(Q.get('stems')).then(r=>r.json()).then(j=>{STEMS=j;toast('Stems loaded ('+(j.engine||'?')+')')}).catch(()=>{});
+let STEMS=null,STEMS_URL=Q.get('stems')||'';if(Q.get('stems'))fetch(Q.get('stems')).then(r=>r.json()).then(j=>{STEMS=j;toast('Stems loaded ('+(j.engine||'?')+')')}).catch(()=>{});
+function loadStems(url){if(!url||url===STEMS_URL&&STEMS)return Promise.resolve(STEMS);STEMS_URL=url;return fetch(url).then(r=>r.ok?r.json():Promise.reject()).then(j=>{STEMS=j;report(true);return j}).catch(()=>null)}
 function stemAt(name,t){const v=STEMS&&STEMS[name];if(!v||!v.length)return 0;return +v[Math.min(v.length-1,Math.max(0,Math.round(t*(STEMS.fps||24))))]||0}
 const SE={drums:0,bass:0,other:0,vocals:0,pf:0};
 const ROLE=n=>{n=String(n).toLowerCase();return /drum|kick|snare|hat|perc|beat|cymbal|tom|clap/.test(n)?'drums':/bass|sub|808/.test(n)?'bass':/vocal|vox|voice|choir|sing/.test(n)?'vocals':'other'};
 function gains(){try{return (JSON.parse(localStorage.getItem('xeno-macros')||'{}'))}catch(e){return{}}}
 function setStemGain(name,v){const g=gains();g['stem:'+name]=Math.max(0,Math.min(1,v));try{localStorage.setItem('xeno-macros',JSON.stringify(g))}catch(e){}}
 const roleGain=o=>({drums:o.drums*S.gain.drums,bass:o.bass*S.gain.bass,other:o.other*S.gain.other,vocals:o.vocals*S.gain.vocals});
-function stems(a){if(STEMS&&trackEl){const t=trackEl.currentTime;
+function stems(a,t,au){if(STEMS&&au.hasTrack()){
   if(Array.isArray(STEMS.stems)&&STEMS.stems.length){const g=gains(),o={drums:0,bass:0,other:0,vocals:0};  // any number of stems, each with its own gain
     for(const n of STEMS.stems.slice(0,32)){const r=(STEMS.roles&&STEMS.roles[n])||ROLE(n),k=g['stem:'+n];o[r]=Math.max(o[r],stemAt(n,t)*(k==null?1:k));}return roleGain(o);}
   return roleGain({drums:stemAt('drums',t),bass:stemAt('bass',t),other:stemAt('other',t),vocals:stemAt('vocals',t)})}
- if(!an)return{drums:0,bass:0,other:0,vocals:0};const hz=AC.sampleRate/an.fftSize;
+ if(!a.buf)return{drums:0,bass:0,other:0,vocals:0};const hz=a.hz,buf=a.buf;
  const avg=(lo,hi)=>{let s=0,n=0;for(let i=Math.floor(lo/hz);i<Math.min(buf.length,hi/hz);i++){s+=buf[i];n++}return n?s/n/255:0};
  const voc=avg(300,3400),oth=(avg(150,300)+avg(3400,8000))/2,kick=avg(40,110);const tr=Math.max(0,avg(2000,9000)+kick-SE.pf);SE.pf=avg(2000,9000)+kick;
  return roleGain({drums:Math.min(1,tr*6+(a.flux>avgFlux*2?.5:0)),bass:a.b,other:Math.min(1,oth*1.6),vocals:Math.min(1,voc*1.4)})}
+function bands(au){const sp=au.spectrum&&au.spectrum();if(!sp)return{b:0,m:0,h:0,flux:0};const buf=sp.buf,hz=sp.hz;
+ const avg=(a,b)=>{let s=0,n=0;for(let i=Math.floor(a/hz);i<Math.min(buf.length,b/hz);i++){s+=buf[i];n++}return n?s/n/255:0};
+ const b=avg(30,150),m=avg(150,2000),h=avg(4000,12000);const e=b*2+m+h;const flux=Math.max(0,e-bands.p);bands.p=e;return{b,m,h,flux,buf,hz}}bands.p=0;
+let grid=null,taps=[];function tap(){const now=performance.now();taps=taps.filter(x=>now-x<3000);taps.push(now);if(taps.length>=3){const p=(taps[taps.length-1]-taps[0])/(taps.length-1)/1000;S.bpm=Math.round(600/p)/10;grid={tap:true,period:p,phase:(now/1000)%p};toast(`Tap tempo ${S.bpm} BPM`)}}
+
+// beats: the desk's (the cut's record, or the desk's analysis of the loaded track), else the browser's grid, tap tempo,
+// or energy flux from the mic
+let lastBeatIdx=-1,beatPulse=0,lastFluxBeat=0,avgFlux=0,bassS=0,midS=0,highS=0,lastPos=0;
+function beatAt(t){const B=S.song&&S.song.beats;if(!B||!B.length)return -1;let lo=0,hi=B.length-1,r=-1;while(lo<=hi){const m=(lo+hi)>>1;if(B[m]<=t){r=m;lo=m+1}else hi=m-1}return r}
+function passageAt(t){const P=S.song&&S.song.passages||[];for(const p of P)if(t>=p.start&&t<p.end)return p;return null}
+function barPos(idx){if(S.song&&S.song.beats&&S.song.beats.length)return idx-(S.song.bar_phase||0);if(grid&&grid.down!=null)return idx-grid.down;return S.beats}
+function switchEvery(idx){if(S.every)return S.every;const t=S.song&&S.song.beats?S.song.beats[idx]:null;
+ if(t!=null&&S.song.passages&&S.song.passages.length&&S.song.src!=='browser'){const p=passageAt(t),r=p&&p.role||'';return /^drop/.test(r)?((p.heat==null||p.heat>.6)?1:2):r==='build'?2:4}
+ if(S.song&&S.song.en){const e=S.song.en[idx]||0;return e>S.song.hi?1:e>S.song.med*1.05?2:4}return 4}
+function onBeat(idx){beatPulse=1;S.beats++;S.beatIdx=idx;if(followCut())return;
+ const N=switchEvery(idx);const pos=barPos(idx),pe=premiumEvery();if(((pos%N)+N)%N===0)next(null,((pos%pe)+pe)%pe===0)}
+
+// recording (V7, V10, V6): the output canvas at its size, held while the take runs, with the song's sound (or the mic's)
+// from the control view; chunks go to the desk as they come (POST /api/perform/takes/<id>/chunk), so a crash loses
+// seconds, not the set; Stop has the desk remux an mp4 beside the webm (work/ui/takes/<id>/), listed in My videos
+const REC={on:false,rec:null,id:'',seq:0,q:Promise.resolve(),t0:0,bytes:0,sent:0,status:'',err:'',take:null,head:null,local:[],audio:true,w:0,h:0,fps:30,startPos:null,done:null};
+async function recStart(o={}){if(REC.rec)return;size();const fps=+(Q.get('fps')||o.fps||30);
+ const au=A(),tracks=au.recTracks?au.recTracks():[];
+ const st=cv.captureStream(fps);tracks.forEach(t=>st.addTrack(t));REC.audio=tracks.length>0;
+ // H.264 first: the browser's (often hardware) encoder keeps up with a full-size canvas at 60 fps where VP9 drops frames
+ const mimes=['video/webm;codecs=h264,opus','video/webm;codecs=vp8,opus','video/webm;codecs=vp9,opus','video/webm'].filter(x=>MediaRecorder.isTypeSupported(x));
+ Object.assign(REC,{on:true,id:'',seq:0,q:Promise.resolve(),t0:performance.now(),bytes:0,sent:0,status:'recording',err:REC.audio?'':'No sound reaches this window: the take is picture only. Open the output window from the control view.',take:null,head:null,local:[],w:cv.width,h:cv.height,fps,startPos:au.hasTrack()?au.pos():null});
+ const meta={width:cv.width,height:cv.height,fps,mime:mimes[0],title:o.title||'Live take',job:o.job||'',audio_id:o.audio_id||'',source:o.source||'',audio:REC.audio,start_pos:REC.startPos};
+ try{const r=await fetch('/api/perform/takes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(meta)});const j=await r.json();if(!r.ok)throw new Error(j.detail||r.status);REC.id=j.id}
+ catch(e){REC.err='The desk did not answer, so this take stays in the browser and downloads when you stop.'}
+ startRecorder(st,mimes,0,+(Q.get('vbr')||o.vbr||16e6));report(true)}
+// an encoder that never starts (a hardware encoder still held by another window) hands the take to the next codec
+function startRecorder(st,mimes,i,vbr){const rec=new MediaRecorder(st,{mimeType:mimes[i],videoBitsPerSecond:vbr});REC.rec=rec;REC.mime=mimes[i];
+ const retry=()=>{if(REC.rec!==rec||REC.bytes||i+1>=mimes.length)return false;rec.retired=true;try{rec.stop()}catch(_){}startRecorder(st,mimes,i+1,vbr);return true};
+ rec.ondataavailable=e=>{if(rec.retired||!e.data.size)return;REC.bytes+=e.data.size;if(!REC.head)REC.head=e.data;if(REC.id&&!REC.local.length)sendChunk(e.data);else REC.local.push(e.data)};
+ rec.onstop=()=>{if(!rec.retired)finishTake(st)};
+ rec.onerror=e=>{if(retry())return;REC.err='The recorder stopped: '+((e.error&&e.error.message)||'an error');try{rec.stop()}catch(_){}};
+ rec.start(1000);setTimeout(()=>{if(REC.rec===rec&&rec.state==='recording'&&!REC.bytes)retry()},3500)}
+function sendChunk(blob){const seq=REC.seq++,id=REC.id;REC.q=REC.q.then(async()=>{if(REC.local.length){REC.local.push(blob);return}
+ for(let a=0;a<4;a++){try{const r=await fetch(`/api/perform/takes/${id}/chunk?seq=${seq}`,{method:'POST',headers:{'Content-Type':'application/octet-stream'},body:blob});if(r.ok){REC.sent+=blob.size;return}if(r.status<500)break}catch(e){}await new Promise(r=>setTimeout(r,400*(a+1)))}
+ REC.err='The desk stopped taking the take: the rest stays in the browser and downloads when you stop.';REC.local.push(REC.head,blob)})}
+async function finishTake(st){REC.status='saving';report(true);st.getVideoTracks().forEach(t=>t.stop());await REC.q;
+ const secs=(performance.now()-REC.t0)/1000;let take=null;
+ if(REC.id){try{let r=await fetch(`/api/perform/takes/${REC.id}/finish`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({end_pos:A().hasTrack()?A().pos():null,seconds_played:secs})});take=await r.json();
+   REC.status='remuxing';REC.take=take;report(true);
+   for(let i=0;i<1800&&take&&take.status==='finishing';i++){await new Promise(r=>setTimeout(r,700));r=await fetch(`/api/perform/takes/${REC.id}`);take=await r.json();REC.take=take}}
+  catch(e){REC.err=REC.err||'The desk did not finish the take; its webm is in work/ui/takes/'+REC.id}}
+ let name='';if(REC.local.length){const b=new Blob(REC.local,{type:'video/webm'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name=`xenoform_take_${REC.w}x${REC.h}_${Date.now()}.webm`;document.body.appendChild(a);a.click();a.remove()}
+ Object.assign(REC,{on:false,rec:null,status:take&&take.status==='done'?'saved':take&&take.status==='error'?'error':REC.local.length?'downloaded':'error',take,secs});
+ if(take&&take.error)REC.err=take.error;report(true);const d=REC.done;REC.done=null;d&&d(take||name||null)}
+function recStop(){if(REC.rec&&REC.rec.state!=='inactive'){REC.rec.stop();report(true)}}
+// the old automation API: record for sec seconds (or toggle), resolve with the take once it is saved
+function record(sec,o){return new Promise(res=>{if(REC.rec){REC.done=res;recStop();return}REC.done=res;recStart(o||{});if(sec)setTimeout(()=>REC.rec&&recStop(),sec*1000)})}
+
+// render loop
+let fpsN=0,fpsT=performance.now(),fpsNow=0,lastNow=0,frameS=1/60;
+function frame(now){requestAnimationFrame(frame);if(S.asleep)return;size();
+ if(lastNow&&now-lastNow<100)frameS+=((now-lastNow)/1000-frameS)*.05;lastNow=now;
+ // a frame drawn now is seen (and captured) about a frame later: draw the song as it will be heard then
+ const au=A(),playing=au.playing(),t=au.pos()+(playing?Math.min(.034,frameS):0);
+ const a=bands(au);bassS+=(a.b-bassS)*.35;midS+=(a.m-midS)*.35;highS+=(a.h-highS)*.5;avgFlux=avgFlux*.95+a.flux*.05;
+ {const st=stems(a,t,au);SE.drums=Math.max(st.drums,SE.drums*.82);SE.bass+=(st.bass-SE.bass)*.35;SE.other+=(st.other-SE.other)*.2;SE.vocals+=(st.vocals-SE.vocals)*.25;}
+ const B=S.song&&S.song.beats&&S.song.beats.length;
+ if(B&&au.hasTrack()&&!au.isMic()){const idx=beatAt(t);if(idx!==lastBeatIdx){const step=idx===lastBeatIdx+1;lastBeatIdx=idx;if(idx>=0&&(playing||!step))onBeat(idx)}}
+ else if(grid&&grid.tap){const idx=Math.floor((now/1000-grid.phase)/grid.period);if(idx!==lastBeatIdx){lastBeatIdx=idx;onBeat(idx)}}
+ else if(a.buf&&a.flux>avgFlux*2.6&&a.flux>.04&&now-lastFluxBeat>350&&a.b>.4){lastFluxBeat=now;onBeat(S.beats)}
+ beatPulse*=.9;
+ if(followCut()){const i=shotAt(t);if(i!==S.progShot){S.progShot=i;const k=cutScene(S.song.shots[i]);if(k>=0){S.prog=k;S.progAt=now;if(!sceneHeld())show(k,Math.abs(t-lastPos)>.5?8:shotFx(i),{place:true})}}syncProgram(t,playing)}
+ lastPos=t;
+ let mixv=0;if(S.trans){mixv=Math.min(1,(now-S.t0)/S.dur);if(mixv>=1){const old=S.scenes[S.cur];if(old&&S.cur!==S.nxt)pauseSc(old);S.cur=S.nxt;S.trans=false;mixv=0}}
+ const As=S.scenes[S.cur],Bs=S.trans?S.scenes[S.nxt]:As,EA=As&&As.el,EB=Bs&&Bs.el;
+ [[EA,0],[EB,1]].forEach(([el,u])=>{if(ready(el)){gl.activeTexture(gl.TEXTURE0+u);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,el)}});
+ const f1=(n,v)=>gl.uniform1f(U(n),v),lk=S.look||{};f1('t',now/1000);f1('m',mixv);f1('bass',bassS);f1('high',highS);f1('fx',S.curFx);f1('beat',beatPulse);
+ f1('kal',(S.kal||lk.kaleido)?1:0);f1('mir',(S.mir||lk.mirror)?1:0);f1('stb',(S.stb||lk.strobe)?1:0);f1('inten',S.inten);f1('inv',lk.invert?1:0);f1('glow',S.glow);
+ f1('flash',SYNC&&syncFlash(t)?1:0);f1('master',S.black?0:S.master);
+ f1('sDrum',SE.drums);f1('sBass',SE.bass);f1('sOther',SE.other);f1('sVoc',SE.vocals);window.__xfStems=SE;
+ f1('aspA',asp(EA));f1('aspB',asp(EB));f1('aspS',cv.width/cv.height);
+ gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+ fpsN++;if(now-fpsT>500){fpsNow=Math.round(fpsN*1000/(now-fpsT));fpsN=0;fpsT=now}}
+// the sync check (perform_check.js, ?sync=1): white for 50 ms from each beat, so a take shows where the picture's beat
+// lands against the sound's
+function syncFlash(t){const i=beatAt(t);return i>=0&&t-S.song.beats[i]<.05}
+
+// the engine's commands, the same from this window's control view or from the control view of the output window
+function report(now){const au=A(),r={out:OUT,id:RID,pos:au.pos(),playing:au.playing(),dur:au.dur(),w:cv.width,h:cv.height,fps:fpsNow,asleep:S.asleep,full:!!document.fullscreenElement,
+  scene:((S.scenes[S.trans?S.nxt:S.cur])||{}).name||'',key:((S.scenes[S.trans?S.nxt:S.cur])||{}).key||'',prog:((S.scenes[S.prog])||{}).key||'',shot:S.progShot,
+  fx:S.curFx,fxName:FXN[S.curFx],auto:S.fx==='auto',every:S.every,inten:S.inten,bpm:S.bpm,beats:S.beats,beatIdx:S.beatIdx,bar:S.beatIdx>=0?((barPos(S.beatIdx)%4)+4)%4:-1,
+  levels:{b:bassS,m:midS,h:highS},stems:STEMS?(STEMS.engine||'stems'):'',hold:S.hold,ready:S.scenes.filter(s=>s.el&&ready(s.el)).length,scenes:S.scenes.length,
+  rec:{on:REC.on,status:REC.status,id:REC.id,secs:REC.on?(performance.now()-REC.t0)/1000:(REC.secs||0),bytes:REC.bytes,sent:REC.sent,err:REC.err,audio:REC.audio,w:REC.w,h:REC.h,take:REC.take}};
+ if(now&&OUT&&window.__xpPost)window.__xpPost('report',{r});return r}
+function applySet(o){for(const k of ['fx','every','inten','mir','stb','kal','master','black','glow','speed','chaos','pics','hud'])if(o[k]!=null)S[k]=o[k];
+ if(o.gain)Object.assign(S.gain,o.gain);if(o.kal&&!EXPERT)S.kal=0;if(o.pics!=null){S.used=new Set();S.progShot=-1;if(!followCut()){const P=pool();if(P.length&&!P.includes(S.prog)){S.prog=P[0];S.progAt=performance.now();if(!sceneHeld()&&!S.asleep)show(S.prog,8)}}}
+ if(o.speed!=null)S.scenes.forEach(sc=>{if(sc.v&&sc.set!=='cut')sc.v.playbackRate=S.speed})}
+function sleep(){S.asleep=true;S.scenes.forEach(pauseSc)}
+function wake(){S.asleep=false;S.progShot=-1;lastBeatIdx=-1;show(S.prog,8,{place:true})}
+function cmd(op,a){a=a||{};switch(op){case 'set':applySet(a);break;case 'scenes':S.scenesReady=setScenes(a);break;case 'song':S.song=a.song||null;lastBeatIdx=-1;S.progShot=-1;S.bpm=S.song&&S.song.tempo||S.bpm;break;
+ case 'stems':loadStems(a.url);break;case 'next':next(a.fx!=null?a.fx:null);break;case 'prev':prev();break;case 'hold':applyHold(a.h||null);break;case 'tap':tap();break;
+ case 'rec':if(a.on)recStart(a);else recStop();break;case 'sleep':sleep();break;case 'wake':wake();break;
+ case 'sync':if(a.set)applySet(a.set);if(a.song!==undefined)cmd('song',{song:a.song});if(a.stems)loadStems(a.stems);if(a.scenes)setScenes(a.scenes);if(a.hold!==undefined)applyHold(a.hold);break}report(true)}
+function toast(t){if(OUT){window.__xpPost&&window.__xpPost('toast',{text:t});return}if(window.XP)XP.toast(t)}
+window.VJ={S,cmd,report,next,prev,record,REC,size,get cv(){return cv},ready:()=>S.scenes.filter(s=>s.el&&ready(s.el)&&s.kind==='video'&&s.v.readyState>=3).length};
+
+// the output window: canvas only, no keys but Esc (which hands focus back to the control view), no cursor
+if(OUT){const bc=new BroadcastChannel('xeno-rig'),post=(t,o)=>bc.postMessage(Object.assign({t,id:RID},o||{}));window.__xpPost=post;let MON=null;
+ const pushMonitor=()=>{try{const o=window.opener;if(o&&o.XP&&o.XP.monitor){MON=MON||cv.captureStream(24);o.XP.monitor(MON,RID)}}catch(e){}};
+ const full=()=>{if(!document.fullscreenElement)document.documentElement.requestFullscreen().catch(()=>{})};
+ bc.onmessage=e=>{const m=e.data||{};if(m.t==='cmd'&&(!m.to||m.to===RID))cmd(m.op,m.a);else if(m.t==='hello-ctl'){post('hello-out',{w:cv.width,h:cv.height});pushMonitor()}
+  else if(m.t==='clock')Object.assign(CHAN,m.c||{});else if(m.t==='bye-ctl'&&REC.on)recStop()};
+ addEventListener('message',e=>{if(e.origin===location.origin&&e.data&&e.data.t==='fullscreen')full()});   // the control view lends its click (capability delegation)
+ addEventListener('dblclick',()=>document.fullscreenElement?document.exitFullscreen():full());
+ addEventListener('keydown',e=>{if(e.key==='Escape'){try{window.opener&&window.opener.focus()}catch(_){}}});
+ addEventListener('beforeunload',e=>{if(REC.on){e.preventDefault();e.returnValue=''}});
+ addEventListener('pagehide',()=>post('bye-out'));
+ post('hello-out',{w:cv.width,h:cv.height});pushMonitor();setInterval(()=>{post('report',{r:report()})},100);}
+
+// ---------------------------------------------------------------- the control view's own: the sound, the song, the keys, MIDI
+let AC=null,an=null,buf=null,recDest=null,bus=null,micBus=null,trackEl=null,MIC=null,trackFile=null;
+function ensureAC(){if(!AC){AC=new AudioContext();an=AC.createAnalyser();an.fftSize=2048;an.smoothingTimeConstant=.5;buf=new Uint8Array(an.frequencyBinCount);recDest=AC.createMediaStreamDestination();
+  bus=AC.createGain();bus.connect(an);bus.connect(AC.destination);bus.connect(recDest);micBus=AC.createGain();micBus.connect(an);micBus.connect(recDest)}return AC}
+// the song from its decoded buffer on the AudioContext clock (the same time the take's sound is stamped with), with the
+// media element's names (currentTime, paused, play, pause) so the rest reads it as before
+function makeTrack(ab){let node=null,start=0,off=0,on=false;const ends=[];
+ const stop=()=>{if(node){node.onended=null;try{node.stop()}catch(e){}node.disconnect();node=null}on=false};
+ const T={buffer:ab,get duration(){return ab.duration},get paused(){return !on},get currentTime(){return on?Math.min(ab.duration,off+(AC.currentTime-start)):off},
+  set currentTime(v){const was=on;stop();off=Math.max(0,Math.min(ab.duration,+v||0));if(was)T.play()},
+  play(){if(on)return Promise.resolve();ensureAC();AC.resume();if(off>=ab.duration-.01)off=0;node=AC.createBufferSource();node.buffer=ab;node.connect(bus);start=AC.currentTime;node.start(start,off);on=true;
+   const me=node;node.onended=()=>{if(me!==node)return;off=ab.duration;node=null;on=false;ends.forEach(f=>f())};return Promise.resolve()},
+  pause(){if(!on)return;off=T.currentTime;stop()},onended(f){ends.push(f)},at(ctx){return on?Math.max(off,Math.min(ab.duration,off+(ctx-start))):off}};return T}
+// The picture follows the sound as it is heard: the context time leaving the speakers now (getOutputTimestamp), not the
+// time rendered ahead of it. A take's sound is stamped with that time too, so this is also what keeps a take in sync.
+function heardCtx(){const c=AC.currentTime;let ts=null;try{ts=AC.getOutputTimestamp()}catch(e){}
+ if(!ts||!(ts.contextTime>0)||!(ts.performanceTime>0))return c;return Math.min(c,ts.contextTime+(performance.now()-ts.performanceTime)/1000)}
+window.XPA=OUT?null:{ready:true,pos(){return !trackEl?0:trackEl.paused?trackEl.currentTime:trackEl.at(heardCtx())},playing(){return !!trackEl&&!trackEl.paused},dur(){return trackEl?trackEl.duration:0},hasTrack(){return !!trackEl},
+ isMic(){return !!MIC},spectrum(){if(!an)return null;an.getByteFrequencyData(buf);return{buf,hz:AC.sampleRate/an.fftSize}},recTracks(){ensureAC();return recDest.stream.getAudioTracks()},
+ latency(){if(!AC)return null;return{base:AC.baseLatency||0,output:AC.outputLatency||0,heard:+(AC.currentTime-heardCtx()).toFixed(4)}}};
+async function listInputs(){const d=await navigator.mediaDevices.enumerateDevices();const sel=$('input');const keep=sel.value;sel.innerHTML=d.filter(x=>x.kind==='audioinput').map(x=>`<option value="${x.deviceId}">${(x.label||'Audio input').replace(/</g,'&lt;')}</option>`).join('');if(keep)sel.value=keep}
+// mic or line-in (V6, V10): a refused permission says so; another input swaps the source instead of stacking a second;
+// the input goes to the analyser and into the take, never to the speakers
+async function micOn(id){ensureAC();AC.resume();micOff();let st;
+ try{st=await navigator.mediaDevices.getUserMedia({audio:{deviceId:id?{exact:id}:undefined,echoCancellation:false,noiseSuppression:false,autoGainControl:false}})}
+ catch(e){const why=e&&e.name==='NotAllowedError'?'The browser blocked the microphone. Allow it from the address bar (the site settings icon), then press Mic / line-in again.':e&&e.name==='NotFoundError'?'No microphone or line-in is connected.':e&&e.name==='NotReadableError'?'Another program is using that input.':'The input did not open: '+((e&&e.message)||e);
+  XP.micFailed(why);return false}
+ MIC={st,src:AC.createMediaStreamSource(st),id};MIC.src.connect(micBus);trackEl&&trackEl.pause();grid=null;listInputs().catch(()=>{});return true}
+function micOff(){if(!MIC)return;MIC.st.getTracks().forEach(t=>t.stop());try{MIC.src.disconnect()}catch(e){}MIC=null}
+async function analyse(ab){ // onset envelope (low band) -> tempo (autocorrelation 80-170 BPM) -> phase: the grid when the desk cannot say
+ const sr=ab.sampleRate,ch=ab.getChannelData(0),hop=512,n=Math.floor(ch.length/hop);
+ const off=new OfflineAudioContext(1,ab.length,sr),src=off.createBufferSource();src.buffer=ab;const lp=off.createBiquadFilter();lp.type='lowpass';lp.frequency.value=160;src.connect(lp);lp.connect(off.destination);src.start();
+ const low=(await off.startRendering()).getChannelData(0);const env=new Float32Array(n);let prevE=0;
+ for(let i=0;i<n;i++){let e=0,el=0;for(let k=i*hop;k<(i+1)*hop;k++){e+=ch[k]*ch[k];el+=low[k]*low[k]}e=Math.sqrt(e/hop)+2*Math.sqrt(el/hop);env[i]=Math.max(0,e-prevE);prevE=e}
+ const fps=sr/hop;let best=0,bestL=0;for(let L=Math.round(fps*60/170);L<=Math.round(fps*60/80);L++){let s=0;for(let i=L;i<n;i++)s+=env[i]*env[i-L];if(s>best){best=s;bestL=L}}
+ let period=bestL/fps,bpm=60/period;bpm=Math.round(bpm*10)/10;period=60/bpm;
+ let bestP=0,bestS=-1;for(let ph=0;ph<period;ph+=1/fps){let s=0;for(let tt=ph;tt<ab.duration;tt+=period)s+=env[Math.round(tt*fps)]||0;if(s>bestS){bestS=s;bestP=ph}}
+ const nb=Math.floor((ab.duration-bestP)/period),en=new Float32Array(nb);for(let b=0;b<nb;b++){let s=0;const a=Math.round((bestP+b*period)*fps),z=Math.round((bestP+(b+1)*period)*fps);for(let i=a;i<z&&i<n;i++){let e=0;for(let k=i*hop;k<(i+1)*hop;k+=4)e+=Math.abs(low[k]);s+=e}en[b]=s/Math.max(1,z-a)}
+ let dsum=[0,0,0,0];for(let b=0;b<nb;b++)dsum[b%4]+=en[b];const down=dsum.indexOf(Math.max(...dsum));
+ const sorted=[...en].sort((x,y)=>x-y),med=sorted[Math.floor(nb/2)]||1,hi=sorted[Math.floor(nb*.8)]||1;
+ return {src:'browser',tempo:bpm,duration:ab.duration,beats:Array.from({length:nb},(_,b)=>+(bestP+b*period).toFixed(4)),bar_phase:down,en:Array.from(en),med,hi,passages:[],bars:[]}}
+// a track into the control view: decoded here (the output reads it from here), the browser's grid at once, the desk's
+// analysis (sections, beats, drops: V11) as soon as the desk has it
+async function loadTrack(file,o={}){trackEl&&trackEl.pause();micOff();ensureAC();toast('Reading the track…');
+ const ab=await AC.decodeAudioData(await file.arrayBuffer());trackEl=makeTrack(ab);trackFile=file;trackEl.onended(()=>XP.ended());
+ XP.trackLoaded(o.title||file.name||'Track',ab.duration);
+ if(!o.song){const g=await analyse(ab);S.bpm=g.tempo;XP.setSong(g,{soft:true})}
+ return trackEl}
 // "Use this song's stems": the loaded track goes to the desk (/api/analyze gives it an id), POST /api/stems splits it
-// (cached by song hash, so the second time is instant), then the page reloads with ?stems=<envelopes>&track=<id>
-// and picks the same track back up from /media/audio/<id>, in sync with the envelopes.
-let trackFile=null;
-async function useStems(){if(!trackFile){toast('Load a track first (Mic mode has no stems)');return}
+// (cached by song hash, so the second time is instant), then the envelopes drive the picture in both windows; the
+// address keeps ?stems=<envelopes>&track=<id> so a reload picks the same track back up from /media/audio/<id>.
+async function useStems(){if(!trackFile){toast(MIC?'Mic mode has no stems: load a track':'Load a track first (Mic mode has no stems)');return}
  const btn=$('stemsb');btn.disabled=true;btn.textContent='Uploading…';
- try{let id=S.trackId;if(!id){const fd=new FormData();fd.append('file',trackFile,trackFile.name||'track.wav');const r=await fetch('/api/analyze',{method:'POST',body:fd});const j=await r.json();if(!r.ok)throw new Error(j.detail||'upload failed');id=j.audio_id}
+ try{let id=S.trackId;if(!id){const fd=new FormData();fd.append('file',trackFile,trackFile.name||'track.wav');const r=await fetch('/api/analyze',{method:'POST',body:fd});const j=await r.json();if(!r.ok)throw new Error(j.detail||'upload failed');id=j.audio_id;S.trackId=id}
   btn.textContent='Splitting stems…';let st=await (await fetch('/api/stems',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({audio_id:id})})).json();
   if(st.detail)throw new Error(st.detail);
   while(st.status==='running'){await new Promise(r=>setTimeout(r,1200));st=await (await fetch('/api/stems/'+st.id)).json();btn.textContent='Splitting stems… ('+(st.engine||'')+')'}
   if(st.status!=='done')throw new Error(st.error||'stems failed');
-  toast(st.count+' stems ('+st.engine+')');const u=new URL(location.href);u.searchParams.set('stems',st.envelopes);u.searchParams.set('stemsId',st.id);u.searchParams.set('track',id);location.href=u.toString()}
+  const u=new URL(location.href);u.searchParams.set('stems',st.envelopes);u.searchParams.set('stemsId',st.id);u.searchParams.set('track',id);history.replaceState(null,'',u.toString());
+  S.stemsId=st.id;await XP.stems(st.envelopes);toast(st.count+' stems ('+st.engine+')');btn.disabled=false}
  catch(e){toast('Stems: '+e.message);btn.disabled=false;btn.textContent="Use this song's stems"}}
-$('stemsb').onclick=useStems;
-if(S.trackId)fetch('/media/audio/'+encodeURIComponent(S.trackId)).then(r=>r.ok?r.blob():Promise.reject()).then(async b=>{trackFile=b;await loadTrack(b);if(Q.get('stems')){$('stemsb').textContent='Stems on ('+(STEMS&&STEMS.engine||'…')+')';$('stemsb').classList.add('on');toast('Track + stems ready. Space to play')}}).catch(()=>toast('That track is no longer on the desk; load it again'));
-function bands(){if(!an)return{b:0,m:0,h:0,flux:0};an.getByteFrequencyData(buf);const hz=AC.sampleRate/an.fftSize;
- const avg=(a,b)=>{let s=0,n=0;for(let i=Math.floor(a/hz);i<Math.min(buf.length,b/hz);i++){s+=buf[i];n++}return n?s/n/255:0};
- const b=avg(30,150),m=avg(150,2000),h=avg(4000,12000);const e=b*2+m+h;const flux=Math.max(0,e-bands.p);bands.p=e;return{b,m,h,flux}}bands.p=0;
-let taps=[];function tap(){const now=performance.now();taps=taps.filter(x=>now-x<3000);taps.push(now);if(taps.length>=3){const p=(taps[taps.length-1]-taps[0])/(taps.length-1)/1000;S.bpm=Math.round(600/p)/10;grid={tap:true,period:p,phase:(now/1000)%p};toast(`Tap tempo ${S.bpm} BPM`)}}
-
-// beat handling
-let lastBeatIdx=-1,beatPulse=0,lastFluxBeat=0,avgFlux=0,bassS=0,highS=0;
-function switchEvery(idx){if(S.every)return S.every;if(!grid||!grid.en)return 4;const e=grid.en[idx]||0;return e>grid.hi?1:e>grid.med*1.05?2:4}
-function onBeat(idx){beatPulse=1;S.beats++;const bi=grid&&grid.down!=null?((idx-grid.down)%4+4)%4:S.beats%4;
- document.querySelectorAll('#bars i').forEach((el,i)=>el.classList.toggle('on',i===bi));
- const N=switchEvery(idx);const pos=grid&&grid.down!=null?idx-grid.down:S.beats;if(((pos%N)+N)%N===0)next(null,((pos%8)+8)%8===0)}
-
-// render loop
-let fpsN=0,fpsT=performance.now();
-function frame(now){requestAnimationFrame(frame);size();
- const a=bands();bassS+=(a.b-bassS)*.35;highS+=(a.h-highS)*.5;avgFlux=avgFlux*.95+a.flux*.05;
- {const st=stems(a);SE.drums=Math.max(st.drums,SE.drums*.82);SE.bass+=(st.bass-SE.bass)*.35;SE.other+=(st.other-SE.other)*.2;SE.vocals+=(st.vocals-SE.vocals)*.25;}
- if(grid&&trackEl&&!trackEl.paused){const idx=Math.floor((trackEl.currentTime-grid.phase)/grid.period);if(idx!==lastBeatIdx&&idx>=0){lastBeatIdx=idx;onBeat(idx)}}
- else if(grid&&grid.tap){const idx=Math.floor((now/1000-grid.phase)/grid.period);if(idx!==lastBeatIdx){lastBeatIdx=idx;onBeat(idx)}}
- else if(an&&a.flux>avgFlux*2.6&&a.flux>.04&&now-lastFluxBeat>350&&a.b>.4){lastFluxBeat=now;onBeat(S.beats)}
- beatPulse*=.9;
- let mixv=0;if(S.trans){mixv=Math.min(1,(now-S.t0)/S.dur);if(mixv>=1){S.scenes[S.cur]&&S.scenes[S.cur].v.pause();S.cur=S.nxt;S.trans=false;mixv=0}}
- const A=S.scenes[S.cur]&&S.scenes[S.cur].v,B=S.trans?S.scenes[S.nxt].v:A;
- [[A,0],[B,1]].forEach(([v,u])=>{if(v&&v.readyState>=2){gl.activeTexture(gl.TEXTURE0+u);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,v)}});
- const f1=(n,v)=>gl.uniform1f(U(n),v);f1('t',now/1000);f1('m',mixv);f1('bass',bassS);f1('high',highS);f1('fx',S.curFx);f1('beat',beatPulse);
- f1('kal',S.kal);f1('mir',S.mir);f1('stb',S.stb);f1('inten',S.inten);
- f1('sDrum',SE.drums);f1('sBass',SE.bass);f1('sOther',SE.other);f1('sVoc',SE.vocals);window.__xfStems=SE;
- f1('aspA',A&&A.videoWidth?A.videoWidth/A.videoHeight:1);f1('aspB',B&&B.videoWidth?B.videoWidth/B.videoHeight:1);f1('aspS',cv.width/cv.height);
- gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
- fpsN++;if(now-fpsT>500){if(S.hud){$('h-fps').textContent=Math.round(fpsN*1000/(now-fpsT));$('h-bpm').textContent=S.bpm||'-';$('h-beat').textContent=S.beats;
-  $('h-scene').textContent=(S.scenes[S.cur]||{}).name||'-';$('h-fx').textContent=(S.fx==='auto'?'auto · ':'')+FXN[S.curFx];$('h-every').textContent=S.every?S.every+' beat(s)':'follow song';$('h-int').textContent=S.inten.toFixed(2)}fpsN=0;fpsT=now}
- if(S.hud){$('mb').style.height=(3+27*bassS)+'px';$('mm').style.height=(3+27*a.m)+'px';$('mh').style.height=(3+27*highS)+'px'}}
-
-// recording: canvas + track audio -> webm download
-let rec=null;function record(sec){return new Promise(res=>{if(rec){rec.stop();return res(null)}
- const st=cv.captureStream(+(Q.get('fps')||30));if(recDest)recDest.stream.getAudioTracks().forEach(t=>st.addTrack(t));
- const mt=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(x=>MediaRecorder.isTypeSupported(x));
- rec=new MediaRecorder(st,{mimeType:mt,videoBitsPerSecond:+(Q.get('vbr')||24e6)});const ch=[];rec.ondataavailable=e=>e.data.size&&ch.push(e.data);
- rec.onstop=()=>{const b=new Blob(ch,{type:'video/webm'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`xenoform_vj_${cv.width}x${cv.height}_${Date.now()}.webm`;document.body.appendChild(a);a.click();
-  rec=null;$('recb').classList.remove('on');toast('Clip saved');res(a.download)};
- rec.start(1000);$('recb').classList.add('on');if(sec)setTimeout(()=>rec&&rec.stop(),sec*1000)})}
-// automation hook for scripted demo captures
-window.VJ={S,loadTrack,next,record,async go({start=0,seconds=12}={}){await AC.resume();trackEl.currentTime=start;lastBeatIdx=Math.floor((start-grid.phase)/grid.period);await trackEl.play();
- const name=await record(seconds);trackEl.pause();return name},ready:()=>S.scenes.filter(s=>s.v.readyState>=3).length};
-
-// controls
-function toast(t){const el=$('toast');el.textContent=t;el.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove('show'),1800)}
-function setFx(v){S.fx=v;$('fx').value=v;toast(v==='auto'?'Auto transitions':FXN[+v])}
-const EV=[0,1,2,4,8];function rate(d){let i=EV.indexOf(S.every);i=Math.max(0,Math.min(EV.length-1,i+d));S.every=EV[i];$('every').value=S.every;toast(S.every?`Switch every ${S.every} beat(s)`:'Follow the song')}
-function tog(k,btn){S[k]=S[k]?0:1;$(btn).classList.toggle('on',!!S[k])}
-function hud(){S.hud=!S.hud;$('hud').classList.toggle('hide',!S.hud);$('hudb').classList.toggle('on',S.hud)}
-$('fx').onchange=e=>setFx(e.target.value);$('every').onchange=e=>{S.every=+e.target.value};$('every').value=S.every;$('fx').value=S.fx;
-if(!EXPERT){$('kal').style.display='none'}$('kal').onclick=()=>{if(EXPERT)tog('kal','kal')};$('mir').onclick=()=>tog('mir','mir');$('stb').onclick=()=>tog('stb','stb');$('stb').classList.toggle('on',!!S.stb);$('kal').classList.toggle('on',!!S.kal);$('mir').classList.toggle('on',!!S.mir);
-$('hudb').onclick=hud;$('recb').onclick=()=>record();$('helpb').onclick=()=>$('help').classList.toggle('show');$('help').onclick=()=>$('help').classList.remove('show');
-$('fs').onclick=()=>document.documentElement.requestFullscreen();
+// a desk track by id (?track=: the desk's song, the demo, or one loaded here before a reload)
+function trackFromDesk(id){return fetch('/media/audio/'+encodeURIComponent(id)).then(r=>r.ok?r.blob():Promise.reject()).then(b=>loadTrack(b,{title:id==='demo'?'Demo track':id}))}
+// Dance presets (MIDI pads B1-B6, S.dance): there is no separate post-look in the VJ page, so a preset is a
+// combination of the transition pick, mirror, strobe and intensity. 1 always brings the picture back to clean.
+const DANCE=[null,{name:'Clean',fx:'auto',mir:0,stb:0,inten:1},{name:'Mirror',mir:1,stb:0},{name:'Strobe',stb:1},{name:'Mirror + strobe',mir:1,stb:1,inten:1.3},
+ {name:'Echo trail',fx:'14',stb:0,inten:1.4},{name:'Chrome mirror',fx:'13',mir:1,inten:1.6}];
+function dance(i){const d=DANCE[i];if(!d)return;S.dance=i;const o={};if(d.fx!=null)o.fx=String(d.fx);if(d.mir!=null)o.mir=d.mir;if(d.stb!=null)o.stb=d.stb;if(d.inten!=null)o.inten=d.inten;
+ XP.set(o);toast('Dance '+i+' · '+d.name);if(S.scenes.length>1)XP.send('next')}
+function setFx(v){XP.set({fx:v});toast(v==='auto'?'Auto transitions':FXN[+v])}
+const EV=[0,1,2,4,8];function rate(d){let i=EV.indexOf(S.every);i=Math.max(0,Math.min(EV.length-1,i+d));XP.set({every:EV[i]});toast(S.every?`Switch every ${S.every} beat(s)`:'Follow the song')}
+function tog(k,btn){XP.set({[k]:S[k]?0:1})}
+function hud(){XP.set({hud:!S.hud})}
+const setTog=(k,btn,on)=>{XP.set({[k]:on?1:0})};
+// Pad holds (T1: pads are temporary overriders): press(id) puts a pad on top, release(id) takes it off, the top is what
+// shows, last in wins, and the song never stops. midi.js brings XenoMidi.holds with these names (t1-midi); this one
+// stands in on a midi.js without it: ids are targets ("pad:3"), on(fn) calls fn(id, on, top, stack) and returns an
+// unsubscribe, top(prefix) is the newest id that starts with prefix.
+if(!OUT&&!XenoMidi.holds)XenoMidi.holds=(()=>{const st=[],fns=[];const top=p=>{for(let i=st.length-1;i>=0;i--)if(!p||String(st[i]).startsWith(p))return st[i];return null};
+ const tell=(id,on)=>{const t=top(),s=st.slice();fns.slice().forEach(f=>{try{f(id,on,t,s)}catch(e){console.error(e)}})};
+ return{press(id){const i=st.indexOf(id);if(i>=0)st.splice(i,1);st.push(id);tell(id,true)},release(id){const i=st.indexOf(id);if(i<0)return false;st.splice(i,1);tell(id,false);return true},
+  top,clear(){const was=st.splice(0);was.forEach(id=>tell(id,false))},list(){return st.slice()},held(id){return st.includes(id)},on(f){fns.push(f);return()=>{const i=fns.indexOf(f);if(i>=0)fns.splice(i,1)}}}})();
+// a dropdown picked with the mouse (Transition, Switch, the audio input) gives the keys back: the key handler skips a
+// focused select, so after one pick every shortcut went dead (UI review V9); stepping one with the arrow keys keeps it
+let pickedSelect=null;addEventListener('pointerdown',e=>{pickedSelect=e.target.tagName==='SELECT'?e.target:null},true);
+addEventListener('change',e=>{if(e.target.tagName==='SELECT'&&e.target===pickedSelect){pickedSelect=null;e.target.blur()}},true);
 addEventListener('keydown',e=>{if(e.target.tagName==='SELECT')return;const k=e.key;
- if(k===' '||k==='ArrowRight'){e.preventDefault();if(trackEl&&trackEl.paused&&!S.played){S.played=1;AC.resume();trackEl.play()}else next()}
- else if(k==='ArrowLeft')prev();else if(k>='1'&&k<='8')setFx(String(KEYFX[+k-1]));else if(k==='0'||k==='a'||k==='A')setFx('auto');
- else if(k==='[')rate(-1);else if(k===']')rate(1);else if(k==='ArrowUp'){e.preventDefault();S.inten=Math.min(2,S.inten+.1);toast('Intensity '+S.inten.toFixed(1))}
- else if(k==='ArrowDown'){e.preventDefault();S.inten=Math.max(0,S.inten-.1);toast('Intensity '+S.inten.toFixed(1))}
+ if(OUT||e.ctrlKey||e.metaKey||e.altKey||/^(INPUT|TEXTAREA)$/.test(e.target.tagName)&&e.target.type!=='range'||e.target.closest&&e.target.closest('[role=slider]')&&/^Arrow/.test(k))return;
+ if(e.shiftKey&&/^Digit[1-8]$/.test(e.code)){e.preventDefault();if(!e.repeat)XP.press(+e.code.slice(5));return}
+ if(k===' '){e.preventDefault();if(e.target.tagName==='BUTTON'||e.repeat)return;if(MIC||!trackEl)XP.send('next');else XP.togglePlay()}
+ else if(k==='ArrowRight'){e.preventDefault();XP.send('next')}
+ else if(k==='ArrowLeft')XP.send('prev');else if(k>='1'&&k<='8')setFx(String(KEYFX[+k-1]));else if(k==='0'||k==='a'||k==='A')setFx('auto');
+ else if(k==='[')rate(-1);else if(k===']')rate(1);else if(k==='ArrowUp'){e.preventDefault();XP.set({inten:Math.min(2,S.inten+.1)});toast('Intensity '+S.inten.toFixed(1))}
+ else if(k==='ArrowDown'){e.preventDefault();XP.set({inten:Math.max(0,S.inten-.1)});toast('Intensity '+S.inten.toFixed(1))}
  else if(/^[kK]$/.test(k)){if(EXPERT)tog('kal','kal');else toast('Kaleido is expert only (?expert=1)')}else if(/^[mM]$/.test(k))tog('mir','mir');else if(/^[sS]$/.test(k))tog('stb','stb');
- else if(/^[tT]$/.test(k))tap();else if(/^[pP]$/.test(k))hud();else if(/^[hH]$/.test(k))$('ui').classList.toggle('hide');
- else if(/^[rR]$/.test(k))record();else if(/^[fF]$/.test(k))document.documentElement.requestFullscreen();else if(k==='?')$('help').classList.toggle('show')
- else if(/^[lL]$/.test(k)){XenoMidi.setLearnMode(!XenoMidi.learnMode);if(XenoMidi.learnMode)$('help').classList.add('show')}});
+ else if(/^[tT]$/.test(k))XP.send('tap');else if(/^[pP]$/.test(k))hud();else if(/^[hH]$/.test(k))XP.monitorOnly();
+ else if(/^[rR]$/.test(k))XP.rec();else if(/^[fF]$/.test(k))XP.fullscreen();else if(k==='?')XP.help();
+ else if(/^[oO]$/.test(k))XP.openOutput();else if(/^[bB]$/.test(k))XP.blackout();else if(/^[dD]$/.test(k))XP.cueDrop();else if(k==='Home')XP.seek(0);
+ else if(k==='Escape')XP.help(false);
+ else if(/^[lL]$/.test(k))XP.midi()});
+addEventListener('keyup',e=>{if(!OUT&&/^Digit[1-8]$/.test(e.code))XP.release(+e.code.slice(5))});
 // MIDI: Web MIDI and the desk bridge (/ws/midi) through the shared mapping layer (midi.js). Default map = MiniLab 3.
-const setTog=(k,btn,on)=>{S[k]=on?1:0;$(btn).classList.toggle('on',!!S[k])};
 let intenToast=0;const stemName=n=>/^\d+$/.test(n)?((STEMS&&STEMS.stems)||[])[+n-1]||null:n;
-XenoMidi.init({page:'vj',toast,elements:{fx:'fx:next',every:'every',stemsb:'stem:1'},
- onStatus:s=>{$('h-midi').textContent=s.inputs.length?s.inputs.length+' input(s)'+(s.bridge==='bridge'?' + bridge':''):s.bridge==='bridge'?'bridge':s.bridge==='sse'?'bridge (sse)':'none'},
+const PAD_TARGETS=[1,2,3,4,5,6,7,8].map(i=>'pad:'+i);
+// Held looks (t1-midi): a MIDI row on a dance preset, strobe, mirror or kaleido set to "On while held" is pressed onto
+// XenoMidi.holds by midi.js; the look applies while held and on release goes back to what it was; several stack, the
+// last one pressed wins where they disagree. The pads' own looks (S.hold, kind "look") are the engine's, not these.
+const isHold=e=>!!(e&&e.mode==='hold');
+const LOOKHOLD={snap:null};const isLookHold=id=>/^(dance:\d+|strobe|mirror|kaleido)$/.test(id);
+function applyLookHolds(){const held=XenoMidi.holds.list().filter(isLookHold);
+ if(!held.length){if(LOOKHOLD.snap){XP.set(LOOKHOLD.snap);LOOKHOLD.snap=null}return}
+ if(!LOOKHOLD.snap)LOOKHOLD.snap={fx:S.fx,mir:S.mir,stb:S.stb,kal:S.kal,inten:S.inten};const o=Object.assign({},LOOKHOLD.snap);
+ for(const id of held){if(id.startsWith('dance:')){const d=DANCE[+id.slice(6)];if(!d)continue;if(d.fx!=null)o.fx=String(d.fx);['mir','stb','inten'].forEach(k=>{if(d[k]!=null)o[k]=d[k]})}
+  else if(id!=='kaleido'||EXPERT)o[{strobe:'stb',mirror:'mir',kaleido:'kal'}[id]]=1}
+ XP.set(o)}
+if(!OUT)XenoMidi.holds.on(id=>{if(isLookHold(id))applyLookHolds()});
+// read: the value on screen, so a hardware knob takes over softly (t1-midi); targetName: a pad's scene in plain words
+if(!OUT)XenoMidi.init({page:'vj',toast,elements:{fx:'fx:next',every:'every',stemsb:'stem:1'},extraTargets:[...PAD_TARGETS,'blackout','master','glow','speed','chaos','play','cue:drop','output'],
+ read:t=>XP.readTarget(t),targetName:t=>XP.targetName(t),
+ onStatus:s=>{$('h-midi').textContent=s.device?s.device+(s.held&&s.held.length?' · held '+s.held.join(' '):''):s.inputs.length?s.inputs.length+' input(s)'+(s.bridge==='bridge'?' + bridge':''):s.bridge==='bridge'?'bridge':s.bridge==='sse'?'bridge (sse)':'none'},
  targets:{
-  intensity:v=>{S.inten=Math.max(0,Math.min(2,v));const now=performance.now();if(now-intenToast>250){intenToast=now;toast('Intensity '+S.inten.toFixed(2))}},
-  every:v=>{S.every=EV[Math.min(4,Math.floor(v*4.999))];$('every').value=S.every},
-  'fx:*':(n,v)=>{if(n==='next')next();else if(n==='prev')prev();else if(n==='auto')setFx('auto');
+  intensity:v=>{XP.set({inten:Math.max(0,Math.min(2,v))});const now=performance.now();if(now-intenToast>250){intenToast=now;toast('Intensity '+S.inten.toFixed(2))}},
+  every:v=>{XP.set({every:EV[Math.min(4,Math.floor(v*4.999))]})},
+  'fx:*':(n,v)=>{if(n==='next')XP.send('next');else if(n==='prev')XP.send('prev');else if(n==='auto')setFx('auto');
    else if(n==='step'){const i=KEYFX.indexOf(+S.fx),j=((i<0?0:i)+(v>0?1:-1)+KEYFX.length)%KEYFX.length;setFx(String(KEYFX[j]))}
-   else{const f=KEYFX[+n-1];if(f!=null){setFx(String(f));next(f)}}},
-  'dance:*':n=>dance(+n),
-  mirror:v=>setTog('mir','mir',v>0),strobe:v=>setTog('stb','stb',v>0),kaleido:v=>{if(EXPERT)setTog('kal','kal',v>0);else toast('Kaleido is expert only (?expert=1)')},
-  record:v=>{if((v>0)!==!!rec)record()},tap:()=>tap(),hud:v=>{if((v>0)!==S.hud)hud()},
-  drums:v=>{S.gain.drums=v},bass:v=>{S.gain.bass=v},other:v=>{S.gain.other=v},vocals:v=>{S.gain.vocals=v},
+   else{const f=KEYFX[+n-1];if(f!=null){setFx(String(f));XP.send('next',{fx:f})}}},
+  // a row in mode "hold" ("On while held") is played by the hold stack below (applyLookHolds): these see only the latching modes
+  'dance:*':(n,v,ev,e)=>{if(!isHold(e))dance(+n)},
+  'pad:*':(n,v,ev,entry)=>{if(entry&&entry.mode==='hold')return;if(v>0)XP.press(+n);else XP.release(+n)},blackout:v=>XP.blackout(v>0),  // a hold row: midi.js holds it
+  master:v=>XP.knob('master',v),glow:v=>XP.knob('glow',v),speed:v=>XP.knob('speed',v),chaos:v=>XP.knob('chaos',v),
+  play:v=>{if(v>0)XP.togglePlay()},'cue:*':(n,v)=>{if(v>0)XP.cueDrop()},output:v=>{if(v>0)XP.openOutput()},
+  mirror:(v,ev,e)=>{if(!isHold(e))setTog('mir','mir',v>0)},strobe:(v,ev,e)=>{if(!isHold(e))setTog('stb','stb',v>0)},
+  kaleido:(v,ev,e)=>{if(isHold(e))return;if(EXPERT)setTog('kal','kal',v>0);else toast('Kaleido is expert only (?expert=1)')},
+  record:v=>{if((v>0)!==XP.recording())XP.rec()},tap:()=>XP.send('tap'),hud:v=>{if((v>0)!==S.hud)hud()},
+  drums:v=>{XP.set({gain:{drums:v}})},bass:v=>{XP.set({gain:{bass:v}})},other:v=>{XP.set({gain:{other:v}})},vocals:v=>{XP.set({gain:{vocals:v}})},
   'stem:*':(n,v)=>{const name=stemName(n);if(name)setStemGain(name,v);else toast('No stem '+n+' (use this song\'s stems first)')}}});
-XenoMidi.panel($('midi-panel'));
-if(Q.get('clean')==='1')document.body.classList.add('clean');if(Q.get('hud')==='1')hud();
-let idle;addEventListener('mousemove',()=>{$('ui').classList.remove('hide');clearTimeout(idle);idle=setTimeout(()=>{if(!$('help').classList.contains('show'))$('ui').classList.add('hide')},3500)});
-loadLibrary();listInputs().catch(()=>{});requestAnimationFrame(frame);
-</script></body></html>
+// OSC to TouchDesigner (t3-td-bridge: osc_out.js, docs/osc.md): frame() is what the picture shows right now. This
+// window's engine draws it, except while the output window is linked: then this engine sleeps, the output reads this
+// window's analyser (so an/buf stay fresh and the levels come from them), and the beat counter and the scene come from
+// the output's last report. The control goes just above the MIDI panel in the help sheet, before the map docks it away;
+// the output window (OUT) has no help and sends nothing (the control view streams what it shows).
+const oscLevels=r=>{if(!an||!buf||!AC)return r.levels||{b:0,m:0,h:0};const hz=AC.sampleRate/an.fftSize;
+ const avg=(a,b)=>{let s=0,n=0;for(let i=Math.floor(a/hz);i<Math.min(buf.length,b/hz);i++){s+=buf[i];n++}return n?s/n/255:0};return{b:avg(30,150),m:avg(150,2000),h:avg(4000,12000)}};
+if(!OUT&&window.XenoOsc){XenoOsc.init({toast,frame:()=>{const au=A(),r=S.asleep&&window.XP&&XP.report?XP.report():null;
+  const lv=r?oscLevels(r):{b:bassS,m:midS,h:highS},k=r?S.scenes.findIndex(s=>s.key===r.key):S.cur;
+  const f=Object.assign(XenoOsc.audio(an,buf,AC&&AC.sampleRate),{bass:lv.b,mid:lv.m,high:lv.h,beat:r?r.beats:S.beats,
+   scene:k<0?S.cur:k,scene_name:r?r.scene:(S.scenes[S.cur]||{}).name||'',transition_fx:r?r.fx:S.curFx,intensity:S.inten,bpm:S.bpm||0,
+   t:au.hasTrack()&&!au.isMic()?au.pos():performance.now()/1000});
+  if(!r)Object.assign(f,{beat_env:beatPulse,transition:S.trans?Math.min(1,(performance.now()-S.t0)/S.dur):0,stems:{drums:SE.drums,bass:SE.bass,other:SE.other,vocals:SE.vocals}});
+  return f}});
+ XenoOsc.mount($('midi-panel'),'before')}
+// the MIDI map: docked by midi.js where it can (t1-midi: XenoMidi.dock), else the panel in the help sheet
+if(!OUT){if(XenoMidi.dock){const mp=$('midi-panel');if(mp)mp.remove()}else XenoMidi.panel($('midi-panel'))}
+// the dock is made at load, as t1's page made it (the merge dropped the call): a dock left open comes back open, the
+// badges and the button's dot show a connected controller, and the first press of MIDI or L toggles what is on screen
+if(!OUT&&XenoMidi.dock)XenoMidi.dock();
+if(Q.get('clean')==='1')document.documentElement.classList.add('clean');
+if(OUT||Q.get('clean')==='1')document.body.classList.add('clean');  // midi.js hides its badges under body.clean
+window.XC={loadTrack,trackFromDesk,useStems,micOn,micOff,listInputs,analyse,dance,setFx,rate,hud,ensureAC,loadStems,get track(){return trackEl},get file(){return trackFile},get mic(){return MIC},get ac(){return AC},stemsUrl:()=>STEMS_URL};
+requestAnimationFrame(frame);
+</script>
+<script src="/static/vj_control.js"></script>
+</body></html>

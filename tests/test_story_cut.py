@@ -204,7 +204,10 @@ def test_recut_route_bumps_the_video_version(client, monkeypatch):
 
 def test_desk_offers_the_re_cut_on_the_result_screen():
     assert 'data-act="easy-recut-knobs"' in APP and "async function recutWithKnobs" in APP
-    assert APP.count('<div class="simple-knobs"></div>') == 2  # the first screen and the result screen
+    # one knob strip, on Tweak, for a plan and for a cut: the cut's screen no longer repeats the knobs, and its Re-cut is
+    # the step bar's button on Tweak (docs/UI_REVIEW.md 6.3, 6.6)
+    assert APP.count('<div class="simple-knobs"></div>') == 1
+    assert 'data-act="easy-recut-knobs"' in APP.split("function stepBar(", 1)[1].split("\n}\n", 1)[0]
     assert "/recut`" in APP and "poll(id);" in APP.split("async function recutWithKnobs")[1].split("async function easyMake")[0]
 
 

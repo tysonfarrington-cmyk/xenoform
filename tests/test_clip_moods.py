@@ -215,6 +215,7 @@ def tiny(tmp_path_factory) -> Path:
 @pytest.mark.skipif(shutil.which("ffmpeg") is None or shutil.which("ffprobe") is None, reason="ffmpeg makes the tiny clips")
 def test_pack_json_and_labels_json_carry_the_fields_and_scan_hands_them_on(tmp_path, monkeypatch, tiny):
     monkeypatch.setenv("XENO_FILM_PACK", str(tmp_path / "pack"))
+    monkeypatch.delenv("XENO_OFFLINE", raising=False)  # the download is the mocked runner below; offline mode refuses to start one
     monkeypatch.setattr(film_pack, "RETRY_WAIT_S", 0.0)
     film_pack._reset_for_tests()
     manifest = {"version": 2, "name": "Free film pack", "folder": "film_pack",

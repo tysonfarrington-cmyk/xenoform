@@ -250,3 +250,21 @@ def test_a_window_make_on_the_mock_engine_is_the_songs_passage(tmp_path, drop):
     again = dense.recut_from_cache(job, {"macros": {"intensity": 0.7, "chaos": 0.4, "glow": 0.5}})
     assert again["drop"] == info["drop"] and len(again["shots"]) == 5
     assert again["pacing"]["line"].startswith("passage 8 of 14 of the song")
+
+
+def test_a_failed_window_goes_to_the_back_even_when_the_clock_has_not_ticked(tmp_path, monkeypatch):
+    """The 21 Nov review: the test above failed whenever the window failed within one tick of the clock of being queued
+    (Windows ticks every 15 ms): the retry took the same time as the windows still waiting and the tie went to it."""
+    monkeypatch.setattr(batch.time, "time", lambda: 1000.0)  # a clock that never moves
+    fake, closed = Fake(), []
+    r = _runner(tmp_path, fake, closed)
+    b = r.add_items(_rows(3), vary=batch.SONG, song_id="s1", song="Glitch Out")
+    assert r.step() == "started"
+    fake.finish("job0", "error", error="ComfyUI went away")
+    assert r.step() == "finished"
+    assert r.step() == "started" and fake.started[-1][1]["length_start"] == 7.0  # window 1, not the failed window 0
+    fake.finish("job1")
+    assert r.step() == "finished" and r.step() == "started" and fake.started[-1][1]["length_start"] == 14.0
+    fake.finish("job2")
+    assert r.step() == "finished" and r.step() == "started" and fake.started[-1][1]["length_start"] == 0.0
+    assert r.get(b["id"])["items"][0]["attempts"] == 1

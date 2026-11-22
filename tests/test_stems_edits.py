@@ -107,7 +107,11 @@ def test_the_drawer_routes_swap_and_re_render_to_the_layer_and_says_what_stays_o
     app = (Path(__file__).resolve().parents[1] / "src" / "xenoform" / "ui_static" / "app.js").read_text(encoding="utf-8")
     swap = app.split("async function swapStill(id, slot, file) {", 1)[1].split("\n}\n", 1)[0]
     assert 'if (lane && lane.mode === "stems") swap.layer = lane.layer;' in swap and "JSON.stringify(swap)" in swap
-    rerender = app.split("async function rerenderShot(index, style) {", 1)[1].split("\n}\n", 1)[0]
-    assert 'if (lane.mode === "stems") body.layer = lane.layer;' in rerender
-    drawer = app.split("function timelineDrawer(easy, lane, tl, picked) {", 1)[1].split("\n}\n", 1)[0]
-    assert 'lane.insertable === false ? ""' in drawer and "lane.layer_note" in drawer
+    # the re-render is Under the hood's (hood.js, 4 Nov): mountHood hands the panel the layer and its body carries it
+    mount = app.split("function mountHood() {", 1)[1].split("\n}\n", 1)[0]
+    assert 'const layer = lane.mode === "stems" ? lane.layer : null;' in mount and "jobId: id, shotIndex: index, layer," in mount
+    hood = (Path(__file__).resolve().parents[1] / "src" / "xenoform" / "ui_static" / "hood.js").read_text(encoding="utf-8")
+    assert "if (opts.layer) body.layer = opts.layer;" in hood.split("function bodyOf(entry, opts) {", 1)[1].split("\n  }\n", 1)[0]
+    # the Shot tab's GPU rows (Swap, Generate here, Dream here) say what a layer keeps off (shotGpuRows, 4 Nov)
+    rows = app.split("function shotGpuRows(lane, s, choices, canGpu, dream) {", 1)[1].split("\n}\n", 1)[0]
+    assert "lane.insertable !== false" in rows and "lane.layer_note" in rows

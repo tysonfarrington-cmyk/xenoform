@@ -28,11 +28,49 @@ _FINAL = {
 }
 
 TIERS: dict[str, dict[str, Any]] = {
-    "cpu": {"id": "cpu", "label": "CPU", "gb": None, "clamp": False, "detail": "No GPU was found. The draft still renders on the CPU."},
-    "8gb": {"id": "8gb", "label": "8 GB", "gb": 8, "clamp": True, "detail": "8 GB preset: Draft is LTX-Video 0.9.5 at 512×288, weights offloaded. Fast Final upscales the Draft 4x to 1080×1920. Final needs a larger card for LTX-2.3, so it falls back to the Draft."},
-    "12gb": {"id": "12gb", "label": "12 GB", "gb": 12, "clamp": True, "detail": "12 GB preset: Draft is LTX-Video 0.9.5 at 512×288. Fast Final is the Draft upscaled 4x to 1080×1920. Final is LTX-2.3 22B distilled fp8 at 448×768 plus a 4x upscale, about 90 to 290 seconds a shot. A shot Final cannot render falls back to the Draft."},
-    "24gb": {"id": "24gb", "label": "24 GB+", "gb": 24, "clamp": True, "detail": "24 GB preset: Draft is LTX-Video 0.9.5. Fast Final is the Draft upscaled 4x to 1080×1920. Final is LTX-2.3 22B distilled; the full weights fit."},
+    "cpu": {"id": "cpu", "label": "CPU", "gb": None, "clamp": False, "heading": "GPU not recognised",
+            "detail": "GPU not recognised: only NVIDIA (CUDA) cards are detected here, so the Draft renders on the CPU. If this machine has a card, pick its size under Tweak → Project · under the hood → GPU."},
+    "8gb": {"id": "8gb", "label": "8 GB", "gb": 8, "clamp": True, "heading": "8 GB GPU preset",
+            "detail": "Draft is LTX-Video 0.9.5 at 512×288, weights offloaded. Fast Final upscales the Draft 4x to 1080×1920. Final needs a 12 GB card, so it falls back to the Draft."},
+    "12gb": {"id": "12gb", "label": "12 GB", "gb": 12, "clamp": True, "heading": "12 GB GPU preset",
+             "detail": "Draft is LTX-Video 0.9.5 at 512×288. Fast Final is the Draft upscaled 4x to 1080×1920. Final is LTX-2.3 22B distilled fp8 at 448×768 plus a 4x upscale, about 90 to 290 seconds a shot. A shot Final cannot render falls back to the Draft."},
+    "24gb": {"id": "24gb", "label": "24 GB+", "gb": 24, "clamp": True, "heading": "24 GB+ GPU preset",
+             "detail": "Draft is LTX-Video 0.9.5. Fast Final is the Draft upscaled 4x to 1080×1920. Final is LTX-2.3 22B distilled; the full weights fit."},
 }
+
+# What each tier's Draft and Fast Final are (they never change with the Final's model), and the Final sentence per model.
+_DRAFT_TEXT = {
+    "8gb": "Draft is LTX-Video 0.9.5 at 512×288, weights offloaded. Fast Final upscales the Draft 4x to 1080×1920.",
+    "12gb": "Draft is LTX-Video 0.9.5 at 512×288. Fast Final is the Draft upscaled 4x to 1080×1920.",
+    "24gb": "Draft is LTX-Video 0.9.5. Fast Final is the Draft upscaled 4x to 1080×1920.",
+}
+_FINAL_TEXT = {
+    ("8gb", "ltx23"): "Final needs a 12 GB card, so it falls back to the Draft.",
+    ("8gb", "ltx25"): "Final needs a 12 GB card, so it falls back to the Draft.",
+    ("12gb", "ltx23"): "Final is LTX-2.3 22B distilled fp8 at 448×768 plus a 4x upscale, about 90 to 290 seconds a shot. A shot Final cannot render falls back to the Draft.",
+    ("12gb", "ltx25"): "Final is LTX-2.5 22B distilled int8 at 576×1024, scaled to 1080×1920, about 5 to 7 minutes a 3 s shot. A shot Final cannot render falls back to the Draft.",
+    ("24gb", "ltx23"): "Final is LTX-2.3 22B distilled; the full weights fit.",
+    ("24gb", "ltx25"): "Final is LTX-2.5 22B distilled int8 at 576×1024, scaled to 1080×1920. A shot Final cannot render falls back to the Draft.",
+}
+
+
+def final_model() -> str:
+    """The model Final resolves to on this machine, ``ltx25`` or ``ltx23`` (``final_tier.model``): LTX-2.5 once its four
+    files are installed, else LTX-2.3. ``ltx23`` when the question cannot be asked."""
+    try:
+        from xenoform import final_tier
+
+        return final_tier.model()
+    except Exception:
+        return "ltx23"
+
+
+def tier_detail(tier_id: str, model: str | None = None) -> str:
+    """The tier's sentence, written from the Final model that really runs, so Setup and About say the same thing."""
+    if tier_id not in _DRAFT_TEXT:
+        return str(TIERS.get(tier_id, TIERS["cpu"])["detail"])
+    model = model or final_model()
+    return f"{_DRAFT_TEXT[tier_id]} {_FINAL_TEXT[(tier_id, model if model == 'ltx25' else 'ltx23')]}"
 
 _LADDER = ("24gb", "12gb", "8gb")
 FAST_CHECKPOINT = "ltx-video-2b-v0.9.5.safetensors"
@@ -61,9 +99,15 @@ def detect_vram_gb() -> float | None:
         return None
 
 
+def _worded(tier: dict[str, Any]) -> dict[str, Any]:
+    """The tier with its sentence written from the Final model that runs here."""
+    tier["detail"] = tier_detail(str(tier.get("id") or "cpu"))
+    return tier
+
+
 def tier_for_gb(gb: float | None) -> dict[str, Any]:
     if gb is None:
-        return dict(TIERS["cpu"])
+        return _worded(dict(TIERS["cpu"]))
     if gb >= 20:
         found = dict(TIERS["24gb"])
     elif gb >= 11:
@@ -71,7 +115,8 @@ def tier_for_gb(gb: float | None) -> dict[str, Any]:
     else:
         found = dict(TIERS["8gb"])
     found["gb"] = round(gb, 1)
-    return found
+    found["vram_label"] = f"{gb:.1f} GB of video memory"
+    return _worded(found)
 
 
 def detect_tier() -> dict[str, Any]:
@@ -80,7 +125,7 @@ def detect_tier() -> dict[str, Any]:
 
 def resolve_tier(tier_id: str | None) -> dict[str, Any]:
     if tier_id and tier_id in TIERS:
-        return dict(TIERS[tier_id])
+        return _worded(dict(TIERS[tier_id]))
     return detect_tier()
 
 
