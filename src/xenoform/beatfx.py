@@ -24,6 +24,7 @@ import logging
 import math
 import os
 import subprocess
+import threading
 import time
 from pathlib import Path
 from typing import Callable, Iterable
@@ -565,6 +566,10 @@ def _ffmpeg() -> str:
     return find()
 
 
+ENCODER_STALL_S = 300.0  # an ffmpeg that takes no frame for this long is not slow: it has stopped taking frames
+ENCODER_END_S = 30.0     # and has this long again to end on its own before it is stopped
+
+
 class _Encoder:
     """An ffmpeg that takes raw frames on stdin and ends the file at the song's end (``-shortest``).
 
@@ -574,40 +579,136 @@ class _Encoder:
     reads on for a while first. The writer met the closed pipe on the one and not on the other and raised
     ``BrokenPipeError`` with a good file on disk. So a frame ffmpeg no longer takes is counted and dropped, and
     ``finish`` gives the exit code: 0 with frames left over is the song's end, anything else is a failed encode
-    whatever the pipe did. An error other than the closed pipe is still raised where it happens.
+    whatever the pipe did. An error other than the closed pipe is still raised, at the next frame or by ``judge``.
+
+    An ffmpeg that stops reading and keeps its end of the pipe open (finishing a large file, or stuck) must not hold
+    the cut for good: a write into a full pipe has no time limit and cannot be called off. So the frames go down the
+    pipe on a thread of the encoder's own, one in hand at a time, and ``write`` waits for it no longer than
+    ``ENCODER_STALL_S`` in all. After that ffmpeg has stalled: the frames still to come are counted and dropped, and
+    ``finish`` gives it ``ENCODER_END_S`` to end on its own. If it does, its exit code is the measure as ever (0 is
+    the song's end). If it does not it is stopped, and that is a failed encode, said so. The pipe is not closed on a
+    stalled ffmpeg first: one that wakes to find its input ended would write a short file and leave with exit 0.
 
     ffmpeg's words go to a file, not the console and not a pipe (nothing reads a pipe while frames are written: see
     ``comfy_pack.assemble``); ``finish`` reads them once ffmpeg has ended."""
 
+    _END = None  # what the writer thread is handed after the last frame
+
     def __init__(self, cmd: list[str]) -> None:
+        import queue
         import tempfile
 
         self._said = tempfile.TemporaryFile()
         self.proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=self._said)
-        self.taken = 0  # frames written before ffmpeg stopped reading
-        self.left = 0  # frames offered after it
+        self.offered = 0  # frames handed to write()
+        self.taken = 0  # frames ffmpeg took
+        self.gone = False  # ffmpeg closed its end of the pipe
+        self.stalled = 0.0  # how long ffmpeg had taken nothing when the writer stopped offering; 0 while it takes them
+        self.stopped = False  # ffmpeg stalled, did not end on its own, and was stopped
+        self._error: BaseException | None = None  # what the pipe raised other than "closed"
+        self._frames: queue.Queue = queue.Queue(maxsize=1)
+        # started at the first frame, not here: compose's worker processes are forked after the encoder is made, and
+        # a process should not be forked with a thread running
+        self._writer: threading.Thread | None = None
 
-    def write(self, frame: np.ndarray) -> None:
+    @property
+    def left(self) -> int:
+        """Frames offered that ffmpeg did not take."""
+        return self.offered - self.taken
+
+    def _pump(self) -> None:
         import errno
 
-        if self.left:
-            self.left += 1
+        while True:
+            data = self._frames.get()
+            if data is self._END:
+                return
+            if self.gone or self._error is not None:
+                continue
+            try:
+                self.proc.stdin.write(data)
+            except OSError as exc:  # EPIPE, or EINVAL as Windows sometimes names the same closed pipe
+                if isinstance(exc, BrokenPipeError) or exc.errno == errno.EINVAL:
+                    self.gone = True
+                else:
+                    self._error = exc
+            except Exception as exc:  # noqa: BLE001  (whatever it is, it is raised where the frames come from)
+                self._error = exc
+            else:
+                self.taken += 1
+
+    def _within_patience(self, attempt: Callable[[float], bool]) -> bool:
+        """``attempt(seconds)`` until it succeeds, a second at a time; False, and ffmpeg has stalled, once it has
+        failed for ``ENCODER_STALL_S``. Counted in the waits themselves, not read off a clock, so a machine that slept
+        through an hour has waited one second."""
+        waited = 0.0
+        while True:
+            step = max(min(1.0, ENCODER_STALL_S - waited), 0.001)
+            if attempt(step):
+                return True
+            waited += step
+            if waited >= ENCODER_STALL_S:
+                self.stalled = waited
+                return False
+
+    def _hand_over(self, data) -> bool:
+        """Put a frame (or the end mark) in the writer's hand. False when ffmpeg takes no more: gone, or stalled."""
+        import queue
+
+        def attempt(seconds: float) -> bool:
+            if self.gone or self._error is not None:
+                return True
+            try:
+                self._frames.put(data, timeout=seconds)
+            except queue.Full:
+                return False
+            return True
+
+        return self._within_patience(attempt) and not self.gone and self._error is None
+
+    def write(self, frame: np.ndarray) -> None:
+        if self._error is not None:
+            raise self._error
+        self.offered += 1
+        if self.gone or self.stalled:
             return
-        try:
-            self.proc.stdin.write(np.ascontiguousarray(frame).tobytes())
-        except OSError as exc:  # EPIPE, or EINVAL as Windows sometimes names the same closed pipe
-            if not isinstance(exc, BrokenPipeError) and exc.errno != errno.EINVAL:
-                raise
-            self.left = 1
-            return
-        self.taken += 1
+        if self._writer is None:
+            self._writer = threading.Thread(target=self._pump, name="xenoform-encoder", daemon=True)
+            self._writer.start()
+        self._hand_over(np.ascontiguousarray(frame).tobytes())
 
     def finish(self) -> tuple[int, str]:
-        """Close stdin, wait for ffmpeg, and give its exit code and what it said. Never raises for the pipe."""
-        try:
-            self.proc.stdin.close()
-        except OSError:  # the close flushes what a refused write left behind, into the same closed pipe
-            pass
+        """Close stdin, wait for ffmpeg, and give its exit code and what it said. Never raises for the pipe, and
+        never waits on a stalled ffmpeg for longer than ``ENCODER_END_S``."""
+        import queue
+
+        writer = self._writer
+        if writer is not None:
+            if not self.stalled and self._hand_over(self._END):  # behind the last frame, which now goes down
+
+                def ended(seconds: float) -> bool:
+                    writer.join(seconds)
+                    return not writer.is_alive()
+
+                self._within_patience(ended)
+            if self.stalled:
+                try:
+                    self.proc.wait(timeout=ENCODER_END_S)
+                except subprocess.TimeoutExpired:
+                    self.stopped = True
+                    self.proc.kill()
+                    self.proc.wait()
+            if writer.is_alive():  # freed by ffmpeg's end, or with nothing left it will write: the end mark reaches it
+                try:
+                    self._frames.put(self._END, timeout=ENCODER_END_S)
+                except queue.Full:
+                    pass
+                writer.join(ENCODER_END_S)
+        if writer is None or not writer.is_alive():  # (a writer still in its write holds the pipe's lock)
+            try:
+                self.proc.stdin.close()
+            except OSError:  # the close flushes what a refused write left behind, into the same closed pipe
+                pass
         code = self.proc.wait()
         self._said.seek(0)
         said = self._said.read().decode("utf-8", "replace").strip()
@@ -616,6 +717,12 @@ class _Encoder:
 
     def judge(self, code: int, said: str, could_not: str) -> None:
         """Raise for a failed encode, in ffmpeg's words; log what a good one had to say and where the song ended."""
+        if self._error is not None:
+            raise self._error
+        if self.stopped:
+            raise RuntimeError(f"ffmpeg could not {could_not}: it took no frame for {self.stalled:g} s and did not end, "
+                               f"so it was stopped after {self.taken} of {self.offered} frames"
+                               + (f": {said[-400:]}" if said else "."))
         if code:
             raise RuntimeError(f"ffmpeg could not {could_not} (exit {code})" + (f": {said[-400:]}" if said else "."))
         if said:
